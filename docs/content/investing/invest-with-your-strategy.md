@@ -1,6 +1,6 @@
 ---
 title: "Start to invest"
-description: "Learn how to quickly and easily start your investment on OctoBot cloud."
+description: "Learn how to quickly and easily start your investment on OctoBot app."
 sidebar_position: 6
 ---
 
@@ -11,7 +11,7 @@ sidebar_position: 6
 ![cloud strategy](/images/guides/cloud-strategy2.png)
 
 
-Once you found the strategy or the crypto basket you want to use with your real funds, you are ready to really profit from OctoBot cloud. 
+Once you found the strategy or the crypto basket you want to use with your real funds, you are ready to really profit from OctoBot app. 
 
 ## Getting started
 

@@ -707,7 +707,7 @@ export default function OctoBotAppFeature(): ReactNode {
         lead={translate({
           id: 'features.octobotApp.pricing.lead',
           message:
-            'OctoBot Cloud offers a plan for every type of investor — start free and upgrade only when you need more.',
+            'OctoBot App offers a plan for every type of investor — start free and upgrade only when you need more.',
           description: 'Section lead on OctoBot App page',
         })}>
         <PricingStrip cells={PRICING} />

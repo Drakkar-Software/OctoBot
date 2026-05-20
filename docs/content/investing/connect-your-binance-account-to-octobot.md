@@ -1,10 +1,10 @@
 ---
 title: "Connecting to Binance"
-description: "Step by step guide on how to securely use your Binance account with OctoBot cloud and profit from automated crypto investments."
+description: "Step by step guide on how to securely use your Binance account with OctoBot app and profit from automated crypto investments."
 sidebar_position: 22
 ---
 
-# Connecting your Binance account to OctoBot cloud
+# Connecting your Binance account to OctoBot app
 
 To automate the investment strategies of your choice on your Binance account, it is necessary to allow OctoBot to access a part of your account.
 
@@ -14,7 +14,7 @@ If you are wondering what an `API Key` is and why OctoBot is using it, checkout 
 
 ## Connecting to your Binance account with API Keys
 
-Here are the 7 simple steps to connect to your Binance account with OctoBot cloud and automate your investment strategies.
+Here are the 7 simple steps to connect to your Binance account with OctoBot app and automate your investment strategies.
 
 ### 1. Log in to your Binance account
 
@@ -53,7 +53,7 @@ The only remaining thing is to add the trading permission for OctoBot to be able
 
 2. Choose "Restrict access to trusted IPs only"
 
-3. Click the "copy" button from OctoBot cloud to copy the IP whitelist
+3. Click the "copy" button from OctoBot app to copy the IP whitelist
 
 4. Paste the list in the field that just appeared
 
@@ -73,24 +73,24 @@ The only remaining thing is to add the trading permission for OctoBot to be able
 
 Please note that every other permission than "Enable Reading" and "Enable Spot & Margin Trading" should remain unchecked.
 
-### 6. Add your API Key to your OctoBot cloud account
+### 6. Add your API Key to your OctoBot app account
 
 Your API Key is now ready to be used by OctoBot !
 
-All you need to do is to copy and paste both `API Key` and `Secret Key` values into your Binance account configuration on OctoBot cloud. This can be done either when starting a trading strategy with a real account or from your profile on [octobot.cloud](https://www.octobot.cloud/)
+All you need to do is to copy and paste both `API Key` and `Secret Key` values into your Binance account configuration on OctoBot app. This can be done either when starting a trading strategy with a real account or from your profile on [octobot.cloud](https://www.octobot.cloud/)
 
-Note: When adding an API Key on OctoBot cloud, you can associate a name to it. As for the naming on Binance side, this is a free field where you can enter any name to quickly identify this API Key in the future.
+Note: When adding an API Key on OctoBot app, you can associate a name to it. As for the naming on Binance side, this is a free field where you can enter any name to quickly identify this API Key in the future.
 ![api creation completed selected values](/images/guides/binance/api-creation-completed-selected-values.png)
 
-![add API Key to octobot cloud from strategy start](/images/guides/binance/add-api-key-to-octobot-cloud-from-strategy-start.png)
+![add API Key to octobot app from strategy start](/images/guides/binance/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
 <em>Adding an API Key when starting a strategy</em>
 
-![add API Key to octobot cloud from profile](/images/guides/binance/add-api-key-to-octobot-cloud-from-profile.png)
+![add API Key to octobot app from profile](/images/guides/binance/add-api-key-to-octobot-cloud-from-profile.png)
 
 <em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
 
-Your Binance account can now be used on OctoBot cloud !
+Your Binance account can now be used on OctoBot app !
 
 :::info
   Please note that when starting a bot, some of the funds available in your API key related portfolio might be sold. This include any stablecoin and fiat related funds as well as cryptocurrencies that are traded by the strategy you selected. This is is part of the [portfolio optimization](invest-with-your-strategy#1-portfolio-optimization).
@@ -102,7 +102,7 @@ Your Binance account can now be used on OctoBot cloud !
 
 If you get the `Incorrect API Keys` error, this usually means that:
 
-- There was an error when copy-pasting your API Key or Secret Key from Binance to OctoBot cloud
+- There was an error when copy-pasting your API Key or Secret Key from Binance to OctoBot app
 - You made a mistake when copying the IP whitelist
 - You might have selected the wrong exchange (make sure to select Binance)
 

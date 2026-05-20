@@ -350,7 +350,7 @@ export default function ConverterPair({
           {
             id: 'programmatic.converterPair.cta.description',
             message:
-              'Put your {base} to work with an automated strategy on OctoBot Cloud.',
+              'Put your {base} to work with an automated strategy on OctoBot App.',
             description:
               'CTA band description; {base} is the base ticker',
           },
@@ -360,7 +360,7 @@ export default function ConverterPair({
           {
             label: translate({
               id: 'programmatic.converterPair.cta.action.start',
-              message: 'Start on OctoBot Cloud',
+              message: 'Start on OctoBot App',
               description: 'CTA band label',
             }),
             to: CLOUD,

@@ -50,8 +50,8 @@ Cela est utile pour s'assurer que la stratégie DCA reste cohérente même lors 
 Par exemple, en tradant BTC/USDT et ETH/USDT, si le bot constate que de l'ETH se trouve dans le portefeuille et n'est pas inclus dans un ordre de vente, alors il considérera que cet ETH doit être vendu et le vendra contre des USDT avec un ordre au marché.
 
 ## Exemples d'utilisation du trading mode DCA
-De nombreuses stratégies OctoBot cloud sont construites en utilisant le trading mode DCA.
+De nombreuses stratégies OctoBot app sont construites en utilisant le trading mode DCA.
 
-- Dans notre [Smart DCA making of](/blog/smart-dca-making-of), nous expliquons le processus de conception de certaines des stratégies OctoBot cloud.
+- Dans notre [Smart DCA making of](/blog/smart-dca-making-of), nous expliquons le processus de conception de certaines des stratégies OctoBot app.
 
 - En [tradant avec ChatGPT](chatgpt-trading), vous pouvez également utiliser le trading mode DCA pour la gestion des ordres.

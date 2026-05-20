@@ -1,6 +1,6 @@
 ---
 title: "BingX Wheel of Fortune Event"
-description: "Join the BingX Wheel of Fortune event to earn up to 1000 USDT simply by trading using OctoBot cloud or your own OctoBot trading robot"
+description: "Join the BingX Wheel of Fortune event to earn up to 1000 USDT simply by trading using OctoBot app or your own OctoBot trading robot"
 slug: "bingx-wheel-of-fortune-event"
 date: "2024-02-27"
 authors: ["guillaume"]
@@ -12,7 +12,7 @@ image: "/images/blog/bingx-wheel-of-fortune-event/bingx-and-octobot-wheel-of-for
 
 ![bingx and octobot wheel of fortune event with 1000 usdt to earn](/images/blog/bingx-wheel-of-fortune-event/bingx-and-octobot-wheel-of-fortune-event-with-usdt-to-earn.png)
 
-In december, we [announced](octobot-1-0-4-whats-new) the official support of BingX in OctoBot, <a href="https://bingx.com/invite/Z4UUVX/" rel="nofollow">BingX</a> is now also supported on [OctoBot cloud strategies](https://www.octobot.cloud/).
+In december, we [announced](octobot-1-0-4-whats-new) the official support of BingX in OctoBot, <a href="https://bingx.com/invite/Z4UUVX/" rel="nofollow">BingX</a> is now also supported on [OctoBot app strategies](https://www.octobot.cloud/).
 
 <!--truncate-->
 
@@ -22,8 +22,8 @@ Today, we are glad to announce that starting from the 28th of February till the 
 
 After <a href="https://bingx.com/invite/Z4UUVX/" rel="nofollow">creating your BingX account</a> (if you don't have one already) and registering on the <a href="https://bingx.com/en-us/act/turntable/8628992176/" rel="nofollow">BingX Wheel of Fortune event</a>, you will earn draws by simply trading on BingX using any of:
 
-- BingX pre-configured strategies on [OctoBot cloud](https://www.octobot.cloud/).
-- The new [TradingView OctoBots](/investing/tradingview-automated-trading) from [OctoBot cloud](https://www.octobot.cloud/) to simply automate trades using price events, indicators or Pine Script strategies directly from TradingView.
+- BingX pre-configured strategies on [OctoBot app](https://www.octobot.cloud/).
+- The new [TradingView OctoBots](/investing/tradingview-automated-trading) from [OctoBot app](https://www.octobot.cloud/) to simply automate trades using price events, indicators or Pine Script strategies directly from TradingView.
 - Your own OctoBot strategy using [cloud or self hosted OctoBot trading bots](https://www.octobot.cloud/trading-bot).
 
 **[Join the event](https://bingx.com/en-us/act/turntable/8628992176)**
@@ -52,6 +52,6 @@ We believe this BingX event to be a great time to tell your friends about OctoBo
 Also, did you know that OctoBot has a referral program ? When your friends sign up using your OctoBot referral link:
 
 - They get a $5 discount on the subscription of their choice.
-- You receive 25% of their subscription fees as well as a part of the trading fees OctoBot cloud receives from partner exchanges on their real trading OctoBot.
+- You receive 25% of their subscription fees as well as a part of the trading fees OctoBot app receives from partner exchanges on their real trading OctoBot.
 
 Get your referral link on <a href="https://www.octobot.cloud/rewards" rel="nofollow">your referral dashboard</a>.

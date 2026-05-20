@@ -165,7 +165,7 @@ export default function CoinTradingBot({
             answer: translate({
               id: 'programmatic.coinTradingBot.faq.free.answer',
               message:
-                'OctoBot is open source and free to self-host. You can also start on OctoBot Cloud — some advanced strategies and baskets need a paid plan.',
+                'OctoBot is open source and free to self-host. You can also start on OctoBot App — some advanced strategies and baskets need a paid plan.',
               description: 'FAQ answer',
             }),
           },

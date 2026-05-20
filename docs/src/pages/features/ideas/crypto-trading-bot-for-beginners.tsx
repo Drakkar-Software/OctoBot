@@ -181,7 +181,7 @@ const DATA: IdeaPageData = {
           icon: '🚫',
           text: translate({
             id: 'pages.ideas.beginners.skip.3',
-            message: 'No server to manage — run it on OctoBot Cloud',
+            message: 'No server to manage — run it on OctoBot App',
             description: 'Beginners icon item',
           }),
         },

@@ -1,12 +1,12 @@
 ---
 title: "Having multiple OctoBots"
-description: "Learn how to run multiple trading strategies to optimize your gains and reduce risk. Use OctoBot cloud to run many strategies for free."
+description: "Learn how to run multiple trading strategies to optimize your gains and reduce risk. Use OctoBot app to run many strategies for free."
 sidebar_position: 7
 ---
 
 # Having multiple OctoBots
 
-When using OctoBot cloud, you can have as many strategies or crypto baskets as you wish.
+When using OctoBot app, you can have as many strategies or crypto baskets as you wish.
 
 ![having multiple octobots on different strategies](/images/guides/having-multiple-octobots-on-different-strategies.png)
 
@@ -14,7 +14,7 @@ While there is nothing mandatory, you can very well use one strategy at a time, 
 
 ## Benefits of running multiple OctoBots
 
-On OctoBot cloud, running one or many trading strategies is always free. Therefore there is no real reason not to do it. If you think it can be profitable for you, then you are free to do it at no cost.
+On OctoBot app, running one or many trading strategies is always free. Therefore there is no real reason not to do it. If you think it can be profitable for you, then you are free to do it at no cost.
 
 Running multiple OctoBots at the same time has many advantages, it allows you to:
 
@@ -39,7 +39,7 @@ This means that you can run as many simultaneous strategies or baskets as you wa
 
 ### Using different exchanges
 
-To use different OctoBots, you can just connect different exchanges to your OctoBot cloud account. You will then be able on run a strategy or a crypto basket on each exchange account.
+To use different OctoBots, you can just connect different exchanges to your OctoBot app account. You will then be able on run a strategy or a crypto basket on each exchange account.
 
 You could for example run a high-risk, high-reward IA-based strategy on Binance and a low-risk, safe grid strategy on Kucoin. This also reduces the risks associated to holding your funds on a single exchange.
 

@@ -1,16 +1,16 @@
 ---
 title: "FAQ"
-description: "Vous avez des questions sur OctoBot cloud ? Voici les questions fréquemment posées et leurs réponses."
+description: "Vous avez des questions sur OctoBot app ? Voici les questions fréquemment posées et leurs réponses."
 sidebar_position: 33
 ---
 
 
 
-# Foire aux questions d'OctoBot cloud (FAQ)
+# Foire aux questions d'OctoBot app (FAQ)
 
 ## Comment puis-je tester une stratégie ou un panier de crypto ?
 
-Sur OctoBot cloud, nous cherchons à simplifier autant que possible, et cela inclut les tests de stratégies et de paniers. En plus des performances historiques publiques, **chaque stratégie ou panier de crypto peut être testé sans risque en utilisant le [trading virtuel](paper-trading-a-strategy)**.
+Sur OctoBot app, nous cherchons à simplifier autant que possible, et cela inclut les tests de stratégies et de paniers. En plus des performances historiques publiques, **chaque stratégie ou panier de crypto peut être testé sans risque en utilisant le [trading virtuel](paper-trading-a-strategy)**.
 
 Cela signifie que vous pouvez exécuter n'importe quelle stratégie de trading ou panier de crypto à tout moment en utilisant des fonds virtuels avant de [démarrer l'investissement sur votre compte d'échange réel](invest-with-your-strategy). Le trading virtuel vous permet de tester les stratégies qui vous intéressent autant que vous le souhaitez, et ce, gratuitement.
 
@@ -18,13 +18,13 @@ Cela signifie que vous pouvez exécuter n'importe quelle stratégie de trading o
 
 ## Comment sont calculés les profits des stratégies ?
 
-Chaque stratégie sur OctoBot cloud est construite, exécutée et testée à l'aide d'OctoBot. Cela signifie que les performances passées de chaque stratégie sont évaluées régulièrement en utilisant des données historiques et le [backtesting d'OctoBot](/guides/octobot-usage/backtesting).
+Chaque stratégie sur OctoBot app est construite, exécutée et testée à l'aide d'OctoBot. Cela signifie que les performances passées de chaque stratégie sont évaluées régulièrement en utilisant des données historiques et le [backtesting d'OctoBot](/guides/octobot-usage/backtesting).
 
 Chez OctoBot, nous croyons en la transparence. Cela signifie que parfois les stratégies peuvent devenir non rentables, car les profits dépendent de nombreux facteurs différents, y compris les conditions du marché. Si une stratégie ne génère pas de profits pendant une période donnée, vous le verrez avant de l'utiliser.
 
 ## Comment créer ma stratégie ?
 
-OctoBot cloud vous permet de trader selon votre propre stratégie grace à [l'automatisation de stratégies TradingView](tradingview-automated-trading).
+OctoBot app vous permet de trader selon votre propre stratégie grace à [l'automatisation de stratégies TradingView](tradingview-automated-trading).
 
 ## Où sont vos fonds lorsque vous utilisez OctoBot ?
 
@@ -56,13 +56,13 @@ Lors de l'utilisation d'OctoBot, les mêmes règles que sur les plateformes d'é
   virtuel](paper-trading-a-strategy).
 :::
 
-## OctoBot cloud est-il sécurisé ?
+## OctoBot app est-il sécurisé ?
 
-Oui, la sécurité est l'une de nos principales priorités. Lors de l'utilisation d'OctoBot cloud, les mesures de sécurité suivantes s'appliquent :
+Oui, la sécurité est l'une de nos principales priorités. Lors de l'utilisation d'OctoBot app, les mesures de sécurité suivantes s'appliquent :
 
 - Vos clés d'API d'échange sont stockées dans un coffre-fort crypté sécurisé. Cela signifie que même en cas de fuite des clés d'API d'échange depuis les serveurs d'OctoBot, elles ne seraient pas lisibles.
-- Vos clés d'API d'échange sont configurées pour ne pouvoir être utilisées que depuis les adresses IP d'OctoBot cloud. Cela signifie que dans l'improbable cas où vos clés d'API seraient compromises (depuis OctoBot cloud ou de votre part), elles seraient refusées par l'échange.
-- Les clés d'API d'OctoBot avec des droits de retrait ne peuvent pas être utilisées. OctoBot cloud refuse de stocker les clés d'API d'échange avec des autorisations de retrait (lorsque cela est techniquement possible). Cela signifie que vos fonds ne peuvent techniquement pas être retirés de votre compte d'échange par OctoBot ou par la société qui le gère.
+- Vos clés d'API d'échange sont configurées pour ne pouvoir être utilisées que depuis les adresses IP d'OctoBot app. Cela signifie que dans l'improbable cas où vos clés d'API seraient compromises (depuis OctoBot app ou de votre part), elles seraient refusées par l'échange.
+- Les clés d'API d'OctoBot avec des droits de retrait ne peuvent pas être utilisées. OctoBot app refuse de stocker les clés d'API d'échange avec des autorisations de retrait (lorsque cela est techniquement possible). Cela signifie que vos fonds ne peuvent techniquement pas être retirés de votre compte d'échange par OctoBot ou par la société qui le gère.
 - OctoBot repose sur des stratégies automatisées plutôt que sur des actions humaines. Cela signifie que chaque stratégie est fiable et prévisible. Vous n'avez pas besoin de faire confiance à un être humain pour exécuter correctement la stratégie.
 
 ## Puis-je utiliser le même compte de plateforme d'échange sur plusieurs OctoBots ?
@@ -74,7 +74,7 @@ Oui, vous pouvez utiliser le même compte d'échange sur plusieurs OctoBots. Cha
 Il y a deux raisons pour les fonds minimaux dans les stratégies de trading et les paniers de crypto :
 
 - **Règles de trading de l'échange**: OctoBot envoie des ordres à l'échange. Ces échanges ont des règles de trading qui imposent une taille minimale pour chaque ordre. Sur Binance, ce montant <a href="https://www.binance.com/en/trade-rule" rel="nofollow">est généralement de 5 ou 10 dollars</a>. Les stratégies tradent généralement avec une partie de votre portefeuille pour chaque ordre, cela signifie que cette partie doit être suffisamment grande pour respecter les règles de trading. C'est particulièrement vrai pour les stratégies de trading basées sur la grille, où vos fonds sont répartis en un grand nombre de petits ordres.
-- **Le plan investisseur**: afin de maintenir le plan investisseur d'OctoBot cloud complètement gratuit, nous nous associons avec des échanges pour leur apporter du volume de trading. Cela signifie que nous devons exiger un montant minimum dans chaque portefeuille pour payer nos factures. Nous essayons de maintenir ce minimum aussi bas que possible, mais nous devons définir un seuil.
+- **Le plan investisseur**: afin de maintenir le plan investisseur d'OctoBot app complètement gratuit, nous nous associons avec des échanges pour leur apporter du volume de trading. Cela signifie que nous devons exiger un montant minimum dans chaque portefeuille pour payer nos factures. Nous essayons de maintenir ce minimum aussi bas que possible, mais nous devons définir un seuil.
 
 ## Comment puis-je connecter mon compte de plateforme d'échange à OctoBot ?
 

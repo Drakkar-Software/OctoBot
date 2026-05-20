@@ -1,15 +1,15 @@
 ---
 title: "Privacy policy"
-description: "Know everything about OctoBot cloud privacy policy. Consent how we use your information, log files, cookies and third party policies"
+description: "Know everything about OctoBot app privacy policy. Consent how we use your information, log files, cookies and third party policies"
 ---
 
 
 
 # Privacy policy
 
-At OctoBot cloud, accessible from www.octobot.cloud, one of our main
+At OctoBot app, accessible from www.octobot.cloud, one of our main
 priorities is the privacy of our visitors. This Privacy Policy document
-contains types of information that is collected and recorded by OctoBot cloud
+contains types of information that is collected and recorded by OctoBot app
 and how we use it.
 
 If you have additional questions or require more information about our Privacy
@@ -17,39 +17,39 @@ Policy, do not hesitate to contact us.
 
 This Privacy Policy applies only to our online activities and is valid for
 visitors to our website with regards to the information that they shared
-and/or collected in OctoBot cloud. This policy is not applicable to any
+and/or collected in OctoBot app. This policy is not applicable to any
 information collected offline or via channels other than this website.
 
 ## Consent
 
-- OctoBot cloud is a SAS (Software as a Service) offering from
+- OctoBot app is a SAS (Software as a Service) offering from
   Drakkar-Software, which provides hosting services for OctoBot
   software, a cryptocurrency trading bot.
-- The purpose of OctoBot cloud is to allow users to access and utilize
+- The purpose of OctoBot app is to allow users to access and utilize
   the capabilities of the OctoBot software for the purpose of trading
   cryptocurrencies on supported exchanges.
-- By accessing and using OctoBot cloud, the user agrees to be bound by
+- By accessing and using OctoBot app, the user agrees to be bound by
   these terms and conditions, which constitute a legally binding
   agreement between the user and Drakkar-Software.
 - Drakkar-Software reserves the right to modify these terms and
   conditions at any time, with notice to the user. The user is
   responsible for regularly reviewing these terms and conditions.
-  Continued use of OctoBot cloud after any modifications indicates the
+  Continued use of OctoBot app after any modifications indicates the
   user's acceptance of the modified terms.
 - Drakkar-Software reserves the right to make changes to any product
   at any time without prior notice to the user. It is the
   responsibility of the user to regularly review these details and
-  updates. By continuing to use OctoBot Cloud after any changes have
+  updates. By continuing to use OctoBot App after any changes have
   been made, the user is acknowledging and accepting the updated
   product.
-- By using OctoBot cloud, the user agrees to the collection and use of
+- By using OctoBot app, the user agrees to the collection and use of
   their personal information as outlined in the Privacy Policy. The
   Privacy Policy, which is incorporated into these terms and
   conditions, provides more information about the types of information
   collected, how it is used, and with whom it may be shared. The user
   is encouraged to review the Privacy Policy carefully and to contact
-  OctoBot Cloud if they have any questions or concerns.
-- By using OctoBot cloud and its services, the user acknowledges and
+  OctoBot App if they have any questions or concerns.
+- By using OctoBot app and its services, the user acknowledges and
   agrees to the terms and conditions set forth in this agreement,
   including but not limited to the [Risks Disclosure Statement](risk). 
   The user is advised to regularly review the terms and
@@ -70,7 +70,7 @@ information collected offline or via channels other than this website.
 - Send you emails
 - Find and prevent fraud
 - Log Files
-  OctoBot cloud follows a standard procedure of using log files. These
+  OctoBot app follows a standard procedure of using log files. These
   files log visitors when they visit websites. All hosting companies do
   this as part of hosting services' analytics. The information collected
   by log files include internet protocol (IP) addresses, browser type,
@@ -80,14 +80,14 @@ information collected offline or via channels other than this website.
   information is for analyzing trends, administering the site, tracking
   users' movement on the website, and gathering demographic information.
 - Cookies and Web Beacons
-  Like any other website, OctoBot cloud uses 'cookies'. These cookies
+  Like any other website, OctoBot app uses 'cookies'. These cookies
   are used to store information including visitors' preferences, and the
   pages on the website that the visitor accessed or visited. The
   information is used to optimize the users' experience by customizing
   our web page content based on visitors' browser type and/or other
   information.
 - Third Party Privacy Policies
-  OctoBot cloud's Privacy Policy does not apply to other advertisers or
+  OctoBot app's Privacy Policy does not apply to other advertisers or
   websites. Thus, we are advising you to consult the respective Privacy
   Policies of these third-party ad servers for more detailed
   information. It may include their practices and instructions about how
@@ -100,10 +100,10 @@ information collected offline or via channels other than this website.
   ,
   <a href="https://vercel.com/analytics" rel="nofollow">Vercel Analytics</a>
   , and <a href="https://posthog.com/" rel="nofollow">Posthog</a> to track user behavior on the site. In order to process
-  credit card payments, OctoBot Cloud utilizes Stripe, a third-party payment
+  credit card payments, OctoBot App utilizes Stripe, a third-party payment
   processing service. Stripe collects certain personal information, including
   credit card numbers, in order to process payments. This information is
-  securely stored by Stripe, and OctoBot Cloud does not have access to it. For
+  securely stored by Stripe, and OctoBot App does not have access to it. For
   more information about privacy practices, please refer to their Privacy
   Policy. Stripe's privacy practices, please refer to their Privacy Policy.
 - CCPA Privacy Rights (Do Not Sell My Personal Information)
@@ -139,7 +139,7 @@ information collected offline or via channels other than this website.
   Another part of our priority is adding protection for children while
   using the internet. We encourage parents and guardians to observe,
   participate in, and/or monitor and guide their online activity.
-  OctoBot cloud does not knowingly collect any Personal Identifiable
+  OctoBot app does not knowingly collect any Personal Identifiable
   Information from children under the age of 13. If you think that your
   child provided this kind of information on our website, we strongly
   encourage you to contact us immediately and we will do our best

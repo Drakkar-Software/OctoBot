@@ -1,16 +1,16 @@
 ---
 title: "FAQ"
-description: "Any question on OctoBot cloud ? Here are the frequently asked questions and their answers."
+description: "Any question on OctoBot app ? Here are the frequently asked questions and their answers."
 sidebar_position: 33
 ---
 
 
 
-# OctoBot cloud frequently asked questions (FAQ)
+# OctoBot app frequently asked questions (FAQ)
 
 ## How can I test strategies or crypto baskets ?
 
-On OctoBot cloud, we try to keep everything as simple as possible and this includes testing strategies or crypto baskets. Additionnaly to public historical performances, **every strategy and crypto basket can be tested risk free using [paper trading](paper-trading-a-strategy)**.
+On OctoBot app, we try to keep everything as simple as possible and this includes testing strategies or crypto baskets. Additionnaly to public historical performances, **every strategy and crypto basket can be tested risk free using [paper trading](paper-trading-a-strategy)**.
 
 This means that you can run any trading strategy or basket at anytime using virtual funds before [starting to invest on your real exchange account](invest-with-your-strategy). Paper trading allows you to test the strategies you are interested in as much as you want for free free.
 
@@ -18,13 +18,13 @@ This means that you can run any trading strategy or basket at anytime using virt
 
 ## How are strategies profits computed ?
 
-Each strategy on OctoBot cloud is built, run and tested using OctoBot. This means that each strategy past performance is evaluated on a regular basis using historical data and OctoBot's [backtesting](/guides/octobot-usage/backtesting).
+Each strategy on OctoBot app is built, run and tested using OctoBot. This means that each strategy past performance is evaluated on a regular basis using historical data and OctoBot's [backtesting](/guides/octobot-usage/backtesting).
 
 At OctoBot we believe in transparency. This means that sometimes strategies can turn unprofitable as profits depends on so many different factors including market conditions. If a strategy is not making profits during a given period, you will see it before using it.
 
 ## How to create my strategy ?
 
-OctoBot cloud enables you to trade using your own strategy by [automating TradingView strategies](tradingview-automated-trading).
+OctoBot app enables you to trade using your own strategy by [automating TradingView strategies](tradingview-automated-trading).
 
 ## Where are your funds when using OctoBot ?
 
@@ -55,13 +55,13 @@ When using OctoBot, the same rules as on exchanges apply, this means that you ca
   funds using [paper trading](paper-trading-a-strategy).
 :::
 
-## Is OctoBot cloud secure ?
+## Is OctoBot app secure ?
 
-Yes, security is among our top priorities. When using OctoBot cloud, the following security measures apply:
+Yes, security is among our top priorities. When using OctoBot app, the following security measures apply:
 
 - Your exchange API keys are stored on a secure encrypted vault. This means that even in the unlikely event that exchange API keys would leak from OctoBot servers, they would not be readable.
-- Your exchange API  keys are configured to only be usable from the IP addresses of OctoBot cloud. This means that in the very unlikely event that your API keys would leak from OctoBot cloud or from you, they would be refused by the exchange.
-- OctoBot API keys with withdrawal rights can't be used. OctoBot cloud refuses to store exchange API keys with withdrawal permissions (when technically possible). This means that your funds technically can't be taken out of your exchange account by OctoBot or the company behind it.
+- Your exchange API  keys are configured to only be usable from the IP addresses of OctoBot app. This means that in the very unlikely event that your API keys would leak from OctoBot app or from you, they would be refused by the exchange.
+- OctoBot API keys with withdrawal rights can't be used. OctoBot app refuses to store exchange API keys with withdrawal permissions (when technically possible). This means that your funds technically can't be taken out of your exchange account by OctoBot or the company behind it.
 - OctoBot relies on automated strategies instead of human actions. This means that each strategy is reliable and predictible. You don't need to trust a human to properly execute the strategy.
 
 ## Can I use the same exchange account on 2 OctoBots ?
@@ -73,7 +73,7 @@ Yes, you can use the same exchange account on multiple OctoBots. Each OctoBot wi
 There are 2 reasons for minimal funds in trading strategies and crypto baskets:
 
 - **Exchange trading rules**: OctoBot ultimately send orders to exchange. Those exchanges have trading rules that are enforcing a minimal size for each order. On Binance, this amount <a href="https://www.binance.com/en/trade-rule" rel="nofollow">is usually $5 or $10</a>. Strategies usually trade with a portion of your portfolio for each order, this means this part need to be large enough to comply with trading rules. This is especially true for Grid-based trading strategies where your funds are split into a large amount of smaller orders.
-- **The investor plan**: in order to keep the Investor Plan of OctoBot cloud completely free, we are are partnering up with exchanges to bring them trading volume. This means that we have to require a minimum amount in each portfolio to pay our bills. We try to keep this minimum as low as possible but have to set a threshold.
+- **The investor plan**: in order to keep the Investor Plan of OctoBot app completely free, we are are partnering up with exchanges to bring them trading volume. This means that we have to require a minimum amount in each portfolio to pay our bills. We try to keep this minimum as low as possible but have to set a threshold.
 
 ## How can I connect my exchange account to OctoBot ?
 

@@ -2,7 +2,7 @@
 
 The programmatic SEO pages (per-coin, per-exchange, crypto converter matrix) are
 **implemented** in this repo but **cannot build** until one external dependency ships:
-a public OctoBot Cloud endpoint that returns the slug / coin / exchange list.
+a public OctoBot App endpoint that returns the slug / coin / exchange list.
 
 Until that endpoint exists, `docusaurus build` fails by design — there is no committed
 fallback data (deliberate choice: builds must reflect live data or fail loudly).
@@ -29,7 +29,7 @@ succeeds for `en` + `fr`, all route families render with SSR content.
 
 ### 1. Build and deploy the endpoint
 
-A public, unauthenticated, cacheable JSON endpoint on OctoBot Cloud:
+A public, unauthenticated, cacheable JSON endpoint on OctoBot App:
 
 ```
 GET https://www.octobot.cloud/api/programmatic-slugs?locale=<en|fr>
@@ -117,7 +117,7 @@ do not hand-write 20+ of these.
 
 ## How to finish
 
-1. **Backend**: implement + deploy the endpoint above on OctoBot Cloud.
+1. **Backend**: implement + deploy the endpoint above on OctoBot App.
 2. **Verify the contract**:
    ```bash
    curl "https://www.octobot.cloud/api/programmatic-slugs?locale=en" | head -c 400

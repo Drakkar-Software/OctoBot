@@ -4,7 +4,7 @@ description: "Découvrez des stratégies de trading en grille pour profiter de l
 slug: "grid-trading"
 date: "2024-11-15"
 authors: ["guillaume"]
-tags: ["Trading", "Stratégie", "OctoBot cloud"]
+tags: ["Trading", "Stratégie", "OctoBot app"]
 image: "/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png"
 ---
 

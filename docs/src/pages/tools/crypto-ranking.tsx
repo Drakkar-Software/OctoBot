@@ -7,7 +7,7 @@ import styles from './crypto-ranking.module.css';
 /*
  * Cryptocurrencies ranking tool page — route: /tools/crypto-ranking.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Built the same way as the feature pages: a navbar-less
  * LandingLayout composed from reusable components, plus a page-local
  * _RankingTable mock for the market-cap ranking grid.
@@ -112,7 +112,7 @@ export default function CryptoRankingTool(): ReactNode {
         lead={translate({
           id: 'tools.cryptoRanking.market.lead',
           message:
-            'A sample of the market-cap ranking OctoBot surfaces — price, market cap and 24h change for the largest cryptocurrencies. The live ranking updates continuously on OctoBot Cloud.',
+            'A sample of the market-cap ranking OctoBot surfaces — price, market cap and 24h change for the largest cryptocurrencies. The live ranking updates continuously on OctoBot App.',
           description: 'Crypto ranking market cap section lead',
         })}>
         <RankingTable />
@@ -135,7 +135,7 @@ export default function CryptoRankingTool(): ReactNode {
         description={translate({
           id: 'tools.cryptoRanking.cta.description',
           message:
-            'Create your trading bot for free on OctoBot Cloud, or read the guides first.',
+            'Create your trading bot for free on OctoBot App, or read the guides first.',
           description: 'Crypto ranking CTA band description',
         })}
         actions={[

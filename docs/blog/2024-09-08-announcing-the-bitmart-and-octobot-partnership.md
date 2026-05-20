@@ -45,7 +45,7 @@ The BitMart support by OctoBot opens the door to a wide range of trading strateg
 
 ### BitMart Crypto Baskets
 
-Invest in the whole crypto market or themes you like directly from BitMart using OctoBot cloud-based [crypto baskets](/guides/octobot-trading-modes/index-trading-mode) or your custom baskets. To use OctoBot cloud crypto baskets on BitMart, simply download the crypto basket you want directly from your OctoBot and enable the BitMart exchange.
+Invest in the whole crypto market or themes you like directly from BitMart using OctoBot app-based [crypto baskets](/guides/octobot-trading-modes/index-trading-mode) or your custom baskets. To use OctoBot app crypto baskets on BitMart, simply download the crypto basket you want directly from your OctoBot and enable the BitMart exchange.
 
 ### BitMart TradingView automated trading
 
@@ -69,6 +69,6 @@ BitMart has been included within OctoBot's regularly tested exchanges. The OctoB
 
 At OctoBot, we are trying to make trading strategies automation as accessible as possible to everyone. Following this philosophy, it's important for us to enable automated trading on each exchange that is important to our users.
 
-Adding [BitMart](https://www.octobot.cloud/bitmart-trading-bot) to the supported exchanges of the open source OctoBot is a first step towards a broader integration with BitMart, if you are interested in using BitMart with [OctoBot cloud strategies](https://www.octobot.cloud/explore), let us know by upvoting <a href="https://feedback.octobot.online/cloud/p/bitmart-support" rel="nofollow">the BitMart support</a> on our roadmap.
+Adding [BitMart](https://www.octobot.cloud/bitmart-trading-bot) to the supported exchanges of the open source OctoBot is a first step towards a broader integration with BitMart, if you are interested in using BitMart with [OctoBot app strategies](https://www.octobot.cloud/explore), let us know by upvoting <a href="https://feedback.octobot.online/cloud/p/bitmart-support" rel="nofollow">the BitMart support</a> on our roadmap.
 
 If you are trading on an exchange that is not currently supported, please create or upvote the post associated to your exchange on <a href="https://feedback.octobot.online" rel="nofollow">our feedback website</a>.

@@ -1,6 +1,6 @@
 ---
 title: "Stop investing"
-description: "Learn how to quickly and easily stop and restart your running investment strategy on OctoBot cloud."
+description: "Learn how to quickly and easily stop and restart your running investment strategy on OctoBot app."
 sidebar_position: 8
 ---
 
@@ -22,6 +22,6 @@ Stopping a running OctoBot will:
 
 After being stopped, OctoBots can be restarted in order to resume your investment strategy.
 
-![octobot cloud restart octobot](/images/guides/octobot-cloud-restart-octobot.png)
+![octobot app restart octobot](/images/guides/octobot-cloud-restart-octobot.png)
 
 A restarted OctoBot will start again to apply its strategy while keeping its original portfolio history and profitability.

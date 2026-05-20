@@ -1,6 +1,6 @@
 ---
 title: "Utiliser un webhook"
-description: "Configurez vos webhooks OctoBot pour investissez à partir de signaux TradingView. Utilisez OctoBot cloud, Ngrok ou votre configuration personnelle."
+description: "Configurez vos webhooks OctoBot pour investissez à partir de signaux TradingView. Utilisez OctoBot app, Ngrok ou votre configuration personnelle."
 sidebar_position: 5
 ---
 
@@ -20,7 +20,7 @@ send messages to your OctoBot from any website supporting this system.
 
 In order to be able to receive TradingView webhook's message, you need to make your OctoBot reachable from TradingView. For this, there are 3 options:
 
-- Use the [Premium OctoBot Extension](/guides/octobot-configuration/premium-octobot-extension) and simply connect your OctoBot through the OctoBot cloud secure server.
+- Use the [Premium OctoBot Extension](/guides/octobot-configuration/premium-octobot-extension) and simply connect your OctoBot through the OctoBot app secure server.
 - Use <a href="https://ngrok.com/" rel="nofollow">Ngrok</a> to act as a secure intermediary between the internet and your OctoBot.
 - Or setup your own public IP and port configuration
 

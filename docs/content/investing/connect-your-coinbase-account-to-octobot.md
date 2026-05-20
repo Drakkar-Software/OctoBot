@@ -1,10 +1,10 @@
 ---
 title: "Connecting to Coinbase"
-description: "Step by step guide on how to securely use your Coinbase account with OctoBot cloud and profit from automated crypto investments."
+description: "Step by step guide on how to securely use your Coinbase account with OctoBot app and profit from automated crypto investments."
 sidebar_position: 24
 ---
 
-# Connecting your Coinbase account to OctoBot cloud
+# Connecting your Coinbase account to OctoBot app
 
 To automate the investment strategies of your choice on your Coinbase account, it is necessary to allow OctoBot to access a part of your account.
 
@@ -14,7 +14,7 @@ If you are wondering what an `API Key` is and why OctoBot is using it, checkout 
 
 ## Connecting to your Coinbase account with API Keys
 
-Here are the 5 simple steps to connect to your Coinbase account with OctoBot cloud and automate your investment strategies.
+Here are the 5 simple steps to connect to your Coinbase account with OctoBot app and automate your investment strategies.
 
 ### 1. Log in to your Coinbase account
 
@@ -45,38 +45,38 @@ Click "Create API Key with Coinbase Developer Platform (Recommended)".
 
 ![select api name passphrase and restrictions](/images/guides/coinbase/select-api-name-and-restrictions.png)
 
-4. Click the "copy" button from OctoBot cloud to copy the IP whitelist and paste the list in the `IP whitelist` field.
+4. Click the "copy" button from OctoBot app to copy the IP whitelist and paste the list in the `IP whitelist` field.
 
 ### 4. Save your API Key
 
 Now that your key is named, the Spot Trading permission is checked and the IP whitelist is configured, click "Create & download".  
 Proceed with the security verification to create the API Key.
 
-Your API Key is now created. Do not close this window as long as you are not done entering it on OctoBot cloud.
+Your API Key is now created. Do not close this window as long as you are not done entering it on OctoBot app.
 
 ![coinbase api key created](/images/guides/coinbase/coinbase-api-key-created.png)
 
 Note: Coinbase will ask you to download a file containing the API Key details. Downloading it is not necessary, do not download the file or remove it from your computer if you did.
 
-### 5. Add your API Key to your OctoBot cloud account
+### 5. Add your API Key to your OctoBot app account
 
 You now have your API key details !
 
-All you need to do is to copy and paste the values of `API key name` and `Secret` (step 4) into your Coinbase account configuration on OctoBot cloud. This can be done either when starting a trading strategy with a real account or from your profile on [octobot.cloud](https://www.octobot.cloud/)
+All you need to do is to copy and paste the values of `API key name` and `Secret` (step 4) into your Coinbase account configuration on OctoBot app. This can be done either when starting a trading strategy with a real account or from your profile on [octobot.cloud](https://www.octobot.cloud/)
 
-Note: When adding an API Key on OctoBot cloud, you can associate a name to it. As for the naming on Coinbase side, this is a free field where you can enter any name to quickly identify this API Key in the future.
+Note: When adding an API Key on OctoBot app, you can associate a name to it. As for the naming on Coinbase side, this is a free field where you can enter any name to quickly identify this API Key in the future.
 
 ![api creation completed selected values](/images/guides/coinbase/api-creation-completed-selected-values.png)
 
-![add API Key to octobot cloud from strategy start](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-strategy-start.png)
+![add API Key to octobot app from strategy start](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
 <em>Adding an API Key when starting a strategy</em>
 
-![add API Key to octobot cloud from profile](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-profile.png)
+![add API Key to octobot app from profile](/images/guides/coinbase/add-api-key-to-octobot-cloud-from-profile.png)
 
 <em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
 
-Your Coinbase account can now be used on OctoBot cloud !
+Your Coinbase account can now be used on OctoBot app !
 
 :::info
   Please note that when starting a bot, some of the funds available in your API key related portfolio might be sold. This include any stablecoin and fiat related funds as well as cryptocurrencies that are traded by the strategy you selected. This is is part of the [portfolio optimization](invest-with-your-strategy#1-portfolio-optimization).
@@ -88,7 +88,7 @@ Your Coinbase account can now be used on OctoBot cloud !
 
 If you get the `Incorrect API Keys` error, this usually means that:
 
-- There was an error when copy-pasting your API Key or Secret Key from Coinbase to OctoBot cloud
+- There was an error when copy-pasting your API Key or Secret Key from Coinbase to OctoBot app
 - You made a mistake when copying the IP whitelist
 - You might have selected the wrong exchange (make sure to select Coinbase)
 - Should you use ECDSA or Ed25519 API keys? You can use any, both ECDSA and Ed25519 key formats are supported.

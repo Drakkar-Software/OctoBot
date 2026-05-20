@@ -1,6 +1,6 @@
 ---
 title: "Refund policy"
-description: "Explore OctoBot cloud's refund policy. Subscription cancellation, refund conditions for monthly and annual plans, and payment processing details."
+description: "Explore OctoBot app's refund policy. Subscription cancellation, refund conditions for monthly and annual plans, and payment processing details."
 ---
 
 # Refund policy
@@ -42,12 +42,12 @@ Stripe, Apple AppStore, Google Play, or cryptocurrencies.
 
 A refund may be utilized by the user only once. Upon approval of a
 refund request, the user will not have access to further contests,
-disputes, or transaction reversals with OctoBot cloud or any
+disputes, or transaction reversals with OctoBot app or any
 third-party payment service.
 
 ## Currency and Fees
 
-Refunds in the same currency or equivalent. OctoBot cloud is not
+Refunds in the same currency or equivalent. OctoBot app is not
 responsible for any fees from payment service providers.
 
 ## Limitation on Refunds

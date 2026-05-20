@@ -4,7 +4,7 @@ description: "Les récompenses OctoBot permettent de débloquer gratuitement les
 slug: "what-are-octobot-rewards-and-how-to-get-them"
 date: "2024-06-18"
 authors: ["guillaume"]
-tags: ["Rewards", "OctoBot cloud", "Release"]
+tags: ["Rewards", "OctoBot app", "Release"]
 image: "/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png"
 ---
 
@@ -71,12 +71,12 @@ Les principaux aspects à garder à l'esprit pour gagner rapidement des récompe
 
 Nous réalisons que de nombreux investisseurs en crypto investissent avec un portefeuille contenant moins de quelques centaines d'euros. Dans ce contexte, payer pour un abonnement mensuel peut être compliqué.
 
-Notre objectif chez OctoBot cloud est de rendre l'investissement en crypto plus accessible, et nous voulons également améliorer les investissements pour les petits portefeuilles, ainsi que pour ceux qui ne veulent tout simplement pas payer.
+Notre objectif chez OctoBot app est de rendre l'investissement en crypto plus accessible, et nous voulons également améliorer les investissements pour les petits portefeuilles, ainsi que pour ceux qui ne veulent tout simplement pas payer.
 
-C'est pourquoi nous avons conçu ce système de récompenses. Si vous ou un de vos amis souhaitez automatiser vos investissements avec OctoBot cloud, il existe maintenant de plusieurs façons pour ce faire :
+C'est pourquoi nous avons conçu ce système de récompenses. Si vous ou un de vos amis souhaitez automatiser vos investissements avec OctoBot app, il existe maintenant de plusieurs façons pour ce faire :
 
 - Utiliser l'une des offres Investisseur Plus ou Pro pour débloquer instantanément toutes les stratégies
 - Utiliser des stratégies disponibles gratuitement
-- Être un utilisateur actif d'OctoBot et accéder aux stratégies et fonctionnalités de l'offre Investor Plus comme un cadeau de la part d'OctoBot cloud
+- Être un utilisateur actif d'OctoBot et accéder aux stratégies et fonctionnalités de l'offre Investor Plus comme un cadeau de la part d'OctoBot app
 
 **[Découvrir les plans OctoBot](https://www.octobot.cloud/pricing)**

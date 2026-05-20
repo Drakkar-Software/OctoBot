@@ -1,10 +1,10 @@
 ---
-title: "Suivre des stratégies avec OctoBot cloud"
+title: "Suivre des stratégies avec OctoBot app"
 description: "You can now follow trading strategies of the community"
 slug: "following-strategies-in-octobot-cloud"
 date: "2022-11"
 authors: ["paul"]
-tags: ["Cryptocurrency", "Trading", "Strategy", "Exchange", "OctoBot cloud"]
+tags: ["Cryptocurrency", "Trading", "Strategy", "Exchange", "OctoBot app"]
 image: "/images/blog/following-strategies-in-octobot-cloud/cover.png"
 ---
 
@@ -18,17 +18,17 @@ image: "/images/blog/following-strategies-in-octobot-cloud/cover.png"
 
 ![cover](/images/blog/following-strategies-in-octobot-cloud/cover.png)
 
-On OctoBot cloud, you can subscribe to trading strategies. Subscribing to a strategy allows you to easily trade using a strategy made by someone else from the OctoBot community.
+On OctoBot app, you can subscribe to trading strategies. Subscribing to a strategy allows you to easily trade using a strategy made by someone else from the OctoBot community.
 
 When subscribed to a strategy, you can use the strategy profile directly from your OctoBot. When you do so, your OctoBot will follow the strategy by coping any trade made by this strategy. Order amounts will be adapted to your current portfolio.
 
 ## Comment utiliser une stratégie ?
 
-1. Login on [OctoBot cloud](/fr) and go to the desired strategy page
+1. Login on [OctoBot app](/fr) and go to the desired strategy page
 2. Click `Subscribe`
    ![Following-strategies-pre-sub](/images/blog/following-strategies-in-octobot-cloud/pre-sub.png)
 3. Now that you are subscribing to the strategy, click `Copy download url`
-4. From your OctoBot, login to your OctoBot cloud account
+4. From your OctoBot, login to your OctoBot app account
    ![Following-strategies-community](/images/blog/following-strategies-in-octobot-cloud/community.png)
 5. Go to the `Profile` tab and click on the name of the current profile, click `Import a profile`
    ![Following-strategies-import](/images/blog/profile-sharing-in-octobot-cloud/bot-import.jpg)
@@ -44,23 +44,23 @@ Trading through strategy signals is achieved by using the RemoteTradingSignalsTr
 
 ![Following-strategies-mode-config](/images/blog/following-strategies-in-octobot-cloud/mode-config.png)
 
-As following a strategy is only possible through OctoBot cloud, you need to login to your OctoBot cloud account from your OctoBot to be able to follow a strategy.
+As following a strategy is only possible through OctoBot app, you need to login to your OctoBot app account from your OctoBot to be able to follow a strategy.
 
-## Comment publier une stratégie sur OctoBot cloud ?
+## Comment publier une stratégie sur OctoBot app ?
 
-Trading strategies are published on [OctoBot cloud](/fr) by the OctoBot community.
+Trading strategies are published on [OctoBot app](/fr) by the OctoBot community.
 When a user wants to share a trading strategy, the only thing to do is to:
 
-1. Create a strategy on [OctoBot cloud](/fr)
+1. Create a strategy on [OctoBot app](/fr)
 2. Setup the desired OctoBot trading mode to emit trading signals to this strategy
    ![Following-strategies-config](/images/blog/following-strategies-in-octobot-cloud/config.png)
 
 Note: the identifier of the strategy to emit signal on can be found on the strategy page, by clicking on this button
 ![Following-strategies-id-button](/images/blog/following-strategies-in-octobot-cloud/id-button.png)
 
-Please note that configuration and content of a published strategy is not uploaded to OctoBot cloud and followers can't access the code or configuration of the strategy. They will only get trading signals when the OctoBot that is actually running the strategy will create or cancel orders.
+Please note that configuration and content of a published strategy is not uploaded to OctoBot app and followers can't access the code or configuration of the strategy. They will only get trading signals when the OctoBot that is actually running the strategy will create or cancel orders.
 
 ## Rejoindre la bêta
 
-Following strategies will first be available on the [beta OctoBot cloud](https://beta.octobot.cloud/).
+Following strategies will first be available on the [beta OctoBot app](https://beta.octobot.cloud/).
 To join the OctoBot beta program, [have a look at our beta program](/guides/octobot-advanced-usage/beta-program)

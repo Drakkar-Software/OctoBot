@@ -1,32 +1,32 @@
 ---
-title: "Nouvelles offres OctoBot cloud"
-description: "OctoBot cloud lance de nouvelles offres et une nouvelle gamme de robots pour automatiser vos stratégies de trading"
+title: "Nouvelles offres OctoBot app"
+description: "OctoBot app lance de nouvelles offres et une nouvelle gamme de robots pour automatiser vos stratégies de trading"
 slug: "new-octobot-cloud-plans-and-trading-bots"
 date: "2024-02-04"
 authors: ["guillaume"]
-tags: ["AI", "Backtesting", "Cryptocurrency", "Trading", "OctoBot cloud", "Release"]
+tags: ["AI", "Backtesting", "Cryptocurrency", "Trading", "OctoBot app", "Release"]
 image: "/images/blog/new-octobot-cloud-plans-and-trading-bots/a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-light.png"
 ---
 
 
 
-# Nouvelles offres OctoBot cloud
+# Nouvelles offres OctoBot app
 
 ![a man relaxing in his couch while octobot is making money by automating cryptocurrency strategies dark](/images/blog/new-octobot-cloud-plans-and-trading-bots/a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-light.png)
 
 2024 sera une grande année pour OctoBot !
 
-En 2023, nous avons [annoncé le lancement du nouveau Octobot cloud](introducing-the-new-octobot-cloud) où nous avons présenté notre approche en matière de stratégies de trading et notre volonté de diviser OctoBot en deux mondes :
+En 2023, nous avons [annoncé le lancement du nouveau Octobot app](introducing-the-new-octobot-cloud) où nous avons présenté notre approche en matière de stratégies de trading et notre volonté de diviser OctoBot en deux mondes :
 
-Où il est très facile d'automatiser les stratégies d'investissement crypto. Cette offre est destinée aux utilisateurs qui ne souhaitent pas créer leurs propres stratégies commerciales ou qui recherchent une diversification dans leurs propres systèmes commerciaux. Nous élargissons ces offres pour inclure plus d'options et vous apporter plus de valeur lors de l'utilisation des stratégies OctoBot cloud.
+Où il est très facile d'automatiser les stratégies d'investissement crypto. Cette offre est destinée aux utilisateurs qui ne souhaitent pas créer leurs propres stratégies commerciales ou qui recherchent une diversification dans leurs propres systèmes commerciaux. Nous élargissons ces offres pour inclure plus d'options et vous apporter plus de valeur lors de l'utilisation des stratégies OctoBot app.
 
 C'est ce qui est présenté sur [octobot.cloud](/fr)
 
 ## Changements dans les offres pour investisseurs
 
-Nous avons beaucoup réfléchi à la manière d'ajouter davantage de valeur aux offres des stratégies de trading prêtes à l'emploi proposées par OctoBot cloud. Notre objectif est de les rendre aussi simples et accessibles que possible afin d'intéresser les investisseurs crypto qui ne souhaitent pas créer leur propre stratégie mais veulent toutefois tirer profit d'excellentes stratégies d'investissement.
+Nous avons beaucoup réfléchi à la manière d'ajouter davantage de valeur aux offres des stratégies de trading prêtes à l'emploi proposées par OctoBot app. Notre objectif est de les rendre aussi simples et accessibles que possible afin d'intéresser les investisseurs crypto qui ne souhaitent pas créer leur propre stratégie mais veulent toutefois tirer profit d'excellentes stratégies d'investissement.
 
-Bien sûr, l'offre Investisseur actuel reste gratuit et permet toujours d'utiliser plusieurs stratégies OctoBot cloud avec de [vrais fonds sur plateforme d'échange](/investing/invest-with-your-strategy) ainsi qu'avec des [fonds virtuels](/investing/paper-trading-a-strategy).
+Bien sûr, l'offre Investisseur actuel reste gratuit et permet toujours d'utiliser plusieurs stratégies OctoBot app avec de [vrais fonds sur plateforme d'échange](/investing/invest-with-your-strategy) ainsi qu'avec des [fonds virtuels](/investing/paper-trading-a-strategy).
 
 Nous ajoutons maintenant 2 autres plans liés qui étendent la porté de l'offre Investisseur.
 
@@ -61,8 +61,8 @@ Découvrez tous les détails de l'offre Pro [sur notre article dédié](introduc
 ## En conclusion
 
 Nous avons réfléchi à de nombreuses façons d'offrir des offres payantes et nous pensons que ces nouvelles offres sont excellents car ils rendent OctoBot très accessible:
-- Vous pouvez continuer à utiliser les stratégies OctoBot cloud gratuitement et de manière illimitée, comme vous le faites peut-être déjà avec l'offre Investisseur
-- La [version gratuite et open source d'OctoBot](/guides/octobot-installation/install-octobot-on-your-computer) bénéficie de mise à jours régulières qui sont possibles grâce aux abonnements payants d'[OctoBot cloud](/fr).
+- Vous pouvez continuer à utiliser les stratégies OctoBot app gratuitement et de manière illimitée, comme vous le faites peut-être déjà avec l'offre Investisseur
+- La [version gratuite et open source d'OctoBot](/guides/octobot-installation/install-octobot-on-your-computer) bénéficie de mise à jours régulières qui sont possibles grâce aux abonnements payants d'[OctoBot app](/fr).
 
 D'autre part, si vous recherchez des fonctionnalités supplémentaires pour simplifier et surveiller facilement vos échanges, créer des stratégies de trading avancées ou obtenir un support personnalisé de l'équipe OctoBot, tout est maintenant possible.
 

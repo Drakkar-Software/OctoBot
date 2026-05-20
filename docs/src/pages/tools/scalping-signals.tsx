@@ -7,7 +7,7 @@ import styles from './scalping-signals.module.css';
 /*
  * Scalping signals tool page — route: /tools/scalping-signals.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Built the same way as the feature pages: a navbar-less
  * LandingLayout composed from reusable components, plus a page-local
  * _ScalpingSignalCards mock for the sample-signal grid.
@@ -121,7 +121,7 @@ export default function ScalpingSignalsTool(): ReactNode {
         lead={translate({
           id: 'tools.scalpingSignals.signals.lead',
           message:
-            'A sample of the scalping signals OctoBot surfaces — entry, take profit, stop loss and expected profit at a glance. Live signals refresh continuously on OctoBot Cloud.',
+            'A sample of the scalping signals OctoBot surfaces — entry, take profit, stop loss and expected profit at a glance. Live signals refresh continuously on OctoBot App.',
           description: 'Scalping signals section lead',
         })}>
         <ScalpingSignalCards />
@@ -136,7 +136,7 @@ export default function ScalpingSignalsTool(): ReactNode {
         description={translate({
           id: 'tools.scalpingSignals.cta.description',
           message:
-            'Create your trading bot for free on OctoBot Cloud, or read the guides first.',
+            'Create your trading bot for free on OctoBot App, or read the guides first.',
           description: 'Scalping signals CTA band description',
         })}
         actions={[

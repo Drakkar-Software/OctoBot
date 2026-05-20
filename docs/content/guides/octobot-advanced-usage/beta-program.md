@@ -19,7 +19,7 @@ This feedback can be used to help improve the final version of the feature being
 
 The goal of this program is to test those new features as well as experimenting with improvements on existing ones.
 
-By joining the OctoBot Beta Tester, you will have early access to new features and improvements on OctoBot cloud by using [app-beta.octobot.cloud](https://app-beta.octobot.cloud/)
+By joining the OctoBot Beta Tester, you will have early access to new features and improvements on OctoBot app by using [app-beta.octobot.cloud](https://app-beta.octobot.cloud/)
 
 ## Who can join
 
@@ -31,7 +31,7 @@ If you are interested in helping OctoBot project to get better and are willing t
 
 The Beta Tester program requires an account on [app-beta.octobot.cloud](https://app-beta.octobot.cloud/). This is a separate account from the one you might have on [octobot.cloud](https://www.octobot.cloud/).
 
-1. Create an OctoBot cloud [beta account](https://app-beta.octobot.cloud/).
+1. Create an OctoBot app [beta account](https://app-beta.octobot.cloud/).
 2. Activate `Connect to the beta environment` in your OctoBot `About` tab and restart your OctoBot.
 3. You can now login using your [app-beta.octobot.cloud](https://app-beta.octobot.cloud/) account in your OctoBot's `Community` tab.
 

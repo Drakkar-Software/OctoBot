@@ -83,7 +83,7 @@ const config: Config = {
       languages: ['en', 'fr'],
     }],
     // Programmatic SEO pages (per-coin / per-exchange / converter matrix).
-    // Fetches its slug list from the OctoBot Cloud endpoint at build time,
+    // Fetches its slug list from the OctoBot App endpoint at build time,
     // falling back to a committed fixture when the endpoint is unreachable.
     require.resolve('./plugins/programmatic-pages'),
     [
@@ -206,7 +206,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'investing',
           position: 'left',
-          label: 'OctoBot Cloud',
+          label: 'OctoBot App',
         },
         {
           type: 'docSidebar',
@@ -232,7 +232,7 @@ const config: Config = {
         },
         {
           href: 'https://www.octobot.cloud',
-          label: 'OctoBot Cloud',
+          label: 'OctoBot App',
           position: 'right',
         },
         {
@@ -249,7 +249,7 @@ const config: Config = {
           title: 'Documentation',
           items: [
             {label: 'Guides', to: '/guides/octobot'},
-            {label: 'OctoBot Cloud', to: '/investing/introduction'},
+            {label: 'OctoBot App', to: '/investing/introduction'},
             {label: 'Blog', to: '/blog'},
             {label: 'Developers', to: '/developers/getting-started'},
           ],
@@ -275,7 +275,7 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'OctoBot Cloud',
+              label: 'OctoBot App',
               href: 'https://www.octobot.cloud',
             },
             {

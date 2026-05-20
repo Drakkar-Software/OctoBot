@@ -1,10 +1,10 @@
 ---
 title: "Connecting to Kucoin"
-description: "Step by step guide on how to securely use your Kucoin account with OctoBot cloud and profit from automated crypto investments."
+description: "Step by step guide on how to securely use your Kucoin account with OctoBot app and profit from automated crypto investments."
 sidebar_position: 23
 ---
 
-# Connecting your Kucoin account to OctoBot cloud
+# Connecting your Kucoin account to OctoBot app
 
 To automate the investment strategies of your choice on your Kucoin account, it is necessary to allow OctoBot to access a part of your account.
 
@@ -14,7 +14,7 @@ If you are wondering what an `API Key` is and why OctoBot is using it, checkout 
 
 ## Connecting to your Kucoin account with API Keys
 
-Here are the 5 simple steps to connect to your Kucoin account with OctoBot cloud and automate your investment strategies.
+Here are the 5 simple steps to connect to your Kucoin account with OctoBot app and automate your investment strategies.
 
 ### 1. Log in to your Kucoin account
 
@@ -31,7 +31,7 @@ Display your account dashboard by clicking on your account and select "API Manag
 
 1. Click "Create API", select "API-Based Trading".
 
-2. Name it as you wish and give it a passphrase. The name is just for you to remember the purpose of this key. The passphrase will have to be entered alongside your API key details on OctoBot cloud.
+2. Name it as you wish and give it a passphrase. The name is just for you to remember the purpose of this key. The passphrase will have to be entered alongside your API key details on OctoBot app.
 
 3. **Remember to check the "Spot Trading" API Restriction**.
 
@@ -41,7 +41,7 @@ Display your account dashboard by clicking on your account and select "API Manag
 
 4. Select the `Restrict to Trusted IPs Only` option.
 
-5. Click the "copy" button from OctoBot cloud to copy the IP whitelist and paste the list in the IP whitelist field, then click `Add`.
+5. Click the "copy" button from OctoBot app to copy the IP whitelist and paste the list in the IP whitelist field, then click `Add`.
 
 ### 4. Save your API Key
 
@@ -51,29 +51,29 @@ Proceed with the security verification to create the API Key.
 
 ![create api security verification](/images/guides/kucoin/create-api-security-verification.png)
 
-Your API Key is now created. Do not close this window as long as your are not done entering it on OctoBot cloud.
+Your API Key is now created. Do not close this window as long as your are not done entering it on OctoBot app.
 
 ![kucoin api key created](/images/guides/kucoin/kucoin-api-key-created.png)
 
-### 5. Add your API Key to your OctoBot cloud account
+### 5. Add your API Key to your OctoBot app account
 
 You now have your API key details !
 
-All you need to do is to copy and paste the values of `Key`, `Secret` (step 4) and the passphrase (step 3) into your Kucoin account configuration on OctoBot cloud. This can be done either when starting a trading strategy with a real account or from your profile on [octobot.cloud](https://www.octobot.cloud/)
+All you need to do is to copy and paste the values of `Key`, `Secret` (step 4) and the passphrase (step 3) into your Kucoin account configuration on OctoBot app. This can be done either when starting a trading strategy with a real account or from your profile on [octobot.cloud](https://www.octobot.cloud/)
 
-Note: When adding an API Key on OctoBot cloud, you can associate a name to it. As for the naming on Kucoin side, this is a free field where you can enter any name to quickly identify this API Key in the future.
+Note: When adding an API Key on OctoBot app, you can associate a name to it. As for the naming on Kucoin side, this is a free field where you can enter any name to quickly identify this API Key in the future.
 
 ![api creation completed selected values](/images/guides/kucoin/api-creation-completed-selected-values.png)
 
-![add API Key to octobot cloud from strategy start](/images/guides/kucoin/add-api-key-to-octobot-cloud-from-strategy-start.png)
+![add API Key to octobot app from strategy start](/images/guides/kucoin/add-api-key-to-octobot-cloud-from-strategy-start.png)
 
 <em>Adding an API Key when starting a strategy</em>
 
-![add API Key to octobot cloud from profile](/images/guides/kucoin/add-api-key-to-octobot-cloud-from-profile.png)
+![add API Key to octobot app from profile](/images/guides/kucoin/add-api-key-to-octobot-cloud-from-profile.png)
 
 <em>Adding an API Key directly from <a href="https://www.octobot.cloud/account" rel="nofollow">your profile</a></em>
 
-Your Kucoin account can now be used on OctoBot cloud !
+Your Kucoin account can now be used on OctoBot app !
 
 :::info
   Please note that when starting a bot, some of the funds available in your API key related portfolio might be sold. This include any stablecoin and fiat related funds as well as cryptocurrencies that are traded by the strategy you selected. This is is part of the [portfolio optimization](invest-with-your-strategy#1-portfolio-optimization).
@@ -85,7 +85,7 @@ Your Kucoin account can now be used on OctoBot cloud !
 
 If you get the `Incorrect API Keys` error, this usually means that:
 
-- There was an error when copy-pasting your API Key, Secret Key or passphrase from Kucoin to OctoBot cloud
+- There was an error when copy-pasting your API Key, Secret Key or passphrase from Kucoin to OctoBot app
 - You made a mistake when copying the IP whitelist
 - You might have selected the wrong exchange (make sure to select Kucoin)
 

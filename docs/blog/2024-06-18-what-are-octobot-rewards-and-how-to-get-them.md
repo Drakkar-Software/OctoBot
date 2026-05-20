@@ -4,7 +4,7 @@ description: "OctoBot rewards enable you to unlock paid plan features for free b
 slug: "what-are-octobot-rewards-and-how-to-get-them"
 date: "2024-06-18"
 authors: ["guillaume"]
-tags: ["Rewards", "OctoBot cloud", "Release"]
+tags: ["Rewards", "OctoBot app", "Release"]
 image: "/images/blog/what-are-octobot-rewards-and-how-to-get-them/octobot-rewards-get-rewarded-for-using-octobot-and-use-advanced-strategies.png"
 ---
 
@@ -72,12 +72,12 @@ The main aspects to keep in mind to quickly earn rewards are:
 
 We realize that many crypto investors are investing with a portfolio containing less than few hundred dollars. In this context, paying for a monthly subscription can be really painful.
 
-Our goal at OctoBot cloud is to make crypto investment more accessible, and we also want to improve investments for smaller portfolios, and for those who simply don't want to pay.
+Our goal at OctoBot app is to make crypto investment more accessible, and we also want to improve investments for smaller portfolios, and for those who simply don't want to pay.
 
-This is why we designed this rewards system. If you or a friend of yours wish to automate their investments with OctoBot cloud, there are many options to do so:
+This is why we designed this rewards system. If you or a friend of yours wish to automate their investments with OctoBot app, there are many options to do so:
 
 - Using the Investor Plus or Pro plan to instantly unlock all the strategies
 - Using strategies that are available free
-- Being a valuable OctoBot user and gain access to the Investor Plus strategies and features as a gift from OctoBot cloud
+- Being a valuable OctoBot user and gain access to the Investor Plus strategies and features as a gift from OctoBot app
 
 **[Check out OctoBot plans](https://www.octobot.cloud/pricing)**

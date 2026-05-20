@@ -4,7 +4,7 @@ description: "Discover the new OctoBot Android App. Track your OctoBots profits,
 slug: "introducing-the-new-octobot-mobile-app"
 date: "2023-11-10"
 authors: ["paul"]
-tags: ["Android", "Mobile", "OctoBot cloud"]
+tags: ["Android", "Mobile", "OctoBot app"]
 image: "/images/blog/introducing-the-new-octobot-mobile-app/cover.png"
 ---
 
@@ -18,7 +18,7 @@ We are thrilled to introduce the OctoBot Android app. This new application bring
 
 ## What is the OctoBot Android App?
 
-The <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=blog&utm_content=introducing-mobile-app" rel="nofollow">OctoBot Android App</a> is a mobile application designed to provide easy access to your OctoBot trading bots. It allows you to log in using your OctoBot cloud account and keep track of your trading bots directly from your Android device.
+The <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=www.octobot.cloud&utm_media=blog&utm_content=introducing-mobile-app" rel="nofollow">OctoBot Android App</a> is a mobile application designed to provide easy access to your OctoBot trading bots. It allows you to log in using your OctoBot app account and keep track of your trading bots directly from your Android device.
 
 ## Features of the OctoBot Android App
 

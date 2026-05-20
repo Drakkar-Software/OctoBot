@@ -1,6 +1,6 @@
 ---
 title: "Tester sans risque"
-description: "Apprenez comment utiliser le trading virtuel (paper trading) pour tester des stratégies et des paniers de crypto en direct et sans risque avec OctoBot cloud."
+description: "Apprenez comment utiliser le trading virtuel (paper trading) pour tester des stratégies et des paniers de crypto en direct et sans risque avec OctoBot app."
 sidebar_position: 5
 ---
 
@@ -26,7 +26,7 @@ C'est parfait pour expérimenter une stratégie de trading ou un panier de crypt
 
 
 :::info
-  Aucun compte d'échange n'est requis pour utiliser le trading virtuel sur OctoBot cloud.
+  Aucun compte d'échange n'est requis pour utiliser le trading virtuel sur OctoBot app.
 :::
 
 ## Le trading virtuel dans OctoBot
@@ -38,15 +38,15 @@ Votre OctoBot en mode trading virtuel appliquera maintenant la stratégie ou le 
 Comme avec les OctoBots en mode réel, vous pouvez [suivre votre bot en trading simulé](follow-your-profits) comme d'habitude.
 
 ### Pendant combien de temps puis-je tester ?
-En utilisant OctoBot cloud, vous pouvez faire fonctionner votre OctoBot en mode trading simulé aussi longtemps que vous le souhaitez. 
+En utilisant OctoBot app, vous pouvez faire fonctionner votre OctoBot en mode trading simulé aussi longtemps que vous le souhaitez. 
 
-La seule contraine est de cliquer sur **Prolonger** une fois toutes les deux semaines lorsque votre OctoBot approche de sa date d'expiration. Cela notifie à OctoBot cloud qu'il doit continuer à faire fonctionner votre OctoBot en trading simulé. 
+La seule contraine est de cliquer sur **Prolonger** une fois toutes les deux semaines lorsque votre OctoBot approche de sa date d'expiration. Cela notifie à OctoBot app qu'il doit continuer à faire fonctionner votre OctoBot en trading simulé. 
 
 ![cloud octobot entrading simulé qui expire dans 2 jours](/images/guides/paper-trading-cloud-octobot-expiring-in-2-days.png)
 
 ### Puis-je trader en simulé et avec mes fonds réels simultanément ?
 
 Oui !
-En fait, nous vous encourageons même à utiliser le trading simulé pour expérimenter des stratégies ou des paniers de crypto sur OctoBot cloud, même après avoir trouvé ceux avec lesquels investir avec vos fonds réels.
+En fait, nous vous encourageons même à utiliser le trading simulé pour expérimenter des stratégies ou des paniers de crypto sur OctoBot app, même après avoir trouvé ceux avec lesquels investir avec vos fonds réels.
 
 Cela vous permet de tester rapidement de nouveaux panier ou stratégies et d'optimiser vos gains en utilisant toujours ceux que vous préférez à tout moment.

@@ -1,6 +1,6 @@
 ---
 title: "Partagez vos signaux de trading"
-description: "Apprenez comment partager vos signaux de trading crypto sur OctoBot cloud pour permettre à d'autres de copier automatiquement vos signaux."
+description: "Apprenez comment partager vos signaux de trading crypto sur OctoBot app pour permettre à d'autres de copier automatiquement vos signaux."
 sidebar_position: 27
 ---
 

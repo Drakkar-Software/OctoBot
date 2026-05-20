@@ -212,7 +212,7 @@ const WHY: IconListItem[] = [
         description="Why list item on portfolio tracker page"
         values={{label: <strong>Self-hosted or cloud:</strong>}}>
         {
-          '{label} run it on your own machine or use OctoBot Cloud — the portfolio data stays yours either way.'
+          '{label} run it on your own machine or use OctoBot App — the portfolio data stays yours either way.'
         }
       </Translate>
     ),
@@ -245,7 +245,7 @@ const FAQ_ITEMS: FAQItem[] = [
         description="FAQ answer on portfolio tracker page"
         values={{githubLink: <a href={GITHUB}>GitHub</a>}}>
         {
-          'Yes — OctoBot is free and open source. You can download it from {githubLink} and track your portfolio at no cost, or use OctoBot Cloud for a hosted experience.'
+          'Yes — OctoBot is free and open source. You can download it from {githubLink} and track your portfolio at no cost, or use OctoBot App for a hosted experience.'
         }
       </Translate>
     ),

@@ -16,7 +16,7 @@ import styles from './converter.module.css';
 /*
  * Crypto converters tool page — route: /tools/converter.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Built the same way as the feature pages: a navbar-less
  * LandingLayout composed from reusable components, plus a page-local
  * _ConverterCard mock for the live-price visual.
@@ -291,7 +291,7 @@ export default function CryptoConverter(): ReactNode {
         description={translate({
           id: 'tools.converter.cta.description',
           message:
-            'Create your trading bot for free on OctoBot Cloud, or read the guides first.',
+            'Create your trading bot for free on OctoBot App, or read the guides first.',
           description: 'Converter CTA band description',
         })}
         actions={[

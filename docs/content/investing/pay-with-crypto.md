@@ -1,6 +1,6 @@
 ---
 title: "Pay with crypto"
-description: "Step-by-step guide on paying for your OctoBot Cloud subscription with cryptocurrency"
+description: "Step-by-step guide on paying for your OctoBot App subscription with cryptocurrency"
 sidebar_position: 30
 ---
 
@@ -10,16 +10,16 @@ sidebar_position: 30
   Warning: Crypto payments are temporarily unavailable. We're actively working to restore this option soon.
 :::
 
-## Payment options for OctoBot Cloud
+## Payment options for OctoBot App
 
-You have the option to pay for your OctoBot Cloud subscription either by credit card or with cryptocurrencies. For cryptocurrency payments, you can use [USDC](https://www.octobot.cloud/what-is-usdc) on various blockchains such as [Ethereum](https://www.octobot.cloud/what-is-ethereum), Optimism, BNB Smart Chain, Polygon, Base, and Arbitrum.
+You have the option to pay for your OctoBot App subscription either by credit card or with cryptocurrencies. For cryptocurrency payments, you can use [USDC](https://www.octobot.cloud/what-is-usdc) on various blockchains such as [Ethereum](https://www.octobot.cloud/what-is-ethereum), Optimism, BNB Smart Chain, Polygon, Base, and Arbitrum.
 
 ## How to make a payment with cryptocurrencies
 
-After the trial period of OctoBot Cloud, or following the creation of your account, you will automatically be enrolled in the free plan, the Investor plan.
+After the trial period of OctoBot App, or following the creation of your account, you will automatically be enrolled in the free plan, the Investor plan.
 To access additional features available in the [Investor Plus](/blog/introducing-the-investor-plus-plan) and [Pro](/blog/introducing-the-pro-plan) plans, you will need to update your subscription.
 
-1. Open the <a href="https://www.octobot.cloud/plan" rel="nofollow">OctoBot cloud plans page</a>.
+1. Open the <a href="https://www.octobot.cloud/plan" rel="nofollow">OctoBot app plans page</a>.
 2. Select the desired plan and click on "Pay with crypto".
 
 ![choose pay with crypto](/images/investing/pay-with-crypto/pay-with-crypto-en.png)
@@ -49,4 +49,4 @@ To stop your cryptocurrency-paid subscription, follow these steps:
 2. Click on the "Stop" button to cancel your subscription.
 3. If you also wish to disconnect your wallet, click on "Update My Payment Method" and follow the instructions to remove wallet access.
 
-By following these steps, you can easily manage your subscription and payment methods for OctoBot Cloud. If you have any questions or need further assistance, do not hesitate to contact customer support.
+By following these steps, you can easily manage your subscription and payment methods for OctoBot App. If you have any questions or need further assistance, do not hesitate to contact customer support.

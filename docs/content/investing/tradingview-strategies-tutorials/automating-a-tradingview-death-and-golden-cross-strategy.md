@@ -57,7 +57,7 @@ Our strategy is ready, the only remaining step is to create an OctoBot to trade 
 
 ### 2.1 Create a TradingView OctoBot
 
-Let's open a new tab and go to <a href="https://www.octobot.cloud/dashboard" rel="nofollow">OctoBot cloud</a> to start a new TradingView OctoBot
+Let's open a new tab and go to <a href="https://www.octobot.cloud/dashboard" rel="nofollow">OctoBot app</a> to start a new TradingView OctoBot
 
 ![start new tradingview octobot from explorer](/images/guides/trading-view/start-new-tradingview-octobot-from-explorer.png)
 

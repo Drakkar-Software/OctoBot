@@ -14,7 +14,7 @@ import SignalCards from '@site/src/components/pages/tools/crypto-prediction/Sign
 /*
  * ChatGPT crypto predictions tool page — route: /tools/crypto-prediction.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Navbar-less LandingLayout composed from reusable
  * components, with a page-local sample-signal grid (_SignalCards).
  */
@@ -118,7 +118,7 @@ export default function CryptoPredictionTool(): ReactNode {
         lead={translate({
           id: 'tools.cryptoPrediction.signals.lead',
           message:
-            'A snapshot of the kind of trading signals ChatGPT generates as it reads the crypto market. Live predictions run on OctoBot Cloud.',
+            'A snapshot of the kind of trading signals ChatGPT generates as it reads the crypto market. Live predictions run on OctoBot App.',
           description: 'Crypto prediction signals section lead',
         })}>
         <SignalCards />
@@ -162,7 +162,7 @@ export default function CryptoPredictionTool(): ReactNode {
         description={translate({
           id: 'tools.cryptoPrediction.cta.description',
           message:
-            'Create your ChatGPT trading bot for free on OctoBot Cloud, or read the guide first.',
+            'Create your ChatGPT trading bot for free on OctoBot App, or read the guide first.',
           description: 'Crypto prediction CTA band description',
         })}
         actions={[

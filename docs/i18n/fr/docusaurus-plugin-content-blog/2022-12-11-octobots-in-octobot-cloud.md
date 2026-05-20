@@ -1,16 +1,16 @@
 ---
-title: "Facilement déployer votre OctoBot dans OctoBot cloud"
-description: "You can now easily deploy your OctoBot directly in OctoBot cloud"
+title: "Facilement déployer votre OctoBot dans OctoBot app"
+description: "You can now easily deploy your OctoBot directly in OctoBot app"
 slug: "octobots-in-octobot-cloud"
 date: "2022-12-11"
 authors: ["paul"]
-tags: ["Cryptocurrency", "Trading", "Strategy", "OctoBot cloud"]
+tags: ["Cryptocurrency", "Trading", "Strategy", "OctoBot app"]
 image: "/images/blog/octobots-in-octobot-cloud/cover.png"
 ---
 
 
 
-# Facilement déployer votre OctoBot sur OctoBot cloud
+# Facilement déployer votre OctoBot sur OctoBot app
 
 :::info
   La traduction française de cette page est en cours.
@@ -25,9 +25,9 @@ Moreover, your OctoBots can be accessed from anywhere, as long as you have an in
 
 This can be especially useful for traders who need to monitor their OctoBot from different locations or devices.
 
-## Comment déployer votre OctoBot sur OctoBot cloud ?
+## Comment déployer votre OctoBot sur OctoBot app ?
 
-1. Login on [OctoBot cloud](/fr) and go to `My bots`.
+1. Login on [OctoBot app](/fr) and go to `My bots`.
    ![my-bots-button](/images/blog/octobots-in-octobot-cloud/my-bots-button.jpg)
 2. Click on `Deploy now` from the `Discover` card.
    ![deploy-now](/images/blog/octobots-in-octobot-cloud/deploy-now.jpg)
@@ -35,17 +35,17 @@ This can be especially useful for traders who need to monitor their OctoBot from
    ![deploying](/images/blog/octobots-in-octobot-cloud/deploying.png)
 4. Access your personal OctoBot using the `Open Interface` button.
    ![open-interface](/images/blog/octobots-in-octobot-cloud/open-interface.png)
-5. Unlock your OctoBot with your OctoBot cloud account password.
+5. Unlock your OctoBot with your OctoBot app account password.
    ![login](/images/blog/octobots-in-octobot-cloud/login.png)
 6. Enjoy your OctoBot from anywhere.
 
-Note: running a cloud OctoBot requires OctoBot cloud credits. We will soon add ways to get those credits. Fow now please ask the OctoBot team if you need beta credits.
+Note: running a cloud OctoBot requires OctoBot app credits. We will soon add ways to get those credits. Fow now please ask the OctoBot team if you need beta credits.
 
 ## Rejoindre la bêta
 
 If you're interested in participating, be sure to follow any guidelines and instructions provided by the OctoBot team, and take the time to thoroughly test the application and provide useful feedback.
 
-Cloud OctoBots will first be available on the [beta OctoBot cloud](https://beta.octobot.cloud/).
+Cloud OctoBots will first be available on the [beta OctoBot app](https://beta.octobot.cloud/).
 
 To participate in the beta testing of OctoBot's cloud hosting, you'll need to sign up to be a beta tester.
 

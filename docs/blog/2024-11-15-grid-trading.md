@@ -4,7 +4,7 @@ description: "Discover grid trading strategies to profit from market volatility.
 slug: "grid-trading"
 date: "2024-11-15"
 authors: ["guillaume"]
-tags: ["Trading", "Strategy", "OctoBot cloud"]
+tags: ["Trading", "Strategy", "OctoBot app"]
 image: "/images/guides/grid-trading-illustrated-by-a-man-stepping-up-on-green-stairs-grabbing-coins.png"
 ---
 

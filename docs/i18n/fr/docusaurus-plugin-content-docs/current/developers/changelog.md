@@ -310,7 +310,7 @@ programmons pour la prochaine.
 ### Ajouté
 - [Extension]: Nouvelle extension OctoBot pour profiter du Strategy designer, sécuriser les webhooks TradingView et bénéficier de paniers de cryptos automatiquement mis à jour
 - [WebInterface] Mode clair et sombre
-- [Webhook] Prise en charge des webhooks propulsés par OctoBot cloud comme alternative à ngrok
+- [Webhook] Prise en charge des webhooks propulsés par OctoBot app comme alternative à ngrok
 ### Modifié
 - [WebInterface] Refonte complète de l'UI
 - [CCXT] mise à jour vers ccxt 4.3.56
@@ -647,7 +647,7 @@ programmons pour la prochaine.
 
 ## [0.4.35] - 2023-01-19
 ### Ajouté
-- WebInterface : formulaire d'inscription à OctoBot cloud
+- WebInterface : formulaire d'inscription à OctoBot app
 ### Modifié
 - Websockets : version de ccxt
 ### Corrigé

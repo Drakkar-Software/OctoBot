@@ -25,11 +25,11 @@ const AudienceList: AudienceItem[] = [
     linkLabel: 'Get Started',
   },
   {
-    title: 'OctoBot Cloud',
+    title: 'OctoBot App',
     icon: '☁️',
     description: (
       <>
-        Invest with OctoBot Cloud automated strategies. Follow strategies,
+        Invest with OctoBot App automated strategies. Follow strategies,
         connect exchanges, and automate TradingView alerts.
       </>
     ),

@@ -4,7 +4,7 @@ description: "OctoBot 2.0.0 improves OctoBot with a full redesign of the user in
 slug: "octobot-2-0-0-whats-new"
 date: "2024-07-07"
 authors: ["guillaume"]
-tags: ["Tradingview", "Chatgpt", "Release", "Backtesting", "Strategy designer", "OctoBot cloud"]
+tags: ["Tradingview", "Chatgpt", "Release", "Backtesting", "Strategy designer", "OctoBot app"]
 image: "/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-annoucement-with-new-design-preview.png"
 ---
 
@@ -51,8 +51,8 @@ preview](/images/blog/octobot-2-0-0-whats-new/octobot-premium-extension-preview.
 The Premium OctoBot Extension is an optional paid extension to permanently improve your open source OctoBot. It adds:
 
 - The [Strategy Designer](/guides/octobot-usage/strategy-designer) to create advanced OctoBot strategies
-- [Secure OctoBot cloud webhooks](/guides/octobot-interfaces/tradingview/using-a-webhook) for your TradingView strategies
-- [OctoBot cloud crypto baskets](https://www.octobot.cloud/features/crypto-basket) directly into your open source Octobot
+- [Secure OctoBot app webhooks](/guides/octobot-interfaces/tradingview/using-a-webhook) for your TradingView strategies
+- [OctoBot app crypto baskets](https://www.octobot.cloud/features/crypto-basket) directly into your open source Octobot
 
 ![octobot open source utilisant les paniers de crypto avec extension premium
 octobot](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
@@ -61,7 +61,7 @@ We created the Premium OctoBot extension in order to:
 
 - Improve the ease of automating your TradingView strategies
 - Provide a tool suited for those who want to delve deeper into creating advanced strategies
-- Allow open source OctoBots to use OctoBot cloud crypto baskets that are automatically kept up to date
+- Allow open source OctoBots to use OctoBot app crypto baskets that are automatically kept up to date
 
 These features incur significant operating and development costs, which is why we decided to include them in the [Premium OctoBot Extension](/guides/octobot-configuration/premium-octobot-extension) and we look forward to receiving your feedback on this.
 

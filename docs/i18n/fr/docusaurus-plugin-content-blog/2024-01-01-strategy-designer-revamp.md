@@ -6,7 +6,7 @@ date: "2024-01-01"
 ---
 title: Refonte du Stratégie Designer
 description: Enjoy the revamped Strategy Designer and created your best trading strategies
-tags: Strategy designer, Configuration, Backtesting, Cryptocurrency, OctoBot cloud
+tags: Strategy designer, Configuration, Backtesting, Cryptocurrency, OctoBot app
 image: /images/blog/strategy-designer-revamp/cover.png
 domain: blog.octobot.online
 sidebar: false

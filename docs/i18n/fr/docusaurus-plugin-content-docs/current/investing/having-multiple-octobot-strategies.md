@@ -1,6 +1,6 @@
 ---
 title: "Avoir plusieurs OctoBot"
-description: "Apprenez à exécuter gratuitement plusieurs stratégies de trading pour optimiser vos gains et réduire les risques en utilisant OctoBot cloud."
+description: "Apprenez à exécuter gratuitement plusieurs stratégies de trading pour optimiser vos gains et réduire les risques en utilisant OctoBot app."
 sidebar_position: 7
 ---
 
@@ -14,7 +14,7 @@ Bien qu'il n'y ait rien d'obligatoire, il est généralement préférable d'util
 
 ## Les avantages d'utiliser plusieurs OctoBot
 
-Sur OctoBot cloud, l'exécution d'une ou plusieurs stratégies de trading est toujours gratuite. Il n'y donc a aucune raison réelle de ne pas le faire. Si vous pensez que cela peut être rentable pour vous, alors vous avez la possibilité de le faire sans frais.
+Sur OctoBot app, l'exécution d'une ou plusieurs stratégies de trading est toujours gratuite. Il n'y donc a aucune raison réelle de ne pas le faire. Si vous pensez que cela peut être rentable pour vous, alors vous avez la possibilité de le faire sans frais.
 
 L'exécution simultanée de plusieurs OctoBots présente de nombreux avantages, il permet notamment de:
 
@@ -39,7 +39,7 @@ Cela signifie que vous pouvez exécuter autant de stratégies ou de paniers de c
 
 ### Utiliser différentes plateformes d'échange
 
-Pour utiliser plusieurs OctoBot, il vous suffit de connecter différentes plateformes d'échange à votre compte OctoBot cloud. Vous pourrez alors exécuter une stratégie ou un panier de crypto sur chaque compte d'échange.
+Pour utiliser plusieurs OctoBot, il vous suffit de connecter différentes plateformes d'échange à votre compte OctoBot app. Vous pourrez alors exécuter une stratégie ou un panier de crypto sur chaque compte d'échange.
 
 Par exemple, vous pouvez exécuter une stratégie risquée mais à haut poentiel basée sur l'intelligence artificielle sur Binance, et une stratégie de grille à faible risque sur Kucoin. Cela réduit également les risques associés à la détention de vos fonds sur une seule plateforme.
 

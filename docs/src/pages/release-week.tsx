@@ -14,7 +14,7 @@ import styles from './release-week.module.css';
 /*
  * OctoBot release week marketing page — route: /release-week.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. A navbar-less LandingLayout composed from the reusable
  * landing components: hero, announcement video, the five-release StepList
  * and a closing CTA band.
@@ -158,7 +158,7 @@ export default function ReleaseWeek(): ReactNode {
         note={translate({
           id: 'pages.releaseWeek.hero.note',
           message:
-            'Enter your email on OctoBot Cloud to be among the first notified when the next release week starts.',
+            'Enter your email on OctoBot App to be among the first notified when the next release week starts.',
           description: 'Release week hero note',
         })}
       />
@@ -213,7 +213,7 @@ export default function ReleaseWeek(): ReactNode {
         description={translate({
           id: 'pages.releaseWeek.cta.description',
           message:
-            'Join the launch on OctoBot Cloud, or read the guides to get the most out of every new feature.',
+            'Join the launch on OctoBot App, or read the guides to get the most out of every new feature.',
           description: 'Release week CTA description',
         })}
         actions={[

@@ -62,7 +62,7 @@ Notre stratégie est prête, la seule étape restante est de créer un OctoBot p
 
 ### 2.1 Créer un OctoBot TradingView
 
-Ouvrons un nouvel onglet et allons sur <a href="https://www.octobot.cloud/fr/dashboard" rel="nofollow">OctoBot cloud</a> pour démarrer un nouveal OctoBot TradingView.
+Ouvrons un nouvel onglet et allons sur <a href="https://www.octobot.cloud/fr/dashboard" rel="nofollow">OctoBot app</a> pour démarrer un nouveal OctoBot TradingView.
 
 ![demarrer un nouvel octobot tradingview depuis
 explorer](/images/guides/trading-view/demarrer-un-nouvel-octobot-tradingview-depuis-l-explorer.png)

@@ -33,7 +33,7 @@ const COLUMNS: FooterColumn[] = [
         }),
         to: '/features/ideas',
       },
-      {label: 'OctoBot Cloud', to: 'https://www.octobot.cloud'},
+      {label: 'OctoBot App', to: 'https://www.octobot.cloud'},
       {
         label: translate({
           id: 'nav.footer.product.blog',

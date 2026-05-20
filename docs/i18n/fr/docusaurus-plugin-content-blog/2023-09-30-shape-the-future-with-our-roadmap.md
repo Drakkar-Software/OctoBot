@@ -4,7 +4,7 @@ description: "Vote for what matters to you and influence the future of OctoBot"
 slug: "shape-the-future-with-our-roadmap"
 date: "2023-09-30"
 authors: ["guillaume"]
-tags: ["Roadmap", "Vote", "Share", "Cryptocurrency", "OctoBot cloud"]
+tags: ["Roadmap", "Vote", "Share", "Cryptocurrency", "OctoBot app"]
 image: "/images/blog/shape-the-future-with-our-roadmap/banner-dark.png"
 ---
 
@@ -22,9 +22,9 @@ image: "/images/blog/shape-the-future-with-our-roadmap/banner-dark.png"
 
 ### Contexte rapide
 
-Simplicity and transparency are among the most important values to us as we explaned on [our previous article](/blog/introducing-the-new-octobot-cloud) regarding the [new OctoBot cloud](/fr).
+Simplicity and transparency are among the most important values to us as we explaned on [our previous article](/blog/introducing-the-new-octobot-cloud) regarding the [new OctoBot app](/fr).
 
-With OctoBot cloud, we are comitted in creating the best strategy automation system possible. Of course, "best" always depends on what is used as comparison criteria.  
+With OctoBot app, we are comitted in creating the best strategy automation system possible. Of course, "best" always depends on what is used as comparison criteria.  
 For us it means that you, our users, can:
 
 1. Clearly identify the investment strategies you want to use
@@ -50,7 +50,7 @@ Our goal is, and has always been, to shape the whole OctoBot ecosystem according
 
 As the community is growing and we are now releasing new features at a much faster pace, we will give a greater weight to our public feedback and roadmap system and split it into two part:
 
-- The <a href="https://feedback.octobot.cloud/cloud" rel="nofollow">OctoBot cloud section</a>
+- The <a href="https://feedback.octobot.cloud/cloud" rel="nofollow">OctoBot app section</a>
 
 ![octobot_cloud](/images/blog/shape-the-future-with-our-roadmap/octobot_cloud.png)
 
@@ -70,7 +70,7 @@ On <a href="https://feedback.octobot.cloud/" rel="nofollow">feedback.octobot.clo
 
 What you can do to improve OctoBot:
 
-- Vote for features that you would like to see added to the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot</a> or [OctoBot cloud](/fr)
+- Vote for features that you would like to see added to the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot</a> or [OctoBot app](/fr)
 - Share new ideas
 - Spread the word about <a href="https://feedback.octobot.cloud/" rel="nofollow">feedback.octobot.cloud</a> to encourage people to share ideas and vote for what matters the most
 
@@ -78,4 +78,4 @@ What happens next ?
 
 - We update this roadmap on a regular basis to reflect our current work
 - You get notified when things change to an idea you submitted or are following
-- Both the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot</a> and [OctoBot cloud](/fr) become better and better thanks you and we are really greateful for this. Thank you
+- Both the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot</a> and [OctoBot app](/fr) become better and better thanks you and we are really greateful for this. Thank you

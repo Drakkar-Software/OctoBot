@@ -16,7 +16,7 @@ const OUTPUT_PATH = join(__dirname, '..', 'static', 'llms.txt');
 
 const SECTIONS = [
   {dir: 'guides', label: 'Guides'},
-  {dir: 'investing', label: 'OctoBot Cloud'},
+  {dir: 'investing', label: 'OctoBot App'},
   {dir: 'creators', label: 'Creators'},
   {dir: 'developers', label: 'Developers'},
 ];
@@ -32,7 +32,7 @@ OctoBot is developed by [Drakkar-Software](https://github.com/Drakkar-Software) 
 This documentation is organized into three sections:
 
 - [Open Source Guides](${BASE_URL}/guides/octobot): Install, configure, and run OctoBot
-- [OctoBot Cloud](${BASE_URL}/investing/introduction): Invest with OctoBot Cloud strategies
+- [OctoBot App](${BASE_URL}/investing/introduction): Invest with OctoBot App strategies
 - [Creators Guide](${BASE_URL}/creators/getting-started): Build and customize trading strategies
 - [Developers Guide](${BASE_URL}/developers/getting-started): Contribute to the OctoBot codebase
 

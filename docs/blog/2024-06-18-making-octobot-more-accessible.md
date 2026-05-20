@@ -67,6 +67,6 @@ We also adapted the Pro plan price to be less impactful on your portfolio: the P
 
 We believe that this revamp of the OctoBot plans will greatly increase the accessibility of automated investment strategies for any crypto investor.
 
-With those new plans, we want to make [OctoBot cloud](/) the best platform to easily invest in crypto using investment strategies.
+With those new plans, we want to make [OctoBot app](/) the best platform to easily invest in crypto using investment strategies.
 
 We hope that you will enjoy those changes and want can't wait to get your feedback on it.

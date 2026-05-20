@@ -15,7 +15,7 @@ import OpportunityCards from '@site/src/components/pages/tools/triangular-arbitr
  * Crypto triangular arbitrage tool page —
  * route: /tools/triangular-arbitrage-crypto.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Navbar-less LandingLayout composed from reusable
  * components, with a page-local sample-opportunity grid (_OpportunityCards).
  */
@@ -119,7 +119,7 @@ export default function TriangularArbitrageTool(): ReactNode {
         lead={translate({
           id: 'tools.triangularArbitrage.opportunities.lead',
           message:
-            'A snapshot of the three-leg paths OctoBot scans for price gaps. Live opportunities are detected on OctoBot Cloud.',
+            'A snapshot of the three-leg paths OctoBot scans for price gaps. Live opportunities are detected on OctoBot App.',
           description: 'Triangular arbitrage opportunities section lead',
         })}>
         <OpportunityCards />
@@ -171,7 +171,7 @@ export default function TriangularArbitrageTool(): ReactNode {
         description={translate({
           id: 'tools.triangularArbitrage.cta.description',
           message:
-            'Start a triangular arbitrage bot for free on OctoBot Cloud, or read the guides first.',
+            'Start a triangular arbitrage bot for free on OctoBot App, or read the guides first.',
           description: 'Triangular arbitrage CTA band description',
         })}
         actions={[

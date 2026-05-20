@@ -90,7 +90,7 @@ const FEATURES: Feature[] = [
     description: translate({
       id: 'pages.welcome.features.runAnywhere.description',
       message:
-        'Self-host on your computer, a Raspberry Pi or a server — or use OctoBot Cloud.',
+        'Self-host on your computer, a Raspberry Pi or a server — or use OctoBot App.',
       description: 'Welcome page feature description',
     }),
     to: '/guides/octobot-installation/install-octobot-on-your-computer',

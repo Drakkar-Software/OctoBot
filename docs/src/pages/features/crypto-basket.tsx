@@ -18,7 +18,7 @@ import styles from './_styles.module.css';
 /*
  * Crypto Basket feature page — route: /features/crypto-basket.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Navbar-less LandingLayout composed from reusable
  * components.
  */

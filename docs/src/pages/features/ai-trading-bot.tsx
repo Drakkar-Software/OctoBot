@@ -18,7 +18,7 @@ import styles from './_styles.module.css';
 /*
  * AI Trading Bot feature page — route: /features/ai-trading-bot.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Built the same way as the other feature pages: a
  * navbar-less LandingLayout composed entirely from reusable components.
  */
@@ -205,7 +205,7 @@ const FAQ_ITEMS: FAQItem[] = [
           ),
         }}>
         {
-          'You can easily create an AI trading bot for free on OctoBot Cloud. {guideLink}'
+          'You can easily create an AI trading bot for free on OctoBot App. {guideLink}'
         }
       </Translate>
     ),
@@ -232,7 +232,7 @@ const FAQ_ITEMS: FAQItem[] = [
           ),
         }}>
         {
-          'Once you have started an AI trading bot on OctoBot Cloud, you can easily follow its activity. {guideLink}'
+          'Once you have started an AI trading bot on OctoBot App, you can easily follow its activity. {guideLink}'
         }
       </Translate>
     ),
@@ -459,7 +459,7 @@ export default function AITradingBotFeature(): ReactNode {
         description={translate({
           id: 'features.aiTradingBot.cta.description',
           message:
-            'Create your AI trading bot for free on OctoBot Cloud, or read the guide first.',
+            'Create your AI trading bot for free on OctoBot App, or read the guide first.',
           description: 'CTA band description on AI trading bot page',
         })}
         actions={[

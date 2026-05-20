@@ -10,7 +10,7 @@ Le Trading Mode Index (ou IndexTradingMode) est conçu pour maintenir votre port
 
 ![index trading illustraté par un panier de crypto](/images/guides/crypto-basket.png)
 
-Tout comme les [paniers de cryptos d'OctoBot cloud](https://www.octobot.cloud/features/crypto-basket), Le Trading Mode Index vous permet d'investir facilement dans des ensembles de cryptomonnaies.
+Tout comme les [paniers de cryptos d'OctoBot app](https://www.octobot.cloud/features/crypto-basket), Le Trading Mode Index vous permet d'investir facilement dans des ensembles de cryptomonnaies.
 
 ## L'Index Trading Mode permet de
 
@@ -27,12 +27,12 @@ Lorsque vous démarrez un OctoBot avec le trading mode Index, celui-ci va :
 2. Si une crypto des paires échangées est absente ou présente avec un ratio incorrect, un rééquilibrage est déclenché.
 3. Si un rééquilibrage est déclenché, alors vos fonds sont convertis sur le marché de référence puis répartis entre les crypto configurées.
 
-## Utiliser les paniers de crypto OctoBot cloud
-En utilisant l'[extension premium d'OctoBot](/guides/octobot-configuration/premium-octobot-extension), vous pouvez utiliser chaque panier de cryptos disponible sur OctoBot cloud directement depuis votre OctoBot open source.
+## Utiliser les paniers de crypto OctoBot app
+En utilisant l'[extension premium d'OctoBot](/guides/octobot-configuration/premium-octobot-extension), vous pouvez utiliser chaque panier de cryptos disponible sur OctoBot app directement depuis votre OctoBot open source.
 
 ![index trading illustraté par un panier de crypto](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
 
-De cette manière, lorsque un panier de cryptos OctoBot cloud est mis à jour, par exemple si le top 20 du marché crypto change ou si une nouvelle crypto rejoint le panier de crypto d'intelligence artificielle, alors votre OctoBot open source se mettra également à jour automatiquement.
+De cette manière, lorsque un panier de cryptos OctoBot app est mis à jour, par exemple si le top 20 du marché crypto change ou si une nouvelle crypto rejoint le panier de crypto d'intelligence artificielle, alors votre OctoBot open source se mettra également à jour automatiquement.
 
 ## Configurer les rééquilibrages
 ### Période de rééquilibrage

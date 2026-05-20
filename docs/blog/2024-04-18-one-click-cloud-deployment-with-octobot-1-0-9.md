@@ -35,7 +35,7 @@ We're glad to announce the release of OctoBot 1.0.9. This version notably adds s
 
 ### Crypto Baskets
 
-Similarly to [OctoBot cloud crypto baskets](https://www.octobot.cloud/features/crypto-basket), you can now create your own crypto baskets using OctoBot and the new [Index Trading Mode](/guides/octobot-trading-modes/index-trading-mode).
+Similarly to [OctoBot app crypto baskets](https://www.octobot.cloud/features/crypto-basket), you can now create your own crypto baskets using OctoBot and the new [Index Trading Mode](/guides/octobot-trading-modes/index-trading-mode).
 
 ![crypto
 basket](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/crypto-basket.png)

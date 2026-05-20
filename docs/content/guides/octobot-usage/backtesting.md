@@ -119,7 +119,7 @@ Each trade executed during a backtesting is available in the trades explorer whe
 
 ## Going deeper with the Strategy Designer
 
-Backtesting as presented on this page is the basic, yet very complete already version of the [Strategy Designer](strategy-designer) available on OctoBot cloud plans.
+Backtesting as presented on this page is the basic, yet very complete already version of the [Strategy Designer](strategy-designer) available on OctoBot app plans.
 
 ![octobot strategy designer results on doge btc shib](/images/guides/strategy-designer/octobot-strategy-designer-results-on-doge-btc-shib.png)
 
@@ -142,7 +142,7 @@ When running in backtesting, OctoBot uses the same code to execute a trading str
 As backtesting runs using complete candles, there might be a difference with live trading as live trading could access incomplete candles to run its indicators (this is the case with real-time evaluators for example). Therefore, in backtesting **realtime evaluators can't run the same way they do in live trading** because in-construction candles are not available.
 
 For the same reason, as only candles data are available, backtesting on strategies that run on other data than candles data (following google trends for exmaple) is currently impossible.  
-The only exeption is **ChatGPT historical signals that are made available for free** thanks to OctoBot cloud when running a backtesting using the ChatGPTEvaluator on traded pairs and time frames used by <a href="https://www.octobot.cloud/explore" rel="nofollow">OctoBot cloud strategies</a> that are also using the ChatGPTEvaluator.
+The only exeption is **ChatGPT historical signals that are made available for free** thanks to OctoBot app when running a backtesting using the ChatGPTEvaluator on traded pairs and time frames used by <a href="https://www.octobot.cloud/explore" rel="nofollow">OctoBot app strategies</a> that are also using the ChatGPTEvaluator.
 
 ### Time management
 

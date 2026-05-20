@@ -4,7 +4,7 @@ description: "Automate your trades using any TradingView indicator"
 slug: "trading-using-tradingview"
 date: "2023-05-17"
 authors: ["paul"]
-tags: ["Tradingview", "Pine Script", "Webhook", "Strategy", "OctoBot cloud", "Educational"]
+tags: ["Tradingview", "Pine Script", "Webhook", "Strategy", "OctoBot app", "Educational"]
 image: "/images/blog/trading-using-tradingview/cover.png"
 ---
 
@@ -38,7 +38,7 @@ You can send details on the order to create directly from the TradingView signal
 
 ## Comment lier votre compte TradingView à votre OctoBot ?
 
-### Utiliser OctoBot cloud
+### Utiliser OctoBot app
 
 When using [OctoBot trading bots](https://www.octobot.cloud/trading-bot), all you need to do is to [create TradingView alerts](/guides/octobot-interfaces/tradingview#create-an-alert) on any event, directly from Pine Script or from a custom alert.
 

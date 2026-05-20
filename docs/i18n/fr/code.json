@@ -520,7 +520,7 @@
     "description": "Pricing page metadata title"
   },
   "pages.pricing.meta.description": {
-    "message": "OctoBot Cloud propose un plan d'abonnement pour chaque type d'investisseur — commencez gratuitement et passez à un plan supérieur uniquement lorsque vous avez besoin de plus.",
+    "message": "OctoBot App propose un plan d'abonnement pour chaque type d'investisseur — commencez gratuitement et passez à un plan supérieur uniquement lorsque vous avez besoin de plus.",
     "description": "Pricing page metadata description"
   },
   "pages.pricing.hero.eyebrow": {
@@ -536,7 +536,7 @@
     "description": "Pricing hero title accent word"
   },
   "pages.pricing.hero.subtitle": {
-    "message": "OctoBot Cloud propose un plan d'abonnement pour chaque type d'investisseur — commencez gratuitement et passez à un plan supérieur uniquement lorsque vous avez besoin de plus.",
+    "message": "OctoBot App propose un plan d'abonnement pour chaque type d'investisseur — commencez gratuitement et passez à un plan supérieur uniquement lorsque vous avez besoin de plus.",
     "description": "Pricing hero subtitle"
   },
   "pages.pricing.hero.action.start": {
@@ -576,7 +576,7 @@
     "description": "Pricing CTA title"
   },
   "pages.pricing.cta.description": {
-    "message": "Créez votre compte sur OctoBot Cloud et lancez votre première stratégie sans frais.",
+    "message": "Créez votre compte sur OctoBot App et lancez votre première stratégie sans frais.",
     "description": "Pricing CTA description"
   },
   "pages.pricing.cta.action.start": {
@@ -656,7 +656,7 @@
     "description": "Release week hero action label"
   },
   "pages.releaseWeek.hero.note": {
-    "message": "Saisissez votre e-mail sur OctoBot Cloud pour être parmi les premiers prévenus au démarrage de la prochaine semaine de sorties.",
+    "message": "Saisissez votre e-mail sur OctoBot App pour être parmi les premiers prévenus au démarrage de la prochaine semaine de sorties.",
     "description": "Release week hero note"
   },
   "pages.releaseWeek.announcement.eyebrow": {
@@ -688,7 +688,7 @@
     "description": "Release week CTA title"
   },
   "pages.releaseWeek.cta.description": {
-    "message": "Rejoignez le lancement sur OctoBot Cloud, ou lisez les guides pour tirer le meilleur parti de chaque nouvelle fonctionnalité.",
+    "message": "Rejoignez le lancement sur OctoBot App, ou lisez les guides pour tirer le meilleur parti de chaque nouvelle fonctionnalité.",
     "description": "Release week CTA description"
   },
   "pages.releaseWeek.cta.action.join": {
@@ -948,7 +948,7 @@
     "description": "Trading bot CTA title"
   },
   "pages.tradingBot.cta.description": {
-    "message": "Créez votre trading bot gratuitement sur OctoBot Cloud, ou lisez d'abord les guides.",
+    "message": "Créez votre trading bot gratuitement sur OctoBot App, ou lisez d'abord les guides.",
     "description": "Trading bot CTA description"
   },
   "pages.tradingBot.cta.action.invest": {
@@ -996,7 +996,7 @@
     "description": "Welcome page feature title"
   },
   "pages.welcome.features.runAnywhere.description": {
-    "message": "Auto-hébergez-le sur votre ordinateur, un Raspberry Pi ou un serveur — ou utilisez OctoBot Cloud.",
+    "message": "Auto-hébergez-le sur votre ordinateur, un Raspberry Pi ou un serveur — ou utilisez OctoBot App.",
     "description": "Welcome page feature description"
   },
   "pages.welcome.features.openSource.title": {
@@ -1520,7 +1520,7 @@
     "description": "FAQ question on AI trading bot page"
   },
   "features.aiTradingBot.faq.q2.answer": {
-    "message": "Vous pouvez facilement créer un bot de trading IA gratuitement sur OctoBot Cloud. {guideLink}",
+    "message": "Vous pouvez facilement créer un bot de trading IA gratuitement sur OctoBot App. {guideLink}",
     "description": "FAQ answer on AI trading bot page"
   },
   "features.aiTradingBot.faq.q2.answerLink": {
@@ -1532,7 +1532,7 @@
     "description": "FAQ question on AI trading bot page"
   },
   "features.aiTradingBot.faq.q3.answer": {
-    "message": "Une fois que vous avez lancé un bot de trading IA sur OctoBot Cloud, vous pouvez facilement suivre son activité. {guideLink}",
+    "message": "Une fois que vous avez lancé un bot de trading IA sur OctoBot App, vous pouvez facilement suivre son activité. {guideLink}",
     "description": "FAQ answer on AI trading bot page"
   },
   "features.aiTradingBot.faq.q3.answerLink": {
@@ -1648,7 +1648,7 @@
     "description": "CTA band title on AI trading bot page"
   },
   "features.aiTradingBot.cta.description": {
-    "message": "Créez votre bot de trading IA gratuitement sur OctoBot Cloud, ou lisez d'abord le guide.",
+    "message": "Créez votre bot de trading IA gratuitement sur OctoBot App, ou lisez d'abord le guide.",
     "description": "CTA band description on AI trading bot page"
   },
   "features.aiTradingBot.cta.action.invest": {
@@ -2488,7 +2488,7 @@
     "description": "Section title on OctoBot App page"
   },
   "features.octobotApp.pricing.lead": {
-    "message": "OctoBot Cloud propose un plan pour chaque type d'investisseur — commencez gratuitement et passez à un plan supérieur uniquement lorsque vous avez besoin de plus.",
+    "message": "OctoBot App propose un plan pour chaque type d'investisseur — commencez gratuitement et passez à un plan supérieur uniquement lorsque vous avez besoin de plus.",
     "description": "Section lead on OctoBot App page"
   },
   "features.octobotApp.faq.eyebrow": {
@@ -2600,7 +2600,7 @@
     "description": "Why list item on portfolio tracker page"
   },
   "features.portfolioTracker.why.selfHosted": {
-    "message": "{label} exécutez-le sur votre propre machine ou utilisez OctoBot Cloud — dans les deux cas, les données de votre portefeuille restent les vôtres.",
+    "message": "{label} exécutez-le sur votre propre machine ou utilisez OctoBot App — dans les deux cas, les données de votre portefeuille restent les vôtres.",
     "description": "Why list item on portfolio tracker page"
   },
   "features.portfolioTracker.faq.q1.question": {
@@ -2616,7 +2616,7 @@
     "description": "FAQ question on portfolio tracker page"
   },
   "features.portfolioTracker.faq.q2.answer": {
-    "message": "Oui — OctoBot est gratuit et open source. Vous pouvez le télécharger depuis {githubLink} et suivre votre portefeuille sans aucun frais, ou utiliser OctoBot Cloud pour une expérience hébergée.",
+    "message": "Oui — OctoBot est gratuit et open source. Vous pouvez le télécharger depuis {githubLink} et suivre votre portefeuille sans aucun frais, ou utiliser OctoBot App pour une expérience hébergée.",
     "description": "FAQ answer on portfolio tracker page"
   },
   "features.portfolioTracker.faq.q3.question": {
@@ -2868,11 +2868,11 @@
     "description": "FAQ answer link text on self custody trading bot page"
   },
   "features.selfCustodyTradingBot.faq.q3.question": {
-    "message": "Quelle est la différence entre OctoBot en self-custody et OctoBot Cloud ou open source ?",
+    "message": "Quelle est la différence entre OctoBot en self-custody et OctoBot App ou open source ?",
     "description": "FAQ question on self custody trading bot page"
   },
   "features.selfCustodyTradingBot.faq.q3.answer": {
-    "message": "OctoBot en self-custody est aussi simple à utiliser qu'OctoBot Cloud, mais s'exécute sur votre propre mobile. Il vous donne le contrôle total de vos clés API (ou de wallet) et fonctionne avec les exchanges centralisés ou décentralisés. Il est conçu pour rester facile à utiliser tout en demeurant très flexible — et il est bien plus simple à utiliser que l'OctoBot open source, qui requiert davantage de connaissances techniques ainsi qu'un ordinateur ou un serveur pour fonctionner.",
+    "message": "OctoBot en self-custody est aussi simple à utiliser qu'OctoBot App, mais s'exécute sur votre propre mobile. Il vous donne le contrôle total de vos clés API (ou de wallet) et fonctionne avec les exchanges centralisés ou décentralisés. Il est conçu pour rester facile à utiliser tout en demeurant très flexible — et il est bien plus simple à utiliser que l'OctoBot open source, qui requiert davantage de connaissances techniques ainsi qu'un ordinateur ou un serveur pour fonctionner.",
     "description": "FAQ answer on self custody trading bot page"
   },
   "features.selfCustodyTradingBot.faq.q4.question": {
@@ -2896,7 +2896,7 @@
     "description": "FAQ question on self custody trading bot page"
   },
   "features.selfCustodyTradingBot.faq.q6.answer": {
-    "message": "Nous prévoyons de prendre en charge toutes les stratégies disponibles sur OctoBot Cloud, notamment le DCA, l'IA, le grid trading, les paniers de cryptos, les stratégies TradingView et bien plus.",
+    "message": "Nous prévoyons de prendre en charge toutes les stratégies disponibles sur OctoBot App, notamment le DCA, l'IA, le grid trading, les paniers de cryptos, les stratégies TradingView et bien plus.",
     "description": "FAQ answer on self custody trading bot page"
   },
   "features.selfCustodyTradingBot.faq.q7.question": {
@@ -3468,7 +3468,7 @@
     "description": "FAQ question on TradingView bot page"
   },
   "features.tradingviewBot.faq.q3.answer": {
-    "message": "Vous avez besoin d'un abonnement OctoBot Cloud permettant de faire tourner un OctoBot TradingView. De plus, il vous faudra un compte TradingView payant pour utiliser les webhooks.",
+    "message": "Vous avez besoin d'un abonnement OctoBot App permettant de faire tourner un OctoBot TradingView. De plus, il vous faudra un compte TradingView payant pour utiliser les webhooks.",
     "description": "FAQ answer on TradingView bot page"
   },
   "features.tradingviewBot.faq.q4.question": {
@@ -3512,7 +3512,7 @@
     "description": "FAQ question on TradingView bot page"
   },
   "features.tradingviewBot.faq.q7.answer": {
-    "message": "Sur OctoBot Cloud, vous pouvez générer une stratégie TradingView à partir d'une description textuelle de vos idées de trading — l'IA traduit votre concept en code Pine Script prêt à l'emploi.",
+    "message": "Sur OctoBot App, vous pouvez générer une stratégie TradingView à partir d'une description textuelle de vos idées de trading — l'IA traduit votre concept en code Pine Script prêt à l'emploi.",
     "description": "FAQ answer on TradingView bot page"
   },
   "features.tradingviewBot.layout.title": {
@@ -3624,7 +3624,7 @@
     "description": "CTA band title on TradingView bot page"
   },
   "features.tradingviewBot.cta.description": {
-    "message": "Démarrez un OctoBot TradingView sur OctoBot Cloud, ou lisez d'abord le guide d'automatisation.",
+    "message": "Démarrez un OctoBot TradingView sur OctoBot App, ou lisez d'abord le guide d'automatisation.",
     "description": "CTA band description on TradingView bot page"
   },
   "features.tradingviewBot.cta.action.automate": {
@@ -3768,7 +3768,7 @@
     "description": "Converter CTA band title"
   },
   "tools.converter.cta.description": {
-    "message": "Créez votre trading bot gratuitement sur OctoBot Cloud, ou lisez d'abord les guides.",
+    "message": "Créez votre trading bot gratuitement sur OctoBot App, ou lisez d'abord les guides.",
     "description": "Converter CTA band description"
   },
   "tools.converter.cta.action.invest": {
@@ -3828,7 +3828,7 @@
     "description": "Crypto prediction signals section title"
   },
   "tools.cryptoPrediction.signals.lead": {
-    "message": "Un aperçu du type de signaux de trading que ChatGPT génère en analysant le marché crypto. Les prédictions en direct fonctionnent sur OctoBot Cloud.",
+    "message": "Un aperçu du type de signaux de trading que ChatGPT génère en analysant le marché crypto. Les prédictions en direct fonctionnent sur OctoBot App.",
     "description": "Crypto prediction signals section lead"
   },
   "tools.cryptoPrediction.panel.title": {
@@ -3848,7 +3848,7 @@
     "description": "Crypto prediction CTA band title"
   },
   "tools.cryptoPrediction.cta.description": {
-    "message": "Créez votre trading bot ChatGPT gratuitement sur OctoBot Cloud, ou lisez d'abord le guide.",
+    "message": "Créez votre trading bot ChatGPT gratuitement sur OctoBot App, ou lisez d'abord le guide.",
     "description": "Crypto prediction CTA band description"
   },
   "tools.cryptoPrediction.cta.action.invest": {
@@ -3908,7 +3908,7 @@
     "description": "Crypto ranking market cap section title"
   },
   "tools.cryptoRanking.market.lead": {
-    "message": "Un échantillon du classement par capitalisation boursière qu'OctoBot met en avant — prix, capitalisation et variation sur 24h pour les plus grandes cryptomonnaies. Le classement en direct se met à jour en continu sur OctoBot Cloud.",
+    "message": "Un échantillon du classement par capitalisation boursière qu'OctoBot met en avant — prix, capitalisation et variation sur 24h pour les plus grandes cryptomonnaies. Le classement en direct se met à jour en continu sur OctoBot App.",
     "description": "Crypto ranking market cap section lead"
   },
   "tools.cryptoRanking.market.note": {
@@ -3920,7 +3920,7 @@
     "description": "Crypto ranking CTA band title"
   },
   "tools.cryptoRanking.cta.description": {
-    "message": "Créez votre trading bot gratuitement sur OctoBot Cloud, ou lisez d'abord les guides.",
+    "message": "Créez votre trading bot gratuitement sur OctoBot App, ou lisez d'abord les guides.",
     "description": "Crypto ranking CTA band description"
   },
   "tools.cryptoRanking.cta.action.invest": {
@@ -4032,7 +4032,7 @@
     "description": "Tools hub CTA band title"
   },
   "tools.hub.cta.description": {
-    "message": "Créez votre trading bot gratuitement sur OctoBot Cloud, ou lisez d'abord les guides.",
+    "message": "Créez votre trading bot gratuitement sur OctoBot App, ou lisez d'abord les guides.",
     "description": "Tools hub CTA band description"
   },
   "tools.hub.cta.action.invest": {
@@ -4096,7 +4096,7 @@
     "description": "Scalping signals section title"
   },
   "tools.scalpingSignals.signals.lead": {
-    "message": "Un échantillon des signaux de scalping qu'OctoBot met en avant — entrée, take profit, stop loss et profit attendu en un coup d'œil. Les signaux en direct se rafraîchissent en continu sur OctoBot Cloud.",
+    "message": "Un échantillon des signaux de scalping qu'OctoBot met en avant — entrée, take profit, stop loss et profit attendu en un coup d'œil. Les signaux en direct se rafraîchissent en continu sur OctoBot App.",
     "description": "Scalping signals section lead"
   },
   "tools.scalpingSignals.cta.title": {
@@ -4104,7 +4104,7 @@
     "description": "Scalping signals CTA band title"
   },
   "tools.scalpingSignals.cta.description": {
-    "message": "Créez votre trading bot gratuitement sur OctoBot Cloud, ou lisez d'abord les guides.",
+    "message": "Créez votre trading bot gratuitement sur OctoBot App, ou lisez d'abord les guides.",
     "description": "Scalping signals CTA band description"
   },
   "tools.scalpingSignals.cta.action.invest": {
@@ -4164,7 +4164,7 @@
     "description": "Triangular arbitrage opportunities section title"
   },
   "tools.triangularArbitrage.opportunities.lead": {
-    "message": "Un aperçu des parcours à trois étapes qu'OctoBot scanne à la recherche d'écarts de prix. Les opportunités en direct sont détectées sur OctoBot Cloud.",
+    "message": "Un aperçu des parcours à trois étapes qu'OctoBot scanne à la recherche d'écarts de prix. Les opportunités en direct sont détectées sur OctoBot App.",
     "description": "Triangular arbitrage opportunities section lead"
   },
   "tools.triangularArbitrage.opportunities.note": {
@@ -4188,7 +4188,7 @@
     "description": "Triangular arbitrage CTA band title"
   },
   "tools.triangularArbitrage.cta.description": {
-    "message": "Lancez un bot d'arbitrage triangulaire gratuitement sur OctoBot Cloud, ou lisez d'abord les guides.",
+    "message": "Lancez un bot d'arbitrage triangulaire gratuitement sur OctoBot App, ou lisez d'abord les guides.",
     "description": "Triangular arbitrage CTA band description"
   },
   "tools.triangularArbitrage.cta.action.invest": {
@@ -4608,7 +4608,7 @@
     "description": "Nav menu link label"
   },
   "nav.cta.openOctobotCloud": {
-    "message": "Ouvrir OctoBot Cloud",
+    "message": "Ouvrir OctoBot App",
     "description": "Nav primary CTA label"
   },
   "pages.index.heroStage.running.dca.name": {
@@ -5408,11 +5408,11 @@
     "description": "CTA band title accent"
   },
   "programmatic.converterPair.cta.description": {
-    "message": "Faites travailler vos {base} avec une stratégie automatisée sur OctoBot Cloud.",
+    "message": "Faites travailler vos {base} avec une stratégie automatisée sur OctoBot App.",
     "description": "CTA band description; {base} is the base ticker"
   },
   "programmatic.converterPair.cta.action.start": {
-    "message": "Commencer sur OctoBot Cloud",
+    "message": "Commencer sur OctoBot App",
     "description": "CTA band label"
   },
   "programmatic.converterPair.cta.action.prediction": {
@@ -5540,7 +5540,7 @@
     "description": "Hero secondary CTA label"
   },
   "programmatic.exchangeTradingBot.hero.meta.cloud": {
-    "message": "OctoBot Cloud",
+    "message": "OctoBot App",
     "description": "Hero meta label"
   },
   "programmatic.exchangeTradingBot.hero.meta.openSource": {
@@ -5828,7 +5828,7 @@
     "description": "Hero title accent"
   },
   "programmatic.cryptoPrediction.hero.subtitle": {
-    "message": "Prévisions {symbol} générées par IA depuis ChatGPT — actualisées en continu sur OctoBot Cloud.",
+    "message": "Prévisions {symbol} générées par IA depuis ChatGPT — actualisées en continu sur OctoBot App.",
     "description": "Hero subtitle; {symbol} is the ticker"
   },
   "programmatic.cryptoPrediction.hero.action.live": {
@@ -5860,7 +5860,7 @@
     "description": "Prediction card label; {name} is the cryptocurrency name"
   },
   "programmatic.cryptoPrediction.signal.badge": {
-    "message": "En direct sur OctoBot Cloud",
+    "message": "En direct sur OctoBot App",
     "description": "Prediction card badge label"
   },
   "programmatic.cryptoPrediction.signal.prose": {
@@ -5900,11 +5900,11 @@
     "description": "CTA band title accent"
   },
   "programmatic.cryptoPrediction.cta.description": {
-    "message": "Transformez les signaux IA de {name} en trades automatisés sur OctoBot Cloud.",
+    "message": "Transformez les signaux IA de {name} en trades automatisés sur OctoBot App.",
     "description": "CTA band description; {name} is the cryptocurrency name"
   },
   "programmatic.cryptoPrediction.cta.action.start": {
-    "message": "Commencer sur OctoBot Cloud",
+    "message": "Commencer sur OctoBot App",
     "description": "CTA band label"
   },
   "programmatic.cryptoPrediction.cta.action.all": {
@@ -5984,11 +5984,11 @@
     "description": "CTA band title accent"
   },
   "programmatic.whatIsCrypto.cta.description": {
-    "message": "Automatisez une stratégie {name} sur OctoBot Cloud, ou convertissez-la d'abord.",
+    "message": "Automatisez une stratégie {name} sur OctoBot App, ou convertissez-la d'abord.",
     "description": "CTA band description; {name} is the cryptocurrency name"
   },
   "programmatic.whatIsCrypto.cta.action.start": {
-    "message": "Commencer sur OctoBot Cloud",
+    "message": "Commencer sur OctoBot App",
     "description": "CTA band label"
   },
   "programmatic.whatIsCrypto.cta.action.converter": {

@@ -1,6 +1,6 @@
 ---
 title: "Politique de remboursement"
-description: "Explorez la politique de remboursement d'OctoBot Cloud. Annulation d'abonnement, conditions de remboursement pour les plans mensuels et annuels, et détails sur le traitement des paiements."
+description: "Explorez la politique de remboursement d'OctoBot App. Annulation d'abonnement, conditions de remboursement pour les plans mensuels et annuels, et détails sur le traitement des paiements."
 ---
 
 # Politique de remboursement
@@ -32,11 +32,11 @@ Les remboursements sont traités via le mode de paiement initial, y compris Stri
 
 ## Restrictions sur les remboursements  
 
-Un utilisateur ne peut bénéficier d’un remboursement qu’une seule fois. Une fois la demande de remboursement approuvée, l'utilisateur ne pourra pas engager de contestations, litiges ou annulations de transactions avec OctoBot Cloud ou tout service de paiement tiers.  
+Un utilisateur ne peut bénéficier d’un remboursement qu’une seule fois. Une fois la demande de remboursement approuvée, l'utilisateur ne pourra pas engager de contestations, litiges ou annulations de transactions avec OctoBot App ou tout service de paiement tiers.  
 
 ## Devise et frais  
 
-Les remboursements sont effectués dans la même devise ou en équivalent. OctoBot Cloud n'est pas responsable des frais appliqués par les prestataires de services de paiement.  
+Les remboursements sont effectués dans la même devise ou en équivalent. OctoBot App n'est pas responsable des frais appliqués par les prestataires de services de paiement.  
 
 ## Limitation des remboursements  
 

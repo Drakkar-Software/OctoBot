@@ -10,7 +10,7 @@ The Index Trading Mode (or IndexTradingMode) is designed to maintain your portfo
 
 ![index trading illustrated by a crypto basket](/images/guides/crypto-basket.png)
 
-Similarly to [OctoBot cloud's crypto baskets](https://www.octobot.cloud/features/crypto-basket), The Index Trading Mode enables you to easily invest in sets of cryptocurrencies.
+Similarly to [OctoBot app's crypto baskets](https://www.octobot.cloud/features/crypto-basket), The Index Trading Mode enables you to easily invest in sets of cryptocurrencies.
 
 ## The Index Trading Mode can
 
@@ -27,12 +27,12 @@ When starting a OctoBot with the Index Trading Mode, your OctoBot will:
 2. If a crypto from the traded pairs is missing from your portfolio or present with the wrong ratio, a rebalance is triggered.
 3. If a rebalance is triggered, then your funds are converted to the reference market and then split into the configured coins
 
-## Using OctoBot cloud crypto baskets
-When using the [Premium OctoBot Extension](/guides/octobot-configuration/premium-octobot-extension), you can use every crypto basket available OctoBot cloud directly from your open source OctoBot.
+## Using OctoBot app crypto baskets
+When using the [Premium OctoBot Extension](/guides/octobot-configuration/premium-octobot-extension), you can use every crypto basket available OctoBot app directly from your open source OctoBot.
 
 ![index trading illustrated by a crypto basket](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
 
-This way, when an OctoBot cloud crypto basket gets updated, for example if the top 20 of the crypto market changes or if a new coin joins the AI crypto basket, then your open source OctoBot will also automatically update its basket.
+This way, when an OctoBot app crypto basket gets updated, for example if the top 20 of the crypto market changes or if a new coin joins the AI crypto basket, then your open source OctoBot will also automatically update its basket.
 
 ## Configuring rebalances
 ### Trigger period

@@ -13,7 +13,7 @@ import styles from './supported-exchanges.module.css';
 /*
  * OctoBot Market Making supported exchanges page — route: /supported-exchanges.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. A navbar-less LandingLayout: hero, the page-local
  * ExchangeTable, a LogoRibbon of exchange names and a closing CTA band.
  */

@@ -17,9 +17,9 @@ Il existe deux façons d'utiliser OctoBot:
 - Avec [www.octobot.cloud](https://www.octobot.cloud/fr) pour facilement investir en crypto
 - Avec [le robot de trading open source OctoBot](https://www.octobot.cloud/trading-bot) pour créer et tester ses propres stratégies de trading
 
-### Utiliser OctoBot cloud
+### Utiliser OctoBot app
 
-Utiliser [OctoBot cloud](/fr) directement pour facilement investir avec des **paniers de crypto**, bénéficier les **stratégies d'investissement pré-configurées** et **automatiser vos stratégies TradingView**.
+Utiliser [OctoBot app](/fr) directement pour facilement investir avec des **paniers de crypto**, bénéficier les **stratégies d'investissement pré-configurées** et **automatiser vos stratégies TradingView**.
 
 Dans ce cas, [www.octobot.cloud](https://www.octobot.cloud/fr) est fait pour vous et la **section [Investir](/investing/introduction)** des guide est ce que vous recherchez.
 
@@ -27,7 +27,7 @@ Dans ce cas, [www.octobot.cloud](https://www.octobot.cloud/fr) est fait pour vou
 
 <iframe width="100%" height="400" style="max-width: 640px; border-radius: 8px" src="https://www.youtube.com/embed/TJUU62e1jR8" title="OctoBot - Robot de trading crypto open source" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-Avec [le robot de trading OctoBot](https://www.octobot.cloud/trading-bot) vous pouvez créer, tester et configurer votre propre stratégie d'investissement, que ce soit avec les stratégies d'OctoBot cloud ou les votre. Il est possible installer votre robot de trading [sur votre ordinateur](octobot-installation/install-octobot-on-your-computer) ou sur un [serveur dans le cloud](octobot-installation/cloud-install-octobot-on-digitalocean).
+Avec [le robot de trading OctoBot](https://www.octobot.cloud/trading-bot) vous pouvez créer, tester et configurer votre propre stratégie d'investissement, que ce soit avec les stratégies d'OctoBot app ou les votre. Il est possible installer votre robot de trading [sur votre ordinateur](octobot-installation/install-octobot-on-your-computer) ou sur un [serveur dans le cloud](octobot-installation/cloud-install-octobot-on-digitalocean).
 
 La **section Robot de trading** des guides est dédiée à OctoBot en tant que
 
@@ -45,7 +45,7 @@ OctoBot propose de nombreuses stratégies de trading : les [trading modes](octob
 - Trader avec des stratégies d'[IA](https://www.octobot.cloud/features/ai-trading-bot) et des [prédictions de ChatGPT](octobot-trading-modes/chatgpt-trading).
 - Utiliser des [algorithmes de market-making](octobot-trading-modes/grid-trading-mode) pour minimiser les risques et garantir des gains réguliers et petits.
 - Trader sur des signaux de plateformes telles que [TradingView](octobot-trading-modes/tradingview-trading-mode).
-- Appliquer les meilleures [stratégies d'OctoBot cloud](/fr).
+- Appliquer les meilleures [stratégies d'OctoBot app](/fr).
 
 <iframe width="100%" height="400" style="max-width: 640px; border-radius: 8px" src="https://www.youtube.com/embed/Exdl94cmMDQ" title="Configuration de Trading dans OctoBot" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 

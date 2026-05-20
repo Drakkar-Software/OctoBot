@@ -1,28 +1,28 @@
 ---
-title: "OctoBot cloud trading bots early access"
+title: "OctoBot app trading bots early access"
 slug: "octobot-pro-plan-early-access"
 date: "2023-11-29"
 authors: ["guillaume"]
-tags: ["Strategy designer", "AI", "Backtesting", "Cryptocurrency", "Trading", "OctoBot cloud", "Release"]
+tags: ["Strategy designer", "AI", "Backtesting", "Cryptocurrency", "Trading", "OctoBot app", "Release"]
 image: "/images/blog/octobot-pro-plan-early-access/octobot-pro-plan-early-access-announcement.png"
 ---
 
 
 
-# OctoBot cloud trading bots plan early access
+# OctoBot app trading bots plan early access
 
-![octobot cloud trading bots plan early access announcement](/images/blog/octobot-pro-plan-early-access/octobot-pro-plan-early-access-announcement.png)
+![octobot app trading bots plan early access announcement](/images/blog/octobot-pro-plan-early-access/octobot-pro-plan-early-access-announcement.png)
 
-## OctoBot cloud trading bots
+## OctoBot app trading bots
 
-With [OctoBot cloud trading bots](https://www.octobot.cloud/trading-bot), you get access to the full power of OctoBot.
+With [OctoBot app trading bots](https://www.octobot.cloud/trading-bot), you get access to the full power of OctoBot.
 
 <!--truncate-->
 
 - Your OctoBot will always be live and up to date: the OctoBot team takes care of all the technicals
 - Enjoy Pro-exclusive extensions such as the [Strategy Designer](/guides/octobot-usage/strategy-designer) to create and optimize your best trading strategies
 - You get personalized support to be sure that you have everything you need to start your OctoBot properly according to the strategy you want
-- Easily use and customize OctoBot cloud strategies
+- Easily use and customize OctoBot app strategies
 - Simply and securely automate your TradingView strategies trades without the need for custom configuration
 - Enjoy the full potential of ChatGPT based strategies without having to pay for an OpenAI subscription
 
@@ -30,7 +30,7 @@ With [OctoBot cloud trading bots](https://www.octobot.cloud/trading-bot), you ge
 
 ## Your improved OctoBot
 
-OctoBot cloud trading bots give you access to an improved version of the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot</a>. But unlike the open source version where you have to make sure that your OctoBot remains online, pay for server costs and manually handle updates, when using a cloud OctoBot trading bot, you OctoBot is always online and operates in the best conditions.
+OctoBot app trading bots give you access to an improved version of the <a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">open source OctoBot</a>. But unlike the open source version where you have to make sure that your OctoBot remains online, pay for server costs and manually handle updates, when using a cloud OctoBot trading bot, you OctoBot is always online and operates in the best conditions.
 
 This means that using the cloud OctoBots, you can:
 
@@ -39,7 +39,7 @@ This means that using the cloud OctoBots, you can:
 - Trade Spot and Futures markets on any [supported exchange](/guides/exchanges). There is no restriction to the exchange you can use
 - Use [simulated money (paper trading)](/guides/octobot-usage/simulator) or your real exchange account funds
 - Optimize your strategies by running unlimited backtestings on any type of market and exchange using both the [open source backtesting](/guides/octobot-usage/backtesting) or the [Strategy Designer](#the-strategy-designer)
-- Access your OctoBot directly from [your browser](/guides/octobot-interfaces/web), <a href="https://www.octobot.cloud/bots" rel="nofollow">the bots dedicated page on OctoBot cloud</a>, [Telegram](/guides/octobot-interfaces/telegram) or the <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp" rel="nofollow">OctoBot app</a> at anytime
+- Access your OctoBot directly from [your browser](/guides/octobot-interfaces/web), <a href="https://www.octobot.cloud/bots" rel="nofollow">the bots dedicated page on OctoBot app</a>, [Telegram](/guides/octobot-interfaces/telegram) or the <a href="https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp" rel="nofollow">OctoBot app</a> at anytime
 
 Let's explore the exclusive benefits of using the [cloud OctoBot trading bots](https://www.octobot.cloud/trading-bot).
 
@@ -61,9 +61,9 @@ We know that starting a trading strategy can be complicated. That's why the Octo
 
 This way you are sure to be able to use your OctoBot at its full potential.
 
-## Access & customize OctoBot cloud strategies
+## Access & customize OctoBot app strategies
 
-One of the great benefits of using the cloud OctoBot trading bots is to be able to configure <a href="https://www.octobot.cloud/explore" rel="nofollow">OctoBot cloud strategies</a>.
+One of the great benefits of using the cloud OctoBot trading bots is to be able to configure <a href="https://www.octobot.cloud/explore" rel="nofollow">OctoBot app strategies</a>.
 
 ![cloud strategies](/images/blog/octobot-pro-plan-early-access/cloud-strategies.png)
 
@@ -87,6 +87,6 @@ With a cloud OctoBot trading bot in [standard or ultra plans](https://www.octobo
 
 ## Register for early access
 
-We are now opening registrations for cloud OctoBot trading bots early acccess. If you are interested in benefiting from the many advantages of cloud OctoBot trading bots, start your OctoBot on [OctoBot cloud trading bots](https://www.octobot.cloud/trading-bot).
+We are now opening registrations for cloud OctoBot trading bots early acccess. If you are interested in benefiting from the many advantages of cloud OctoBot trading bots, start your OctoBot on [OctoBot app trading bots](https://www.octobot.cloud/trading-bot).
 
 **[Start your OctoBot](https://www.octobot.cloud)**

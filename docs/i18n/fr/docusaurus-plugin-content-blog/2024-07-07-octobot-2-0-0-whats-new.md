@@ -4,7 +4,7 @@ description: "OctoBot 2.0.0 améliore OctoBot avec une refonte complète de l'in
 slug: "octobot-2-0-0-whats-new"
 date: "2024-07-07"
 authors: ["guillaume"]
-tags: ["Tradingview", "Chatgpt", "Release", "Backtesting", "Strategy designer", "OctoBot cloud"]
+tags: ["Tradingview", "Chatgpt", "Release", "Backtesting", "Strategy designer", "OctoBot app"]
 image: "/images/blog/octobot-2-0-0-whats-new/octobot-2.0.0-annoucement-with-new-design-preview.png"
 ---
 
@@ -49,8 +49,8 @@ octobot](/images/blog/octobot-2-0-0-whats-new/octobot-premium-extension-preview.
 L'extension Premium OctoBot est une extension payante facultative visant à améliorer de manière permanente votre OctoBot open source. Elle ajoute :
 
 - Le [Strategy Designer](/guides/octobot-usage/strategy-designer) pour créer des stratégies OctoBot avancées
-- Les [webhooks sécurisés d'OctoBot cloud](/guides/octobot-interfaces/tradingview/using-a-webhook) pour vos stratégies TradingView
-- [Les paniers de crypto d'OctoBot cloud](https://www.octobot.cloud/features/crypto-basket) directement dans votre Octobot open source
+- Les [webhooks sécurisés d'OctoBot app](/guides/octobot-interfaces/tradingview/using-a-webhook) pour vos stratégies TradingView
+- [Les paniers de crypto d'OctoBot app](https://www.octobot.cloud/features/crypto-basket) directement dans votre Octobot open source
 
 ![octobot open source utilisant les paniers de crypto avec extension premium
 octobot](/images/guides/trading-modes/octobot-open-source-using-crypto-baskets-from-premium-extension.png)
@@ -59,7 +59,7 @@ Nous avons créé l'extension Premium OctoBot afin de:
 
 - Améliorer le confort d'automation de vos stratégies TradingView
 - Offrir un outil adapté à ceux qui veulent aller plus loin dans la création de stratégies avancées
-- Permettre aux OctoBots open source d'utiliser paniers de crypto OctoBot cloud qui sont maintenus automatiquement à jour
+- Permettre aux OctoBots open source d'utiliser paniers de crypto OctoBot app qui sont maintenus automatiquement à jour
 
 Ces fonctionnalités ayant un important coût de fonctionnement et de développement, nous avons décidé de les inclure dans [l'extension premium d'OctoBot](/guides/octobot-configuration/premium-octobot-extension) et nous sommes impatients de recevoir vos retours à ce sujet.
 

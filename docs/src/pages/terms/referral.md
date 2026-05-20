@@ -1,11 +1,11 @@
 ---
 title: "Terms of Referral"
-description: "Know everything about OctoBot cloud Terms of Referral. Unlock rewards by bringing your friend to OctoBot."
+description: "Know everything about OctoBot app Terms of Referral. Unlock rewards by bringing your friend to OctoBot."
 ---
 
 # Terms of Referral
 
-We welcome you to OctoBot cloud, a SaaS service provided by Drakkar-Software
+We welcome you to OctoBot app, a SaaS service provided by Drakkar-Software
 that hosts OctoBot software, a bot for cryptocurrency trading. The Octobot
 software, the www.octobot.cloud website, mobile applications, and application
 program interfaces are collectively referred to as the "Software".

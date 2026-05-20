@@ -47,7 +47,7 @@ const DEFAULT_LINKS: LandingNavLink[] = [
 const DEFAULT_CTA = {
   label: translate({
     id: 'nav.cta.openOctobotCloud',
-    message: 'Open OctoBot Cloud',
+    message: 'Open OctoBot App',
     description: 'Nav primary CTA label',
   }),
   to: 'https://www.octobot.cloud',

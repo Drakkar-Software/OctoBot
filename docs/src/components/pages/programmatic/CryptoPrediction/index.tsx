@@ -102,7 +102,7 @@ export default function CryptoPrediction({
           {
             id: 'programmatic.cryptoPrediction.hero.subtitle',
             message:
-              'AI-generated {symbol} predictions from ChatGPT — refreshed continuously on OctoBot Cloud.',
+              'AI-generated {symbol} predictions from ChatGPT — refreshed continuously on OctoBot App.',
             description: 'Hero subtitle; {symbol} is the ticker',
           },
           {symbol: crypto.symbol},
@@ -176,7 +176,7 @@ export default function CryptoPrediction({
             <Translate
               id="programmatic.cryptoPrediction.signal.badge"
               description="Prediction card badge label">
-              Live on OctoBot Cloud
+              Live on OctoBot App
             </Translate>
           </Badge>
           <p className={shared.prose}>
@@ -271,7 +271,7 @@ export default function CryptoPrediction({
           {
             id: 'programmatic.cryptoPrediction.cta.description',
             message:
-              'Turn {name} AI signals into automated trades on OctoBot Cloud.',
+              'Turn {name} AI signals into automated trades on OctoBot App.',
             description:
               'CTA band description; {name} is the cryptocurrency name',
           },
@@ -281,7 +281,7 @@ export default function CryptoPrediction({
           {
             label: translate({
               id: 'programmatic.cryptoPrediction.cta.action.start',
-              message: 'Start on OctoBot Cloud',
+              message: 'Start on OctoBot App',
               description: 'CTA band label',
             }),
             to: CLOUD,

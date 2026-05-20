@@ -4,7 +4,7 @@ description: "|"
 sidebar_position: 22
 ---
 
-# Connecter votre compte Binance à OctoBot cloud
+# Connecter votre compte Binance à OctoBot app
 
 Pour automatiser les stratégies d'investissement de votre choix sur votre propre compte Binance, il est nécessaire d'autoriser OctoBot à accéder à une partie de votre compte.
 
@@ -14,7 +14,7 @@ Si vous vous demandez ce qu'est une `API Key` et pourquoi OctoBot utilise cette 
 
 ## Connecter votre compte Binance grâce aux API Keys
 
-Voici les 7 étapes simples pour connecter votre compte Binance à OctoBot cloud et automatiser vos stratégies d'investissement.
+Voici les 7 étapes simples pour connecter votre compte Binance à OctoBot app et automatiser vos stratégies d'investissement.
 
 ### 1. Connectez-vous à votre compte Binance
 
@@ -53,7 +53,7 @@ La dernière étape sur Binance est l'ajout de la permission de trading afin qu'
 
 2. Choisissez "Restreindre l'accès aux adresses IP de confiance uniquement"
 
-3. Cliquez sur le bouton "copier" depuis OctoBot cloud pour copier la liste blanche d'IP
+3. Cliquez sur le bouton "copier" depuis OctoBot app pour copier la liste blanche d'IP
 
 4. Collez la liste dans le champ qui vient d'apparaître
 
@@ -73,25 +73,25 @@ La dernière étape sur Binance est l'ajout de la permission de trading afin qu'
 
 Note: Toutes les permissions en dehors de "Permettre la lecture" et "Activer le trading Spot et sur marge" doivent rester décochée.
 
-### 7. Ajouter votre API Key à votre compte OctoBot cloud
+### 7. Ajouter votre API Key à votre compte OctoBot app
 
 Votre API key est maintenant prête à être utilisée par OctoBot !
 
 Tout ce qu'il vous reste à faire est de copier/coller les valeurs de `API Key` et `Secret Key`
-dans la configuration de votre compte Binance sur OctoBot cloud. Cette étape peut être réalisée au lancement d'une stratégie de trading avec un compte réel ou depuis votre profil sur [octobot.cloud](https://www.octobot.cloud/)
+dans la configuration de votre compte Binance sur OctoBot app. Cette étape peut être réalisée au lancement d'une stratégie de trading avec un compte réel ou depuis votre profil sur [octobot.cloud](https://www.octobot.cloud/)
 
-Remarque : Quand vous ajoutez une API Key sur OctoBot cloud, vous avez la possibilité de la nommer. Cette étape, semblable à celle sur Binance, permet de choisir un nom facilement identifiable pour votre configuration Binance.
+Remarque : Quand vous ajoutez une API Key sur OctoBot app, vous avez la possibilité de la nommer. Cette étape, semblable à celle sur Binance, permet de choisir un nom facilement identifiable pour votre configuration Binance.
 ![api cree key selectionnees](/images/guides/binance/api-cree-key-selectionnees.png)
 
-![ajouter api key a octobot cloud depuis start de strategie](/images/guides/binance/ajouter-api-key-a-octobot-cloud-depuis-start-de-strategie.png)
+![ajouter api key a octobot app depuis start de strategie](/images/guides/binance/ajouter-api-key-a-octobot-cloud-depuis-start-de-strategie.png)
 
 <em>Ajouter une API Key au lancement d'une stratégie</em>
 
-![ajouter api key a octobot cloud depuis profil](/images/guides/binance/ajouter-api-key-a-octobot-cloud-depuis-profil.png)
+![ajouter api key a octobot app depuis profil](/images/guides/binance/ajouter-api-key-a-octobot-cloud-depuis-profil.png)
 
 <em>Ajouter une API Key depuis <a href="https://www.octobot.cloud/fr/account" rel="nofollow">votre profil</a></em>
 
-Votre compte Binance peut maintenant être utilsié sur OctoBot cloud !
+Votre compte Binance peut maintenant être utilsié sur OctoBot app !
 
 :::info
   Veuillez noter que lors du démarrage d'un bot, une partie des fonds disponibles dans le portefeuille lié à votre API Key peuvent être vendus. Cela inclut les stablecoins, les fonds en monnaie fiduciaire (comme les euros) ainsi que les cryptomonnaies échangées par la stratégie que vous avez sélectionnée. Cela fait partie de [l'optimisation de portefeuille](invest-with-your-strategy#1-optimisation-du-portefeuille).

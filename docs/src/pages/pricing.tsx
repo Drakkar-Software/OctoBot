@@ -16,7 +16,7 @@ import styles from './pricing.module.css';
 /*
  * Pricing marketing page — route: /pricing.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit: a navbar-less LandingLayout composed from reusable
  * landing components plus the page-local FeatureComparison table.
  */
@@ -211,7 +211,7 @@ export default function PricingPage(): ReactNode {
       description={translate({
         id: 'pages.pricing.meta.description',
         message:
-          'OctoBot Cloud offers a subscription plan for every type of investor — start free and upgrade only when you need more.',
+          'OctoBot App offers a subscription plan for every type of investor — start free and upgrade only when you need more.',
         description: 'Pricing page metadata description',
       })}>
       <div className={styles.gridVeil} aria-hidden="true" />
@@ -243,7 +243,7 @@ export default function PricingPage(): ReactNode {
         subtitle={translate({
           id: 'pages.pricing.hero.subtitle',
           message:
-            'OctoBot Cloud offers a subscription plan for every type of investor — start free and upgrade only when you need more.',
+            'OctoBot App offers a subscription plan for every type of investor — start free and upgrade only when you need more.',
           description: 'Pricing hero subtitle',
         })}
         actions={[
@@ -319,7 +319,7 @@ export default function PricingPage(): ReactNode {
         description={translate({
           id: 'pages.pricing.cta.description',
           message:
-            'Create your account on OctoBot Cloud and run your first strategy at no cost.',
+            'Create your account on OctoBot App and run your first strategy at no cost.',
           description: 'Pricing CTA description',
         })}
         actions={[

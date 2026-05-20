@@ -15,9 +15,9 @@
     "message": "Guides",
     "description": "The label of footer link with label=Guides linking to /guides/octobot"
   },
-  "link.item.label.OctoBot Cloud": {
-    "message": "OctoBot Cloud",
-    "description": "The label of footer link with label=OctoBot Cloud linking to https://www.octobot.cloud"
+  "link.item.label.OctoBot App": {
+    "message": "OctoBot App",
+    "description": "The label of footer link with label=OctoBot App linking to https://www.octobot.cloud"
   },
   "link.item.label.Blog": {
     "message": "Blog",

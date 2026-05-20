@@ -20,7 +20,7 @@ import styles from './_styles.module.css';
 /*
  * TradingView Bot feature page — route: /features/tradingview-bot.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Navbar-less LandingLayout composed from reusable
  * components.
  */
@@ -196,7 +196,7 @@ const FAQ_ITEMS: FAQItem[] = [
     answer: translate({
       id: 'features.tradingviewBot.faq.q3.answer',
       message:
-        "You need an OctoBot Cloud plan that allows running a TradingView OctoBot. Additionally, you'll need a paid TradingView account to use webhooks.",
+        "You need an OctoBot App plan that allows running a TradingView OctoBot. Additionally, you'll need a paid TradingView account to use webhooks.",
       description: 'FAQ answer on TradingView bot page',
     }),
   },
@@ -290,7 +290,7 @@ const FAQ_ITEMS: FAQItem[] = [
     answer: translate({
       id: 'features.tradingviewBot.faq.q7.answer',
       message:
-        'On OctoBot Cloud you can generate a TradingView strategy from a textual description of your trading ideas — the AI translates your concept into ready-to-use Pine Script code.',
+        'On OctoBot App you can generate a TradingView strategy from a textual description of your trading ideas — the AI translates your concept into ready-to-use Pine Script code.',
       description: 'FAQ answer on TradingView bot page',
     }),
   },
@@ -530,7 +530,7 @@ if ta.crossover(close, upper)
         description={translate({
           id: 'features.tradingviewBot.cta.description',
           message:
-            'Start a TradingView OctoBot on OctoBot Cloud, or read the automation guide first.',
+            'Start a TradingView OctoBot on OctoBot App, or read the automation guide first.',
           description: 'CTA band description on TradingView bot page',
         })}
         actions={[

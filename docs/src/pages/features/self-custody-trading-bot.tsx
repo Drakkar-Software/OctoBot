@@ -20,7 +20,7 @@ import styles from './_styles.module.css';
  * Self Custody Trading Bot feature page — route:
  * /features/self-custody-trading-bot.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit. Navbar-less LandingLayout composed from reusable
  * components.
  */
@@ -187,13 +187,13 @@ const FAQ_ITEMS: FAQItem[] = [
     question: translate({
       id: 'features.selfCustodyTradingBot.faq.q3.question',
       message:
-        'What is the difference between OctoBot self-custody and OctoBot Cloud or open source?',
+        'What is the difference between OctoBot self-custody and OctoBot App or open source?',
       description: 'FAQ question on self custody trading bot page',
     }),
     answer: translate({
       id: 'features.selfCustodyTradingBot.faq.q3.answer',
       message:
-        'OctoBot self-custody is as simple to use as OctoBot Cloud but runs on your own mobile. It gives you complete control over your API (or wallet) keys and works with centralized or decentralized exchanges. It is designed to stay easy to use while remaining very flexible — and it is much easier to use than the open-source OctoBot, which requires more technical knowledge and a computer or server to operate.',
+        'OctoBot self-custody is as simple to use as OctoBot App but runs on your own mobile. It gives you complete control over your API (or wallet) keys and works with centralized or decentralized exchanges. It is designed to stay easy to use while remaining very flexible — and it is much easier to use than the open-source OctoBot, which requires more technical knowledge and a computer or server to operate.',
       description: 'FAQ answer on self custody trading bot page',
     }),
   },
@@ -232,7 +232,7 @@ const FAQ_ITEMS: FAQItem[] = [
     answer: translate({
       id: 'features.selfCustodyTradingBot.faq.q6.answer',
       message:
-        'We expect to support all the strategies available on OctoBot Cloud, including DCA, AI, grid trading, crypto baskets, TradingView strategies and more.',
+        'We expect to support all the strategies available on OctoBot App, including DCA, AI, grid trading, crypto baskets, TradingView strategies and more.',
       description: 'FAQ answer on self custody trading bot page',
     }),
   },

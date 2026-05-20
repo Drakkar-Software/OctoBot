@@ -6,7 +6,7 @@ date: "2024-01-01"
 ---
 title: Présentation du Stratégie Designer
 description: Meet the new Strategy Designer and get the best out of your strategies
-tags: Strategy designer, Backtesting, Cryptocurrency, Trading, OctoBot cloud
+tags: Strategy designer, Backtesting, Cryptocurrency, Trading, OctoBot app
 image: /images/blog/introducing-the-strategy-designer/cover.png
 domain: blog.octobot.online
 sidebar: false

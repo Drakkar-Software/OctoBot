@@ -42,7 +42,7 @@ Le support de BitMart par OctoBot ouvre la porte à une large gamme de stratégi
 
 ### Paniers de crypto BitMart
 
-Investissez dans l'ensemble du marché crypto ou dans des thèmes que vous aimez directement depuis BitMart en utilisant les [paniers crypto](/guides/octobot-trading-modes/index-trading-mode) basés sur OctoBot cloud ou vos paniers personnalisés. Pour utiliser les paniers crypto basés sur OctoBot cloud sur BitMart, il vous suffit de télécharger le panier crypto que vous souhaitez directement depuis votre OctoBot et d'activer le plateforme d'échange BitMart
+Investissez dans l'ensemble du marché crypto ou dans des thèmes que vous aimez directement depuis BitMart en utilisant les [paniers crypto](/guides/octobot-trading-modes/index-trading-mode) basés sur OctoBot app ou vos paniers personnalisés. Pour utiliser les paniers crypto basés sur OctoBot app sur BitMart, il vous suffit de télécharger le panier crypto que vous souhaitez directement depuis votre OctoBot et d'activer le plateforme d'échange BitMart
 
 ### Trading automatisé depuis TradingView sur BitMart
 
@@ -66,6 +66,6 @@ BitMart a été inclus parmi les échanges régulièrement testés par OctoBot. 
 
 Chez OctoBot, nous essayons de rendre l'automatisation des stratégies de trading aussi accessible que possible à tous. Suivant cette philosophie, il est important pour nous d'activer le trading automatisé sur chaque échange important pour nos utilisateurs.
 
-L'ajout de [BitMart](https://www.octobot.cloud/bitmart-trading-bot) aux échanges pris en charge par OctoBot open source est une première étape vers une intégration plus large avec BitMart. Si vous êtes intéressé par l'utilisation de BitMart avec les stratégies cloud d'OctoBot, faites-le nous savoir en votant pour <a href="https://feedback.octobot.online/cloud/p/bitmart-support" rel="nofollow">le support de BitMart</a> sur notre feuille de route OctoBot cloud.
+L'ajout de [BitMart](https://www.octobot.cloud/bitmart-trading-bot) aux échanges pris en charge par OctoBot open source est une première étape vers une intégration plus large avec BitMart. Si vous êtes intéressé par l'utilisation de BitMart avec les stratégies cloud d'OctoBot, faites-le nous savoir en votant pour <a href="https://feedback.octobot.online/cloud/p/bitmart-support" rel="nofollow">le support de BitMart</a> sur notre feuille de route OctoBot app.
 
 Si vous tradez sur un échange qui n'est pas actuellement pris en charge, veuillez créer ou voter pour le post associé à votre échange sur notre <a href="https://feedback.octobot.online" rel="nofollow">notre site de feedback</a>.

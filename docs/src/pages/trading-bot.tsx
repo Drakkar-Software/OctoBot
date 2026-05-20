@@ -20,7 +20,7 @@ import styles from './trading-bot.module.css';
 /*
  * Trading bot marketing page — route: /trading-bot.
  *
- * Migrated from the OctoBot Cloud marketing site into the Neo Glass Dark
+ * Migrated from the OctoBot App marketing site into the Neo Glass Dark
  * landing toolkit: a navbar-less LandingLayout composed from reusable
  * landing components plus the page-local WhyTabs switcher.
  */
@@ -390,7 +390,7 @@ export default function TradingBotPage(): ReactNode {
         description={translate({
           id: 'pages.tradingBot.cta.description',
           message:
-            'Create your trading bot for free on OctoBot Cloud, or read the guides first.',
+            'Create your trading bot for free on OctoBot App, or read the guides first.',
           description: 'Trading bot CTA description',
         })}
         actions={[

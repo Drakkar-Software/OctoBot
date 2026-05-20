@@ -69,6 +69,6 @@ Veuillez noter qu'il s'agit du strict minimum ; il est préférable d'avoir au m
 le mode de trading Index cessera de mettre à jour son portefeuille selon l'index jusqu'à ce que la valeur du portefeuille 
 remonte au-dessus du minimum requis.
 
-### Index OctoBot cloud
+### Index OctoBot app
 L'[extension Premium OctoBot](extensions) permet à votre OctoBot open source d'utiliser et de personnaliser les
-<a target="_blank" rel="noopener" href="https://app.octobot.cloud/explore?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=IndexTradingModeDocs">index automatiquement configurés</a> d'OctoBot cloud. 
+<a target="_blank" rel="noopener" href="https://app.octobot.cloud/explore?utm_source=octobot&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=IndexTradingModeDocs">index automatiquement configurés</a> d'OctoBot app. 

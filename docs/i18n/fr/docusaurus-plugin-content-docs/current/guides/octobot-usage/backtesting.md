@@ -143,7 +143,7 @@ Comme le backtesting utilise des bougies complètes, il peut y avoir une différ
 
 Pour la même raison, car seules les données des bougies sont disponibles, il est actuellement impossible de faire des backtests sur des stratégies qui utilisent d'autres données que les données des bougies (par exemple en suivant les tendances Google).
 
-La seule exception concerne les **signaux historiques de ChatGPT qui sont mis à disposition gratuitement** grâce à OctoBot cloud lorsqu'un backtesting est effectué en utilisant le ChatGPTEvaluator sur les paires de trading et les time frames utilisés par <a href="https://www.octobot.cloud/explore" rel="nofollow">les stratégies du cloud OctoBot</a> qui utilisent également le ChatGPTEvaluator.
+La seule exception concerne les **signaux historiques de ChatGPT qui sont mis à disposition gratuitement** grâce à OctoBot app lorsqu'un backtesting est effectué en utilisant le ChatGPTEvaluator sur les paires de trading et les time frames utilisés par <a href="https://www.octobot.cloud/explore" rel="nofollow">les stratégies du cloud OctoBot</a> qui utilisent également le ChatGPTEvaluator.
 
 ### Gestion du temps
 

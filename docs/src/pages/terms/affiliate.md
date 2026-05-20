@@ -1,11 +1,11 @@
 ---
 title: "Affiliate terms"
-description: "Know everything about OctoBot cloud Affiliate Terms. Earn passive income as an affiliate when your referenced users trade or subscribe to paid plans."
+description: "Know everything about OctoBot app Affiliate Terms. Earn passive income as an affiliate when your referenced users trade or subscribe to paid plans."
 ---
 
 # Affiliate terms
 
-We welcome you to OctoBot cloud, a SaaS service provided by Drakkar-Software that hosts OctoBot software, a bot for cryptocurrency trading. The Octobot software, the www.octobot.cloud website, mobile applications, and application program interfaces are collectively referred to as the "Software".
+We welcome you to OctoBot app, a SaaS service provided by Drakkar-Software that hosts OctoBot software, a bot for cryptocurrency trading. The Octobot software, the www.octobot.cloud website, mobile applications, and application program interfaces are collectively referred to as the "Software".
 
 **By creating or sharing an affiliate link, you acknowledge and consent to being bound by these Affiliate Terms.**
 

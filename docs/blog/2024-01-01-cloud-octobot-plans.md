@@ -4,9 +4,9 @@ slug: "cloud-octobot-plans"
 date: "2024-01-01"
 ---
 ---
-title: OctoBot cloud plans
+title: OctoBot app plans
 description: Explore the different OctoBot plans designed to suit every need, whether you seek simplicity or customization in your trading strategies.
-tags: Cryptocurrency, Trading, Plans, OctoBot cloud
+tags: Cryptocurrency, Trading, Plans, OctoBot app
 image: /images/blog/introducing-cloud-octobot-plans/cover.png
 domain: blog.octobot.online
 sidebar: false
@@ -19,7 +19,7 @@ author: guillaume
 --- 
 
 
-# OctoBot cloud plans
+# OctoBot app plans
 
 ![cover](/images/blog/introducing-cloud-octobot-plans/cover.png)
 
@@ -42,7 +42,7 @@ The Investor plan is free. It uses the simplest version of OctoBot.
 
 ### The Investor Plus plan
 
-The [Investor Plus plan](introducing-the-investor-plus-plan) gives access to each and every investment startegy on OctoBot cloud as well as the possibility to run as many OctoBots as you wish.
+The [Investor Plus plan](introducing-the-investor-plus-plan) gives access to each and every investment startegy on OctoBot app as well as the possibility to run as many OctoBots as you wish.
 
 ### The Pro plan
 
@@ -54,8 +54,8 @@ The Self hosting plan allows you to run your OctoBot directly from home, on the 
 
 If you prefer to run OctoBot at home or on your own server, the Self hosting plan is made for you.
 
-## How to start investing on OctoBot cloud?
+## How to start investing on OctoBot app?
 
-Select a strategy on [OctoBot cloud](/) and choose Investor to start investing for free.
+Select a strategy on [OctoBot app](/) and choose Investor to start investing for free.
 
 You will find all the plans details on the [pricing page](https://www.octobot.cloud/pricing).

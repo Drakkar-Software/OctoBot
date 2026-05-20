@@ -1,6 +1,6 @@
 ---
 title: "Test risk-free"
-description: "Learn how to use paper trading to test strategies and crypto baskets live and risk free with OctoBot cloud."
+description: "Learn how to use paper trading to test strategies and crypto baskets live and risk free with OctoBot app."
 sidebar_position: 5
 ---
 
@@ -26,7 +26,7 @@ It is perfect to experiment with a trading strategy or crypto basket without tak
 
 
 :::info
-  No exchange account is required to use paper trading on OctoBot cloud.
+  No exchange account is required to use paper trading on OctoBot app.
 :::
 
 ## Paper trading in OctoBot
@@ -37,15 +37,15 @@ Your paper trading OctoBot will now apply the selected strategy or basket as if 
 As with real trading OctoBots, you can [follow your paper trading bot](follow-your-profits) just as usual.
 
 ### How long is your paper trading running ?
-Using OctoBot cloud, you can have your paper trading OctoBot run for as long as you wish. 
+Using OctoBot app, you can have your paper trading OctoBot run for as long as you wish. 
 
-The only requirement is to click on **Extend** once every two weeks when your OctoBot arrives close to its expiry time. This notifies OctoBot cloud that it should keep your paper trading OctoBot running. 
+The only requirement is to click on **Extend** once every two weeks when your OctoBot arrives close to its expiry time. This notifies OctoBot app that it should keep your paper trading OctoBot running. 
 
 ![paper trading cloud octobot expiring in 2 days](/images/guides/paper-trading-cloud-octobot-expiring-in-2-days.png)
 
 ### Can I have bot paper trading and real trading OctoBots ?
 
 Yes ! 
-In fact, we even encourage you to use paper trading to experiment with strategies and crypto baskets on OctoBot cloud, even after you found the ones to trade with using your real funds.
+In fact, we even encourage you to use paper trading to experiment with strategies and crypto baskets on OctoBot app, even after you found the ones to trade with using your real funds.
 
 This allows you quickly test new baskets or strategies and optimize your gains by always using the ones you prefer at any time.

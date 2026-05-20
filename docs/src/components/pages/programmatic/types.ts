@@ -1,5 +1,5 @@
 /**
- * Shapes returned by the OctoBot Cloud programmatic-slugs endpoint and passed
+ * Shapes returned by the OctoBot App programmatic-slugs endpoint and passed
  * into the programmatic page templates via the plugin's route `modules`.
  */
 

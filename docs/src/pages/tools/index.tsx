@@ -13,7 +13,7 @@ import styles from './index.module.css';
 /*
  * Crypto tools hub — route: /tools.
  *
- * Landing page for the OctoBot free tools, migrated from the OctoBot Cloud
+ * Landing page for the OctoBot free tools, migrated from the OctoBot App
  * marketing site into the Neo Glass Dark landing toolkit. Built the same way
  * as the feature pages: a navbar-less LandingLayout composed entirely from
  * reusable components.
@@ -219,7 +219,7 @@ export default function ToolsHub(): ReactNode {
         description={translate({
           id: 'tools.hub.cta.description',
           message:
-            'Create your trading bot for free on OctoBot Cloud, or read the guides first.',
+            'Create your trading bot for free on OctoBot App, or read the guides first.',
           description: 'Tools hub CTA band description',
         })}
         actions={[

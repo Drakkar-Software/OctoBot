@@ -68,7 +68,7 @@ Here are essential aspects to consider when choosing a crypto trading bot in ord
 OctoBot, created in 2018, is known for its transparency and customizable features in crypto trading.
 
 - Open Source with free strategies: As an [open-source project](open-source-trading-software), it offers multiple trading strategies for free, giving users control and flexibility.
-- OctoBot cloud: [The cloud plateform of OctoBot](introducing-the-new-octobot-cloud) simplifies OctoBot setup, making it accessible even for novices, and is free of charge.
+- OctoBot app: [The cloud plateform of OctoBot](introducing-the-new-octobot-cloud) simplifies OctoBot setup, making it accessible even for novices, and is free of charge.
 - Performance transparency: OctoBot maintains an [history of the performance](/investing/find-your-strategy#strategies-details) of each strategies, aiding users in making informed decisions.
 
 ## Conclusion

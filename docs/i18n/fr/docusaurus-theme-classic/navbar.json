@@ -11,9 +11,9 @@
     "message": "Guides",
     "description": "Navbar item with label Guides"
   },
-  "item.label.OctoBot Cloud": {
-    "message": "OctoBot Cloud",
-    "description": "Navbar item with label OctoBot Cloud"
+  "item.label.OctoBot App": {
+    "message": "OctoBot App",
+    "description": "Navbar item with label OctoBot App"
   },
   "item.label.OctoBot Script": {
     "message": "OctoBot Script",

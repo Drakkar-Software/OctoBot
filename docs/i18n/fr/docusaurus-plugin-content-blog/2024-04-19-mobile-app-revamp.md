@@ -4,7 +4,7 @@ description: "Une nouvelle version de l'application mobile Android et iPhone Oct
 slug: "mobile-app-revamp"
 date: "2024-04-19"
 authors: ["paul"]
-tags: ["Mobile", "App", "OctoBot cloud", "Release"]
+tags: ["Mobile", "App", "OctoBot app", "Release"]
 image: "/images/blog/mobile-app-revamp/thumb.png"
 ---
 
@@ -20,7 +20,7 @@ C'est pourquoi nous avons entièrement revu le design de l'application pour mieu
 Nous avons également créé une nouvelle vue détaillée de votre OctoBot. Vous pourrez suivre précisément ce que font vos OctoBot.
 Vous aurez accès à l'historique des performances de vos bots, la répartition de leur portefeuille, les ordres en cours et leurs dernières actions.
 
-Cette nouvelle vue est disponible que vous utilisiez un OctoBot depuis OctoBot cloud ou que vous l'ayez installé vous-même.
+Cette nouvelle vue est disponible que vous utilisiez un OctoBot depuis OctoBot app ou que vous l'ayez installé vous-même.
 
 ![nouvelle vue détaillée des
 OctoBot](/images/blog/mobile-app-revamp/bot-view-pf-fr.png)

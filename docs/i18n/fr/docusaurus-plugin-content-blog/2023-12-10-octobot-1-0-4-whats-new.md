@@ -1,10 +1,10 @@
 ---
 title: "OctoBot 1.0.4 - Les nouveautés"
-description: "Découvrez les nouveautés d'OctoBot - Téléchargez les stratégies d'OctoBot cloud sur votre OctoBot, tradez sur BingX, utilisez les trading modes Daily et DCA amélioré et bien plus encore"
+description: "Découvrez les nouveautés d'OctoBot - Téléchargez les stratégies d'OctoBot app sur votre OctoBot, tradez sur BingX, utilisez les trading modes Daily et DCA amélioré et bien plus encore"
 slug: "octobot-1-0-4-whats-new"
 date: "2023-12-10"
 authors: ["guillaume"]
-tags: ["OctoBot cloud", "Release", "DCA", "Exchanges"]
+tags: ["OctoBot app", "Release", "DCA", "Exchanges"]
 image: "/images/blog/octobot-1-0-4-whats-new/with-octobot-1.0.4-use-octobot-cloud-strategies-and-trade-on-bingx.png"
 ---
 
@@ -12,19 +12,19 @@ image: "/images/blog/octobot-1-0-4-whats-new/with-octobot-1.0.4-use-octobot-clou
 
 # OctoBot 1.0.4 - Les nouveautés
 
-![utilisez les statégies OctoBot cloud et tradez sur BingX](/images/blog/octobot-1-0-4-whats-new/with-octobot-1.0.4-use-octobot-cloud-strategies-and-trade-on-bingx.png)
+![utilisez les statégies OctoBot app et tradez sur BingX](/images/blog/octobot-1-0-4-whats-new/with-octobot-1.0.4-use-octobot-cloud-strategies-and-trade-on-bingx.png)
 
 ## Présentation d'OctoBot 1.0.4
 
-Nous sommes fiers d'annoncer la nouvelle version d'OctoBot. 1.0.4 est une mise à jour ajoutant la possibilité de télécharger des stratégies d'OctoBot cloud directement dans votre OctoBot, l'ajout de la <a href="https://bingx.com/en-us/invite/Z4UUVX/" rel="nofollow">plateforme d'échange BingX</a> parmi les [échanges partenaires](/guides/exchanges#plateformes-déchange-partenaires---supporter-octobot) et de nombreuses améliorations.
+Nous sommes fiers d'annoncer la nouvelle version d'OctoBot. 1.0.4 est une mise à jour ajoutant la possibilité de télécharger des stratégies d'OctoBot app directement dans votre OctoBot, l'ajout de la <a href="https://bingx.com/en-us/invite/Z4UUVX/" rel="nofollow">plateforme d'échange BingX</a> parmi les [échanges partenaires](/guides/exchanges#plateformes-déchange-partenaires---supporter-octobot) et de nombreuses améliorations.
 
-## Télécharger les stratégies d'OctoBot cloud
+## Télécharger les stratégies d'OctoBot app
 
-A partir d'OctoBot 1.0.4, vous pouvez tirer profit des <a href="https://www.octobot.cloud/fr/explore" rel="nofollow">stratégies d'OctoBot cloud</a> directement depuis votre [OctoBot auto-hébergé](/guides/octobot).
+A partir d'OctoBot 1.0.4, vous pouvez tirer profit des <a href="https://www.octobot.cloud/fr/explore" rel="nofollow">stratégies d'OctoBot app</a> directement depuis votre [OctoBot auto-hébergé](/guides/octobot).
 
-![télécharger les stratégies d'OctoBot cloud dans votre bot open source](/images/blog/octobot-1-0-4-whats-new/download-octobot-cloud-strategies-in-open-source-bot.png)
+![télécharger les stratégies d'OctoBot app dans votre bot open source](/images/blog/octobot-1-0-4-whats-new/download-octobot-cloud-strategies-in-open-source-bot.png)
 
-Directement depuis votre OctoBot, téléchargez les stratégies OctoBot cloud et:
+Directement depuis votre OctoBot, téléchargez les stratégies OctoBot app et:
 
 - Utilisez les avec des fonds réels ou simulés
 - Configurez les pour trader différemment, sur d'autres plateformes d'échange ou d'autres assets

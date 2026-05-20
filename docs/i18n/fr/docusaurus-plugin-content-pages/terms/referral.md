@@ -1,11 +1,11 @@
 ---
 title: "Conditions de Parrainage"
-description: "Découvrez les Conditions de Parrainage d'OctoBot Cloud. Obtenez des récompenses en invitant vos amis à rejoindre OctoBot."
+description: "Découvrez les Conditions de Parrainage d'OctoBot App. Obtenez des récompenses en invitant vos amis à rejoindre OctoBot."
 ---
 
 # Conditions de Parrainage
 
-Nous vous souhaitons la bienvenue sur OctoBot Cloud, un service SaaS proposé par Drakkar-Software, qui héberge OctoBot, un bot de trading de cryptomonnaies. Le logiciel OctoBot, le site web www.octobot.cloud, les applications mobiles et les interfaces de programmation d'applications sont collectivement désignés sous le terme de "Logiciel".
+Nous vous souhaitons la bienvenue sur OctoBot App, un service SaaS proposé par Drakkar-Software, qui héberge OctoBot, un bot de trading de cryptomonnaies. Le logiciel OctoBot, le site web www.octobot.cloud, les applications mobiles et les interfaces de programmation d'applications sont collectivement désignés sous le terme de "Logiciel".
 
 **En créant ou en partageant un lien de parrainage, vous reconnaissez et acceptez d'être lié par ces Conditions de Parrainage.**
 

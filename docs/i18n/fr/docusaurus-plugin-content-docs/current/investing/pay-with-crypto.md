@@ -10,16 +10,16 @@ sidebar_position: 30
   Attention : Les paiements en cryptomonnaies sont temporairement indisponibles. Nous travaillons activement à rétablir cette option prochainement.
 :::
 
-## Options de paiement pour OctoBot Cloud
+## Options de paiement pour OctoBot App
 
-Vous avez la possibilité de payer votre abonnement OctoBot Cloud soit par carte bancaire, soit par cryptomonnaies. Pour les paiements en cryptomonnaies, vous pouvez utiliser le [USDC](https://www.octobot.cloud/what-is-usdc) sur différentes blockchains telles qu'[Ethereum](https://www.octobot.cloud/what-is-ethereum), Optimism, BNB Smart Chain, Polygon, Base et [Arbitrum](https://www.octobot.cloud/what-is-arbitrum).
+Vous avez la possibilité de payer votre abonnement OctoBot App soit par carte bancaire, soit par cryptomonnaies. Pour les paiements en cryptomonnaies, vous pouvez utiliser le [USDC](https://www.octobot.cloud/what-is-usdc) sur différentes blockchains telles qu'[Ethereum](https://www.octobot.cloud/what-is-ethereum), Optimism, BNB Smart Chain, Polygon, Base et [Arbitrum](https://www.octobot.cloud/what-is-arbitrum).
 
 ## Comment effectuer un paiement en cryptomonnaies
 
-Après la période d'essai d'OctoBot Cloud, ou suite à la création de votre compte, vous serez automatiquement inscrit au plan gratuit, le plan Investisseur.
+Après la période d'essai d'OctoBot App, ou suite à la création de votre compte, vous serez automatiquement inscrit au plan gratuit, le plan Investisseur.
 Pour accéder à des fonctionnalités supplémentaires disponibles dans les plans [Investisseur Plus](/blog/introducing-the-investor-plus-plan) et [Pro](/blog/introducing-the-pro-plan), vous devrez mettre à jour votre abonnement.
 
-1. Ouvrir la page des <a href="https://www.octobot.cloud/fr/plan" rel="nofollow">plans OctoBot cloud</a>.
+1. Ouvrir la page des <a href="https://www.octobot.cloud/fr/plan" rel="nofollow">plans OctoBot app</a>.
 2. Sélectionnez le plan souhaité et cliquez sur "Payer en crypto".
 
 ![choisir payer en
@@ -50,4 +50,4 @@ Pour arrêter votre abonnement payé par cryptomonnaies, suivez ces étapes :
 2. Cliquez sur le bouton "Stop" pour annuler votre abonnement.
 3. Si vous souhaitez également déconnecter votre portefeuille, cliquez sur "Mettre à jour ma méthode de paiement" et suivez les instructions pour retirer l'accès de votre portefeuille.
 
-En suivant ces étapes, vous pouvez gérer facilement votre abonnement et vos méthodes de paiement pour OctoBot Cloud. Si vous avez des questions ou besoin d'assistance supplémentaire, n'hésitez pas à contacter le support client.
+En suivant ces étapes, vous pouvez gérer facilement votre abonnement et vos méthodes de paiement pour OctoBot App. Si vous avez des questions ou besoin d'assistance supplémentaire, n'hésitez pas à contacter le support client.

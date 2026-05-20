@@ -63,6 +63,6 @@ Nous avons également adapté le prix de l'offre Pro pour qu'elle ait moins d'im
 
 Nous pensons que cette refonte des plans OctoBot augmentera considérablement l'accessibilité des stratégies d'investissement automatisées pour tous les investisseurs en crypto.
 
-Avec ces nouvelles offres, nous voulons faire d'[OctoBot cloud](/fr) la meilleure plateforme pour investir facilement dans les cryptomonnaies en utilisant des stratégies d'investissement.
+Avec ces nouvelles offres, nous voulons faire d'[OctoBot app](/fr) la meilleure plateforme pour investir facilement dans les cryptomonnaies en utilisant des stratégies d'investissement.
 
 Nous espérons que vous apprécierez ces changements et avons hâte de recevoir vos retours à ce sujet.

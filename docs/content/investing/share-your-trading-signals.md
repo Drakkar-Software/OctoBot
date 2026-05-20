@@ -1,6 +1,6 @@
 ---
 title: "Share your trading signals"
-description: "Learn how to share your crypto trading signals on OctoBot cloud and let others automatically copy your signals."
+description: "Learn how to share your crypto trading signals on OctoBot app and let others automatically copy your signals."
 sidebar_position: 27
 ---
 

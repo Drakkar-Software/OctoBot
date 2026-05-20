@@ -1,16 +1,16 @@
 ---
-title: "Les plans OctoBot cloud"
+title: "Les plans OctoBot app"
 description: "Explorez les différents plans OctoBot conçus pour tous, que vous recherchiez la simplicité ou la personnalisation dans vos stratégies de trading."
 slug: "cloud-octobot-plans"
 date: "2023-10-23"
 authors: ["guillaume"]
-tags: ["Cryptocurrency", "Trading", "Plans", "OctoBot cloud"]
+tags: ["Cryptocurrency", "Trading", "Plans", "OctoBot app"]
 image: "/images/blog/introducing-cloud-octobot-plans/cover.png"
 ---
 
 
 
-# Les plans OctoBot cloud
+# Les plans OctoBot app
 
 ![cover](/images/blog/introducing-cloud-octobot-plans/cover.png)
 
@@ -32,7 +32,7 @@ Le plan Investisseur est gratuit, il utilise la version la plus simple d'OctoBot
 
 ### Investisseur Plus
 
-Le [plan Investisseur Plus](introducing-the-investor-plus-plan) offre l'accès à toutes les stratégies d'investissement d'OctoBot cloud ainsi que la possibilité d'exécuter autant d'OctoBot que vous le souhaitez
+Le [plan Investisseur Plus](introducing-the-investor-plus-plan) offre l'accès à toutes les stratégies d'investissement d'OctoBot app ainsi que la possibilité d'exécuter autant d'OctoBot que vous le souhaitez
 
 ### Le plan Pro
 
@@ -44,8 +44,8 @@ Le plan Auto-hébergement vous permet de faire fonctionner votre OctoBot directe
 
 Si vous préférez faire fonctionner OctoBot chez vous ou sur votre propre serveur, le plan Auto-hébergement est fait pour vous.
 
-## Comment investir avec OctoBot cloud?
+## Comment investir avec OctoBot app?
 
-Sélectionnez une stratégie sur [OctoBot cloud](/fr) et choisissez Investisseur pour commencer à investir gratuitement.
+Sélectionnez une stratégie sur [OctoBot app](/fr) et choisissez Investisseur pour commencer à investir gratuitement.
 
 Vous trouverez tous les détails des plans sur la page [de pricing](https://www.octobot.cloud/pricing)

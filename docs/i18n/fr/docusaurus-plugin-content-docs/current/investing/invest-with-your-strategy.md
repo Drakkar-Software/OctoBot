@@ -1,6 +1,6 @@
 ---
 title: "Démarrer l'investissement"
-description: "Apprenez comment démarrer rapidement et facilement votre investissement sur OctoBot cloud."
+description: "Apprenez comment démarrer rapidement et facilement votre investissement sur OctoBot app."
 sidebar_position: 6
 ---
 
@@ -8,9 +8,9 @@ sidebar_position: 6
 
 # Démarrer votre investissement
 
-![strategies OctoBot cloud](/images/guides/cloud-strategy2.png)
+![strategies OctoBot app](/images/guides/cloud-strategy2.png)
 
-Une fois que vous avez trouvé la stratégie ou le panier que vous souhaitez utiliser avec vos fonds réels, vous êtes prêt à vraiment tirer profit d'OctoBot cloud. 
+Une fois que vous avez trouvé la stratégie ou le panier que vous souhaitez utiliser avec vos fonds réels, vous êtes prêt à vraiment tirer profit d'OctoBot app. 
 
 ## Démarrer
 
@@ -18,9 +18,9 @@ Une fois que vous avez trouvé la stratégie ou le panier que vous souhaitez uti
 2. Sélectionnez **Trading réel**.
 ![choix entre le trading avec un compte réel ou virtuel](/images/guides/type-de-compte-de-trading-choix-entre-reel-ou-virtuel.png)
 3. Sélectionnez ou saisissez la [clé API](what-is-an-exchange-api-key) du compte d'échange. Suivez le [guide de connexion à Binance](connect-your-binance-account-to-octobot), [guide de connexion à Kucoin](connect-your-kucoin-account-to-octobot) ou [guide de connexion à Coinbase](connect-your-coinbase-account-to-octobot) si vous avez des questions sur ce point.
-![sélection d'échange pour une stratégie OctoBot cloud](/images/guides/cloud-strategy-select-exchange.png)
+![sélection d'échange pour une stratégie OctoBot app](/images/guides/cloud-strategy-select-exchange.png)
   _Note: OctoBot s'assurera que vous disposez de suffisamment de fonds sur votre compte d'échange pour démarrer la stratégie choisie_
-![lancer une stratégie OctoBot cloud](/images/guides/cloud-strategy-start.png)
+![lancer une stratégie OctoBot app](/images/guides/cloud-strategy-start.png)
 4. Démarrez votre OctoBot pour automatiser vos investissements avec cette stratégie ou ce panier.
 
 ## Que va-t-il se passer ?

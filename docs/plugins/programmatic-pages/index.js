@@ -7,7 +7,7 @@
  * programmatically at build time (loadContent -> contentLoaded -> addRoute),
  * the standard "many pages from data" plugin pattern.
  *
- * Data source: a single OctoBot Cloud endpoint, fetched live at build time,
+ * Data source: a single OctoBot App endpoint, fetched live at build time,
  * once per locale. The endpoint is still a placeholder, so whenever it is
  * unreachable or returns an unexpected response the plugin falls back to the
  * committed fixture (./fixtures/slugs.json) and logs a warning instead of

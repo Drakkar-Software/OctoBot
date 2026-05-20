@@ -4,7 +4,7 @@ description: "A new version of the Android and iPhone OctoBot mobile app is avai
 slug: "mobile-app-revamp"
 date: "2024-04-19"
 authors: ["paul"]
-tags: ["Mobile", "App", "OctoBot cloud", "Release"]
+tags: ["Mobile", "App", "OctoBot app", "Release"]
 image: "/images/blog/mobile-app-revamp/thumb.png"
 ---
 
@@ -23,7 +23,7 @@ That's why we have completely redesigned the app to better meet your needs.
 We have also created a new detailed view of your OctoBot. You will be able to precisely follow what your OctoBots are doing.
 You will have access to the performance history of your bots, the distribution of their portfolio, ongoing orders, and their latest actions.
 
-This new view is available whether you are using an OctoBot from OctoBot cloud or have installed it yourself.
+This new view is available whether you are using an OctoBot from OctoBot app or have installed it yourself.
 
 ![new detailed view for your
 bots](/images/blog/mobile-app-revamp/bot-view-pf-en.png)

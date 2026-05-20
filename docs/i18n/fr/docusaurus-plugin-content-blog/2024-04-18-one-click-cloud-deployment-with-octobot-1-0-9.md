@@ -33,7 +33,7 @@ Nous sommes heureux d'annoncer la sortie d'OctoBot 1.0.9. Cette version ajoute n
 
 ### Paniers de crypto
 
-Tout comme les [paniers de crypto d'OctoBot cloud](https://www.octobot.cloud/features/crypto-basket), vous pouvez maintenant créer votre propre panier de crypto en utilisant Octobot et le nouvel [Index Mode Trading](/guides/octobot-trading-modes/index-trading-mode).
+Tout comme les [paniers de crypto d'OctoBot app](https://www.octobot.cloud/features/crypto-basket), vous pouvez maintenant créer votre propre panier de crypto en utilisant Octobot et le nouvel [Index Mode Trading](/guides/octobot-trading-modes/index-trading-mode).
 
 ![panier de
 crypto](/images/blog/one-click-cloud-deployment-with-octobot-1-0-9/crypto-basket.png)
