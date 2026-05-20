@@ -8,9 +8,15 @@
  * the standard "many pages from data" plugin pattern.
  *
  * Data source: a single OctoBot Cloud endpoint, fetched live at build time,
- * once per locale. There is no committed fallback — if the endpoint is
- * unreachable the build fails by design.
+ * once per locale. The endpoint is still a placeholder, so whenever it is
+ * unreachable or returns an unexpected response the plugin falls back to the
+ * committed fixture (./fixtures/slugs.json) and logs a warning instead of
+ * failing the build. Once the real endpoint ships, live data takes priority.
  */
+
+const logger = require('@docusaurus/logger').default;
+
+const FALLBACK = require('./fixtures/slugs.json');
 
 const DEFAULT_ENDPOINT = 'https://www.octobot.cloud/api/programmatic-slugs';
 
@@ -32,26 +38,35 @@ module.exports = function programmaticPagesPlugin(context) {
 
     async loadContent() {
       const url = `${ENDPOINT}?locale=${encodeURIComponent(locale)}`;
+      const useFallback = (reason) => {
+        logger.warn(
+          `[programmatic-pages] ${reason}; using committed fixture (fixtures/slugs.json)`,
+        );
+        return FALLBACK;
+      };
       let res;
       try {
         res = await fetch(url);
       } catch (err) {
-        throw new Error(
-          `[programmatic-pages] failed to reach ${url}: ${err.message}`,
-        );
+        return useFallback(`failed to reach ${url}: ${err.message}`);
       }
       if (!res.ok) {
-        throw new Error(
-          `[programmatic-pages] ${url} returned ${res.status} ${res.statusText}`,
+        return useFallback(
+          `${url} returned ${res.status} ${res.statusText}`,
         );
       }
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        return useFallback(`${url} returned invalid JSON: ${err.message}`);
+      }
       if (
         !Array.isArray(data && data.cryptocurrencies) ||
         !Array.isArray(data && data.exchanges)
       ) {
-        throw new Error(
-          `[programmatic-pages] ${url} returned an unexpected shape — ` +
+        return useFallback(
+          `${url} returned an unexpected shape — ` +
             'expected { cryptocurrencies: [], exchanges: [] }',
         );
       }

@@ -1,0 +1,107 @@
+{
+  "cryptocurrencies": [
+    {
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "slug": "bitcoin",
+      "lastPrice": 67000,
+      "hasPrediction": true,
+      "whatIs": "Bitcoin is the first and largest cryptocurrency, a decentralized digital money secured by a global proof-of-work network. It runs without any central authority, letting anyone send value across the internet and hold a fixed-supply asset capped at 21 million coins.",
+      "faq": [
+        {
+          "question": "What is Bitcoin used for?",
+          "answer": "Bitcoin is used as a store of value, a hedge against inflation, and a way to transfer money globally without intermediaries."
+        },
+        {
+          "question": "Can I automate Bitcoin trading?",
+          "answer": "Yes. OctoBot can run automated strategies on BTC pairs across many exchanges, backtest them on historical data, and execute them live."
+        }
+      ]
+    },
+    {
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "slug": "ethereum",
+      "lastPrice": 3500,
+      "hasPrediction": true,
+      "whatIs": "Ethereum is a programmable blockchain whose native asset, ether, powers smart contracts and decentralized applications. Beyond payments, it underpins most of DeFi, NFTs, and tokenized assets, and secures the network through proof of stake.",
+      "faq": [
+        {
+          "question": "How is Ethereum different from Bitcoin?",
+          "answer": "Bitcoin focuses on being sound digital money, while Ethereum is a general-purpose platform for running smart contracts and applications."
+        }
+      ]
+    },
+    {
+      "symbol": "SOL",
+      "name": "Solana",
+      "slug": "solana",
+      "lastPrice": 150,
+      "whatIs": "Solana is a high-throughput blockchain designed for fast, low-cost transactions. Its architecture targets demanding use cases such as high-frequency trading, payments, and consumer applications that need quick confirmation times."
+    },
+    {
+      "symbol": "BNB",
+      "name": "BNB",
+      "slug": "bnb",
+      "lastPrice": 580,
+      "whatIs": "BNB is the native asset of the BNB Chain ecosystem, originally launched to pay reduced trading fees and now used for transaction fees, staking, and participation across a broad range of on-chain applications."
+    },
+    {
+      "symbol": "XRP",
+      "name": "XRP",
+      "slug": "xrp",
+      "lastPrice": 0.52,
+      "whatIs": "XRP is the native asset of the XRP Ledger, a payments-focused network built for fast and inexpensive cross-border value transfer between financial institutions and individuals."
+    },
+    {
+      "symbol": "USDT",
+      "name": "Tether",
+      "slug": "tether",
+      "lastPrice": 1,
+      "whatIs": "Tether (USDT) is a stablecoin pegged to the US dollar, widely used as a stable unit of account on crypto exchanges and as a way to move value between markets without converting back to fiat."
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "Binance",
+      "slug": "binance",
+      "internalName": "binance",
+      "tier1": true,
+      "supports": {
+        "spot": "supported",
+        "open_source": "supported",
+        "market_making": "supported"
+      }
+    },
+    {
+      "name": "Coinbase",
+      "slug": "coinbase",
+      "internalName": "coinbase",
+      "tier1": true,
+      "supports": {
+        "spot": "supported",
+        "open_source": "unsupported",
+        "market_making": "unsupported"
+      }
+    },
+    {
+      "name": "Kraken",
+      "slug": "kraken",
+      "internalName": "kraken",
+      "supports": {
+        "spot": "supported",
+        "open_source": "partial",
+        "market_making": "supported"
+      }
+    },
+    {
+      "name": "Bitget",
+      "slug": "bitget",
+      "internalName": "bitget",
+      "supports": {
+        "spot": "supported",
+        "market_making": "unsupported"
+      }
+    }
+  ]
+}
