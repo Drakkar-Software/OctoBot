@@ -9,8 +9,12 @@ import {
   FAQ,
   CTABand,
   type Feature,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import type {Exchange} from '../types';
 import shared from '../styles.module.css';
 
@@ -102,7 +106,7 @@ export default function ExchangeMarketMaker({
     },
   ];
 
-  const faqItems: FAQItem[] = [
+  const faqItems: FaqJsonLdItem[] = [
     {
       question: translate(
         {
@@ -181,16 +185,18 @@ export default function ExchangeMarketMaker({
     },
   ];
 
+  const title = translate(
+    {
+      id: 'programmatic.exchangeMarketMaker.layout.title',
+      message: '{name} Market Maker',
+      description: 'Page title; {name} is the exchange name',
+    },
+    {name: exchange.name},
+  );
+
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.exchangeMarketMaker.layout.title',
-          message: '{name} Market Maker',
-          description: 'Page title; {name} is the exchange name',
-        },
-        {name: exchange.name},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.exchangeMarketMaker.layout.description',
@@ -200,6 +206,10 @@ export default function ExchangeMarketMaker({
         },
         {name: exchange.name},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd
+        trail={[{name: title, path: `/${exchange.slug}-market-maker`}]}
+      />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero

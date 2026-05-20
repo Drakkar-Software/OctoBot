@@ -8,8 +8,12 @@ import {
   FAQ,
   CTABand,
   TradingViewWidget,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import GlassCard from '@site/src/components/GlassCard';
 import Badge from '@site/src/components/Badge';
 import type {Cryptocurrency} from '../types';
@@ -37,21 +41,22 @@ export default function CryptoPrediction({
   data: CryptoPredictionData;
 }): ReactNode {
   const {crypto} = data;
-  const faqItems: FAQItem[] = (crypto.faq ?? []).map((entry) => ({
+  const faqItems: FaqJsonLdItem[] = (crypto.faq ?? []).map((entry) => ({
     question: entry.question,
     answer: entry.answer,
   }));
+  const title = translate(
+    {
+      id: 'programmatic.cryptoPrediction.layout.title',
+      message: '{name} AI prediction',
+      description: 'Page title; {name} is the cryptocurrency name',
+    },
+    {name: crypto.name},
+  );
 
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.cryptoPrediction.layout.title',
-          message: '{name} AI prediction',
-          description: 'Page title; {name} is the cryptocurrency name',
-        },
-        {name: crypto.name},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.cryptoPrediction.layout.description',
@@ -62,6 +67,10 @@ export default function CryptoPrediction({
         },
         {name: crypto.name, symbol: crypto.symbol},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd
+        trail={[{name: title, path: `/${crypto.symbol.toLowerCase()}-prediction`}]}
+      />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero

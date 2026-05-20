@@ -9,8 +9,12 @@ import {
   CTABand,
   TradingViewWidget,
   type Step,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import GlassCard from '@site/src/components/GlassCard';
 import type {Cryptocurrency} from '../types';
 import shared from '../styles.module.css';
@@ -89,7 +93,7 @@ export default function CoinDcaBot({
     },
   ];
 
-  const faqItems: FAQItem[] = [
+  const faqItems: FaqJsonLdItem[] = [
     {
       question: translate(
         {
@@ -143,16 +147,18 @@ export default function CoinDcaBot({
     },
   ];
 
+  const title = translate(
+    {
+      id: 'programmatic.coinDcaBot.layout.title',
+      message: '{name} DCA bot',
+      description: 'Page title; {name} is the coin name',
+    },
+    {name: crypto.name},
+  );
+
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.coinDcaBot.layout.title',
-          message: '{name} DCA bot',
-          description: 'Page title; {name} is the coin name',
-        },
-        {name: crypto.name},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.coinDcaBot.layout.description',
@@ -163,6 +169,10 @@ export default function CoinDcaBot({
         },
         {name: crypto.name, symbol: crypto.symbol},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd
+        trail={[{name: title, path: `/${crypto.slug}-dca-bot`}]}
+      />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero

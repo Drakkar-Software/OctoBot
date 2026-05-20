@@ -83,8 +83,8 @@ const config: Config = {
       languages: ['en', 'fr'],
     }],
     // Programmatic SEO pages (per-coin / per-exchange / converter matrix).
-    // Fetches its slug list live from the OctoBot Cloud endpoint at build
-    // time — no committed fallback, the build fails if it is unreachable.
+    // Fetches its slug list from the OctoBot Cloud endpoint at build time,
+    // falling back to a committed fixture when the endpoint is unreachable.
     require.resolve('./plugins/programmatic-pages'),
     [
       '@docusaurus/plugin-client-redirects',
@@ -170,6 +170,9 @@ const config: Config = {
   ],
 
   themeConfig: {
+    // Default social-share card (og:image / twitter:image) for every page.
+    image:
+      'a-man-relaxing-in-his-couch-while-octobot-is-making-money-by-automating-cryptocurrency-strategies-dark.png',
     metadata: [
       {name: 'robots', content: 'noindex'},
       {name: 'twitter:card', content: 'summary_large_image'},

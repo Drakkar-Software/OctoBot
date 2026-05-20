@@ -7,8 +7,12 @@ import {
   FAQ,
   CTABand,
   TradingViewWidget,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import GlassCard from '@site/src/components/GlassCard';
 import type {Cryptocurrency} from '../types';
 import shared from '../styles.module.css';
@@ -33,21 +37,22 @@ export default function WhatIsCrypto({
   data: WhatIsCryptoData;
 }): ReactNode {
   const {crypto} = data;
-  const faqItems: FAQItem[] = (crypto.faq ?? []).map((entry) => ({
+  const faqItems: FaqJsonLdItem[] = (crypto.faq ?? []).map((entry) => ({
     question: entry.question,
     answer: entry.answer,
   }));
+  const title = translate(
+    {
+      id: 'programmatic.whatIsCrypto.layout.title',
+      message: 'What is {name}?',
+      description: 'Page title; {name} is the cryptocurrency name',
+    },
+    {name: crypto.name},
+  );
 
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.whatIsCrypto.layout.title',
-          message: 'What is {name}?',
-          description: 'Page title; {name} is the cryptocurrency name',
-        },
-        {name: crypto.name},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.whatIsCrypto.layout.description',
@@ -58,6 +63,8 @@ export default function WhatIsCrypto({
         },
         {name: crypto.name, symbol: crypto.symbol},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd trail={[{name: title, path: `/what-is-${crypto.slug}`}]} />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero

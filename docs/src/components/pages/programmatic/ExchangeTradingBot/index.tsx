@@ -8,8 +8,12 @@ import {
   FAQ,
   CTABand,
   type Feature,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import Badge from '@site/src/components/Badge';
 import type {Exchange} from '../types';
 import shared from '../styles.module.css';
@@ -121,7 +125,7 @@ export default function ExchangeTradingBot({
   const {exchange} = data;
   const isCloud = exchange.supports?.spot === 'supported';
 
-  const faqItems: FAQItem[] = [
+  const faqItems: FaqJsonLdItem[] = [
     {
       question: translate(
         {
@@ -214,16 +218,18 @@ export default function ExchangeTradingBot({
     },
   ];
 
+  const title = translate(
+    {
+      id: 'programmatic.exchangeTradingBot.layout.title',
+      message: '{name} trading bot',
+      description: 'Page title; {name} is the exchange name',
+    },
+    {name: exchange.name},
+  );
+
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.exchangeTradingBot.layout.title',
-          message: '{name} trading bot',
-          description: 'Page title; {name} is the exchange name',
-        },
-        {name: exchange.name},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.exchangeTradingBot.layout.description',
@@ -233,6 +239,10 @@ export default function ExchangeTradingBot({
         },
         {name: exchange.name},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd
+        trail={[{name: title, path: `/${exchange.slug}-trading-bot`}]}
+      />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero

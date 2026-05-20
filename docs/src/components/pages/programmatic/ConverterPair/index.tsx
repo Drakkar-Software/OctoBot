@@ -10,8 +10,12 @@ import {
   CTABand,
   TradingViewWidget,
   type Feature,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import GlassCard from '@site/src/components/GlassCard';
 import ConverterWidget from '../shared/ConverterWidget';
 import type {Cryptocurrency} from '../types';
@@ -58,7 +62,7 @@ export default function ConverterPair({
       to: `/tools/converter/${coin.symbol.toLowerCase()}/${quote.symbol.toLowerCase()}`,
     }));
 
-  const faqItems: FAQItem[] = [
+  const faqItems: FaqJsonLdItem[] = [
     {
       question: translate(
         {
@@ -119,17 +123,18 @@ export default function ConverterPair({
     },
   ];
 
+  const title = translate(
+    {
+      id: 'programmatic.converterPair.layout.title',
+      message: '{base} to {quote} Converter',
+      description: 'Page title; {base} and {quote} are the pair tickers',
+    },
+    {base: baseSym, quote: quoteSym},
+  );
+
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.converterPair.layout.title',
-          message: '{base} to {quote} Converter',
-          description:
-            'Page title; {base} and {quote} are the pair tickers',
-        },
-        {base: baseSym, quote: quoteSym},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.converterPair.layout.description',
@@ -140,6 +145,15 @@ export default function ConverterPair({
         },
         {base: baseSym, quote: quoteSym},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd
+        trail={[
+          {
+            name: title,
+            path: `/tools/converter/${base.symbol.toLowerCase()}/${quote.symbol.toLowerCase()}`,
+          },
+        ]}
+      />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero

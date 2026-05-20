@@ -9,8 +9,12 @@ import {
   CTABand,
   TradingViewWidget,
   type Feature,
-  type FAQItem,
 } from '@site/src/components/landing';
+import {
+  FaqJsonLd,
+  BreadcrumbsJsonLd,
+  type FaqJsonLdItem,
+} from '@site/src/components/seo';
 import GlassCard from '@site/src/components/GlassCard';
 import type {Cryptocurrency} from '../types';
 import shared from '../styles.module.css';
@@ -123,7 +127,7 @@ export default function CoinTradingBot({
 
   // Prefer the coin's own FAQ entries; fall back to a generic set so the
   // page always has an FAQ section.
-  const faqItems: FAQItem[] =
+  const faqItems: FaqJsonLdItem[] =
     crypto.faq && crypto.faq.length > 0
       ? crypto.faq.map((entry) => ({
           question: entry.question,
@@ -183,16 +187,18 @@ export default function CoinTradingBot({
           },
         ];
 
+  const title = translate(
+    {
+      id: 'programmatic.coinTradingBot.layout.title',
+      message: '{name} trading bot',
+      description: 'Page title; {name} is the coin name',
+    },
+    {name: crypto.name},
+  );
+
   return (
     <LandingLayout
-      title={translate(
-        {
-          id: 'programmatic.coinTradingBot.layout.title',
-          message: '{name} trading bot',
-          description: 'Page title; {name} is the coin name',
-        },
-        {name: crypto.name},
-      )}
+      title={title}
       description={translate(
         {
           id: 'programmatic.coinTradingBot.layout.description',
@@ -203,6 +209,10 @@ export default function CoinTradingBot({
         },
         {name: crypto.name, symbol: crypto.symbol},
       )}>
+      <FaqJsonLd items={faqItems} />
+      <BreadcrumbsJsonLd
+        trail={[{name: title, path: `/${crypto.slug}-trading-bot`}]}
+      />
       <div className={shared.gridVeil} aria-hidden="true" />
 
       <Hero
