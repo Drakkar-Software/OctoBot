@@ -10,7 +10,7 @@ const NEO_GLASS_FONTS =
   'family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap';
 
 const config: Config = {
-  title: 'OctoBot Documentation',
+  title: 'OctoBot',
   tagline: 'Open-source cryptocurrency trading bot',
   favicon: 'img/favicon.ico',
 
@@ -178,7 +178,7 @@ const config: Config = {
       {name: 'twitter:card', content: 'summary_large_image'},
       {name: 'twitter:site', content: '@OctoBotTrading'},
       {property: 'og:type', content: 'website'},
-      {property: 'og:site_name', content: 'OctoBot Documentation'},
+      {property: 'og:site_name', content: 'OctoBot'},
       {name: 'keywords', content: 'octobot, crypto, trading bot, open source, automated trading'},
     ],
     // Neo Glass Dark is a strict dark-mode-only theme — no light palette,
