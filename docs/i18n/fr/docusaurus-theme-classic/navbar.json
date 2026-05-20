@@ -7,21 +7,13 @@
     "message": "Logo OctoBot",
     "description": "The alt text of navbar logo"
   },
-  "item.label.Guides": {
-    "message": "Guides",
-    "description": "Navbar item with label Guides"
+  "item.label.OctoBot": {
+    "message": "OctoBot",
+    "description": "Navbar item with label OctoBot"
   },
-  "item.label.OctoBot App": {
-    "message": "OctoBot App",
-    "description": "Navbar item with label OctoBot App"
-  },
-  "item.label.OctoBot Script": {
-    "message": "OctoBot Script",
-    "description": "Navbar item with label OctoBot Script"
-  },
-  "item.label.Market Making": {
-    "message": "Market Making",
-    "description": "Navbar item with label Market Making"
+  "item.label.OctoBot Node": {
+    "message": "OctoBot Node",
+    "description": "Navbar item with label OctoBot Node"
   },
   "item.label.Developers": {
     "message": "Développeurs",

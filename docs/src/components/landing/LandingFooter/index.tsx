@@ -67,7 +67,7 @@ const COLUMNS: FooterColumn[] = [
         }),
         to: '/developers/getting-started',
       },
-      {label: 'OctoBot Script', to: '/octobot-script/getting-started'},
+      {label: 'OctoBot Script', to: '/developers/scripting/getting-started'},
     ],
   },
   {
