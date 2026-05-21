@@ -831,6 +831,12 @@ async def create_and_register_chained_order_on_base_order(
     # do not reduce chained order amounts to account for fees when trading futures
     if update_with_triggering_order_fees is None:
         update_with_triggering_order_fees = not exchange_manager.is_future
+    if update_with_triggering_order_fees and not constants.ENABLE_CHAINED_ORDER_UPDATE_WITH_TRIGGERING_ORDER_FEES:
+        logging.get_logger(LOGGER_NAME).info(
+            "Chained order update with triggering order fees is disabled, "
+            "update_with_triggering_order_fees will be set to False."
+        )
+        update_with_triggering_order_fees = False
     if allow_bundling:
         params = await exchange_manager.trader.bundle_chained_order_with_uncreated_order(
             base_order, chained_order, update_with_triggering_order_fees
