@@ -62,6 +62,7 @@ import {
 import { discoverPaths, extractValue, formatCellValue } from "@/lib/json-path"
 import { fetchServerPublicKeys } from "@/lib/server-keys"
 import { getActiveExecution } from "@/utils/executions"
+import { resolveTaskError } from "@/utils/task-errors"
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -91,6 +92,7 @@ function resolveValue(row: ExportRow, jsonPath: string): unknown {
 function buildExportRows(tasks: Task[]): ExportRow[] {
   return tasks.map((task) => {
     const activeExec = getActiveExecution(task.executions)
+    const { status: errorStatus, message: errorMessage } = resolveTaskError(task)
     return {
       taskId: task.id ?? "",
       resultData: {},
@@ -101,7 +103,8 @@ function buildExportRows(tasks: Task[]): ExportRow[] {
           activeExec?.status === "failed" || activeExec?.error
             ? "errored"
             : (activeExec?.status ?? ""),
-        __task_error__: activeExec?.error ?? "",
+        __task_error__: errorStatus ?? "",
+        __task_error_message__: errorMessage ?? "",
         __exec_type__: activeExec?.type ?? "",
         __exec_completed_at__: activeExec?.completed_at ?? "",
       },
@@ -121,6 +124,12 @@ function buildColumnsForFullDetails(rows: ExportRow[]): ExportColumnDef[] {
   const metaCols: ExportColumnDef[] = [
     { key: "name", label: "Name", jsonPath: "__task_name__" },
     { key: "status", label: "Status", jsonPath: "__exec_status__" },
+    { key: "error", label: "Error", jsonPath: "__task_error__" },
+    {
+      key: "error_message",
+      label: "Error Message",
+      jsonPath: "__task_error_message__",
+    },
   ]
 
   const dataCols: ExportColumnDef[] = Array.from(allPaths)

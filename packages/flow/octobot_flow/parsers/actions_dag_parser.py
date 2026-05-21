@@ -253,7 +253,12 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
         blockchain: str,
         descriptors_overrides: typing.Optional[dict[str, typing.Any]] = None
     ) -> tuple[str, dict, dict]:
-        blockchain_wallet_class = blockchain_wallets.get_blockchain_wallet_class_by_blockchain()[blockchain.lower()]
+        try:
+            blockchain_wallet_class = blockchain_wallets.get_blockchain_wallet_class_by_blockchain()[blockchain.lower()]
+        except KeyError as err:
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"Invalid blockchain: {blockchain}"
+            ) from err
         simulator_config = {
             blockchain_wallets_simulator.BlockchainWalletSimulatorConfigurationKeys.ASSETS.value: {
                 self.BLOCKCHAIN_FROM_ASSET: self.BLOCKCHAIN_FROM_AMOUNT,

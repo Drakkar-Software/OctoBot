@@ -40,7 +40,6 @@ class UnsupportedConfiguredActionTypeError(UnsupportedActionTypeError):
     """raise when an unsupported configured action type is encountered"""
 
 
-
 class InvalidAutomationActionError(ConfigurationError):
     """raise when an automation action is invalid"""
 

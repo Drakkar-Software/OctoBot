@@ -25,6 +25,7 @@ import octobot_commons.constants as constants
 import octobot_commons.enums as enums
 import octobot_commons.tests.test_config as test_config
 
+import tests.profiles.conftest as profiles_conftest
 from tests.profiles import profile, get_profile_path, get_profiles_path
 
 
@@ -393,6 +394,7 @@ def test_load_profile():
         read_config_mock.assert_called_once()
 
 
+@pytest.mark.xdist_group(name=profiles_conftest.PROFILES_FS_XDIST_GROUP)
 def test_get_existing_profiles_ids(profile):
     assert profiles.Profile.get_all_profiles_ids(get_profiles_path()) == ["default"]
     assert profiles.Profile.get_all_profiles_ids(get_profiles_path(), ignore=profile.path) == []

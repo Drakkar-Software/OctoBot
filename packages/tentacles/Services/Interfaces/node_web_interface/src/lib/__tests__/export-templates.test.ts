@@ -77,6 +77,12 @@ describe("export-templates", () => {
       expect(keys).toContain("completed_at")
     })
 
+    it("includes error status and error message columns", () => {
+      const keys = GENERAL_EXPORT_TEMPLATE.columns.map((c) => c.key)
+      expect(keys).toContain("error")
+      expect(keys).toContain("error_message")
+    })
+
     it("uses meta paths for task-level data", () => {
       const nameCol = GENERAL_EXPORT_TEMPLATE.columns.find(
         (c) => c.key === "name",
@@ -94,6 +100,8 @@ describe("export-templates", () => {
       expect(keys).toContain("price")
       expect(keys).toContain("exchange_trade_id")
       expect(keys).toContain("trade_status")
+      expect(keys).toContain("error")
+      expect(keys).toContain("error_message")
       const prefix = "state.automation.exchange_account_elements.trades[0]"
       const amountCol = TRADE_EXPORT_TEMPLATE.columns.find(
         (c) => c.key === "amount",
@@ -123,6 +131,8 @@ describe("export-templates", () => {
       expect(keys).toContain("address_from")
       expect(keys).toContain("address_to")
       expect(keys).toContain("txid")
+      expect(keys).toContain("error")
+      expect(keys).toContain("error_message")
     })
   })
 

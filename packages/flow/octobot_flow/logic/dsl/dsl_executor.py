@@ -13,6 +13,7 @@ import octobot_trading.modes as trading_modes
 import octobot_flow.entities
 import octobot_flow.errors
 import octobot_flow.enums
+import octobot_flow.logic.dsl.action_error_util
 
 # avoid circular import
 from octobot_flow.logic.dsl.dsl_action_execution_context import dsl_action_execution
@@ -119,21 +120,20 @@ class DSLExecutor(AbstractActionExecutor):
             )
         except octobot_commons.errors.MaxAttemptsExceededError as err:
             self._logger().error(f"Max attempts exceeded: {err}")
-            return octobot_commons.dsl_interpreter.DSLCallResult(
-                statement=expression,
-                error=octobot_flow.enums.ActionErrorStatus.MAX_ATTEMPTS_EXCEEDED.value
+            return octobot_flow.logic.dsl.action_error_util.build_dsl_call_result(
+                expression,
+                octobot_flow.enums.ActionErrorStatus.MAX_ATTEMPTS_EXCEEDED.value,
+                str(err),
             )
         except octobot_commons.errors.ErrorStatementEncountered as err:
             self._logger().exception(
                 err, True, f"Generic DSL error statement encountered: {err}"
             )
-            validated_error = (
-                err.args[0] if err.args and err.args[0] in octobot_flow.enums.ActionErrorStatus 
-                else octobot_flow.enums.ActionErrorStatus.DSL_EXECUTION_ERROR.value
-            )
-            return octobot_commons.dsl_interpreter.DSLCallResult(
-                statement=expression,
-                error=validated_error
+            error_status, error_message = octobot_flow.logic.dsl.action_error_util.resolve_error_statement(err)
+            return octobot_flow.logic.dsl.action_error_util.build_dsl_call_result(
+                expression,
+                error_status,
+                error_message,
             )
 
     @contextlib.asynccontextmanager

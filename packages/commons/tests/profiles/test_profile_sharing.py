@@ -31,7 +31,10 @@ from octobot_commons.profiles.profile_sharing import _get_unique_profile_folder,
     _get_profile_name
 import octobot_commons.tests.test_config as test_config
 
+import tests.profiles.conftest as profiles_conftest
 from tests.profiles import profile, get_profile_path, invalid_profile
+
+pytestmark = pytest.mark.xdist_group(name=profiles_conftest.PROFILES_FS_XDIST_GROUP)
 
 
 def test_export_profile(profile):

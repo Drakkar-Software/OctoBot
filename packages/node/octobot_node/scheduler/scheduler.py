@@ -319,6 +319,7 @@ class Scheduler:
             for completed_workflow_status in completed_workflow_statuses:
                 try:
                     task = workflows_util.get_automation_input_task(completed_workflow_status)
+                    error_message = None
                     if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value:
                         output_error = None
                         if completed_workflow_status.output:
@@ -327,6 +328,7 @@ class Scheduler:
                                     json.loads(completed_workflow_status.output)
                                 )
                                 output_error = output.error
+                                error_message = output.error_message
                             except Exception as parse_err:
                                 self.logger.warning(
                                     f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {parse_err}"
@@ -339,6 +341,7 @@ class Scheduler:
                             status = octobot_node.models.TaskStatus.COMPLETED
                             description = "Completed"
                             error = None
+                            error_message = None
                     else:
                         status = octobot_node.models.TaskStatus.FAILED
                         description = "ERROR"
@@ -354,6 +357,7 @@ class Scheduler:
                         scheduled_at=completed_workflow_status.created_at,
                         completed_at=completed_workflow_status.updated_at,
                         error=error,
+                        error_message=error_message,
                         wallet_address=task.wallet_address if task else None,
                     ))
                 except Exception as e:

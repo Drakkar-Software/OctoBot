@@ -115,6 +115,18 @@ class TestResolveParamDependencyStringValue:
         assert "cycle" in str(raised.value).lower() or "unresolved" in str(raised.value).lower()
 
 
+class TestGetBlockchainAndSpecificConfigs:
+    """`get_blockchain_and_specific_configs`: unknown blockchain network."""
+
+    def test_invalid_blockchain_raises_invalid_automation_action_error(self):
+        params = actions_dag_parser.ActionsDAGParserParams.from_dict({})
+        invalid_blockchain = "invalid_blockchain_xyz"
+        with pytest.raises(octobot_flow.errors.InvalidAutomationActionError) as raised:
+            params.get_blockchain_and_specific_configs(invalid_blockchain)
+        assert str(raised.value) == f"Invalid blockchain: {invalid_blockchain}"
+        assert isinstance(raised.value.__cause__, KeyError)
+
+
 class TestParseWalletCleanupIfError:
     """`parse` / `_parse_generic_actions`: if_error wrapper after open wallet init."""
 

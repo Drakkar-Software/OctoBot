@@ -86,6 +86,7 @@ class AutomationWorkflow:
                         state=final_state,
                         state_metadata=final_state_metadata,
                         error=final_error,
+                        error_message=iteration_result.progress_status.error_message,
                     )
         except Exception as err:
             AutomationWorkflow.get_logger(parsed_inputs).exception(
@@ -97,6 +98,7 @@ class AutomationWorkflow:
                 state_metadata=iteration_result.next_iteration_description_metadata if iteration_result else None,
                 # keep track of the failed iteration
                 error=AutomationWorkflow._get_failed_error_status(err),
+                error_message=str(err),
             )
         return json.dumps(output.to_dict(include_default_values=False)) if output else None
 
@@ -105,6 +107,7 @@ class AutomationWorkflow:
         return not isinstance(error, (
             # workflow stopping errors
             errors.WorkflowError,
+            octobot_flow.errors.ConfigurationError,
         ))
 
     @staticmethod
@@ -131,7 +134,7 @@ class AutomationWorkflow:
         # TODO stop exec if wf status is cancelled + test
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"
-        execution_error = next_step = next_step_at = None
+        execution_error = next_step = next_step_at = execution_error_message = None
         result = octobot_flow_client.OctoBotActionsJobResult()
         with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task, result):
             #### Start of decryped task context ####
@@ -156,6 +159,7 @@ class AutomationWorkflow:
                                 f"Error: {action.error_status} when executing action {action.id}: {action.get_summary()} "
                             )
                             execution_error = action.error_status
+                            execution_error_message = action.error_message
             else:
                 raise errors.WorkflowInputError(f"Invalid task type: {parsed_inputs.task.type}")
             next_actions = []
@@ -179,6 +183,7 @@ class AutomationWorkflow:
                 next_step_at=next_step_at,
                 remaining_steps=remaining_steps,
                 error=execution_error,
+                error_message=execution_error_message,
                 should_stop=result.should_stop,
             ),
             next_iteration_description=result.maybe_encrypted_next_actions_description,

@@ -264,6 +264,32 @@ async def test_error_operator(interpreter):
     assert await interpreter.interprete("error('123-error') if False else 'ok'") == "ok"
 
 
+class TestErrorOperatorComputeExpressionWithResult:
+    @pytest.mark.asyncio
+    async def test_single_argument_error(self, interpreter):
+        interpreter.prepare("error('123-error')")
+        call_result = await interpreter.compute_expression_with_result()
+        assert not call_result.succeeded()
+        assert call_result.error == "123-error"
+        assert call_result.error_message == "123-error"
+
+    @pytest.mark.asyncio
+    async def test_status_and_detail_error(self, interpreter):
+        interpreter.prepare("error('not_enough_funds', 'Balance below threshold')")
+        call_result = await interpreter.compute_expression_with_result()
+        assert not call_result.succeeded()
+        assert call_result.error == "not_enough_funds"
+        assert call_result.error_message == "Balance below threshold"
+
+    @pytest.mark.asyncio
+    async def test_conditional_error_not_taken(self, interpreter):
+        interpreter.prepare("error('123-error') if False else 'ok'")
+        call_result = await interpreter.compute_expression_with_result()
+        assert call_result.succeeded()
+        assert call_result.error_message is None
+        assert call_result.result == "ok"
+
+
 @pytest.mark.asyncio
 async def test_if_error_operator(interpreter):
     assert "if_error" in interpreter.operators_by_name

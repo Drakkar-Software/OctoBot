@@ -8,6 +8,7 @@ import octobot_trading.enums as trading_enums
 import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
+import octobot_flow.logic.dsl.action_error_util
 
 import tests.functionnal_tests as functionnal_tests
 from tests.functionnal_tests import (
@@ -54,15 +55,15 @@ def actions_with_blockchain_deposit_and_withdrawal_with_holding_checks():
     return [
         {
             "id": "action_1",
-            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}') if (blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 1) else 'ok'", # will pass
+            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}', 'Add more funds 1') if (blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 1) else 'ok'", # will pass
         },
         {
             "id": "action_2",
-            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}') if blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 2500 else 'ok'", # will fail
+            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}', 'Add more funds 2') if blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 2500 else 'ok'", # will fail
         },
         {
             "id": "action_3",
-            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}') if blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 1 else 'ok'", # will pass
+            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}', 'Add more funds 3') if blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 1 else 'ok'", # will pass
         },
         {
             "id": "action_4",
@@ -70,7 +71,7 @@ def actions_with_blockchain_deposit_and_withdrawal_with_holding_checks():
         },
         {
             "id": "action_5",
-            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}') if available('{ADDED_COIN_SYMBOL}') < 0.1 else 'ok'",
+            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}', 'Add more funds 5') if available('{ADDED_COIN_SYMBOL}') < 0.1 else 'ok'",
         },
         {
             "id": "action_6",
@@ -82,7 +83,7 @@ def actions_with_blockchain_deposit_and_withdrawal_with_holding_checks():
         },
         {
             "id": "action_8",
-            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}') if blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 0.95 else 'ok'",
+            "dsl_script": f"error('{octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value}', 'Add more funds 8') if blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, '{ADDED_COIN_SYMBOL}') < 0.95 else 'ok'",
         },
     ]
 
@@ -111,9 +112,11 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal(
             if index == 1:
                 # only the second action will fail because of not enough funds
                 assert action.error_status == octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value
+                assert action.error_message == "Add more funds 2"
                 assert action.result is None
             else:
                 assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+                assert action.error_message is None
                 assert isinstance(action.result, dict) or action.result == "ok"
                 assert action.result
             assert action.executed_at and action.executed_at >= current_time
@@ -176,9 +179,11 @@ async def test_execute_actions_with_blockchain_deposit_and_withdrawal_with_holdi
             if index == 1:
                 # only the second action will fail because of not enough funds
                 assert action.error_status == octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value
+                assert action.error_message == "Add more funds 2"
                 assert action.result is None
             else:
                 assert action.error_status == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+                assert action.error_message is None
                 assert isinstance(action.result, dict) or action.result == "ok"
                 assert action.result
             assert action.executed_at and action.executed_at >= current_time

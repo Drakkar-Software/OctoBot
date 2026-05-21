@@ -164,7 +164,8 @@ class Interpreter:
         except octobot_commons.errors.ErrorStatementEncountered as err:
             return dsl_call_result.DSLCallResult(
                 statement=self._parsed_expression,
-                error=err.args[0] if err.args else ""
+                error=err.args[0] if err.args else "",
+                error_message=dsl_call_result.error_message_from_error_statement(err),
             )
 
     def _visit_node(self, node: typing.Optional[ast.AST]) -> typing.Union[

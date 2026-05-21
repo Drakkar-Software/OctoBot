@@ -23,10 +23,25 @@ export interface ExportTemplate {
   columns: ExportColumnDef[]
 }
 
+const TASK_ERROR_COLUMNS: ExportColumnDef[] = [
+  {
+    key: "error",
+    label: "Error",
+    jsonPath: "__task_error__",
+    formatter: "text",
+  },
+  {
+    key: "error_message",
+    label: "Error Message",
+    jsonPath: "__task_error_message__",
+    formatter: "text",
+  },
+]
+
 export const GENERAL_EXPORT_TEMPLATE: ExportTemplate = {
   id: "general",
   label: "General",
-  description: "Basic task info: name, status, execution date, and errors",
+  description: "Basic task info: name, status, execution date, errors, and error messages",
   columns: [
     {
       key: "name",
@@ -52,12 +67,7 @@ export const GENERAL_EXPORT_TEMPLATE: ExportTemplate = {
       jsonPath: "__exec_completed_at__",
       formatter: "date",
     },
-    {
-      key: "error",
-      label: "Error",
-      jsonPath: "__task_error__",
-      formatter: "text",
-    },
+    ...TASK_ERROR_COLUMNS,
   ],
 }
 
@@ -81,6 +91,7 @@ export const TRADE_EXPORT_TEMPLATE: ExportTemplate = {
       jsonPath: "__exec_status__",
       formatter: "text",
     },
+    ...TASK_ERROR_COLUMNS,
     {
       key: "timestamp",
       label: "Timestamp",
@@ -206,6 +217,7 @@ export const TRANSFER_EXPORT_TEMPLATE: ExportTemplate = {
       jsonPath: "__exec_status__",
       formatter: "text",
     },
+    ...TASK_ERROR_COLUMNS,
     {
       key: "address_from",
       label: "From Address",

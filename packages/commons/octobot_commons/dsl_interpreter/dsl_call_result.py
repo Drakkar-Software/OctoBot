@@ -18,6 +18,7 @@ import dataclasses
 import typing
 
 import octobot_commons.dataclasses
+import octobot_commons.errors
 
 
 @dataclasses.dataclass
@@ -28,6 +29,7 @@ class DSLCallResult(octobot_commons.dataclasses.FlexibleDataclass):
     statement: str
     result: typing.Optional[typing.Any] = None
     error: typing.Optional[str] = None
+    error_message: typing.Optional[str] = None
 
     def succeeded(self) -> bool:
         """
@@ -35,3 +37,18 @@ class DSLCallResult(octobot_commons.dataclasses.FlexibleDataclass):
         :return: True if the DSL call succeeded, False otherwise
         """
         return self.error is None
+
+
+def error_message_from_error_statement(
+    err: octobot_commons.errors.ErrorStatementEncountered,
+) -> str:
+    """
+    Extract the error message from an error statement
+    :param err: The error statement
+    :return: The error message
+    """
+    if len(err.args) > 1:
+        return ", ".join(str(arg) for arg in err.args[1:])
+    if err.args:
+        return str(err.args[0])
+    return str(err)

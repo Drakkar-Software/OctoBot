@@ -21,6 +21,7 @@ import {
   formatIsoTooltip,
   parseActionCount,
 } from "@/utils/task-format"
+import { formatTaskErrorDisplay } from "@/utils/task-errors"
 import {
   getDisplayDate,
   getStatusVariant,
@@ -158,6 +159,7 @@ function areTaskPropsEqual(
     prev.task.id === next.task.id &&
     prev.task.name === next.task.name &&
     prev.task.error === next.task.error &&
+    prev.task.error_message === next.task.error_message &&
     prev.task.executions?.length === next.task.executions?.length &&
     JSON.stringify(prev.task.executions) ===
       JSON.stringify(next.task.executions)
@@ -177,6 +179,7 @@ export const BotCard = memo(function BotCard({
   const rawStatus = (activeExec?.status ?? "scheduled") as TaskStatus
   const group = getStatusGroup(rawStatus)
   const hasError = !!task.error
+  const errorDisplay = formatTaskErrorDisplay(task)
   const started = hasStartedExecution(task.executions)
 
   const label =
@@ -248,9 +251,9 @@ export const BotCard = memo(function BotCard({
               <span className="font-mono text-xs text-muted-foreground shrink-0">
                 ID: {task.id?.slice(0, 12) || "—"}
               </span>
-              {hasError && (
+              {hasError && errorDisplay && (
                 <span className="font-mono text-xs text-neg truncate text-right">
-                  {task.error}
+                  {errorDisplay}
                 </span>
               )}
             </div>

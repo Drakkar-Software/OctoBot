@@ -89,13 +89,23 @@ def _parse_automation_workflow_output(
     return params.AutomationWorkflowOutput.from_dict(payload)
 
 
-def _expected_automation_workflow_envelope_json(state_document: str, error: str | None = None) -> str:
+def _expected_automation_workflow_envelope_json(
+    state_document: str,
+    error: str | None = None,
+    error_message: str | None = None,
+) -> str:
     """Mirror ``execute_automation`` return: ``json.dumps(AutomationWorkflowOutput.to_dict(...))``."""
     return json.dumps(
-        params.AutomationWorkflowOutput(state=state_document, error=error).to_dict(
-            include_default_values=False
-        )
+        params.AutomationWorkflowOutput(
+            state=state_document,
+            error=error,
+            error_message=error_message,
+        ).to_dict(include_default_values=False)
     )
+
+
+def _dbos_step_retries_exhausted_error_message(step_name: str, max_attempts: int) -> str:
+    return f"DBOS Error 7: Step {step_name} has exceeded its maximum of {max_attempts} retries"
 
 
 def _job_description_dict_from_output(parsed: params.AutomationWorkflowOutput) -> dict[str, typing.Any]:
@@ -363,17 +373,31 @@ class TestExecuteAutomation:
         # 5. Exceptions are caught and mapped to workflow error statuses
         parsed_inputs.execution_time = 0
         inputs = parsed_inputs.to_dict(include_default_values=False)
+        max_attempts = octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
+        dbos_retries_exhausted_message = _dbos_step_retries_exhausted_error_message(
+            "execute_iteration",
+            max_attempts,
+        )
         failure_cases = [
             (
                 ValueError("test error"),
                 octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                dbos_retries_exhausted_message,
+                max_attempts,
             ),
             (
                 octobot_flow.errors.InvalidAutomationActionError("invalid action config"),
-                octobot_flow.enums.AutomationWorkflowErrorStatus.INVALID_ACTION_CONFIGURATION.value,
+                octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                "invalid action config",
+                1,
             ),
         ]
-        for raised_exception, expected_error_status in failure_cases:
+        for (
+            raised_exception,
+            expected_error_status,
+            expected_error_message,
+            expected_run_await_count,
+        ) in failure_cases:
             mock_logger = mock.Mock()
             mock_process = mock.AsyncMock()
             mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
@@ -405,16 +429,15 @@ class TestExecuteAutomation:
                 workflow_result = await handle.get_result()
                 assert workflow_result == json.dumps(
                     params.AutomationWorkflowOutput(
-                        error=expected_error_status
+                        error=expected_error_status,
+                        error_message=expected_error_message,
                     ).to_dict(include_default_values=False)
                 )
                 parsed_output = _parse_automation_workflow_output(workflow_result)
                 assert parsed_output.state is None
                 assert parsed_output.error == expected_error_status
-                assert (
-                    run_mock.await_count
-                    == octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
-                )
+                assert parsed_output.error_message == expected_error_message
+                assert run_mock.await_count == expected_run_await_count
                 mock_logger.exception.assert_called_once()
                 mock_process.assert_not_called()
 
@@ -1430,9 +1453,14 @@ class TestExecuteAutomationIntegration:
                 inputs=inputs,
             )
             workflow_result = await handle.get_result()
+            expected_error_message = _dbos_step_retries_exhausted_error_message(
+                "execute_iteration",
+                max_attempts,
+            )
             assert workflow_result == json.dumps(
                 params.AutomationWorkflowOutput(
-                    error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+                    error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                    error_message=expected_error_message,
                 ).to_dict(include_default_values=False)
             )
             parsed_output = _parse_automation_workflow_output(workflow_result)
@@ -1441,6 +1469,7 @@ class TestExecuteAutomationIntegration:
                 parsed_output.error
                 == octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
             )
+            assert parsed_output.error_message == expected_error_message
             wf_status = await handle.get_status()
             assert wf_status.status == dbos.WorkflowStatusString.SUCCESS.value
             assert wf_status.output == workflow_result

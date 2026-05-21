@@ -30,6 +30,8 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
     ] = dataclasses.field(default=None, repr=octobot_commons.constants.ALLOW_PRIVATE_DATA_LOGS)
     # error status of the action. Set after the action is executed, in case an error occured
     error_status: typing.Optional[str] = dataclasses.field(default=None, repr=True)       # ActionErrorStatus
+    # error message of the action. Set after the action is executed, in case an error occured.
+    error_message: typing.Optional[str] = dataclasses.field(default=None, repr=True)
     # time at which the action was executed
     executed_at: typing.Optional[float] = dataclasses.field(default=None, repr=True)
     # dependencies of this action. If an action has dependencies, it will not be executed until all its dependencies are completed
@@ -51,12 +53,15 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         self,
         result: typing.Optional[dict] = None,
         error_status: typing.Optional[str] = None,
+        error_message: typing.Optional[str] = None,
     ):
         self.executed_at = time.time()
         if result:
             self.result = result
         if error_status:
             self.error_status = error_status
+        if error_message:
+            self.error_message = error_message
 
     def is_completed(self) -> bool:
         return self.executed_at is not None
@@ -65,6 +70,7 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         self.result = action.result
         self.executed_at = action.executed_at
         self.error_status = action.error_status
+        self.error_message = action.error_message
 
     def should_be_historised_in_database(self) -> bool:
         return False
@@ -99,6 +105,7 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         self.previous_execution_result = self.result # type: ignore
         self.result = None
         self.error_status = None
+        self.error_message = None
         self.executed_at = None
 
     def update_configuration(self, action: "AbstractActionDetails"):
