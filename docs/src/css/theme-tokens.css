@@ -85,8 +85,9 @@
   --ng-radius-pill:       999px;
 
   /* -- shadows ---------------------------------------------------------- */
-  --ng-shadow-glow:       0 12px 32px -8px rgba(101, 231, 207, 0.5);
-  --ng-shadow-glass:      0 24px 60px -28px rgba(0, 0, 0, 0.65);
+  --ng-shadow-glow:        0 12px 32px -8px rgba(101, 231, 207, 0.5);
+  --ng-shadow-glow-strong: 0 16px 40px -8px rgba(101, 231, 207, 0.65);
+  --ng-shadow-glass:       0 24px 60px -28px rgba(0, 0, 0, 0.65);
 
   /* -- fonts ------------------------------------------------------------ */
   --ng-font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -227,17 +228,19 @@
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 80ms ease, opacity 80ms ease, background-color 120ms ease;
+  transition: transform 120ms ease, opacity 80ms ease, background-color 120ms ease,
+    box-shadow 160ms ease, border-color 120ms ease;
 }
+/* :hover lifts, :active presses — :active is declared last so the press wins. */
+.ng-btn:hover { text-decoration: none; transform: translateY(-1px); }
 .ng-btn:active { transform: scale(0.98); opacity: 0.9; }
-.ng-btn:hover { text-decoration: none; }
 
 .ng-btn--primary {
   background: var(--ng-turquoise);
   color: var(--ng-bg);
   box-shadow: var(--ng-shadow-glow);
 }
-.ng-btn--primary:hover { color: var(--ng-bg); }
+.ng-btn--primary:hover { color: var(--ng-bg); box-shadow: var(--ng-shadow-glow-strong); }
 
 .ng-btn--ghost {
   background: var(--ng-frost-bg-subtle);

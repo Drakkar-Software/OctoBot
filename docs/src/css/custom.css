@@ -118,6 +118,20 @@ body {
   color: var(--ng-ink);
 }
 
+/* Accessibility — honour the OS "reduce motion" preference. The theme leans on
+ * hover lifts, fades and the staggered hero reveal; collapse them all to near-
+ * instant for users who opt out, rather than animating against their setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ----------------------------------------------------------------------------
  * 3. Navbar — frosted glass over the halo
  * --------------------------------------------------------------------------*/
@@ -195,7 +209,8 @@ body {
 
 .menu__link--active {
   background: var(--ng-frost-bg-mid);
-  border: 1px solid var(--ng-frost-soft);
+  /* Left accent rail — shared "you are here" language with the TOC. */
+  box-shadow: inset 3px 0 0 var(--ng-frost);
   color: var(--ng-frost);
   font-weight: 500;
 }
@@ -222,7 +237,12 @@ body {
 
 .table-of-contents__link {
   color: var(--ng-ink-faint);
-  transition: color 100ms ease;
+  /* Reserve a left rail on every link so activating one never shifts text;
+     only the active link paints it frost — the same accent as the sidebar. */
+  border-left: 2px solid transparent;
+  padding-left: 0.75rem;
+  margin-left: -1px;
+  transition: color 100ms ease, border-color 100ms ease;
 }
 .table-of-contents__link:hover {
   color: var(--ng-ink);
@@ -230,6 +250,7 @@ body {
 .table-of-contents__link--active {
   color: var(--ng-frost);
   font-weight: 500;
+  border-left-color: var(--ng-frost);
 }
 
 /* ----------------------------------------------------------------------------
@@ -432,16 +453,29 @@ button[class*='copyButton'] {
 /* ----------------------------------------------------------------------------
  * 11. Pagination (doc + blog prev/next)
  * --------------------------------------------------------------------------*/
+/* Shared interactive lift — doc pagination and blog cards (section 16) reuse the
+ * same hover motion as the .ng-card-interactive primitive (theme-tokens.css):
+ * a small rise, a frost edge and the glass shadow. Defined once, here, so the
+ * two Docusaurus surfaces stay in sync instead of each carrying their own copy. */
+.pagination-nav__link,
+.blog-post-card {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease,
+    background-color 160ms ease;
+}
+.pagination-nav__link:hover,
+.blog-post-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--ng-frost-soft);
+  box-shadow: var(--ng-shadow-glass);
+}
+
 .pagination-nav__link {
   border: 1px solid var(--ng-rule-glass);
   border-radius: var(--ng-radius-card);
   background: var(--ng-surface);
-  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 .pagination-nav__link:hover {
   background: var(--ng-surface-strong);
-  border-color: var(--ng-frost-soft);
-  transform: translateY(-2px);
 }
 .pagination-nav__sublabel {
   color: var(--ng-muted);
@@ -456,7 +490,12 @@ button[class*='copyButton'] {
 .button {
   border-radius: var(--ng-radius-pill);
   font-weight: 600;
-  transition: transform 80ms ease, opacity 80ms ease, background-color 120ms ease;
+  transition: transform 120ms ease, opacity 80ms ease, background-color 120ms ease,
+    box-shadow 160ms ease;
+}
+/* :hover lifts, :active presses — :active is declared last so the press wins. */
+.button:hover {
+  transform: translateY(-1px);
 }
 .button:active {
   transform: scale(0.98);
@@ -472,6 +511,7 @@ button[class*='copyButton'] {
 .button--primary:hover {
   background: var(--ng-turquoise);
   color: var(--ng-bg);
+  box-shadow: var(--ng-shadow-glow-strong);
 }
 
 .button--secondary {
@@ -482,6 +522,7 @@ button[class*='copyButton'] {
 }
 .button--secondary:hover {
   color: var(--ng-bg);
+  box-shadow: var(--ng-shadow-glow-strong);
 }
 
 .button--outline.button--secondary {
@@ -598,27 +639,41 @@ button:focus-visible,
  * 16. Blog — list page card grid + post page
  * ==========================================================================*/
 
-/* --- list page: 3-col responsive card grid ------------------------------- */
-.blog-list-page .row > main {
+/* --- post-list pages: 3-col responsive card grid -------------------------
+ * Selector targets every page that renders a column of post cards — the main
+ * /blog list (.blog-list-page) and per-tag post lists (.blog-tags-post-list-page)
+ * — while excluding the single post (.blog-post-page) and the tag/author *index*
+ * pages (.blog-tags-list-page / .blog-authors-list-page), which are not card
+ * lists. Expressed as exclusions so any future per-facet post list is covered. */
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) .row > main {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
   max-width: 100%;
   flex-basis: 100%;
+  /* Tag/author list pages render main with col--offset-1; drop it so the card
+     grid spans the full row like the main /blog list instead of clipping. */
+  margin-left: 0;
+}
+/* Tag/author pages put an intro header ("N posts tagged …") as a direct child
+ * of main — span it across all columns so it reads as a title, not a grid cell. */
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) .row > main > header {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 996px) {
-  .blog-list-page .row > main {
+  .blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) .row > main {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 @media (max-width: 768px) {
-  .blog-list-page .row > main {
+  .blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) .row > main {
     grid-template-columns: 1fr;
   }
 }
 
-/* card wrapper (rendered by src/theme/BlogPostItem) */
+/* card wrapper (rendered by src/theme/BlogPostItem) — the hover lift is shared
+ * with doc pagination and defined once in section 11. */
 .blog-post-card {
   background: var(--ng-surface);
   border: 1px solid var(--ng-rule-glass);
@@ -626,12 +681,6 @@ button:focus-visible,
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-.blog-post-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--ng-frost-soft);
-  box-shadow: var(--ng-shadow-glass);
 }
 
 /* cover image */
@@ -662,33 +711,35 @@ button:focus-visible,
   flex-direction: column;
 }
 
-.blog-list-page article header h2 {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article header h2 {
   font-size: 1rem;
   line-height: 1.35;
   margin-bottom: 0.25rem;
   letter-spacing: -0.3px;
 }
-.blog-list-page article header h2 a {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article header h2 a {
   color: var(--ng-ink);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.blog-list-page article header h2 a:hover {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article header h2 a:hover {
   color: var(--ng-frost);
 }
 
 /* meta line (date + reading time) */
-.blog-list-page article header .margin-vert--md {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article header .margin-vert--md {
   margin-top: 0 !important;
   margin-bottom: 0.5rem !important;
   font-size: 0.72rem;
   color: var(--ng-ink-faint);
 }
 
-/* excerpt — clamp to 2 lines */
-.blog-list-page article .markdown {
+/* excerpt — clamp to 2 lines. No flex-grow: the article wrapper already fills
+ * the card and pins the footer (margin-top:auto), so an empty or one-line
+ * excerpt must not stretch to a tall void. */
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown {
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--ng-ink-faint);
@@ -696,28 +747,41 @@ button:focus-visible,
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  flex: 1;
+  /* Hard bound (~2 lines at line-height 1.5) in case -webkit-box is defeated by
+   * a higher-specificity .markdown display rule — keeps every card the same
+   * height even when a post opens with a long paragraph. */
+  max-height: 3em;
 }
-.blog-list-page article .markdown > *:first-child {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown > *:first-child {
   margin-top: 0;
 }
-.blog-list-page article .markdown > h1:first-child,
-.blog-list-page article .markdown > h2:first-child {
+/* Drop block media some posts open with (cover image, pull-quote, code, table…)
+ * from the card excerpt: the -webkit-line-clamp only trims inline text, so these
+ * would otherwise spill and leave the grid with wildly uneven card heights.
+ * Scoped to .blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) — full posts keep every element. */
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown img,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown figure,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown blockquote,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown pre,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown table,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown hr,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown > h1:first-child,
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article .markdown > h2:first-child {
   display: none;
 }
 
 /* footer (tags + read more) */
-.blog-list-page article footer.row {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) article footer.row {
   margin-top: auto !important;
   padding-top: 0.6rem;
   border-top: 1px solid var(--ng-rule-soft);
   font-size: 0.72rem;
 }
 
-.blog-list-page .row > main > .margin-bottom--xl {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) .row > main > .margin-bottom--xl {
   margin-bottom: 0 !important;
 }
-.blog-list-page nav.pagination-nav {
+.blog-wrapper:not(.blog-post-page):not(.blog-tags-list-page):not(.blog-authors-list-page) nav.pagination-nav {
   grid-column: 1 / -1;
 }
 
@@ -763,14 +827,17 @@ a[class*='tag_']:hover {
 
 /* Centered illustration images + their emphasis captions.
  * Blog posts ship images as standalone-paragraph markdown (no JSX wrapper);
- * center them and style any immediately-following *italic* line as a caption. */
-.blog-wrapper .markdown > p > img:only-child,
-.blog-wrapper .markdown > p > img:first-child {
+ * center them and style any immediately-following *italic* line as a caption.
+ * Scoped to .blog-post-page — these are post-body rules and must never reach a
+ * listing page (main, tag or author), where the same markup is an excerpt that
+ * should stay text-only. blog-post-page is the single-post wrapper class. */
+.blog-post-page .markdown > p > img:only-child,
+.blog-post-page .markdown > p > img:first-child {
   display: block;
   margin: 1.5rem auto 0.5rem;
 }
 
-.blog-wrapper .markdown > p > img:first-child ~ em {
+.blog-post-page .markdown > p > img:first-child ~ em {
   display: block;
   text-align: center;
   color: var(--ng-muted);
@@ -778,7 +845,7 @@ a[class*='tag_']:hover {
 }
 
 /* a paragraph that is only an italic caption directly after an image paragraph */
-.blog-wrapper .markdown > p > em:only-child {
+.blog-post-page .markdown > p > em:only-child {
   display: block;
   text-align: center;
   color: var(--ng-muted);
