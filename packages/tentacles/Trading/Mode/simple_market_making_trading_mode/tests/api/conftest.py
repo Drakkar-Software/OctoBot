@@ -35,6 +35,23 @@ import tentacles.Services.Interfaces.node_api_interface as node_api_interface_mo
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as market_making_core
 
 
+def dex_exchange_config_dict(**overrides) -> dict:
+    dex_config_overrides = overrides.pop("dex_config", {})
+    return {
+        "name": "dexscreener",
+        "exchange_type": "spot",
+        "sandboxed": False,
+        "dex_config": {
+            "chain_id": "ethereum",
+            "dex_id": "uniswap",
+            "base_token_addresses": ["0xbase"],
+            "quote_token_addresses": ["0xquote"],
+            **dex_config_overrides,
+        },
+        **overrides,
+    }
+
+
 @pytest.fixture()
 def app() -> FastAPI:
     fastapi_app = node_api_interface_module.NodeApiInterface.create_app()

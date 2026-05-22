@@ -27,6 +27,7 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as ma
 
 from tentacles.Trading.Mode.simple_market_making_trading_mode.tests.api.conftest import (
     assert_response_headers,
+    dex_exchange_config_dict,
     mocked_common_methods,
 )
 
@@ -187,6 +188,47 @@ def test_compute_market_making_volume(
             assert get_market_making_volume_mock.mock_calls[0].kwargs["user_auth"] == user_auth
             assert response.status_code == 200
             assert response.json() == {"BTC/USDT": 1000.5, "ETH/USDC": 500.25}
+            assert_response_headers(response)
+
+
+def test_compute_market_making_volume_passes_dex_exchange_config(client):
+    with mocked_common_methods() as get_market_making_profile_data_mock:
+        with mock.patch.object(
+            market_making_core,
+            "get_market_making_volume",
+            mock.AsyncMock(return_value={"BTC/USDT": 1000.5}),
+        ) as get_market_making_volume_mock:
+            exchange_configs = [dex_exchange_config_dict()]
+            market_making_config = _minimal_market_making_config_payload()
+            expected_market_making_configuration = (
+                market_making_configuration_model.MarketMakingConfiguration.model_validate(
+                    market_making_config
+                )
+            )
+            response = client.post(
+                _MARKET_MAKING_ROOT,
+                json={
+                    "type": "market_making_volume",
+                    "exchanges": exchange_configs,
+                    "config": {"config": market_making_config},
+                },
+            )
+
+            expected_exchange_configs = _expected_profile_exchange_args(exchange_configs)
+            get_market_making_profile_data_mock.assert_called_once_with(
+                expected_exchange_configs,
+                expected_market_making_configuration,
+                user_auth=None,
+            )
+            parsed_dex_config = expected_exchange_configs[0].dex_config
+            assert isinstance(parsed_dex_config, exchanges_core.DEXConfig)
+            assert parsed_dex_config.chain_id == "ethereum"
+            assert parsed_dex_config.dex_id == "uniswap"
+            assert parsed_dex_config.base_token_addresses == ["0xbase"]
+            assert parsed_dex_config.quote_token_addresses == ["0xquote"]
+            get_market_making_volume_mock.assert_awaited_once()
+            assert response.status_code == 200
+            assert response.json() == {"BTC/USDT": 1000.5}
             assert_response_headers(response)
 
 

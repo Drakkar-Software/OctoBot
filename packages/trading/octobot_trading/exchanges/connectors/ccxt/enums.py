@@ -135,6 +135,13 @@ class ExchangeOrderCCXTUnifiedParams(enum.Enum):
     TRAILING_TRIGGER_PRICE = "trailingTriggerPrice"    # float
 
 
+class DEXExchangeCCXTConfigKeys(enum.StrEnum):
+    CHAIN_ID = "chainId"
+    DEX_ID = "dexId"
+    BASE_TOKEN_ADDRESSES = "baseTokenAddresses"
+    QUOTE_TOKEN_ADDRESSES = "quoteTokenAddresses"
+
+
 class ExchangeWrapperLibs(enum.Enum):
     ASYNC_CCXT = "async_ccxt"
     CCXT = "ccxt"

@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import typing
+import decimal
 
 import octobot_commons.constants
 import octobot_commons.errors
@@ -54,22 +55,33 @@ class PriceOperator(exchange_operator.ExchangeOperator):
 def create_price_operators(
     exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
     symbol: typing.Optional[str],
+    price_by_symbol: typing.Optional[dict[str, typing.Optional[decimal.Decimal]]] = None
 ) -> typing.List[type[PriceOperator]]:
 
     def _get_latest_price(input_symbol: typing.Optional[str]) -> float:
         if exchange_manager is None:
+            if price_by_symbol:
+                if input_symbol in price_by_symbol:
+                    return float(price_by_symbol[input_symbol])
+                raise octobot_commons.errors.DSLInterpreterError(
+                    f"Price for symbol {input_symbol} not found in price_by_symbol: {price_by_symbol}"
+                )
             raise octobot_commons.errors.DSLInterpreterError(
                 "exchange_manager must be provided"
             )
         resolved_symbol = exchange_manager.get_exchange_symbol(input_symbol or symbol)
-        symbol_data = octobot_trading.api.get_symbol_data(
-            exchange_manager, resolved_symbol, allow_creation=False
-        )
         try:
+            symbol_data = octobot_trading.api.get_symbol_data(
+                exchange_manager, resolved_symbol, allow_creation=False
+            )
             mark_price = symbol_data.prices_manager.get_mark_price_no_wait()
+        except KeyError:
+            raise octobot_commons.errors.DSLInterpreterError(
+                f"No symbol data found for {resolved_symbol} on {exchange_manager.exchange_name}"
+            )
         except ValueError as err:
             raise octobot_commons.errors.DSLInterpreterError(
-                f"No up to date mark price for {resolved_symbol}"
+                f"No up to date mark price for {resolved_symbol} on {exchange_manager.exchange_name}"
             ) from err
         return float(mark_price)
 

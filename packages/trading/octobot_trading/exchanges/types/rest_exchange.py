@@ -642,8 +642,8 @@ class RestExchange(abstract_exchange.AbstractExchange):
     async def get_price_ticker(self, symbol: str, **kwargs: dict) -> typing.Optional[dict]:
         return await self.connector.get_price_ticker(symbol=symbol, **kwargs)
 
-    async def get_all_currencies_price_ticker(self, **kwargs: dict) -> typing.Optional[dict[str, dict]]:
-        return await self.connector.get_all_currencies_price_ticker(**kwargs)
+    async def get_all_currencies_price_ticker(self, symbols: typing.Optional[list[str]] = None, **kwargs: dict) -> typing.Optional[dict[str, dict]]:
+        return await self.connector.get_all_currencies_price_ticker(symbols=symbols, **kwargs)
 
     async def refresh_markets(self):
         return await self.connector.load_symbol_markets(
@@ -842,8 +842,8 @@ class RestExchange(abstract_exchange.AbstractExchange):
     def get_fees(self, symbol):
         return self.connector.get_fees(symbol)
 
-    def get_pair_from_exchange(self, pair) -> str:
-        return self.connector.get_pair_from_exchange(pair)
+    def get_pair_from_exchange(self, pair, error_on_missing=True) -> str:
+        return self.connector.get_pair_from_exchange(pair, error_on_missing=error_on_missing)
 
     def get_split_pair_from_exchange(self, pair) -> (str, str):
         return self.connector.get_split_pair_from_exchange(pair)

@@ -169,6 +169,7 @@ class TestDexScreenerRealExchangeTester(real_exchange_tester.RealExchangeTester)
                 check_high=False,
                 check_low=False,
                 check_base_volume=False,
+                check_quote_volume=True,
                 check_last=True,
             )
 
@@ -183,7 +184,7 @@ class TestDexScreenerRealExchangeTester(real_exchange_tester.RealExchangeTester)
                 bid_volume=ticker_expect.NONE,
                 ask_volume=ticker_expect.NONE,
                 base_volume=ticker_expect.NONE,
-                quote_volume=ticker_expect.NONE,
+                quote_volume=ticker_expect.TRUTHY,
                 previous_close=ticker_expect.NONE,
             )
         # ensure both regular symbols and address-pair symbols are supported
@@ -202,6 +203,7 @@ class TestDexScreenerRealExchangeTester(real_exchange_tester.RealExchangeTester)
                 check_high=False,
                 check_low=False,
                 check_base_volume=False,
+                check_quote_volume=True,
                 check_last=True,
             )
             ticker_expect = real_exchange_tester.TickerExpect
@@ -216,7 +218,7 @@ class TestDexScreenerRealExchangeTester(real_exchange_tester.RealExchangeTester)
                     bid_volume=ticker_expect.NONE,
                     ask_volume=ticker_expect.NONE,
                     base_volume=ticker_expect.NONE,
-                    quote_volume=ticker_expect.NONE,
+                    quote_volume=ticker_expect.TRUTHY,
                     previous_close=ticker_expect.NONE,
                 ),
             )

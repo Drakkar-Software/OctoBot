@@ -42,9 +42,10 @@ class AdvancedPriceSource:
 
     _formula_interpreter: typing.Optional[dsl_interpreter.Interpreter] = None
 
-    async def evaluate_formula(self, price: decimal.Decimal) -> decimal.Decimal:
+    async def evaluate_formula(self, price: typing.Optional[decimal.Decimal] = None) -> decimal.Decimal:
         if not self.formula:
-            # no formula to use
+            if price is None:
+                raise ValueError("price is required when no formula is configured")
             return price
         result = None
         try:
@@ -85,10 +86,13 @@ class AdvancedPriceSource:
         exchange_manager,
         candle_manager_by_time_frame_by_symbol: typing.Optional[
             typing.Dict[str, typing.Dict[str, exchange_data.CandlesManager]]
-        ] = None
+        ] = None,
+        price_by_symbol: typing.Optional[typing.Dict[str, typing.Optional[decimal.Decimal]]] = None
     ) -> None:
         if self.formula and not self._formula_interpreter:
-            self._initialize_formula_interpreter(exchange_manager, candle_manager_by_time_frame_by_symbol)
+            self._initialize_formula_interpreter(
+                exchange_manager, candle_manager_by_time_frame_by_symbol, price_by_symbol
+            )
     
     async def validate_interpreted_formula(
         self,
@@ -117,14 +121,15 @@ class AdvancedPriceSource:
         time_frame: commons_enums.TimeFrames,
         candle_manager_by_time_frame_by_symbol: typing.Optional[
             typing.Dict[str, typing.Dict[str, exchange_data.CandlesManager]]
-        ]
+        ] = None,
+        price_by_symbol: typing.Optional[typing.Dict[str, typing.Optional[decimal.Decimal]]] = None
     ) -> typing.List[type[dsl_interpreter.Operator]]:
         base_operators = dsl_interpreter.get_all_operators()
         ohlcv_operators = exchange_operators.create_ohlcv_operators(
             exchange_manager, self.pair, time_frame.value, candle_manager_by_time_frame_by_symbol
         )
         price_operators = exchange_operators.create_price_operators(
-            exchange_manager, self.pair
+            exchange_manager, self.pair, price_by_symbol
         )
         return base_operators + ohlcv_operators + price_operators
 
@@ -133,7 +138,8 @@ class AdvancedPriceSource:
         exchange_manager,
         candle_manager_by_time_frame_by_symbol: typing.Optional[
             typing.Dict[str, typing.Dict[str, exchange_data.CandlesManager]]
-        ]
+        ] = None,
+        price_by_symbol: typing.Optional[typing.Dict[str, typing.Optional[decimal.Decimal]]] = None
     ) -> None:
 
         if exchange_manager:
@@ -152,7 +158,7 @@ class AdvancedPriceSource:
         time_frame = commons_enums.TimeFrames(time_frame)
         self._formula_interpreter = dsl_interpreter.Interpreter(
             self._get_formula_interpreter_operators(
-                exchange_manager, time_frame, candle_manager_by_time_frame_by_symbol
+                exchange_manager, time_frame, candle_manager_by_time_frame_by_symbol, price_by_symbol
             )
         )
         logger = logging.get_logger(self.__class__.__name__)
@@ -169,7 +175,7 @@ class AdvancedPriceSource:
             raise e
 
 async def compute_reference_price(
-    price_by_pair_by_exchange: typing.Dict[str, typing.Dict[str, decimal.Decimal]],
+    price_by_pair_by_exchange: typing.Dict[str, typing.Dict[str, typing.Optional[decimal.Decimal]]],
     reference_price_specs_by_exchange: typing.Dict[str, typing.Iterable[AdvancedPriceSource]]
 ) -> decimal.Decimal:
     total_price = trading_constants.ZERO
@@ -177,10 +183,10 @@ async def compute_reference_price(
     for exchange, price_by_pair in price_by_pair_by_exchange.items():
         if exchange in reference_price_specs_by_exchange:
             for reference_price_spec in reference_price_specs_by_exchange[exchange]:
-                if price := price_by_pair.get(reference_price_spec.pair):
-                    source_price = await reference_price_spec.evaluate_formula(price)
-                    total_price += source_price * reference_price_spec.weight
-                    total_weight += reference_price_spec.weight
+                price = price_by_pair.get(reference_price_spec.pair)
+                source_price = await reference_price_spec.evaluate_formula(price)
+                total_price += source_price * reference_price_spec.weight
+                total_weight += reference_price_spec.weight
     if total_weight:
         return total_price / total_weight
     return trading_constants.ZERO

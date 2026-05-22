@@ -648,3 +648,18 @@ def _get_is_auth_required_exchange(
         exchange_config_by_exchange,
         ccxt_rest_exchange_id=None,
     )
+
+
+def get_dex_exchange_config(configuration: dict) -> dict:
+    return {
+        enums.DEXExchangeConfigKeys.CHAIN_ID.value: configuration.get(enums.DEXExchangeConfigKeys.CHAIN_ID.value),
+        enums.DEXExchangeConfigKeys.DEX_ID.value: configuration.get(enums.DEXExchangeConfigKeys.DEX_ID.value),
+        enums.DEXExchangeConfigKeys.BASE_TOKEN_ADDRESSES.value: configuration.get(enums.DEXExchangeConfigKeys.BASE_TOKEN_ADDRESSES.value),
+        enums.DEXExchangeConfigKeys.QUOTE_TOKEN_ADDRESSES.value: configuration.get(enums.DEXExchangeConfigKeys.QUOTE_TOKEN_ADDRESSES.value),
+    }
+
+
+def has_dex_exchange_config(configuration: dict) -> bool:
+    return any(
+        configuration.get(key.value) for key in enums.DEXExchangeConfigKeys
+    )

@@ -459,12 +459,21 @@ class RealExchangeTester:
         expectations: dict[str, tuple[str, str, str]],
     ):
         async with self.get_exchange_manager() as exchange_manager:
+            connector_symbols = exchange_manager.exchange.connector.symbols
             for input_symbol, (expected_symbol, expected_base, expected_quote) in expectations.items():
                 resolved_symbol = exchange_manager.get_exchange_symbol(input_symbol)
                 assert resolved_symbol == expected_symbol
                 base, quote = exchange_manager.get_exchange_quote_and_base(input_symbol)
                 assert base == expected_base
                 assert quote == expected_quote
+                assert expected_symbol in connector_symbols, (
+                    f"resolved symbol {expected_symbol!r} must be listed in connector.symbols"
+                )
+                if input_symbol != expected_symbol:
+                    assert input_symbol not in connector_symbols, (
+                        f"alias input symbol {input_symbol!r} must not be listed in connector.symbols "
+                        f"(only its canonical symbol {expected_symbol!r} should)"
+                    )
 
     async def get_market_statuses(self):
         # return 2 different market status with different traded pairs to reduce possible

@@ -17,6 +17,7 @@ class OrderBookFetchPolicy(enum.Enum):
 class MarketMakingData:
     exchange: str
     pair: str
+    pair_alias: typing.Optional[str]
     price: decimal.Decimal
     base_volume: decimal.Decimal
     quote_volume: decimal.Decimal

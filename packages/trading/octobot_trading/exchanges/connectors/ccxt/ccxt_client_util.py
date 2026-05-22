@@ -182,6 +182,9 @@ def filtered_fetched_markets(client, market_filter: typing.Callable[[dict], bool
 
 
 def load_markets_from_cache(client: async_ccxt.Exchange, authenticated_cache: bool, market_filter: typing.Union[None, typing.Callable[[dict], bool]] = None):
+    if not get_option_value(client, enums.ExchangeClientOptions.SUPPORTS_MARKETS_CACHE):
+        _get_logger().info(f"Forcing markets load: {client.name} does not support markets cache")
+        raise KeyError()
     client_key = ccxt_clients_cache.get_client_key(client, authenticated_cache)
     ccxt_clients_cache.apply_exchange_markets_cache(client_key, client, market_filter)
     if time_difference := ccxt_clients_cache.get_exchange_time_difference(client_key):
@@ -190,7 +193,7 @@ def load_markets_from_cache(client: async_ccxt.Exchange, authenticated_cache: bo
 
 
 def set_ccxt_client_cache(client: async_ccxt.Exchange, authenticated_cache: bool):
-    if client.markets:
+    if client.markets and get_option_value(client, enums.ExchangeClientOptions.SUPPORTS_MARKETS_CACHE):
         client_key = ccxt_clients_cache.get_client_key(client, authenticated_cache)
         ccxt_clients_cache.set_exchange_markets_cache(client_key, client)
         if time_difference := client.options.get(ccxt_constants.CCXT_TIME_DIFFERENCE):
@@ -667,6 +670,15 @@ def fix_client_missing_markets_fees(
             _get_logger().exception(
                 err, True, f"Unexpected error when fixing missing market fees for {symbol}: {err}"
             )
+
+
+def get_dex_exchange_ccxt_config(configuration: dict) -> dict:
+    return {
+        ccxt_enums.DEXExchangeCCXTConfigKeys.CHAIN_ID.value: configuration.get(enums.DEXExchangeConfigKeys.CHAIN_ID.value),
+        ccxt_enums.DEXExchangeCCXTConfigKeys.DEX_ID.value: configuration.get(enums.DEXExchangeConfigKeys.DEX_ID.value),
+        ccxt_enums.DEXExchangeCCXTConfigKeys.BASE_TOKEN_ADDRESSES.value: configuration.get(enums.DEXExchangeConfigKeys.BASE_TOKEN_ADDRESSES.value),
+        ccxt_enums.DEXExchangeCCXTConfigKeys.QUOTE_TOKEN_ADDRESSES.value: configuration.get(enums.DEXExchangeConfigKeys.QUOTE_TOKEN_ADDRESSES.value),
+    }
 
 
 def _get_market_symbol_suffix(symbol):

@@ -16,11 +16,20 @@ class ExchangeInfo(enum.Enum):
     TIMEFRAMES = "timeframes"
 
 
+class DEXConfig(pydantic.BaseModel):
+    # keys from octobot_trading.enums.DEXExchangeConfigKeys
+    chain_id: str
+    dex_id: str
+    base_token_addresses: list[str]
+    quote_token_addresses: list[str]
+
+
 class ExchangeConfig(pydantic.BaseModel):
     name: str
     sandboxed: bool = False
     exchange_type: typing.Optional[str] = None
     url: typing.Optional[str] = None
+    dex_config: typing.Optional[DEXConfig] = None
 
 
 async def get_traded_pairs_and_timeframes_by_exchange(

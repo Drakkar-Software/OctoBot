@@ -20,6 +20,7 @@ import decimal
 import typing
 
 import octobot_commons.enums as commons_enums
+import octobot_commons.tree as commons_tree
 import octobot_commons.constants as commons_constants
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.errors as commons_errors
@@ -956,7 +957,10 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
 
     async def _ensure_dependencies(
         self, exchange_manager, dependencies: typing.List[exchange_operators.ExchangeDataDependency]
-    ):
+    ) -> dict[str, set[str]]:
+        symbols_by_pending_topic: dict[str, set[str]] = {
+            commons_enums.InitializationEventExchangeTopics.PRICE.value: set(),
+        }
         exchange_id = trading_api.get_exchange_manager_id(exchange_manager)
         for dependency in dependencies:
             if dependency.data_source == trading_constants.OHLCV_CHANNEL:
@@ -967,11 +971,17 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
                     dependency.time_frame
                 )
                 # also subscribe to mark price to trigger on price updates
-                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager)
+                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager, self.symbol)
+                symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value].add(dependency.symbol)
             elif dependency.data_source == trading_constants.MARK_PRICE_CHANNEL:
-                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager)
+                for symbol in [self.symbol, dependency.symbol]:
+                    await self._subscribe_to_exchange_mark_price(
+                        exchange_id, exchange_manager, symbol
+                    )
+                symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value].add(dependency.symbol)
             else:
                 self.logger.error(f"Unknown dependency data source: {dependency.data_source}")
+        return symbols_by_pending_topic
 
     async def _subscribe_to_exchange_ohlcv(
         self, exchange_id: str, exchange_manager, symbol: str, time_frame: str
@@ -1017,16 +1027,53 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
                 continue
             exchange_reference_prices = self.reference_prices_by_exchange[other_exchange_key]
             if exchange_id not in self.subscribed_requirements_exchange_ids:
+                all_symbols_by_pending_topic: dict[str, set[str]] = {
+                    commons_enums.InitializationEventExchangeTopics.PRICE.value: set(),
+                }
                 await self._register_pair_requirement_on_reference_exchange(exchange_manager, exchange_reference_prices)
                 self.subscribed_requirements_exchange_ids.add(exchange_id)
                 for reference_price_spec in exchange_reference_prices:
                     # exchange just initialized, subscribe to channels and initialize all ref prices for this exchange
                     await reference_price_spec.initialize_if_required(exchange_manager)
-                    await self._ensure_dependencies(
+                    symbols_by_pending_topic = await self._ensure_dependencies(
                         exchange_manager,
                         reference_price_spec.get_dependencies(exchange_manager)
                     )
-    
+                    if exchange_manager is not self.exchange_manager and reference_price_spec.formula:
+                        # only consider waiting for symbol init when using formula on other exchanges 
+                        # to handle indirect symbol dependencies
+                        all_symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value].update(symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value])
+                with self._dependencies_init():
+                    await self._wait_for_symbols_init(exchange_manager, all_symbols_by_pending_topic)
+
+    async def _wait_for_symbols_init(
+        self, exchange_manager: trading_exchanges.ExchangeManager, symbols_by_pending_topic: dict[str, set[str]]
+    ):
+        for topic, symbols in symbols_by_pending_topic.items():
+            for symbol in symbols:
+                # ensure event exist, create them if they don't so they can be waited for
+                commons_tree.EventProvider.instance().get_or_create_event(
+                    exchange_manager.bot_id, commons_tree.get_exchange_path(
+                        exchange_manager.exchange_name,
+                        topic,
+                        symbol=symbol
+                    ), allow_creation=True
+                )
+            self.logger.info(
+                f"Waiting for {topic} initialization for {symbols} on {exchange_manager.exchange_name}"
+            )
+            try:
+                await trading_util.wait_for_topic_init(
+                    exchange_manager, 1 * commons_constants.MINUTE_TO_SECONDS, topic, symbols=list(symbols)
+                )
+            except asyncio.TimeoutError:
+                self.logger.error(
+                    f"{topic} initialization for {symbols} on {exchange_manager.exchange_name} timed out"
+                )
+            self.logger.info(
+                f"{topic} initialization for {symbols} on {exchange_manager.exchange_name} completed"
+            )
+
     def _is_registered_on_all_reference_exchanges(self) -> bool:
         return len(self.subscribed_requirements_exchange_ids) >= len(self.reference_prices_by_exchange)
 
