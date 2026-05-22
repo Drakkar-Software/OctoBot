@@ -1,4 +1,4 @@
-import { Check, Clock, Layers, Lock } from "lucide-react"
+import { Check, Clock, Layers, Lock, TriangleAlert } from "lucide-react"
 import { memo } from "react"
 
 import type { Task_Output as Task, TaskStatus } from "@/client"
@@ -21,7 +21,7 @@ import {
   formatIsoTooltip,
   parseActionCount,
 } from "@/utils/task-format"
-import { formatTaskErrorDisplay } from "@/utils/task-errors"
+import { resolveTaskError, type TaskErrorInfo } from "@/utils/task-errors"
 import {
   getDisplayDate,
   getStatusVariant,
@@ -48,14 +48,51 @@ function DateRow({ date }: { date: { label: string; value: string } | null }) {
   )
 }
 
+function ErrorPanel({ status, message }: TaskErrorInfo) {
+  const full = [status, message].filter(Boolean).join(": ")
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-start gap-2 rounded-md border border-neg/25 border-l-2 border-l-neg/70 bg-neg/[0.07] px-2.5 py-1.5 cursor-default">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-neg/80" />
+          <div className="min-w-0 flex-1">
+            {status && (
+              <div className="truncate font-mono text-[11px] font-medium leading-tight text-neg">
+                {status}
+              </div>
+            )}
+            {message && (
+              <div
+                className={cn(
+                  "text-xs leading-snug text-neg/75 line-clamp-2",
+                  status && "mt-0.5",
+                )}
+              >
+                {message}
+              </div>
+            )}
+          </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-sm">
+        <span className="block whitespace-pre-wrap break-words font-mono text-xs">
+          {full}
+        </span>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 function BotCardBody({
   task,
   isRunning,
   isScheduled,
+  errorInfo,
 }: {
   task: Task
   isRunning: boolean
   isScheduled: boolean
+  errorInfo: TaskErrorInfo | null
 }) {
   const activeExec = getActiveExecution(task.executions)
   const group = getStatusGroup(activeExec?.status)
@@ -67,12 +104,18 @@ function BotCardBody({
     ).length ?? 0
   const actionCount = parseActionCount(activeExec?.actions)
 
+  const errorPanel =
+    errorInfo && (errorInfo.status || errorInfo.message) ? (
+      <ErrorPanel status={errorInfo.status} message={errorInfo.message} />
+    ) : null
+
   if (group === "active") {
     if (isRunning) {
       const runningExec = task.executions?.find((e) => e.status === "running")
       const elapsedFrom = runningExec?.scheduled_at ?? activeExec?.scheduled_at
       return (
-        <CardContent className="flex flex-col gap-2 pt-0">
+        <CardContent className="flex flex-col gap-2 pt-0 -mt-4">
+          {errorPanel}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {runCount > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -97,7 +140,8 @@ function BotCardBody({
     }
 
     return (
-      <CardContent className="flex flex-col gap-2 pt-0">
+      <CardContent className="flex flex-col gap-2 pt-0 -mt-4">
+        {errorPanel}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {actionCount != null && (
             <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -126,10 +170,9 @@ function BotCardBody({
     )
   }
 
-  const isFailed = activeExec?.status === "failed"
-
   return (
-    <CardContent className="flex flex-col gap-2 pt-0">
+    <CardContent className="flex flex-col gap-2 pt-0 -mt-4">
+      {errorPanel}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {runCount > 0 && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -137,14 +180,7 @@ function BotCardBody({
             {runCount} run{runCount !== 1 ? "s" : ""}
           </span>
         )}
-      </div>
-      <div
-        className={cn(
-          "text-xs",
-          isFailed ? "text-destructive/80" : "text-muted-foreground",
-        )}
-      >
-        {date ? `${date.label}: ${formatDate(date.value)}` : null}
+        <DateRow date={date} />
       </div>
     </CardContent>
   )
@@ -179,7 +215,7 @@ export const BotCard = memo(function BotCard({
   const rawStatus = (activeExec?.status ?? "scheduled") as TaskStatus
   const group = getStatusGroup(rawStatus)
   const hasError = !!task.error
-  const errorDisplay = formatTaskErrorDisplay(task)
+  const errorInfo = hasError ? resolveTaskError(task) : null
   const started = hasStartedExecution(task.executions)
 
   const label =
@@ -247,15 +283,10 @@ export const BotCard = memo(function BotCard({
                 {displayLabel}
               </Badge>
             </div>
-            <div className="mt-0.5 flex items-center justify-between gap-2 min-w-0">
-              <span className="font-mono text-xs text-muted-foreground shrink-0">
+            <div className="mt-0.5 min-w-0">
+              <span className="font-mono text-xs text-muted-foreground">
                 ID: {task.id?.slice(0, 12) || "—"}
               </span>
-              {hasError && errorDisplay && (
-                <span className="font-mono text-xs text-neg truncate text-right">
-                  {errorDisplay}
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -264,6 +295,7 @@ export const BotCard = memo(function BotCard({
         task={task}
         isRunning={isRunning}
         isScheduled={isScheduled}
+        errorInfo={errorInfo}
       />
     </Card>
   )
