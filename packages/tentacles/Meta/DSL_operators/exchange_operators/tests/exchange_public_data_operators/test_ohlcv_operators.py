@@ -25,6 +25,7 @@ import octobot_commons.logging
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.api
 import octobot_trading.constants
+import octobot_trading.enums
 import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.ohlcv_operators as ohlcv_operators
 
@@ -97,8 +98,10 @@ async def test_ohlcv_operators_basic_calls_without_klines(
         assert np.array_equal(await _interpreter.interprete(f"{operator}('BTC/USDT', '1h')"), expected_values) # 4h BTC rsi value
         assert np.array_equal(await _interpreter.interprete(f"{operator}('BTC/USDT', '4h')"), expected_values * 2) # 4h BTC rsi value
         assert np.array_equal(await _interpreter.interprete(f"{operator}('ETH/USDT', '1h')"), expected_values / 2) # 1h ETH rsi value
-        with pytest.raises(KeyError): # no 4h ETH candles
+        with pytest.raises(octobot_commons.errors.DSLInterpreterError): # no 4h ETH candles
             await _interpreter.interprete(f"{operator}('ETH/USDT', '4h')")
+        with pytest.raises(octobot_commons.errors.DSLInterpreterError): # no XXX/USDT candles
+            await _interpreter.interprete(f"{operator}('XXX/USDT', '1h')")
 
 
 def _adapted_for_kline(values: np.ndarray, operator: str, time_delay: float) -> np.ndarray:
@@ -140,8 +143,10 @@ async def test_ohlcv_operators_basic_calls_with_klines(
     assert np.array_equal(await _interpreter.interprete(f"{operator}('BTC/USDT', '1h')"), kline_adapted_value) # 4h BTC rsi value
     assert np.array_equal(await _interpreter.interprete(f"{operator}('BTC/USDT', '4h')"), _adapted_for_kline(expected_values * 2, operator, 0)) # 4h BTC rsi value
     assert np.array_equal(await _interpreter.interprete(f"{operator}('ETH/USDT', '1h')"), _adapted_for_kline(expected_values / 2, operator, 0)) # 1h ETH rsi value
-    with pytest.raises(KeyError): # no 4h ETH candles
+    with pytest.raises(octobot_commons.errors.DSLInterpreterError): # no 4h ETH candles
         await _interpreter.interprete(f"{operator}('ETH/USDT', '4h')")
+    with pytest.raises(octobot_commons.errors.DSLInterpreterError): # no XXX/USDT candles
+        await _interpreter.interprete(f"{operator}('XXX/USDT', '1h')")
 
 
 @pytest.mark.asyncio
@@ -176,8 +181,10 @@ async def test_ohlcv_operators_basic_calls_with_new_candle_klines(
     assert np.array_equal(await _interpreter.interprete(f"{operator}('BTC/USDT', '1h')"), kline_adapted_value) # 4h BTC rsi value
     assert np.array_equal(await _interpreter.interprete(f"{operator}('BTC/USDT', '4h')"), _adapted_for_kline(expected_values * 2, operator, four_hours_time_delay)) # 4h BTC rsi value
     assert np.array_equal(await _interpreter.interprete(f"{operator}('ETH/USDT', '1h')"), _adapted_for_kline(expected_values / 2, operator, one_hour_time_delay)) # 1h ETH rsi value
-    with pytest.raises(KeyError): # no 4h ETH candles
+    with pytest.raises(octobot_commons.errors.DSLInterpreterError): # no 4h ETH candles
         await _interpreter.interprete(f"{operator}('ETH/USDT', '4h')")
+    with pytest.raises(octobot_commons.errors.DSLInterpreterError): # no XXX/USDT candles
+        await _interpreter.interprete(f"{operator}('XXX/USDT', '1h')")
 
     # with unknown kline time: unknown kline is ignored
     def _get_kline(symbol_data, time_frame):
@@ -314,4 +321,28 @@ class TestGetExchangeSymbol:
             await ohlcv_interpreter.interprete("close")
             get_symbol_data_spy.assert_called_once_with(
                 exchange_manager_with_candles, RESOLVED_SYMBOL, allow_creation=False
+            )
+
+
+class TestCreateOhlcvFromTickersOption:
+    @pytest.mark.asyncio
+    async def test_raises_when_exchange_creates_ohlcv_from_tickers(
+        self, exchange_manager_with_candles
+    ):
+        with mock.patch.object(
+            exchange_manager_with_candles.exchange, "get_option_value", mock.Mock(return_value=True)
+        ) as get_option_value_mock:
+            ohlcv_interpreter = dsl_interpreter.Interpreter(
+                dsl_interpreter.get_all_operators()
+                + exchange_operators.create_ohlcv_operators(
+                    exchange_manager_with_candles, SYMBOL, TIME_FRAME
+                )
+            )
+            with pytest.raises(
+                octobot_commons.errors.DSLInterpreterError,
+                match="OHLCV data are not available for this exchange",
+            ):
+                await ohlcv_interpreter.interprete("close")
+            get_option_value_mock.assert_called_once_with(
+                octobot_trading.enums.ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS
             )

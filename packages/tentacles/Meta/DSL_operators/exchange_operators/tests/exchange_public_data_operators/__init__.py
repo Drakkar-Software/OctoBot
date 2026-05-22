@@ -131,6 +131,10 @@ def _identity_get_exchange_symbol(symbol):
     return symbol
 
 
+def _mock_exchange():
+    return mock.Mock(get_option_value=mock.Mock(return_value=False))
+
+
 def _normalize_symbol(symbol: str) -> str:
     symbol_aliases = {
         RESOLVED_SYMBOL: SYMBOL,
@@ -189,6 +193,7 @@ def exchange_manager_with_candles(historical_prices, historical_volume, historic
     return mock.Mock(
         id="exchange_manager_id",
         exchange_name="binance",
+        exchange=_mock_exchange(),
         get_exchange_symbol=mock.Mock(side_effect=_identity_get_exchange_symbol),
         exchange_symbols_data=mock.Mock(
             get_exchange_symbol_data=_get_symbol_data_factory(
@@ -206,6 +211,7 @@ def exchange_manager_with_candles_and_klines(historical_prices, historical_volum
     return mock.Mock(
         id="exchange_manager_id",
         exchange_name="binance",
+        exchange=_mock_exchange(),
         get_exchange_symbol=mock.Mock(side_effect=_identity_get_exchange_symbol),
         exchange_symbols_data=mock.Mock(
             get_exchange_symbol_data=_get_symbol_data_factory(
@@ -223,6 +229,7 @@ def exchange_manager_with_candles_and_new_candle_klines(historical_prices, histo
     return mock.Mock(
         id="exchange_manager_id",
         exchange_name="binance",
+        exchange=_mock_exchange(),
         get_exchange_symbol=mock.Mock(side_effect=_identity_get_exchange_symbol),
         exchange_symbols_data=mock.Mock(
             get_exchange_symbol_data=_get_symbol_data_factory(

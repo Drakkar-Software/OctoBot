@@ -28,6 +28,7 @@ import octobot_trading.exchange_data
 import octobot_trading.api
 import octobot_trading.constants
 import octobot_trading.dsl
+import octobot_trading.enums
 
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_operator as exchange_operator
 
@@ -88,17 +89,28 @@ def create_ohlcv_operators(
             )
         _symbol = input_symbol or symbol
         _time_frame = input_time_frame or time_frame
-        if exchange_manager is None:
-            if candle_manager_by_time_frame_by_symbol is not None:
-                candles_manager = candle_manager_by_time_frame_by_symbol[_time_frame][_symbol]
-            symbol_data = None
-        else:
-            _symbol = exchange_manager.get_exchange_symbol(_symbol)
-            symbol_data = octobot_trading.api.get_symbol_data(
-                exchange_manager, _symbol, allow_creation=False
-            )
-            candles_manager = octobot_trading.api.get_symbol_candles_manager(
-                symbol_data, _time_frame
+        try:
+            if exchange_manager is None:
+                if candle_manager_by_time_frame_by_symbol is not None:
+                    candles_manager = candle_manager_by_time_frame_by_symbol[_time_frame][_symbol]
+                symbol_data = None
+            else:
+                if exchange_manager.exchange.get_option_value(
+                    octobot_trading.enums.ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS
+                ):
+                    raise octobot_commons.errors.DSLInterpreterError(
+                        "OHLCV data are not available for this exchange"
+                    )
+                _symbol = exchange_manager.get_exchange_symbol(_symbol)
+                symbol_data = octobot_trading.api.get_symbol_data(
+                    exchange_manager, _symbol, allow_creation=False
+                )
+                candles_manager = octobot_trading.api.get_symbol_candles_manager(
+                    symbol_data, _time_frame
+                )
+        except KeyError:
+            raise octobot_commons.errors.DSLInterpreterError(
+                f"No candles manager found for {_symbol} {_time_frame}"
             )
         candles_values = _get_candles_values(candles_manager, value_type, limit)
         if symbol_data is not None and (kline := _get_kline(symbol_data, _time_frame)):
