@@ -49,6 +49,13 @@ class KlineUpdater(kline_channel.KlineProducer):
         if self.channel.is_paused:
             await self.pause()
         else:
+            if self.channel.exchange_manager.exchange.get_option_value(
+                enums.ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS
+            ):
+                self.logger.info(
+                    "Fetching Klines is not supported for this exchange. Cannot start Kline updater."
+                )
+                return
             self.tasks = [
                 asyncio.create_task(self.time_frame_watcher(time_frame))
                 for time_frame in self.channel.exchange_manager.exchange_config.available_time_frames

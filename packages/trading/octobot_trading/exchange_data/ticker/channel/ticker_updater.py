@@ -41,24 +41,28 @@ class TickerUpdater(ticker_channel.TickerProducer):
     CHANNEL_NAME = constants.TICKER_CHANNEL
     TICKER_REFRESH_TIME = 64
     TICKER_FUTURE_REFRESH_TIME = 14
+    TICKERS_AS_SINGLE_PRICE_SOURCE_REFRESH_TIME = 15
     TICKER_REFRESH_DELAY_THRESHOLD = 10
 
     def __init__(self, channel):
         super().__init__(channel)
         self._added_pairs = []
-        self.is_fetching_future_data = False
+        self.enable_short_refresh_time = False
         self.refresh_time = self.TICKER_REFRESH_TIME
         self.updating_pairs = set()
 
     async def start(self):
-        use_futures = self._should_use_future()
-        if use_futures:
-            self.is_fetching_future_data = True
+        if self._should_use_future():
+            self.enable_short_refresh_time = True
             self.refresh_time = self.TICKER_FUTURE_REFRESH_TIME
+        if self._creates_ohlcv_from_tickers():
+            # tickers are the only source of price data, need to refresh them often
+            self.enable_short_refresh_time = True
+            self.refresh_time = self.TICKERS_AS_SINGLE_PRICE_SOURCE_REFRESH_TIME
         if self.channel.is_paused:
             await self.pause()
         else:
-            if use_futures or self._should_loop():
+            if self.enable_short_refresh_time or self._should_loop():
                 # initialize ticker
                 await asyncio.gather(*[self._fetch_ticker(pair)
                                        for pair in self._get_pairs_to_update()])
@@ -165,12 +169,6 @@ class TickerUpdater(ticker_channel.TickerProducer):
                 and ticker.get(enums.ExchangeConstantsTickersColumns.TIMESTAMP.value)
             ):
                 return False
-            if not (
-                ticker.get(enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value)
-                or ticker.get(enums.ExchangeConstantsTickersColumns.QUOTE_VOLUME.value)
-            ):
-                # require either base or quote volume
-                return False
             return True
         except KeyError:
             return False
@@ -203,6 +201,11 @@ class TickerUpdater(ticker_channel.TickerProducer):
             )
         )
 
+    def _creates_ohlcv_from_tickers(self):
+        return self.channel.exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS
+        )
+
     async def modify(self, added_pairs=None, removed_pairs=None):
         if added_pairs:
             to_add_pairs = [pair
@@ -222,7 +225,7 @@ class TickerUpdater(ticker_channel.TickerProducer):
             self._update_refresh_time()
 
     def _update_refresh_time(self):
-        if self.is_fetching_future_data:
+        if self.enable_short_refresh_time:
             # do not change ticker update rate on futures
             return
         pairs_to_update_count = len(self._get_pairs_to_update())
