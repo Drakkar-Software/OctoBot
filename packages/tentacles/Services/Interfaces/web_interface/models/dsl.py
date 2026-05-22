@@ -23,6 +23,8 @@ def get_dsl_keywords_docs() -> list[dsl_interpreter.OperatorDocs]:
         dsl_interpreter.get_all_operators()
         + dsl_operators.create_ohlcv_operators(
             None, None, None
+        ) + dsl_operators.create_price_operators(
+            None, None
         ) + dsl_operators.create_portfolio_operators(
             None
         ) + dsl_operators.create_create_order_operators(

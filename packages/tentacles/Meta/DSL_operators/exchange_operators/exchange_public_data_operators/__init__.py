@@ -29,6 +29,11 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_oper
 from tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.symbol_operators import (
     create_symbol_operators,
 )
+import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.price_operators
+from tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_operators.price_operators import (
+    PriceOperator,
+    create_price_operators,
+)
 
 __all__ = [
     "OHLCVOperator",
@@ -36,4 +41,6 @@ __all__ = [
     "create_ohlcv_operators",
     "create_ticker_operators",
     "create_symbol_operators",
+    "PriceOperator",
+    "create_price_operators",
 ]

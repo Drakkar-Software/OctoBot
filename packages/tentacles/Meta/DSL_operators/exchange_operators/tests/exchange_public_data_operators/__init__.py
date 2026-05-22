@@ -28,6 +28,8 @@ import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
 
 SYMBOL = "BTC/USDT"
 SYMBOL2 = "ETH/USDT"
+RESOLVED_SYMBOL = "BTCUSDT"
+RESOLVED_SYMBOL2 = "ETHUSDT"
 TIME_FRAME = "1h"
 TIME_FRAME2 = "4h"
 KLINE_SIGNATURE = 0.00666
@@ -125,10 +127,23 @@ def _get_kline(candles_manager: mock.Mock, signature: float, kline_time_delta: t
     return kline
 
 
+def _identity_get_exchange_symbol(symbol):
+    return symbol
+
+
+def _normalize_symbol(symbol: str) -> str:
+    symbol_aliases = {
+        RESOLVED_SYMBOL: SYMBOL,
+        RESOLVED_SYMBOL2: SYMBOL2,
+    }
+    return symbol_aliases.get(symbol, symbol)
+
+
 def _get_symbol_data_factory(
     btc_1h_candles_manager, eth_1h_candles_manager, btc_4h_candles_manager, kline_type: str
 ):
     def _get_symbol_data(symbol: str, **kwargs):
+        symbol = _normalize_symbol(symbol)
         symbol_candles = {}
         one_h_candles_manager = btc_1h_candles_manager if symbol == SYMBOL else eth_1h_candles_manager if symbol == SYMBOL2 else None
         four_h_candles_manager = btc_4h_candles_manager if symbol == SYMBOL else None # no 4h eth candles
@@ -174,6 +189,7 @@ def exchange_manager_with_candles(historical_prices, historical_volume, historic
     return mock.Mock(
         id="exchange_manager_id",
         exchange_name="binance",
+        get_exchange_symbol=mock.Mock(side_effect=_identity_get_exchange_symbol),
         exchange_symbols_data=mock.Mock(
             get_exchange_symbol_data=_get_symbol_data_factory(
                 btc_1h_candles_manager, eth_1h_candles_manager, btc_4h_candles_manager, "no_kline"
@@ -190,6 +206,7 @@ def exchange_manager_with_candles_and_klines(historical_prices, historical_volum
     return mock.Mock(
         id="exchange_manager_id",
         exchange_name="binance",
+        get_exchange_symbol=mock.Mock(side_effect=_identity_get_exchange_symbol),
         exchange_symbols_data=mock.Mock(
             get_exchange_symbol_data=_get_symbol_data_factory(
                 btc_1h_candles_manager, eth_1h_candles_manager, btc_4h_candles_manager, "same_time_kline"
@@ -206,6 +223,7 @@ def exchange_manager_with_candles_and_new_candle_klines(historical_prices, histo
     return mock.Mock(
         id="exchange_manager_id",
         exchange_name="binance",
+        get_exchange_symbol=mock.Mock(side_effect=_identity_get_exchange_symbol),
         exchange_symbols_data=mock.Mock(
             get_exchange_symbol_data=_get_symbol_data_factory(
                 btc_1h_candles_manager, eth_1h_candles_manager, btc_4h_candles_manager, "new_time_kline"

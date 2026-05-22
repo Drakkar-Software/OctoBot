@@ -31,8 +31,10 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_oper
 
 from tentacles.Meta.DSL_operators.exchange_operators.tests.exchange_public_data_operators import (
     SYMBOL,
+    SYMBOL2,
     TIME_FRAME,
     KLINE_SIGNATURE,
+    RESOLVED_SYMBOL,
     historical_prices,
     historical_volume,
     historical_times,
@@ -260,3 +262,56 @@ class TestGetDependencies:
                 data_source=octobot_trading.constants.OHLCV_CHANNEL
             ),
         ]
+
+
+class TestGetExchangeSymbol:
+    @pytest.mark.asyncio
+    async def test_pre_compute_calls_get_exchange_symbol_with_context_symbol(
+        self, interpreter, exchange_manager_with_candles
+    ):
+        exchange_manager_with_candles.get_exchange_symbol.reset_mock()
+        await interpreter.interprete("close")
+        exchange_manager_with_candles.get_exchange_symbol.assert_called_with(SYMBOL)
+
+    @pytest.mark.asyncio
+    async def test_pre_compute_calls_get_exchange_symbol_with_param_symbol(
+        self, interpreter, exchange_manager_with_candles
+    ):
+        exchange_manager_with_candles.get_exchange_symbol.reset_mock()
+        await interpreter.interprete(f"close('{SYMBOL2}')")
+        exchange_manager_with_candles.get_exchange_symbol.assert_called_with(SYMBOL2)
+
+    @pytest.mark.asyncio
+    async def test_get_dependencies_calls_get_exchange_symbol(
+        self, interpreter, exchange_manager_with_candles
+    ):
+        exchange_manager_with_candles.get_exchange_symbol.reset_mock()
+        interpreter.prepare("close")
+        interpreter.get_dependencies()
+        exchange_manager_with_candles.get_exchange_symbol.assert_called_with(SYMBOL)
+
+    @pytest.mark.asyncio
+    async def test_pre_compute_does_not_call_get_exchange_symbol_without_exchange_manager(
+        self, interpreter_with_candle_manager_by_time_frame_by_symbol, historical_prices
+    ):
+        operator_value = await interpreter_with_candle_manager_by_time_frame_by_symbol.interprete("close")
+        assert np.array_equal(operator_value, historical_prices)
+
+    @pytest.mark.asyncio
+    async def test_pre_compute_uses_resolved_symbol_downstream(
+        self, exchange_manager_with_candles
+    ):
+        exchange_manager_with_candles.get_exchange_symbol = mock.Mock(return_value=RESOLVED_SYMBOL)
+        ohlcv_interpreter = dsl_interpreter.Interpreter(
+            dsl_interpreter.get_all_operators()
+            + exchange_operators.create_ohlcv_operators(
+                exchange_manager_with_candles, SYMBOL, TIME_FRAME
+            )
+        )
+        with mock.patch.object(
+            octobot_trading.api, "get_symbol_data", wraps=octobot_trading.api.get_symbol_data
+        ) as get_symbol_data_spy:
+            await ohlcv_interpreter.interprete("close")
+            get_symbol_data_spy.assert_called_once_with(
+                exchange_manager_with_candles, RESOLVED_SYMBOL, allow_creation=False
+            )

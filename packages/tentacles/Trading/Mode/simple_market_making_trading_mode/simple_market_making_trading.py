@@ -312,6 +312,7 @@ class SimpleMarketMakingTradingMode(market_making_trading.MarketMakingTradingMod
             self.HEDGING_EXCHANGE: self.UI.user_input(
                 self.HEDGING_EXCHANGE, commons_enums.UserInputTypes.TEXT,
                 "", inputs, parent_input_name=self.HEDGING_ENGINE,
+                other_schema_values={"minLength": 0},
                 title="Hedging exchange: exchange to hedge on. This exchange must be enabled in exchange configuration.",
             ),
         }

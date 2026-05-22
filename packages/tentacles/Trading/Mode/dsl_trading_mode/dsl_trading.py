@@ -114,6 +114,7 @@ class DSLTradingMode(trading_modes.AbstractTradingMode):
         return dsl_interpreter.Interpreter(
             dsl_interpreter.get_all_operators()
             + dsl_operators.create_ohlcv_operators(self.exchange_manager, None, None)
+            + dsl_operators.create_price_operators(self.exchange_manager, None)
             + dsl_operators.create_portfolio_operators(self.exchange_manager)
             + dsl_operators.create_create_order_operators(
                 self.exchange_manager, trading_mode=self, dependencies=dependencies

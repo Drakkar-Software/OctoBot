@@ -39,6 +39,7 @@ def exchange_manager_mock():
     exchange_manager = mock.Mock()
     exchange_manager.id = str(uuid.uuid4())
     exchange_manager.exchange_name = "binance"
+    exchange_manager.get_exchange_symbol = mock.Mock(side_effect=lambda symbol: symbol)
     return exchange_manager
 
 
@@ -295,33 +296,52 @@ def test_advanced_price_source_attributes(price_source_no_formula):
     assert price_source_no_formula._formula_interpreter is None
 
 
-async def test_get_dependencies_with_formula_dependencies(price_source_with_formula, exchange_manager_mock):
-    """Test get_dependencies returns dependencies from interpreter when using OHLCV operators."""
-    # Use a formula that would use OHLCV operators to get dependencies
+@pytest.mark.parametrize("formula, expected_formula_dependencies", [
+    pytest.param(
+        "close",
+        [
+            exchange_operators.ExchangeDataDependency(
+                symbol="BTC/USDT",
+                time_frame=commons_enums.TimeFrames.ONE_HOUR.value,
+                data_source=trading_constants.OHLCV_CHANNEL,
+            ),
+        ],
+        id="close",
+    ),
+    pytest.param(
+        "price",
+        [],
+        id="price",
+    ),
+])
+async def test_get_dependencies_with_formula_dependencies(
+    price_source_with_formula,
+    exchange_manager_mock,
+    formula,
+    expected_formula_dependencies,
+):
+    """Test get_dependencies returns dependencies from interpreter for OHLCV and price operators."""
     ohlcv_operators = exchange_operators.create_ohlcv_operators(
         exchange_manager_mock, "BTC/USDT", commons_enums.TimeFrames.ONE_HOUR.value
     )
-    
-    # Use a formula that references OHLCV data
-    price_source_with_formula.formula = "close"
-    
+    price_operators = exchange_operators.create_price_operators(
+        exchange_manager_mock, "BTC/USDT"
+    )
+    price_source_with_formula.formula = formula
+
     with mock.patch.object(
         trading_api, 'get_watched_timeframes', return_value=[commons_enums.TimeFrames.ONE_HOUR]
     ), mock.patch.object(
         exchange_operators, 'create_ohlcv_operators', return_value=ohlcv_operators
+    ), mock.patch.object(
+        exchange_operators, 'create_price_operators', return_value=price_operators
     ):
         await price_source_with_formula.initialize_if_required(exchange_manager_mock)
-    
+
+    mark_price_dependency = exchange_operators.ExchangeDataDependency(
+        symbol="BTC/USDT",
+        time_frame=None,
+        data_source=trading_constants.MARK_PRICE_CHANNEL,
+    )
     dependencies = price_source_with_formula.get_dependencies(exchange_manager_mock)
-    assert dependencies == [
-        exchange_operators.ExchangeDataDependency(
-            symbol="BTC/USDT",
-            time_frame=None,
-            data_source=trading_constants.MARK_PRICE_CHANNEL
-        ),
-        exchange_operators.ExchangeDataDependency(
-            symbol="BTC/USDT",
-            time_frame=commons_enums.TimeFrames.ONE_HOUR.value,
-            data_source=trading_constants.OHLCV_CHANNEL
-        )
-    ]
+    assert dependencies == [mark_price_dependency] + expected_formula_dependencies

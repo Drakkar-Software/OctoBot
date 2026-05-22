@@ -36,6 +36,12 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_operator as exch
 class ExchangeDataDependency(octobot_trading.dsl.SymbolDependency):
     data_source: str = octobot_trading.constants.OHLCV_CHANNEL
 
+    def resolve_symbol(
+        self, exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager]
+    ):
+        if exchange_manager is not None:
+            self.symbol = exchange_manager.get_exchange_symbol(self.symbol)
+
     def __hash__(self) -> int:
         return hash((self.symbol, self.time_frame, self.data_source))
 
@@ -87,6 +93,7 @@ def create_ohlcv_operators(
                 candles_manager = candle_manager_by_time_frame_by_symbol[_time_frame][_symbol]
             symbol_data = None
         else:
+            _symbol = exchange_manager.get_exchange_symbol(_symbol)
             symbol_data = octobot_trading.api.get_symbol_data(
                 exchange_manager, _symbol, allow_creation=False
             )
@@ -135,6 +142,8 @@ def create_ohlcv_operators(
                 )
                 if symbol_dep not in local_dependencies:
                     local_dependencies.append(symbol_dep)
+            for dependency in local_dependencies:
+                dependency.resolve_symbol(exchange_manager)
             return super().get_dependencies() + local_dependencies
 
         async def pre_compute(self) -> None:

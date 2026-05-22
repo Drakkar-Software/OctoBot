@@ -85,16 +85,20 @@ class ScriptedCondition(abstract_condition.AbstractCondition):
     def _create_dsl_interpreter(self):
         exchange_manager = self._get_exchange_manager()
         ohlcv_operators = []
+        price_operators = []
         portfolio_operators = []
         if exchange_manager is not None:
             ohlcv_operators = dsl_operators.exchange_operators.create_ohlcv_operators(
                 exchange_manager, None, None
             )
+            price_operators = dsl_operators.exchange_operators.create_price_operators(
+                exchange_manager, None
+            )
             portfolio_operators = dsl_operators.exchange_operators.create_portfolio_operators(
                 exchange_manager
             )
         return dsl_interpreter.Interpreter(
-            dsl_interpreter.get_all_operators() + ohlcv_operators + portfolio_operators
+            dsl_interpreter.get_all_operators() + ohlcv_operators + price_operators + portfolio_operators
         )
     
     def _get_exchange_manager(self):
