@@ -687,6 +687,7 @@ class ExchangeClientOptions(enum.StrEnum):
     FIX_MARKET_STATUS = "fixMarketStatus"
     REMOVE_MARKET_STATUS_PRICE_LIMITS = "removeMarketStatusPriceLimits"
     ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE = "adaptMarketStatusForContractSize"
+    SUPPORTS_MARKETS_CACHE = "supportsMarketsCache"
     INCLUDE_DISABLED_SYMBOLS_IN_AVAILABLE_SYMBOLS = "includeDisabledSymbolsInAvailableSymbols"
     ENABLE_SPOT_BUY_MARKET_WITH_COST = "enableSpotBuyMarketWithCost"
     REQUIRE_ORDER_FEES_FROM_TRADES = "requireOrderFeesFromTrades"
@@ -707,16 +708,17 @@ class ExchangeClientOptions(enum.StrEnum):
     STOP_LOSS_CREATE_PRICE_PARAM = "stopLossCreatePriceParam"
     MARK_PRICE_IN_POSITION = "markPriceInPosition"
     MARK_PRICE_IN_TICKER = "markPriceInTicker"
-    MAX_FETCHED_OHLCV_COUNT = "maxFetchedOhlcvCount"
     CREATE_OHLCV_FROM_TICKERS = "createOhlcvFromTickers"
-    FUNDING_WITH_MARK_PRICE = "fundingWithMarkPrice"
     FUNDING_IN_TICKER = "fundingInTicker"
+    CAN_MISS_TICKERS_IN_ALL_TICKERS = "canMissTickersInAllTickers"
+    REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS = "requiresSymbolsParamToFetchTickers"
+    MAX_FETCHED_OHLCV_COUNT = "maxFetchedOhlcvCount"
+    FUNDING_WITH_MARK_PRICE = "fundingWithMarkPrice"
     MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER = "maxIncreasedPositionQuantityMultiplier"
     SUPPORT_FETCHING_CANCELLED_ORDERS = "supportFetchingCancelledOrders"
     CAN_HAVE_DELAYED_OPEN_ORDERS = "canHaveDelayedOpenOrders"
     CAN_HAVE_DELAYED_CANCELLED_ORDERS = "canHaveDelayedCancelledOrders"
     SUPPORTS_CUSTOM_LIMIT_ORDER_BOOK_FETCH = "supportsCustomLimitOrderBookFetch"
-    CAN_MISS_TICKERS_IN_ALL_TICKERS = "canMissTickersInAllTickers"
     LOCAL_FEES_CURRENCIES = "localFeesCurrencies"
     ADJUST_FOR_TIME_DIFFERENCE = "adjustForTimeDifference"
     DEFAULT_QUOTE_CURRENCY = "defaultQuoteCurrency"
@@ -734,6 +736,13 @@ class ExchangeSupportedElements(enum.StrEnum):
     BUNDLED_ORDERS = "bundled_orders"
 
 
+class DEXExchangeConfigKeys(enum.StrEnum):
+    CHAIN_ID = "chain_id"
+    DEX_ID = "dex_id"
+    BASE_TOKEN_ADDRESSES = "base_token_addresses"
+    QUOTE_TOKEN_ADDRESSES = "quote_token_addresses"
+
+
 DEFAULT_EXCHANGE_OPTION_VALUES = {
     # set True when ccxt should fix the market status
     ExchangeClientOptions.FIX_MARKET_STATUS: False,
@@ -742,6 +751,8 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     # set True when ccxt should adapt amounts for contract size
     # (amounts are in not kept as contract size with OctoBot)
     ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE: False,
+    # set True when the exchange supports markets cache (true by default for ccxt)
+    ExchangeClientOptions.SUPPORTS_MARKETS_CACHE: True,
     # set True when disabled symbols should still be considered
     # (ex: mexc with its temporary api trading disabled symbols)
     ExchangeClientOptions.INCLUDE_DISABLED_SYMBOLS_IN_AVAILABLE_SYMBOLS: False,
@@ -806,6 +817,8 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.SUPPORTS_CUSTOM_LIMIT_ORDER_BOOK_FETCH: False,
     # set True when fetch_tickers can sometimes miss symbols. In this case, the connector will try to fix it
     ExchangeClientOptions.CAN_MISS_TICKERS_IN_ALL_TICKERS: True,
+    # set True when fetch_tickers requires the symbols param to be passed
+    ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS: False,
     # set when the exchange can allow users to pay fees in a custom currency (ex: BNB on binance)
     ExchangeClientOptions.LOCAL_FEES_CURRENCIES: None,
     # set True when the client needs to adjust its requests for time difference with the server

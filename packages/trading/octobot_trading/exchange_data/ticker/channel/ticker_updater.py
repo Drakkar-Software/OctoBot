@@ -77,7 +77,10 @@ class TickerUpdater(ticker_channel.TickerProducer):
     async def start_update_loop(self):
         while not self.should_stop and not self.channel.is_paused:
             try:
-                for pair in self._get_pairs_to_update():
+                pairs = self._get_pairs_to_update()
+                if self.enable_short_refresh_time:
+                    self.logger.debug(f"Triggering ticker update for {len(pairs)} pairs: {pairs}")
+                for pair in pairs:
                     await self._fetch_ticker(pair)
 
                 await asyncio.sleep(self.refresh_time)
@@ -127,7 +130,12 @@ class TickerUpdater(ticker_channel.TickerProducer):
             exchange_type,
             self.channel.exchange_manager.is_sandboxed
         )):
-            tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker()
+            symbols_filter = None
+            if self.channel.exchange_manager.exchange.get_option_value(
+                enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
+            ):
+                symbols_filter = symbols
+            tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker(symbols=symbols_filter)
             self.set_cache(
                 self.channel.exchange_manager.exchange_name,
                 exchange_type,

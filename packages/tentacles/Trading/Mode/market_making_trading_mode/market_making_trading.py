@@ -19,6 +19,7 @@ import collections
 import dataclasses
 import decimal
 import typing
+import contextlib
 
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as common_constants
@@ -499,6 +500,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         self.last_target_buy_orders_count: int = 0
         self.last_target_sell_orders_count: int = 0
         self.subscribed_requirements_exchange_ids: set[str] = set()
+        self.waiting_for_dependencies_init: bool = False
 
         try:
             self._load_symbol_trading_config()
@@ -634,7 +636,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
                     ):
                         self.is_first_execution = False
                         self._started_at = self.exchange_manager.exchange.get_exchange_current_time()
-                        return True
+                        return trading_personal_data.TradesUpdater
                 except trading_errors.TraderDisabledError as err:
                     current_time = self.exchange_manager.exchange.get_exchange_current_time()
                     current_minute_ts = current_time - current_time % (5 * common_constants.MINUTE_TO_SECONDS)
@@ -1320,7 +1322,21 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         :param mark_price: updated mark price
         :return: None
         """
+        if self.waiting_for_dependencies_init:
+            self.logger.info(
+                f"Skipping reference price update for {self.symbol} [{self.exchange_manager.exchange_name}]: "
+                f"waiting for dependencies initialization"
+            )
+            return
         await self._on_reference_price_update()
+
+    @contextlib.contextmanager
+    def _dependencies_init(self):
+        self.waiting_for_dependencies_init = True
+        try:
+            yield
+        finally:
+            self.waiting_for_dependencies_init = False
 
     async def _register_pair_requirement_on_reference_exchanges(self):
         local_exchange_name = self.exchange_manager.exchange_name
@@ -1340,22 +1356,22 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
             if other_exchange_key != self.reference_price.exchange:
                 continue
             if exchange_id not in self.subscribed_requirements_exchange_ids:
-                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager)
+                await self._subscribe_to_exchange_mark_price(exchange_id, exchange_manager, self.symbol)
                 self.subscribed_requirements_exchange_ids.add(exchange_id)
     
     def _is_registered_on_all_reference_exchanges(self) -> bool:
         return len(self.subscribed_requirements_exchange_ids) == 1
 
-    async def _subscribe_to_exchange_mark_price(self, exchange_id: str, exchange_manager):
+    async def _subscribe_to_exchange_mark_price(self, exchange_id: str, exchange_manager, symbol: str):
         if not self.already_subscribed_to_channel(
-            exchange_id, trading_constants.MARK_PRICE_CHANNEL, self._mark_price_callback, symbol=self.trading_mode.symbol
+            exchange_id, trading_constants.MARK_PRICE_CHANNEL, self._mark_price_callback, symbol=symbol
         ):
             await exchanges_channel.get_chan(trading_constants.MARK_PRICE_CHANNEL, exchange_id).new_consumer(
                 callback=self._mark_price_callback,
-                symbol=self.trading_mode.symbol
+                symbol=symbol
             )
             self.logger.info(
-                f"{self.trading_mode.get_name()} for {self.trading_mode.symbol} on {self.exchange_name}  "
+                f"{self.trading_mode.get_name()} for {symbol} on {self.exchange_name} "
                 f"subscribed to {exchange_manager.exchange_name} price data feed."
             )
 

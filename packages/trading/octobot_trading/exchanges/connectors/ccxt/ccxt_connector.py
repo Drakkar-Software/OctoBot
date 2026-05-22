@@ -648,10 +648,9 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
 
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_all_currencies_price_ticker(
-        self, can_try_to_fix_missing_tickers: bool = True, **kwargs: dict
+        self, symbols: typing.Optional[list[str]] = None, can_try_to_fix_missing_tickers: bool = True, **kwargs: dict
     ) -> typing.Optional[dict[str, dict]]:
         try:
-            symbols = kwargs.pop("symbols", None)
             with self.error_describer(False):
                 tickers = {
                     symbol: self.adapter.adapt_ticker(ticker)
@@ -1299,14 +1298,15 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         self.client = None
         self.exchange_manager = None
 
-    def get_pair_from_exchange(self, pair) -> typing.Optional[str]:
+    def get_pair_from_exchange(self, pair, error_on_missing=True) -> typing.Optional[str]:
         try:
             return self.client.market(pair)["symbol"]
         except ccxt.async_support.BadSymbol:
             try:
                 return self.client.markets_by_id[pair]["symbol"]
             except KeyError:
-                self.logger.error(f"Failed to get market of {pair} [{self.exchange_manager.exchange_name}]")
+                method = self.logger.error if error_on_missing else self.logger.warning
+                method(f"Failed to get market of {pair} [{self.exchange_manager.exchange_name}]")
         return None
 
     def get_split_pair_from_exchange(self, pair) -> (str, str):

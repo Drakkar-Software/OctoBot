@@ -39,7 +39,9 @@ def exchange_manager_mock():
     exchange_manager = mock.Mock()
     exchange_manager.id = str(uuid.uuid4())
     exchange_manager.exchange_name = "binance"
-    exchange_manager.get_exchange_symbol = mock.Mock(side_effect=lambda symbol: symbol)
+    exchange_manager.get_exchange_symbol = mock.Mock(
+        side_effect=lambda symbol, **kwargs: symbol
+    )
     return exchange_manager
 
 
@@ -84,6 +86,11 @@ async def test_evaluate_formula_no_formula(price_source_no_formula):
     assert result == price
 
 
+async def test_evaluate_formula_no_formula_requires_price(price_source_no_formula):
+    with pytest.raises(ValueError, match="price is required when no formula is configured"):
+        await price_source_no_formula.evaluate_formula()
+
+
 async def test_evaluate_formula_with_valid_formula(price_source_with_formula, exchange_manager_mock):
     """Test evaluate_formula with a valid numeric formula."""
     # Set a simple numeric formula
@@ -97,8 +104,7 @@ async def test_evaluate_formula_with_valid_formula(price_source_with_formula, ex
     ):
         await price_source_with_formula.initialize_if_required(exchange_manager_mock)
     
-    price = decimal.Decimal("50000.50")
-    result = await price_source_with_formula.evaluate_formula(price)
+    result = await price_source_with_formula.evaluate_formula()
     assert result == decimal.Decimal("50000.25")
 
 
@@ -345,3 +351,31 @@ async def test_get_dependencies_with_formula_dependencies(
     )
     dependencies = price_source_with_formula.get_dependencies(exchange_manager_mock)
     assert dependencies == [mark_price_dependency] + expected_formula_dependencies
+
+
+class TestComputeReferencePrice:
+    async def test_uses_formula_without_price_in_dict(
+        self, price_source_with_formula, exchange_manager_mock
+    ):
+        price_source_with_formula.formula = "50000.25"
+        with mock.patch.object(
+            trading_api, 'get_watched_timeframes', return_value=[commons_enums.TimeFrames.ONE_HOUR]
+        ), mock.patch.object(
+            exchange_operators, 'create_ohlcv_operators', return_value=[]
+        ):
+            await price_source_with_formula.initialize_if_required(exchange_manager_mock)
+
+        price_by_pair_by_exchange = {"binance": {"BTC/USDT": None}}
+        reference_price_specs_by_exchange = {"binance": [price_source_with_formula]}
+        result = await advanced_reference_price.compute_reference_price(
+            price_by_pair_by_exchange, reference_price_specs_by_exchange
+        )
+        assert result == decimal.Decimal("50000.25")
+
+    async def test_raises_when_no_formula_and_price_missing(self, price_source_no_formula):
+        price_by_pair_by_exchange = {"binance": {"BTC/USDT": None}}
+        reference_price_specs_by_exchange = {"binance": [price_source_no_formula]}
+        with pytest.raises(ValueError, match="price is required when no formula is configured"):
+            await advanced_reference_price.compute_reference_price(
+                price_by_pair_by_exchange, reference_price_specs_by_exchange
+            )

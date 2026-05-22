@@ -270,8 +270,8 @@ class ExchangeManager(util.Initializable):
             self.logger.warning(f"Exchange {self.exchange.name} is currently disabled")
             return False
 
-    def get_exchange_symbol(self, symbol):
-        return self.exchange.get_pair_from_exchange(symbol)
+    def get_exchange_symbol(self, symbol, error_on_missing=True):
+        return self.exchange.get_pair_from_exchange(symbol, error_on_missing=error_on_missing)
 
     def get_exchange_quote_and_base(self, symbol):
         return self.exchange.get_split_pair_from_exchange(symbol)

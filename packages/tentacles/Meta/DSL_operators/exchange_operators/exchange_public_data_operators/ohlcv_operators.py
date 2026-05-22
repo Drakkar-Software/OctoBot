@@ -41,7 +41,10 @@ class ExchangeDataDependency(octobot_trading.dsl.SymbolDependency):
         self, exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager]
     ):
         if exchange_manager is not None:
-            self.symbol = exchange_manager.get_exchange_symbol(self.symbol)
+            unified_symbol = exchange_manager.get_exchange_symbol(self.symbol, error_on_missing=False)
+            if unified_symbol != self.symbol:
+                self.alias = self.symbol
+                self.symbol = unified_symbol
 
     def __hash__(self) -> int:
         return hash((self.symbol, self.time_frame, self.data_source))

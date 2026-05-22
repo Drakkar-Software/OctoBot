@@ -22,6 +22,7 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 @dataclasses.dataclass
 class SymbolDependency(dsl_interpreter.InterpreterDependency):
     symbol: str
+    alias: typing.Optional[str] = None
     time_frame: typing.Optional[str] = None
 
 
