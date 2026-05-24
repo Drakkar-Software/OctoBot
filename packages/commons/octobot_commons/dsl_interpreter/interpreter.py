@@ -59,6 +59,22 @@ class Interpreter:
             {operator_class.get_name(): operator_class for operator_class in operators}
         )
 
+    def create_nested(self) -> "Interpreter":
+        """
+        Create a child interpreter with the same operator classes as this one.
+        """
+        return Interpreter(list(self.operators_by_name.values()))
+
+    def _instantiate_operator(
+        self,
+        operator_class: typing.Type[dsl_interpreter_operator.Operator],
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> dsl_interpreter_operator.Operator:
+        operator_instance = operator_class(*args, **kwargs)
+        operator_instance.interpreter = self
+        return operator_instance
+
     async def interprete(
         self, expression: str
     ) -> dsl_interpreter_operator.ComputedOperatorParameterType:
@@ -217,7 +233,7 @@ class Interpreter:
                 args, kwargs = parameters_util.resolve_operator_args_and_kwargs(
                     operator_class, args, kwargs
                 )
-                return operator_class(*args, **kwargs)
+                return self._instantiate_operator(operator_class, *args, **kwargs)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown operator: {func_name}"
             )
@@ -229,7 +245,7 @@ class Interpreter:
                 operator_class = self.operators_by_name[op_name]
                 left = self._visit_node(node.left)
                 right = self._visit_node(node.right)
-                return operator_class(left, right)
+                return self._instantiate_operator(operator_class, left, right)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown binary operator: {op_name}"
             )
@@ -240,7 +256,7 @@ class Interpreter:
             if op_name in self.operators_by_name:
                 operator_class = self.operators_by_name[op_name]
                 operand = self._visit_node(node.operand)
-                return operator_class(operand)
+                return self._instantiate_operator(operator_class, operand)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown unary operator: {op_name}"
             )
@@ -259,7 +275,7 @@ class Interpreter:
                     )
                 operator_class = self.operators_by_name[op_name]
                 right = self._visit_node(comparator)
-                comparisons.append(operator_class(left, right))
+                comparisons.append(self._instantiate_operator(operator_class, left, right))
                 left = right
             if len(comparisons) == 1:
                 return comparisons[0]
@@ -268,7 +284,9 @@ class Interpreter:
                 raise octobot_commons.errors.UnsupportedOperatorError(
                     f"Chained comparisons require the '{and_op_name}' operator"
                 )
-            return self.operators_by_name[and_op_name](*comparisons)
+            return self._instantiate_operator(
+                self.operators_by_name[and_op_name], *comparisons
+            )
 
         if isinstance(node, (ast.Constant)):
             # Literal values: numbers, strings, booleans, None
@@ -279,7 +297,7 @@ class Interpreter:
             name = node.id
             if name in self.operators_by_name:
                 operator_class = self.operators_by_name[name]
-                return operator_class()
+                return self._instantiate_operator(operator_class)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown name: {name}"
             )
@@ -290,7 +308,7 @@ class Interpreter:
             if op_name in self.operators_by_name:
                 operator_class = self.operators_by_name[op_name]
                 operands = [self._visit_node(operand) for operand in node.values]
-                return operator_class(*operands)
+                return self._instantiate_operator(operator_class, *operands)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown BoolOp operator: {op_name}"
             )
@@ -303,7 +321,7 @@ class Interpreter:
                 test = self._visit_node(node.test)
                 body = self._visit_node(node.body)
                 orelse = self._visit_node(node.orelse)
-                return operator_class(test, body, orelse)
+                return self._instantiate_operator(operator_class, test, body, orelse)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown IfExp operator: {op_name}"
             )
@@ -316,7 +334,9 @@ class Interpreter:
                 array_or_list = self._visit_node(node.value)
                 index_or_slice = self._visit_node(node.slice)
                 context = node.ctx
-                return operator_class(array_or_list, index_or_slice, context)
+                return self._instantiate_operator(
+                    operator_class, array_or_list, index_or_slice, context
+                )
 
         if isinstance(node, ast.List):
             # List: [1, 2, 3]
@@ -324,7 +344,7 @@ class Interpreter:
             if op_name in self.operators_by_name:
                 operator_class = self.operators_by_name[op_name]
                 operands = [self._visit_node(operand) for operand in node.elts]
-                return operator_class(*operands)
+                return self._instantiate_operator(operator_class, *operands)
 
         if isinstance(node, ast.Dict):
             # Dict: {"a": 1, "b": 2} or {"a": 1, **other}
@@ -351,7 +371,7 @@ class Interpreter:
                 lower = self._visit_node(node.lower)
                 upper = self._visit_node(node.upper)
                 step = self._visit_node(node.step)
-                return operator_class(lower, upper, step)
+                return self._instantiate_operator(operator_class, lower, upper, step)
 
         if isinstance(node, ast.Raise):
             # Raise statement: raise exc [from cause] - maps to RaiseOperator
@@ -374,7 +394,7 @@ class Interpreter:
                 args, kwargs = parameters_util.resolve_operator_args_and_kwargs(
                     operator_class, args, {}
                 )
-                return operator_class(*args, **kwargs)
+                return self._instantiate_operator(operator_class, *args, **kwargs)
             raise octobot_commons.errors.UnsupportedOperatorError(
                 f"Unknown operator: {op_name}"
             )

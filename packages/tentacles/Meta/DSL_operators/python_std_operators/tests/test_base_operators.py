@@ -42,6 +42,23 @@ class RaisesInPreComputeTestOperator(dsl_interpreter.CallOperator):
         return "should_not_reach_compute"
 
 
+class ContextualNestedTestOperator(dsl_interpreter.CallOperator):
+    """Contextual operator excluded from get_all_operators(); used for nested DSL tests."""
+
+    NAME = "contextual_nested_test_op"
+
+    @staticmethod
+    def get_name() -> str:
+        return "contextual_nested_test_op"
+
+    @staticmethod
+    def get_library() -> str:
+        return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        return 99
+
+
 @pytest.fixture
 def interpreter():
     return dsl_interpreter.Interpreter(dsl_interpreter.get_all_operators())
@@ -321,6 +338,25 @@ async def test_if_error_operator_fallback_when_base_pre_compute_raises(interpret
 
 
 @pytest.mark.asyncio
+async def test_if_error_operator_uses_parent_interpreter_operators(interpreter):
+    assert ContextualNestedTestOperator not in dsl_interpreter.get_all_operators()
+    interpreter.extend([ContextualNestedTestOperator])
+    assert await interpreter.interprete(
+        "if_error(error('x'), \"contextual_nested_test_op()\")",
+    ) == 99
+
+
+@pytest.mark.asyncio
+async def test_value_if_operator_uses_parent_interpreter_operators(interpreter):
+    assert ContextualNestedTestOperator not in dsl_interpreter.get_all_operators()
+    nested_condition = ' " == 99 - contextual_nested_test_op() + 1"'
+    with pytest.raises(octobot_commons.errors.UnsupportedOperatorError):
+        await interpreter.interprete(f"value_if(1,{nested_condition})")
+    interpreter.extend([ContextualNestedTestOperator])
+    assert await interpreter.interprete(f"value_if(1,{nested_condition})") == 1
+
+
+@pytest.mark.asyncio
 async def test_value_if_operator(interpreter):
     assert "value_if" in interpreter.operators_by_name
 
@@ -375,6 +411,9 @@ async def test_value_if_operator(interpreter):
     condition = (
         f"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', 'closed') == 'open'"
     )
-    operator = base_call_operators.ValueIfOperator(payload, condition)
+    operator = base_call_operators.ValueIfOperator(
+        payload, condition
+    )
+    operator.interpreter = interpreter
     await operator.pre_compute()
     assert operator.compute() == {"status": "open", "qty": 0.25}

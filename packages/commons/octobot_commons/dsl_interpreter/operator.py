@@ -53,6 +53,8 @@ class Operator:
         self._validate_parameters(parameters, kwargs)
         self.parameters = parameters
         self.kwargs = kwargs
+        # Injected by Interpreter._instantiate_operator; not a DSL parameter.
+        self.interpreter: typing.Optional[typing.Any] = None
 
     @staticmethod
     def get_name() -> str:

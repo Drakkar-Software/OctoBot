@@ -292,7 +292,10 @@ class GetOperator(dsl_interpreter.CallOperator):
             return default
 
 
-class ValueIfOperator(dsl_interpreter.PreComputingCallOperator):
+class ValueIfOperator(
+    dsl_interpreter.PreComputingCallOperator,
+    dsl_interpreter.NestedInterpretationMixin,
+):
     NAME = "value_if"
     DESCRIPTION = (
         "Returns the computed value if the inner DSL expression evaluates to a truthy result; "
@@ -345,12 +348,14 @@ class ValueIfOperator(dsl_interpreter.PreComputingCallOperator):
                 octobot_commons_constants.LOCAL_VALUE_PLACEHOLDER,
                 repr(json_util.sanitize(computed_value)),
             )
-        nested_interpreter = dsl_interpreter.Interpreter(dsl_interpreter.get_all_operators())
-        condition_result = await nested_interpreter.interprete(inner_expression)
+        condition_result = await self.interprete_in_nested_interpreter(inner_expression)
         self.value = computed_value if bool(condition_result) else False
 
 
-class IfErrorOperator(dsl_interpreter.PreComputingCallOperator):
+class IfErrorOperator(
+    dsl_interpreter.PreComputingCallOperator,
+    dsl_interpreter.NestedInterpretationMixin,
+):
     NAME = "if_error"
     DESCRIPTION = (
         "Returns the computed value of the base expression when it does not raise. "
@@ -397,8 +402,7 @@ class IfErrorOperator(dsl_interpreter.PreComputingCallOperator):
             else:
                 self.value = self._get_computed_parameter(value_input)
         except Exception:
-            nested_interpreter = dsl_interpreter.Interpreter(dsl_interpreter.get_all_operators())
-            self.value = await nested_interpreter.interprete(on_error_script)
+            self.value = await self.interprete_in_nested_interpreter(on_error_script)
 
 
 class ErrorOperator(dsl_interpreter.CallOperator):

@@ -59,6 +59,9 @@ from octobot_commons.dsl_interpreter.operators.process_bound_operator_mixin impo
     ProcessBoundOperatorMixin,
     is_process_bound,
 )
+from octobot_commons.dsl_interpreter.operators.nested_interpretation_mixin import (
+    NestedInterpretationMixin,
+)
 
 __all__ = [
     "BinaryOperator",
@@ -79,4 +82,5 @@ __all__ = [
     "OperatorSignals",
     "ProcessBoundOperatorMixin",
     "is_process_bound",
+    "NestedInterpretationMixin",
 ]

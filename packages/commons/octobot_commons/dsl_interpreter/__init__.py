@@ -46,6 +46,7 @@ from octobot_commons.dsl_interpreter.operators import (
     ReCallingOperatorResultKeys,
     ProcessBoundOperatorMixin,
     is_process_bound,
+    NestedInterpretationMixin,
 )
 from octobot_commons.dsl_interpreter.interpreter_dependency import (
     InterpreterDependency,
@@ -83,6 +84,7 @@ __all__ = [
     "OperatorSignals",
     "ProcessBoundOperatorMixin",
     "is_process_bound",
+    "NestedInterpretationMixin",
     "InterpreterDependency",
     "format_parameter_value",
     "resove_operator_params",
