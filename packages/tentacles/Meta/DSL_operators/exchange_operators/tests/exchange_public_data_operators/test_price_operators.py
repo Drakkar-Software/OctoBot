@@ -38,7 +38,7 @@ PRICES_BY_SYMBOL = {
 }
 
 
-def _identity_get_exchange_symbol(symbol):
+def _identity_get_exchange_symbol(symbol, error_on_missing=False):
     return symbol
 
 
@@ -191,7 +191,9 @@ class TestGetExchangeSymbol:
         )
         price_interpreter.prepare("price")
         price_interpreter.get_dependencies()
-        exchange_manager_with_prices.get_exchange_symbol.assert_called_once_with(SYMBOL)
+        exchange_manager_with_prices.get_exchange_symbol.assert_called_once_with(
+            SYMBOL, error_on_missing=False
+        )
 
     @pytest.mark.asyncio
     async def test_get_dependencies_does_not_call_get_exchange_symbol_without_exchange_manager(

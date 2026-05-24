@@ -295,7 +295,9 @@ class TestGetExchangeSymbol:
         exchange_manager_with_candles.get_exchange_symbol.reset_mock()
         interpreter.prepare("close")
         interpreter.get_dependencies()
-        exchange_manager_with_candles.get_exchange_symbol.assert_called_with(SYMBOL)
+        exchange_manager_with_candles.get_exchange_symbol.assert_called_with(
+            SYMBOL, error_on_missing=False
+        )
 
     @pytest.mark.asyncio
     async def test_pre_compute_does_not_call_get_exchange_symbol_without_exchange_manager(

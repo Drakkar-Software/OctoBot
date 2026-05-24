@@ -127,7 +127,7 @@ def _get_kline(candles_manager: mock.Mock, signature: float, kline_time_delta: t
     return kline
 
 
-def _identity_get_exchange_symbol(symbol):
+def _identity_get_exchange_symbol(symbol, error_on_missing=False):
     return symbol
 
 
