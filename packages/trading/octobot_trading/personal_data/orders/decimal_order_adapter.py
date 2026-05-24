@@ -35,6 +35,9 @@ def get_minimal_order_amount(symbol_market):
         if min_limit is not None:
             return decimal.Decimal(str(min_limit))
         min_precision = symbol_market[Ecmsc.PRECISION.value][Ecmsc.PRECISION_AMOUNT.value]
+        if min_precision is None:
+            # no available precision
+            return constants.ZERO
         return decimal.Decimal(f"1e-{min_precision}")
     except KeyError:
         raise errors.NotSupported("Impossible to get the minimal order size for the this exchange")
@@ -62,14 +65,19 @@ def get_minimal_order_cost(symbol_market, default_price=None) -> float:
 
 def decimal_adapt_price(symbol_market, price, truncate=True):
     maximal_price_digits = symbol_market[Ecmsc.PRECISION.value].get(
-                                                Ecmsc.PRECISION_PRICE.value,
-                                                constants.CURRENCY_DEFAULT_MAX_PRICE_DIGITS)
+        Ecmsc.PRECISION_PRICE.value, constants.CURRENCY_DEFAULT_MAX_PRICE_DIGITS
+    )
+    if maximal_price_digits is None:
+        return price
     return decimal_trunc_with_n_decimal_digits(price, maximal_price_digits, truncate)
 
 
 def decimal_adapt_quantity(symbol_market, quantity, truncate=True):
     maximal_volume_digits = symbol_market[Ecmsc.PRECISION.value].get(
-                                                 Ecmsc.PRECISION_AMOUNT.value, 0)
+        Ecmsc.PRECISION_AMOUNT.value, 0
+    )
+    if maximal_volume_digits is None:
+        return quantity
     return decimal_trunc_with_n_decimal_digits(quantity, maximal_volume_digits, truncate)
 
 
@@ -291,14 +299,15 @@ def decimal_check_and_adapt_order_details_if_necessary(quantity, price, symbol_m
                 # valid order that can be handled wy the exchange
                 return [(valid_quantity, valid_price)]
 
-    if not fixed_symbol_data:
-        # case 2: try fixing data from exchanges
-        fixed_data = exchanges.ExchangeMarketStatusFixer(symbol_market, float(price)).market_status
-        return decimal_check_and_adapt_order_details_if_necessary(quantity, price, fixed_data,
-                                                                  fixed_symbol_data=True, truncate=truncate)
-    else:
-        # impossible to check if order is valid: try anyway, the exchange will tell
-        return [(valid_quantity, valid_price)]
+    # TODO later: remove once confirmed that fixer is not needed anymore
+    # if not fixed_symbol_data:
+    #     # case 2: try fixing data from exchanges
+    #     fixed_data = exchanges.ExchangeMarketStatusFixer(symbol_market, float(price)).market_status
+    #     return decimal_check_and_adapt_order_details_if_necessary(quantity, price, fixed_data,
+    #                                                               fixed_symbol_data=True, truncate=truncate)
+    # else:
+    # impossible to check if order is valid: try anyway, the exchange will tell
+    return [(valid_quantity, valid_price)]
 
 
 def decimal_add_dusts_to_quantity_if_necessary(quantity, price, symbol_market, current_symbol_holding):
@@ -323,11 +332,12 @@ def decimal_add_dusts_to_quantity_if_necessary(quantity, price, symbol_market, c
     limit_amount = symbol_market_limits[Ecmsc.LIMITS_AMOUNT.value]
     limit_cost = symbol_market_limits[Ecmsc.LIMITS_COST.value]
 
-    if not (personal_data.is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) and
-            personal_data.is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value)):
-        fixed_market_status = exchanges.ExchangeMarketStatusFixer(symbol_market, float(price)).market_status
-        limit_amount = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
-        limit_cost = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_COST.value]
+    # TODO later: remove once confirmed that fixer is not needed anymore
+    # if not (personal_data.is_valid(limit_amount, Ecmsc.LIMITS_AMOUNT_MIN.value) and
+    #         personal_data.is_valid(limit_cost, Ecmsc.LIMITS_COST_MIN.value)):
+    #     fixed_market_status = exchanges.ExchangeMarketStatusFixer(symbol_market, float(price)).market_status
+    #     limit_amount = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_AMOUNT.value]
+    #     limit_cost = fixed_market_status[Ecmsc.LIMITS.value][Ecmsc.LIMITS_COST.value]
 
     min_quantity = limit_amount.get(Ecmsc.LIMITS_AMOUNT_MIN.value, math.nan)
     min_cost = limit_cost.get(Ecmsc.LIMITS_COST_MIN.value, math.nan)

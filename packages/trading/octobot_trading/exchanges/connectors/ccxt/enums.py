@@ -134,6 +134,11 @@ class ExchangeOrderCCXTUnifiedParams(enum.Enum):
     TRAILING_AMOUNT = "trailingAmount"  # float
     TRAILING_TRIGGER_PRICE = "trailingTriggerPrice"    # float
 
+    # for swaps
+    ADDRESS_TO = "address_to" # address to send final funds to
+    ADDRESS_FROM = "address_from" # address to send initial funds to
+    REFUND_ADDRESS = "refund_address" # address to refund initial funds to
+
 
 class DEXExchangeCCXTConfigKeys(enum.StrEnum):
     CHAIN_ID = "chainId"

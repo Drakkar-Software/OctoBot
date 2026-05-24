@@ -78,6 +78,88 @@ async def test_decimal_adapt_price():
         str(1251.00000146))
 
 
+async def test_decimal_add_dusts_to_quantity_if_necessary():
+    symbol_market = {Ecmsc.LIMITS.value: {
+        Ecmsc.LIMITS_AMOUNT.value: {
+            Ecmsc.LIMITS_AMOUNT_MIN.value: 0.5
+        },
+        Ecmsc.LIMITS_COST.value: {
+            Ecmsc.LIMITS_COST_MIN.value: 1
+        }
+    }}
+
+    current_symbol_holding = decimal.Decimal(str(5))
+    quantity = decimal.Decimal(str(3))
+    price = decimal.Decimal(str(1))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == quantity + 0
+
+    current_symbol_holding = decimal.Decimal(str(5))
+    quantity = decimal.Decimal(str(4))
+    price = decimal.Decimal(str(1))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == quantity + 1
+
+    current_symbol_holding = decimal.Decimal(str(5))
+    quantity = decimal.Decimal(str(4.5))
+    price = decimal.Decimal(str(1))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == quantity + decimal.Decimal(str(0.5))
+
+    symbol_market = {Ecmsc.LIMITS.value: {
+        Ecmsc.LIMITS_AMOUNT.value: {
+            Ecmsc.LIMITS_AMOUNT_MIN.value: 0.005
+        },
+        Ecmsc.LIMITS_COST.value: {
+            Ecmsc.LIMITS_COST_MIN.value: 0.00005
+        }
+    }}
+
+    current_symbol_holding = decimal.Decimal(str(0.99000000001))
+    quantity = decimal.Decimal(str(0.9))
+    price = decimal.Decimal(str(0.5))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == quantity + 0
+
+    current_symbol_holding = decimal.Decimal(str(0.99000000001))
+    quantity = decimal.Decimal(str(0.0215245845))
+    price = decimal.Decimal(str(0.5))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == quantity + 0
+
+    current_symbol_holding = decimal.Decimal(str(0.99999999))
+    quantity = decimal.Decimal(str(0.99999))
+    price = decimal.Decimal(str(0.5))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == decimal.Decimal(str(0.99999999))
+
+    current_symbol_holding = decimal.Decimal(str(0.88))
+    quantity = decimal.Decimal(str(0.7055680057024826))
+    price = decimal.Decimal(str(0.0002))
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    price,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == decimal.Decimal(str(0.88))
+
+    # price = 0 => no dust
+    assert personal_data.decimal_add_dusts_to_quantity_if_necessary(quantity,
+                                                                    constants.ZERO,
+                                                                    symbol_market,
+                                                                    current_symbol_holding) == quantity
+
+
 async def test_decimal_check_and_adapt_order_details_if_necessary():
     symbol_market = {
         Ecmsc.LIMITS.value: {
