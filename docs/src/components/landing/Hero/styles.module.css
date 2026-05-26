@@ -19,8 +19,30 @@
   margin: 0 auto;
 }
 
+/* Staggered load reveal — copy children rise in sequence on first paint.
+ * The global prefers-reduced-motion rule collapses this to near-instant. */
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.copy > * {
+  animation: heroRise 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.copy > *:nth-child(1) { animation-delay: 0.04s; }
+.copy > *:nth-child(2) { animation-delay: 0.12s; }
+.copy > *:nth-child(3) { animation-delay: 0.2s; }
+.copy > *:nth-child(4) { animation-delay: 0.28s; }
+.copy > *:nth-child(5) { animation-delay: 0.36s; }
+.copy > *:nth-child(6) { animation-delay: 0.44s; }
+
 .title {
-  font-size: 3.4rem;
+  font-size: clamp(2.4rem, 5.2vw, 4.4rem);
   font-weight: 700;
   letter-spacing: -1.4px;
   line-height: 1.06;

@@ -2,6 +2,29 @@
   width: 100%;
 }
 
+/* Scroll-triggered reveal — each section rises in as it enters the viewport.
+ * Guarded by @supports + no-preference so unsupported browsers and reduced-
+ * motion users always get fully-opaque content (never hidden). */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes sectionReveal {
+      from {
+        opacity: 0;
+        transform: translateY(22px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .section {
+      animation: sectionReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 32%;
+    }
+  }
+}
+
 .spacingSm {
   padding: 2.5rem 0;
 }

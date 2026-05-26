@@ -150,7 +150,7 @@
 .ng-card-interactive:hover {
   transform: translateY(-3px);
   border-color: var(--ng-frost-soft);
-  box-shadow: var(--ng-shadow-glass);
+  box-shadow: var(--ng-shadow-glass), 0 14px 44px -14px rgba(101, 231, 207, 0.3);
 }
 
 /* ============================================================================
@@ -163,7 +163,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ng-muted);
+  color: var(--ng-frost);
 }
 
 /* Badge — pill status / tag label. Tone via modifier class. */
@@ -296,12 +296,18 @@
 }
 
 /* Gradient emphasis — hero headline highlight, large display figures. */
+@keyframes ngGradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
 .ng-text-gradient {
   font-style: normal;
   background: linear-gradient(135deg, #d6f7ee 0%, var(--ng-turquoise) 30%, var(--ng-frost) 60%, #55b7f5 100%);
+  background-size: 220% 220%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: ngGradientShift 9s ease-in-out infinite;
 }
 
 /* ============================================================================
@@ -322,10 +328,16 @@
   letter-spacing: 0.04em;
   color: var(--ng-ink-muted);
 }
+@keyframes ngDotPulse {
+  0%   { box-shadow: 0 0 8px var(--ng-turquoise), 0 0 0 0 var(--ng-turquoise-25); }
+  70%  { box-shadow: 0 0 8px var(--ng-turquoise), 0 0 0 7px rgba(101, 231, 207, 0); }
+  100% { box-shadow: 0 0 8px var(--ng-turquoise), 0 0 0 0 rgba(101, 231, 207, 0); }
+}
 .ng-chip-static__dot {
   width: 6px;
   height: 6px;
   border-radius: var(--ng-radius-pill);
   background: var(--ng-turquoise);
   box-shadow: 0 0 8px var(--ng-turquoise);
+  animation: ngDotPulse 2.4s ease-out infinite;
 }

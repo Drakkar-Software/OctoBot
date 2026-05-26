@@ -21,11 +21,22 @@
 }
 
 .splitCard {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: 2.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   min-height: 460px;
+}
+.splitCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(130% 75% at 50% -15%, rgba(101, 231, 207, 0.1) 0%, transparent 58%);
+  pointer-events: none;
 }
 .splitTitle {
   font-size: 1.85rem;
@@ -83,6 +94,26 @@
   background: linear-gradient(180deg, var(--ng-turquoise), rgba(101, 231, 207, 0.2));
   border-radius: 4px 4px 0 0;
   opacity: 0.85;
+}
+/* Bars rise from the baseline as the chart scrolls into view. Guarded so
+ * unsupported browsers / reduced-motion users always see full-height bars. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes barGrow {
+      from {
+        transform: scaleY(0.12);
+      }
+      to {
+        transform: scaleY(1);
+      }
+    }
+    .bars span {
+      transform-origin: bottom;
+      animation: barGrow linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 38%;
+    }
+  }
 }
 
 /* flow illustration */
