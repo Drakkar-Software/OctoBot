@@ -27,12 +27,6 @@
   gap: 1.25rem;
   min-height: 460px;
 }
-.splitNum {
-  font-family: var(--ng-font-mono);
-  font-size: 0.75rem;
-  color: var(--ng-frost);
-  letter-spacing: 0.18em;
-}
 .splitTitle {
   font-size: 1.85rem;
   font-weight: 700;
@@ -96,6 +90,8 @@
   display: grid;
   grid-template-columns: 1fr 24px 1fr 24px 1fr;
   align-items: center;
+  align-content: center;
+  min-height: 120px;
 }
 .flowNode {
   padding: 12px;

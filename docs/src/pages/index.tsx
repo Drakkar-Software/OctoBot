@@ -351,11 +351,6 @@ export default function AppPage(): ReactNode {
 
       <Section
         id="two-jobs"
-        eyebrow={translate({
-          id: 'pages.index.twoJobs.eyebrow',
-          message: '01 / What it does',
-          description: 'Home page section eyebrow',
-        })}
         title={translate({
           id: 'pages.index.twoJobs.title',
           message: 'One app. Two jobs.',
@@ -364,12 +359,11 @@ export default function AppPage(): ReactNode {
         lead={translate({
           id: 'pages.index.twoJobs.lead',
           message:
-            'Tracking your wealth and automating it — the same surface, running locally on the device you already own.',
+            'Track your wealth and automate it — locally, on the device you already own.',
           description: 'Home page section lead',
         })}>
         <div className={styles.split}>
           <GlassCard variant="strong" padded={false} className={styles.splitCard}>
-            <span className={styles.splitNum}>01 · TRACK</span>
             <h3 className={styles.splitTitle}>
               <Translate
                 id="pages.index.twoJobs.track.title"
@@ -381,9 +375,8 @@ export default function AppPage(): ReactNode {
               <Translate
                 id="pages.index.twoJobs.track.text"
                 description="Home page track card text">
-                Crypto, stocks, real estate, cash — every account in one
-                dashboard. Net worth, IRR, contribution vs. performance,
-                hidden-fee detection. Goals with monthly check-ins.
+                Every account — crypto, stocks, real estate, cash — in one
+                dashboard, tracked for net worth, IRR and goals.
               </Translate>
             </p>
             <div className={styles.tags}>
@@ -399,20 +392,6 @@ export default function AppPage(): ReactNode {
                   id="pages.index.twoJobs.track.tag.netWorth"
                   description="Home page track card tag">
                   net worth · irr
-                </Translate>
-              </span>
-              <span>
-                <Translate
-                  id="pages.index.twoJobs.track.tag.goalTracking"
-                  description="Home page track card tag">
-                  goal tracking
-                </Translate>
-              </span>
-              <span>
-                <Translate
-                  id="pages.index.twoJobs.track.tag.feeDetection"
-                  description="Home page track card tag">
-                  fee detection
                 </Translate>
               </span>
             </div>
@@ -433,7 +412,6 @@ export default function AppPage(): ReactNode {
           </GlassCard>
 
           <GlassCard variant="strong" padded={false} className={styles.splitCard}>
-            <span className={styles.splitNum}>02 · AUTOMATE</span>
             <h3 className={styles.splitTitle}>
               <Translate
                 id="pages.index.twoJobs.automate.title"
@@ -445,9 +423,8 @@ export default function AppPage(): ReactNode {
               <Translate
                 id="pages.index.twoJobs.automate.text"
                 description="Home page automate card text">
-                Visual strategy builder, real-history backtesting, paper
-                trading, then live execution — all from your own device. DCA,
-                grid, custom signals, copy.
+                Build strategies visually, backtest on real history,
+                paper-trade, then go live — all from your own device.
               </Translate>
             </p>
             <div className={styles.tags}>
@@ -463,20 +440,6 @@ export default function AppPage(): ReactNode {
                   id="pages.index.twoJobs.automate.tag.backtest"
                   description="Home page automate card tag">
                   backtest
-                </Translate>
-              </span>
-              <span>
-                <Translate
-                  id="pages.index.twoJobs.automate.tag.paperTrading"
-                  description="Home page automate card tag">
-                  paper trading
-                </Translate>
-              </span>
-              <span>
-                <Translate
-                  id="pages.index.twoJobs.automate.tag.marketplace"
-                  description="Home page automate card tag">
-                  marketplace
                 </Translate>
               </span>
             </div>
@@ -539,7 +502,7 @@ export default function AppPage(): ReactNode {
         align="left"
         eyebrow={translate({
           id: 'pages.index.switch.eyebrow',
-          message: '02 / The switch',
+          message: '01 / The switch',
           description: 'Home page section eyebrow',
         })}
         title={
@@ -682,7 +645,7 @@ export default function AppPage(): ReactNode {
         align="right"
         eyebrow={translate({
           id: 'pages.index.privacySection.eyebrow',
-          message: '03 / Privacy',
+          message: '02 / Privacy',
           description: 'Home page section eyebrow',
         })}
         title={
@@ -709,7 +672,7 @@ export default function AppPage(): ReactNode {
       <Section
         eyebrow={translate({
           id: 'pages.index.week.eyebrow',
-          message: '04 / A week with OctoBot',
+          message: '03 / A week with OctoBot',
           description: 'Home page section eyebrow',
         })}
         title={
@@ -738,7 +701,7 @@ export default function AppPage(): ReactNode {
         align="left"
         eyebrow={translate({
           id: 'pages.index.pricingSection.eyebrow',
-          message: '05 / Pricing',
+          message: '04 / Pricing',
           description: 'Home page section eyebrow',
         })}
         title={
@@ -772,7 +735,7 @@ export default function AppPage(): ReactNode {
         align="left"
         eyebrow={translate({
           id: 'pages.index.users.eyebrow',
-          message: '06 / What users say',
+          message: '05 / What users say',
           description: 'Home page section eyebrow',
         })}
         title={
@@ -801,7 +764,7 @@ export default function AppPage(): ReactNode {
           head={{
             eyebrow: translate({
               id: 'pages.index.traction.eyebrow',
-              message: '07 / Traction',
+              message: '06 / Traction',
               description: 'Home page section eyebrow',
             }),
             title: translate({
@@ -818,7 +781,7 @@ export default function AppPage(): ReactNode {
         align="right"
         eyebrow={translate({
           id: 'pages.index.distribution.eyebrow',
-          message: '08 / Distribution',
+          message: '07 / Distribution',
           description: 'Home page section eyebrow',
         })}
         title={

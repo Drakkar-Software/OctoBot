@@ -159,16 +159,12 @@
     "message": "Zéro faille",
     "description": "Home page hero meta label"
   },
-  "pages.index.twoJobs.eyebrow": {
-    "message": "01 / Ce qu'il fait",
-    "description": "Home page section eyebrow"
-  },
   "pages.index.twoJobs.title": {
     "message": "Une application. Deux missions.",
     "description": "Home page section title"
   },
   "pages.index.twoJobs.lead": {
-    "message": "Suivre votre patrimoine et l'automatiser — la même interface, exécutée localement sur l'appareil que vous possédez déjà.",
+    "message": "Suivre votre patrimoine et l'automatiser — localement, sur l'appareil que vous possédez déjà.",
     "description": "Home page section lead"
   },
   "pages.index.twoJobs.track.title": {
@@ -176,7 +172,7 @@
     "description": "Home page track card title"
   },
   "pages.index.twoJobs.track.text": {
-    "message": "Crypto, actions, immobilier, liquidités — tous vos comptes dans un seul tableau de bord. Valeur nette, TRI, apports vs. performance, détection des frais cachés. Objectifs avec points mensuels.",
+    "message": "Tous vos comptes — crypto, actions, immobilier, liquidités — dans un seul tableau de bord, suivis en valeur nette, TRI et objectifs.",
     "description": "Home page track card text"
   },
   "pages.index.twoJobs.track.tag.multiAsset": {
@@ -185,14 +181,6 @@
   },
   "pages.index.twoJobs.track.tag.netWorth": {
     "message": "valeur nette · tri",
-    "description": "Home page track card tag"
-  },
-  "pages.index.twoJobs.track.tag.goalTracking": {
-    "message": "suivi d'objectifs",
-    "description": "Home page track card tag"
-  },
-  "pages.index.twoJobs.track.tag.feeDetection": {
-    "message": "détection des frais",
     "description": "Home page track card tag"
   },
   "pages.index.twoJobs.track.illuLabel": {
@@ -204,7 +192,7 @@
     "description": "Home page automate card title"
   },
   "pages.index.twoJobs.automate.text": {
-    "message": "Constructeur visuel de stratégies, backtesting sur historique réel, paper trading, puis exécution en réel — le tout depuis votre propre appareil. DCA, grid, signaux personnalisés, copy.",
+    "message": "Construisez vos stratégies visuellement, backtestez sur historique réel, paper-tradez, puis passez en réel — le tout depuis votre propre appareil.",
     "description": "Home page automate card text"
   },
   "pages.index.twoJobs.automate.tag.dca": {
@@ -213,14 +201,6 @@
   },
   "pages.index.twoJobs.automate.tag.backtest": {
     "message": "backtest",
-    "description": "Home page automate card tag"
-  },
-  "pages.index.twoJobs.automate.tag.paperTrading": {
-    "message": "paper trading",
-    "description": "Home page automate card tag"
-  },
-  "pages.index.twoJobs.automate.tag.marketplace": {
-    "message": "marketplace",
     "description": "Home page automate card tag"
   },
   "pages.index.twoJobs.automate.illuLabel": {
@@ -248,7 +228,7 @@
     "description": "Home page strategy flow node label"
   },
   "pages.index.switch.eyebrow": {
-    "message": "02 / Le changement",
+    "message": "01 / Le changement",
     "description": "Home page section eyebrow"
   },
   "pages.index.switch.title": {
@@ -316,7 +296,7 @@
     "description": "Home page after item emphasis"
   },
   "pages.index.privacySection.eyebrow": {
-    "message": "03 / Confidentialité",
+    "message": "02 / Confidentialité",
     "description": "Home page section eyebrow"
   },
   "pages.index.privacySection.title": {
@@ -328,7 +308,7 @@
     "description": "Home page section title accent words"
   },
   "pages.index.week.eyebrow": {
-    "message": "04 / Une semaine avec OctoBot",
+    "message": "03 / Une semaine avec OctoBot",
     "description": "Home page section eyebrow"
   },
   "pages.index.week.title": {
@@ -340,7 +320,7 @@
     "description": "Home page section title accent words"
   },
   "pages.index.pricingSection.eyebrow": {
-    "message": "05 / Tarifs",
+    "message": "04 / Tarifs",
     "description": "Home page section eyebrow"
   },
   "pages.index.pricingSection.title": {
@@ -356,7 +336,7 @@
     "description": "Home page section lead"
   },
   "pages.index.users.eyebrow": {
-    "message": "06 / Ce que disent les utilisateurs",
+    "message": "05 / Ce que disent les utilisateurs",
     "description": "Home page section eyebrow"
   },
   "pages.index.users.title": {
@@ -368,7 +348,7 @@
     "description": "Home page section title accent words"
   },
   "pages.index.traction.eyebrow": {
-    "message": "07 / Traction",
+    "message": "06 / Traction",
     "description": "Home page section eyebrow"
   },
   "pages.index.traction.title": {
@@ -376,7 +356,7 @@
     "description": "Home page section title"
   },
   "pages.index.distribution.eyebrow": {
-    "message": "08 / Distribution",
+    "message": "07 / Distribution",
     "description": "Home page section eyebrow"
   },
   "pages.index.distribution.title": {
