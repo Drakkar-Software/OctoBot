@@ -268,7 +268,7 @@ export default function AppPage(): ReactNode {
       <Hero
         eyebrow={translate({
           id: 'pages.index.hero.eyebrow',
-          message: 'A wealth app, only honest · 2026',
+          message: 'Open source. No catch.',
           description: 'Home page hero eyebrow',
         })}
         title={
