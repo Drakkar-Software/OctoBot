@@ -125,6 +125,8 @@ MAX_ALLOWED_CONSECUTIVE_CREDENTIALS_ERROR_MINUTES = float(os.getenv(
 TICKER_CACHE_TTL = int(os.getenv("TICKER_CACHE_TTL", "300"))
 OHLCV_CACHE_TTL = int(os.getenv("OHLCV_CACHE_TTL", "60"))
 
+ALLOW_EMPTY_TICKERS = os_util.parse_boolean_environment_var("ALLOW_EMPTY_TICKERS", "False")
+
 # Storage
 ENABLE_LIVE_CANDLES_STORAGE = os_util.parse_boolean_environment_var("ENABLE_LIVE_CANDLES_STORAGE", "False")
 ENABLE_HISTORICAL_ORDERS_UPDATES_STORAGE = os_util.parse_boolean_environment_var("ENABLE_HISTORICAL_ORDERS_UPDATES_STORAGE", "False")

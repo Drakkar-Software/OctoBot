@@ -76,6 +76,19 @@ SYMBOL_MARKET = {
     'percentage': True, 'feeSide': 'get', 'tierBased': False
 }
 
+FORMULA_REFERENCE_PRICE = decimal.Decimal("1.2")
+
+
+def _incomplete_ticker(symbol: str) -> dict:
+    return {
+        trading_enums.ExchangeConstantsTickersColumns.SYMBOL.value: symbol,
+        trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: None,
+        trading_enums.ExchangeConstantsTickersColumns.LAST.value: None,
+        trading_enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value: 0.0,
+        trading_enums.ExchangeConstantsTickersColumns.QUOTE_VOLUME.value: None,
+    }
+
+
 def _get_mm_config(symbol):
     return {
       "pair_settings": [
@@ -282,6 +295,104 @@ async def test_init_user_inputs_defaults_valid_hedging_off_without_exchange(hedg
             await producer._initialize_hedging_engine()
             get_or_create_mock.assert_not_called()
         assert producer._hedging_engine is None
+
+
+async def _initialize_reference_prices(producer: simple_market_making_trading.SimpleMarketMakingTradingModeProducer):
+    for reference_prices in producer.reference_prices_by_exchange.values():
+        for reference_price in reference_prices:
+            await reference_price.initialize_if_required(producer.exchange_manager)
+
+
+async def test_handle_market_making_orders_with_formula_and_incomplete_ticker():
+    symbol = "BTC/USDT"
+    trading_mode_cls = simple_market_making_trading.SimpleMarketMakingTradingMode
+    async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+        pair_config = producer.trading_mode.trading_config[trading_mode_cls.CONFIG_PAIR_SETTINGS][0]
+        pair_config[trading_mode_cls.REFERENCE_PRICE] = [{
+            trading_mode_cls.EXCHANGE: "binance",
+            trading_mode_cls.PAIR: symbol,
+            trading_mode_cls.WEIGHT: 1,
+            trading_mode_cls.FORMULA: str(FORMULA_REFERENCE_PRICE),
+        }]
+        producer.read_config()
+        await producer._validate_reference_prices()
+        await _initialize_reference_prices(producer)
+
+        symbol_data = exchange_manager.exchange_symbols_data.get_exchange_symbol_data(symbol)
+        symbol_data.handle_ticker_update(_incomplete_ticker(symbol))
+
+        origin_submit_trading_evaluation = producer.submit_trading_evaluation
+        with mock.patch.object(
+            trading_personal_data,
+            "get_potentially_outdated_price",
+            mock.Mock(side_effect=KeyError("no mark price")),
+        ), mock.patch.object(
+            trading_api,
+            "get_all_exchange_ids_with_same_matrix_id",
+            mock.Mock(return_value=[exchange_manager.id]),
+        ), mock.patch.object(
+            trading_api,
+            "get_exchange_manager_from_exchange_id",
+            mock.Mock(return_value=exchange_manager),
+        ):
+            assert await producer._get_reference_price() == FORMULA_REFERENCE_PRICE
+
+            with mock.patch.object(
+                producer,
+                "submit_trading_evaluation",
+                mock.AsyncMock(side_effect=origin_submit_trading_evaluation),
+            ) as submit_trading_evaluation_mock:
+                current_price = decimal.Decimal("1000")
+                trigger_source = "ref_price"
+                symbol_market = copy.deepcopy(SYMBOL_MARKET)
+                symbol_market["limits"]["cost"]["min"] = 0.01
+                assert await producer._handle_market_making_orders(
+                    current_price, symbol_market, trigger_source, False
+                ) is True
+
+                submit_trading_evaluation_mock.assert_called_once()
+                data = submit_trading_evaluation_mock.mock_calls[0].kwargs["data"]
+                assert data[simple_market_making_trading.SimpleMarketMakingTradingModeConsumer.CURRENT_PRICE_KEY] == (
+                    current_price
+                )
+                order_plan: market_making_trading_mode.OrdersUpdatePlan = data[
+                    simple_market_making_trading.SimpleMarketMakingTradingModeConsumer.ORDER_ACTIONS_PLAN_KEY
+                ]
+                assert len(order_plan.order_actions) == 10
+                buy_actions = [
+                    action for action in order_plan.order_actions
+                    if isinstance(action, market_making_trading_mode.CreateOrderAction)
+                    and action.order_data.side == trading_enums.TradeOrderSide.BUY
+                ]
+                sell_actions = [
+                    action for action in order_plan.order_actions
+                    if isinstance(action, market_making_trading_mode.CreateOrderAction)
+                    and action.order_data.side == trading_enums.TradeOrderSide.SELL
+                ]
+                assert len(buy_actions) == len(sell_actions) == 5
+                assert all(action.order_data.price < FORMULA_REFERENCE_PRICE for action in buy_actions)
+                assert all(action.order_data.price > FORMULA_REFERENCE_PRICE for action in sell_actions)
+                min_spread_ratio = decimal.Decimal("5") / decimal.Decimal("100")
+                expected_best_bid = FORMULA_REFERENCE_PRICE * (
+                    trading_constants.ONE - min_spread_ratio / decimal.Decimal("2")
+                )
+                assert buy_actions[0].order_data.price == expected_best_bid
+
+                for _ in range(len(order_plan.order_actions)):
+                    await asyncio_tools.wait_asyncio_next_cycle()
+
+                open_orders = exchange_manager.exchange_personal_data.orders_manager.get_open_orders(symbol)
+                assert len(open_orders) == 10
+                assert all(
+                    order.origin_price < FORMULA_REFERENCE_PRICE
+                    for order in open_orders
+                    if order.side == trading_enums.TradeOrderSide.BUY
+                )
+                assert all(
+                    order.origin_price > FORMULA_REFERENCE_PRICE
+                    for order in open_orders
+                    if order.side == trading_enums.TradeOrderSide.SELL
+                )
 
 
 async def test_handle_market_making_orders_from_no_orders():
@@ -1361,12 +1472,6 @@ async def test_force_stop_strategy_integration():
         # Orders should be cancelled (may still be in the list but with cancelled status)
         for order in open_orders_after:
             assert order.is_cancelled() or order.is_closed()
-
-
-async def _initialize_reference_prices(producer: simple_market_making_trading.SimpleMarketMakingTradingModeProducer):
-    for reference_prices in producer.reference_prices_by_exchange.values():
-        for reference_price in reference_prices:
-            await reference_price.initialize_if_required(producer.exchange_manager)
 
 
 async def test_get_reference_price():

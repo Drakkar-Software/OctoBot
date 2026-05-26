@@ -171,13 +171,16 @@ class TickerUpdater(ticker_channel.TickerProducer):
     @staticmethod
     def _is_valid(ticker):
         try:
-            # at least require close, volume and timestamp
-            if not (
-                ticker.get(enums.ExchangeConstantsTickersColumns.CLOSE.value)
-                and ticker.get(enums.ExchangeConstantsTickersColumns.TIMESTAMP.value)
-            ):
-                return False
-            return True
+            # at least require close and timestamp
+            if ticker.get(enums.ExchangeConstantsTickersColumns.TIMESTAMP.value):
+                # only accept empty tickers if ALLOW_EMPTY_TICKERS is True
+                # warning: price manager will still be uninitilized if ticker price is empty
+                # TODO later: completely support this case if required
+                return (
+                    ticker.get(enums.ExchangeConstantsTickersColumns.CLOSE.value)
+                    or constants.ALLOW_EMPTY_TICKERS
+                )
+            return False # no timestamp
         except KeyError:
             return False
 
