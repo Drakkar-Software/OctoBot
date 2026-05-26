@@ -31,10 +31,21 @@
   gap: 1.25rem;
 }
 .model {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+.model::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(130% 75% at 50% -15%, rgba(101, 231, 207, 0.1) 0%, transparent 58%);
+  pointer-events: none;
 }
 .modelTag {
   font-size: 0.7rem;
@@ -76,10 +87,21 @@
 
 /* Centered testimonial panel. */
 .quoteCard {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: 3.5rem;
   text-align: center;
   max-width: 880px;
   margin: 0 auto;
+}
+.quoteCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(130% 75% at 50% -15%, rgba(101, 231, 207, 0.1) 0%, transparent 58%);
+  pointer-events: none;
 }
 .quoteMark {
   font-family: var(--ng-font-mono);
