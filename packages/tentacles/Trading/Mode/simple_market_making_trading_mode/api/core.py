@@ -734,6 +734,25 @@ def _format_format_market_making_volume(volume: typing.Union[dict, None], error:
     }
 
 
+def _parse_ticker_close_as_decimal(ticker: typing.Optional[dict]) -> decimal.Decimal:
+    if not ticker:
+        return decimal.Decimal("nan")
+    close_column = octobot_trading.enums.ExchangeConstantsTickersColumns.CLOSE.value
+    last_column = octobot_trading.enums.ExchangeConstantsTickersColumns.LAST.value
+    for column in (close_column, last_column):
+        raw_value = ticker.get(column)
+        if raw_value is None:
+            continue
+        try:
+            parsed_price = decimal.Decimal(str(raw_value))
+        except decimal.DecimalException:
+            continue
+        if parsed_price.is_nan() or parsed_price <= 0:
+            continue
+        return parsed_price
+    return decimal.Decimal("nan")
+
+
 def _create_market_data(
     exchange_internal_name: str, 
     symbol: str,
@@ -742,16 +761,21 @@ def _create_market_data(
     market_statuses: dict, 
     market_details: list[octobot_trading.exchanges.MarketDetails]
 ) -> models.MarketMakingData:
+    default_volume = octobot_trading.constants.ZERO
     if ticker is None:
-        price = base_volume = quote_volume = decimal.Decimal("nan")
+        price = decimal.Decimal("nan")
+        base_volume = quote_volume = default_volume
     else:
-        price = decimal.Decimal(str(ticker[octobot_trading.enums.ExchangeConstantsTickersColumns.CLOSE.value]))
-        try:
-            base_volume, quote_volume = octobot_trading.api.get_daily_base_and_quote_volume_from_ticker(
-                ticker, reference_price=price
-            )
-        except ValueError:
-            base_volume = quote_volume = decimal.Decimal("nan")
+        price = _parse_ticker_close_as_decimal(ticker)
+        if price.is_nan():
+            base_volume = quote_volume = default_volume
+        else:
+            try:
+                base_volume, quote_volume = octobot_trading.api.get_daily_base_and_quote_volume_from_ticker(
+                    ticker, reference_price=price
+                )
+            except ValueError:
+                base_volume = quote_volume = default_volume
     return models.MarketMakingData(
         exchange_internal_name,
         symbol,

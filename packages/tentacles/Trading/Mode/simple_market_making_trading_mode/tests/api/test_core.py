@@ -1052,7 +1052,7 @@ class TestCreateMarketData:
         assert market_data.base_volume == decimal.Decimal("10")
         assert market_data.quote_volume == decimal.Decimal("50000")
 
-    def test_uses_nan_volumes_when_both_volumes_are_none(self):
+    def test_uses_zero_volumes_when_both_volumes_are_none(self):
         ticker = _market_making_ticker(
             **{
                 trading_enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value: None,
@@ -1065,17 +1065,34 @@ class TestCreateMarketData:
         )
 
         assert market_data.price == decimal.Decimal("5000")
-        assert market_data.base_volume.is_nan()
-        assert market_data.quote_volume.is_nan()
+        assert market_data.base_volume == trading_constants.ZERO
+        assert market_data.quote_volume == trading_constants.ZERO
 
-    def test_uses_nan_price_and_volumes_when_ticker_is_none(self):
+    def test_uses_nan_price_and_zero_volumes_when_ticker_is_none(self):
         market_data = market_making_core._create_market_data(
             "dexscreener", "BTC/USDT", None, None, {}, []
         )
 
         assert market_data.price.is_nan()
-        assert market_data.base_volume.is_nan()
-        assert market_data.quote_volume.is_nan()
+        assert market_data.base_volume == trading_constants.ZERO
+        assert market_data.quote_volume == trading_constants.ZERO
+
+    def test_uses_nan_price_and_zero_volumes_when_close_is_none(self):
+        ticker = {
+            trading_enums.ExchangeConstantsTickersColumns.SYMBOL.value: "USDT/KGS",
+            trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: None,
+            trading_enums.ExchangeConstantsTickersColumns.LAST.value: None,
+            trading_enums.ExchangeConstantsTickersColumns.BASE_VOLUME.value: 0.0,
+            trading_enums.ExchangeConstantsTickersColumns.QUOTE_VOLUME.value: None,
+        }
+
+        market_data = market_making_core._create_market_data(
+            "cne", "USDT/KGS", None, ticker, {}, []
+        )
+
+        assert market_data.price.is_nan()
+        assert market_data.base_volume == trading_constants.ZERO
+        assert market_data.quote_volume == trading_constants.ZERO
 
 
 def _profile_data_for_market_making_fill(exchange_internal_name="binance"):
@@ -1188,8 +1205,8 @@ class TestFillMarketMakingDataBySymbol:
         )
         btc_usdt_data = mm_data_by_symbol_by_exchange["binance"]["BTC/USDT"]
         assert btc_usdt_data.price.is_nan()
-        assert btc_usdt_data.base_volume.is_nan()
-        assert btc_usdt_data.quote_volume.is_nan()
+        assert btc_usdt_data.base_volume == trading_constants.ZERO
+        assert btc_usdt_data.quote_volume == trading_constants.ZERO
 
     async def test_still_fetches_formula_dependency_symbols(self):
         price_sources = [
@@ -1285,6 +1302,7 @@ def _cross_pair_formula_mm_data_by_exchange(
         }
     }
     nan = decimal.Decimal("nan")
+    zero_volume = trading_constants.ZERO
     return {
         "binance": {
             "BTC/USDT": market_making_models.MarketMakingData(
@@ -1294,8 +1312,8 @@ def _cross_pair_formula_mm_data_by_exchange(
                 price=nan,
                 market_status=market_status,
                 market_details=[],
-                base_volume=nan,
-                quote_volume=nan,
+                base_volume=zero_volume,
+                quote_volume=zero_volume,
             ),
             "BTC/ETH": market_making_models.MarketMakingData(
                 exchange="binance",
