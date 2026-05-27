@@ -73,9 +73,11 @@ class AutomationConfigurationUpdater:
         exchange_data_update = profiles_import.ExchangeData().get_update(
             configuration_update.exchange_details
         )
+        new_exchange_account_id = exchange_data_update.exchange_account_id
+        current_exchange_account_id = self.automation_state.exchange_account_details.exchange_details.exchange_account_id
         updating_exchange_account_id = bool(
-            exchange_data_update.exchange_account_id
-            and exchange_data_update.exchange_account_id != self.automation_state.exchange_account_details.exchange_details.exchange_account_id
+            new_exchange_account_id and current_exchange_account_id
+            and new_exchange_account_id != current_exchange_account_id
         )
         self.automation_state.exchange_account_details.exchange_details.update(exchange_data_update)
         return updating_exchange_account_id

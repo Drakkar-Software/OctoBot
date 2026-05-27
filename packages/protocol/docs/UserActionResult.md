@@ -6,10 +6,10 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **updated_at** | **datetime** |  | 
-**error_message** | [**ExchangeConfigActionResultErrorMessage**](ExchangeConfigActionResultErrorMessage.md) |  | [optional] 
+**error_message** | [**AccountAuthActionResultErrorMessage**](AccountAuthActionResultErrorMessage.md) |  | [optional] 
 **error_details** | **str** |  | [optional] 
 **created_automation_id** | **str** |  | [optional] 
-**result_type** | [**UserActionResultType**](UserActionResultType.md) |  | 
+**result_type** | [**UserActionResultType**](UserActionResultType.md) | account_auth | 
 
 ## Example
 

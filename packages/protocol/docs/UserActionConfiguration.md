@@ -5,9 +5,12 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**action_type** | [**UserActionType**](UserActionType.md) | accounts_refresh | 
-**configuration** | [**ExchangeConfig**](ExchangeConfig.md) |  | 
+**action_type** | [**UserActionType**](UserActionType.md) | account_auth_delete | 
+**configuration** | [**AccountAuthentication**](AccountAuthentication.md) |  | 
 **id** | **str** |  | 
+**automation_id** | **str** |  | 
+**signal_type** | [**AutomationSignalType**](AutomationSignalType.md) |  | 
+**signal_payload** | [**SignalAutomationConfigurationSignalPayload**](SignalAutomationConfigurationSignalPayload.md) |  | [optional] 
 **account_ids** | **List[str]** |  | [optional] 
 
 ## Example

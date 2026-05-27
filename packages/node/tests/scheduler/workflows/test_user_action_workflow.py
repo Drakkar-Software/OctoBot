@@ -5,6 +5,8 @@
 #  modify it under the terms of the GNU Lesser General Public
 #  License version 3.0 of the License, or (at your option) any later version.
 
+import datetime
+
 import mock
 import pytest
 import pydantic
@@ -271,3 +273,96 @@ class Test_UserActionWorkflow_execute_user_action_step:
 
         assert workflow_lifetime_status_snapshot.status != dbos.WorkflowStatusString.SUCCESS.value
         assert executor_execute_single_attempt_observer.await_count == 1
+
+    @staticmethod
+    def _signal_automation_user_action(*, automation_identifier: str) -> protocol_models.UserAction:
+        configuration_inner_payload = protocol_models.SignalAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_SIGNAL,
+            automation_id=automation_identifier,
+            signal_type=protocol_models.AutomationSignalType.FORCED_TRIGGER,
+        )
+        wrapped_configuration_payload = protocol_models.UserActionConfiguration.from_json(
+            configuration_inner_payload.to_json(),
+        )
+        return protocol_models.UserAction(
+            id="ua-signal-not-found",
+            configuration=wrapped_configuration_payload,
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_user_action_step_returns_failed_user_action_on_user_action_error(
+        self,
+        temp_dbos_scheduler,
+    ):
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        wallet_address = "0xwallet_user_action_error_terminal"
+        user_action_wire_configuration = self._signal_automation_user_action(
+            automation_identifier="missing-automation-workflow",
+        )
+        workflow_encoded_inputs_bundle = self._inputs_dict(
+            wallet_address_value=wallet_address,
+            user_action_document=user_action_wire_configuration,
+        )
+        reparsed_user_action = protocol_models.UserAction(
+            id="signal-not-found-ua-stable",
+            configuration=user_action_wire_configuration.configuration,
+        )
+
+        async def executor_raises_active_automation_not_found(
+            user_action_bundle: protocol_models.UserAction,
+        ) -> None:
+            user_action_bundle.status = protocol_models.UserActionStatus.FAILED
+            user_action_bundle.result = protocol_models.UserActionResult(
+                actual_instance=protocol_models.AutomationActionResult(
+                    updated_at=datetime.datetime(2026, 5, 1, 12, 0, 0, tzinfo=datetime.UTC),
+                    result_type=protocol_models.UserActionResultType.AUTOMATION,
+                    error_message=protocol_models.AutomationActionResultErrorMessage.AUTOMATION_NOT_FOUND,
+                    error_details="No active automation workflow for automation_id 'missing-automation-workflow'.",
+                )
+            )
+            raise node_errors.ActiveAutomationWorkflowNotFoundError(
+                "No active automation workflow for automation_id 'missing-automation-workflow'."
+            )
+
+        executor_execute_observer = mock.AsyncMock(
+            side_effect=executor_raises_active_automation_not_found,
+        )
+
+        class UserActionErrorExecutorShell:
+            def __init__(self, wallet_segment_from_workflow_inputs: str):
+                self.wallet_segment_from_workflow_inputs = wallet_segment_from_workflow_inputs
+                self.post_actions = user_action_post_actions_module.UserActionPostActions()
+
+            async def execute(self, user_action_bundle: protocol_models.UserAction):
+                assert self.wallet_segment_from_workflow_inputs == wallet_address
+                return await executor_execute_observer(user_action_bundle)
+
+        with mock.patch.object(
+            protocol_models.UserAction,
+            "from_json",
+            return_value=reparsed_user_action,
+        ), mock.patch.object(
+            user_action_workflow_module_loaded.user_actions_executor,
+            "user_action_executor_factory",
+            return_value=UserActionErrorExecutorShell,
+        ):
+            workflow_enqueue_handle_record = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                user_action_workflow_module_loaded.UserActionWorkflow.execute_user_action,
+                inputs=workflow_encoded_inputs_bundle,
+            )
+            workflow_completion_output_blob = await workflow_enqueue_handle_record.get_result()
+            workflow_lifetime_status_snapshot = await workflow_enqueue_handle_record.get_status()
+
+        assert workflow_lifetime_status_snapshot.status == dbos.WorkflowStatusString.SUCCESS.value
+        assert isinstance(workflow_completion_output_blob, dict)
+        assert executor_execute_observer.await_count == 1
+        parsed_output = workflow_params_module.UserActionWorkflowOutput.from_dict(
+            workflow_completion_output_blob,
+        )
+        assert parsed_output.updated_user_action is not None
+        assert parsed_output.updated_user_action.status == protocol_models.UserActionStatus.FAILED
+        assert parsed_output.updated_user_action.result is not None
+        result_inner = parsed_output.updated_user_action.result.actual_instance
+        assert isinstance(result_inner, protocol_models.AutomationActionResult)
+        assert result_inner.error_message == protocol_models.AutomationActionResultErrorMessage.AUTOMATION_NOT_FOUND

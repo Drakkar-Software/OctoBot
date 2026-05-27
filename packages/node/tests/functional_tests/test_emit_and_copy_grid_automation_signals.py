@@ -32,6 +32,7 @@ import octobot_node.scheduler
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals_module
 import octobot_protocol.models as octobot_protocol_models
 import octobot_node.scheduler.tasks
+import starfish_server.config.schema as starfish_server_config_schema
 
 from . import grid_workflow_simulator_test_util as grid_sim_util
 from tests.scheduler import temp_dbos_scheduler
@@ -100,13 +101,15 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         octobot_namespace = base_config.namespaces[sync_namespace_key]
         trading_signals_collection = sync_collections_module.CollectionConfig(
             name="trading-signals",
-            storagePath="products/{strategyId}/signals/{version}",
-            # OctoBot-Sync ``create_role_resolver`` grants role ``user`` (``self`` is only
-            # added for paths that include ``{identity}`` matching the caller).
+            storagePath="products/{strategyId}/{version}/signals",
             readRoles=["public"],
             writeRoles=["public"],
             encryption="none",
             maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
+            appendOnly=starfish_server_config_schema.AppendOnlyConfig(
+                type="by_timestamp",
+                requireAuthorSignature=False,
+            ),
         )
         extended_octobot = sync_collections_module.NamespaceConfig(
             collections=[*octobot_namespace.collections, trading_signals_collection],

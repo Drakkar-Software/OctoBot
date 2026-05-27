@@ -17,6 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
@@ -27,13 +28,15 @@ class AccountAuthentication(BaseModel):
     """
     AccountAuthentication
     """ # noqa: E501
+    id: StrictStr
+    updated_at: Optional[datetime] = None
     api_key: Optional[StrictStr] = None
     api_secret: Optional[StrictStr] = None
     api_passphrase: Optional[StrictStr] = None
     public_key: Optional[StrictStr] = None
     private_key: Optional[StrictStr] = None
     seed_phrase: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["api_key", "api_secret", "api_passphrase", "public_key", "private_key", "seed_phrase"]
+    __properties: ClassVar[List[str]] = ["id", "updated_at", "api_key", "api_secret", "api_passphrase", "public_key", "private_key", "seed_phrase"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -86,6 +89,8 @@ class AccountAuthentication(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "id": obj.get("id"),
+            "updated_at": obj.get("updated_at"),
             "api_key": obj.get("api_key"),
             "api_secret": obj.get("api_secret"),
             "api_passphrase": obj.get("api_passphrase"),

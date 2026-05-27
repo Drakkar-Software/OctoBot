@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import contextlib
+import datetime
 import dbos
 import json
 import logging
@@ -372,9 +373,13 @@ class Scheduler:
             workflow_params.AutomationWorkflowOutput.from_dict(json.loads(workflow_status.output))
             if workflow_status.output else workflow_params.AutomationWorkflowOutput()
         )
+        input_task = workflows_util.get_automation_input_task(workflow_status)
+        task_name = input_task.name if input_task is not None else None
         return output, octobot_node.models.Task(
-            name="", content=output.state,
-            content_metadata=output.state_metadata, type="execute_actions",
+            name=task_name,
+            content=output.state,
+            content_metadata=output.state_metadata,
+            type="execute_actions",
         )
 
     def _build_export_result_from_status(
@@ -494,35 +499,29 @@ class Scheduler:
         else:
             return default_value
 
-    async def get_latest_task_for_each_automation(
-        self,
-        wallet_address: typing.Optional[str],
-        statuses: typing.Optional[list[dbos.WorkflowStatusString]],
-        load_output: bool = False,
-    ) -> list[octobot_node.models.Task]:
+    async def get_automation_states(self, wallet_address: typing.Optional[str]) -> list[protocol_models.AutomationState]:
         workflows = await self._get_latest_workflow_for_each_automation(
-            wallet_address, statuses, load_output=load_output
+            wallet_address, None, load_output=True
         )
-        tasks = []
+        sources: list[automations_protocol.AutomationStateSource] = []
         for workflow in workflows:
+            workflow_output = None
             if workflow.output:
-                _, task = self._parse_output_and_task_from_workflow_output(workflow)
+                workflow_output, task = self._parse_output_and_task_from_workflow_output(workflow)
             else:
                 task = workflows_util.get_automation_input_task(workflow)
             if task:
                 task.id = workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
-                tasks.append(task)
-        return [t for t in tasks if t is not None]
-
-    async def get_automation_states(self, wallet_address: typing.Optional[str]) -> list[protocol_models.AutomationState]:
-        tasks = await self.get_latest_task_for_each_automation(
-            wallet_address, None, load_output=True
-        )
+                sources.append(automations_protocol.AutomationStateSource(
+                    task=task,
+                    workflow_status=workflow.status,
+                    workflow_output=workflow_output,
+                    workflow_error=str(workflow.error) if workflow.error else None,
+                ))
         with contextlib.ExitStack() as exit_stack:
-            for task in tasks:
-                exit_stack.enter_context(task_context.encrypted_task(task))
-            # tasks are now decrypted during to_protocol_automations_state call
-            return automations_protocol.to_protocol_automations_state(tasks)
+            for source in sources:
+                exit_stack.enter_context(task_context.encrypted_task(source.task))
+            return automations_protocol.to_protocol_automations_state(sources)
 
     @staticmethod
     def _user_action_list_sort_key(
@@ -551,23 +550,20 @@ class Scheduler:
             return None
         return output.updated_user_action
 
-    def _failed_user_action_when_output_missing(
+    def _workflow_updated_at(self, workflow_status: dbos.WorkflowStatus) -> datetime.datetime:
+        return timestamp_util.utc_datetime_from_timestamp(
+            (workflow_status.created_at or 0) / 1000
+        )
+
+    def _failed_user_action_from_parsed_inputs(
         self,
         workflow_status: dbos.WorkflowStatus,
-    ) -> typing.Optional[protocol_models.UserAction]:
-        ua_inputs = workflows_util.get_user_action_workflow_inputs(workflow_status)
-        if ua_inputs is None or ua_inputs.user_action is None:
-            self.logger.warning(
-                "Cannot build fallback user action for workflow %s: no user-action inputs.",
-                getattr(workflow_status, "workflow_id", None),
-            )
-            return None
+        ua_inputs: workflow_params.UserActionWorkflowInputs,
+    ) -> protocol_models.UserAction:
         user_action = ua_inputs.user_action
         user_action.status = protocol_models.UserActionStatus.FAILED
         error_text = str(workflow_status.error) if workflow_status.error else "Workflow finished without usable output."
-        updated_at = timestamp_util.utc_datetime_from_timestamp(
-            (workflow_status.created_at or 0) / 1000
-        )
+        updated_at = self._workflow_updated_at(workflow_status)
         result_type = user_action_util.resolve_user_action_result_type(user_action)
         user_action.result = user_action_util.build_synthesized_failure_user_action_result(
             result_type=result_type,
@@ -577,52 +573,80 @@ class Scheduler:
         user_action.updated_at = updated_at
         return user_action
 
-    async def list_user_actions(self, wallet_address: typing.Optional[str]) -> list[protocol_models.UserAction]:
+    def _minimal_user_action_for_workflow(
+        self,
+        workflow_status: dbos.WorkflowStatus,
+        resolved: workflows_util.ResolvedUserActionWorkflowInputs,
+        *,
+        terminal: bool,
+    ) -> protocol_models.UserAction:
+        workflow_identifier = str(workflow_status.workflow_id or "")
+        parse_error = resolved.parse_error or "could not parse UserActionWorkflowInputs"
+        self.logger.debug(
+            "Recovered minimal user action for workflow %s: %s",
+            workflow_identifier,
+            parse_error,
+        )
+        return user_action_util.build_minimal_user_action_for_workflow(
+            workflow_id=workflow_identifier,
+            terminal=terminal,
+            updated_at=self._workflow_updated_at(workflow_status),
+            parse_error=parse_error,
+            partial_user_action_id=resolved.partial_user_action_id,
+            workflow_error=str(workflow_status.error) if workflow_status.error else None,
+        )
+
+    def _user_action_from_workflow_inputs(
+        self,
+        workflow_status: dbos.WorkflowStatus,
+        *,
+        terminal: bool,
+    ) -> protocol_models.UserAction:
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+        if resolved.inputs is not None and resolved.inputs.user_action is not None:
+            if terminal:
+                return self._failed_user_action_from_parsed_inputs(workflow_status, resolved.inputs)
+            return resolved.inputs.user_action
+        return self._minimal_user_action_for_workflow(workflow_status, resolved, terminal=terminal)
+
+    def _user_action_from_terminal_workflow(
+        self,
+        workflow_status: dbos.WorkflowStatus,
+    ) -> protocol_models.UserAction:
+        from_output = self._parse_user_action_from_workflow_output(workflow_status)
+        if from_output is not None:
+            return from_output
+        return self._user_action_from_workflow_inputs(workflow_status, terminal=True)
+
+    async def list_user_actions(
+        self, wallet_address: typing.Optional[str],
+        active_only: bool = True,
+    ) -> list[protocol_models.UserAction]:
         # Step: aggregate user actions from USER_ACTION_QUEUE workflows (pending inputs + terminal outputs).
         if not self.INSTANCE:
             return []
+        _ = active_only  # Reserved for API; DBOS fetches always use explicit non-terminal / terminal status sets.
         user_action_queue_name = octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value
         loaded: list[tuple[tuple[int, str, str], protocol_models.UserAction]] = []
-        active_workflows = await self._list_workflows(
+        input_workflows = await self._list_workflows(
             wallet_address,
-            [
-                dbos.WorkflowStatusString.ENQUEUED,
-                dbos.WorkflowStatusString.PENDING,
-            ],
+            list(workflows_util.get_user_action_input_workflow_statuses()),
             [user_action_queue_name],
             load_output=False,
         )
-        for workflow_status in active_workflows:
-            ua_inputs = workflows_util.get_user_action_workflow_inputs(workflow_status)
-            if ua_inputs is None or ua_inputs.user_action is None:
-                self.logger.warning(
-                    "Skipping user action workflow %s: could not parse UserActionWorkflowInputs.",
-                    getattr(workflow_status, "workflow_id", None),
-                )
-                continue
-            user_action_row = ua_inputs.user_action
+        for workflow_status in input_workflows:
+            user_action_row = self._user_action_from_workflow_inputs(workflow_status, terminal=False)
             sort_key = self._user_action_list_sort_key(user_action_row, workflow_status)
             loaded.append((sort_key, user_action_row))
         terminal_workflows = await self._list_workflows(
             wallet_address,
-            [
-                dbos.WorkflowStatusString.SUCCESS,
-                dbos.WorkflowStatusString.ERROR,
-                dbos.WorkflowStatusString.CANCELLED,
-                dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED,
-            ],
+            list(workflows_util.get_user_action_terminal_workflow_statuses()),
             [user_action_queue_name],
             load_output=True,
         )
         for workflow_status in terminal_workflows:
-            from_output = self._parse_user_action_from_workflow_output(workflow_status)
-            if from_output is not None:
-                sort_key = self._user_action_list_sort_key(from_output, workflow_status)
-                loaded.append((sort_key, from_output))
-            else:
-                synthesized = self._failed_user_action_when_output_missing(workflow_status)
-                if synthesized is not None:
-                    sort_key = self._user_action_list_sort_key(synthesized, workflow_status)
-                    loaded.append((sort_key, synthesized))
+            user_action_row = self._user_action_from_terminal_workflow(workflow_status)
+            sort_key = self._user_action_list_sort_key(user_action_row, workflow_status)
+            loaded.append((sort_key, user_action_row))
         loaded.sort(key=lambda row: row[0])
         return [pair[1] for pair in loaded]

@@ -58,7 +58,18 @@ class AutomationWorkflowIterationRetryInterval:
         return float(self._effective_seconds())
 
 
+def destroy_launched_dbos() -> None:
+    """
+    Tear down the DBOS singleton so the next test can reset the system database.
+
+    Required when a previous test failed after ``launch()`` or when pytest-xdist
+    runs many scheduler tests on the same worker.
+    """
+    dbos.DBOS.destroy(workflow_completion_timeout_sec=0)
+
+
 def init_scheduler(db_file_name: str):
+    destroy_launched_dbos()
     baseline_seconds = float(octobot_node_constants_module.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS)
     retry_interval_proxy = AutomationWorkflowIterationRetryInterval(baseline_seconds)
     with mock.patch.object(
@@ -83,17 +94,19 @@ def temp_dbos_scheduler():
     # from https://docs.dbos.dev/python/tutorials/testing
     # don't use too muck as it is very slow
     with tempfile.NamedTemporaryFile() as temp_file:
+        destroy_launched_dbos()
         dbos_runtime = init_scheduler(temp_file.name)
         dbos_runtime.reset_system_database()
         dbos_runtime.launch()
         try:
             yield octobot_node.scheduler.SCHEDULER
         finally:
-            dbos_runtime.destroy()
+            destroy_launched_dbos()
 
 
 def init_and_destroy_scheduler(db_file_name: str):
-    dbos = init_scheduler(db_file_name)
-    dbos.reset_system_database()
-    dbos.launch()
-    dbos.destroy()
+    destroy_launched_dbos()
+    dbos_runtime = init_scheduler(db_file_name)
+    dbos_runtime.reset_system_database()
+    dbos_runtime.launch()
+    destroy_launched_dbos()

@@ -27,6 +27,7 @@ import tests.scheduler as scheduler_tests
 _TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 _TEST_WALLET_PASSPHRASE = "accountsCRUD1!"
 _DOOMED_ACCOUNT_ID = "functional-account-doomed"
+_FUNCTIONAL_AUTHENTICATION_ID = "functional-auth-1"
 _WORKFLOW_RESULT_TIMEOUT_SECONDS = 120.0
 _USER_ACTION_LIST_POLL_TIMEOUT_SECONDS = 15.0
 
@@ -189,13 +190,26 @@ class TestExecuteUserActionAccountCrud:
                 exchange_config_ids=["functional-test-exchange-config-id"],
             )
 
-        def build_account(*, account_id: str, account_name: str) -> protocol_models.Account:
+        def build_functional_authentication() -> protocol_models.AccountAuthentication:
+            return protocol_models.AccountAuthentication(
+                id=_FUNCTIONAL_AUTHENTICATION_ID,
+                api_key="functional-test-api-key",
+                api_secret="functional-test-api-secret",
+            )
+
+        def build_account(
+            *,
+            account_id: str,
+            account_name: str,
+            authentication_id: str | None = _FUNCTIONAL_AUTHENTICATION_ID,
+        ) -> protocol_models.Account:
             return protocol_models.Account(
                 id=account_id,
                 name=account_name,
-                is_simulated=True,
+                is_simulated=False,
                 created_at=sample_timestamp,
                 updated_at=sample_timestamp,
+                authentication_id=authentication_id,
                 specifics=protocol_models.AccountSpecifics(
                     actual_instance=build_exchange_account(),
                 ),
@@ -270,6 +284,9 @@ class TestExecuteUserActionAccountCrud:
 
             # Step: Filesystem-backed provider for this test root (also patched as ``AccountProvider.instance()``).
             account_provider = octobot_sync.sync.AccountProvider(base_folder=str(test_user_root))
+            authentication_provider = octobot_sync.sync.collection_providers.AccountAuthenticationProvider(
+                base_folder=str(test_user_root),
+            )
 
             # Step: Permission mock sequence — happy create OK; edit hits RetriableFailedRequest then whitelist error; refresh OK.
             # RetriableFailedRequest is re-raised from account_state_updater (unlike RuntimeError, which is swallowed).
@@ -294,6 +311,11 @@ class TestExecuteUserActionAccountCrud:
                     return_value=account_provider,
                 ),
                 mock.patch.object(
+                    octobot_sync.sync.collection_providers.AccountAuthenticationProvider,
+                    "instance",
+                    return_value=authentication_provider,
+                ),
+                mock.patch.object(
                     account_state_updater_module,
                     "_ensure_api_key_permissions",
                     new=ensure_permissions_mock,
@@ -316,6 +338,7 @@ class TestExecuteUserActionAccountCrud:
             ):
                 # Step: Patches above strip network/CCXT and steer ``update_account_state`` / permissions for this scenario.
                 account_provider.create_exchange_config(wallet_address, build_exchange_config())
+                authentication_provider.create_item(wallet_address, build_functional_authentication())
 
                 # Step: No persisted accounts before any workflow runs.
                 assert account_provider.list_items(wallet_address) == []
@@ -336,7 +359,7 @@ class TestExecuteUserActionAccountCrud:
                 )
 
                 # Step 1 (continued) — Listing: only the doomed row, FAILED with executor-built ``AccountActionResult``.
-                listed_after_doomed = await scheduler_api.list_user_actions(wallet_address)
+                listed_after_doomed = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                 _assert_listed_user_actions_match_expected_id_status_pairs(
                     listed_after_doomed,
                     [(doomed_create.id, protocol_models.UserActionStatus.FAILED)],
@@ -362,7 +385,7 @@ class TestExecuteUserActionAccountCrud:
                 await _run_user_action_to_completion(wallet_address, happy_create)
 
                 # Step 2 (continued) — Listing: doomed FAILED + happy COMPLETED.
-                listed_after_create = await scheduler_api.list_user_actions(wallet_address)
+                listed_after_create = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                 _assert_listed_user_actions_match_expected_id_status_pairs(
                     listed_after_create,
                     [
@@ -406,7 +429,7 @@ class TestExecuteUserActionAccountCrud:
                 saw_mid_retry_pending = False
                 while asyncio.get_running_loop().time() < spin_deadline_seconds:
                     if ensure_permissions_mock.await_count >= 2:
-                        listed_mid = await scheduler_api.list_user_actions(wallet_address)
+                        listed_mid = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                         _assert_listed_user_actions_match_expected_id_status_pairs(
                             listed_mid,
                             [
@@ -431,7 +454,7 @@ class TestExecuteUserActionAccountCrud:
                 await asyncio.wait_for(edit_handle.get_result(), timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS)
 
                 # Step 3 (listing) — Terminal edit row COMPLETED alongside prior workflows.
-                listed_after_edit = await scheduler_api.list_user_actions(wallet_address)
+                listed_after_edit = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                 _assert_listed_user_actions_match_expected_id_status_pairs(
                     listed_after_edit,
                     [
@@ -464,7 +487,7 @@ class TestExecuteUserActionAccountCrud:
                 await _run_user_action_to_completion(wallet_address, refresh_action)
 
                 # Step 4 (continued) — Listing adds COMPLETED refresh row.
-                listed_after_refresh = await scheduler_api.list_user_actions(wallet_address)
+                listed_after_refresh = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                 _assert_listed_user_actions_match_expected_id_status_pairs(
                     listed_after_refresh,
                     [
@@ -497,7 +520,7 @@ class TestExecuteUserActionAccountCrud:
                 await _run_user_action_to_completion(wallet_address, delete_action)
 
                 # Step 5 (continued) — Full listing is five terminal rows with expected id/status pairs.
-                listed_after_delete = await scheduler_api.list_user_actions(wallet_address)
+                listed_after_delete = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                 _assert_listed_user_actions_match_expected_id_status_pairs(
                     listed_after_delete,
                     [

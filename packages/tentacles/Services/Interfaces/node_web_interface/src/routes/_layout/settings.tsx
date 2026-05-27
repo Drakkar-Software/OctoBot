@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import {
+  Bug,
   Check,
   Copy,
   Download,
@@ -1040,6 +1041,14 @@ function Settings() {
         <LoggingCard />
         <ClientEncryptionKeysCard />
         <WalletManagementCard />
+      </div>
+      <div className="flex justify-center pt-2">
+        <Button variant="outline" asChild>
+          <Link to="/debug">
+            <Bug className="size-4" />
+            Debug view
+          </Link>
+        </Button>
       </div>
     </div>
   )

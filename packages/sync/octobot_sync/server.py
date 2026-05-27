@@ -15,7 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import typing
+import secrets
 import json
 from collections.abc import Awaitable, Callable
 
@@ -44,9 +44,11 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.protocol.user_data as user_data_protocol
+import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.accounts as accounts_protocol
 import octobot_node.protocol.accounts_authentication as accounts_auth_protocol
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
+import octobot_node.protocol.strategies as strategies_protocol
 
 
 _get_data: Callable[[str, StoreContext | None], Awaitable[str | None]] | None = None
@@ -167,6 +169,11 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 _get_account_id(context),
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
+        case enums.TemporaryCollections.TEMP_USER_STRATEGIES.value:
+            encrypted_blob = strategies_protocol.get_strategies_state_encrypted(
+                _get_identity(context)
+            )
+            already_encrypted_payload = json.dumps(encrypted_blob)
         case enums.Collections.USER_ACTIONS.value:
             # reading user actions should always return an empty list
             actions_state = protocol_models.UserActionsState(
@@ -174,6 +181,11 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 user_actions=[]
             )
             plaintext = actions_state.to_json()
+        case enums.Collections.DEBUG.value:
+            debug_state = await debug_protocol.get_debug_state(
+                _get_identity(context)
+            )
+            plaintext = debug_state.to_json()
         case _:
             # Opaque storage: collections with no protocol bridge are persisted
             # as client-encrypted ciphertext and the node never decrypts them.

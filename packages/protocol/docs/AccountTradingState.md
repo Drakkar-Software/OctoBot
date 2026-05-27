@@ -7,7 +7,7 @@ AccountTradingState
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **version** | **str** |  | 
-**account_trading** | [**List[AccountTrading]**](AccountTrading.md) |  | 
+**account_trading** | [**AccountTrading**](AccountTrading.md) |  | 
 
 ## Example
 

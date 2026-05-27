@@ -29,6 +29,7 @@ class UserActionType(str, Enum):
     AUTOMATION_CREATE = 'automation_create'
     AUTOMATION_EDIT = 'automation_edit'
     AUTOMATION_STOP = 'automation_stop'
+    AUTOMATION_SIGNAL = 'automation_signal'
     ACCOUNT_CREATE = 'account_create'
     ACCOUNT_EDIT = 'account_edit'
     ACCOUNT_DELETE = 'account_delete'
@@ -36,6 +37,12 @@ class UserActionType(str, Enum):
     EXCHANGE_CONFIG_CREATE = 'exchange_config_create'
     EXCHANGE_CONFIG_EDIT = 'exchange_config_edit'
     EXCHANGE_CONFIG_DELETE = 'exchange_config_delete'
+    STRATEGY_CREATE = 'strategy_create'
+    STRATEGY_EDIT = 'strategy_edit'
+    STRATEGY_DELETE = 'strategy_delete'
+    ACCOUNT_AUTH_CREATE = 'account_auth_create'
+    ACCOUNT_AUTH_EDIT = 'account_auth_edit'
+    ACCOUNT_AUTH_DELETE = 'account_auth_delete'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

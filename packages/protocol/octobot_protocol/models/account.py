@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.account_specifics import AccountSpecifics
 from octobot_protocol.models.account_state import AccountState
@@ -37,10 +37,11 @@ class Account(BaseModel):
     description: Optional[StrictStr] = None
     state: Optional[AccountState] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
+    authentication_id: Optional[StrictStr] = Field(default=None, description="The id of the account authentication bound to this account")
     assets: Optional[List[DetailedAssetsForTradingType]] = None
     specifics: Optional[AccountSpecifics] = None
-    __properties: ClassVar[List[str]] = ["id", "name", "is_simulated", "description", "state", "created_at", "updated_at", "assets", "specifics"]
+    __properties: ClassVar[List[str]] = ["id", "name", "is_simulated", "description", "state", "created_at", "updated_at", "authentication_id", "assets", "specifics"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -113,6 +114,7 @@ class Account(BaseModel):
             "state": AccountState.from_dict(obj["state"]) if obj.get("state") is not None else None,
             "created_at": obj.get("created_at"),
             "updated_at": obj.get("updated_at"),
+            "authentication_id": obj.get("authentication_id"),
             "assets": [DetailedAssetsForTradingType.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
             "specifics": AccountSpecifics.from_dict(obj["specifics"]) if obj.get("specifics") is not None else None
         })

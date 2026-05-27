@@ -3,11 +3,14 @@ import typing
 
 import octobot_commons.dataclasses
 import octobot_commons.json_util
+import octobot_commons.constants
+import octobot_commons.logging as logging
 import octobot_sync.client
 import octobot_flow.entities
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
 import octobot_flow.repositories.community.community_repository as community_repository
-import octobot_commons.logging as logging
+import octobot_flow.errors
+import octobot_flow.constants
 
 
 VERSION = "1.0.0"
@@ -52,7 +55,7 @@ class TradingSignalPayload(octobot_commons.dataclasses.MinimizableDataclass):
 
 
 def _sync_signals_path(sync_kind: str, strategy_id: str) -> str:
-    return f"/v1/{sync_kind}/products/{strategy_id}/signals/{VERSION}"
+    return f"/v1/{sync_kind}/products/{strategy_id}/{VERSION}/signals"
 
 
 def _merge_trading_signal_documents(
@@ -90,7 +93,9 @@ class TradingSignalsRepository(community_repository.CommunityRepository):
         trading_signals: list[octobot_flow.entities.TradingSignal] = []
         for strategy_identifier in strategy_ids:
             try:
-                pulled_signals = await self._pull_trading_signals(self._get_sync_client(), strategy_identifier)
+                pulled_signals = await self._pull_trading_signals(
+                    self._get_sync_client(), strategy_identifier, history_size
+                )
                 if not pulled_signals.signals:
                     continue
                 trading_signal = max(
@@ -112,25 +117,31 @@ class TradingSignalsRepository(community_repository.CommunityRepository):
         trading_signal: octobot_flow.entities.TradingSignal,
     ):
         client = self._get_sync_client()
-        previous_signals = await self._pull_trading_signals(client, trading_signal.strategy_id)
-        payload = TradingSignalPayload(signals=previous_signals.signals + [trading_signal])
+        payload = octobot_commons.json_util.sanitize(trading_signal.to_dict())
         try:
-            await octobot_sync.client.push_payload(
+            await octobot_sync.client.append_payload(
                 client,
                 push_path=_sync_signals_path("push", trading_signal.strategy_id),
-                pull_path=_sync_signals_path("pull", trading_signal.strategy_id),
-                payload=octobot_commons.json_util.sanitize(payload.to_dict()),
-                on_conflict=_merge_trading_signal_documents,
+                payload=payload,
+                timestamp=int(trading_signal.account.updated_at * octobot_commons.constants.MSECONDS_TO_SECONDS),
             )
         except Exception as upload_error:
             self._logger().exception(upload_error, True, f"Failed to upload trading signal: {upload_error}")
 
     async def _pull_trading_signals(
-        self, client: octobot_sync.client.StarfishClient, strategy_id: str
+        self, client: octobot_sync.client.StarfishClient, strategy_id: str, last: typing.Optional[int]
     ) -> TradingSignalPayload:
-        return TradingSignalPayload.from_dict((
-            await client.pull(_sync_signals_path("pull", strategy_id))
-        ).data)
+        signals = await client.pull(
+            _sync_signals_path("pull", strategy_id),
+            last=last
+        )
+        if not isinstance(signals, list):
+            raise octobot_flow.errors.CommunityTradingSignalError(f"Unexpected response type: {type(signals)}")
+        return TradingSignalPayload(
+            signals=[
+                octobot_flow.entities.TradingSignal.from_dict(signal["data"]) for signal in signals
+            ]
+        )
 
     def _logger(self) -> logging.BotLogger:
         return logging.get_logger("TradingSignalsRepository")

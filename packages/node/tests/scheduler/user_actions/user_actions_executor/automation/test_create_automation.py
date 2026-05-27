@@ -119,7 +119,6 @@ def _assert_init_action_matches_minimal_account(
     assert portfolio_content["USDT"]["available"] == 1000.0
     assert portfolio_content["USDT"]["total"] == 1000.0
     exch_meta = init_config["exchange_account_details"]["metadata"]
-    assert exch_meta["id"] == account_id
     assert exch_meta["name"] == "Test account"
     expected_ts = protocol_account.updated_at
     if expected_ts.tzinfo is None:

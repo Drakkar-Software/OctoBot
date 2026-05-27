@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import octobot_commons.configuration.fields_utils as fields_utils
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.profiles.profile_data as commons_profile_data
@@ -204,7 +205,6 @@ def exchange_protocol_account_to_apply_configuration_dict(
     protocol_account: protocol_models.Account,
     *,
     wallet_address: str,
-    account_id_override: str | None = None,
     reference_market: str | None = None,
 ) -> dict:
     """
@@ -222,15 +222,16 @@ def exchange_protocol_account_to_apply_configuration_dict(
         )
 
     exchange_payload = specifics_instance
-    account_identifier = account_id_override if account_id_override is not None else protocol_account.id
+    account_identifier = protocol_account.id
     exchange_config = exchange_account_resolver.get_exchange_config(
         wallet_address,
         exchange_payload,
     )
 
     exchange_details = commons_profile_data.ExchangeData(internal_name=exchange_config.exchange)
-    if exchange_payload.remote_account_id:
-        exchange_details.exchange_account_id = exchange_payload.remote_account_id
+    exchange_details.exchange_account_id = (
+        exchange_payload.remote_account_id or account_identifier
+    )
     if protocol_account.is_simulated:
         auth_details = exchange_data_module.ExchangeAuthDetails()
     else:
@@ -238,15 +239,17 @@ def exchange_protocol_account_to_apply_configuration_dict(
             wallet_address,
             protocol_account,
         )
+        api_password = ""
+        if authentication.api_passphrase:
+            api_password = fields_utils.encrypt(authentication.api_passphrase).decode()
         auth_details = exchange_data_module.ExchangeAuthDetails(
-            api_key=authentication.api_key,
-            api_secret=authentication.api_secret,
-            api_password=authentication.api_passphrase or "",
+            api_key=fields_utils.encrypt(authentication.api_key).decode(),
+            api_secret=fields_utils.encrypt(authentication.api_secret).decode(),
+            api_password=api_password,
         )
 
     exchange_account_details = flow_entities.ExchangeAccountDetails(
         metadata=flow_exchange_account_details.ExchangeAccountMetadata(
-            id=account_identifier,
             updated_at=_protocol_account_updated_at_unix_seconds(protocol_account),
             name=protocol_account.name,
         ),

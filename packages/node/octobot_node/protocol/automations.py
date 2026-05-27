@@ -14,15 +14,19 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import dataclasses
+import datetime
 import enum
 import json
 import typing
 
+import dbos
 import octobot_commons.logging as octobot_commons_logging
 import octobot_commons.timestamp_util as octobot_commons_timestamp_util
 import octobot_flow.entities as flow_entities
 import octobot_node.models as node_models
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
+import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_protocol.models as protocol_models
 import octobot_trading.constants as octobot_trading_constants
 import octobot_trading.enums as octobot_trading_enums
@@ -32,12 +36,28 @@ import octobot_trading.personal_data.portfolios.protocol as octobot_trading_port
 logger = octobot_commons_logging.get_logger("AutomationsProtocol")
 
 
-def to_protocol_automations_state(tasks: list[node_models.Task]) -> list[protocol_models.AutomationState]:
+@dataclasses.dataclass
+class AutomationStateSource:
+    task: node_models.Task
+    workflow_status: str
+    workflow_output: typing.Optional[workflow_params.AutomationWorkflowOutput] = None
+    workflow_error: typing.Optional[str] = None
+
+
+def to_protocol_automations_state(
+    sources: list[AutomationStateSource],
+) -> list[protocol_models.AutomationState]:
     states: list[protocol_models.AutomationState] = []
-    for task in tasks:
+    for source in sources:
         try:
-            states.append(_to_protocol_automation_state(task))
+            states.append(_to_protocol_automation_state(
+                source.task,
+                workflow_status=source.workflow_status,
+                workflow_output=source.workflow_output,
+                workflow_error=source.workflow_error,
+            ))
         except Exception as exc:
+            task = source.task
             content_preview = (task.content or "")[:80] if isinstance(task.content, str) else repr(task.content)
             logger.warning(
                 f"Skipping malformed automation task id={task.id!r}: {exc} "
@@ -46,9 +66,77 @@ def to_protocol_automations_state(tasks: list[node_models.Task]) -> list[protoco
     return states
 
 
-def _to_protocol_automation_state(task: node_models.Task) -> protocol_models.AutomationState:
-    flow_automation_state = _parse_automation_state(task)
-    protocol_automation_state = protocol_models.AutomationState(
+def _resolve_automation_status(
+    flow_status: protocol_models.TaskStatus,
+    workflow_status: str,
+    workflow_output: typing.Optional[workflow_params.AutomationWorkflowOutput],
+) -> protocol_models.TaskStatus:
+    active_statuses = (
+        dbos.WorkflowStatusString.ENQUEUED.value,
+        dbos.WorkflowStatusString.PENDING.value,
+    )
+    if workflow_status in active_statuses:
+        return flow_status
+    if workflow_status == dbos.WorkflowStatusString.CANCELLED.value:
+        return protocol_models.TaskStatus.CANCELED
+    if workflow_status in (
+        dbos.WorkflowStatusString.ERROR.value,
+        dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED.value,
+    ):
+        return protocol_models.TaskStatus.FAILED
+    if workflow_status == dbos.WorkflowStatusString.SUCCESS.value:
+        if workflow_output is not None and workflow_output.error:
+            return protocol_models.TaskStatus.FAILED
+        if flow_status == protocol_models.TaskStatus.FAILED:
+            return protocol_models.TaskStatus.FAILED
+        return protocol_models.TaskStatus.COMPLETED
+    if flow_status in (protocol_models.TaskStatus.FAILED, protocol_models.TaskStatus.CANCELED):
+        return flow_status
+    return protocol_models.TaskStatus.COMPLETED
+
+
+def _resolve_automation_errors(
+    workflow_status: str,
+    workflow_output: typing.Optional[workflow_params.AutomationWorkflowOutput],
+    workflow_error: typing.Optional[str],
+) -> tuple[typing.Optional[str], typing.Optional[str]]:
+    if workflow_status == dbos.WorkflowStatusString.SUCCESS.value:
+        if workflow_output is not None and workflow_output.error:
+            return workflow_output.error, workflow_output.error_message
+        return None, None
+    if workflow_status in (
+        dbos.WorkflowStatusString.ERROR.value,
+        dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED.value,
+    ):
+        return workflow_error or "Execution failed", None
+    return None, None
+
+
+def _task_content_is_missing(content: typing.Optional[str]) -> bool:
+    return content is None or content == ""
+
+
+def _empty_flow_automation_state() -> flow_entities.AutomationState:
+    return flow_entities.AutomationState(
+        automation=flow_entities.AutomationDetails(
+            metadata=flow_entities.AutomationMetadata(automation_id=""),
+            actions_dag=flow_entities.ActionsDAG(actions=[]),
+        ),
+    )
+
+
+def _merge_task_errors_when_workflow_errors_absent(
+    task: node_models.Task,
+    workflow_error: typing.Optional[str],
+    workflow_error_message: typing.Optional[str],
+) -> tuple[typing.Optional[str], typing.Optional[str]]:
+    if workflow_error is not None or workflow_error_message is not None:
+        return workflow_error, workflow_error_message
+    return task.error, task.error_message
+
+
+def _base_protocol_automation_state(task: node_models.Task) -> protocol_models.AutomationState:
+    return protocol_models.AutomationState(
         id=task.id,
         status=protocol_models.TaskStatus.PENDING,
         metadata=protocol_models.AutomationMetadata(
@@ -56,7 +144,60 @@ def _to_protocol_automation_state(task: node_models.Task) -> protocol_models.Aut
             description="",
         ),
     )
-    return _fill_protocol_automation_state(protocol_automation_state, flow_automation_state)
+
+
+def _apply_workflow_resolution_to_automation_state(
+    filled: protocol_models.AutomationState,
+    task: node_models.Task,
+    *,
+    workflow_status: str,
+    workflow_output: typing.Optional[workflow_params.AutomationWorkflowOutput],
+    workflow_error: typing.Optional[str],
+    merge_task_errors_when_workflow_absent: bool,
+) -> protocol_models.AutomationState:
+    resolved_status = _resolve_automation_status(
+        filled.status, workflow_status, workflow_output
+    )
+    resolved_error, resolved_error_message = _resolve_automation_errors(
+        workflow_status, workflow_output, workflow_error
+    )
+    if merge_task_errors_when_workflow_absent:
+        error, error_message = _merge_task_errors_when_workflow_errors_absent(
+            task, resolved_error, resolved_error_message
+        )
+    else:
+        error, error_message = resolved_error, resolved_error_message
+    return filled.model_copy(update={
+        "status": resolved_status,
+        "error": error,
+        "error_message": error_message,
+    })
+
+
+def _to_protocol_automation_state(
+    task: node_models.Task,
+    *,
+    workflow_status: str,
+    workflow_output: typing.Optional[workflow_params.AutomationWorkflowOutput] = None,
+    workflow_error: typing.Optional[str] = None,
+) -> protocol_models.AutomationState:
+    content_missing = _task_content_is_missing(task.content)
+    flow_automation_state = (
+        _empty_flow_automation_state()
+        if content_missing
+        else _parse_automation_state(task)
+    )
+    filled = _fill_protocol_automation_state(
+        _base_protocol_automation_state(task), flow_automation_state
+    )
+    return _apply_workflow_resolution_to_automation_state(
+        filled,
+        task,
+        workflow_status=workflow_status,
+        workflow_output=workflow_output,
+        workflow_error=workflow_error,
+        merge_task_errors_when_workflow_absent=content_missing,
+    )
 
 
 def _parse_automation_state(task: node_models.Task) -> flow_entities.AutomationState:
@@ -93,6 +234,22 @@ def _flow_result_to_protocol_str(result: typing.Any) -> typing.Optional[str]:
     if isinstance(result, str):
         return result
     return json.dumps(result, default=str)
+
+
+def _metadata_updated_at_from_execution(
+    execution: flow_entities.ExecutionDetails,
+) -> typing.Optional[datetime.datetime]:
+    execution_timestamps = (
+        execution.previous_execution.triggered_at,
+        execution.current_execution.triggered_at,
+    )
+    positive_timestamps = [
+        timestamp for timestamp in execution_timestamps if timestamp > 0
+    ]
+    if not positive_timestamps:
+        return None
+    latest_timestamp = max(positive_timestamps)
+    return octobot_commons_timestamp_util.utc_datetime_from_timestamp(latest_timestamp)
 
 
 def _automation_task_status(flow_automation_state: flow_entities.AutomationState) -> protocol_models.TaskStatus:
@@ -183,8 +340,9 @@ def _fill_protocol_automation_state(
         internal_name = exchange_details.exchange_details.internal_name
         if internal_name:
             exchanges = [internal_name]
-        if exchange_details.metadata.id:
-            exchange_account_ids = [exchange_details.metadata.id]
+        bound_account_id = exchange_details.exchange_details.exchange_account_id
+        if bound_account_id:
+            exchange_account_ids = [bound_account_id]
     # Derive portfolio and trading summaries from automation exchange elements.
     exchange_elements = flow_automation_state.automation.exchange_account_elements
     assets: typing.Optional[list[protocol_models.DetailedAsset]] = None
@@ -198,9 +356,17 @@ def _fill_protocol_automation_state(
         orders = _order_summaries_from_open_orders(exchange_elements.orders.open_orders) or None
         positions = _position_summaries(exchange_elements.positions) or None
         trades = _trade_summaries(exchange_elements.trades) or None
+    metadata = protocol_automation_state.metadata.model_copy(
+        update={
+            "updated_at": _metadata_updated_at_from_execution(
+                flow_automation_state.automation.execution
+            ),
+        }
+    )
     return protocol_automation_state.model_copy(
         update={
             "status": status,
+            "metadata": metadata,
             "actions": dag_actions or None,
             "priority_actions": priority_actions or None,
             "exchanges": exchanges,

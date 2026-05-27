@@ -26,11 +26,11 @@ import octobot_sync.enums as sync_enums
 
 class TestStrategyProviderCollection:
     def test_collection_is_user_strategies(self):
-        assert strategy_provider_module.StrategyProvider.COLLECTION == sync_enums.Collections.USER_STRATEGIES.value
+        assert strategy_provider_module.StrategyProvider.COLLECTION == sync_enums.TemporaryCollections.TEMP_USER_STRATEGIES.value
 
     def test_storage_collection_matches(self, tmp_path):
         provider = strategy_provider_module.StrategyProvider(base_folder=str(tmp_path))
-        assert provider._storage.collection == sync_enums.Collections.USER_STRATEGIES.value
+        assert provider._storage.collection == sync_enums.TemporaryCollections.TEMP_USER_STRATEGIES.value
 
     def test_storage_is_base_local_collection_storage(self, tmp_path):
         provider = strategy_provider_module.StrategyProvider(base_folder=str(tmp_path))

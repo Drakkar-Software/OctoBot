@@ -1,4 +1,7 @@
-import type { Task_Output as Task, TaskStatus } from "@/client"
+import type {
+  Task_Output as Task,
+  octobot_node__models__TaskStatus as TaskStatus,
+} from "@/client"
 import { getActiveExecution, getStatusGroup } from "@/utils/executions"
 
 export type TaskFilterGroup = "active" | "completed" | "errored"

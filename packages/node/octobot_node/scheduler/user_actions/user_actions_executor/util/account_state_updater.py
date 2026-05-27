@@ -1,6 +1,7 @@
 import octobot_commons.configuration.fields_utils as fields_utils
 import octobot_commons.constants as commons_constants
 import octobot_commons.profiles.profile_data as commons_profile_data
+import octobot_commons.timestamp_util as timestamp_util
 import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_trading.enums as trading_enums
@@ -57,6 +58,7 @@ async def update_account_state(
     account_updates: dict = {"state": checked_state}
     if assets is not None:
         account_updates["assets"] = assets
+    account_updates["updated_at"] = timestamp_util.utc_now_datetime()
     return account.model_copy(update=account_updates)
 
 
@@ -109,6 +111,14 @@ async def _check_exchange_account_state(
     account: protocol_models.Account,
     wallet_address: str,
 ) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAssetsForTradingType] | None]:
+    if account.is_simulated:
+        return (
+            protocol_models.AccountState(
+                status=protocol_models.AccountStatus.VALID,
+                message=protocol_models.AccountStatusMessage.VALID,
+            ),
+            None, # not fetching assets for simulated accounts
+        )
     authentication = account_authentication_resolver.get_exchange_authentication(
         wallet_address,
         account,

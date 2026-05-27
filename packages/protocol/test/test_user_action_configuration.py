@@ -36,13 +36,19 @@ class TestUserActionConfiguration(unittest.TestCase):
         if include_optional:
             return UserActionConfiguration(
                 action_type = 'automation_create',
-                configuration = octobot_protocol.models.exchange_config.ExchangeConfig(
+                configuration = octobot_protocol.models.account_authentication.AccountAuthentication(
                     id = '', 
-                    name = '', 
-                    exchange = '', 
-                    sandboxed = True, 
-                    url = '', ),
+                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    api_key = '', 
+                    api_secret = '', 
+                    api_passphrase = '', 
+                    public_key = '', 
+                    private_key = '', 
+                    seed_phrase = '', ),
                 id = '',
+                automation_id = '',
+                signal_type = 'actions',
+                signal_payload = None,
                 account_ids = [
                     ''
                     ]
@@ -50,13 +56,18 @@ class TestUserActionConfiguration(unittest.TestCase):
         else:
             return UserActionConfiguration(
                 action_type = 'automation_create',
-                configuration = octobot_protocol.models.exchange_config.ExchangeConfig(
+                configuration = octobot_protocol.models.account_authentication.AccountAuthentication(
                     id = '', 
-                    name = '', 
-                    exchange = '', 
-                    sandboxed = True, 
-                    url = '', ),
+                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    api_key = '', 
+                    api_secret = '', 
+                    api_passphrase = '', 
+                    public_key = '', 
+                    private_key = '', 
+                    seed_phrase = '', ),
                 id = '',
+                automation_id = '',
+                signal_type = 'actions',
         )
         """
 

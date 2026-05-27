@@ -33,7 +33,7 @@ class StrategyProvider(
     Strategies are grouped per wallet address and persisted as an encrypted
     StrategiesState envelope.  All CRUD logic lives in the base class.
     """
-    COLLECTION = sync_enums.Collections.USER_STRATEGIES.value
+    COLLECTION = sync_enums.TemporaryCollections.TEMP_USER_STRATEGIES.value
     STATE_VERSION = sync_constants.USER_STRATEGIES_STATE_VERSION
     STATE_CLASS = protocol_models.StrategiesState
     ITEMS_KEY = "strategies"

@@ -33,17 +33,6 @@ import octobot_sync.enums as enums
 
 logger = logging.get_logger("Collections")
 
-# --- TEMPORARY: append-only product signals collection ---------------------
-# Scaffolding to store signals as an append-only (by_timestamp) log, keyed by
-# PRODUCT (not user identity): every push appends the payload as a {ts, data}
-# element rather than overwriting, and pulls fetch only newer elements via
-# ?checkpoint=. The path is product-scoped, so it carries no {identity} segment
-# and cannot use the "self" role; access is granted to the node's self-signed
-# root device cap (ROLE_ROOT_DEVICE). This whole block (the constant and the
-# CollectionConfig entry below) is temporary and will be REMOVED once the signals
-# storage design is finalized.
-_TEMP_SIGNALS_COLLECTION = "product-signals"
-
 DEFAULT_SYNC_CONFIG = SyncConfig(
     version=1,
     collections=[],
@@ -99,14 +88,6 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
                 CollectionConfig(
-                    name=enums.Collections.USER_STRATEGIES.value,
-                    storagePath="users/{identity}/strategies",
-                    readRoles=["self"],
-                    writeRoles=["self"],
-                    encryption="delegated",
-                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
-                ),
-                CollectionConfig(
                     name=enums.Collections.USER_ACTIONS.value,
                     storagePath="users/{identity}/actions",
                     readRoles=["self"],
@@ -114,16 +95,23 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
-                # TEMPORARY (see _TEMP_SIGNALS_COLLECTION above) — product-scoped
-                # append-only signals log. by_timestamp: each push is stored as a
-                # {ts, data} element under the "items" array; pulls filter by
-                # ?checkpoint=. Keyed by product (productId + version), not user
-                # identity. requireAuthorSignature is disabled so the existing
-                # (cap-authenticated, but non-author-signing) push path can write
-                # without per-element author-proof plumbing. Remove this entry when
-                # the signals design is finalized.
                 CollectionConfig(
-                    name=_TEMP_SIGNALS_COLLECTION,
+                    name=enums.Collections.DEBUG.value,
+                    storagePath="users/{identity}/debug",
+                    readRoles=["self"],
+                    writeRoles=["self"],
+                    encryption="delegated",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
+                ),
+                # TEMPORARY (see TemporaryCollections.TEMP_PRODUCT_SIGNALS) —
+                # product-scoped append-only signals log. by_timestamp: each push
+                # is stored as a {ts, data} element under the "items" array; pulls
+                # filter by ?checkpoint=. Keyed by product (productId + version),
+                # not user identity. requireAuthorSignature is disabled so the
+                # existing (cap-authenticated, but non-author-signing) push path
+                # can write without per-element author-proof plumbing.
+                CollectionConfig(
+                    name=enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value,
                     storagePath="products/{product_id}/{version}/signals",
                     readRoles=[ROLE_ROOT_DEVICE],
                     writeRoles=[ROLE_ROOT_DEVICE],
@@ -133,6 +121,17 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                         type="by_timestamp",
                         requireAuthorSignature=False,
                     ),
+                ),
+                # TEMPORARY (see TemporaryCollections.TEMP_USER_STRATEGIES) —
+                # temporary user-strategies collection; remove when strategies storage
+                # is finalized.
+                CollectionConfig(
+                    name=enums.TemporaryCollections.TEMP_USER_STRATEGIES.value,
+                    storagePath="users/{identity}/strategies",
+                    readRoles=["self"],
+                    writeRoles=["self"],
+                    encryption="delegated",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
             ]
         )

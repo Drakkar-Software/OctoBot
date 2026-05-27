@@ -36,6 +36,8 @@ class AutomationState(BaseModel):
     """ # noqa: E501
     id: StrictStr
     status: TaskStatus
+    error: Optional[StrictStr] = None
+    error_message: Optional[StrictStr] = None
     metadata: AutomationMetadata
     actions: Optional[List[Action]] = None
     priority_actions: Optional[List[Action]] = None
@@ -45,7 +47,7 @@ class AutomationState(BaseModel):
     orders: Optional[List[OrderSummary]] = None
     trades: Optional[List[TradeSummary]] = None
     positions: Optional[List[PositionSummary]] = None
-    __properties: ClassVar[List[str]] = ["id", "status", "metadata", "actions", "priority_actions", "exchanges", "exchange_account_ids", "assets", "orders", "trades", "positions"]
+    __properties: ClassVar[List[str]] = ["id", "status", "error", "error_message", "metadata", "actions", "priority_actions", "exchanges", "exchange_account_ids", "assets", "orders", "trades", "positions"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -145,6 +147,8 @@ class AutomationState(BaseModel):
         _obj = cls.model_validate({
             "id": obj.get("id"),
             "status": obj.get("status"),
+            "error": obj.get("error"),
+            "error_message": obj.get("error_message"),
             "metadata": AutomationMetadata.from_dict(obj["metadata"]) if obj.get("metadata") is not None else None,
             "actions": [Action.from_dict(_item) for _item in obj["actions"]] if obj.get("actions") is not None else None,
             "priority_actions": [Action.from_dict(_item) for _item in obj["priority_actions"]] if obj.get("priority_actions") is not None else None,

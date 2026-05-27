@@ -322,6 +322,15 @@ class AutomationJob:
                 copy_constants.DEFAULT_MISSED_SIGNALS_GRACE_ABORT_THRESHOLD,
             )
             self._logger.info(f"Fetched {len(trading_signals)} copy trading signals")
+            fetched_strategy_ids = {trading_signal.strategy_id for trading_signal in trading_signals}
+            missing_strategy_ids = set(to_fetch_signals) - fetched_strategy_ids
+            if missing_strategy_ids:
+                missing_strategy_ids_list = ", ".join(sorted(missing_strategy_ids))
+                raise octobot_flow.errors.CommunityTradingSignalError(
+                    f"No trading signal available for strategy {missing_strategy_ids_list}. "
+                    "The leader automation must complete at least one iteration with "
+                    "`emit_signals` enabled before copy can run."
+                )
             copy_trading_data = octobot_flow.entities.FetchedCopyTradingData(
                 trading_signals=trading_signals
             )

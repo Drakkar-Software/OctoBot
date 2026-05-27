@@ -36,14 +36,19 @@ def get_exchange_authentication(
         raise node_errors.AccountAuthenticationNotFoundError(
             f"Account {account.id!r} is not an exchange account; cannot resolve authentication."
         )
+    authentication_id = account.authentication_id
+    if not authentication_id:
+        raise node_errors.AccountAuthenticationNotFoundError(
+            f"Account {account.id!r} has no authentication_id for authentication lookup."
+        )
     try:
         authentication = collection_providers.AccountAuthenticationProvider.instance().get_item(
             wallet_address,
-            account.id,
+            authentication_id,
         )
     except collection_errors.ItemNotFoundError as err:
         raise node_errors.AccountAuthenticationNotFoundError(
-            f"Authentication for account {account.id!r} not found for address {wallet_address!r}: {err}"
+            f"Authentication {authentication_id!r} for account {account.id!r} not found for address {wallet_address!r}: {err}"
         ) from err
     if not authentication.api_key or not authentication.api_secret:
         raise node_errors.AccountAuthenticationNotFoundError(

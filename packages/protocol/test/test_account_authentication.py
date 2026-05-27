@@ -35,6 +35,8 @@ class TestAccountAuthentication(unittest.TestCase):
         model = AccountAuthentication()
         if include_optional:
             return AccountAuthentication(
+                id = '',
+                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 api_key = '',
                 api_secret = '',
                 api_passphrase = '',
@@ -44,6 +46,7 @@ class TestAccountAuthentication(unittest.TestCase):
             )
         else:
             return AccountAuthentication(
+                id = '',
         )
         """
 

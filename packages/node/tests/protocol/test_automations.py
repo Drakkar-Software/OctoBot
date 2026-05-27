@@ -15,15 +15,20 @@
 #  License along with this library.
 
 import datetime
+import json
 
+import dbos
 import octobot_commons.constants as octobot_commons_constants
+import octobot_commons.timestamp_util as octobot_commons_timestamp_util
 import octobot_flow.entities as flow_entities
 import octobot_flow.enums as flow_enums
+import octobot_node.models as node_models
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.exchanges.util.exchange_data as octobot_trading_exchange_data
 
 import octobot_node.protocol.automations as automations_protocol
+import octobot_node.scheduler.workflows.params as workflow_params
 
 
 def _minimal_protocol_base() -> protocol_models.AutomationState:
@@ -51,16 +56,321 @@ def _minimal_automation_details(**overrides) -> flow_entities.AutomationDetails:
 
 
 class TestFillProtocolAutomationStateReturnAndMetadata:
-    def test_returns_new_instance_and_preserves_metadata(self):
+    def test_returns_new_instance_and_preserves_metadata_fields(self):
         flow_state = flow_entities.AutomationState(automation=_minimal_automation_details())
         base = _minimal_protocol_base()
         filled = automations_protocol._fill_protocol_automation_state(base, flow_state)
         assert filled is not base
-        assert filled.metadata is base.metadata
+        assert filled.metadata is not base.metadata
         assert filled.metadata.name == "task-name"
         assert filled.metadata.description == "task-description"
         assert filled.metadata.created_at == base.metadata.created_at
-        assert filled.metadata.updated_at == base.metadata.updated_at
+        assert filled.metadata.updated_at is None
+
+
+class TestFillProtocolAutomationStateMetadataUpdatedAt:
+    def test_updated_at_none_when_no_execution_triggers(self):
+        flow_state = flow_entities.AutomationState(automation=_minimal_automation_details())
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.metadata.updated_at is None
+
+    def test_updated_at_from_current_execution_triggered_at(self):
+        current_triggered_at = 1_700_000_000.0
+        execution = flow_entities.ExecutionDetails(
+            current_execution=flow_entities.TriggerDetails(triggered_at=current_triggered_at),
+        )
+        flow_state = flow_entities.AutomationState(
+            automation=_minimal_automation_details(execution=execution),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.metadata.updated_at == octobot_commons_timestamp_util.utc_datetime_from_timestamp(
+            current_triggered_at
+        )
+
+    def test_updated_at_from_previous_execution_triggered_at(self):
+        previous_triggered_at = 1_600_000_000.0
+        execution = flow_entities.ExecutionDetails(
+            previous_execution=flow_entities.TriggerDetails(triggered_at=previous_triggered_at),
+        )
+        flow_state = flow_entities.AutomationState(
+            automation=_minimal_automation_details(execution=execution),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.metadata.updated_at == octobot_commons_timestamp_util.utc_datetime_from_timestamp(
+            previous_triggered_at
+        )
+
+    def test_updated_at_uses_latest_triggered_at(self):
+        previous_triggered_at = 1_600_000_000.0
+        current_triggered_at = 1_700_000_000.0
+        execution = flow_entities.ExecutionDetails(
+            previous_execution=flow_entities.TriggerDetails(triggered_at=previous_triggered_at),
+            current_execution=flow_entities.TriggerDetails(triggered_at=current_triggered_at),
+        )
+        flow_state = flow_entities.AutomationState(
+            automation=_minimal_automation_details(execution=execution),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.metadata.updated_at == octobot_commons_timestamp_util.utc_datetime_from_timestamp(
+            current_triggered_at
+        )
+
+
+class TestResolveAutomationStatusFromWorkflow:
+    def test_error_overrides_running_flow_status(self):
+        resolved = automations_protocol._resolve_automation_status(
+            protocol_models.TaskStatus.RUNNING,
+            dbos.WorkflowStatusString.ERROR.value,
+            None,
+        )
+        assert resolved == protocol_models.TaskStatus.FAILED
+
+    def test_cancelled_maps_to_canceled(self):
+        resolved = automations_protocol._resolve_automation_status(
+            protocol_models.TaskStatus.RUNNING,
+            dbos.WorkflowStatusString.CANCELLED.value,
+            None,
+        )
+        assert resolved == protocol_models.TaskStatus.CANCELED
+
+    def test_success_overrides_stale_running_to_completed(self):
+        resolved = automations_protocol._resolve_automation_status(
+            protocol_models.TaskStatus.RUNNING,
+            dbos.WorkflowStatusString.SUCCESS.value,
+            None,
+        )
+        assert resolved == protocol_models.TaskStatus.COMPLETED
+
+    def test_success_with_output_error_maps_to_failed(self):
+        workflow_output = workflow_params.AutomationWorkflowOutput(error="boom")
+        resolved = automations_protocol._resolve_automation_status(
+            protocol_models.TaskStatus.RUNNING,
+            dbos.WorkflowStatusString.SUCCESS.value,
+            workflow_output,
+        )
+        assert resolved == protocol_models.TaskStatus.FAILED
+
+    def test_pending_keeps_running_flow_status(self):
+        resolved = automations_protocol._resolve_automation_status(
+            protocol_models.TaskStatus.RUNNING,
+            dbos.WorkflowStatusString.PENDING.value,
+            None,
+        )
+        assert resolved == protocol_models.TaskStatus.RUNNING
+
+
+class TestResolveAutomationErrors:
+    def test_success_with_output_error(self):
+        workflow_output = workflow_params.AutomationWorkflowOutput(
+            error="internal_error",
+            error_message="Something went wrong",
+        )
+        error, error_message = automations_protocol._resolve_automation_errors(
+            dbos.WorkflowStatusString.SUCCESS.value,
+            workflow_output,
+            None,
+        )
+        assert error == "internal_error"
+        assert error_message == "Something went wrong"
+
+    def test_success_without_output_error(self):
+        workflow_output = workflow_params.AutomationWorkflowOutput()
+        error, error_message = automations_protocol._resolve_automation_errors(
+            dbos.WorkflowStatusString.SUCCESS.value,
+            workflow_output,
+            None,
+        )
+        assert error is None
+        assert error_message is None
+
+    def test_error_with_workflow_error(self):
+        error, error_message = automations_protocol._resolve_automation_errors(
+            dbos.WorkflowStatusString.ERROR.value,
+            None,
+            "DBOSUnexpectedStepError",
+        )
+        assert error == "DBOSUnexpectedStepError"
+        assert error_message is None
+
+    def test_error_without_workflow_error_uses_fallback(self):
+        error, error_message = automations_protocol._resolve_automation_errors(
+            dbos.WorkflowStatusString.ERROR.value,
+            None,
+            None,
+        )
+        assert error == "Execution failed"
+        assert error_message is None
+
+    def test_pending_returns_none(self):
+        error, error_message = automations_protocol._resolve_automation_errors(
+            dbos.WorkflowStatusString.PENDING.value,
+            None,
+            None,
+        )
+        assert error is None
+        assert error_message is None
+
+
+def _minimal_automation_task_content(**execution_overrides) -> str:
+    execution_dict = {
+        "previous_execution": {"triggered_at": 0},
+        "current_execution": {"triggered_at": 0},
+    }
+    execution_dict.update(execution_overrides)
+    state_dict = {
+        "automation": {
+            "metadata": {"automation_id": "automation_1"},
+            "actions_dag": {"actions": []},
+            "execution": execution_dict,
+        },
+    }
+    return json.dumps({"state": state_dict})
+
+
+class TestToProtocolAutomationStateWithoutContent:
+    def test_none_content_returns_minimal_state_with_task_fields(self):
+        task = node_models.Task(
+            id="task-none-content",
+            name="automation-without-body",
+            content=None,
+            type="execute_actions",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.PENDING.value,
+        )
+        assert state.id == "task-none-content"
+        assert state.metadata.name == "automation-without-body"
+        assert state.actions is None
+        assert state.status == protocol_models.TaskStatus.COMPLETED
+        assert state.error is None
+        assert state.error_message is None
+
+    def test_none_content_workflow_error_maps_to_failed(self):
+        task = node_models.Task(
+            id="task-none-content",
+            name="automation",
+            content=None,
+            type="execute_actions",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.ERROR.value,
+            workflow_error="DBOSUnexpectedStepError",
+        )
+        assert state.status == protocol_models.TaskStatus.FAILED
+        assert state.error == "DBOSUnexpectedStepError"
+        assert state.error_message is None
+
+    def test_none_content_prefers_workflow_error_over_task_error(self):
+        task = node_models.Task(
+            id="task-none-content",
+            name="automation",
+            content=None,
+            type="execute_actions",
+            error="task-level-error",
+            error_message="task-level-message",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.ERROR.value,
+            workflow_error="workflow-level-error",
+        )
+        assert state.error == "workflow-level-error"
+        assert state.error_message is None
+
+    def test_to_protocol_automations_state_includes_none_content_task(self):
+        task = node_models.Task(
+            id="task-none-content",
+            name="automation",
+            content=None,
+            type="execute_actions",
+        )
+        sources = [
+            automations_protocol.AutomationStateSource(
+                task=task,
+                workflow_status=dbos.WorkflowStatusString.PENDING.value,
+            ),
+        ]
+        states = automations_protocol.to_protocol_automations_state(sources)
+        assert len(states) == 1
+        assert states[0].id == "task-none-content"
+
+
+class TestToProtocolAutomationStateErrors:
+    def test_success_with_output_error_populates_fields(self):
+        task = node_models.Task(
+            id="task-1",
+            name="automation",
+            content=_minimal_automation_task_content(),
+            type="execute_actions",
+        )
+        workflow_output = workflow_params.AutomationWorkflowOutput(
+            error="no_trading_signal",
+            error_message="No trading signal available",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.SUCCESS.value,
+            workflow_output=workflow_output,
+        )
+        assert state.status == protocol_models.TaskStatus.FAILED
+        assert state.error == "no_trading_signal"
+        assert state.error_message == "No trading signal available"
+
+    def test_success_without_error_clears_fields(self):
+        task = node_models.Task(
+            id="task-1",
+            name="automation",
+            content=_minimal_automation_task_content(),
+            type="execute_actions",
+        )
+        workflow_output = workflow_params.AutomationWorkflowOutput()
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.SUCCESS.value,
+            workflow_output=workflow_output,
+        )
+        assert state.status == protocol_models.TaskStatus.COMPLETED
+        assert state.error is None
+        assert state.error_message is None
+
+    def test_metadata_updated_at_from_execution_triggers(self):
+        previous_triggered_at = 1_600_000_000.0
+        current_triggered_at = 1_700_000_000.0
+        task = node_models.Task(
+            id="task-1",
+            name="automation",
+            content=_minimal_automation_task_content(
+                previous_execution={"triggered_at": previous_triggered_at},
+                current_execution={"triggered_at": current_triggered_at},
+            ),
+            type="execute_actions",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.SUCCESS.value,
+            workflow_output=workflow_params.AutomationWorkflowOutput(),
+        )
+        assert state.metadata.updated_at == octobot_commons_timestamp_util.utc_datetime_from_timestamp(
+            current_triggered_at
+        )
+
+    def test_error_workflow_populates_error_from_workflow_error(self):
+        task = node_models.Task(
+            id="task-1",
+            name="automation",
+            content=_minimal_automation_task_content(),
+            type="execute_actions",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.ERROR.value,
+            workflow_error="DBOSUnexpectedStepError",
+        )
+        assert state.status == protocol_models.TaskStatus.FAILED
+        assert state.error == "DBOSUnexpectedStepError"
+        assert state.error_message is None
 
 
 class TestFillProtocolAutomationStateAutomationStatus:
@@ -198,9 +508,9 @@ class TestFillProtocolAutomationStatePriorityActions:
 class TestFillProtocolAutomationStateExchanges:
     def test_exchanges_and_account_ids_from_exchange_details(self):
         exchange_details = flow_entities.ExchangeAccountDetails()
-        exchange_details.metadata.id = "acc-1"
         exchange_details.metadata.name = "acc"
         exchange_details.exchange_details.internal_name = "binance"
+        exchange_details.exchange_details.exchange_account_id = "acc-1"
         flow_state = flow_entities.AutomationState(
             automation=_minimal_automation_details(),
             exchange_account_details=exchange_details,
@@ -208,6 +518,17 @@ class TestFillProtocolAutomationStateExchanges:
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.exchanges == ["binance"]
         assert filled.exchange_account_ids == ["acc-1"]
+
+    def test_exchange_account_ids_none_without_exchange_account_id(self):
+        exchange_details = flow_entities.ExchangeAccountDetails()
+        exchange_details.metadata.name = "acc"
+        exchange_details.exchange_details.internal_name = "binance"
+        flow_state = flow_entities.AutomationState(
+            automation=_minimal_automation_details(),
+            exchange_account_details=exchange_details,
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.exchange_account_ids is None
 
 
 class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
@@ -248,7 +569,6 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         automation = _minimal_automation_details()
         automation.exchange_account_elements = elements
         exchange_details = flow_entities.ExchangeAccountDetails()
-        exchange_details.metadata.id = "acc-1"
         exchange_details.metadata.name = "acc"
         exchange_details.exchange_details.internal_name = "binance"
         exchange_details.portfolio = flow_entities.ExchangeAccountPortfolio(unit="USDT")

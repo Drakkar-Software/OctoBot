@@ -679,7 +679,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_sync_client_for_address(self, address: str) -> sync_client.StarfishClient:
         self.init_sync_client_for_wallet(address)
         if self._sync_client is None:
-            raise wallet_backend.WalletNotFoundError("Wallet with address {address} not found")
+            raise wallet_backend.WalletNotFoundError(
+                f"Wallet with address {address} not found"
+            )
         return self._sync_client
 
     def get_wallet(self, address: str) -> sync_chain.Wallet:

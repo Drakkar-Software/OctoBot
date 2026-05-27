@@ -192,9 +192,9 @@ class TestGetData:
     async def test_unmatched_collection_returns_none_when_no_stored_value(self):
         mock_store = mock.MagicMock()
         mock_store.get_string = mock.AsyncMock(return_value=None)
-        context = _make_context(identity="0xwallet", collection="user-strategies")
+        context = _make_context(identity="0xwallet", collection="user-settings")
         with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
-            result = await server.get_data("users/0xwallet/strategies", context)
+            result = await server.get_data("users/0xwallet/settings", context)
         assert result is None
 
 

@@ -87,7 +87,9 @@ class UserActionExecutor(abc.ABC):
             await self._do_execute(user_action)
             logger.info(f"User action executed successfully: {user_action.id}")
         except Exception as exc:
-            logger.error(f"User action execution failed: {user_action.id}: {exc}")
+            logger.error(
+                f"User action execution failed: {user_action.id}: {exc} ({exc.__class__.__name__})"
+            )
             self._apply_execution_failure(user_action, exc)
             raise
         finally:

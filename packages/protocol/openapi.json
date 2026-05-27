@@ -17,6 +17,7 @@
           "periodic",
           "running",
           "completed",
+          "canceled",
           "failed"
         ]
       },
@@ -518,6 +519,12 @@
           "status": {
             "$ref": "#/components/schemas/TaskStatus"
           },
+          "error": {
+            "type": "string"
+          },
+          "error_message": {
+            "type": "string"
+          },
           "metadata": {
             "$ref": "#/components/schemas/AutomationMetadata"
           },
@@ -674,7 +681,17 @@
       "AccountAuthentication": {
         "description": "AccountAuthentication",
         "type": "object",
+        "required": [
+          "id"
+        ],
         "properties": {
+            "id": {
+              "type": "string"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
             "api_key": {
               "type": "string"
             },
@@ -694,6 +711,67 @@
               "type": "string"
             }
           }
+      },
+      "AccountTradingWithAccountId": {
+        "description": "AccountTradingWithAccountId",
+        "type": "object",
+        "required": [
+          "account_id"
+        ],
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "account_trading": {
+            "$ref": "#/components/schemas/AccountTrading"
+          }
+        }
+      },
+      "Debug": {
+        "description": "Debug view of all automations and user actions",
+        "type": "object",
+        "required": [
+          "automations",
+          "user_actions"
+        ],
+        "properties": {
+          "automations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationState"
+            }
+          },
+          "user_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserAction"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Account"
+            }
+          },
+          "exchange_configs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExchangeConfig"
+            }
+          },
+          "account_tradings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountTradingWithAccountId"
+            }
+          },
+          "local_strategies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Strategy"
+            }
+          }
+        }
       },
       "AccountTrading": {
         "description": "AccountTrading",
@@ -863,8 +941,7 @@
           "id",
           "name",
           "is_simulated",
-          "created_at",
-          "updated_at"
+          "created_at"
         ],
         "properties": {
           "id": {
@@ -889,6 +966,10 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "authentication_id": {
+            "type": "string",
+            "description": "The id of the account authentication bound to this account"
           },
           "assets": {
             "type": "array",
@@ -1779,6 +1860,50 @@
           }
         }
       },
+      "AutomationSignalType": {
+        "description": "AutomationSignalType",
+        "type": "string",
+        "enum": [
+          "actions",
+          "trading_signal",
+          "forced_trigger"
+        ]
+      },
+      "SignalAutomationConfiguration": {
+        "description": "SignalAutomationConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "automation_id",
+          "signal_type"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "automation_signal"
+          },
+          "automation_id": {
+            "type": "string"
+          },
+          "signal_type": {
+            "$ref": "#/components/schemas/AutomationSignalType"
+          },
+          "signal_payload": {
+            "oneOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            ],
+            "description": "Optional payload associated with the signal type"
+          }
+        }
+      },
       "CreateAccountConfiguration": {
         "description": "CreateAccountConfiguration",
         "type": "object",
@@ -1906,6 +2031,150 @@
           }
         }
       },
+      "CreateStrategyConfiguration": {
+        "description": "CreateStrategyConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "configuration"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "strategy_create"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/Strategy"
+          }
+        }
+      },
+      "EditStrategyConfiguration": {
+        "description": "EditStrategyConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "id",
+          "configuration"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "strategy_edit"
+          },
+          "id": {
+            "type": "string"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/Strategy"
+          }
+        }
+      },
+      "DeleteStrategyConfiguration": {
+        "description": "DeleteStrategyConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "id"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "strategy_delete"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAccountAuthConfiguration": {
+        "description": "CreateAccountAuthConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "configuration"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "account_auth_create"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/AccountAuthentication"
+          }
+        }
+      },
+      "EditAccountAuthConfiguration": {
+        "description": "EditAccountAuthConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "id",
+          "configuration"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "account_auth_edit"
+          },
+          "id": {
+            "type": "string"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/AccountAuthentication"
+          }
+        }
+      },
+      "DeleteAccountAuthConfiguration": {
+        "description": "DeleteAccountAuthConfiguration",
+        "type": "object",
+        "required": [
+          "action_type",
+          "id"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "account_auth_delete"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "StrategyActionResultErrorMessage": {
+        "description": "StrategyActionResultErrorMessage",
+        "type": "string",
+        "enum": [
+          "strategy_not_found",
+          "invalid_configuration",
+          "duplicate_item",
+          "internal_error"
+        ]
+      },
+      "StrategyActionResult": {
+        "description": "StrategyActionResult",
+        "type": "object",
+        "required": [
+          "result_type",
+          "updated_at"
+        ],
+        "properties": {
+          "result_type": {
+            "$ref": "#/components/schemas/UserActionResultType",
+            "description": "strategy"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error_message": {
+            "$ref": "#/components/schemas/StrategyActionResultErrorMessage"
+          },
+          "error_details": {
+            "type": "string"
+          }
+        }
+      },
       "UserActionType": {
         "description": "UserActionType",
         "type": "string",
@@ -1913,13 +2182,20 @@
           "automation_create",
           "automation_edit",
           "automation_stop",
+          "automation_signal",
           "account_create",
           "account_edit",
           "account_delete",
           "accounts_refresh",
           "exchange_config_create",
           "exchange_config_edit",
-          "exchange_config_delete"
+          "exchange_config_delete",
+          "strategy_create",
+          "strategy_edit",
+          "strategy_delete",
+          "account_auth_create",
+          "account_auth_edit",
+          "account_auth_delete"
         ]
       },
       "UserActionStatus": {
@@ -1938,7 +2214,9 @@
         "enum": [
           "automation",
           "account",
-          "exchange_config"
+          "exchange_config",
+          "strategy",
+          "account_auth"
         ]
       },
       "AutomationActionResultErrorMessage": {
@@ -2050,6 +2328,40 @@
           }
         }
       },
+      "AccountAuthActionResultErrorMessage": {
+        "description": "AccountAuthActionResultErrorMessage",
+        "type": "string",
+        "enum": [
+          "account_auth_not_found",
+          "invalid_configuration",
+          "duplicate_item",
+          "internal_error"
+        ]
+      },
+      "AccountAuthActionResult": {
+        "description": "AccountAuthActionResult",
+        "type": "object",
+        "required": [
+          "updated_at",
+          "result_type"
+        ],
+        "properties": {
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error_message": {
+            "$ref": "#/components/schemas/AccountAuthActionResultErrorMessage"
+          },
+          "error_details": {
+            "type": "string"
+          },
+          "result_type": {
+            "$ref": "#/components/schemas/UserActionResultType",
+            "description": "account_auth"
+          }
+        }
+      },
       "UserAction": {
         "description": "UserAction",
         "type": "object",
@@ -2083,6 +2395,9 @@
                 "$ref": "#/components/schemas/StopAutomationConfiguration"
               },
               {
+                "$ref": "#/components/schemas/SignalAutomationConfiguration"
+              },
+              {
                 "$ref": "#/components/schemas/CreateAccountConfiguration"
               },
               {
@@ -2102,6 +2417,24 @@
               },
               {
                 "$ref": "#/components/schemas/RefreshAccountsConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/CreateStrategyConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/EditStrategyConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/DeleteStrategyConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/CreateAccountAuthConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/EditAccountAuthConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/DeleteAccountAuthConfiguration"
               }
             ],
             "discriminator": {
@@ -2110,13 +2443,20 @@
                 "automation_create": "#/components/schemas/CreateAutomationConfiguration",
                 "automation_edit": "#/components/schemas/EditAutomationConfiguration",
                 "automation_stop": "#/components/schemas/StopAutomationConfiguration",
+                "automation_signal": "#/components/schemas/SignalAutomationConfiguration",
                 "account_create": "#/components/schemas/CreateAccountConfiguration",
                 "account_edit": "#/components/schemas/EditAccountConfiguration",
                 "account_delete": "#/components/schemas/DeleteAccountConfiguration",
                 "exchange_config_create": "#/components/schemas/CreateExchangeConfigConfiguration",
                 "exchange_config_edit": "#/components/schemas/EditExchangeConfigConfiguration",
                 "exchange_config_delete": "#/components/schemas/DeleteExchangeConfigConfiguration",
-                "accounts_refresh": "#/components/schemas/RefreshAccountsConfiguration"
+                "accounts_refresh": "#/components/schemas/RefreshAccountsConfiguration",
+                "strategy_create": "#/components/schemas/CreateStrategyConfiguration",
+                "strategy_edit": "#/components/schemas/EditStrategyConfiguration",
+                "strategy_delete": "#/components/schemas/DeleteStrategyConfiguration",
+                "account_auth_create": "#/components/schemas/CreateAccountAuthConfiguration",
+                "account_auth_edit": "#/components/schemas/EditAccountAuthConfiguration",
+                "account_auth_delete": "#/components/schemas/DeleteAccountAuthConfiguration"
               }
             }
           },
@@ -2130,6 +2470,12 @@
               },
               {
                 "$ref": "#/components/schemas/ExchangeConfigActionResult"
+              },
+              {
+                "$ref": "#/components/schemas/StrategyActionResult"
+              },
+              {
+                "$ref": "#/components/schemas/AccountAuthActionResult"
               }
             ],
             "discriminator": {
@@ -2137,7 +2483,9 @@
               "mapping": {
                 "automation": "#/components/schemas/AutomationActionResult",
                 "account": "#/components/schemas/AccountActionResult",
-                "exchange_config": "#/components/schemas/ExchangeConfigActionResult"
+                "exchange_config": "#/components/schemas/ExchangeConfigActionResult",
+                "strategy": "#/components/schemas/StrategyActionResult",
+                "account_auth": "#/components/schemas/AccountAuthActionResult"
               }
             }
           }
@@ -2246,10 +2594,7 @@
             "type": "string"
           },
           "account_trading": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AccountTrading"
-            }
+            "$ref": "#/components/schemas/AccountTrading"
           }
         }
       },
@@ -2285,6 +2630,21 @@
             "items": {
               "$ref": "#/components/schemas/AccountAuthentication"
             }
+          }
+        }
+      },
+      "DebugState": {
+        "description": "DebugState",
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
           }
         }
       }

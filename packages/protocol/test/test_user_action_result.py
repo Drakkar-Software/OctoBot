@@ -36,7 +36,7 @@ class TestUserActionResult(unittest.TestCase):
         if include_optional:
             return UserActionResult(
                 updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                error_message = 'exchange_config_not_found',
+                error_message = 'account_auth_not_found',
                 error_details = '',
                 created_automation_id = '',
                 result_type = 'automation'

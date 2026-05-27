@@ -16,7 +16,6 @@ class ExchangeAccountPortfolio(octobot_commons.dataclasses.MinimizableDataclass,
 
 @dataclasses.dataclass
 class ExchangeAccountMetadata(octobot_commons.dataclasses.MinimizableDataclass):
-    id: str = ""
     updated_at: float = 0.0 # timestamp (s) of the last update of the account creds
     name: str = ""
 

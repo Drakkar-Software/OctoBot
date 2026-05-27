@@ -29,6 +29,8 @@ class UserActionResultType(str, Enum):
     AUTOMATION = 'automation'
     ACCOUNT = 'account'
     EXCHANGE_CONFIG = 'exchange_config'
+    STRATEGY = 'strategy'
+    ACCOUNT_AUTH = 'account_auth'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
