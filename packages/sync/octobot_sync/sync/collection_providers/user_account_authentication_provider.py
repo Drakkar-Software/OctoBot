@@ -21,7 +21,6 @@ import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
 import octobot_sync.sync.collection_backend.base_local_collection_provider as base_provider
-import octobot_sync.sync.collection_backend.errors as collection_errors
 
 
 class AccountAuthenticationProvider(
@@ -43,13 +42,4 @@ class AccountAuthenticationProvider(
     ITEMS_KEY = "account_authentication"
 
     def _get_item_id(self, item: protocol_models.AccountAuthentication) -> str:
-        # Wallet-scoped auth file holds a single credentials entry (no account_id on model).
-        return "wallet"
-
-    def get_item(self, address: str, item_id: str) -> protocol_models.AccountAuthentication:
-        items = self.list_items(address)
-        if not items:
-            raise collection_errors.ItemNotFoundError(
-                f"Authentication not found for address {address}"
-            )
-        return items[0]
+        return item.id

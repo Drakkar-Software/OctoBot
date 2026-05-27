@@ -23,6 +23,8 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as re_callable_operator_mixin
 import octobot_trading.dsl
 
+import octobot_flow.enums
+
 import octobot_copy.copiers.account_copier as account_copier_module
 import octobot_copy.entities as copy_entities
 
@@ -114,6 +116,21 @@ class TestGetDependencies:
             isinstance(dependency, octobot_trading.dsl.SymbolDependency)
             for dependency in dependencies
         )
+
+
+class TestPreCompute:
+    @pytest.mark.asyncio
+    async def test_empty_reference_account_returns_no_trading_signal_error(
+        self, copy_exchange_interpreter_with_exchange_manager
+    ):
+        dsl_expression = (
+            f"copy_exchange_account(strategy_id='{STRATEGY_ID}', reference_market='{REFERENCE_MARKET}', "
+            f"reference_account='', account_copy_settings='{{}}')"
+        )
+        copy_exchange_interpreter_with_exchange_manager.prepare(dsl_expression)
+        result = await copy_exchange_interpreter_with_exchange_manager.compute_expression_with_result()
+        assert result.error == octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
+        assert STRATEGY_ID in result.error_message
 
 
 class TestCopyExchangeAccountCallAsDsl:

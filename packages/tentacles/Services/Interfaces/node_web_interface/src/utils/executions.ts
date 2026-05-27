@@ -1,4 +1,7 @@
-import type { Execution, TaskStatus } from "@/client"
+import type {
+  Execution_Output as Execution,
+  octobot_node__models__TaskStatus as TaskStatus,
+} from "@/client"
 
 export function getStatusGroup(
   status?: TaskStatus | null,

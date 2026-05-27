@@ -43,6 +43,12 @@ from octobot_trading.personal_data.trades.trades_util import (
     compute_win_rate,
     aggregate_trades_by_exchange_order_id,
     get_real_or_estimated_trade_fee,
+    trade_identity_key,
+    merge_trades_deduped,
+)
+from octobot_trading.personal_data.trades.protocol import (
+    to_protocol_trade,
+    exchange_columns_dict_from_protocol_trade,
 )
 
 __all__ = [
@@ -59,4 +65,8 @@ __all__ = [
     "compute_win_rate",
     "aggregate_trades_by_exchange_order_id",
     "get_real_or_estimated_trade_fee",
+    "trade_identity_key",
+    "merge_trades_deduped",
+    "to_protocol_trade",
+    "exchange_columns_dict_from_protocol_trade",
 ]

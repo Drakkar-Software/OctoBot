@@ -40,6 +40,8 @@ class TestUserDataState(unittest.TestCase):
                     octobot_protocol.models.automation_state.AutomationState(
                         id = '', 
                         status = 'pending', 
+                        error = '', 
+                        error_message = '', 
                         metadata = octobot_protocol.models.automation_metadata.AutomationMetadata(
                             name = '', 
                             description = '', 

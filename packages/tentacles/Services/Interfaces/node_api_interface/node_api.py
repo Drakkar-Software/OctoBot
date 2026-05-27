@@ -92,7 +92,6 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             scheduler.initialize_scheduler()
         host = self.host
         port = self.port
-        community_auth.CommunityAuthentication.instance()
         self.app = self.create_app()
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()

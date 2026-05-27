@@ -6,6 +6,8 @@ AccountAuthentication
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**id** | **str** |  | 
+**updated_at** | **datetime** |  | [optional] 
 **api_key** | **str** |  | [optional] 
 **api_secret** | **str** |  | [optional] 
 **api_passphrase** | **str** |  | [optional] 

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import typing
 
 import octobot_commons.symbols as symbols_util
 import octobot_trading.enums as trading_enums
@@ -25,6 +26,33 @@ _LOSING_ORDER_TYPES = [
     trading_enums.TradeOrderType.STOP_LOSS,
     trading_enums.TradeOrderType.STOP_LOSS_LIMIT,
 ]
+
+
+def trade_identity_key(trade: dict) -> typing.Optional[tuple[str, typing.Hashable]]:
+    order_columns = trading_enums.ExchangeConstantsOrderColumns
+    exchange_trade_id = trade.get(order_columns.EXCHANGE_TRADE_ID.value)
+    if exchange_trade_id is not None:
+        return order_columns.EXCHANGE_TRADE_ID.value, exchange_trade_id
+    exchange_order_exchange_id = trade.get(order_columns.EXCHANGE_ID.value)
+    if exchange_order_exchange_id is not None:
+        return order_columns.EXCHANGE_ID.value, exchange_order_exchange_id
+    return None
+
+
+def merge_trades_deduped(existing_trades: list[dict], new_trades: list[dict]) -> list[dict]:
+    merged_trades = [dict(trade) for trade in existing_trades]
+    known_trade_keys: set[tuple[str, typing.Hashable]] = set()
+    for trade in merged_trades:
+        identity_key = trade_identity_key(trade)
+        if identity_key is not None:
+            known_trade_keys.add(identity_key)
+    for trade in new_trades:
+        identity_key = trade_identity_key(trade)
+        if identity_key is None or identity_key in known_trade_keys:
+            continue
+        known_trade_keys.add(identity_key)
+        merged_trades.append(dict(trade))
+    return merged_trades
 
 
 def compute_win_rate(exchange_manager):

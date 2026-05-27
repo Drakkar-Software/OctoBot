@@ -13,11 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import dataclasses
 import json
 import typing
 import dbos as dbos_lib
 
 import octobot_commons.logging
+import octobot_protocol.models as protocol_models
 import octobot_node.config
 import octobot_node.constants
 import octobot_node.enums as octobot_node_enums
@@ -38,6 +40,136 @@ except ImportError:
 logger = octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util")
 
 STATE_KEY = "state"
+
+_USER_ACTION_TERMINAL_WORKFLOW_STATUSES = (
+    dbos_lib.WorkflowStatusString.SUCCESS,
+    dbos_lib.WorkflowStatusString.ERROR,
+    dbos_lib.WorkflowStatusString.CANCELLED,
+    dbos_lib.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED,
+)
+_USER_ACTION_INPUT_WORKFLOW_STATUSES = tuple(
+    workflow_status
+    for workflow_status in dbos_lib.WorkflowStatusString
+    if workflow_status not in _USER_ACTION_TERMINAL_WORKFLOW_STATUSES
+)
+
+
+def get_user_action_input_workflow_statuses() -> tuple[dbos_lib.WorkflowStatusString, ...]:
+    return _USER_ACTION_INPUT_WORKFLOW_STATUSES
+
+
+def get_user_action_terminal_workflow_statuses() -> tuple[dbos_lib.WorkflowStatusString, ...]:
+    return _USER_ACTION_TERMINAL_WORKFLOW_STATUSES
+
+
+@dataclasses.dataclass
+class ResolvedUserActionWorkflowInputs:
+    inputs: typing.Optional[params.UserActionWorkflowInputs] = None
+    parse_error: typing.Optional[str] = None
+    partial_wallet_address: typing.Optional[str] = None
+    partial_user_action_id: typing.Optional[str] = None
+
+
+def _is_user_action_workflow_input_dict(candidate: dict) -> bool:
+    return "wallet_address" in candidate or "user_action" in candidate
+
+
+def _yield_user_action_input_dicts_from_container(
+    container: typing.Any,
+) -> typing.Iterator[dict]:
+    if not isinstance(container, dict):
+        return
+    if _is_user_action_workflow_input_dict(container):
+        yield container
+        return
+    inputs_value = container.get("inputs")
+    if isinstance(inputs_value, dict) and _is_user_action_workflow_input_dict(inputs_value):
+        yield inputs_value
+    named_args = container.get("namedArgs")
+    if isinstance(named_args, dict):
+        named_inputs = named_args.get("inputs")
+        if isinstance(named_inputs, dict) and _is_user_action_workflow_input_dict(named_inputs):
+            yield named_inputs
+    for positional_arg in container.get("args") or []:
+        yield from _yield_user_action_input_dicts_from_container(positional_arg)
+    kwargs = container.get("kwargs")
+    if isinstance(kwargs, dict):
+        for kwarg_value in kwargs.values():
+            yield from _yield_user_action_input_dicts_from_container(kwarg_value)
+
+
+def _iter_workflow_input_dicts(workflow_status: dbos_lib.WorkflowStatus) -> typing.Iterator[dict]:
+    if not workflow_status.input:
+        return
+    seen_candidate_ids: set[int] = set()
+    for input_candidate in _yield_user_action_input_dicts_from_container(workflow_status.input):
+        candidate_id = id(input_candidate)
+        if candidate_id in seen_candidate_ids:
+            continue
+        seen_candidate_ids.add(candidate_id)
+        yield input_candidate
+
+
+def _partial_user_action_workflow_fragments(input_dict: dict) -> tuple[typing.Optional[str], typing.Optional[str]]:
+    wallet_address = input_dict.get("wallet_address")
+    partial_wallet = wallet_address if isinstance(wallet_address, str) else None
+    user_action_raw = input_dict.get("user_action")
+    partial_action_id = None
+    if isinstance(user_action_raw, dict):
+        user_action_id = user_action_raw.get("id")
+        if isinstance(user_action_id, str):
+            partial_action_id = user_action_id
+    return partial_wallet, partial_action_id
+
+
+def _parse_user_action_workflow_inputs_from_dict(input_dict: dict) -> params.UserActionWorkflowInputs:
+    try:
+        return params.UserActionWorkflowInputs.from_dict(input_dict)
+    except (TypeError, ValueError) as first_error:
+        user_action_raw = input_dict.get("user_action")
+        if not isinstance(user_action_raw, dict):
+            raise first_error from first_error
+        try:
+            reparsed_user_action = protocol_models.UserAction.from_json(json.dumps(user_action_raw))
+        except (TypeError, ValueError, json.JSONDecodeError) as nested_error:
+            raise first_error from nested_error
+        if reparsed_user_action is None:
+            raise first_error from first_error
+        wallet_address = input_dict.get("wallet_address")
+        if not isinstance(wallet_address, str):
+            raise first_error from first_error
+        return params.UserActionWorkflowInputs(
+            wallet_address=wallet_address,
+            user_action=reparsed_user_action,
+        )
+
+
+def resolve_user_action_workflow_inputs(
+    workflow_status: dbos_lib.WorkflowStatus,
+) -> ResolvedUserActionWorkflowInputs:
+    last_parse_error: typing.Optional[str] = None
+    partial_wallet_address: typing.Optional[str] = None
+    partial_user_action_id: typing.Optional[str] = None
+    for input_dict in _iter_workflow_input_dicts(workflow_status):
+        partial_wallet, partial_action_id = _partial_user_action_workflow_fragments(input_dict)
+        if partial_wallet is not None:
+            partial_wallet_address = partial_wallet
+        if partial_action_id is not None:
+            partial_user_action_id = partial_action_id
+        try:
+            parsed_inputs = _parse_user_action_workflow_inputs_from_dict(input_dict)
+        except (TypeError, ValueError) as parse_error:
+            last_parse_error = str(parse_error)
+            continue
+        if parsed_inputs.user_action is None:
+            last_parse_error = "user_action is missing after parse"
+            continue
+        return ResolvedUserActionWorkflowInputs(inputs=parsed_inputs)
+    return ResolvedUserActionWorkflowInputs(
+        parse_error=last_parse_error or "no user-action workflow inputs found",
+        partial_wallet_address=partial_wallet_address,
+        partial_user_action_id=partial_user_action_id,
+    )
 
 
 def filter_by_wallet(
@@ -141,15 +273,8 @@ def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> 
 
 
 def get_user_action_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[params.UserActionWorkflowInputs]:
-    if not workflow_status.input:
-        return None
-    for input in list(workflow_status.input.get("args", [])) + list(workflow_status.input.get("kwargs", {}).values()):
-        if isinstance(input, dict):
-            try:
-                return params.UserActionWorkflowInputs.from_dict(input)
-            except TypeError:
-                pass
-    return None
+    resolved = resolve_user_action_workflow_inputs(workflow_status)
+    return resolved.inputs
 
 
 def get_automation_dict(description: typing.Union[str, dict]) -> dict:

@@ -39,6 +39,8 @@ class ActionErrorStatus(enum.Enum):
     INVALID_ORDER = "invalid_order"
     INVALID_CONFIG = "invalid_config"
     INVALID_SIGNAL_FORMAT = "invalid_signal_format"
+    NO_TRADING_SIGNAL = "no_trading_signal"
+    AUTHENTICATION_ERROR = "authentication_error"
     UNSUPPORTED_STOP_ORDER = "unsupported_stop_order"
     INCOMPATIBLE_TRADING_TYPE = "incompatible_trading_type"
     UNSUPPORTED_HEDGE_POSITION = "unsupported_hedge_position"

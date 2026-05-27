@@ -38,12 +38,51 @@ def _sample_account(
 
 def _authentication() -> protocol_models.AccountAuthentication:
     return protocol_models.AccountAuthentication(
+        id="acc-1",
         api_key="plain-key",
         api_secret="plain-secret",
     )
 
 
 class TestAccountStateUpdaterCheckExchangeAccountState:
+    @pytest.mark.asyncio
+    async def test_simulated_account_returns_valid_state_without_fetching_assets(self):
+        exchange_account = account_executor_test_utils.exchange_account_payload()
+        account = _sample_account(is_simulated=True)
+        get_exchange_authentication_mock = mock.Mock()
+        get_exchange_config_mock = mock.Mock()
+        exchange_manager_context_mock = mock.Mock()
+
+        with (
+            mock.patch.object(
+                account_state_updater_module.account_authentication_resolver,
+                "get_exchange_authentication",
+                get_exchange_authentication_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module.exchange_account_resolver,
+                "get_exchange_config",
+                get_exchange_config_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module.trading_exchanges,
+                "exchange_manager_from_exchange_data",
+                exchange_manager_context_mock,
+            ),
+        ):
+            account_state, assets = await account_state_updater_module._check_exchange_account_state(
+                exchange_account,
+                account,
+                _WALLET_ADDRESS,
+            )
+
+        assert account_state.status == protocol_models.AccountStatus.VALID
+        assert account_state.message == protocol_models.AccountStatusMessage.VALID
+        assert assets is None
+        get_exchange_authentication_mock.assert_not_called()
+        get_exchange_config_mock.assert_not_called()
+        exchange_manager_context_mock.assert_not_called()
+
     @pytest.mark.asyncio
     async def test_encrypts_clear_credentials_before_exchange_manager_context(self):
         exchange_account = account_executor_test_utils.exchange_account_payload()
@@ -118,6 +157,7 @@ class TestAccountStateUpdaterCheckExchangeAccountState:
         exchange_account = account_executor_test_utils.exchange_account_payload()
         account = _sample_account()
         authentication = protocol_models.AccountAuthentication(
+            id="acc-1",
             api_key="plain-key",
             api_secret="plain-secret",
             api_passphrase="plain-pass",

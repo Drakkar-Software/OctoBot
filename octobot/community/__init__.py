@@ -110,6 +110,7 @@ from octobot.community.community_bot import (
 )
 from octobot.community.local_authenticator import (
     get_stateless_configuration,
+    get_user_configuration,
     local_user_authenticator,
     local_anon_user_authenticator,  
 )
@@ -174,6 +175,7 @@ __all__ = [
     "upload_error",
     "share_logs",
     "get_stateless_configuration",
+    "get_user_configuration",
     "local_user_authenticator",
     "local_anon_user_authenticator",
 ]

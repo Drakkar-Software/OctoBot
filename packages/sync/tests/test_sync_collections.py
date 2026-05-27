@@ -88,7 +88,7 @@ def test_fallback_to_default_config():
     assert config.namespaces is not None
     ns_collections = config.namespaces["octobot"].collections
     # 8 standard user collections + 1 temporary product-scoped append-only log.
-    assert len(ns_collections) == 9
+    assert len(ns_collections) == 10
     by_name = {c.name: c for c in ns_collections}
     assert set(by_name) == {
         "user-data",
@@ -99,6 +99,7 @@ def test_fallback_to_default_config():
         "user-settings",
         "user-strategies",
         "user-actions",
+        "debug",
         "product-signals",
     }
     assert by_name["user-data"].storage_path == "users/{identity}/data"
@@ -109,6 +110,7 @@ def test_fallback_to_default_config():
     assert by_name["user-settings"].storage_path == "users/{identity}/settings"
     assert by_name["user-strategies"].storage_path == "users/{identity}/strategies"
     assert by_name["user-actions"].storage_path == "users/{identity}/actions"
+    assert by_name["debug"].storage_path == "users/{identity}/debug"
     # The 8 standard user collections are "self"-scoped and "delegated"; the
     # temporary product-signals log is a product-scoped (device:root) plaintext
     # append-only by_timestamp collection.

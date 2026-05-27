@@ -35,6 +35,8 @@ import octobot_copy.copiers
 import octobot_copy.entities
 import octobot_copy.constants
 
+import octobot_flow.enums
+
 import tentacles.Meta.DSL_operators.exchange_operators.exchange_personal_data_operators.create_order_operators as create_order_operators
 
 
@@ -169,7 +171,17 @@ def create_copy_exchange_account_operators(
                     "copier_exchange_manager is required in context to execute copy_exchange_account"
                 )
             params = self.get_computed_value_by_parameter()
-            reference_account = self._parse_reference_account(params.get("reference_account"))
+            strategy_id = params.get("strategy_id")
+            reference_account_raw = params.get("reference_account")
+            if reference_account_raw is None or (
+                isinstance(reference_account_raw, str) and not reference_account_raw.strip()
+            ):
+                raise commons_errors.ErrorStatementEncountered(
+                    octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value,
+                    f"No trading signal available for strategy {strategy_id!r}. "
+                    "The leader automation must emit a signal before copy can run.",
+                )
+            reference_account = self._parse_reference_account(reference_account_raw)
             copy_settings = octobot_copy.entities.parse_account_copy_settings(
                 params.get("account_copy_settings")
             )

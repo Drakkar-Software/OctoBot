@@ -8,6 +8,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
 **status** | [**TaskStatus**](TaskStatus.md) |  | 
+**error** | **str** |  | [optional] 
+**error_message** | **str** |  | [optional] 
 **metadata** | [**AutomationMetadata**](AutomationMetadata.md) |  | 
 **actions** | [**List[Action]**](Action.md) |  | [optional] 
 **priority_actions** | [**List[Action]**](Action.md) |  | [optional] 

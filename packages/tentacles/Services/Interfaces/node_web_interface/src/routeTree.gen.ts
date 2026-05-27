@@ -18,6 +18,7 @@ import { Route as SetupMobileAppRouteImport } from './routes/setup/mobile-app'
 import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
+import { Route as LayoutDebugRouteImport } from './routes/_layout/debug'
 import { Route as LayoutOctobotsIndexRouteImport } from './routes/_layout/octobots/index'
 import { Route as LayoutOctobotsNewRouteImport } from './routes/_layout/octobots/new'
 import { Route as LayoutOctobotsImportRouteImport } from './routes/_layout/octobots/import'
@@ -70,6 +71,11 @@ const LayoutOctobotsRoute = LayoutOctobotsRouteImport.update({
   path: '/octobots',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutDebugRoute = LayoutDebugRouteImport.update({
+  id: '/debug',
+  path: '/debug',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutOctobotsIndexRoute = LayoutOctobotsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRouteWithChildren
+  '/debug': typeof LayoutDebugRoute
   '/octobots': typeof LayoutOctobotsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/debug': typeof LayoutDebugRoute
   '/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
   '/setup/mobile-app': typeof SetupMobileAppRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRouteWithChildren
+  '/_layout/debug': typeof LayoutDebugRoute
   '/_layout/octobots': typeof LayoutOctobotsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/setup'
+    | '/debug'
     | '/octobots'
     | '/settings'
     | '/setup/first-bot'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/debug'
     | '/settings'
     | '/setup/first-bot'
     | '/setup/mobile-app'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/_layout'
     | '/login'
     | '/setup'
+    | '/_layout/debug'
     | '/_layout/octobots'
     | '/_layout/settings'
     | '/setup/first-bot'
@@ -282,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/octobots'
       fullPath: '/octobots'
       preLoaderRoute: typeof LayoutOctobotsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/debug': {
+      id: '/_layout/debug'
+      path: '/debug'
+      fullPath: '/debug'
+      preLoaderRoute: typeof LayoutDebugRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/octobots/': {
@@ -370,12 +389,14 @@ const LayoutOctobotsRouteWithChildren = LayoutOctobotsRoute._addFileChildren(
 )
 
 interface LayoutRouteChildren {
+  LayoutDebugRoute: typeof LayoutDebugRoute
   LayoutOctobotsRoute: typeof LayoutOctobotsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutDebugRoute: LayoutDebugRoute,
   LayoutOctobotsRoute: LayoutOctobotsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,

@@ -47,6 +47,7 @@ class TestAccountsState(unittest.TestCase):
                             message = 'pending_validation', ), 
                         created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                        authentication_id = '', 
                         assets = [
                             octobot_protocol.models.detailed_assets_for_trading_type.DetailedAssetsForTradingType(
                                 trading_type = 'spot', 

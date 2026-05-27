@@ -31,6 +31,7 @@ class TaskStatus(str, Enum):
     PERIODIC = 'periodic'
     RUNNING = 'running'
     COMPLETED = 'completed'
+    CANCELED = 'canceled'
     FAILED = 'failed'
 
     @classmethod

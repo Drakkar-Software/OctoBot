@@ -21,6 +21,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.create_automation as create_automation_executor_module
 import octobot_node.scheduler.user_actions.user_actions_executor.account.create_account as create_account_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.create_exchange_config as create_exchange_config_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.strategy.create_strategy as create_strategy_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.account_auth.create_account_auth as create_account_auth_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation as stop_automation_executor
 
 _WALLET = "0xwallet"
@@ -151,3 +153,47 @@ class TestExchangeConfigUserActionExecutorGetErrorMessage:
         executor = create_exchange_config_executor.CreateExchangeConfigActionExecutor(_WALLET)
         resolved = executor._get_error_message(ValueError("unexpected"))
         assert resolved == protocol_models.ExchangeConfigActionResultErrorMessage.INTERNAL_ERROR
+
+
+class TestStrategyUserActionExecutorGetErrorMessage:
+    def test_strategy_not_found_from_backend(self):
+        executor = create_strategy_executor.CreateStrategyActionExecutor(_WALLET)
+        resolved = executor._get_error_message(collection_errors.ItemNotFoundError("missing"))
+        assert resolved == protocol_models.StrategyActionResultErrorMessage.STRATEGY_NOT_FOUND
+
+    def test_invalid_user_action_payload(self):
+        executor = create_strategy_executor.CreateStrategyActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.InvalidUserActionPayloadError("bad"))
+        assert resolved == protocol_models.StrategyActionResultErrorMessage.INVALID_CONFIGURATION
+
+    def test_duplicate_strategy(self):
+        executor = create_strategy_executor.CreateStrategyActionExecutor(_WALLET)
+        resolved = executor._get_error_message(collection_errors.DuplicateItemError("dup"))
+        assert resolved == protocol_models.StrategyActionResultErrorMessage.DUPLICATE_ITEM
+
+    def test_unknown_exception_falls_back_to_internal_error(self):
+        executor = create_strategy_executor.CreateStrategyActionExecutor(_WALLET)
+        resolved = executor._get_error_message(ValueError("unexpected"))
+        assert resolved == protocol_models.StrategyActionResultErrorMessage.INTERNAL_ERROR
+
+
+class TestAccountAuthUserActionExecutorGetErrorMessage:
+    def test_account_auth_not_found_from_backend(self):
+        executor = create_account_auth_executor.CreateAccountAuthActionExecutor(_WALLET)
+        resolved = executor._get_error_message(collection_errors.ItemNotFoundError("missing"))
+        assert resolved == protocol_models.AccountAuthActionResultErrorMessage.ACCOUNT_AUTH_NOT_FOUND
+
+    def test_invalid_user_action_payload(self):
+        executor = create_account_auth_executor.CreateAccountAuthActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.InvalidUserActionPayloadError("bad"))
+        assert resolved == protocol_models.AccountAuthActionResultErrorMessage.INVALID_CONFIGURATION
+
+    def test_duplicate_account_auth(self):
+        executor = create_account_auth_executor.CreateAccountAuthActionExecutor(_WALLET)
+        resolved = executor._get_error_message(collection_errors.DuplicateItemError("dup"))
+        assert resolved == protocol_models.AccountAuthActionResultErrorMessage.DUPLICATE_ITEM
+
+    def test_unknown_exception_falls_back_to_internal_error(self):
+        executor = create_account_auth_executor.CreateAccountAuthActionExecutor(_WALLET)
+        resolved = executor._get_error_message(ValueError("unexpected"))
+        assert resolved == protocol_models.AccountAuthActionResultErrorMessage.INTERNAL_ERROR

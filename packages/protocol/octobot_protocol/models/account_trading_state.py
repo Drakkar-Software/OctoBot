@@ -29,7 +29,7 @@ class AccountTradingState(BaseModel):
     AccountTradingState
     """ # noqa: E501
     version: StrictStr
-    account_trading: List[AccountTrading]
+    account_trading: AccountTrading
     __properties: ClassVar[List[str]] = ["version", "account_trading"]
 
     model_config = ConfigDict(
@@ -71,13 +71,9 @@ class AccountTradingState(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in account_trading (list)
-        _items = []
+        # override the default output from pydantic by calling `to_dict()` of account_trading
         if self.account_trading:
-            for _item_account_trading in self.account_trading:
-                if _item_account_trading:
-                    _items.append(_item_account_trading.to_dict())
-            _dict['account_trading'] = _items
+            _dict['account_trading'] = self.account_trading.to_dict()
         return _dict
 
     @classmethod
@@ -91,7 +87,7 @@ class AccountTradingState(BaseModel):
 
         _obj = cls.model_validate({
             "version": obj.get("version"),
-            "account_trading": [AccountTrading.from_dict(_item) for _item in obj["account_trading"]] if obj.get("account_trading") is not None else None
+            "account_trading": AccountTrading.from_dict(obj["account_trading"]) if obj.get("account_trading") is not None else None
         })
         return _obj
 

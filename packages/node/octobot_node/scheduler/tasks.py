@@ -67,17 +67,8 @@ async def trigger_task(
 
 
 async def send_actions_to_automation(actions: list[dict], automation_id: str):
-    import octobot_node.scheduler  # avoid circular import
     workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
-    payload = params.AutomationWorkflowActionUpdate(
-        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
-        actions_details=actions,
-    ).to_dict(include_default_values=False)
-    await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
-        workflow_status.workflow_id,
-        payload,
-        topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
-    )
+    await send_actions_to_automation_workflow(actions, workflow_status.workflow_id)
 
 
 async def trigger_copier_automation(automation_id: str, trading_signal: octobot_flow.entities.TradingSignal) -> None:
@@ -94,14 +85,38 @@ async def trigger_copier_automation(automation_id: str, trading_signal: octobot_
 
 
 async def send_forced_trigger_to_automation(automation_id: str):
-    import octobot_node.scheduler  # avoid circular import
     workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    await send_forced_trigger_to_automation_workflow(workflow_status.workflow_id)
+
+
+async def _send_automation_workflow_action_update(
+    target_workflow_id: str,
+    actions_type: str,
+    actions_details: list[dict],
+) -> None:
+    import octobot_node.scheduler  # avoid circular import
     payload = params.AutomationWorkflowActionUpdate(
-        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
-        actions_details=[],
+        actions_type=actions_type,
+        actions_details=actions_details,
     ).to_dict(include_default_values=False)
     await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
-        workflow_status.workflow_id,
+        target_workflow_id,
         payload,
         topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
+    )
+
+
+async def send_actions_to_automation_workflow(actions: list[dict], target_workflow_id: str) -> None:
+    await _send_automation_workflow_action_update(
+        target_workflow_id,
+        octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
+        actions,
+    )
+
+
+async def send_forced_trigger_to_automation_workflow(target_workflow_id: str) -> None:
+    await _send_automation_workflow_action_update(
+        target_workflow_id,
+        octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
+        [],
     )

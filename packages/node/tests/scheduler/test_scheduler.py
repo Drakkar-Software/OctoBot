@@ -27,6 +27,7 @@ import octobot_node.models
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.encryption.task_inputs as task_inputs_encryption
 import octobot_node.scheduler.workflows.params as params
+import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.scheduler as scheduler_module
 
 PARENT_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
@@ -616,6 +617,71 @@ class TestSchedulerGetPendingTasks:
         assert executions[0].name is None
 
 
+def _running_automation_task_content() -> str:
+    state_dict = {
+        "automation": {
+            "metadata": {"automation_id": "automation_1"},
+            "actions_dag": {
+                "actions": [{"id": "a1", "dsl_script": "True"}],
+            },
+            "execution": {
+                "current_execution": {"scheduled_to": 1, "triggered_at": 2},
+            },
+        },
+    }
+    return json.dumps({"state": state_dict})
+
+
+class TestSchedulerGetAutomationStates:
+
+    @pytest.mark.asyncio
+    async def test_error_workflow_reports_failed_not_running(self):
+        """DBOS ERROR with input-only task content must not surface as running in protocol state."""
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="failed-automation",
+            content=_running_automation_task_content(),
+            type="execute_actions",
+        )
+        error_ws = _build_mock_workflow_status_error(task, RuntimeError("DBOSUnexpectedStepError"), workflow_id=PARENT_ID)
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[error_ws])
+
+        automation_states = await sched.get_automation_states(None)
+
+        assert len(automation_states) == 1
+        assert automation_states[0].id == PARENT_ID
+        assert automation_states[0].status == protocol_models.TaskStatus.FAILED
+        assert "DBOSUnexpectedStepError" in (automation_states[0].error or "")
+        assert automation_states[0].error_message is None
+
+    @pytest.mark.asyncio
+    async def test_success_workflow_with_output_preserves_metadata_name(self):
+        """Completed automation with workflow output must keep task.name in protocol metadata."""
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="my-automation",
+            content=_running_automation_task_content(),
+            type="execute_actions",
+        )
+        success_ws = _build_mock_workflow_status(
+            task,
+            encrypted_state=_running_automation_task_content(),
+            state_metadata="",
+            workflow_id=PARENT_ID,
+        )
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[success_ws])
+
+        automation_states = await sched.get_automation_states(None)
+
+        assert len(automation_states) == 1
+        assert automation_states[0].id == PARENT_ID
+        assert automation_states[0].metadata.name == "my-automation"
+
+
 class TestSchedulerListUserActions:
     @pytest.mark.asyncio
     async def test_returns_empty_when_instance_missing(self):
@@ -787,3 +853,90 @@ class TestSchedulerListUserActions:
         assert inner.error_message == protocol_models.AutomationActionResultErrorMessage.INTERNAL_ERROR
         assert inner.error_details is not None
         assert "automation boom" in inner.error_details
+
+    @pytest.mark.asyncio
+    async def test_list_user_actions_uses_explicit_non_terminal_and_terminal_status_partitions(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], []])
+        await sched.list_user_actions("0xwallet", active_only=False)
+        assert mock_instance.list_workflows_async.await_count == 2
+        input_status_values = set(mock_instance.list_workflows_async.await_args_list[0].kwargs["status"])
+        terminal_status_values = set(mock_instance.list_workflows_async.await_args_list[1].kwargs["status"])
+        expected_input_status_values = {
+            status.value for status in workflows_util.get_user_action_input_workflow_statuses()
+        }
+        expected_terminal_status_values = {
+            status.value for status in workflows_util.get_user_action_terminal_workflow_statuses()
+        }
+        assert input_status_values == expected_input_status_values
+        assert terminal_status_values == expected_terminal_status_values
+        assert "SUCCESS" not in input_status_values
+
+    @pytest.mark.asyncio
+    async def test_active_only_false_terminal_unparseable_appears_once(self):
+        wallet_segment = "0xw_debug"
+        workflow_terminal = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_terminal.workflow_id = "wf-terminal-unparseable"
+        workflow_terminal.input = {"args": [], "kwargs": {}}
+        workflow_terminal.output = None
+        workflow_terminal.error = "workflow crashed"
+        workflow_terminal.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], [workflow_terminal]])
+        listed = await sched.list_user_actions(wallet_segment, active_only=False)
+        assert len(listed) == 1
+        assert listed[0].id == "wf-terminal-unparseable"
+        assert listed[0].status == protocol_models.UserActionStatus.FAILED
+
+    @pytest.mark.asyncio
+    async def test_delayed_workflow_with_empty_input_returns_minimal_pending_action(self):
+        wallet_segment = "0xw_delayed"
+        workflow_delayed = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_delayed.workflow_id = "wf-delayed-unparseable"
+        workflow_delayed.status = dbos.WorkflowStatusString.DELAYED.value
+        workflow_delayed.input = {"args": [], "kwargs": {}}
+        workflow_delayed.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[workflow_delayed], []])
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        assert listed[0].id == "wf-delayed-unparseable"
+        assert listed[0].status == protocol_models.UserActionStatus.PENDING
+
+    @pytest.mark.asyncio
+    async def test_active_workflow_with_empty_input_returns_minimal_pending_action(self):
+        wallet_segment = "0xw_active_empty"
+        workflow_enqueued = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_enqueued.workflow_id = "wf-enqueued-empty"
+        workflow_enqueued.input = {"args": [], "kwargs": {}}
+        workflow_enqueued.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[workflow_enqueued], []])
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        assert listed[0].id == "wf-enqueued-empty"
+        assert listed[0].status == protocol_models.UserActionStatus.PENDING
+
+    @pytest.mark.asyncio
+    async def test_terminal_workflow_with_empty_input_returns_minimal_failed_action(self):
+        wallet_segment = "0xw_terminal_empty"
+        workflow_error = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_error.workflow_id = "wf-terminal-empty"
+        workflow_error.input = {"args": [], "kwargs": {}}
+        workflow_error.output = None
+        workflow_error.error = "persist failed"
+        workflow_error.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], [workflow_error]])
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        assert listed[0].id == "wf-terminal-empty"
+        assert listed[0].status == protocol_models.UserActionStatus.FAILED
+        inner = listed[0].result.actual_instance
+        assert isinstance(inner, protocol_models.AccountActionResult)
+        assert inner.error_details is not None
+        assert "persist failed" in inner.error_details

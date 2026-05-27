@@ -20,6 +20,10 @@ import dbos
 
 import octobot_commons.logging
 
+import octobot.community.wallet_backend.errors as wallet_backend_errors
+import octobot_trading.errors
+
+import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.errors
 
@@ -30,9 +34,7 @@ import octobot_node.scheduler.task_context
 import octobot_node.constants as constants
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.errors as errors
-
-if typing.TYPE_CHECKING:
-    import octobot_flow.entities
+import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
@@ -46,7 +48,7 @@ class AutomationWorkflow:
     async def execute_automation(inputs: dict) -> typing.Optional[str]:
         """
         Automation workflow runner: 
-        1. Wait for priority actions if any.
+        1. Wait for priority actions (zero timeout when execution_time is already due).
         2. Execute the iteration (received priority action or DAG's executable actions).
         3. Check and process other received priority actions if any.
         4. Either:
@@ -61,15 +63,18 @@ class AutomationWorkflow:
             delay = parsed_inputs.execution_time - time.time()
             delay_str = f" in {delay:.2f} seconds" if delay > 0 else ""
             AutomationWorkflow.get_logger(parsed_inputs).info(f"{AutomationWorkflow.__name__} starting{delay_str}.")
-            actions_update: typing.Optional[dict] = None
-            if delay > 0:
-                actions_update = await AutomationWorkflow._wait_and_trigger_on_actions_update(
-                    parsed_inputs, parsed_inputs.execution_time
-                )
+            actions_update = await AutomationWorkflow._wait_and_trigger_on_actions_update(
+                parsed_inputs, parsed_inputs.execution_time
+            )
             raw_iteration_result = await AutomationWorkflow.execute_iteration(inputs, actions_update)
             iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_iteration_result)
             continue_workflow = False
-            if AutomationWorkflow._should_continue_workflow(parsed_inputs, iteration_result.progress_status, bool(actions_update)):
+            if (
+                iteration_result.progress_status.postponed_iteration
+                or AutomationWorkflow._should_continue_workflow(
+                    parsed_inputs, iteration_result.progress_status, bool(actions_update)
+                )
+            ):
                 # update iteration_result to include the executions of priority actions if any
                 continue_workflow, iteration_result = await AutomationWorkflow._process_pending_priority_actions_and_reschedule(
                     parsed_inputs, iteration_result
@@ -131,10 +136,13 @@ class AutomationWorkflow:
 
         Will retry up to 3 times in case of an unexpected error before failing step.
         """
-        # TODO stop exec if wf status is cancelled + test
         parsed_inputs: params.AutomationWorkflowInputs = params.AutomationWorkflowInputs.from_dict(inputs)
         executed_step: str = "no action executed"
         execution_error = next_step = next_step_at = execution_error_message = None
+        postponed_iteration = False
+        has_next_actions_override: typing.Optional[bool] = None
+        next_iteration_description_override: typing.Optional[str] = None
+        next_iteration_description_metadata_override: typing.Optional[str] = None
         result = octobot_flow_client.OctoBotActionsJobResult()
         with octobot_node.scheduler.task_context.encrypted_task(parsed_inputs.task, result):
             #### Start of decryped task context ####
@@ -143,13 +151,28 @@ class AutomationWorkflow:
                 AutomationWorkflow._log_iteration_execution_intent(
                     parsed_inputs, user_actions, trading_signals
                 )
-                await octobot_flow_client.OctoBotActionsJob(
-                    parsed_inputs.task.content,
-                    user_actions,
-                    trading_signals,
-                    result,
-                    wallet_address=parsed_inputs.task.wallet_address,
-                ).run()
+                try:
+                    await octobot_flow_client.OctoBotActionsJob(
+                        parsed_inputs.task.content,
+                        user_actions,
+                        trading_signals,
+                        result,
+                        wallet_address=parsed_inputs.task.wallet_address,
+                    ).run()
+                except octobot_flow.errors.CommunityTradingSignalError as err:
+                    execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
+                    execution_error_message = str(err)
+                except octobot_trading.errors.AuthenticationError as err:
+                    AutomationWorkflow.get_logger(parsed_inputs).error(
+                        f"Authentication error: {err} ({err.__class__.__name__})"
+                    )
+                    execution_error = octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value
+                    execution_error_message = str(err)
+                    postponed_iteration = True
+                    next_step_at = time.time() + constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
+                    has_next_actions_override = True
+                    next_iteration_description_override = parsed_inputs.task.content
+                    next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
                 if result.processed_actions:
                     if latest_step := AutomationWorkflow._get_actions_summary(result.processed_actions, minimal=True):
                         executed_step = latest_step
@@ -164,16 +187,26 @@ class AutomationWorkflow:
                 raise errors.WorkflowInputError(f"Invalid task type: {parsed_inputs.task.type}")
             next_actions = []
             remaining_steps = 0
-            if result.has_next_actions:
-                if result.actions_dag:
-                    next_actions = result.actions_dag.get_executable_actions()
-                    remaining_steps = len(result.actions_dag.get_pending_actions())
-                next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
-            next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
-            next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
-            AutomationWorkflow.get_logger(parsed_inputs).info(
-                f"Iteration completed, executed step: '{executed_step}', {next_actions_str}"
-            )
+            if not postponed_iteration:
+                if result.has_next_actions:
+                    if result.actions_dag:
+                        next_actions = result.actions_dag.get_executable_actions()
+                        remaining_steps = len(result.actions_dag.get_pending_actions())
+                    next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
+                next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
+                next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
+                AutomationWorkflow.get_logger(parsed_inputs).info(
+                    f"Iteration completed, executed step: '{executed_step}', {next_actions_str}"
+                )
+                AutomationWorkflow._persist_account_trading_from_iteration_result(
+                    parsed_inputs.task.wallet_address,
+                    result,
+                )
+            else:
+                AutomationWorkflow.get_logger(parsed_inputs).info(
+                    f"Iteration postponed after authentication error, retry scheduled in "
+                    f"{constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS:.0f} seconds"
+                )
             #### End of decryped task context - no clear data after this point in encrypted context ####
 
         return params.AutomationWorkflowIterationResult(
@@ -185,10 +218,21 @@ class AutomationWorkflow:
                 error=execution_error,
                 error_message=execution_error_message,
                 should_stop=result.should_stop,
+                postponed_iteration=postponed_iteration,
             ),
-            next_iteration_description=result.maybe_encrypted_next_actions_description,
-            next_iteration_description_metadata=result.next_actions_description_encryption_metadata,
-            has_next_actions=result.has_next_actions,
+            next_iteration_description=(
+                next_iteration_description_override
+                if postponed_iteration
+                else result.maybe_encrypted_next_actions_description
+            ),
+            next_iteration_description_metadata=(
+                next_iteration_description_metadata_override
+                if postponed_iteration
+                else result.next_actions_description_encryption_metadata
+            ),
+            has_next_actions=(
+                has_next_actions_override if postponed_iteration else result.has_next_actions
+            ),
         ).to_dict(include_default_values=False)
 
     @staticmethod
@@ -201,6 +245,42 @@ class AutomationWorkflow:
             AutomationWorkflow.get_logger(parsed_inputs).info(f"Received actions updates: {recv_payload}")
             return recv_payload
         return None
+
+    @staticmethod
+    def _persist_account_trading_from_iteration_result(
+        wallet_address: typing.Optional[str],
+        job_result: octobot_flow_client.OctoBotActionsJobResult,
+    ) -> None:
+        # Temporary: persist trading snapshot locally until the global view system owns this sync.
+        if wallet_address is None or job_result.next_actions_description is None:
+            return
+        automation_state = octobot_flow.entities.AutomationState.from_dict(
+            job_result.next_actions_description.state
+        )
+        exchange_account_elements = automation_state.automation.exchange_account_elements
+        exchange_account_details = automation_state.exchange_account_details
+        if exchange_account_elements is None or exchange_account_details is None:
+            return
+        exchange_account_id = exchange_account_details.exchange_details.exchange_account_id
+        if not exchange_account_id:
+            return
+        try:
+            accounts_trading_protocol.update_account_trading(
+                wallet_address,
+                exchange_account_id,
+                list(exchange_account_elements.orders.open_orders),
+                list(exchange_account_elements.trades),
+                [
+                    position_details.position
+                    for position_details in exchange_account_elements.positions
+                ],
+            )
+        except wallet_backend_errors.WalletNotFoundError:
+            # Trading collections are wallet-scoped; skip until the wallet is registered locally.
+            octobot_commons.logging.get_logger(AutomationWorkflow.__name__).warning(
+                "Skipping account trading persistence for wallet %s: wallet not registered",
+                wallet_address,
+            )
 
     @staticmethod
     def _parse_actions_update_envelope(

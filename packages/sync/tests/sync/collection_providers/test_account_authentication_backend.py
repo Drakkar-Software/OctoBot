@@ -57,10 +57,11 @@ class TestAccountAuthenticationProviderStateFormat:
 
 
 class TestAccountAuthenticationProviderGetItemId:
-    def test_returns_wallet_scoped_item_id(self, tmp_path):
+    def test_returns_authentication_id(self, tmp_path):
         provider = auth_provider_module.AccountAuthenticationProvider(base_folder=str(tmp_path))
         authentication = protocol_models.AccountAuthentication(
+            id="auth-1",
             api_key="key",
             api_secret="secret",
         )
-        assert provider._get_item_id(authentication) == "wallet"
+        assert provider._get_item_id(authentication) == "auth-1"

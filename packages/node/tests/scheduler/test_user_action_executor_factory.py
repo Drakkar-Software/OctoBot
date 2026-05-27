@@ -98,6 +98,16 @@ class Test_user_action_executor_factory:
         resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
         assert resolved_executor_cls is user_actions_executor_package.StopAutomationActionExecutor
 
+    def test_returns_signal_automation_executor_class(self):
+        configuration_inner = protocol_models.SignalAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_SIGNAL,
+            automation_id="auto-signal",
+            signal_type=protocol_models.AutomationSignalType.FORCED_TRIGGER,
+        )
+        user_action_model = self._user_action(action_identifier="ua-signal", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.SignalAutomationActionExecutor
+
     def test_returns_create_account_executor_class(self):
         configuration_inner = protocol_models.CreateAccountConfiguration(
             action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
@@ -171,6 +181,97 @@ class Test_user_action_executor_factory:
         user_action_model = self._user_action(action_identifier="ua-delete-config", configuration_inner=configuration_inner)
         resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
         assert resolved_executor_cls is user_actions_executor_package.DeleteExchangeConfigActionExecutor
+
+    def test_returns_create_strategy_executor_class(self):
+        configuration_inner = protocol_models.CreateStrategyConfiguration(
+            action_type=protocol_models.UserActionType.STRATEGY_CREATE,
+            configuration=protocol_models.Strategy(
+                id="new-strategy",
+                version="1.0.0",
+                name="Factory strategy",
+                reference_market="USDT",
+                created_at=datetime.datetime(2026, 2, 1, 12, 0, 0, tzinfo=datetime.UTC),
+                updated_at=datetime.datetime(2026, 2, 1, 12, 0, 0, tzinfo=datetime.UTC),
+                configuration=protocol_models.StrategyConfiguration(
+                    protocol_models.GenericProcessConfiguration(
+                        configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+                        profile_data={},
+                    ),
+                ),
+            ),
+        )
+        user_action_model = self._user_action(action_identifier="ua-create-strategy", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.CreateStrategyActionExecutor
+
+    def test_returns_edit_strategy_executor_class(self):
+        strategy_model = protocol_models.Strategy(
+            id="edit-strategy",
+            version="1.0.0",
+            name="Factory strategy",
+            reference_market="USDT",
+            created_at=datetime.datetime(2026, 2, 1, 12, 0, 0, tzinfo=datetime.UTC),
+            updated_at=datetime.datetime(2026, 2, 1, 12, 0, 0, tzinfo=datetime.UTC),
+            configuration=protocol_models.StrategyConfiguration(
+                protocol_models.GenericProcessConfiguration(
+                    configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+                    profile_data={},
+                ),
+            ),
+        )
+        configuration_inner = protocol_models.EditStrategyConfiguration(
+            action_type=protocol_models.UserActionType.STRATEGY_EDIT,
+            id="edit-strategy",
+            configuration=strategy_model,
+        )
+        user_action_model = self._user_action(action_identifier="ua-edit-strategy", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.EditStrategyActionExecutor
+
+    def test_returns_delete_strategy_executor_class(self):
+        configuration_inner = protocol_models.DeleteStrategyConfiguration(
+            action_type=protocol_models.UserActionType.STRATEGY_DELETE,
+            id="del-strategy",
+        )
+        user_action_model = self._user_action(action_identifier="ua-delete-strategy", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.DeleteStrategyActionExecutor
+
+    def test_returns_create_account_auth_executor_class(self):
+        configuration_inner = protocol_models.CreateAccountAuthConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_AUTH_CREATE,
+            configuration=protocol_models.AccountAuthentication(
+                id="new-auth",
+                api_key="key",
+                api_secret="secret",
+            ),
+        )
+        user_action_model = self._user_action(action_identifier="ua-create-auth", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.CreateAccountAuthActionExecutor
+
+    def test_returns_edit_account_auth_executor_class(self):
+        configuration_inner = protocol_models.EditAccountAuthConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_AUTH_EDIT,
+            id="edit-auth",
+            configuration=protocol_models.AccountAuthentication(
+                id="edit-auth",
+                api_key="key",
+                api_secret="secret",
+            ),
+        )
+        user_action_model = self._user_action(action_identifier="ua-edit-auth", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.EditAccountAuthActionExecutor
+
+    def test_returns_delete_account_auth_executor_class(self):
+        configuration_inner = protocol_models.DeleteAccountAuthConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_AUTH_DELETE,
+            id="del-auth",
+        )
+        user_action_model = self._user_action(action_identifier="ua-delete-auth", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.DeleteAccountAuthActionExecutor
 
     def test_raises_when_configuration_is_none(self):
         user_action_model = protocol_models.UserAction(id="ua-no-configuration", configuration=None)

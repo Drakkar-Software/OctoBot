@@ -47,7 +47,7 @@ class TestGetUserDataState:
         ):
             user_data_state = await user_data_module.get_user_data_state(_TEST_WALLET_ADDRESS)
         get_automation_states_mock.assert_awaited_once_with(_TEST_WALLET_ADDRESS)
-        list_user_actions_mock.assert_awaited_once_with(_TEST_WALLET_ADDRESS)
+        list_user_actions_mock.assert_awaited_once_with(_TEST_WALLET_ADDRESS, active_only=True)
         assert user_data_state.version == sync_constants.USER_DATA_STATE_VERSION
         assert user_data_state.automations == automations_payload
         assert user_data_state.user_actions == user_actions_payload

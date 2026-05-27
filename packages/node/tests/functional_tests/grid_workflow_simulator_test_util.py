@@ -98,10 +98,14 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             sandboxed=False,
         )
 
-    def protocol_exchange_account_for_grid_functional(*, usdc_total: float) -> protocol_models_module.ExchangeAccount:
+    def protocol_exchange_account_for_grid_functional(
+        *,
+        usdc_total: float,
+        remote_account_id: str,
+    ) -> protocol_models_module.ExchangeAccount:
         return protocol_models_module.ExchangeAccount(
             account_type=protocol_models_module.AccountType.EXCHANGE,
-            remote_account_id="functional-test-account",
+            remote_account_id=remote_account_id,
             exchange_config_ids=["functional-test-exchange-config-id"],
         )
 
@@ -130,7 +134,10 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
                 )
             ],
             specifics=protocol_models_module.AccountSpecifics(
-                actual_instance=protocol_exchange_account_for_grid_functional(usdc_total=usdc_total),
+                actual_instance=protocol_exchange_account_for_grid_functional(
+                    usdc_total=usdc_total,
+                    remote_account_id=account_id,
+                ),
             ),
         )
 
@@ -252,6 +259,21 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         payload = protocol_models_module.StopAutomationConfiguration(
             action_type=protocol_models_module.UserActionType.AUTOMATION_STOP,
             id=automation_id,
+        )
+        return protocol_models_module.UserAction(
+            id=user_action_id,
+            configuration=_wrap_user_action_configuration(payload),
+        )
+
+    def build_forced_trigger_signal_user_action(
+        *,
+        automation_id: str,
+        user_action_id: str,
+    ) -> protocol_models_module.UserAction:
+        payload = protocol_models_module.SignalAutomationConfiguration(
+            action_type=protocol_models_module.UserActionType.AUTOMATION_SIGNAL,
+            automation_id=automation_id,
+            signal_type=protocol_models_module.AutomationSignalType.FORCED_TRIGGER,
         )
         return protocol_models_module.UserAction(
             id=user_action_id,
@@ -431,13 +453,29 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             raise AssertionError(f"portfolio row missing field {field_name!r}: {row!r}")
         return float(raw_value)
 
+    def assert_protocol_automation_metadata_name(
+        protocol_automation: protocol_models_module.AutomationState,
+        expected_name: str,
+    ) -> None:
+        assert protocol_automation.metadata is not None, "expected AutomationState.metadata to be set"
+        assert protocol_automation.metadata.name == expected_name, (
+            f"AutomationState.metadata.name is {protocol_automation.metadata.name!r}; "
+            f"expected {expected_name!r}"
+        )
+
     def assert_protocol_automation_matches_exchange_account_elements(
         protocol_automation: protocol_models_module.AutomationState,
         exchange_account_elements: typing.Any,
         *,
         expected_automation_task_status: protocol_models_module.TaskStatus,
         expected_order_symbol: str = "BTC/USDC",
+        expected_exchange_account_id: str | None = None,
     ) -> None:
+        if expected_exchange_account_id is not None:
+            assert protocol_automation.exchange_account_ids == [expected_exchange_account_id], (
+                f"AutomationState.exchange_account_ids is {protocol_automation.exchange_account_ids!r}; "
+                f"expected {[expected_exchange_account_id]!r}"
+            )
         assert protocol_automation.status == expected_automation_task_status, (
             f"AutomationState.status is {protocol_automation.status.value!r}; "
             f"expected {expected_automation_task_status.value!r}"

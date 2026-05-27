@@ -66,8 +66,8 @@ async def get_automation_states(wallet_address: typing.Optional[str]) -> list[pr
     return await octobot_node.scheduler.SCHEDULER.get_automation_states(wallet_address)
 
 
-async def list_user_actions(wallet_address: typing.Optional[str]) -> list[protocol_models.UserAction]:
-    return await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+async def list_user_actions(wallet_address: typing.Optional[str], active_only: bool) -> list[protocol_models.UserAction]:
+    return await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address, active_only)
 
 
 async def get_task_metrics(

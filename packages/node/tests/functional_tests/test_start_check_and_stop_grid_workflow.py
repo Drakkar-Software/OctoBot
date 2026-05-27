@@ -42,12 +42,14 @@ else:
 
 _T_ENQUEUE_SECONDS = 5.0
 _T_GRID_SECONDS = 20.0
+_T_SIGNAL_SECONDS = 5.0
 _T_STOP_SEND_SECONDS = 5.0
 _T_STOP_COMPLETE_SECONDS = 10.0
-# Default grid poll is 0.5s; protocol may flip RUNNING→COMPLETED faster after stop on CI.
+# Fast poll after stop/signal send; protocol status may flip RUNNING→COMPLETED quickly on CI.
 _POST_STOP_PROTOCOL_POLL_SECONDS = 0.05
 
 _GRID_ACCOUNT_ID = "functional_grid_account"
+_GRID_AUTOMATION_DISPLAY_NAME = "test_grid_trigger_automation"
 
 
 def _workflow_row_id_matches_user_action_selector_created_automation_id(
@@ -93,6 +95,7 @@ async def _assert_user_action_selector_completed_automation_create(
     expected_workflow_id: str | None,
     wallet_address: str = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
 ) -> None:
+    """Assert create user action is COMPLETED and optionally ties to a workflow row id."""
     listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
     by_id = _merge_user_actions_latest_per_id(listed)
     assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
@@ -115,11 +118,48 @@ async def _assert_user_action_selector_completed_automation_create(
         assert len(inner.created_automation_id) > 0
 
 
+async def _get_created_automation_id_from_user_action(
+    *,
+    user_action_id: str,
+    wallet_address: str = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+) -> str:
+    """Return parent workflow id from a completed create-automation user action result."""
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    by_id = _merge_user_actions_latest_per_id(listed)
+    assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
+    stored = by_id[user_action_id]
+    assert stored.result is not None
+    inner = stored.result.actual_instance
+    assert isinstance(inner, octobot_protocol_models.AutomationActionResult)
+    assert inner.created_automation_id
+    return inner.created_automation_id
+
+
 async def _assert_user_action_selector_completed_automation_stop(
     *,
     user_action_id: str,
     wallet_address: str = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
 ) -> None:
+    """Assert stop user action is COMPLETED with no automation result error."""
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    by_id = _merge_user_actions_latest_per_id(listed)
+    assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
+    stored = by_id[user_action_id]
+    assert stored.status == octobot_protocol_models.UserActionStatus.COMPLETED
+    assert stored.result is not None
+    inner = stored.result.actual_instance
+    assert isinstance(inner, octobot_protocol_models.AutomationActionResult)
+    assert inner.result_type == octobot_protocol_models.UserActionResultType.AUTOMATION
+    assert inner.error_details is None
+    assert inner.error_message is None
+
+
+async def _assert_user_action_selector_completed_automation_signal(
+    *,
+    user_action_id: str,
+    wallet_address: str = grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+) -> None:
+    """Assert signal user action is COMPLETED with no automation result error."""
     listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
     by_id = _merge_user_actions_latest_per_id(listed)
     assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
@@ -137,6 +177,13 @@ async def _assert_user_action_selector_completed_automation_stop(
 class TestTriggerTaskGridDbosIntegration:
     @pytest.mark.asyncio
     async def test_trigger_task_grid_simulator_two_iterations_then_stop(self, temp_dbos_scheduler):
+        """
+        End-to-end grid automation lifecycle on the simulator exchange.
+
+        Flow: create automation → wait for baseline grid → forced-trigger signal (fixed price,
+        no new orders) → stop automation → verify clean termination with preserved ladder.
+        """
+        # Step 0 — Pin BTC/USDC close so grid placement and forced iteration stay deterministic.
         patched_fetch_tickers = grid_sim_util.tickers_repository_fetch_tickers_btc_usdc_close_override(
             lambda: grid_sim_util.FIXED_BTC_USDC_CLOSE
         )
@@ -151,10 +198,10 @@ class TestTriggerTaskGridDbosIntegration:
         )
         create_user_action = grid_sim_util.build_create_grid_user_action(
             account_id=_GRID_ACCOUNT_ID,
-            name="test_grid_trigger_automation",
+            name=_GRID_AUTOMATION_DISPLAY_NAME,
         )
 
-        # The only mocks are symbol prices to avoid side effects; everything else runs on the target environment.
+        # Step 0 (continued) — Mock only market data and sync providers; DBOS scheduler and flow run for real.
         with (
             mock.patch.object(
                 octobot_flow_repositories_exchange_module.TickersRepository,
@@ -186,6 +233,7 @@ class TestTriggerTaskGridDbosIntegration:
                 ),
             ),
         ):
+            # Step 1 — Enqueue AUTOMATION_CREATE user action; expect a COMPLETED create result and a running workflow.
             try:
                 await asyncio.wait_for(
                     grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
@@ -203,17 +251,17 @@ class TestTriggerTaskGridDbosIntegration:
                 expected_workflow_id=None,
             )
 
-            # Step 1 — wait until the simulator grid exposes the ladder (2 buys, 2 sells) and one optimisation trade.
+            # Step 2 — Poll until the simulator grid reaches baseline: 2 open buys, 2 open sells, 1 trade.
             grid_deadline = time.monotonic() + _T_GRID_SECONDS
             automation_reader_matching: typing.Any = None
             workflow_row_matching: typing.Any = None
-            created_automation_id = create_user_action.id
+            metadata_automation_id = create_user_action.id
             while time.monotonic() < grid_deadline:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 grid_predicate_met = False
                 for workflow_row in workflow_rows:
                     workflow_automation_id = grid_sim_util.workflows_util_module.get_automation_id(workflow_row)
-                    if workflow_automation_id != created_automation_id:
+                    if workflow_automation_id != metadata_automation_id:
                         continue
                     state_reader = grid_sim_util.workflows_util_module.get_automation_state_reader(workflow_row)
                     if state_reader is None:
@@ -250,6 +298,7 @@ class TestTriggerTaskGridDbosIntegration:
                     f"last seen buys={last_buys}, sells={last_sells}, trades={last_trades}"
                 )
 
+            # Step 2 (continued) — Assert baseline counts and that protocol AutomationState mirrors exchange elements.
             elems_after_grid = automation_reader_matching.state.automation.exchange_account_elements
             buys_grid, sells_grid, trades_grid = grid_sim_util.buy_sell_trade_counts_from_exchange_elements(
                 elems_after_grid
@@ -269,13 +318,85 @@ class TestTriggerTaskGridDbosIntegration:
                 protocol_state_after_step1,
                 elems_after_grid,
                 expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+                expected_exchange_account_id=_GRID_ACCOUNT_ID,
+            )
+            grid_sim_util.assert_protocol_automation_metadata_name(
+                protocol_state_after_step1,
+                _GRID_AUTOMATION_DISPLAY_NAME,
             )
 
-            parent_workflow_id = workflow_row_matching.workflow_id[
-                : grid_sim_util.node_constants_module.PARENT_WORKFLOW_ID_LENGTH
-            ]
+            # Step 3 — Enqueue AUTOMATION_SIGNAL (forced_trigger); exercises SignalAutomationActionExecutor end-to-end.
+            parent_automation_id = await _get_created_automation_id_from_user_action(
+                user_action_id=create_user_action.id,
+                wallet_address=wallet_address,
+            )
+            signal_user_action = grid_sim_util.build_forced_trigger_signal_user_action(
+                automation_id=parent_automation_id,
+                user_action_id="ua-signal-forced-grid-functional",
+            )
+            try:
+                await asyncio.wait_for(
+                    grid_sim_util.enqueue_user_action_workflow_and_await_terminal_result(
+                        temp_dbos_scheduler,
+                        signal_user_action,
+                        wallet_address,
+                    ),
+                    timeout=_T_SIGNAL_SECONDS,
+                )
+            except TimeoutError as exc:
+                raise AssertionError("execute_user_action forced-trigger signal timed out") from exc
+
+            await _assert_user_action_selector_completed_automation_signal(
+                user_action_id=signal_user_action.id,
+            )
+
+            # Step 3 (continued) — At fixed price, forced iteration must not add orders; ladder stays 2/2/1 and RUNNING.
+            workflow_row_after_signal: typing.Any = None
+            elements_after_signal: typing.Any = None
+            signal_deadline = time.monotonic() + _T_SIGNAL_SECONDS
+            while time.monotonic() < signal_deadline:
+                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
+                    if grid_sim_util.workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                        continue
+                    reader_after_signal = grid_sim_util.workflows_util_module.get_automation_state_reader(
+                        workflow_row
+                    )
+                    if reader_after_signal is None:
+                        continue
+                    candidate_elements = reader_after_signal.state.automation.exchange_account_elements
+                    candidate_buys, candidate_sells, candidate_trades = (
+                        grid_sim_util.buy_sell_trade_counts_from_exchange_elements(candidate_elements)
+                    )
+                    if not grid_sim_util.is_simulator_grid_baseline_exactly_one_trade(
+                        candidate_buys,
+                        candidate_sells,
+                        candidate_trades,
+                    ):
+                        continue
+                    workflow_row_after_signal = workflow_row
+                    elements_after_signal = candidate_elements
+                    break
+                if workflow_row_after_signal is not None:
+                    break
+                await asyncio.sleep(_POST_STOP_PROTOCOL_POLL_SECONDS)
+            assert workflow_row_after_signal is not None
+            protocol_state_after_signal = await grid_sim_util.load_protocol_automation_state_for_workflow(
+                grid_sim_util.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_row_after_signal,
+            )
+            grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
+                protocol_state_after_signal,
+                elements_after_signal,
+                expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+            )
+            grid_sim_util.assert_protocol_automation_metadata_name(
+                protocol_state_after_signal,
+                _GRID_AUTOMATION_DISPLAY_NAME,
+            )
+
+            # Step 4 — Enqueue AUTOMATION_STOP; stop payload targets the parent workflow id (UUID prefix).
             stop_user_action = grid_sim_util.build_stop_user_action(
-                automation_id=parent_workflow_id,
+                automation_id=parent_automation_id,
                 user_action_id="ua-stop-grid-functional",
             )
             try:
@@ -292,6 +413,8 @@ class TestTriggerTaskGridDbosIntegration:
 
             await _assert_user_action_selector_completed_automation_stop(user_action_id=stop_user_action.id)
 
+            # Step 4 (continued) — Right after stop is sent, ladder counts should still match baseline while
+            # protocol status may already be RUNNING or COMPLETED depending on CI timing.
             workflow_row_after_stop_send: typing.Any = None
             elements_after_stop_send: typing.Any = None
             stop_send_deadline = time.monotonic() + _T_STOP_SEND_SECONDS
@@ -301,7 +424,7 @@ class TestTriggerTaskGridDbosIntegration:
                     key=lambda workflow_status: workflow_status.updated_at or 0,
                     reverse=True,
                 ):
-                    if grid_sim_util.workflows_util_module.get_automation_id(workflow_row) != created_automation_id:
+                    if grid_sim_util.workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
                     reader_after_send = grid_sim_util.workflows_util_module.get_automation_state_reader(workflow_row)
                     if reader_after_send is None:
@@ -341,15 +464,21 @@ class TestTriggerTaskGridDbosIntegration:
                 protocol_state_after_stop_send,
                 elements_after_stop_send,
                 expected_automation_task_status=observed_protocol_status,
+                expected_exchange_account_id=_GRID_ACCOUNT_ID,
+            )
+            grid_sim_util.assert_protocol_automation_metadata_name(
+                protocol_state_after_stop_send,
+                _GRID_AUTOMATION_DISPLAY_NAME,
             )
 
-            # Step 2 — wait for terminate output with priority stop; expect preserved ladder and trade counts.
+            # Step 5 — Wait for the automation workflow to finish with post_actions.stop_automation set.
             final_output_text = await grid_sim_util.wait_for_stop_success_output(
                 temp_dbos_scheduler,
-                created_automation_id,
+                metadata_automation_id,
                 _T_STOP_COMPLETE_SECONDS,
             )
 
+            # Step 5 (continued) — Final job output: no error, stop flag, preserved 2/2/1 ladder, wallet in auth.
             assert final_output_text is not None
             parsed_final = grid_sim_util.parse_automation_workflow_output(final_output_text)
             assert parsed_final.error is None
@@ -373,11 +502,12 @@ class TestTriggerTaskGridDbosIntegration:
                 final_trades,
             )
 
+            # Step 6 — Latest SUCCESS workflow row exposes COMPLETED protocol AutomationState matching final output.
             success_rows = [
                 workflow_row
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 if workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value
-                and grid_sim_util.workflows_util_module.get_automation_id(workflow_row) == created_automation_id
+                and grid_sim_util.workflows_util_module.get_automation_id(workflow_row) == metadata_automation_id
             ]
             assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
@@ -389,4 +519,9 @@ class TestTriggerTaskGridDbosIntegration:
                 protocol_state_final,
                 final_elements,
                 expected_automation_task_status=octobot_protocol_models.TaskStatus.COMPLETED,
+                expected_exchange_account_id=_GRID_ACCOUNT_ID,
+            )
+            grid_sim_util.assert_protocol_automation_metadata_name(
+                protocol_state_final,
+                _GRID_AUTOMATION_DISPLAY_NAME,
             )

@@ -15,10 +15,11 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import secrets
-from typing import Any
+from typing import Any, Optional
 
 from starfish_sdk import StarfishClient, SyncManager
 from starfish_sdk.types import ConflictResolver
+from starfish_protocol.types import PushSuccess
 
 import octobot_commons.logging as logging
 import octobot_sync.auth as auth
@@ -92,6 +93,16 @@ async def push_payload(
         encryptor=_share_encryptor(encryption_secret, encryption_salt, encryption_info),
     )
     return await manager.push(payload)
+
+
+async def append_payload(
+    client: StarfishClient,
+    *,
+    push_path: str,
+    payload: dict[str, Any],
+    timestamp: Optional[int] = None,
+) -> PushSuccess:
+    return await client.append(push_path, payload, ts=timestamp)
 
 
 async def pull_payload(

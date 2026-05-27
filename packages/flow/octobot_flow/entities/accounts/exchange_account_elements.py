@@ -9,6 +9,7 @@ import octobot_trading.api
 import octobot_trading.enums
 import octobot_trading.constants
 import octobot_trading.personal_data
+import octobot_trading.personal_data.trades.trades_util as trades_util
 
 import octobot_flow.enums
 import octobot_flow.entities.accounts.account_elements as account_elements_import
@@ -64,32 +65,9 @@ class ExchangeAccountElements(account_elements_import.AccountElements):
         return changed_elements
 
     def append_new_trades_deduped(self, trades: list[dict]) -> bool:
-        exchange_trade_id_key = octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value
-        exchange_order_exchange_id_key = octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
-
-        def _identity_key(trade: dict) -> typing.Optional[tuple[str, typing.Hashable]]:
-            exchange_trade_id = trade.get(exchange_trade_id_key)
-            if exchange_trade_id is not None:
-                return exchange_trade_id_key, exchange_trade_id
-            exchange_order_exchange_id = trade.get(exchange_order_exchange_id_key)
-            if exchange_order_exchange_id is not None:
-                return exchange_order_exchange_id_key, exchange_order_exchange_id
-            return None
-
-        known_trade_keys: set[tuple[str, typing.Hashable]] = set()
-        for trade in self.trades:
-            key = _identity_key(trade)
-            if key is not None:
-                known_trade_keys.add(key)
-        added = False
-        for trade in trades:
-            key = _identity_key(trade)
-            if key is None or key in known_trade_keys:
-                continue
-            known_trade_keys.add(key)
-            self.trades.append(dict(trade))
-            added = True
-        return added
+        previous_count = len(self.trades)
+        self.trades = trades_util.merge_trades_deduped(self.trades, trades)
+        return len(self.trades) != previous_count
 
     def merge_trades_from_exchange_account_elements(
         self,

@@ -60,8 +60,9 @@ def assets_payload(
     ]
 
 
-def authentication_payload() -> protocol_models.AccountAuthentication:
+def authentication_payload(*, auth_id: str = "test-account-id") -> protocol_models.AccountAuthentication:
     return protocol_models.AccountAuthentication(
+        id=auth_id,
         api_key="k",
         api_secret="s",
     )

@@ -77,7 +77,11 @@ class UserActionWorkflow:
         ):
             executor_class = user_actions_executor.user_action_executor_factory(parsed_user_action)
             executor = executor_class(parsed_inputs.wallet_address)
-            await executor.execute(parsed_user_action)
+            try:
+                await executor.execute(parsed_user_action)
+            except errors.UserActionError:
+                if parsed_user_action.status != protocol_models.UserActionStatus.FAILED:
+                    raise
             return params.UserActionExecutionResult(
                 updated_user_action=parsed_user_action,
                 post_actions=executor.post_actions,

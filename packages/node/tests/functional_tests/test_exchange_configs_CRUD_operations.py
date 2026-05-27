@@ -310,11 +310,10 @@ class TestExecuteUserActionExchangeConfigCrud:
                     await _run_user_action_to_completion(
                         wallet_address,
                         doomed_create,
-                        expect_exceptions=(node_errors_module.InvalidUserActionPayloadError,),
                     )
 
-                    # Step 1 (continued) — Listing: only the doomed row, FAILED with scheduler-synthesized ``ExchangeConfigActionResult``.
-                    listed_after_doomed = await scheduler_api.list_user_actions(wallet_address)
+                    # Step 1 (continued) — Listing: only the doomed row, FAILED with executor-built ``ExchangeConfigActionResult``.
+                    listed_after_doomed = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_doomed,
                         [(doomed_create.id, protocol_models.UserActionStatus.FAILED)],
@@ -324,7 +323,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     doomed_inner = doomed_latest.result.actual_instance
                     assert isinstance(doomed_inner, protocol_models.ExchangeConfigActionResult)
                     assert doomed_inner.result_type == protocol_models.UserActionResultType.EXCHANGE_CONFIG
-                    assert doomed_inner.error_message == protocol_models.ExchangeConfigActionResultErrorMessage.INTERNAL_ERROR
+                    assert doomed_inner.error_message == protocol_models.ExchangeConfigActionResultErrorMessage.INVALID_CONFIGURATION
                     assert doomed_inner.error_details is not None
                     assert "forced doomed create failure" in doomed_inner.error_details
 
@@ -336,7 +335,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     await _run_user_action_to_completion(wallet_address, happy_create)
 
                     # Step 2 (continued) — Listing: doomed FAILED + happy COMPLETED; verify persisted config.
-                    listed_after_create = await scheduler_api.list_user_actions(wallet_address)
+                    listed_after_create = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_create,
                         [
@@ -370,7 +369,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     await _run_user_action_to_completion(wallet_address, account_create)
 
                     # Step 3 (continued) — Listing adds COMPLETED account row; account persisted with matching ``exchange_config_ids``.
-                    listed_after_account_create = await scheduler_api.list_user_actions(wallet_address)
+                    listed_after_account_create = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_account_create,
                         [
@@ -398,7 +397,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     await _run_user_action_to_completion(wallet_address, edit_config_action)
 
                     # Step 4 (continued) — Listing adds COMPLETED edit row; config updated, account link unchanged.
-                    listed_after_edit = await scheduler_api.list_user_actions(wallet_address)
+                    listed_after_edit = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_edit,
                         [
@@ -425,7 +424,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     await _run_user_action_to_completion(wallet_address, delete_account_action)
 
                     # Step 5 (continued) — Listing adds COMPLETED account-delete row; accounts collection empty.
-                    listed_after_account_delete = await scheduler_api.list_user_actions(wallet_address)
+                    listed_after_account_delete = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_account_delete,
                         [
@@ -446,7 +445,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     await _run_user_action_to_completion(wallet_address, delete_config_action)
 
                     # Step 6 (continued) — Full listing is six terminal rows; exchange config collection empty.
-                    listed_after_delete = await scheduler_api.list_user_actions(wallet_address)
+                    listed_after_delete = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_delete,
                         [

@@ -38,6 +38,8 @@ class TestAccountsAuthenticationState(unittest.TestCase):
                 version = '',
                 account_authentication = [
                     octobot_protocol.models.account_authentication.AccountAuthentication(
+                        id = '', 
+                        updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         api_key = '', 
                         api_secret = '', 
                         api_passphrase = '', 
@@ -51,6 +53,8 @@ class TestAccountsAuthenticationState(unittest.TestCase):
                 version = '',
                 account_authentication = [
                     octobot_protocol.models.account_authentication.AccountAuthentication(
+                        id = '', 
+                        updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         api_key = '', 
                         api_secret = '', 
                         api_passphrase = '', 

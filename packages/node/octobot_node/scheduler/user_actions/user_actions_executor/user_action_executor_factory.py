@@ -43,6 +43,8 @@ def user_action_executor_factory(
             return user_actions_executor_package.EditAutomationActionExecutor
         case protocol_models.StopAutomationConfiguration:
             return user_actions_executor_package.StopAutomationActionExecutor
+        case protocol_models.SignalAutomationConfiguration:
+            return user_actions_executor_package.SignalAutomationActionExecutor
         case protocol_models.CreateAccountConfiguration:
             return user_actions_executor_package.CreateAccountActionExecutor
         case protocol_models.EditAccountConfiguration:
@@ -57,6 +59,18 @@ def user_action_executor_factory(
             return user_actions_executor_package.EditExchangeConfigActionExecutor
         case protocol_models.DeleteExchangeConfigConfiguration:
             return user_actions_executor_package.DeleteExchangeConfigActionExecutor
+        case protocol_models.CreateStrategyConfiguration:
+            return user_actions_executor_package.CreateStrategyActionExecutor
+        case protocol_models.EditStrategyConfiguration:
+            return user_actions_executor_package.EditStrategyActionExecutor
+        case protocol_models.DeleteStrategyConfiguration:
+            return user_actions_executor_package.DeleteStrategyActionExecutor
+        case protocol_models.CreateAccountAuthConfiguration:
+            return user_actions_executor_package.CreateAccountAuthActionExecutor
+        case protocol_models.EditAccountAuthConfiguration:
+            return user_actions_executor_package.EditAccountAuthActionExecutor
+        case protocol_models.DeleteAccountAuthConfiguration:
+            return user_actions_executor_package.DeleteAccountAuthActionExecutor
         case _:
             raise node_errors.UnsupportedUserActionConfigurationTypeError(
                 f"Unknown user action configuration type: {type(actual).__name__}"

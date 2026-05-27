@@ -12,7 +12,8 @@ Name | Type | Description | Notes
 **description** | **str** |  | [optional] 
 **state** | [**AccountState**](AccountState.md) |  | [optional] 
 **created_at** | **datetime** |  | 
-**updated_at** | **datetime** |  | 
+**updated_at** | **datetime** |  | [optional] 
+**authentication_id** | **str** | The id of the account authentication bound to this account | [optional] 
 **assets** | [**List[DetailedAssetsForTradingType]**](DetailedAssetsForTradingType.md) |  | [optional] 
 **specifics** | [**AccountSpecifics**](AccountSpecifics.md) |  | [optional] 
 

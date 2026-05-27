@@ -36,162 +36,158 @@ class TestAccountTradingState(unittest.TestCase):
         if include_optional:
             return AccountTradingState(
                 version = '',
-                account_trading = [
-                    octobot_protocol.models.account_trading.AccountTrading(
-                        updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                        orders = [
-                            octobot_protocol.models.order.Order(
+                account_trading = octobot_protocol.models.account_trading.AccountTrading(
+                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    orders = [
+                        octobot_protocol.models.order.Order(
+                            id = '', 
+                            symbol = '', 
+                            price = 1.337, 
+                            quantity = 1.337, 
+                            filled = 1.337, 
+                            exchange_id = '', 
+                            side = 'buy', 
+                            type = 'limit', 
+                            trigger_above = True, 
+                            reduce_only = True, 
+                            is_active = True, 
+                            status = 'pending_creation', 
+                            created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                            entries = [
+                                ''
+                                ], 
+                            update_with_triggering_order_fees = True, 
+                            order_group = octobot_protocol.models.order_group.OrderGroup(
                                 id = '', 
-                                symbol = '', 
-                                price = 1.337, 
-                                quantity = 1.337, 
-                                filled = 1.337, 
-                                exchange_id = '', 
-                                side = 'buy', 
-                                type = 'limit', 
-                                trigger_above = True, 
-                                reduce_only = True, 
-                                is_active = True, 
-                                status = 'pending_creation', 
-                                created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                                entries = [
-                                    ''
-                                    ], 
-                                update_with_triggering_order_fees = True, 
-                                order_group = octobot_protocol.models.order_group.OrderGroup(
+                                active_order_swap_strategy = octobot_protocol.models.active_order_swap_strategy.ActiveOrderSwapStrategy(
+                                    type = 'StopFirstActiveOrderSwapStrategy', 
+                                    trigger_price_configuration = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), 
+                                    timeout = 1.337, ), ), 
+                            trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
+                                type = 'filled_take_profit', 
+                                specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
+                                type = 'ExpirationTimeOrderCancelPolicy', 
+                                specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            chained_orders = [
+                                octobot_protocol.models.order.Order(
                                     id = '', 
-                                    active_order_swap_strategy = octobot_protocol.models.active_order_swap_strategy.ActiveOrderSwapStrategy(
-                                        type = 'StopFirstActiveOrderSwapStrategy', 
-                                        trigger_price_configuration = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), 
-                                        timeout = 1.337, ), ), 
-                                trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
-                                    type = 'filled_take_profit', 
-                                    specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
-                                cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
-                                    type = 'ExpirationTimeOrderCancelPolicy', 
-                                    specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
-                                chained_orders = [
-                                    octobot_protocol.models.order.Order(
-                                        id = '', 
-                                        symbol = '', 
-                                        price = 1.337, 
-                                        quantity = 1.337, 
-                                        filled = 1.337, 
-                                        exchange_id = '', 
-                                        side = 'buy', 
-                                        type = 'limit', 
-                                        trigger_above = True, 
-                                        reduce_only = True, 
-                                        is_active = True, 
-                                        status = 'pending_creation', 
-                                        created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                                        update_with_triggering_order_fees = True, )
-                                    ], )
-                            ], 
-                        trades = [
-                            octobot_protocol.models.trade.Trade(
-                                id = '', 
-                                trade_id = '', 
-                                type = , 
-                                symbol = '', 
-                                side = , 
-                                quantity = 1.337, 
-                                price = 1.337, 
-                                status = , 
-                                executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
-                            ], 
-                        positions = [
-                            octobot_protocol.models.position.Position(
-                                id = '', 
-                                symbol = '', 
-                                side = , 
-                                quantity = 1.337, 
-                                entry_price = 1.337, 
-                                mark_price = 1.337, 
-                                liquidation_price = 1.337, 
-                                status = 'open', )
-                            ], )
-                    ]
+                                    symbol = '', 
+                                    price = 1.337, 
+                                    quantity = 1.337, 
+                                    filled = 1.337, 
+                                    exchange_id = '', 
+                                    side = 'buy', 
+                                    type = 'limit', 
+                                    trigger_above = True, 
+                                    reduce_only = True, 
+                                    is_active = True, 
+                                    status = 'pending_creation', 
+                                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                                    update_with_triggering_order_fees = True, )
+                                ], )
+                        ], 
+                    trades = [
+                        octobot_protocol.models.trade.Trade(
+                            id = '', 
+                            trade_id = '', 
+                            type = , 
+                            symbol = '', 
+                            side = , 
+                            quantity = 1.337, 
+                            price = 1.337, 
+                            status = , 
+                            executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
+                        ], 
+                    positions = [
+                        octobot_protocol.models.position.Position(
+                            id = '', 
+                            symbol = '', 
+                            side = , 
+                            quantity = 1.337, 
+                            entry_price = 1.337, 
+                            mark_price = 1.337, 
+                            liquidation_price = 1.337, 
+                            status = 'open', )
+                        ], )
             )
         else:
             return AccountTradingState(
                 version = '',
-                account_trading = [
-                    octobot_protocol.models.account_trading.AccountTrading(
-                        updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                        orders = [
-                            octobot_protocol.models.order.Order(
+                account_trading = octobot_protocol.models.account_trading.AccountTrading(
+                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                    orders = [
+                        octobot_protocol.models.order.Order(
+                            id = '', 
+                            symbol = '', 
+                            price = 1.337, 
+                            quantity = 1.337, 
+                            filled = 1.337, 
+                            exchange_id = '', 
+                            side = 'buy', 
+                            type = 'limit', 
+                            trigger_above = True, 
+                            reduce_only = True, 
+                            is_active = True, 
+                            status = 'pending_creation', 
+                            created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                            entries = [
+                                ''
+                                ], 
+                            update_with_triggering_order_fees = True, 
+                            order_group = octobot_protocol.models.order_group.OrderGroup(
                                 id = '', 
-                                symbol = '', 
-                                price = 1.337, 
-                                quantity = 1.337, 
-                                filled = 1.337, 
-                                exchange_id = '', 
-                                side = 'buy', 
-                                type = 'limit', 
-                                trigger_above = True, 
-                                reduce_only = True, 
-                                is_active = True, 
-                                status = 'pending_creation', 
-                                created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                                entries = [
-                                    ''
-                                    ], 
-                                update_with_triggering_order_fees = True, 
-                                order_group = octobot_protocol.models.order_group.OrderGroup(
+                                active_order_swap_strategy = octobot_protocol.models.active_order_swap_strategy.ActiveOrderSwapStrategy(
+                                    type = 'StopFirstActiveOrderSwapStrategy', 
+                                    trigger_price_configuration = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), 
+                                    timeout = 1.337, ), ), 
+                            trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
+                                type = 'filled_take_profit', 
+                                specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
+                                type = 'ExpirationTimeOrderCancelPolicy', 
+                                specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
+                            chained_orders = [
+                                octobot_protocol.models.order.Order(
                                     id = '', 
-                                    active_order_swap_strategy = octobot_protocol.models.active_order_swap_strategy.ActiveOrderSwapStrategy(
-                                        type = 'StopFirstActiveOrderSwapStrategy', 
-                                        trigger_price_configuration = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), 
-                                        timeout = 1.337, ), ), 
-                                trailing_profile = octobot_protocol.models.trailing_profile.TrailingProfile(
-                                    type = 'filled_take_profit', 
-                                    specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
-                                cancel_policy = octobot_protocol.models.cancel_policy.CancelPolicy(
-                                    type = 'ExpirationTimeOrderCancelPolicy', 
-                                    specifics = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(), ), 
-                                chained_orders = [
-                                    octobot_protocol.models.order.Order(
-                                        id = '', 
-                                        symbol = '', 
-                                        price = 1.337, 
-                                        quantity = 1.337, 
-                                        filled = 1.337, 
-                                        exchange_id = '', 
-                                        side = 'buy', 
-                                        type = 'limit', 
-                                        trigger_above = True, 
-                                        reduce_only = True, 
-                                        is_active = True, 
-                                        status = 'pending_creation', 
-                                        created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                                        update_with_triggering_order_fees = True, )
-                                    ], )
-                            ], 
-                        trades = [
-                            octobot_protocol.models.trade.Trade(
-                                id = '', 
-                                trade_id = '', 
-                                type = , 
-                                symbol = '', 
-                                side = , 
-                                quantity = 1.337, 
-                                price = 1.337, 
-                                status = , 
-                                executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
-                            ], 
-                        positions = [
-                            octobot_protocol.models.position.Position(
-                                id = '', 
-                                symbol = '', 
-                                side = , 
-                                quantity = 1.337, 
-                                entry_price = 1.337, 
-                                mark_price = 1.337, 
-                                liquidation_price = 1.337, 
-                                status = 'open', )
-                            ], )
-                    ],
+                                    symbol = '', 
+                                    price = 1.337, 
+                                    quantity = 1.337, 
+                                    filled = 1.337, 
+                                    exchange_id = '', 
+                                    side = 'buy', 
+                                    type = 'limit', 
+                                    trigger_above = True, 
+                                    reduce_only = True, 
+                                    is_active = True, 
+                                    status = 'pending_creation', 
+                                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                                    update_with_triggering_order_fees = True, )
+                                ], )
+                        ], 
+                    trades = [
+                        octobot_protocol.models.trade.Trade(
+                            id = '', 
+                            trade_id = '', 
+                            type = , 
+                            symbol = '', 
+                            side = , 
+                            quantity = 1.337, 
+                            price = 1.337, 
+                            status = , 
+                            executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
+                        ], 
+                    positions = [
+                        octobot_protocol.models.position.Position(
+                            id = '', 
+                            symbol = '', 
+                            side = , 
+                            quantity = 1.337, 
+                            entry_price = 1.337, 
+                            mark_price = 1.337, 
+                            liquidation_price = 1.337, 
+                            status = 'open', )
+                        ], ),
         )
         """
 

@@ -177,7 +177,8 @@ disable=raw-checker-failed,
         wrong-import-order,
         trailing-whitespace,
         no-name-in-module,
-        astroid-error
+        astroid-error,
+        not-an-iterable
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

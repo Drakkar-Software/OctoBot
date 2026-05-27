@@ -114,7 +114,7 @@ class TestStrategyConfiguration(unittest.TestCase):
                 enable_trailing_down = True,
                 order_by_order_trailing = True,
                 strategy_id = '',
-                profile_data = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(),
+                profile_data = octobot_protocol.models.profile_data.profile_data(),
                 actions = [
                     octobot_protocol.models.action.Action(
                         id = '', 
@@ -208,7 +208,7 @@ class TestStrategyConfiguration(unittest.TestCase):
                 enable_trailing_down = True,
                 order_by_order_trailing = True,
                 strategy_id = '',
-                profile_data = octobot_protocol.models.trigger_price_configuration.trigger_price_configuration(),
+                profile_data = octobot_protocol.models.profile_data.profile_data(),
                 actions = [
                     octobot_protocol.models.action.Action(
                         id = '', 
