@@ -800,7 +800,7 @@ def get_valid_filled_price(order, ideal_price: decimal.Decimal):
 
 async def adapt_chained_order_before_creation(base_order, chained_order):
     can_be_created = True
-    if chained_order.update_with_triggering_order_fees:
+    if chained_order.update_with_triggering_order_fees and constants.ENABLE_CHAINED_ORDER_UPDATE_WITH_TRIGGERING_ORDER_FEES:
         can_be_created = chained_order.update_quantity_with_order_fees(base_order)
     # ensure price is not outdated
     await chained_order.update_price_if_outdated()
