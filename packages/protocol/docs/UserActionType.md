@@ -18,6 +18,12 @@ UserActionType
 
 * `ACCOUNTS_REFRESH` (value: `'accounts_refresh'`)
 
+* `EXCHANGE_CONFIG_CREATE` (value: `'exchange_config_create'`)
+
+* `EXCHANGE_CONFIG_EDIT` (value: `'exchange_config_edit'`)
+
+* `EXCHANGE_CONFIG_DELETE` (value: `'exchange_config_delete'`)
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

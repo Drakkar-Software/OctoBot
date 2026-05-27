@@ -1,0 +1,17 @@
+# ExchangeConfigActionResultErrorMessage
+
+ExchangeConfigActionResultErrorMessage
+
+## Enum
+
+* `EXCHANGE_CONFIG_NOT_FOUND` (value: `'exchange_config_not_found'`)
+
+* `INVALID_CONFIGURATION` (value: `'invalid_configuration'`)
+
+* `DUPLICATE_ITEM` (value: `'duplicate_item'`)
+
+* `INTERNAL_ERROR` (value: `'internal_error'`)
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+

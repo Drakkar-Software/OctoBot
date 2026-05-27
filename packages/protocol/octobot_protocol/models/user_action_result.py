@@ -19,11 +19,12 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, f
 from typing import Any, List, Optional
 from octobot_protocol.models.account_action_result import AccountActionResult
 from octobot_protocol.models.automation_action_result import AutomationActionResult
+from octobot_protocol.models.exchange_config_action_result import ExchangeConfigActionResult
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-USERACTIONRESULT_ONE_OF_SCHEMAS = ["AccountActionResult", "AutomationActionResult"]
+USERACTIONRESULT_ONE_OF_SCHEMAS = ["AccountActionResult", "AutomationActionResult", "ExchangeConfigActionResult"]
 
 class UserActionResult(BaseModel):
     """
@@ -33,8 +34,10 @@ class UserActionResult(BaseModel):
     oneof_schema_1_validator: Optional[AutomationActionResult] = None
     # data type: AccountActionResult
     oneof_schema_2_validator: Optional[AccountActionResult] = None
-    actual_instance: Optional[Union[AccountActionResult, AutomationActionResult]] = None
-    one_of_schemas: Set[str] = { "AccountActionResult", "AutomationActionResult" }
+    # data type: ExchangeConfigActionResult
+    oneof_schema_3_validator: Optional[ExchangeConfigActionResult] = None
+    actual_instance: Optional[Union[AccountActionResult, AutomationActionResult, ExchangeConfigActionResult]] = None
+    one_of_schemas: Set[str] = { "AccountActionResult", "AutomationActionResult", "ExchangeConfigActionResult" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -70,12 +73,17 @@ class UserActionResult(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `AccountActionResult`")
         else:
             match += 1
+        # validate data type: ExchangeConfigActionResult
+        if not isinstance(v, ExchangeConfigActionResult):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `ExchangeConfigActionResult`")
+        else:
+            match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult, ExchangeConfigActionResult. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult, ExchangeConfigActionResult. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -105,6 +113,11 @@ class UserActionResult(BaseModel):
             instance.actual_instance = AutomationActionResult.from_json(json_str)
             return instance
 
+        # check if data type is `ExchangeConfigActionResult`
+        if _data_type == "exchange_config":
+            instance.actual_instance = ExchangeConfigActionResult.from_json(json_str)
+            return instance
+
         # deserialize data into AutomationActionResult
         try:
             instance.actual_instance = AutomationActionResult.from_json(json_str)
@@ -117,13 +130,19 @@ class UserActionResult(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
+        # deserialize data into ExchangeConfigActionResult
+        try:
+            instance.actual_instance = ExchangeConfigActionResult.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult, ExchangeConfigActionResult. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into UserActionResult with oneOf schemas: AccountActionResult, AutomationActionResult, ExchangeConfigActionResult. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -137,7 +156,7 @@ class UserActionResult(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], AccountActionResult, AutomationActionResult]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], AccountActionResult, AutomationActionResult, ExchangeConfigActionResult]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

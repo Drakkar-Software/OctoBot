@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 **state** | [**AccountState**](AccountState.md) |  | [optional] 
 **created_at** | **datetime** |  | 
 **updated_at** | **datetime** |  | 
-**assets** | [**List[DetailedAsset]**](DetailedAsset.md) |  | [optional] 
+**assets** | [**List[DetailedAssetsForTradingType]**](DetailedAssetsForTradingType.md) |  | [optional] 
 **specifics** | [**AccountSpecifics**](AccountSpecifics.md) |  | [optional] 
 
 ## Example

@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **version** | **str** |  | 
 **accounts** | [**List[Account]**](Account.md) |  | [optional] 
+**exchange_configs** | [**List[ExchangeConfig]**](ExchangeConfig.md) |  | [optional] 
 
 ## Example
 

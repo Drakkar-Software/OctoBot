@@ -18,9 +18,10 @@ import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
-import octobot_node.scheduler.user_actions.user_actions_executor.create_automation as create_automation_executor_module
-import octobot_node.scheduler.user_actions.user_actions_executor.create_account as create_account_executor
-import octobot_node.scheduler.user_actions.user_actions_executor.stop_automation as stop_automation_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.create_automation as create_automation_executor_module
+import octobot_node.scheduler.user_actions.user_actions_executor.account.create_account as create_account_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.create_exchange_config as create_exchange_config_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation as stop_automation_executor
 
 _WALLET = "0xwallet"
 
@@ -72,6 +73,21 @@ class TestAutomationUserActionExecutorGetErrorMessage:
         )
         assert resolved == protocol_models.AutomationActionResultErrorMessage.STRATEGY_VERSION_NOT_FOUND
 
+    def test_unknown_trading_type(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.UnknownTradingTypeError("unknown"))
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.UNKNOWN_TRADING_TYPE
+
+    def test_ambiguous_trading_type(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.AmbiguousTradingTypeError("ambiguous"))
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.AMBIGUOUS_TRADING_TYPE
+
+    def test_ambiguous_exchange_config(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.AmbiguousExchangeConfigError("ambiguous"))
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.AMBIGUOUS_EXCHANGE_CONFIG
+
     def test_unknown_exception_falls_back_to_internal_error(self):
         executor = stop_automation_executor.StopAutomationActionExecutor(_WALLET)
         resolved = executor._get_error_message(RuntimeError("boom"))
@@ -107,9 +123,31 @@ class TestAccountUserActionExecutorGetErrorMessage:
     def test_duplicate_account(self):
         executor = create_account_executor.CreateAccountActionExecutor(_WALLET)
         resolved = executor._get_error_message(collection_errors.DuplicateItemError("dup"))
-        assert resolved == protocol_models.AccountActionResultErrorMessage.INVALID_CONFIGURATION
+        assert resolved == protocol_models.AccountActionResultErrorMessage.DUPLICATE_ITEM
 
     def test_unknown_exception_falls_back_to_internal_error(self):
         executor = create_account_executor.CreateAccountActionExecutor(_WALLET)
         resolved = executor._get_error_message(ValueError("unexpected"))
         assert resolved == protocol_models.AccountActionResultErrorMessage.INTERNAL_ERROR
+
+
+class TestExchangeConfigUserActionExecutorGetErrorMessage:
+    def test_exchange_config_not_found_from_backend(self):
+        executor = create_exchange_config_executor.CreateExchangeConfigActionExecutor(_WALLET)
+        resolved = executor._get_error_message(collection_errors.ItemNotFoundError("missing"))
+        assert resolved == protocol_models.ExchangeConfigActionResultErrorMessage.EXCHANGE_CONFIG_NOT_FOUND
+
+    def test_invalid_user_action_payload(self):
+        executor = create_exchange_config_executor.CreateExchangeConfigActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.InvalidUserActionPayloadError("bad"))
+        assert resolved == protocol_models.ExchangeConfigActionResultErrorMessage.INVALID_CONFIGURATION
+
+    def test_duplicate_exchange_config(self):
+        executor = create_exchange_config_executor.CreateExchangeConfigActionExecutor(_WALLET)
+        resolved = executor._get_error_message(collection_errors.DuplicateItemError("dup"))
+        assert resolved == protocol_models.ExchangeConfigActionResultErrorMessage.DUPLICATE_ITEM
+
+    def test_unknown_exception_falls_back_to_internal_error(self):
+        executor = create_exchange_config_executor.CreateExchangeConfigActionExecutor(_WALLET)
+        resolved = executor._get_error_message(ValueError("unexpected"))
+        assert resolved == protocol_models.ExchangeConfigActionResultErrorMessage.INTERNAL_ERROR

@@ -33,6 +33,9 @@ class UserActionType(str, Enum):
     ACCOUNT_EDIT = 'account_edit'
     ACCOUNT_DELETE = 'account_delete'
     ACCOUNTS_REFRESH = 'accounts_refresh'
+    EXCHANGE_CONFIG_CREATE = 'exchange_config_create'
+    EXCHANGE_CONFIG_EDIT = 'exchange_config_edit'
+    EXCHANGE_CONFIG_DELETE = 'exchange_config_delete'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

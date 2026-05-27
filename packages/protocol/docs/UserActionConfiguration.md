@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **action_type** | [**UserActionType**](UserActionType.md) | accounts_refresh | 
-**configuration** | [**Account**](Account.md) |  | 
+**configuration** | [**ExchangeConfig**](ExchangeConfig.md) |  | 
 **id** | **str** |  | 
 **account_ids** | **List[str]** |  | [optional] 
 

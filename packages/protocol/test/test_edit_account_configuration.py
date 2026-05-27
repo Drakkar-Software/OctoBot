@@ -48,10 +48,14 @@ class TestEditAccountConfiguration(unittest.TestCase):
                     created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     assets = [
-                        octobot_protocol.models.detailed_asset.DetailedAsset(
-                            symbol = '', 
-                            total = 1.337, 
-                            available = 1.337, )
+                        octobot_protocol.models.detailed_assets_for_trading_type.DetailedAssetsForTradingType(
+                            trading_type = 'spot', 
+                            assets = [
+                                octobot_protocol.models.detailed_asset.DetailedAsset(
+                                    symbol = '', 
+                                    total = 1.337, 
+                                    available = 1.337, )
+                                ], )
                         ], 
                     specifics = null, )
             )

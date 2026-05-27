@@ -31,7 +31,8 @@ class BlockchainAccount(BaseModel):
     account_type: AccountType = Field(description="blockchain")
     blockchain: StrictStr
     network: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["account_type", "blockchain", "network"]
+    exchange_config_ids: Optional[List[StrictStr]] = None
+    __properties: ClassVar[List[str]] = ["account_type", "blockchain", "network", "exchange_config_ids"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -86,7 +87,8 @@ class BlockchainAccount(BaseModel):
         _obj = cls.model_validate({
             "account_type": obj.get("account_type"),
             "blockchain": obj.get("blockchain"),
-            "network": obj.get("network")
+            "network": obj.get("network"),
+            "exchange_config_ids": obj.get("exchange_config_ids")
         })
         return _obj
 

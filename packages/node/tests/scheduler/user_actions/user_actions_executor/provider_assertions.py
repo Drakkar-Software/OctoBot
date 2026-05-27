@@ -24,7 +24,7 @@ def assert_user_action_terminal_state(
     *,
     user_action: protocol_models.UserAction,
     expected_status: protocol_models.UserActionStatus,
-    result_channel: typing.Literal["account", "automation"],
+    result_channel: typing.Literal["account", "automation", "exchange_config"],
     expect_error_details: bool,
     expected_error_message: typing.Any | None = None,
 ) -> protocol_models.UserAction:
@@ -35,6 +35,9 @@ def assert_user_action_terminal_state(
     if result_channel == "account":
         assert isinstance(inner, protocol_models.AccountActionResult)
         assert inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+    elif result_channel == "exchange_config":
+        assert isinstance(inner, protocol_models.ExchangeConfigActionResult)
+        assert inner.result_type == protocol_models.UserActionResultType.EXCHANGE_CONFIG
     else:
         assert isinstance(inner, protocol_models.AutomationActionResult)
         assert inner.result_type == protocol_models.UserActionResultType.AUTOMATION

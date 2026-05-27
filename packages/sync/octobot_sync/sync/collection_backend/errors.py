@@ -37,3 +37,7 @@ class ItemNotFoundError(CollectionStorageError):
 
 class DuplicateItemError(CollectionStorageError):
     pass
+
+
+class UnsupportedItemsKeyError(CollectionStorageError):
+    pass

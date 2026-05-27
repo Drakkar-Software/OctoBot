@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import typing
 import secrets
 import json
 from collections.abc import Awaitable, Callable
@@ -30,7 +29,7 @@ import octobot_commons.configuration as commons_configuration
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot.community.authentication as community_authentication
 import octobot.community.wallet_backend.errors as wallet_backend_errors
 
@@ -165,7 +164,7 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
         case enums.Collections.USER_ACTIONS.value:
             # reading user actions should always return an empty list
             actions_state = protocol_models.UserActionsState(
-                version=node_constants.USER_ACTIONS_STATE_VERSION,
+                version=sync_constants.USER_ACTIONS_STATE_VERSION,
                 user_actions=[]
             )
             plaintext = actions_state.to_json()

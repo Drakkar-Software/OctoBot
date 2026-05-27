@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.action import Action
 from octobot_protocol.models.automation_metadata import AutomationMetadata
-from octobot_protocol.models.detailed_asset import DetailedAsset
+from octobot_protocol.models.detailed_assets_for_trading_type import DetailedAssetsForTradingType
 from octobot_protocol.models.order_summary import OrderSummary
 from octobot_protocol.models.position_summary import PositionSummary
 from octobot_protocol.models.task_status import TaskStatus
@@ -41,7 +41,7 @@ class AutomationState(BaseModel):
     priority_actions: Optional[List[Action]] = None
     exchanges: Optional[List[StrictStr]] = None
     exchange_account_ids: Optional[List[StrictStr]] = None
-    assets: Optional[List[DetailedAsset]] = None
+    assets: Optional[List[DetailedAssetsForTradingType]] = None
     orders: Optional[List[OrderSummary]] = None
     trades: Optional[List[TradeSummary]] = None
     positions: Optional[List[PositionSummary]] = None
@@ -150,7 +150,7 @@ class AutomationState(BaseModel):
             "priority_actions": [Action.from_dict(_item) for _item in obj["priority_actions"]] if obj.get("priority_actions") is not None else None,
             "exchanges": obj.get("exchanges"),
             "exchange_account_ids": obj.get("exchange_account_ids"),
-            "assets": [DetailedAsset.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
+            "assets": [DetailedAssetsForTradingType.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
             "orders": [OrderSummary.from_dict(_item) for _item in obj["orders"]] if obj.get("orders") is not None else None,
             "trades": [TradeSummary.from_dict(_item) for _item in obj["trades"]] if obj.get("trades") is not None else None,
             "positions": [PositionSummary.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None

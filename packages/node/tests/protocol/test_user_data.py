@@ -10,7 +10,7 @@ import pytest
 
 import octobot_protocol.models as protocol_models
 
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_node.protocol.user_data as user_data_module
 
 _TEST_WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
@@ -48,7 +48,7 @@ class TestGetUserDataState:
             user_data_state = await user_data_module.get_user_data_state(_TEST_WALLET_ADDRESS)
         get_automation_states_mock.assert_awaited_once_with(_TEST_WALLET_ADDRESS)
         list_user_actions_mock.assert_awaited_once_with(_TEST_WALLET_ADDRESS)
-        assert user_data_state.version == node_constants.USER_DATA_STATE_VERSION
+        assert user_data_state.version == sync_constants.USER_DATA_STATE_VERSION
         assert user_data_state.automations == automations_payload
         assert user_data_state.user_actions == user_actions_payload
         assert isinstance(user_data_state, protocol_models.UserDataState)

@@ -13,6 +13,7 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
+import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
 
 
 _ACTION_ID_INIT = "action_init"
@@ -32,6 +33,7 @@ def init_action_factory(
     automation_id: str,
     protocol_account: protocol_models.Account,
     strategy_reference: protocol_models.StrategyReference,
+    stored_strategy: protocol_models.Strategy,
     wallet_address: str,
     reference_market: str,
 ) -> flow_entities.AbstractActionDetails:
@@ -48,7 +50,10 @@ def init_action_factory(
             f"Only exchange accounts are supported for automations, got {type(specifics_instance).__name__}"
         )
 
-    portfolio_assets = _portfolio_assets_from_account(protocol_account)
+    portfolio_assets = _portfolio_assets_from_account(
+        protocol_account,
+        exchange_account_resolver.trading_type_from_strategy(stored_strategy),
+    )
     portfolio_content = _portfolio_content_from_detailed_assets(portfolio_assets)
     base_exchange_config = exchange_protocol_account_to_apply_configuration_dict(
         protocol_account,
@@ -167,11 +172,14 @@ def market_making_action_factory(
     protocol_account: protocol_models.Account,
     wallet_address: str,
     reference_market: str,
+    stored_strategy: protocol_models.Strategy,
 ) -> flow_entities.AbstractActionDetails:
     profile_data = market_making_profile_data_factory(
         protocol_account=protocol_account,
         market_making_configuration=market_making_configuration,
         reference_market=reference_market,
+        wallet_address=wallet_address,
+        stored_strategy=stored_strategy,
     )
     profile_data_dict = profile_data.to_dict(include_default_values=False)
     exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
@@ -215,8 +223,12 @@ def exchange_protocol_account_to_apply_configuration_dict(
 
     exchange_payload = specifics_instance
     account_identifier = account_id_override if account_id_override is not None else protocol_account.id
+    exchange_config = exchange_account_resolver.get_exchange_config(
+        wallet_address,
+        exchange_payload,
+    )
 
-    exchange_details = commons_profile_data.ExchangeData(internal_name=exchange_payload.exchange)
+    exchange_details = commons_profile_data.ExchangeData(internal_name=exchange_config.exchange)
     if exchange_payload.remote_account_id:
         exchange_details.exchange_account_id = exchange_payload.remote_account_id
     if protocol_account.is_simulated:
@@ -253,6 +265,8 @@ def market_making_profile_data_factory(
     protocol_account: protocol_models.Account,
     market_making_configuration: protocol_models.MarketMakingConfiguration,
     reference_market: str,
+    wallet_address: str,
+    stored_strategy: protocol_models.Strategy,
 ) -> commons_profile_data.ProfileData:
     if protocol_account.specifics is None or protocol_account.specifics.actual_instance is None:
         raise node_errors.InvalidAutomationConfigurationError(
@@ -272,7 +286,10 @@ def market_making_profile_data_factory(
 
     reference_market_value = reference_market
 
-    portfolio_assets = _portfolio_assets_from_account(protocol_account)
+    portfolio_assets = _portfolio_assets_from_account(
+        protocol_account,
+        exchange_account_resolver.trading_type_from_strategy(stored_strategy),
+    )
     starting_portfolio = {asset.symbol: float(asset.total) for asset in portfolio_assets}
 
     profile_identifier = f"market_making_{protocol_account.id}"
@@ -286,7 +303,10 @@ def market_making_profile_data_factory(
         enabled=True,
     )
     exchange_entry = commons_profile_data.ExchangeData(
-        internal_name=specifics_instance.exchange,
+        internal_name=exchange_account_resolver.get_exchange_config(
+            wallet_address,
+            specifics_instance,
+        ).exchange,
         exchange_type=commons_constants.DEFAULT_EXCHANGE_TYPE,
     )
     trader = commons_profile_data.TraderData(enabled=False)
@@ -341,13 +361,12 @@ def _translate_workflow_action(
 
 def _portfolio_assets_from_account(
     protocol_account: protocol_models.Account,
+    trading_type: protocol_models.TradingType | None,
 ) -> list[protocol_models.DetailedAsset]:
-    account_assets = protocol_account.assets
-    if not account_assets:
-        raise node_errors.InvalidAutomationConfigurationError(
-            "Account.assets is required to build automation configuration."
-        )
-    return list(account_assets)
+    return exchange_account_resolver.detailed_assets_from_account(
+        protocol_account,
+        trading_type,
+    )
 
 
 def _portfolio_content_from_detailed_assets(
@@ -386,13 +405,17 @@ def _exchange_auth_data_list_from_protocol_account(
         wallet_address,
         protocol_account,
     )
+    exchange_config = exchange_account_resolver.get_exchange_config(
+        wallet_address,
+        specifics_instance,
+    )
     return [
         {
-            "internal_name": specifics_instance.exchange,
+            "internal_name": exchange_config.exchange,
             "api_key": authentication.api_key,
             "api_secret": authentication.api_secret,
             "api_password": authentication.api_passphrase or "",
             "exchange_type": commons_constants.DEFAULT_EXCHANGE_TYPE,
-            "sandboxed": False,
+            "sandboxed": exchange_config.sandboxed,
         }
     ]
