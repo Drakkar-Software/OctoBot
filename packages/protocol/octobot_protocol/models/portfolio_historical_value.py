@@ -20,7 +20,7 @@ import json
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from octobot_protocol.models.historical_asset_value import HistoricalAssetValue
+from octobot_protocol.models.historical_assets_for_trading_type import HistoricalAssetsForTradingType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class PortfolioHistoricalValue(BaseModel):
     """ # noqa: E501
     timestamp: datetime
     total: Union[StrictFloat, StrictInt]
-    assets: Optional[List[HistoricalAssetValue]] = None
+    assets: Optional[List[HistoricalAssetsForTradingType]] = None
     __properties: ClassVar[List[str]] = ["timestamp", "total", "assets"]
 
     model_config = ConfigDict(
@@ -94,7 +94,7 @@ class PortfolioHistoricalValue(BaseModel):
         _obj = cls.model_validate({
             "timestamp": obj.get("timestamp"),
             "total": obj.get("total"),
-            "assets": [HistoricalAssetValue.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None
+            "assets": [HistoricalAssetsForTradingType.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None
         })
         return _obj
 

@@ -14,9 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import asyncio
 import contextlib
-import datetime
 import dbos
 import json
 import logging
@@ -34,10 +32,10 @@ import octobot_node.models
 import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_node.scheduler.user_actions.user_action_util as user_action_util
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.protocol.automations as automations_protocol
-import octobot_node.protocol.accounts as accounts_protocol
 
 try:
     from octobot import VERSION
@@ -570,13 +568,11 @@ class Scheduler:
         updated_at = timestamp_util.utc_datetime_from_timestamp(
             (workflow_status.created_at or 0) / 1000
         )
-        user_action.result = protocol_models.UserActionResult(
-            actual_instance=protocol_models.AccountActionResult(
-                updated_at=updated_at,
-                result_type=protocol_models.UserActionResultType.ACCOUNT,
-                error_message=protocol_models.AccountActionResultErrorMessage.INTERNAL_ERROR,
-                error_details=error_text[:octobot_node.constants.FAILURE_ERROR_DETAILS_MAX_LENGTH],
-            ),
+        result_type = user_action_util.resolve_user_action_result_type(user_action)
+        user_action.result = user_action_util.build_synthesized_failure_user_action_result(
+            result_type=result_type,
+            updated_at=updated_at,
+            error_details=error_text[:octobot_node.constants.FAILURE_ERROR_DETAILS_MAX_LENGTH],
         )
         user_action.updated_at = updated_at
         return user_action

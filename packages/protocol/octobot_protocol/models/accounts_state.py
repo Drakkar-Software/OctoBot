@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.account import Account
+from octobot_protocol.models.exchange_config import ExchangeConfig
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,7 +31,8 @@ class AccountsState(BaseModel):
     """ # noqa: E501
     version: StrictStr
     accounts: Optional[List[Account]] = None
-    __properties: ClassVar[List[str]] = ["version", "accounts"]
+    exchange_configs: Optional[List[ExchangeConfig]] = None
+    __properties: ClassVar[List[str]] = ["version", "accounts", "exchange_configs"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -78,6 +80,13 @@ class AccountsState(BaseModel):
                 if _item_accounts:
                     _items.append(_item_accounts.to_dict())
             _dict['accounts'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in exchange_configs (list)
+        _items = []
+        if self.exchange_configs:
+            for _item_exchange_configs in self.exchange_configs:
+                if _item_exchange_configs:
+                    _items.append(_item_exchange_configs.to_dict())
+            _dict['exchange_configs'] = _items
         return _dict
 
     @classmethod
@@ -91,7 +100,8 @@ class AccountsState(BaseModel):
 
         _obj = cls.model_validate({
             "version": obj.get("version"),
-            "accounts": [Account.from_dict(_item) for _item in obj["accounts"]] if obj.get("accounts") is not None else None
+            "accounts": [Account.from_dict(_item) for _item in obj["accounts"]] if obj.get("accounts") is not None else None,
+            "exchange_configs": [ExchangeConfig.from_dict(_item) for _item in obj["exchange_configs"]] if obj.get("exchange_configs") is not None else None
         })
         return _obj
 

@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as strategy_provider_module
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
@@ -39,7 +39,7 @@ class TestStrategyProviderCollection:
 
 class TestStrategyProviderStateFormat:
     def test_state_version_matches_user_strategies_constant(self):
-        assert strategy_provider_module.StrategyProvider.STATE_VERSION == node_constants.USER_STRATEGIES_STATE_VERSION
+        assert strategy_provider_module.StrategyProvider.STATE_VERSION == sync_constants.USER_STRATEGIES_STATE_VERSION
 
     def test_state_class_is_strategies_state(self):
         assert strategy_provider_module.StrategyProvider.STATE_CLASS is protocol_models.StrategiesState

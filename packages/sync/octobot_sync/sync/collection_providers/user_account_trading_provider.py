@@ -16,7 +16,7 @@
 
 
 import octobot_commons.singleton.singleton_class as singleton_class
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
@@ -34,5 +34,5 @@ class AccountTradingProvider(
     ``<collection>/<wallet>/<account_id>.json``.
     """
     COLLECTION = sync_enums.Collections.USER_ACCOUNTS_TRADING.value
-    STATE_VERSION = node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION
+    STATE_VERSION = sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION
     STATE_CLASS = protocol_models.AccountTradingState

@@ -36,18 +36,20 @@ class TestAccountSpecifics(unittest.TestCase):
         if include_optional:
             return AccountSpecifics(
                 account_type = 'generic',
-                trading_type = 'spot',
-                exchange = '',
                 remote_account_id = '',
+                exchange_config_ids = [
+                    ''
+                    ],
                 blockchain = '',
                 network = ''
             )
         else:
             return AccountSpecifics(
                 account_type = 'generic',
-                trading_type = 'spot',
-                exchange = '',
                 remote_account_id = '',
+                exchange_config_ids = [
+                    ''
+                    ],
                 blockchain = '',
         )
         """

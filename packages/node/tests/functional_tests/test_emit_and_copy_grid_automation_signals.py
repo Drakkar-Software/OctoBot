@@ -629,7 +629,10 @@ class TestEmitAndCopyGridAutomationSignals:
                                             copy_account_id=copy_account_id,
                                             copy_account=copy_account,
                                         )
-                                    )
+                                    ),
+                                    get_exchange_config=mock.Mock(
+                                        return_value=grid_sim_util.protocol_exchange_config_for_grid_functional(),
+                                    ),
                                 ),
                             ),
                         ):

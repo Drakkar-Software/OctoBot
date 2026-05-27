@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **timestamp** | **datetime** |  | 
 **total** | **float** |  | 
-**assets** | [**List[HistoricalAssetValue]**](HistoricalAssetValue.md) |  | [optional] 
+**assets** | [**List[HistoricalAssetsForTradingType]**](HistoricalAssetsForTradingType.md) |  | [optional] 
 
 ## Example
 

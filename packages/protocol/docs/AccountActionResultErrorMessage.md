@@ -8,6 +8,8 @@ AccountActionResultErrorMessage
 
 * `INVALID_CONFIGURATION` (value: `'invalid_configuration'`)
 
+* `DUPLICATE_ITEM` (value: `'duplicate_item'`)
+
 * `ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND` (value: `'account_authentication_details_not_found'`)
 
 * `INTERNAL_ERROR` (value: `'internal_error'`)

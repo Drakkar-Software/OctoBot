@@ -73,10 +73,14 @@ class TestUserDataState(unittest.TestCase):
                             ''
                             ], 
                         assets = [
-                            octobot_protocol.models.detailed_asset.DetailedAsset(
-                                symbol = '', 
-                                total = 1.337, 
-                                available = 1.337, )
+                            octobot_protocol.models.detailed_assets_for_trading_type.DetailedAssetsForTradingType(
+                                trading_type = 'spot', 
+                                assets = [
+                                    octobot_protocol.models.detailed_asset.DetailedAsset(
+                                        symbol = '', 
+                                        total = 1.337, 
+                                        available = 1.337, )
+                                    ], )
                             ], 
                         orders = [
                             octobot_protocol.models.order_summary.OrderSummary(

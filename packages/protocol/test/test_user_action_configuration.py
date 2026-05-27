@@ -36,23 +36,21 @@ class TestUserActionConfiguration(unittest.TestCase):
         if include_optional:
             return UserActionConfiguration(
                 action_type = 'automation_create',
-                configuration = octobot_protocol.models.account.Account(
+                configuration = octobot_protocol.models.exchange_config.ExchangeConfig(
                     id = '', 
                     name = '', 
-                    is_simulated = True, 
-                    description = '', 
-                    state = octobot_protocol.models.account_state.AccountState(
-                        status = 'valid', 
-                        message = 'pending_validation', ), 
-                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                    assets = [
-                        octobot_protocol.models.detailed_asset.DetailedAsset(
-                            symbol = '', 
-                            total = 1.337, 
-                            available = 1.337, )
-                        ], 
-                    specifics = null, ),
+                    exchange = '', 
+                    sandboxed = True, 
+                    url = '', 
+                    dex_config = octobot_protocol.models.dex_config.DEXConfig(
+                        chain_id = '', 
+                        dex_id = '', 
+                        base_token_addresses = [
+                            ''
+                            ], 
+                        quote_token_addresses = [
+                            ''
+                            ], ), ),
                 id = '',
                 account_ids = [
                     ''
@@ -61,23 +59,21 @@ class TestUserActionConfiguration(unittest.TestCase):
         else:
             return UserActionConfiguration(
                 action_type = 'automation_create',
-                configuration = octobot_protocol.models.account.Account(
+                configuration = octobot_protocol.models.exchange_config.ExchangeConfig(
                     id = '', 
                     name = '', 
-                    is_simulated = True, 
-                    description = '', 
-                    state = octobot_protocol.models.account_state.AccountState(
-                        status = 'valid', 
-                        message = 'pending_validation', ), 
-                    created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                    updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                    assets = [
-                        octobot_protocol.models.detailed_asset.DetailedAsset(
-                            symbol = '', 
-                            total = 1.337, 
-                            available = 1.337, )
-                        ], 
-                    specifics = null, ),
+                    exchange = '', 
+                    sandboxed = True, 
+                    url = '', 
+                    dex_config = octobot_protocol.models.dex_config.DEXConfig(
+                        chain_id = '', 
+                        dex_id = '', 
+                        base_token_addresses = [
+                            ''
+                            ], 
+                        quote_token_addresses = [
+                            ''
+                            ], ), ),
                 id = '',
         )
         """

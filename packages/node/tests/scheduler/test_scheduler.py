@@ -714,3 +714,76 @@ class TestSchedulerListUserActions:
         assert isinstance(inner, protocol_models.AccountActionResult)
         assert inner.error_details is not None
         assert "dbos boom" in inner.error_details
+
+    @pytest.mark.asyncio
+    async def test_terminal_without_output_uses_exchange_config_result_for_exchange_config_action(self):
+        wallet_segment = "0xw_exchange_config_fail"
+        configuration_inner = protocol_models.CreateExchangeConfigConfiguration(
+            action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_CREATE,
+            configuration=protocol_models.ExchangeConfig(
+                id="cfg-fail",
+                name="binance-main",
+                exchange="binanceus",
+                sandboxed=False,
+            ),
+        )
+        ua_in = protocol_models.UserAction(
+            id="ua-exchange-config-fail",
+            configuration=protocol_models.UserActionConfiguration.from_json(configuration_inner.to_json()),
+        )
+        inp = params.UserActionWorkflowInputs(
+            wallet_address=wallet_segment,
+            user_action=ua_in,
+        ).to_dict(include_default_values=False)
+        workflow_error = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_error.workflow_id = "wf-exchange-config-err"
+        workflow_error.input = {"args": [inp], "kwargs": {}}
+        workflow_error.output = None
+        workflow_error.error = "exchange config boom"
+        workflow_error.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], [workflow_error]])
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        assert listed[0].status == protocol_models.UserActionStatus.FAILED
+        inner = listed[0].result.actual_instance
+        assert isinstance(inner, protocol_models.ExchangeConfigActionResult)
+        assert inner.result_type == protocol_models.UserActionResultType.EXCHANGE_CONFIG
+        assert inner.error_message == protocol_models.ExchangeConfigActionResultErrorMessage.INTERNAL_ERROR
+        assert inner.error_details is not None
+        assert "exchange config boom" in inner.error_details
+
+    @pytest.mark.asyncio
+    async def test_terminal_without_output_uses_automation_result_for_automation_action(self):
+        wallet_segment = "0xw_automation_fail"
+        configuration_inner = protocol_models.StopAutomationConfiguration(
+            id="auto-stop-fail",
+            action_type=protocol_models.UserActionType.AUTOMATION_STOP,
+        )
+        ua_in = protocol_models.UserAction(
+            id="ua-automation-fail",
+            configuration=protocol_models.UserActionConfiguration.from_json(configuration_inner.to_json()),
+        )
+        inp = params.UserActionWorkflowInputs(
+            wallet_address=wallet_segment,
+            user_action=ua_in,
+        ).to_dict(include_default_values=False)
+        workflow_error = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_error.workflow_id = "wf-automation-err"
+        workflow_error.input = {"args": [inp], "kwargs": {}}
+        workflow_error.output = None
+        workflow_error.error = "automation boom"
+        workflow_error.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], [workflow_error]])
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        assert listed[0].status == protocol_models.UserActionStatus.FAILED
+        inner = listed[0].result.actual_instance
+        assert isinstance(inner, protocol_models.AutomationActionResult)
+        assert inner.result_type == protocol_models.UserActionResultType.AUTOMATION
+        assert inner.error_message == protocol_models.AutomationActionResultErrorMessage.INTERNAL_ERROR
+        assert inner.error_details is not None
+        assert "automation boom" in inner.error_details
