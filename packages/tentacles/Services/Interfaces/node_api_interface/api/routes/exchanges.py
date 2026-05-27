@@ -15,7 +15,8 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import typing
 
-from fastapi import APIRouter, Query
+import octobot_protocol.models as protocol_models
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 try:
@@ -27,11 +28,31 @@ except ImportError:
 router = APIRouter(prefix="/exchanges", tags=["exchanges"])
 
 
+def _exchange_config_from_query(
+    exchange_config_id: typing.Annotated[str, Query(alias="id")],
+    name: typing.Annotated[str, Query()],
+    exchange: typing.Annotated[str, Query()],
+    sandboxed: typing.Annotated[bool, Query()] = False,
+    url: typing.Annotated[str | None, Query()] = None,
+) -> protocol_models.ExchangeConfig:
+    return protocol_models.ExchangeConfig(
+        id=exchange_config_id,
+        name=name,
+        exchange=exchange,
+        sandboxed=sandboxed,
+        url=url,
+    )
+
+
 @router.get("/traded-pairs")
 async def get_traded_pairs(
-    exchange_config: typing.Annotated[exchange_core.ExchangeConfig, Query()],
+    exchange_config: typing.Annotated[protocol_models.ExchangeConfig, Depends(_exchange_config_from_query)],
+    trading_type: typing.Annotated[protocol_models.TradingType, Query()] = protocol_models.TradingType.SPOT,
 ) -> JSONResponse:
-    pairs_and_tf_by_exchange = await exchange_core.get_traded_pairs_and_timeframes_by_exchange(exchange_config)
+    pairs_and_tf_by_exchange = await exchange_core.get_traded_pairs_and_timeframes_by_exchange(
+        exchange_config,
+        trading_type=trading_type,
+    )
     return JSONResponse(content={
         exchange: pairs_and_tf[exchange_core.ExchangeInfo.PAIRS.value]
         for exchange, pairs_and_tf in pairs_and_tf_by_exchange.items()
@@ -40,8 +61,12 @@ async def get_traded_pairs(
 
 @router.get("/traded-pairs-and-timeframes")
 async def get_traded_pairs_and_timeframes(
-    exchange_config: typing.Annotated[exchange_core.ExchangeConfig, Query()],
+    exchange_config: typing.Annotated[protocol_models.ExchangeConfig, Depends(_exchange_config_from_query)],
+    trading_type: typing.Annotated[protocol_models.TradingType, Query()] = protocol_models.TradingType.SPOT,
 ) -> JSONResponse:
     return JSONResponse(
-        content=await exchange_core.get_traded_pairs_and_timeframes_by_exchange(exchange_config)
+        content=await exchange_core.get_traded_pairs_and_timeframes_by_exchange(
+            exchange_config,
+            trading_type=trading_type,
+        )
     )

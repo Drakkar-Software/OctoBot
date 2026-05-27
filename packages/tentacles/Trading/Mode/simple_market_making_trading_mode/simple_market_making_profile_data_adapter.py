@@ -42,6 +42,7 @@ except ImportError:
 
 EXCHANGE_CONFIGS = "exchange_configs"
 NAME = "name"
+EXCHANGE = "exchange"
 EXCHANGE_CREDENTIAL_ID = "exchange_credential_id"
 EXCHANGE_ACCOUNT_ID = "exchange_account_id"
 SANDBOXED = "sandboxed"
@@ -107,17 +108,21 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                 # no common USD-like pair: use 1st pair quote asset
                 profile_data.trading.reference_market = symbols_util.parse_symbol(traded_pairs[0]).quote # type: ignore
         # exchanges are taken from exchange_configs and market making reference prices
+        if traded_pairs:
+            inferred_exchange_type = symbols_util.trading_type_from_traded_symbols(traded_pairs)
+        else:
+            inferred_exchange_type = octobot_commons.constants.DEFAULT_EXCHANGE_TYPE
         exchange_auth_data_by_name = {
-            exchange_config[NAME]: octobot_commons.profiles.ExchangeAuthData(
-                internal_name=exchange_config[NAME],
+            self._exchange_internal_name(exchange_config): octobot_commons.profiles.ExchangeAuthData(
+                internal_name=self._exchange_internal_name(exchange_config),
                 exchange_credential_id=exchange_config.get(EXCHANGE_CREDENTIAL_ID),
                 sandboxed=exchange_config.get(SANDBOXED, False),
-                exchange_type=exchange_config.get(EXCHANGE_TYPE, octobot_commons.constants.DEFAULT_EXCHANGE_TYPE),
+                exchange_type=inferred_exchange_type,
             )
             for exchange_config in exchange_configs
         } if exchange_configs else {}
         exchange_account_id_by_name = {
-            exchange_config[NAME]: exchange_config.get(EXCHANGE_ACCOUNT_ID)
+            self._exchange_internal_name(exchange_config): exchange_config.get(EXCHANGE_ACCOUNT_ID)
             for exchange_config in exchange_configs
         } if exchange_configs else {}
         if exchange_configs is None:
@@ -235,7 +240,9 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                         }
                     }}
                 else:
-                    exchange_tentacle_name = scripting_library.get_exchange_tentacle_from_name(exchange_config[NAME]).__name__
+                    exchange_tentacle_name = scripting_library.get_exchange_tentacle_from_name(
+                        self._exchange_internal_name(exchange_config)
+                    ).__name__
                     tentacle_config = exchange_config_update
                 profile_data.tentacles.append(
                     octobot_commons.profiles.profile_data.TentaclesData(
@@ -365,8 +372,14 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
         return False
 
     @staticmethod
+    def _exchange_internal_name(exchange_config: dict) -> str:
+        return exchange_config.get(EXCHANGE) or exchange_config[NAME]
+
+    @staticmethod
     def exchange_config_requires_exchange_auth(exchange_config: dict) -> bool:
-        return scripting_library.is_exchange_with_different_public_data_after_auth(exchange_config.get(NAME))
+        return scripting_library.is_exchange_with_different_public_data_after_auth(
+            SimpleMarketMakingProfileDataAdapter._exchange_internal_name(exchange_config)
+        )
 
     def _should_fill_exchange_auth(self) -> bool:
         return bool(self.auth_key)

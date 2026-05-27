@@ -22,9 +22,9 @@ import octobot_flow.entities
 import octobot.community.supabase_backend.enums as community_enums
 
 import octobot_tentacles_manager.api
+import octobot_protocol.models as protocol_models
 import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
-import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as \
     simple_market_making_trading
 import tentacles.Trading.Mode.simple_market_making_trading_mode.advanced_reference_price as \
@@ -37,7 +37,7 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.constants as
 
 
 async def get_market_making_profile_data(
-    exchange_configs: list[exchanges_core.ExchangeConfig], 
+    exchange_configs: list[protocol_models.ExchangeConfig],
     market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
     user_auth: typing.Optional[octobot_flow.entities.UserAuthentication]
 ) -> octobot_commons.profiles.ProfileData:
@@ -348,16 +348,23 @@ def get_market_making_trading_mode(market_making_trading_mode: str):
     }[market_making_trading_mode]
 
 
-def _create_profile_exchange_data(exchange_config: exchanges_core.ExchangeConfig) -> octobot_commons.profiles.profile_data.ExchangeData:
+def _create_profile_exchange_data(
+    exchange_config: protocol_models.ExchangeConfig,
+    traded_symbols: list[str] | None = None,
+) -> octobot_commons.profiles.profile_data.ExchangeData:
+    if traded_symbols:
+        exchange_type = commons_symbols.trading_type_from_traded_symbols(traded_symbols)
+    else:
+        exchange_type = octobot_commons.constants.DEFAULT_EXCHANGE_TYPE
     return octobot_commons.profiles.profile_data.ExchangeData(
-        internal_name=exchange_config.name,
-        exchange_type=exchange_config.exchange_type if exchange_config.exchange_type else octobot_trading.enums.ExchangeTypes.SPOT.value,
+        internal_name=exchange_config.exchange,
+        exchange_type=exchange_type,
         sandboxed=exchange_config.sandboxed,
     )
 
 
 async def get_market_making_exchange_only_profile_data(
-    exchange_configs: list[exchanges_core.ExchangeConfig], 
+    exchange_configs: list[protocol_models.ExchangeConfig],
     user_auth: typing.Optional[octobot_flow.entities.UserAuthentication]
 ) -> octobot_commons.profiles.ProfileData:
     profile_data = octobot_commons.profiles.ProfileData(
@@ -381,7 +388,7 @@ async def get_market_making_exchange_only_profile_data(
 
 
 async def _get_market_making_profile_data(
-    exchange_configs: list[exchanges_core.ExchangeConfig],
+    exchange_configs: list[protocol_models.ExchangeConfig],
     market_making_config: market_making_configuration_model.MarketMakingConfiguration,
     auth: typing.Optional[octobot_flow.entities.UserAuthentication]
 ) -> octobot_commons.profiles.ProfileData:
@@ -426,7 +433,7 @@ def _to_simple_market_making_tentacle_config(
 async def _apply_market_making_translator(
     profile_data: octobot_commons.profiles.ProfileData, 
     tentacles_data: octobot_commons.profiles.profile_data.TentaclesData, 
-    exchange_configs: list[exchanges_core.ExchangeConfig], 
+    exchange_configs: list[protocol_models.ExchangeConfig], 
     auth: typing.Optional[octobot_flow.entities.UserAuthentication]
 ):
     additional_data = {
@@ -468,7 +475,7 @@ async def _apply_market_making_translator(
     await translator.translate([tentacles_data], additional_data, None, None)
 
 
-def _requires_exchange_auth(exchange_configs: list[exchanges_core.ExchangeConfig]) -> bool:
+def _requires_exchange_auth(exchange_configs: list[protocol_models.ExchangeConfig]) -> bool:
     return simple_market_making_profile_data_adapter.SimpleMarketMakingProfileDataAdapter.requires_exchange_auth(
         [exchange.model_dump() for exchange in exchange_configs]
     )

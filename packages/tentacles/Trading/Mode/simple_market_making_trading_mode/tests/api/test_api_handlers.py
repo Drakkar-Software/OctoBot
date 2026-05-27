@@ -11,14 +11,14 @@ import typing
 import mock
 import pytest
 
-import octobot_commons.symbols.symbol_util as commons_symbols
 import octobot_commons.asyncio_tools
+import octobot_commons.symbols.symbol_util as commons_symbols
+import octobot_protocol.models as protocol_models
 import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.api_handlers as api_handlers
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.constants as api_constants
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as models
-import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 
 
 def is_on_github_ci() -> bool:
@@ -32,17 +32,20 @@ LIQUID_TEST_SYMBOL = "BTC/USDT"
 
 def _raw_exchange_for_dispatch() -> dict:
     return {
+        "id": "test-exchange-config",
         "name": EXCHANGE_INTERNAL_NAME,
-        "exchange_type": "spot",
+        "exchange": EXCHANGE_INTERNAL_NAME,
+        "sandboxed": False,
     }
 
 
 def _normalized_exchange_configs() -> list:
     return [
-        exchanges_core.ExchangeConfig.model_validate(
+        protocol_models.ExchangeConfig.model_validate(
             {
+                "id": "test-exchange-config",
                 "name": EXCHANGE_INTERNAL_NAME,
-                "exchange_type": "spot",
+                "exchange": EXCHANGE_INTERNAL_NAME,
                 "sandboxed": False,
                 "url": "",
             }

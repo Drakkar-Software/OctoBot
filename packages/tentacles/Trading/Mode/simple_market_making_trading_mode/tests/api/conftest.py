@@ -38,8 +38,9 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as mark
 def dex_exchange_config_dict(**overrides) -> dict:
     dex_config_overrides = overrides.pop("dex_config", {})
     return {
+        "id": "dex-config-1",
         "name": "dexscreener",
-        "exchange_type": "spot",
+        "exchange": "dexscreener",
         "sandboxed": False,
         "dex_config": {
             "chain_id": "ethereum",
@@ -48,6 +49,16 @@ def dex_exchange_config_dict(**overrides) -> dict:
             "quote_token_addresses": ["0xquote"],
             **dex_config_overrides,
         },
+        **overrides,
+    }
+
+
+def protocol_exchange_config_dict(exchange: str = "binance", **overrides) -> dict:
+    return {
+        "id": "test-exchange-config",
+        "name": exchange,
+        "exchange": exchange,
+        "sandboxed": False,
         **overrides,
     }
 

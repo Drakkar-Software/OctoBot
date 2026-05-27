@@ -19,9 +19,9 @@ import typing
 import octobot_commons.authentication as authentication
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_flow.entities.community.user_authentication as community_user_authentication
+import octobot_protocol.models as protocol_models
 import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
-import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as market_making_core
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as market_making_models
 
@@ -29,13 +29,12 @@ from tentacles.Trading.Mode.simple_market_making_trading_mode.tests.api.conftest
     assert_response_headers,
     dex_exchange_config_dict,
     mocked_common_methods,
+    protocol_exchange_config_dict,
 )
 
 
-def _expected_profile_exchange_args(exchange_dicts: list[dict]) -> list[exchanges_core.ExchangeConfig]:
-    # Match the same ``ExchangeConfig.model_validate`` the API uses for request bodies; ``url: null`` stays ``None`` when
-    # the model uses ``Optional[str]`` (do not force ``url`` to ``""`` here or assertions diverge from runtime).
-    return [exchanges_core.ExchangeConfig.model_validate(row) for row in exchange_dicts]
+def _expected_profile_exchange_args(exchange_dicts: list[dict]) -> list[protocol_models.ExchangeConfig]:
+    return [protocol_models.ExchangeConfig.model_validate(row) for row in exchange_dicts]
 
 
 _MARKET_MAKING_ROOT = "/api/v1/tentacles/market-making/"
@@ -86,7 +85,7 @@ def test_market_making_api_root(client, error: Exception, status_code: int):
                 _MARKET_MAKING_ROOT,
                 json={
                     "type": "market_making_volume",
-                    "exchanges": [{"name": "binance", "exchange_type": "spot", "exchange_account_id": "1234567890"}],
+                    "exchanges": [protocol_exchange_config_dict("binance", exchange_account_id="1234567890")],
                     "config": {"config": market_making_config},
                 },
             )
@@ -108,7 +107,10 @@ def test_market_making_api_root(client, error: Exception, status_code: int):
                 _MARKET_MAKING_ROOT,
                 json={
                     "type": "market_making_volume",
-                    "exchanges": [{"name": "binance_futures", "exchange_account_id": "1234567890"}],
+                    "exchanges": [protocol_exchange_config_dict(
+                        "binance_futures",
+                        exchange_account_id="1234567890",
+                    )],
                     "config": {"config": market_making_config},
                 },
             )
@@ -133,7 +135,7 @@ def test_market_making_dispatch_unknown_traded_pairs_type(client):
         _MARKET_MAKING_ROOT,
         json={
             "type": "traded_pairs",
-            "exchanges": [{"name": "binance", "exchange_type": "spot"}],
+            "exchanges": [protocol_exchange_config_dict("binance")],
         },
     )
     assert response.status_code == 400
@@ -163,7 +165,7 @@ def test_compute_market_making_volume(
             "get_market_making_volume",
             mock.AsyncMock(return_value={"BTC/USDT": 1000.5, "ETH/USDC": 500.25}),
         ) as get_market_making_volume_mock:
-            exchange_configs = [{"name": "binance", "exchange_type": "spot", "sandboxed": False, "url": None}]
+            exchange_configs = [protocol_exchange_config_dict("binance", sandboxed=False, url=None)]
             market_making_config = _minimal_market_making_config_payload()
             expected_market_making_configuration = (
                 market_making_configuration_model.MarketMakingConfiguration.model_validate(
@@ -221,7 +223,7 @@ def test_compute_market_making_volume_passes_dex_exchange_config(client):
                 user_auth=None,
             )
             parsed_dex_config = expected_exchange_configs[0].dex_config
-            assert isinstance(parsed_dex_config, exchanges_core.DEXConfig)
+            assert isinstance(parsed_dex_config, protocol_models.DEXConfig)
             assert parsed_dex_config.chain_id == "ethereum"
             assert parsed_dex_config.dex_id == "uniswap"
             assert parsed_dex_config.base_token_addresses == ["0xbase"]
@@ -260,7 +262,12 @@ def test_get_price_and_predicted_order_book(
             "get_price_and_predicted_order_book",
             mock.AsyncMock(return_value=expected_result),
         ) as get_price_and_predicted_order_book_mock:
-            exchange_configs = [{"name": "binance", "exchange_credential_id": "123-creds", "exchange_type": "spot", "sandboxed": False, "url": None}]
+            exchange_configs = [protocol_exchange_config_dict(
+                "binance",
+                exchange_credential_id="123-creds",
+                sandboxed=False,
+                url=None,
+            )]
             market_making_config = _minimal_market_making_config_payload()
             expected_market_making_configuration = (
                 market_making_configuration_model.MarketMakingConfiguration.model_validate(
@@ -315,7 +322,7 @@ def test_update_liquidity_score(
                     "SUPABASE_BUSINESS_USER_EMAIL": "test@example.com",
                     "SUPABASE_BUSINESS_USER_PASSWORD": "test_password"
                 }):
-                    exchange_configs = [{"name": "binance", "exchange_type": "spot", "sandboxed": True, "url": "123"}]
+                    exchange_configs = [protocol_exchange_config_dict("binance", sandboxed=True, url="123")]
                     symbols = ["BTC/USDT", "ETH/USDC"]
                     policy = market_making_models.OrderBookFetchPolicy.ALL_SYMBOLS.value
                     response = client.post(
@@ -371,7 +378,7 @@ def test_update_liquidity_score_already_processing(
                     "SUPABASE_BUSINESS_USER_EMAIL": "test@example.com",
                     "SUPABASE_BUSINESS_USER_PASSWORD": "test_password"
                 }):
-                    exchange_configs = [{"name": "binance", "exchange_type": "spot"}]
+                    exchange_configs = [protocol_exchange_config_dict("binance")]
                     symbols = ["BTC/USDT"]
                     policy = market_making_models.OrderBookFetchPolicy.GIVEN_SYMBOLS.value
                     response = client.post(

@@ -64,15 +64,19 @@ def _direct_wbtc_usdt_dex_config() -> dict:
 
 def _bingx_exchange() -> dict:
     return {
+        "id": "bingx-config",
         "name": BINGX_EXCHANGE_NAME,
-        "exchange_type": "spot",
+        "exchange": BINGX_EXCHANGE_NAME,
+        "sandboxed": False,
     }
 
 
 def _dexscreener_exchange(dex_config: dict) -> dict:
     return {
+        "id": "dexscreener-config",
         "name": DEXSCREENER_EXCHANGE_NAME,
-        "exchange_type": "spot",
+        "exchange": DEXSCREENER_EXCHANGE_NAME,
+        "sandboxed": False,
         "dex_config": dex_config,
     }
 
