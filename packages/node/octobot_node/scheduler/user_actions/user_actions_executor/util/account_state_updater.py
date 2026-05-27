@@ -10,6 +10,7 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
+import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
 
 
 _TRADING_TYPE_TO_EXCHANGE_TYPE: dict[protocol_models.TradingType, trading_enums.ExchangeTypes] = {
@@ -62,11 +63,13 @@ async def update_account_state(
 def _encrypted_exchange_auth_details(
     exchange_account: protocol_models.ExchangeAccount,
     authentication: protocol_models.AccountAuthentication | None,
+    trading_type: protocol_models.TradingType,
+    sandboxed: bool,
 ) -> exchange_data_module.ExchangeAuthDetails:
     if authentication is None:
         return exchange_data_module.ExchangeAuthDetails(
-            exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
-            sandboxed=False,
+            exchange_type=_exchange_type_from_trading_type(trading_type),
+            sandboxed=sandboxed,
             exchange_account_id=exchange_account.remote_account_id,
         )
     # Exchange manager expects Fernet-encrypted strings (see decrypt_element_if_possible on load).
@@ -77,37 +80,65 @@ def _encrypted_exchange_auth_details(
         api_key=fields_utils.encrypt(authentication.api_key).decode(),
         api_secret=fields_utils.encrypt(authentication.api_secret).decode(),
         api_password=api_password,
-        exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
-        sandboxed=False,
+        exchange_type=_exchange_type_from_trading_type(trading_type),
+        sandboxed=sandboxed,
         exchange_account_id=exchange_account.remote_account_id,
     )
+
+
+def _trading_type_for_account_state_check(
+    account: protocol_models.Account,
+) -> protocol_models.TradingType:
+    account_assets = account.assets
+    if not account_assets:
+        return protocol_models.TradingType.SPOT
+    trading_types = {
+        assets_for_trading_type.trading_type
+        for assets_for_trading_type in account_assets
+    }
+    if len(trading_types) > 1:
+        trading_type_names = sorted(trading_type.value for trading_type in trading_types)
+        raise node_errors.AmbiguousTradingTypeError(
+            f"Account.assets maps to multiple trading types: {', '.join(trading_type_names)}."
+        )
+    return next(iter(trading_types))
 
 
 async def _check_exchange_account_state(
     exchange_account: protocol_models.ExchangeAccount,
     account: protocol_models.Account,
     wallet_address: str,
-) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAsset] | None]:
+) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAssetsForTradingType] | None]:
     authentication = account_authentication_resolver.get_exchange_authentication(
         wallet_address,
         account,
     )
+    exchange_config = exchange_account_resolver.get_exchange_config(
+        wallet_address,
+        exchange_account,
+    )
+    trading_type = _trading_type_for_account_state_check(account)
     profile_data = commons_profile_data.ProfileData(
         exchanges=[
             commons_profile_data.ExchangeData(
-                internal_name=exchange_account.exchange,
-                exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
+                internal_name=exchange_config.exchange,
+                exchange_type=_exchange_type_from_trading_type(trading_type),
                 exchange_account_id=exchange_account.remote_account_id,
-                sandboxed=False,
+                sandboxed=exchange_config.sandboxed,
             )
         ]
     )
     profile_data.trader.enabled = True
     exchange_data = exchange_data_module.exchange_data_factory(
-        exchange_internal_name=exchange_account.exchange,
-        exchange_type=_exchange_type_from_trading_type(exchange_account.trading_type),
-        sandboxed=False,
-        auth_details=_encrypted_exchange_auth_details(exchange_account, authentication),
+        exchange_internal_name=exchange_config.exchange,
+        exchange_type=_exchange_type_from_trading_type(trading_type),
+        sandboxed=exchange_config.sandboxed,
+        auth_details=_encrypted_exchange_auth_details(
+            exchange_account,
+            authentication,
+            trading_type,
+            exchange_config.sandboxed,
+        ),
     )
     tentacles_setup_config = tentacles_manager_api.get_full_tentacles_setup_config()
     async with trading_exchanges.exchange_manager_from_exchange_data(
@@ -122,11 +153,11 @@ async def _check_exchange_account_state(
 async def _check_exchange_manager_state(
     exchange_manager,
     account: protocol_models.Account,
-) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAsset] | None]:
+) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAssetsForTradingType] | None]:
     try:
         balance = await exchange_manager.exchange.get_balance()
         await _ensure_api_key_permissions(exchange_manager)
-        assets = _assets_from_balance(balance)
+        assets = _assets_from_balance(balance, _trading_type_for_account_state_check(account))
         return (
             protocol_models.AccountState(
                 status=protocol_models.AccountStatus.VALID,
@@ -166,14 +197,25 @@ def _balance_currency_holdings(balance: dict) -> list[tuple[str, float, float]]:
     return holdings
 
 
-def _assets_from_balance(balance: dict) -> list[protocol_models.DetailedAsset]:
-    return [
+def _assets_from_balance(
+    balance: dict,
+    trading_type: protocol_models.TradingType,
+) -> list[protocol_models.DetailedAssetsForTradingType]:
+    detailed_assets = [
         protocol_models.DetailedAsset(
             symbol=holding_symbol,
             total=total_amount,
             available=available_amount,
         )
         for holding_symbol, total_amount, available_amount in _balance_currency_holdings(balance)
+    ]
+    if not detailed_assets:
+        return []
+    return [
+        protocol_models.DetailedAssetsForTradingType(
+            trading_type=trading_type,
+            assets=detailed_assets,
+        )
     ]
 
 

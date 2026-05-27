@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **account_type** | [**AccountType**](AccountType.md) | blockchain | 
 **blockchain** | **str** |  | 
 **network** | **str** |  | [optional] 
+**exchange_config_ids** | **List[str]** |  | [optional] 
 
 ## Example
 

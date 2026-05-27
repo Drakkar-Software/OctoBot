@@ -20,7 +20,7 @@ import mock
 import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 import octobot_sync.sync.collection_providers.user_account_trading_provider as trading_provider_module
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
@@ -61,7 +61,7 @@ class TestAccountTradingProviderStateFormat:
     def test_state_version_matches_constant(self):
         assert (
             trading_provider_module.AccountTradingProvider.STATE_VERSION
-            == node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION
+            == sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION
         )
 
     def test_state_class_is_account_trading_state(self):
@@ -79,7 +79,7 @@ class TestAccountTradingProviderLoadSaveState:
             updated_at=fixture_time,
         )
         trading_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
             account_trading=[account_trading],
         )
         updated_time = datetime.datetime(2026, 1, 16, tzinfo=datetime.UTC)
@@ -87,7 +87,7 @@ class TestAccountTradingProviderLoadSaveState:
             updated_at=updated_time,
         )
         updated_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
             account_trading=[updated_account_trading],
         )
         with _patch_wallet():
@@ -102,7 +102,7 @@ class TestAccountTradingProviderLoadSaveState:
         provider = trading_provider_module.AccountTradingProvider(base_folder=str(tmp_path))
         fixture_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
         trading_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
             account_trading=[
                 protocol_models.AccountTrading(
                     updated_at=fixture_time,
@@ -120,7 +120,7 @@ class TestAccountTradingProviderLoadSaveState:
         first_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
         second_time = datetime.datetime(2026, 1, 16, tzinfo=datetime.UTC)
         first_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
             account_trading=[
                 protocol_models.AccountTrading(
                     updated_at=first_time,
@@ -128,7 +128,7 @@ class TestAccountTradingProviderLoadSaveState:
             ],
         )
         second_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
             account_trading=[
                 protocol_models.AccountTrading(
                     updated_at=second_time,

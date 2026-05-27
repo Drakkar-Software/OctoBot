@@ -18,7 +18,7 @@ import datetime
 
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_providers.user_account_authentication_provider as auth_provider_module
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
@@ -43,7 +43,7 @@ class TestAccountAuthenticationProviderStateFormat:
     def test_state_version_matches_constant(self):
         assert (
             auth_provider_module.AccountAuthenticationProvider.STATE_VERSION
-            == node_constants.USER_ACCOUNTS_AUTH_STATE_VERSION
+            == sync_constants.USER_ACCOUNTS_AUTH_STATE_VERSION
         )
 
     def test_state_class_is_accounts_authentication_state(self):

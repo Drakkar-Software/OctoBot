@@ -19,7 +19,7 @@ import pytest
 
 import octobot_protocol.models as protocol_models
 
-import octobot_node.scheduler.user_actions.user_actions_executor.account_user_action_executor as account_user_action_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as account_user_action_executor
 
 
 class _AccountChannelTestExecutor(account_user_action_executor.AccountUserActionExecutor):

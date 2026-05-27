@@ -20,7 +20,6 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List
 from octobot_protocol.models.account_type import AccountType
-from octobot_protocol.models.trading_type import TradingType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,10 +29,9 @@ class ExchangeAccount(BaseModel):
     ExchangeAccount
     """ # noqa: E501
     account_type: AccountType = Field(description="exchange")
-    trading_type: TradingType
-    exchange: StrictStr
     remote_account_id: StrictStr
-    __properties: ClassVar[List[str]] = ["account_type", "trading_type", "exchange", "remote_account_id"]
+    exchange_config_ids: List[StrictStr]
+    __properties: ClassVar[List[str]] = ["account_type", "remote_account_id", "exchange_config_ids"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -87,9 +85,8 @@ class ExchangeAccount(BaseModel):
 
         _obj = cls.model_validate({
             "account_type": obj.get("account_type"),
-            "trading_type": obj.get("trading_type"),
-            "exchange": obj.get("exchange"),
-            "remote_account_id": obj.get("remote_account_id")
+            "remote_account_id": obj.get("remote_account_id"),
+            "exchange_config_ids": obj.get("exchange_config_ids")
         })
         return _obj
 

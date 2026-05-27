@@ -16,7 +16,7 @@
 
 
 import octobot_commons.singleton.singleton_class as singleton_class
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
@@ -34,7 +34,7 @@ class StrategyProvider(
     StrategiesState envelope.  All CRUD logic lives in the base class.
     """
     COLLECTION = sync_enums.Collections.USER_STRATEGIES.value
-    STATE_VERSION = node_constants.USER_STRATEGIES_STATE_VERSION
+    STATE_VERSION = sync_constants.USER_STRATEGIES_STATE_VERSION
     STATE_CLASS = protocol_models.StrategiesState
     ITEMS_KEY = "strategies"
 

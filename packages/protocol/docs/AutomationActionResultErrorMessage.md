@@ -12,6 +12,12 @@ AutomationActionResultErrorMessage
 
 * `STRATEGY_VERSION_NOT_FOUND` (value: `'strategy_version_not_found'`)
 
+* `UNKNOWN_TRADING_TYPE` (value: `'unknown_trading_type'`)
+
+* `AMBIGUOUS_TRADING_TYPE` (value: `'ambiguous_trading_type'`)
+
+* `AMBIGUOUS_EXCHANGE_CONFIG` (value: `'ambiguous_exchange_config'`)
+
 * `ACCOUNT_NOT_FOUND` (value: `'account_not_found'`)
 
 * `ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND` (value: `'account_authentication_details_not_found'`)

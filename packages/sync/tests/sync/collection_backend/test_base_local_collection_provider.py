@@ -284,3 +284,104 @@ class TestBaseLocalCollectionProviderAddressIsolation:
 
         assert [entry.id for entry in items_alt] == ["item-a"]
         assert [entry.id for entry in items_other] == ["item-b"]
+
+
+class _MultiFieldTestState(pydantic.BaseModel):
+    """State envelope with primary and secondary item lists for multi-field tests."""
+    version: str
+    items: typing.Optional[list[_TestItem]] = None
+    secondary_items: typing.Optional[list[_TestItem]] = None
+
+    def to_dict(self) -> dict[str, typing.Any]:
+        result = {"version": self.version}
+        if self.items is not None:
+            result["items"] = [item.to_dict() for item in self.items]
+        if self.secondary_items is not None:
+            result["secondary_items"] = [item.to_dict() for item in self.secondary_items]
+        return result
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, typing.Any]) -> "_MultiFieldTestState":
+        return cls.model_validate(raw)
+
+    def to_json(self) -> str:
+        return self.model_dump_json()
+
+    @classmethod
+    def from_json(cls, json_str: str) -> typing.Optional["_MultiFieldTestState"]:
+        return cls.model_validate_json(json_str)
+
+
+class _MultiFieldTestItemProvider(
+    base_provider_module.BaseLocalCollectionProvider[_TestItem, _MultiFieldTestState]
+):
+    COLLECTION = "test-multi-field-items"
+    STATE_VERSION = "1.0.0"
+    STATE_CLASS = _MultiFieldTestState
+    ITEMS_KEY = "items"
+    SECONDARY_ITEMS_KEY = "secondary_items"
+
+    def _get_item_id(self, item: _TestItem) -> str:
+        return item.id
+
+    def _get_item_id_for_key(self, items_key: str, item: typing.Any) -> str:
+        if items_key in (self.ITEMS_KEY, self.SECONDARY_ITEMS_KEY):
+            return item.id
+        return super()._get_item_id_for_key(items_key, item)
+
+
+def _make_multi_field_provider(tmp_path):
+    return _MultiFieldTestItemProvider(base_folder=str(tmp_path))
+
+
+class TestBaseLocalCollectionProviderMultiFieldPersistence:
+    def test_primary_create_preserves_secondary_list_on_disk(self, tmp_path):
+        provider = _make_multi_field_provider(tmp_path)
+        secondary_item = _item("secondary-1", label="Secondary")
+        initial_state = _MultiFieldTestState(
+            version=provider.STATE_VERSION,
+            items=[],
+            secondary_items=[secondary_item],
+        )
+        with _patch_wallet():
+            provider._save_state(_TEST_ADDRESS, initial_state)
+            provider.create_item(_TEST_ADDRESS, _item("item-1", label="Primary"))
+
+        state = provider._storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _MultiFieldTestState)
+        assert len(state.items) == 1
+        assert state.items[0].id == "item-1"
+        assert len(state.secondary_items) == 1
+        assert state.secondary_items[0].id == "secondary-1"
+
+
+class TestBaseLocalCollectionProviderKeyedCrud:
+    def test_create_get_update_delete_secondary_item(self, tmp_path):
+        provider = _make_multi_field_provider(tmp_path)
+        secondary_key = provider.SECONDARY_ITEMS_KEY
+        with _patch_wallet():
+            created = provider._create_item_for_key(
+                _TEST_ADDRESS,
+                secondary_key,
+                _item("secondary-1", label="Original"),
+            )
+            assert created.label == "Original"
+            fetched = provider._get_item_for_key(_TEST_ADDRESS, secondary_key, "secondary-1")
+            assert fetched.label == "Original"
+            provider._update_item_for_key(
+                _TEST_ADDRESS,
+                secondary_key,
+                _item("secondary-1", label="Updated"),
+            )
+            updated = provider._get_item_for_key(_TEST_ADDRESS, secondary_key, "secondary-1")
+            assert updated.label == "Updated"
+            provider._delete_item_for_key(_TEST_ADDRESS, secondary_key, "secondary-1")
+            listed = provider._list_items_for_key(_TEST_ADDRESS, secondary_key)
+        assert listed == []
+
+
+class TestBaseLocalCollectionProviderGetItemIdForKey:
+    def test_unknown_items_key_raises(self, tmp_path):
+        provider = _make_provider(tmp_path)
+        with pytest.raises(collection_errors.UnsupportedItemsKeyError):
+            provider._get_item_id_for_key("unknown_key", _item("item-1"))
+

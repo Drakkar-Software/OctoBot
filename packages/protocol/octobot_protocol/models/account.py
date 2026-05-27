@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.account_specifics import AccountSpecifics
 from octobot_protocol.models.account_state import AccountState
-from octobot_protocol.models.detailed_asset import DetailedAsset
+from octobot_protocol.models.detailed_assets_for_trading_type import DetailedAssetsForTradingType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -38,7 +38,7 @@ class Account(BaseModel):
     state: Optional[AccountState] = None
     created_at: datetime
     updated_at: datetime
-    assets: Optional[List[DetailedAsset]] = None
+    assets: Optional[List[DetailedAssetsForTradingType]] = None
     specifics: Optional[AccountSpecifics] = None
     __properties: ClassVar[List[str]] = ["id", "name", "is_simulated", "description", "state", "created_at", "updated_at", "assets", "specifics"]
 
@@ -113,7 +113,7 @@ class Account(BaseModel):
             "state": AccountState.from_dict(obj["state"]) if obj.get("state") is not None else None,
             "created_at": obj.get("created_at"),
             "updated_at": obj.get("updated_at"),
-            "assets": [DetailedAsset.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
+            "assets": [DetailedAssetsForTradingType.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
             "specifics": AccountSpecifics.from_dict(obj["specifics"]) if obj.get("specifics") is not None else None
         })
         return _obj

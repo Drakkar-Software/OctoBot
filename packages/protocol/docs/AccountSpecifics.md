@@ -6,9 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **account_type** | [**AccountType**](AccountType.md) | generic | 
-**trading_type** | [**TradingType**](TradingType.md) |  | 
-**exchange** | **str** |  | 
 **remote_account_id** | **str** |  | 
+**exchange_config_ids** | **List[str]** |  | 
 **blockchain** | **str** |  | 
 **network** | **str** |  | [optional] 
 

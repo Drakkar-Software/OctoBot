@@ -27,9 +27,8 @@ class Test_user_action_executor_factory:
     def _exchange_account_payload() -> protocol_models.ExchangeAccount:
         return protocol_models.ExchangeAccount(
             account_type=protocol_models.AccountType.EXCHANGE,
-            trading_type=protocol_models.TradingType.SPOT,
-            exchange="binanceus",
             remote_account_id="remote-1",
+            exchange_config_ids=["test-exchange-config-id"],
         )
 
     @classmethod
@@ -134,6 +133,44 @@ class Test_user_action_executor_factory:
         user_action_model = self._user_action(action_identifier="ua-refresh", configuration_inner=configuration_inner)
         resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
         assert resolved_executor_cls is user_actions_executor_package.RefreshAccountsActionExecutor
+
+    def test_returns_create_exchange_config_executor_class(self):
+        configuration_inner = protocol_models.CreateExchangeConfigConfiguration(
+            action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_CREATE,
+            configuration=protocol_models.ExchangeConfig(
+                id="new-config",
+                name="binance-main",
+                exchange="binanceus",
+                sandboxed=False,
+            ),
+        )
+        user_action_model = self._user_action(action_identifier="ua-create-config", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.CreateExchangeConfigActionExecutor
+
+    def test_returns_edit_exchange_config_executor_class(self):
+        configuration_inner = protocol_models.EditExchangeConfigConfiguration(
+            action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_EDIT,
+            id="edit-config",
+            configuration=protocol_models.ExchangeConfig(
+                id="edit-config",
+                name="binance-main",
+                exchange="binanceus",
+                sandboxed=False,
+            ),
+        )
+        user_action_model = self._user_action(action_identifier="ua-edit-config", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.EditExchangeConfigActionExecutor
+
+    def test_returns_delete_exchange_config_executor_class(self):
+        configuration_inner = protocol_models.DeleteExchangeConfigConfiguration(
+            action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_DELETE,
+            id="del-config",
+        )
+        user_action_model = self._user_action(action_identifier="ua-delete-config", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.DeleteExchangeConfigActionExecutor
 
     def test_raises_when_configuration_is_none(self):
         user_action_model = protocol_models.UserAction(id="ua-no-configuration", configuration=None)

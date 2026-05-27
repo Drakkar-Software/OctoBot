@@ -54,16 +54,16 @@ class UnsupportedAutomationConfigurationTypeError(UserActionError):
     """Raised when an automation configuration type is not supported by the node."""
 
 
-class AccountContextMissingError(UserActionError):
-    """Raised when required account context identifiers are missing (public key, wallet key, account id)."""
-
-
 class AccountNotFoundError(UserActionError):
     """Raised when fetching an account via AccountProvider fails."""
 
 
 class AccountAuthenticationNotFoundError(UserActionError):
     """Raised when fetching account authentication via AccountAuthenticationProvider fails."""
+
+
+class AmbiguousExchangeConfigError(UserActionError):
+    """Raised when multiple exchange configs are found for an exchange account."""
 
 
 class AutomationStrategyNotFoundError(UserActionError):
@@ -84,3 +84,11 @@ class ActiveAutomationWorkflowNotFoundError(UserActionError):
 
 class AmbiguousActiveAutomationWorkflowError(UserActionError):
     """Raised when more than one active automation workflow matches the stop request (parent id / wallet filter)."""
+
+
+class UnknownTradingTypeError(UserActionError):
+    """Raised when the trading type is unknown."""
+
+
+class AmbiguousTradingTypeError(UserActionError):
+    """Raised when multiple trading types are found for an account."""

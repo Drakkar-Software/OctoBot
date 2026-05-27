@@ -187,3 +187,9 @@ class MaxAttemptsExceededError(ErrorStatementEncountered):
     """
     Raised when a max attempts is exceeded when executing a script
     """
+
+
+class AmbiguousTradedSymbolsTradingTypeError(ValueError):
+    """
+    Raised when traded symbols map to more than one exchange trading type.
+    """

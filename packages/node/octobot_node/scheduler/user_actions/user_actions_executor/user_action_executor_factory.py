@@ -51,6 +51,12 @@ def user_action_executor_factory(
             return user_actions_executor_package.DeleteAccountActionExecutor
         case protocol_models.RefreshAccountsConfiguration:
             return user_actions_executor_package.RefreshAccountsActionExecutor
+        case protocol_models.CreateExchangeConfigConfiguration:
+            return user_actions_executor_package.CreateExchangeConfigActionExecutor
+        case protocol_models.EditExchangeConfigConfiguration:
+            return user_actions_executor_package.EditExchangeConfigActionExecutor
+        case protocol_models.DeleteExchangeConfigConfiguration:
+            return user_actions_executor_package.DeleteExchangeConfigActionExecutor
         case _:
             raise node_errors.UnsupportedUserActionConfigurationTypeError(
                 f"Unknown user action configuration type: {type(actual).__name__}"

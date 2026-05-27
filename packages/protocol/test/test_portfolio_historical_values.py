@@ -41,10 +41,14 @@ class TestPortfolioHistoricalValues(unittest.TestCase):
                         timestamp = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         total = 1.337, 
                         assets = [
-                            octobot_protocol.models.historical_asset_value.HistoricalAssetValue(
-                                symbol = '', 
-                                holdings = 1.337, 
-                                value = 1.337, )
+                            octobot_protocol.models.historical_assets_for_trading_type.HistoricalAssetsForTradingType(
+                                trading_type = 'spot', 
+                                assets = [
+                                    octobot_protocol.models.historical_asset_value.HistoricalAssetValue(
+                                        symbol = '', 
+                                        holdings = 1.337, 
+                                        value = 1.337, )
+                                    ], )
                             ], )
                     ]
             )
@@ -56,10 +60,14 @@ class TestPortfolioHistoricalValues(unittest.TestCase):
                         timestamp = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                         total = 1.337, 
                         assets = [
-                            octobot_protocol.models.historical_asset_value.HistoricalAssetValue(
-                                symbol = '', 
-                                holdings = 1.337, 
-                                value = 1.337, )
+                            octobot_protocol.models.historical_assets_for_trading_type.HistoricalAssetsForTradingType(
+                                trading_type = 'spot', 
+                                assets = [
+                                    octobot_protocol.models.historical_asset_value.HistoricalAssetValue(
+                                        symbol = '', 
+                                        holdings = 1.337, 
+                                        value = 1.337, )
+                                    ], )
                             ], )
                     ],
         )

@@ -96,3 +96,49 @@ def test_is_symbol():
     assert octobot_commons.symbols.is_symbol("", separator="/") is False
     assert octobot_commons.symbols.is_symbol("/", separator="/") is True
     assert octobot_commons.symbols.is_symbol("BTC/USDT/ETH", separator="/") is True
+
+
+import pytest
+
+import octobot_commons.constants as commons_constants
+
+
+class TestTradingTypeFromSymbol:
+    def test_spot_symbol_returns_spot(self):
+        assert octobot_commons.symbols.trading_type_from_symbol("BTC/USDT") == commons_constants.CONFIG_EXCHANGE_SPOT
+
+    def test_futures_symbol_returns_future(self):
+        assert (
+            octobot_commons.symbols.trading_type_from_symbol("BTC/USDT:USDT")
+            == commons_constants.CONFIG_EXCHANGE_FUTURE
+        )
+
+    def test_option_symbol_returns_option(self):
+        assert (
+            octobot_commons.symbols.trading_type_from_symbol("BTC/USDT:USDT-211225-60000-P")
+            == commons_constants.CONFIG_EXCHANGE_OPTION
+        )
+
+    def test_unknown_symbol_raises_value_error(self):
+        with pytest.raises(ValueError):
+            octobot_commons.symbols.trading_type_from_symbol("BTC")
+
+
+class TestTradingTypeFromTradedSymbols:
+    def test_all_spot_symbols_return_spot(self):
+        assert octobot_commons.symbols.trading_type_from_traded_symbols(
+            ["BTC/USDT", "ETH/USDT"]
+        ) == commons_constants.CONFIG_EXCHANGE_SPOT
+
+    def test_all_futures_symbols_return_future(self):
+        assert octobot_commons.symbols.trading_type_from_traded_symbols(
+            ["BTC/USDT:USDT", "ETH/USDT:USDT"]
+        ) == commons_constants.CONFIG_EXCHANGE_FUTURE
+
+    def test_empty_symbols_raises_value_error(self):
+        with pytest.raises(ValueError):
+            octobot_commons.symbols.trading_type_from_traded_symbols([])
+
+    def test_mixed_symbol_types_raise_ambiguous_error(self):
+        with pytest.raises(octobot_commons.errors.AmbiguousTradedSymbolsTradingTypeError):
+            octobot_commons.symbols.trading_type_from_traded_symbols(["BTC/USDT", "BTC/USDT:USDT"])

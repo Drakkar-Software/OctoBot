@@ -168,7 +168,12 @@ class TestTriggerTaskGridDbosIntegration:
             ),
             mock.patch(
                 "octobot_sync.sync.collection_providers.AccountProvider.instance",
-                return_value=mock.Mock(get_item=mock.Mock(return_value=protocol_account)),
+                return_value=mock.Mock(
+                    get_item=mock.Mock(return_value=protocol_account),
+                    get_exchange_config=mock.Mock(
+                        return_value=grid_sim_util.protocol_exchange_config_for_grid_functional(),
+                    ),
+                ),
             ),
             mock.patch(
                 "octobot_sync.sync.collection_providers.StrategyProvider.instance",

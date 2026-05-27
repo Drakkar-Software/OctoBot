@@ -15,7 +15,7 @@
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import octobot_protocol.models as protocol_models
-import octobot_node.constants as node_constants
+import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collection_providers.user_account_provider as account_provider
 import octobot_sync.sync.collection_backend.errors as collection_errors
 
@@ -27,7 +27,9 @@ def get_accounts_state_encrypted(address: str) -> dict[str, str] | None:
         return None
 
 def get_accounts_state(address: str) -> protocol_models.AccountsState:
+    provider = account_provider.AccountProvider.instance()
     return protocol_models.AccountsState(
-        version=node_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-        accounts=account_provider.AccountProvider.instance().list_items(address)
+        version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
+        accounts=provider.list_items(address),
+        exchange_configs=provider.list_exchange_configs(address),
     )

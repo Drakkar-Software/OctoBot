@@ -14,16 +14,20 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import octobot_node.scheduler.user_actions.user_actions_executor.account_user_action_executor as user_actions_executor_account_base
-import octobot_node.scheduler.user_actions.user_actions_executor.automation_user_action_executor as user_actions_executor_automation_base
+import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as user_actions_executor_account_base
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as user_actions_executor_automation_base
 import octobot_node.scheduler.user_actions.user_actions_executor.base_user_action_executor as user_actions_executor_base
-import octobot_node.scheduler.user_actions.user_actions_executor.create_account as user_actions_executor_create_account
-import octobot_node.scheduler.user_actions.user_actions_executor.create_automation as user_actions_executor_create_automation
-import octobot_node.scheduler.user_actions.user_actions_executor.delete_account as user_actions_executor_delete_account
-import octobot_node.scheduler.user_actions.user_actions_executor.edit_account as user_actions_executor_edit_account
-import octobot_node.scheduler.user_actions.user_actions_executor.edit_automation as user_actions_executor_edit_automation
-import octobot_node.scheduler.user_actions.user_actions_executor.refresh_accounts as user_actions_executor_refresh_accounts
-import octobot_node.scheduler.user_actions.user_actions_executor.stop_automation as user_actions_executor_stop_automation
+import octobot_node.scheduler.user_actions.user_actions_executor.account.create_account as user_actions_executor_create_account
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.create_automation as user_actions_executor_create_automation
+import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.create_exchange_config as user_actions_executor_create_exchange_config
+import octobot_node.scheduler.user_actions.user_actions_executor.account.delete_account as user_actions_executor_delete_account
+import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.delete_exchange_config as user_actions_executor_delete_exchange_config
+import octobot_node.scheduler.user_actions.user_actions_executor.account.edit_account as user_actions_executor_edit_account
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.edit_automation as user_actions_executor_edit_automation
+import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.edit_exchange_config as user_actions_executor_edit_exchange_config
+import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.exchange_config_user_action_executor as user_actions_executor_exchange_config_base
+import octobot_node.scheduler.user_actions.user_actions_executor.account.refresh_accounts as user_actions_executor_refresh_accounts
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation as user_actions_executor_stop_automation
 
 from octobot_node.scheduler.user_actions.user_action_post_actions import UserActionPostActions
 from octobot_node.scheduler.user_actions.user_actions_executor.user_action_executor_factory import (
@@ -33,6 +37,7 @@ from octobot_node.scheduler.user_actions.user_actions_executor.user_action_execu
 UserActionExecutor = user_actions_executor_base.UserActionExecutor
 AccountUserActionExecutor = user_actions_executor_account_base.AccountUserActionExecutor
 AutomationUserActionExecutor = user_actions_executor_automation_base.AutomationUserActionExecutor
+ExchangeConfigUserActionExecutor = user_actions_executor_exchange_config_base.ExchangeConfigUserActionExecutor
 CreateAutomationActionExecutor = user_actions_executor_create_automation.CreateAutomationActionExecutor
 EditAutomationActionExecutor = user_actions_executor_edit_automation.EditAutomationActionExecutor
 StopAutomationActionExecutor = user_actions_executor_stop_automation.StopAutomationActionExecutor
@@ -40,11 +45,15 @@ CreateAccountActionExecutor = user_actions_executor_create_account.CreateAccount
 EditAccountActionExecutor = user_actions_executor_edit_account.EditAccountActionExecutor
 DeleteAccountActionExecutor = user_actions_executor_delete_account.DeleteAccountActionExecutor
 RefreshAccountsActionExecutor = user_actions_executor_refresh_accounts.RefreshAccountsActionExecutor
+CreateExchangeConfigActionExecutor = user_actions_executor_create_exchange_config.CreateExchangeConfigActionExecutor
+EditExchangeConfigActionExecutor = user_actions_executor_edit_exchange_config.EditExchangeConfigActionExecutor
+DeleteExchangeConfigActionExecutor = user_actions_executor_delete_exchange_config.DeleteExchangeConfigActionExecutor
 
 __all__ = [
     "UserActionExecutor",
     "AccountUserActionExecutor",
     "AutomationUserActionExecutor",
+    "ExchangeConfigUserActionExecutor",
     "CreateAutomationActionExecutor",
     "EditAutomationActionExecutor",
     "StopAutomationActionExecutor",
@@ -52,6 +61,9 @@ __all__ = [
     "EditAccountActionExecutor",
     "DeleteAccountActionExecutor",
     "RefreshAccountsActionExecutor",
+    "CreateExchangeConfigActionExecutor",
+    "EditExchangeConfigActionExecutor",
+    "DeleteExchangeConfigActionExecutor",
     "user_action_executor_factory",
     "UserActionPostActions",
 ]

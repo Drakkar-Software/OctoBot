@@ -24,6 +24,8 @@ from octobot_commons.symbols.symbol_util import (
     is_symbol,
     is_usd_like_coin,
     get_most_common_usd_like_symbol,
+    trading_type_from_symbol,
+    trading_type_from_traded_symbols,
 )
 
 from octobot_commons.symbols import symbol
@@ -41,5 +43,7 @@ __all__ = [
     "is_symbol",
     "is_usd_like_coin",
     "get_most_common_usd_like_symbol",
+    "trading_type_from_symbol",
+    "trading_type_from_traded_symbols",
     "Symbol",
 ]

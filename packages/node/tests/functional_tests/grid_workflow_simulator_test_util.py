@@ -90,12 +90,19 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
     def _wrap_user_action_configuration(payload) -> protocol_models_module.UserActionConfiguration:
         return protocol_models_module.UserActionConfiguration.from_json(payload.to_json())
 
+    def protocol_exchange_config_for_grid_functional() -> protocol_models_module.ExchangeConfig:
+        return protocol_models_module.ExchangeConfig(
+            id="functional-test-exchange-config-id",
+            name="binance-main",
+            exchange=exchange_internal_name(),
+            sandboxed=False,
+        )
+
     def protocol_exchange_account_for_grid_functional(*, usdc_total: float) -> protocol_models_module.ExchangeAccount:
         return protocol_models_module.ExchangeAccount(
             account_type=protocol_models_module.AccountType.EXCHANGE,
-            trading_type=protocol_models_module.TradingType.SPOT,
-            exchange=exchange_internal_name(),
             remote_account_id="functional-test-account",
+            exchange_config_ids=["functional-test-exchange-config-id"],
         )
 
     def protocol_account_for_functional(
@@ -111,10 +118,15 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             created_at=_FUNCTIONAL_PROTOCOL_ACCOUNT_TS,
             updated_at=_FUNCTIONAL_PROTOCOL_ACCOUNT_TS,
             assets=[
-                protocol_models_module.DetailedAsset(
-                    symbol="USDC",
-                    total=usdc_total,
-                    available=usdc_total,
+                protocol_models_module.DetailedAssetsForTradingType(
+                    trading_type=protocol_models_module.TradingType.SPOT,
+                    assets=[
+                        protocol_models_module.DetailedAsset(
+                            symbol="USDC",
+                            total=usdc_total,
+                            available=usdc_total,
+                        )
+                    ],
                 )
             ],
             specifics=protocol_models_module.AccountSpecifics(

@@ -128,10 +128,13 @@ def _assert_listed_user_actions_match_expected_id_status_pairs(
 
 
 def _assert_functional_assets(
-    assets: list[protocol_models.DetailedAsset] | None,
+    assets: list[protocol_models.DetailedAssetsForTradingType] | None,
 ) -> None:
     assert assets is not None
-    assets_by_symbol = {asset.symbol: asset for asset in assets}
+    flattened_assets: list[protocol_models.DetailedAsset] = []
+    for assets_for_trading_type in assets:
+        flattened_assets.extend(assets_for_trading_type.assets or [])
+    assets_by_symbol = {asset.symbol: asset for asset in flattened_assets}
     assert set(assets_by_symbol) == {"USDT", "BTC", "ETH", "SOL"}
 
     usdt_asset = assets_by_symbol["USDT"]
@@ -171,12 +174,19 @@ class TestExecuteUserActionAccountCrud:
         def wrap_configuration(payload) -> protocol_models.UserActionConfiguration:
             return protocol_models.UserActionConfiguration.from_json(payload.to_json())
 
+        def build_exchange_config() -> protocol_models.ExchangeConfig:
+            return protocol_models.ExchangeConfig(
+                id="functional-test-exchange-config-id",
+                name="binance-main",
+                exchange="binanceus",
+                sandboxed=False,
+            )
+
         def build_exchange_account() -> protocol_models.ExchangeAccount:
             return protocol_models.ExchangeAccount(
                 account_type=protocol_models.AccountType.EXCHANGE,
-                trading_type=protocol_models.TradingType.SPOT,
-                exchange="binanceus",
                 remote_account_id="functional-test-remote-account",
+                exchange_config_ids=["functional-test-exchange-config-id"],
             )
 
         def build_account(*, account_id: str, account_name: str) -> protocol_models.Account:
@@ -305,6 +315,7 @@ class TestExecuteUserActionAccountCrud:
                 ),
             ):
                 # Step: Patches above strip network/CCXT and steer ``update_account_state`` / permissions for this scenario.
+                account_provider.create_exchange_config(wallet_address, build_exchange_config())
 
                 # Step: No persisted accounts before any workflow runs.
                 assert account_provider.list_items(wallet_address) == []

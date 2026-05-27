@@ -20,6 +20,7 @@ import collections
 
 import octobot_commons
 import octobot_commons.constants as constants
+import octobot_commons.errors as commons_errors
 import octobot_commons.symbols.symbol
 
 
@@ -147,3 +148,38 @@ def get_most_common_usd_like_symbol(pairs: list[str]) -> str:
         if is_usd_like_coin(symbol):
             return symbol
     raise ValueError("Pairs cannot be empty")
+
+
+def trading_type_from_symbol(symbol_str: str) -> str:
+    """
+    Infer exchange trading type from a symbol string.
+    :param symbol_str: the symbol to parse
+    :return: CONFIG_EXCHANGE_* constant (spot, future, or option)
+    """
+    parsed_symbol = parse_symbol(symbol_str)
+    if parsed_symbol.is_option():
+        return constants.CONFIG_EXCHANGE_OPTION
+    if parsed_symbol.is_spot():
+        return constants.CONFIG_EXCHANGE_SPOT
+    if parsed_symbol.is_future() or parsed_symbol.is_perpetual_future():
+        return constants.CONFIG_EXCHANGE_FUTURE
+    raise ValueError(f"Unable to infer trading type from symbol {symbol_str!r}.")
+
+
+def trading_type_from_traded_symbols(symbols: list[str]) -> str:
+    """
+    Infer a single exchange trading type from a list of traded symbols.
+    :param symbols: traded symbol strings
+    :return: CONFIG_EXCHANGE_* constant shared by all symbols
+    """
+    if not symbols:
+        raise ValueError("Traded symbols cannot be empty.")
+    inferred_trading_types: set[str] = set()
+    for symbol_str in symbols:
+        inferred_trading_types.add(trading_type_from_symbol(symbol_str))
+    if len(inferred_trading_types) > 1:
+        trading_type_names = sorted(inferred_trading_types)
+        raise commons_errors.AmbiguousTradedSymbolsTradingTypeError(
+            f"Traded symbols map to multiple trading types: {', '.join(trading_type_names)}."
+        )
+    return next(iter(inferred_trading_types))
