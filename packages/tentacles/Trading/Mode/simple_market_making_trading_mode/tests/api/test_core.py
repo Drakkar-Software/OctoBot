@@ -39,7 +39,7 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as mark
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as market_making_models
 import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as \
     simple_market_making_trading
-import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
+import octobot_protocol.models as protocol_models
 
 from tentacles.Trading.Mode.simple_market_making_trading_mode.tests.api.conftest import dex_exchange_config_dict
 
@@ -948,19 +948,20 @@ def test_format_market_making_volume_by_symbol_multiple_symbols_mixed():
 
 class TestExchangeConfigDexConfig:
     def test_model_validate_parses_nested_dex_config(self):
-        exchange_config = exchanges_core.ExchangeConfig.model_validate(dex_exchange_config_dict())
+        exchange_config = protocol_models.ExchangeConfig.model_validate(dex_exchange_config_dict())
 
-        assert isinstance(exchange_config.dex_config, exchanges_core.DEXConfig)
+        assert isinstance(exchange_config.dex_config, protocol_models.DEXConfig)
         assert exchange_config.dex_config.chain_id == "ethereum"
         assert exchange_config.dex_config.dex_id == "uniswap"
         assert exchange_config.dex_config.base_token_addresses == ["0xbase"]
         assert exchange_config.dex_config.quote_token_addresses == ["0xquote"]
 
     def test_model_validate_without_dex_config_defaults_to_none(self):
-        exchange_config = exchanges_core.ExchangeConfig.model_validate(
+        exchange_config = protocol_models.ExchangeConfig.model_validate(
             {
+                "id": "binance-config-1",
                 "name": "binance",
-                "exchange_type": "spot",
+                "exchange": "binance",
                 "sandboxed": False,
             }
         )
@@ -968,7 +969,7 @@ class TestExchangeConfigDexConfig:
         assert exchange_config.dex_config is None
 
     def test_model_dump_serializes_dex_config_for_adapter(self):
-        exchange_config = exchanges_core.ExchangeConfig.model_validate(dex_exchange_config_dict())
+        exchange_config = protocol_models.ExchangeConfig.model_validate(dex_exchange_config_dict())
         dumped_dex_config = exchange_config.model_dump()["dex_config"]
 
         for dex_config_key in trading_enums.DEXExchangeConfigKeys:
@@ -978,7 +979,7 @@ class TestExchangeConfigDexConfig:
 
 class TestGetMarketMakingExchangeOnlyProfileDataDexConfig:
     async def test_registers_dex_exchange_tentacle_from_exchange_config(self):
-        exchange_config = exchanges_core.ExchangeConfig.model_validate(dex_exchange_config_dict())
+        exchange_config = protocol_models.ExchangeConfig.model_validate(dex_exchange_config_dict())
 
         profile_data = await market_making_core.get_market_making_exchange_only_profile_data(
             [exchange_config],

@@ -17,8 +17,9 @@
 
 import os
 
+import octobot_commons.constants as commons_constants
 import octobot_commons.symbols.symbol_util as commons_symbols
-import octobot_trading.enums
+import octobot_protocol.models as protocol_models
 import pytest
 
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges
@@ -34,20 +35,21 @@ def _public_exchange_name_for_test() -> str:
 
 
 LIQUID_TEST_SYMBOL = "BTC/USDT"
-_INVALID_EXCHANGE_TYPE = "not_a_spot_type"
-
-pytestmark = pytest.mark.asyncio
 
 
-def _spot_exchange_config() -> exchanges.ExchangeConfig:
-    return exchanges.ExchangeConfig(
-        name=_public_exchange_name_for_test(),
-        exchange_type=octobot_trading.enums.ExchangeTypes.SPOT.value,
+def _spot_exchange_config() -> protocol_models.ExchangeConfig:
+    exchange_name = _public_exchange_name_for_test()
+    return protocol_models.ExchangeConfig(
+        id="test-exchange-config",
+        name=f"{exchange_name}-test",
+        exchange=exchange_name,
         sandboxed=False,
     )
 
 
 class TestGetTradedPairsAndTimeframesByExchange:
+    pytestmark = pytest.mark.asyncio
+
     async def test_includes_btc_usdt(
         self,
     ) -> None:
@@ -63,23 +65,29 @@ class TestGetTradedPairsAndTimeframesByExchange:
         assert LIQUID_TEST_SYMBOL in pairs_list
         for traded_symbol in pairs_list:
             assert commons_symbols.parse_symbol(traded_symbol).is_spot(), (
-                f"with exchange_type=spot, only spot pairs are returned; got {traded_symbol!r}"
+                f"with default spot exchange type, only spot pairs are returned; got {traded_symbol!r}"
             )
 
-    def test_accepts_arbitrary_exchange_type_string_on_config(
+    async def test_futures_trading_type_uses_future_exchange_type(
         self,
     ) -> None:
-        config = exchanges.ExchangeConfig.model_validate(
-            {
-                "name": _public_exchange_name_for_test(),
-                "exchange_type": _INVALID_EXCHANGE_TYPE,
-                "sandboxed": False,
-            }
+        config = _spot_exchange_config()
+        profile_data = exchanges._get_exchange_profile_data(
+            config,
+            trading_type=protocol_models.TradingType.FUTURES,
         )
-        assert config.exchange_type == _INVALID_EXCHANGE_TYPE
+        assert profile_data.exchanges[0].exchange_type == commons_constants.CONFIG_EXCHANGE_FUTURE
 
-    def test_rejects_invalid_exchange_type_enum_value(
-        self,
-    ) -> None:
-        with pytest.raises(ValueError):
-            octobot_trading.enums.ExchangeTypes(_INVALID_EXCHANGE_TYPE)
+
+class TestExchangeTypeFromTradingType:
+    def test_spot_trading_type_maps_to_spot_exchange_type(self) -> None:
+        assert (
+            exchanges.exchange_type_from_trading_type(protocol_models.TradingType.SPOT)
+            == commons_constants.CONFIG_EXCHANGE_SPOT
+        )
+
+    def test_futures_trading_type_maps_to_future_exchange_type(self) -> None:
+        assert (
+            exchanges.exchange_type_from_trading_type(protocol_models.TradingType.FUTURES)
+            == commons_constants.CONFIG_EXCHANGE_FUTURE
+        )

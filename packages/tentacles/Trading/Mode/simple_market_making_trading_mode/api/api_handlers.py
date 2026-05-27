@@ -22,17 +22,17 @@ import octobot_commons.authentication as authentication
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.json_util as json_util
 import octobot_flow.entities.community.user_authentication as community_user_authentication
+import octobot_protocol.models as protocol_models
 import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.models as models
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as core
 import tentacles.Trading.Mode.simple_market_making_trading_mode.errors as market_making_errors
-import tentacles.Services.Interfaces.node_api_interface.core.exchanges as exchanges_core
 
 
 @json_util.sanitized
 async def compute_market_making_volume(
-    exchange_configs: list[exchanges_core.ExchangeConfig],
+    exchange_configs: list[protocol_models.ExchangeConfig],
     market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
     auth: typing.Optional[community_user_authentication.UserAuthentication]
 ) -> dict:
@@ -46,7 +46,7 @@ async def compute_market_making_volume(
 
 @json_util.sanitized
 async def get_price_and_predicted_order_book(
-    exchange_configs: list[exchanges_core.ExchangeConfig],
+    exchange_configs: list[protocol_models.ExchangeConfig],
     market_making_config: typing.Optional[market_making_configuration_model.MarketMakingConfiguration],
     auth: typing.Optional[community_user_authentication.UserAuthentication]
 ) -> dict:
@@ -59,7 +59,7 @@ async def get_price_and_predicted_order_book(
 
 
 async def update_liquidity_score(
-    exchange_configs: list[exchanges_core.ExchangeConfig],
+    exchange_configs: list[protocol_models.ExchangeConfig],
     policy: models.OrderBookFetchPolicy,
     symbols: typing.Optional[list[str]],
     auth: typing.Optional[community_user_authentication.UserAuthentication]
@@ -94,10 +94,10 @@ async def dispatch_market_making_request(
         data.get("auth") if data else None
     )
     try:
-        exchanges: list[exchanges_core.ExchangeConfig] = []
+        exchanges: list[protocol_models.ExchangeConfig] = []
         if _exchanges := data.get("exchanges"):
             exchanges = [
-                exchanges_core.ExchangeConfig.model_validate(exchange)
+                protocol_models.ExchangeConfig.model_validate(exchange)
                 for exchange in _exchanges
             ]
         if request_type == "market_making_volume":

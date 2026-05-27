@@ -17,6 +17,7 @@ import mock
 import typing
 
 import octobot_commons.symbols.symbol_util as commons_symbols
+import octobot_protocol.models as protocol_models
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as node_exchanges_core
 
 from tentacles.Services.Interfaces.node_api_interface.tests.conftest import assert_response_headers
@@ -24,7 +25,6 @@ from tentacles.Services.Interfaces.node_api_interface.tests.conftest import asse
 
 _TRADED_PAIRS = "/api/v1/exchanges/traded-pairs"
 _TRADED_PAIRS_AND_TIMEFRAMES = "/api/v1/exchanges/traded-pairs-and-timeframes"
-_INVALID_EXCHANGE_TYPE = "not_a_spot_type"
 
 
 def _is_github_actions() -> bool:
@@ -37,10 +37,13 @@ def _remote_exchange_display_name() -> str:
 
 
 def _query_params_for_spot_exchange() -> dict[str, typing.Any]:
+    exchange_name = _remote_exchange_display_name()
     return {
-        "name": _remote_exchange_display_name(),
-        "exchange_type": "spot",
+        "id": "test-exchange-config",
+        "name": f"{exchange_name}-test",
+        "exchange": exchange_name,
         "sandboxed": False,
+        "trading_type": protocol_models.TradingType.SPOT.value,
     }
 
 
@@ -68,7 +71,13 @@ class TestExchangesGetTradedPairs:
         ) as get_pairs_tf_mock:
             response = client.get(
                 _TRADED_PAIRS,
-                params={"name": "binance", "exchange_type": "spot", "sandboxed": False},
+                params={
+                    "id": "test-exchange-config",
+                    "name": "binance-test",
+                    "exchange": "binance",
+                    "sandboxed": False,
+                    "trading_type": "spot",
+                },
             )
             get_pairs_tf_mock.assert_awaited_once()
             assert response.status_code == 200
@@ -92,7 +101,13 @@ class TestExchangesGetTradedPairsAndTimeframes:
         ) as get_pairs_tf_mock:
             response = client.get(
                 _TRADED_PAIRS_AND_TIMEFRAMES,
-                params={"name": "binance", "exchange_type": "spot", "sandboxed": False},
+                params={
+                    "id": "test-exchange-config",
+                    "name": "binance-test",
+                    "exchange": "binance",
+                    "sandboxed": False,
+                    "trading_type": "spot",
+                },
             )
             get_pairs_tf_mock.assert_awaited_once()
             assert response.status_code == 200
@@ -121,6 +136,6 @@ class TestExchangesTradedPairsIntegration:
         assert "BTC/USDT" in pairs_list
         for traded_symbol in pairs_list:
             assert commons_symbols.parse_symbol(traded_symbol).is_spot(), (
-                f"with exchange_type=spot, only spot pairs are returned; got {traded_symbol!r}"
+                f"with default spot exchange type, only spot pairs are returned; got {traded_symbol!r}"
             )
         assert_response_headers(response)
