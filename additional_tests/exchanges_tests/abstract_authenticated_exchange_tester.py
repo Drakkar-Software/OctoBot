@@ -120,6 +120,7 @@ class AbstractAuthenticatedExchangeTester:
     IGNORE_EXCHANGE_TRADE_ID = False    # set True when trade.exchange_trade_id can't be set
     MAX_TRADE_USD_VALUE = decimal.Decimal(8000)
     MIN_TRADE_USD_VALUE = decimal.Decimal("0.1")
+    EXPECT_EMPTY_RECENT_TRADES = False # set True when recent trades are expected to be empty
     IS_ACCOUNT_ID_AVAILABLE = True  # set False when get_account_id is not available and should be checked
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = False    # set True when is_authenticated_request is implemented
     EXPECTED_GENERATED_ACCOUNT_ID = False   # set True when account_id can't be fetch and a generated account id is used
@@ -769,7 +770,7 @@ class AbstractAuthenticatedExchangeTester:
     @expect_not_supported_on_read_only("get_my_recent_trades")
     async def inner_test_get_my_recent_trades(self):
         trades = await self.get_my_recent_trades()
-        if self.CHECK_EMPTY_ACCOUNT:
+        if self.CHECK_EMPTY_ACCOUNT or self.EXPECT_EMPTY_RECENT_TRADES:
             assert trades == []
             return
         assert trades
