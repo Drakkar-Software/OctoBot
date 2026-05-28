@@ -16,6 +16,7 @@
 import asyncio
 import contextlib
 import decimal
+import functools
 import random
 import time
 import typing
@@ -46,6 +47,20 @@ from additional_tests.exchanges_tests import get_authenticated_exchange_manager,
 # always import and load tentacles
 import tentacles
 tentacles_manager_api.reload_tentacle_info()
+
+
+def expect_not_supported_on_read_only(probe_method_name: str, **probe_kwargs):
+    def decorator(inner_test_method):
+        @functools.wraps(inner_test_method)
+        async def wrapper(self, *args, **kwargs):
+            if self.IS_READ_ONLY_EXCHANGE:
+                probe = getattr(self, probe_method_name)
+                with pytest.raises(trading_errors.NotSupported):
+                    await probe(**probe_kwargs)
+                return
+            return await inner_test_method(self, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 class AbstractAuthenticatedExchangeTester:
@@ -111,6 +126,7 @@ class AbstractAuthenticatedExchangeTester:
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = False    # set True when api key rights can't be checked using a
     # dedicated api and have to be checked by sending an order operation
     EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
+    IS_READ_ONLY_EXCHANGE = False # set True when the exchange is read only and should not be able to fetch portfolio, create or cancel orders
     CHECK_EMPTY_ACCOUNT = False  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
@@ -133,6 +149,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_get_portfolio()
 
+    @expect_not_supported_on_read_only("get_portfolio")
     async def inner_test_get_portfolio(self):
         self.check_portfolio_content(await self.get_portfolio())
 
@@ -559,6 +576,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_create_and_cancel_limit_orders()
 
+    @expect_not_supported_on_read_only("get_portfolio")
     async def inner_test_create_and_cancel_limit_orders(self, symbol=None, settlement_currency=None, **kwargs):
         symbol = symbol or self.SYMBOL
         side = trading_enums.TradeOrderSide.BUY
@@ -658,6 +676,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_create_and_fill_market_orders()
 
+    @expect_not_supported_on_read_only("get_portfolio")
     async def inner_test_create_and_fill_market_orders(self):
         side = trading_enums.TradeOrderSide.BUY
         portfolio = await self.get_portfolio()
@@ -747,6 +766,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_get_my_recent_trades()
 
+    @expect_not_supported_on_read_only("get_my_recent_trades")
     async def inner_test_get_my_recent_trades(self):
         trades = await self.get_my_recent_trades()
         if self.CHECK_EMPTY_ACCOUNT:
@@ -759,6 +779,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_get_closed_orders()
 
+    @expect_not_supported_on_read_only("get_closed_orders")
     async def inner_test_get_closed_orders(self):
         await self.check_require_closed_orders_from_recent_trades()
         orders = await self.get_closed_orders()
@@ -772,6 +793,7 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager():
             await self.inner_test_get_cancelled_orders()
 
+    @expect_not_supported_on_read_only("get_cancelled_orders", force_fetch=True)
     async def inner_test_get_cancelled_orders(self):
         if not self.exchange_manager.exchange.get_option_value(
             trading_enums.ExchangeClientOptions.SUPPORT_FETCHING_CANCELLED_ORDERS
