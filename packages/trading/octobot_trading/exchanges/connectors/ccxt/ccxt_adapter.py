@@ -460,6 +460,20 @@ class CCXTAdapter(adapters.AbstractAdapter):
         # CCXT standard market_status parsing logic
         return fixed # type: ignore
 
+    def fix_dex_pairs(self, raw: list[dict], **kwargs) -> list[dict]:
+        fixed = super().fix_dex_pairs(raw, **kwargs)
+        # CCXT standard dex_pairs fixing logic
+        return fixed
+
+    def parse_dex_pairs(self, fixed: list[dict], **kwargs) -> list[dict]:
+        # CCXT standard dex_pairs parsing logic
+        for dex_pair in fixed:
+            dex_pair.update({
+                enums.ExchangeConstantsDexPairsColumns.PRICE.value: decimal.Decimal(str(dex_pair.get(enums.ExchangeConstantsDexPairsColumns.PRICE.value, 0))),
+                enums.ExchangeConstantsDexPairsColumns.QUOTE_LIQUIDITY.value: decimal.Decimal(str(dex_pair.get(enums.ExchangeConstantsDexPairsColumns.QUOTE_LIQUIDITY.value, 0))),
+            })
+        return fixed
+
     def parse_transaction(self, fixed: CCXTTransaction, **kwargs) -> dict:
         # CCXT standard transaction parsing logic
         return {

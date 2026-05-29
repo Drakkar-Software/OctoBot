@@ -353,7 +353,7 @@ class DipAnalyserTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
                 trader=self.exchange_manager.trader,
                 order_type=trading_enums.TraderOrderType.STOP_LOSS,
                 symbol=sell_order_to_create.symbol,
-                current_price=trading_personal_data.adapt_price(symbol_market, stop_price),
+                current_price=trading_personal_data.decimal_adapt_price(symbol_market, stop_price),
                 quantity=sell_order_to_create.origin_quantity,
                 price=stop_price,
                 side=trading_enums.TradeOrderSide.SELL,

@@ -65,16 +65,7 @@ class TestAccountsState(unittest.TestCase):
                         name = '', 
                         exchange = '', 
                         sandboxed = True, 
-                        url = '', 
-                        dex_config = octobot_protocol.models.dex_config.DEXConfig(
-                            chain_id = '', 
-                            dex_id = '', 
-                            base_token_addresses = [
-                                ''
-                                ], 
-                            quote_token_addresses = [
-                                ''
-                                ], ), )
+                        url = '', )
                     ]
             )
         else:

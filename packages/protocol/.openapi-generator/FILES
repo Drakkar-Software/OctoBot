@@ -31,7 +31,6 @@ docs/CreateAccountConfiguration.md
 docs/CreateAutomationConfiguration.md
 docs/CreateExchangeConfigConfiguration.md
 docs/DCAConfiguration.md
-docs/DEXConfig.md
 docs/DeleteAccountConfiguration.md
 docs/DeleteExchangeConfigConfiguration.md
 docs/DetailedAsset.md
@@ -139,7 +138,6 @@ octobot_protocol/models/delete_account_configuration.py
 octobot_protocol/models/delete_exchange_config_configuration.py
 octobot_protocol/models/detailed_asset.py
 octobot_protocol/models/detailed_assets_for_trading_type.py
-octobot_protocol/models/dex_config.py
 octobot_protocol/models/edit_account_configuration.py
 octobot_protocol/models/edit_automation_configuration.py
 octobot_protocol/models/edit_exchange_config_configuration.py
@@ -241,7 +239,6 @@ test/test_delete_account_configuration.py
 test/test_delete_exchange_config_configuration.py
 test/test_detailed_asset.py
 test/test_detailed_assets_for_trading_type.py
-test/test_dex_config.py
 test/test_edit_account_configuration.py
 test/test_edit_automation_configuration.py
 test/test_edit_exchange_config_configuration.py

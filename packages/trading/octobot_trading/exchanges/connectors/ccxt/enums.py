@@ -140,13 +140,6 @@ class ExchangeOrderCCXTUnifiedParams(enum.Enum):
     REFUND_ADDRESS = "refund_address" # address to refund initial funds to
 
 
-class DEXExchangeCCXTConfigKeys(enum.StrEnum):
-    CHAIN_ID = "chainId"
-    DEX_ID = "dexId"
-    BASE_TOKEN_ADDRESSES = "baseTokenAddresses"
-    QUOTE_TOKEN_ADDRESSES = "quoteTokenAddresses"
-
-
 class ExchangeWrapperLibs(enum.Enum):
     ASYNC_CCXT = "async_ccxt"
     CCXT = "ccxt"

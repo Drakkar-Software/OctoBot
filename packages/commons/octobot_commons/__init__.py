@@ -21,6 +21,9 @@ VERSION = "1.10.6"  # major.minor.revision
 MARKET_SEPARATOR = "/"
 SETTLEMENT_ASSET_SEPARATOR = ":"
 OPTION_SEPARATOR = "-"
+NETWORK_SEPARATOR = "@"
+DEX_SEPARATOR = "!"
+ANY_DEX_WILDCARD = "*"
 DICT_BULLET_TOKEN_STR = "\n "
 
 # DEPRECATED: will be removed in future versions

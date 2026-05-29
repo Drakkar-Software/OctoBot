@@ -61,8 +61,6 @@ from octobot_trading.exchanges.util.exchange_util import (
     force_set_mark_price,
     get_traded_assets,
     is_broker_enabled_on_exchange,
-    get_dex_exchange_config,
-    has_dex_exchange_config,
 )
 from octobot_trading.exchanges.util import websockets_util
 from octobot_trading.exchanges.util.websockets_util import (
@@ -116,6 +114,4 @@ __all__ = [
     "force_set_mark_price",
     "get_traded_assets",
     "is_broker_enabled_on_exchange",
-    "get_dex_exchange_config",
-    "has_dex_exchange_config",
 ]

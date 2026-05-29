@@ -136,6 +136,11 @@ class AbstractAdapter:
         return self.parse_market_status(fixed, **kwargs)
 
     @_adapter
+    def adapt_dex_pairs(self, raw, **kwargs) -> list[dict]:
+        fixed = self.fix_dex_pairs(raw, **kwargs)
+        return self.parse_dex_pairs(fixed, **kwargs)
+
+    @_adapter
     def adapt_transaction(self, raw, **kwargs) -> dict:
         fixed = self.fix_transaction(raw, **kwargs)
         return self.parse_transaction(fixed, **kwargs)
@@ -271,6 +276,13 @@ class AbstractAdapter:
 
     def parse_market_status(self, fixed, **kwargs) -> dict:
         raise NotImplementedError("parse_market_status is not implemented")
+
+    def fix_dex_pairs(self, raw, **kwargs) -> list[dict]:
+        # add generic logic if necessary
+        return raw
+
+    def parse_dex_pairs(self, fixed, **kwargs) -> list[dict]:
+        raise NotImplementedError("parse_dex_pairs is not implemented")
 
     def fix_transaction(self, raw, **kwargs) -> dict:
         # add generic logic if necessary

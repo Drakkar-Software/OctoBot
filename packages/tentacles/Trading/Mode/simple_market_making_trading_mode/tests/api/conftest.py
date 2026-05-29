@@ -36,19 +36,11 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as mark
 
 
 def dex_exchange_config_dict(**overrides) -> dict:
-    dex_config_overrides = overrides.pop("dex_config", {})
     return {
         "id": "dex-config-1",
         "name": "dexscreener",
         "exchange": "dexscreener",
         "sandboxed": False,
-        "dex_config": {
-            "chain_id": "ethereum",
-            "dex_id": "uniswap",
-            "base_token_addresses": ["0xbase"],
-            "quote_token_addresses": ["0xquote"],
-            **dex_config_overrides,
-        },
         **overrides,
     }
 

@@ -31,7 +31,8 @@ import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 import octobot_trading.exchanges.util as exchanges_util
 from octobot_trading.enums import ExchangeConstantsTickersColumns as Ectc, \
-    ExchangeConstantsMarketStatusColumns as Ecmsc
+    ExchangeConstantsMarketStatusColumns as Ecmsc, \
+    ExchangeConstantsDexPairsColumns as Ecdpc
 from tests_additional.real_exchanges import get_exchange_manager
 
 
@@ -214,8 +215,8 @@ class RealExchangeTester:
     async def test_get_all_currencies_price_ticker(self):
         pass
 
-    def ensure_required_market_status_values(self, market_status):
-        assert market_status, "market_status must be a non-empty dict from the exchange"
+    def ensure_required_market_status_values(self, market_status, expected_symbols=None):
+        assert market_status, f"market_status must be a non-empty dict from the exchange, got {market_status!r}"
         if Ecmsc.TYPE.value in market_status:
             assert market_status[Ecmsc.TYPE.value] == self.MARKET_STATUS_TYPE, (
                 f"market type mismatch: expected {self.MARKET_STATUS_TYPE=!r}, "
@@ -226,8 +227,12 @@ class RealExchangeTester:
         assert symbol is not None, (
             f"market_status missing {Ecmsc.SYMBOL.value!r} (keys: {list(market_status.keys())})"
         )
-        assert symbol in (self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3), (
-            f"unexpected market symbol {symbol=!r}: expected one of {(self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3)}"
+        allowed_symbols = (
+            expected_symbols if expected_symbols is not None
+            else (self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3)
+        )
+        assert symbol in allowed_symbols, (
+            f"unexpected market symbol {symbol=!r}: expected one of {allowed_symbols}"
         )
         active_raw = market_status.get(Ecmsc.ACTIVE.value)
         if active_raw is not None:
@@ -453,6 +458,51 @@ class RealExchangeTester:
                 f"{len(all_symbols)} not in "
                 f"[{expected_total_symbols_count}, {expected_total_symbols_count * 1.5}]"
             )
+    
+    async def assert_get_dex_pairs(
+        self,
+        symbols: list[str],
+        *,
+        expected_network: str | None = None,
+        expected_dex: str | None = None,
+        expected_ticker_symbols: set[str] | None = None,
+        min_result_count: int = 1,
+        max_price_per_symbol: dict[str, float] | None = None,
+        extra_checks: typing.Callable[[list[dict]], None] | None = None,
+    ):
+        async with self.get_exchange_manager() as exchange_manager:
+            dex_pairs = await exchange_manager.exchange.get_dex_pairs(symbols)
+            assert len(dex_pairs) >= min_result_count, (
+                f"expected at least {min_result_count} dex pairs, got {len(dex_pairs)}"
+            )
+            for dex_pair in dex_pairs:
+                self.check_dex_pair_typing(dex_pair)
+            self.check_dex_pairs_no_duplicate_venue_per_pair(dex_pairs)
+            if expected_network is not None:
+                assert all(
+                    dex_pair[Ecdpc.NETWORK.value] == expected_network for dex_pair in dex_pairs
+                ), f"expected network {expected_network!r} for all dex pairs"
+            if expected_dex is not None:
+                assert all(
+                    dex_pair[Ecdpc.DEX.value] == expected_dex for dex_pair in dex_pairs
+                ), f"expected dex {expected_dex!r} for all dex pairs"
+            if expected_ticker_symbols is not None:
+                assert {dex_pair[Ecdpc.SYMBOL.value] for dex_pair in dex_pairs} == expected_ticker_symbols, (
+                    f"unexpected dex pair symbols: "
+                    f"{ {dex_pair[Ecdpc.SYMBOL.value] for dex_pair in dex_pairs} } "
+                    f"!= {expected_ticker_symbols}"
+                )
+            if max_price_per_symbol is not None:
+                for dex_pair in dex_pairs:
+                    symbol = dex_pair[Ecdpc.SYMBOL.value]
+                    max_price = max_price_per_symbol.get(symbol)
+                    if max_price is not None:
+                        assert dex_pair[Ecdpc.PRICE.value] < max_price, (
+                            f"dex pair {symbol} price is too high: "
+                            f"{dex_pair[Ecdpc.PRICE.value]} >= {max_price}"
+                        )
+            if extra_checks is not None:
+                extra_checks(dex_pairs)
 
     async def assert_get_exchange_symbol(
         self,
@@ -483,6 +533,87 @@ class RealExchangeTester:
             return exchange_manager.exchange.get_market_status(self.SYMBOL), \
                 exchange_manager.exchange.get_market_status(self.SYMBOL_2), \
                 exchange_manager.exchange.get_market_status(self.SYMBOL_3)
+    
+    async def assert_get_market_status_not_loaded(self):
+        for market_status in await self.get_market_statuses():
+            assert market_status == {}, f"market status must be empty, got {market_status!r}"
+
+    async def assert_lazy_loaded_markets(
+        self, symbols: list[str], 
+        normal_price_max=10000, normal_price_min=1e-06,
+        normal_cost_max=10000, normal_cost_min=1e-06,
+        low_price_max=1e-07, low_price_min=1e-09,
+        low_cost_max=1e-03, low_cost_min=1e-06,
+        expect_invalid_price_limit_values=False,
+        expect_inferior_or_equal_price_and_cost=False,
+        enable_price_and_cost_comparison=True,
+        has_price_limits=True,
+        extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
+    ):
+        # 1. markets are not loaded
+        await self.assert_get_market_status_not_loaded()
+        # 2. fetching markets for symbols initializes market statuses
+        async with self.get_exchange_manager() as exchange_manager:
+            fetched_markets = await exchange_manager.exchange.load_markets_for_symbols(symbols)
+            resolved_symbols = [
+                market_status[Ecmsc.SYMBOL.value] for market_status in fetched_markets
+            ]
+            expected_market_symbols = list(dict.fromkeys(symbols + resolved_symbols))
+            self._check_lazy_loaded_markets(
+                fetched_markets,
+                symbols,
+                loaded_markets=exchange_manager.exchange.connector.client.markets,
+            )
+            await self.assert_get_market_status(
+                normal_price_max=normal_price_max, normal_price_min=normal_price_min,
+                normal_cost_max=normal_cost_max, normal_cost_min=normal_cost_min,
+                low_price_max=low_price_max, low_price_min=low_price_min,
+                low_cost_max=low_cost_max, low_cost_min=low_cost_min,
+                expect_invalid_price_limit_values=expect_invalid_price_limit_values,
+                expect_inferior_or_equal_price_and_cost=expect_inferior_or_equal_price_and_cost,
+                enable_price_and_cost_comparison=enable_price_and_cost_comparison,
+                has_price_limits=has_price_limits,
+                extra_checks=extra_checks,
+                market_statuses=fetched_markets,
+                expected_symbols=expected_market_symbols,
+            )
+            # 3. market statuses are initialized
+            market_statuses = [
+                exchange_manager.exchange.get_market_status(symbol) for symbol in symbols
+            ]
+            await self.assert_get_market_status(
+                normal_price_max=normal_price_max, normal_price_min=normal_price_min,
+                normal_cost_max=normal_cost_max, normal_cost_min=normal_cost_min,
+                low_price_max=low_price_max, low_price_min=low_price_min,
+                low_cost_max=low_cost_max, low_cost_min=low_cost_min,
+                expect_invalid_price_limit_values=expect_invalid_price_limit_values,
+                expect_inferior_or_equal_price_and_cost=expect_inferior_or_equal_price_and_cost,
+                enable_price_and_cost_comparison=enable_price_and_cost_comparison,
+                has_price_limits=has_price_limits,
+                extra_checks=extra_checks,
+                market_statuses=market_statuses,
+                expected_symbols=expected_market_symbols,
+            )
+    
+    def _check_lazy_loaded_markets(
+        self,
+        markets: list[dict],
+        symbols: list[str],
+        loaded_markets: dict | None = None,
+    ):
+        assert len(markets) == len(symbols), (
+            f"expected one market status per requested symbol, got {len(markets)} for {len(symbols)} symbols"
+        )
+        for market_status in markets:
+            assert market_status.get(Ecmsc.SYMBOL.value), (
+                f"market status must include a non-empty symbol: {market_status!r}"
+            )
+        if loaded_markets is not None:
+            for symbol in symbols:
+                assert symbol in loaded_markets, (
+                    f"requested symbol {symbol!r} not present in connector markets"
+                )
+            self.check_markets_no_duplicate_venue_per_pair(loaded_markets)
 
     async def assert_get_market_status(
         self,
@@ -495,9 +626,11 @@ class RealExchangeTester:
         enable_price_and_cost_comparison=True,
         has_price_limits=True,
         extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
+        market_statuses: typing.Optional[dict[str, dict]] = None,
+        expected_symbols: list[str] | None = None,
     ):
-        for market_status in await self.get_market_statuses():
-            self.ensure_required_market_status_values(market_status)
+        for market_status in (market_statuses or await self.get_market_statuses()):
+            self.ensure_required_market_status_values(market_status, expected_symbols=expected_symbols)
             # market statuses should always be valid: fixer is automatically applied when ob_exchange requires it
             symbol = market_status[Ecmsc.SYMBOL.value]
             precision = market_status[Ecmsc.PRECISION.value]
@@ -558,6 +691,10 @@ class RealExchangeTester:
         client_using_cached_markets = exchange_class(
             ccxt_client_util.get_custom_domain_config(exchange_class) # use custom domain config if set
         )
+        if not exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.SUPPORTS_MARKETS_CACHE):
+            with pytest.raises(KeyError):
+                ccxt_client_util.load_markets_from_cache(client_using_cached_markets, False)
+            return
         ccxt_client_util.load_markets_from_cache(client_using_cached_markets, False)
         cached = client_using_cached_markets.markets
         actual = exchange_manager.exchange.connector.client.markets
@@ -1091,6 +1228,85 @@ class RealExchangeTester:
                     f"set enable_price_and_cost_comparison=False if exchange omits this "
                     f"({min_price=} {min_cost=} {market_status[Ecmsc.SYMBOL.value]=})"
                 )
+
+    @classmethod
+    def check_dex_pair_typing(cls, dex_pair: dict):
+        required_columns = (
+            Ecdpc.SYMBOL,
+            Ecdpc.NETWORK,
+            Ecdpc.DEX,
+            Ecdpc.BASE_TOKEN_ADDRESS,
+            Ecdpc.QUOTE_TOKEN_ADDRESS,
+            Ecdpc.PRICE,
+            Ecdpc.QUOTE_LIQUIDITY,
+        )
+        for column in required_columns:
+            assert column.value in dex_pair, (
+                f"dex pair missing required column {column.value!r}: {dex_pair!r}"
+            )
+        string_columns = (
+            Ecdpc.SYMBOL,
+            Ecdpc.NETWORK,
+            Ecdpc.DEX,
+            Ecdpc.BASE_TOKEN_ADDRESS,
+            Ecdpc.QUOTE_TOKEN_ADDRESS,
+        )
+        for column in string_columns:
+            value = dex_pair[column.value]
+            assert isinstance(value, str) and value, (
+                f"dex pair {column.value} must be a non-empty string; got {value!r}"
+            )
+        for column in (Ecdpc.PRICE, Ecdpc.QUOTE_LIQUIDITY):
+            value = dex_pair[column.value]
+            assert isinstance(value, decimal.Decimal), (
+                f"dex pair {column.value} must be decimal.Decimal; got {type(value).__name__} {value!r}"
+            )
+            assert value > 0, (
+                f"dex pair {column.value} must be > 0; got {value!r}"
+            )
+
+    @classmethod
+    def check_dex_pairs_no_duplicate_venue_per_pair(cls, dex_pairs: list[dict]) -> None:
+        seen_pair_venue_keys: set[tuple[str, str, str]] = set()
+        duplicate_pair_venue_keys: list[tuple[str, str, str]] = []
+        for dex_pair in dex_pairs:
+            pair_venue_key = (
+                dex_pair[Ecdpc.SYMBOL.value],
+                dex_pair[Ecdpc.NETWORK.value],
+                dex_pair[Ecdpc.DEX.value],
+            )
+            if pair_venue_key in seen_pair_venue_keys:
+                duplicate_pair_venue_keys.append(pair_venue_key)
+            else:
+                seen_pair_venue_keys.add(pair_venue_key)
+        assert not duplicate_pair_venue_keys, (
+            f"duplicate venues for a pair: {duplicate_pair_venue_keys}"
+        )
+
+    @classmethod
+    def check_markets_no_duplicate_venue_per_pair(cls, markets: dict) -> None:
+        unique_markets_by_id: dict[str, dict] = {}
+        for market in markets.values():
+            market_id = market.get(Ecmsc.ID.value)
+            if market_id and market_id not in unique_markets_by_id:
+                unique_markets_by_id[market_id] = market
+        seen_pair_venue_keys: set[tuple[str, str, str]] = set()
+        duplicate_pair_venue_keys: list[tuple[str, str, str]] = []
+        for market in unique_markets_by_id.values():
+            base = market.get(Ecmsc.CURRENCY.value)
+            quote = market.get(Ecmsc.MARKET.value)
+            market_id = market.get(Ecmsc.ID.value, '')
+            id_parts = market_id.split(':') if market_id else []
+            network_code = id_parts[0] if len(id_parts) > 0 else ''
+            dex_code = id_parts[1] if len(id_parts) > 1 else ''
+            pair_venue_key = (f"{base}/{quote}", network_code, dex_code)
+            if pair_venue_key in seen_pair_venue_keys:
+                duplicate_pair_venue_keys.append(pair_venue_key)
+            else:
+                seen_pair_venue_keys.add(pair_venue_key)
+        assert not duplicate_pair_venue_keys, (
+            f"duplicate venues for a market pair: {duplicate_pair_venue_keys}"
+        )
 
     @classmethod
     def check_ticker_typing(

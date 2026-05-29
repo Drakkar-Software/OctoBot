@@ -672,15 +672,6 @@ def fix_client_missing_markets_fees(
             )
 
 
-def get_dex_exchange_ccxt_config(configuration: dict) -> dict:
-    return {
-        ccxt_enums.DEXExchangeCCXTConfigKeys.CHAIN_ID.value: configuration.get(enums.DEXExchangeConfigKeys.CHAIN_ID.value),
-        ccxt_enums.DEXExchangeCCXTConfigKeys.DEX_ID.value: configuration.get(enums.DEXExchangeConfigKeys.DEX_ID.value),
-        ccxt_enums.DEXExchangeCCXTConfigKeys.BASE_TOKEN_ADDRESSES.value: configuration.get(enums.DEXExchangeConfigKeys.BASE_TOKEN_ADDRESSES.value),
-        ccxt_enums.DEXExchangeCCXTConfigKeys.QUOTE_TOKEN_ADDRESSES.value: configuration.get(enums.DEXExchangeConfigKeys.QUOTE_TOKEN_ADDRESSES.value),
-    }
-
-
 def _get_market_symbol_suffix(symbol):
     return symbol[symbol.index(octobot_commons.MARKET_SEPARATOR):]
 

@@ -120,29 +120,49 @@ class TickerUpdater(ticker_channel.TickerProducer):
     async def fetch_all_tickers(self, symbols: typing.Optional[list[str]]) -> dict[str, dict]:
         if symbols == []:
             return {}
-        if isinstance(symbols, list) and len(symbols) == 1:
-            return {
-                symbols[0]: await self.channel.exchange_manager.exchange.get_price_ticker(symbols[0])
-            }
+        exchange_name = self.channel.exchange_manager.exchange_name
         exchange_type = exchange_util.get_exchange_type(self.channel.exchange_manager).value
-        if not (tickers := _TICKER_CACHE.get_all_tickers(
-            self.channel.exchange_manager.exchange_name,
-            exchange_type,
-            self.channel.exchange_manager.is_sandboxed
-        )):
+        sandboxed = self.channel.exchange_manager.is_sandboxed
+        cached_tickers = _TICKER_CACHE.get_all_tickers(exchange_name, exchange_type, sandboxed) or {}
+        if isinstance(symbols, list) and len(symbols) == 1:
+            symbol = symbols[0]
+            if symbol in cached_tickers:
+                return {symbol: cached_tickers[symbol]}
+            return {
+                symbol: await self.channel.exchange_manager.exchange.get_price_ticker(symbol)
+            }
+        if symbols is None:
+            if cached_tickers:
+                return cached_tickers
             symbols_filter = None
             if self.channel.exchange_manager.exchange.get_option_value(
                 enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
             ):
                 symbols_filter = symbols
-            tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker(symbols=symbols_filter)
-            self.set_cache(
-                self.channel.exchange_manager.exchange_name,
-                exchange_type,
-                self.channel.exchange_manager.is_sandboxed,
-                tickers
+            tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker(
+                symbols=symbols_filter
             )
-        return tickers
+            self.set_cache(exchange_name, exchange_type, sandboxed, tickers)
+            return tickers
+        tickers_from_cache = {
+            symbol: cached_tickers[symbol]
+            for symbol in symbols
+            if symbol in cached_tickers
+        }
+        missing_symbols = [symbol for symbol in symbols if symbol not in cached_tickers]
+        if not missing_symbols:
+            return tickers_from_cache
+        fetched_tickers = await self._fetch_missing_tickers(missing_symbols)
+        self.set_cache(exchange_name, exchange_type, sandboxed, fetched_tickers)
+        return {**tickers_from_cache, **fetched_tickers}
+
+    async def _fetch_missing_tickers(self, missing_symbols: list[str]) -> dict[str, dict]:
+        exchange = self.channel.exchange_manager.exchange
+        if exchange.get_option_value(
+            enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
+        ):
+            return await exchange.get_all_currencies_price_ticker(symbols=missing_symbols)
+        return await exchange.get_all_currencies_price_ticker()
 
     @staticmethod
     def set_cache(exchange_name: str, exchange_type: str, sandboxed: bool, tickers: dict):

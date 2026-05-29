@@ -24,7 +24,7 @@ _FULL_SYMBOL_GROUPS_REGEX = r"([^//]*)\/([^:]*):?([^-]*)-?([^-]*)-?([^-]*)-?([^-
 # pylint: disable=R0902
 class Symbol:
     #                             base   /  quote : settlement-identifier-strike price-type
-    # Inspired from CCXT https://docs.ccxt.com/en/latest/manual.html#option:
+    # Inspired from CCXT https://docs.ccxt.com/#/README?id=contract-naming-conventions:
     # //
     # // base asset or currency
     # // ↓
@@ -46,6 +46,13 @@ class Symbol:
     # on 2021-06-25
     # 'ETH/USDT:USDT-210625-5000-C'  // ETH/USDT call option contract strike price 5000 USDT settled in USDT (linear,
     # vanilla) on 2021-06-25
+    # Local OctoBot addition (supported by the OctoBot ccxt fork)
+    # Uses https://docs.ccxt.com/#/README?id=unified-networks for network names.
+    # Optional network and DEX suffix (in uppercase, always at the end of the symbol):
+    # 'BTC/USDT@SOL!RAYDIUM'  // BTC/USDT spot pair on solana network and raydium dex
+    # 'WETH/USDT:USDT-211225-40000-C@ETH!UNISWAP'  // call option on ethereum network and uniswap dex
+    # 'WETH/USDT:USDT-211225-40000-C@ETH!*'  // call option on ethereum network and any (most liquid) dex
+    # Note: network and dex names cannot contain '!', which separates network from dex after '@'.
 
     def __init__(
         self,
@@ -53,6 +60,8 @@ class Symbol:
         market_separator: str = octobot_commons.MARKET_SEPARATOR,
         settlement_separator: str = octobot_commons.SETTLEMENT_ASSET_SEPARATOR,
         option_separator: str = octobot_commons.OPTION_SEPARATOR,
+        network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+        dex_separator: str = octobot_commons.DEX_SEPARATOR,
     ):
         self.symbol_str: str = symbol_str
         self.base: typing.Optional[str] = None
@@ -61,9 +70,13 @@ class Symbol:
         self.identifier: typing.Optional[str] = None
         self.strike_price: typing.Optional[str] = None
         self.option_type: typing.Optional[str] = None
+        self.network: typing.Optional[str] = None
+        self.dex: typing.Optional[str] = None
         self.market_separator: str = market_separator
         self.settlement_separator: str = settlement_separator
         self.option_separator: str = option_separator
+        self.network_separator: str = network_separator
+        self.dex_separator: str = dex_separator
         self.parse_symbol(self.symbol_str)
 
     def parse_symbol(self, symbol_str: str):
@@ -71,7 +84,10 @@ class Symbol:
         Parse the specified symbol
         :param symbol_str: the symbol to parse
         """
-        if self.settlement_separator in symbol_str:
+        trading_symbol, self.network, self.dex = _extract_network_and_dex(
+            symbol_str, self.network_separator, self.dex_separator
+        )
+        if self.settlement_separator in trading_symbol:
             (
                 self.base,
                 self.quote,
@@ -79,12 +95,12 @@ class Symbol:
                 self.identifier,
                 self.strike_price,
                 self.option_type,
-            ) = _parse_symbol_full(_FULL_SYMBOL_GROUPS_REGEX, symbol_str)
+            ) = _parse_symbol_full(_FULL_SYMBOL_GROUPS_REGEX, trading_symbol)
             self.option_type = _parse_option_type(self.option_type)
         else:
             # simple (probably spot) pair, use str.split as it is much faster
             self.base, self.quote = _parse_spot_symbol(
-                self.market_separator, symbol_str
+                self.market_separator, trading_symbol
             )
             self.settlement_asset = self.identifier = self.strike_price = ""
             self.option_type = None
@@ -100,6 +116,8 @@ class Symbol:
         market_separator: str = octobot_commons.MARKET_SEPARATOR,
         settlement_separator: str = octobot_commons.SETTLEMENT_ASSET_SEPARATOR,
         option_separator: str = octobot_commons.OPTION_SEPARATOR,
+        network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+        dex_separator: str = octobot_commons.DEX_SEPARATOR,
     ) -> str:
         """
         return the base/quote representation of this symbol. includes settlement asset if set
@@ -117,6 +135,10 @@ class Symbol:
                     _parse_option_type(self.option_type),
                 ]
                 merged_symbol = f"{merged_symbol}{option_separator.join(details)}"
+        if self.network:
+            merged_symbol = f"{merged_symbol}{network_separator}{self.network}"
+            if self.dex:
+                merged_symbol = f"{merged_symbol}{dex_separator}{self.dex}"
         return merged_symbol
 
     def merged_str_base_and_quote_only_symbol(
@@ -127,6 +149,24 @@ class Symbol:
         return the base/quote representation of this symbol. includes settlement asset if set
         """
         return f"{self.base}{market_separator}{self.quote}"
+
+    def has_network(self) -> bool:
+        """
+        return True when this symbol specifies a network
+        """
+        return bool(self.network)
+
+    def has_dex(self) -> bool:
+        """
+        return True when this symbol specifies a dex
+        """
+        return bool(self.dex)
+
+    def is_any_dex(self) -> bool:
+        """
+        return True when this symbol uses the any-dex wildcard (most liquid dex)
+        """
+        return self.dex == octobot_commons.ANY_DEX_WILDCARD
 
     def is_perpetual_future(self):
         """
@@ -207,6 +247,8 @@ class Symbol:
             and self.identifier == other.identifier
             and self.strike_price == other.strike_price
             and self.option_type == other.option_type
+            and self.network == other.network
+            and self.dex == other.dex
         )
 
     def __str__(self):
@@ -214,6 +256,25 @@ class Symbol:
 
     def __repr__(self):
         return str(self)
+
+
+def _extract_network_and_dex(
+    symbol_str: str,
+    network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+    dex_separator: str = octobot_commons.DEX_SEPARATOR,
+) -> typing.Tuple[str, typing.Optional[str], typing.Optional[str]]:
+    if network_separator not in symbol_str:
+        return symbol_str, None, None
+    trading_symbol, network_and_dex = symbol_str.rsplit(network_separator, 1)
+    if not network_and_dex:
+        raise ValueError(
+            f"Invalid symbol {symbol_str!r}: network must be specified after {network_separator!r}."
+        )
+    if dex_separator in network_and_dex:
+        network, dex = network_and_dex.split(dex_separator, 1)
+    else:
+        network, dex = network_and_dex, None
+    return trading_symbol, network, dex
 
 
 def _parse_symbol_full(full_symbol_regex, symbol_str):

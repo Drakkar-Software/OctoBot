@@ -212,6 +212,16 @@ class RestExchange(abstract_exchange.AbstractExchange):
 
     def fetch_stop_order_in_different_request(self, symbol: str) -> bool:
         return self.connector.fetch_stop_order_in_different_request(symbol)
+    
+    def supports_all_symbols_listing(self) -> bool:
+        return bool(self.get_option_value(
+            enums.ExchangeClientOptions.SUPPORTS_ALL_SYMBOLS_LISTING
+        ))
+
+    def lazy_load_markets(self) -> bool:
+        return bool(self.get_option_value(
+            enums.ExchangeClientOptions.LAZY_LOAD_MARKETS
+        ))
 
     async def create_order(self, order_type: enums.TraderOrderType, symbol: str, quantity: decimal.Decimal,
                            price: decimal.Decimal = None, stop_price: decimal.Decimal = None,
@@ -564,11 +574,22 @@ class RestExchange(abstract_exchange.AbstractExchange):
     def get_first_consecutive_authentication_error_at(self) -> typing.Optional[float]:
         return self.connector.first_consecutive_authentication_error_at
 
+    async def load_markets_for_symbols(self, symbols: list[str]) -> list[dict]:
+        loaded_markets = await self.connector.load_markets_for_symbols(symbols)
+        # ensure symbols are updated
+        self.symbols.update(
+            self.get_all_available_symbols(active_only=True)
+        )
+        return loaded_markets
+
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         """
         Override using get_fixed_market_status in exchange tentacle if the default market status is not as expected
         """
         return self.connector.get_market_status(symbol, price_example=price_example, with_fixer=with_fixer)
+
+    async def get_dex_pairs(self, symbols: list[str], **kwargs: dict) -> list[dict]:
+        return await self.connector.get_dex_pairs(symbols, **kwargs)
 
     def uses_demo_trading_instead_of_sandbox(self, exchange_type: enums.ExchangeTypes) -> bool:
         return self.connector.uses_demo_trading_instead_of_sandbox(exchange_type)

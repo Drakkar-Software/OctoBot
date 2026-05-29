@@ -48,7 +48,6 @@ EXCHANGE_ACCOUNT_ID = "exchange_account_id"
 SANDBOXED = "sandboxed"
 EXCHANGE_TYPE = "exchange_type"
 URL = "url"
-DEX_CONFIG = "dex_config"
 
 
 class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesProfileDataAdapter):
@@ -218,18 +217,12 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                     exchange_config.get(EXCHANGE_CREDENTIAL_ID) # cloud bots: bound to creds
                 )
             )
-            dex_config = exchange_config.get(DEX_CONFIG) or {}
-            has_dex_exchange_config = octobot_trading.exchanges.has_dex_exchange_config(dex_config)
-            if exchange_url or requires_auth or has_dex_exchange_config:
+            if exchange_url or requires_auth:
                 exchange_config_update = {}
                 if requires_auth:
                     exchange_config_update = {
                         octobot_commons.constants.CONFIG_FORCE_AUTHENTICATION: True
                     }
-                if has_dex_exchange_config:
-                    exchange_config_update.update(
-                        octobot_trading.exchanges.get_dex_exchange_config(dex_config)
-                    )
                 if exchange_url:
                     exchange_tentacle_name = tentacles_exchanges.HollaexAutofilled.get_name()
                     tentacle_config = {**exchange_config_update, **{

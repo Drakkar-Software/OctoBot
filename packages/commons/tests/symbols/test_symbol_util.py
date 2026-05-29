@@ -142,3 +142,20 @@ class TestTradingTypeFromTradedSymbols:
     def test_mixed_symbol_types_raise_ambiguous_error(self):
         with pytest.raises(octobot_commons.errors.AmbiguousTradedSymbolsTradingTypeError):
             octobot_commons.symbols.trading_type_from_traded_symbols(["BTC/USDT", "BTC/USDT:USDT"])
+
+
+class TestMergeSymbolNetworkDex:
+    def test_strips_network_and_dex_suffix(self):
+        assert octobot_commons.symbols.merge_symbol("SOL/USDT@solana!raydium") == "SOLUSDT"
+
+
+class TestConvertSymbolBaseAndQuoteOnlyNetworkDex:
+    def test_strips_network_and_dex_suffix(self):
+        assert (
+            octobot_commons.symbols.convert_symbol(
+                "SOL/USDT@solana!raydium",
+                symbol_separator="/",
+                base_and_quote_only=True,
+            )
+            == "SOL/USDT"
+        )

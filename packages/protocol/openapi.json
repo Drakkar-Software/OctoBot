@@ -726,34 +726,6 @@
           }
         }
       },
-      "DEXConfig": {
-        "description": "DEXConfig",
-        "type": "object",
-        "required": [
-          "chain_id",
-          "dex_id"
-        ],
-        "properties": {
-          "chain_id": {
-            "type": "string"
-          },
-          "dex_id": {
-            "type": "string"
-          },
-          "base_token_addresses": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "quote_token_addresses": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "ExchangeConfig": {
         "description": "ExchangeConfig",
         "type": "object",
@@ -779,9 +751,6 @@
           },
           "url": {
             "type": "string"
-          },
-          "dex_config": {
-            "$ref": "#/components/schemas/DEXConfig"
           }
         }
       },
@@ -1101,7 +1070,8 @@
             "description": "Exchange id, or a sentinel such as local exchange price when supported by the trading mode."
           },
           "pair": {
-            "type": "string"
+            "type": "string",
+            "description": "Pair symbol (e.g. 'BTC/USDT' for a CEX or 'WETH/USDC@ETH-UNISWAP' for a DEX)."
           },
           "weight": {
             "type": "number"

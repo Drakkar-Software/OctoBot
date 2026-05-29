@@ -26,6 +26,7 @@ import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.errors as commons_errors
 
 import octobot_trading.constants as trading_constants
+import octobot_trading.dsl.dsl_dependencies as dsl_dependencies
 import octobot_trading.personal_data as trading_personal_data
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.exchanges as trading_exchanges
@@ -958,6 +959,7 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
     async def _ensure_dependencies(
         self, exchange_manager, dependencies: typing.List[exchange_operators.ExchangeDataDependency]
     ) -> dict[str, set[str]]:
+        await dsl_dependencies.resolve_missing_dependencies_if_required(dependencies, exchange_manager)
         symbols_by_pending_topic: dict[str, set[str]] = {
             commons_enums.InitializationEventExchangeTopics.PRICE.value: set(),
         }
@@ -1193,7 +1195,9 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
         # exchange_reference_prices requirements
         for reference_price in exchange_reference_prices:
             await reference_price.initialize_if_required(exchange_manager)
-            for dependency in reference_price.get_dependencies(exchange_manager):
+            dependencies = reference_price.get_dependencies(exchange_manager)
+            await dsl_dependencies.resolve_missing_dependencies_if_required(dependencies, exchange_manager)
+            for dependency in dependencies:
                 if dependency.data_source == trading_constants.MARK_PRICE_CHANNEL:
                     # mark price = watched symbol
                     watched_symbols.append(dependency.symbol)
@@ -1208,6 +1212,9 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
         # hedging engine requirements
         if self._hedging_engine and self._hedging_engine.hedging_exchange_name == exchange_manager.exchange_name:
             traded_symbols.append(self.symbol)
+        if exchange_manager.exchange.lazy_load_markets():
+            if symbols_to_load := list(dict.fromkeys(watched_symbols + traded_symbols)):
+                await exchange_manager.load_markets_for_symbols_and_refresh_client_symbols(symbols_to_load)
         if traded_symbols:
             await trading_api.register_new_pairs_on_exchange_manager(
                 exchange_manager,

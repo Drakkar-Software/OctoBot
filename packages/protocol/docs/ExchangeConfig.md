@@ -11,7 +11,6 @@ Name | Type | Description | Notes
 **exchange** | **str** |  | 
 **sandboxed** | **bool** |  | [default to False]
 **url** | **str** |  | [optional] 
-**dex_config** | [**DEXConfig**](DEXConfig.md) |  | [optional] 
 
 ## Example
 

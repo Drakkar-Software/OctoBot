@@ -17,9 +17,13 @@
 from octobot_trading.dsl.dsl_dependencies import (
     SymbolDependency,
     CopyTradingDependency,
+    resolve_missing_dependencies,
+    resolve_missing_dependencies_if_required,
 )
 
 __all__ = [
     "SymbolDependency",
     "CopyTradingDependency",
+    "resolve_missing_dependencies",
+    "resolve_missing_dependencies_if_required",
 ]

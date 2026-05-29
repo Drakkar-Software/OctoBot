@@ -19,9 +19,6 @@ import pytest
 import octobot.automation.automation as automation_module
 import octobot_commons.constants as commons_constants
 import octobot_commons.profiles
-import octobot_trading.enums as trading_enums
-import octobot_trading.exchanges as exchanges
-
 import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter as simple_market_making_profile_data_adapter
 from tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading import SimpleMarketMakingTradingMode
 import tentacles.Automation.trigger_events.volatility_threshold_event.volatility_threshold as volatility_threshold_module
@@ -32,19 +29,6 @@ import tentacles.Automation.actions.stop_strategies_and_pause_trader_action.stop
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
-
-
-def _dex_exchange_config(**overrides):
-    dex_config_overrides = overrides.pop(simple_market_making_profile_data_adapter.DEX_CONFIG, {})
-    return {
-        simple_market_making_profile_data_adapter.NAME: "dexscreener",
-        simple_market_making_profile_data_adapter.DEX_CONFIG: {
-            trading_enums.DEXExchangeConfigKeys.CHAIN_ID.value: "ethereum",
-            trading_enums.DEXExchangeConfigKeys.DEX_ID.value: "uniswap",
-            **dex_config_overrides,
-        },
-        **overrides,
-    }
 
 
 @pytest.fixture
@@ -559,40 +543,13 @@ class TestRegisterExchangeConfigs:
         # no tentacle added
         assert profile_data.tentacles == []
 
-    def test_register_exchange_configs_adds_script_tentacle_with_dex_config_when_no_url_or_auth(
-        self, adapter, profile_data
-    ):
-        exchange_configs = [_dex_exchange_config()]
-
-        class DummyExchangeTentacle:
-            pass
-
-        with mock.patch.object(
-            simple_market_making_profile_data_adapter.SimpleMarketMakingProfileDataAdapter,
-            "exchange_config_requires_exchange_auth",
-            return_value=False,
-        ), mock.patch(
-            "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.scripting_library.get_exchange_tentacle_from_name",
-            mock.Mock(return_value=DummyExchangeTentacle),
-        ):
-            adapter._register_exchange_configs(profile_data, exchange_configs)  # type: ignore
-
-        assert len(profile_data.tentacles) == 1
-        tentacle = profile_data.tentacles[0]
-        assert tentacle.name == DummyExchangeTentacle.__name__
-        assert tentacle.config == exchanges.get_dex_exchange_config(
-            exchange_configs[0][simple_market_making_profile_data_adapter.DEX_CONFIG]
-        )
-        assert commons_constants.CONFIG_FORCE_AUTHENTICATION not in tentacle.config
-
-    def test_register_exchange_configs_merges_dex_config_with_force_auth(self, adapter, profile_data):
+    def test_register_exchange_configs_adds_force_auth_tentacle(self, adapter, profile_data):
         exchange_configs = [
-            _dex_exchange_config(
-                **{
-                    simple_market_making_profile_data_adapter.EXCHANGE_ACCOUNT_ID: "acc-1",
-                    simple_market_making_profile_data_adapter.EXCHANGE_CREDENTIAL_ID: "cred-1",
-                }
-            )
+            {
+                simple_market_making_profile_data_adapter.NAME: "dexscreener",
+                simple_market_making_profile_data_adapter.EXCHANGE_ACCOUNT_ID: "acc-1",
+                simple_market_making_profile_data_adapter.EXCHANGE_CREDENTIAL_ID: "cred-1",
+            }
         ]
 
         class DummyExchangeTentacle:
@@ -611,16 +568,16 @@ class TestRegisterExchangeConfigs:
         assert len(profile_data.tentacles) == 1
         tentacle = profile_data.tentacles[0]
         assert tentacle.name == DummyExchangeTentacle.__name__
-        assert tentacle.config == {
-            commons_constants.CONFIG_FORCE_AUTHENTICATION: True,
-            **exchanges.get_dex_exchange_config(
-                exchange_configs[0][simple_market_making_profile_data_adapter.DEX_CONFIG]
-            ),
-        }
+        assert tentacle.config == {commons_constants.CONFIG_FORCE_AUTHENTICATION: True}
 
-    def test_register_exchange_configs_merges_dex_config_with_hollaex_url(self, adapter, profile_data):
+    def test_register_exchange_configs_with_hollaex_url(self, adapter, profile_data):
         exchange_url = "https://api.dexscreener.com"
-        exchange_configs = [_dex_exchange_config(**{simple_market_making_profile_data_adapter.URL: exchange_url})]
+        exchange_configs = [
+            {
+                simple_market_making_profile_data_adapter.NAME: "dexscreener",
+                simple_market_making_profile_data_adapter.URL: exchange_url,
+            }
+        ]
 
         with mock.patch.object(
             simple_market_making_profile_data_adapter.SimpleMarketMakingProfileDataAdapter,
@@ -632,12 +589,7 @@ class TestRegisterExchangeConfigs:
         assert len(profile_data.tentacles) == 1
         tentacle = profile_data.tentacles[0]
 
-        dex_config = exchange_configs[0][simple_market_making_profile_data_adapter.DEX_CONFIG]
-        for dex_config_key in exchanges.get_dex_exchange_config(dex_config):
-            assert tentacle.config[dex_config_key] == dex_config.get(dex_config_key)
-
-        dex_config_keys = set(exchanges.get_dex_exchange_config(dex_config).keys())
-        auto_filled_keys = [key for key in tentacle.config.keys() if key not in dex_config_keys]
+        auto_filled_keys = list(tentacle.config.keys())
         assert len(auto_filled_keys) == 1
         auto_filled = tentacle.config[auto_filled_keys[0]]
         assert list(auto_filled.keys()) == [profile_data.exchanges[0].internal_name]

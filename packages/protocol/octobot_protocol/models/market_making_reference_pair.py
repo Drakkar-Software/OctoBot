@@ -29,7 +29,7 @@ class MarketMakingReferencePair(BaseModel):
     Reference price source for market making (exchange pair, weighting, and optional formula).
     """ # noqa: E501
     exchange: StrictStr = Field(description="Exchange id, or a sentinel such as local exchange price when supported by the trading mode.")
-    pair: StrictStr
+    pair: StrictStr = Field(description="Pair symbol (e.g. 'BTC/USDT' for a CEX or 'WETH/USDC@ETH-UNISWAP' for a DEX).")
     weight: Optional[Union[StrictFloat, StrictInt]] = None
     formula: Optional[StrictStr] = Field(default=None, description="Optional formula overriding the default latest price for this source.")
     time_frame: Optional[TimeFrame] = None
