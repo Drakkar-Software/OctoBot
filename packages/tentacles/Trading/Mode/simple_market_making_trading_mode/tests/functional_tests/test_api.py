@@ -7,6 +7,7 @@ import typing
 
 import pytest
 
+import octobot_commons
 import octobot_commons.symbols.symbol_util as commons_symbols
 
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.api_handlers as api_handlers
@@ -23,43 +24,36 @@ WBNB_TOKEN_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
 USDT_TOKEN_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"
 WBTC_TOKEN_ADDRESS = "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c"
 
-CROSS_PAIR_SYMBOL_FORMULA = "price('BTCB/WBNB')*price('WBNB/USDT')"
+BSC_NETWORK_NAME = "BEP20"
+BSC_DEX_NAME = "UNISWAP"
+BSC_DEX_SYMBOL_SUFFIX = (
+    f"{octobot_commons.NETWORK_SEPARATOR}{BSC_NETWORK_NAME}"
+    f"{octobot_commons.DEX_SEPARATOR}{BSC_DEX_NAME}"
+)
+DEX_BTCB_USDT_TRADING_PAIR = f"{DEX_TRADING_PAIR}{BSC_DEX_SYMBOL_SUFFIX}"
+BSC_ANY_DEX_SYMBOL_SUFFIX = (
+    f"{octobot_commons.NETWORK_SEPARATOR}{BSC_NETWORK_NAME}"
+    f"{octobot_commons.DEX_SEPARATOR}{octobot_commons.ANY_DEX_WILDCARD}"
+)
+DEX_BTCB_USDT_ANY_DEX_TRADING_PAIR = f"{DEX_TRADING_PAIR}{BSC_ANY_DEX_SYMBOL_SUFFIX}"
+
+CROSS_PAIR_SYMBOL_FORMULA = (
+    f"price('{BTCB_TOKEN_ADDRESS}/{WBNB_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}')"
+    f"*price('{WBNB_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}')"
+)
 CROSS_PAIR_ADDRESS_FORMULA = (
-    f'price("{BTCB_TOKEN_ADDRESS}/{WBNB_TOKEN_ADDRESS}")'
-    f'*price("{WBNB_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}")'
+    f'price("{BTCB_TOKEN_ADDRESS}/{WBNB_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}")'
+    f'*price("{WBNB_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}")'
+)
+CROSS_PAIR_ANY_DEX_ADDRESS_FORMULA = (
+    f'price("{BTCB_TOKEN_ADDRESS}/{WBNB_TOKEN_ADDRESS}{BSC_ANY_DEX_SYMBOL_SUFFIX}")'
+    f'*price("{WBNB_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_ANY_DEX_SYMBOL_SUFFIX}")'
 )
 DIRECT_WBTC_USDT_ADDRESS_FORMULA = (
-    f'price("{WBTC_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}")'
+    f'price("{WBTC_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}")'
 )
 
 pytestmark = pytest.mark.asyncio
-
-
-def _cross_pair_dex_config() -> dict:
-    return {
-        "chain_id": "bsc",
-        "dex_id": "uniswap",
-        "base_token_addresses": [BTCB_TOKEN_ADDRESS, WBNB_TOKEN_ADDRESS],
-        "quote_token_addresses": [WBNB_TOKEN_ADDRESS, USDT_TOKEN_ADDRESS],
-    }
-
-
-def _direct_btcb_usdt_dex_config() -> dict:
-    return {
-        "chain_id": "bsc",
-        "dex_id": "uniswap",
-        "base_token_addresses": [BTCB_TOKEN_ADDRESS],
-        "quote_token_addresses": [USDT_TOKEN_ADDRESS],
-    }
-
-
-def _direct_wbtc_usdt_dex_config() -> dict:
-    return {
-        "chain_id": "bsc",
-        "dex_id": "uniswap",
-        "base_token_addresses": [WBTC_TOKEN_ADDRESS],
-        "quote_token_addresses": [USDT_TOKEN_ADDRESS],
-    }
 
 
 def _bingx_exchange() -> dict:
@@ -68,16 +62,6 @@ def _bingx_exchange() -> dict:
         "name": BINGX_EXCHANGE_NAME,
         "exchange": BINGX_EXCHANGE_NAME,
         "sandboxed": False,
-    }
-
-
-def _dexscreener_exchange(dex_config: dict) -> dict:
-    return {
-        "id": "dexscreener-config",
-        "name": DEXSCREENER_EXCHANGE_NAME,
-        "exchange": DEXSCREENER_EXCHANGE_NAME,
-        "sandboxed": False,
-        "dex_config": dex_config,
     }
 
 
@@ -208,7 +192,12 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
         request_data = _predicted_order_book_request(
             exchanges=[
                 _bingx_exchange(),
-                _dexscreener_exchange(_cross_pair_dex_config()),
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
             ],
             pair_settings=[
                 _base_pair_settings(
@@ -233,7 +222,12 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
         request_data = _predicted_order_book_request(
             exchanges=[
                 _bingx_exchange(),
-                _dexscreener_exchange(_cross_pair_dex_config())
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
             ],
             pair_settings=[
                 _base_pair_settings(
@@ -258,7 +252,72 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
         request_data = _predicted_order_book_request(
             exchanges=[
                 _bingx_exchange(),
-                _dexscreener_exchange(_direct_btcb_usdt_dex_config())
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
+            ],
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": DEXSCREENER_EXCHANGE_NAME,
+                            "pair": DEX_BTCB_USDT_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": "",
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
+    async def test_dexscreener_direct_btcb_usdt_any_dex(self):
+        request_data = _predicted_order_book_request(
+            exchanges=[
+                _bingx_exchange(),
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
+            ],
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": DEXSCREENER_EXCHANGE_NAME,
+                            "pair": DEX_BTCB_USDT_ANY_DEX_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": "",
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
+    async def test_dexscreener_any_dex_cross_pair_address_formula(self):
+        request_data = _predicted_order_book_request(
+            exchanges=[
+                _bingx_exchange(),
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
             ],
             pair_settings=[
                 _base_pair_settings(
@@ -269,7 +328,7 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
                             "exchange": DEXSCREENER_EXCHANGE_NAME,
                             "pair": DEX_TRADING_PAIR,
                             "weight": 1,
-                            "formula": "",
+                            "formula": CROSS_PAIR_ANY_DEX_ADDRESS_FORMULA,
                         }
                     ],
                 )
@@ -307,7 +366,12 @@ class TestDispatchMarketMakingRequestMarketMakingVolume:
         request_data = _market_making_volume_request(
             exchanges=[
                 _bingx_exchange(),
-                _dexscreener_exchange(_cross_pair_dex_config()),
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
             ],
             pair_settings=[
                 _base_pair_settings(
@@ -332,7 +396,12 @@ class TestDispatchMarketMakingRequestMarketMakingVolume:
         request_data = _market_making_volume_request(
             exchanges=[
                 _bingx_exchange(),
-                _dexscreener_exchange(_direct_wbtc_usdt_dex_config()),
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
             ],
             pair_settings=[
                 _base_pair_settings(

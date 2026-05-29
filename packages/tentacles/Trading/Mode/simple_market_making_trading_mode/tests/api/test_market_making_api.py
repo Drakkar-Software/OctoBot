@@ -222,12 +222,6 @@ def test_compute_market_making_volume_passes_dex_exchange_config(client):
                 expected_market_making_configuration,
                 user_auth=None,
             )
-            parsed_dex_config = expected_exchange_configs[0].dex_config
-            assert isinstance(parsed_dex_config, protocol_models.DEXConfig)
-            assert parsed_dex_config.chain_id == "ethereum"
-            assert parsed_dex_config.dex_id == "uniswap"
-            assert parsed_dex_config.base_token_addresses == ["0xbase"]
-            assert parsed_dex_config.quote_token_addresses == ["0xquote"]
             get_market_making_volume_mock.assert_awaited_once()
             assert response.status_code == 200
             assert response.json() == {"BTC/USDT": 1000.5}

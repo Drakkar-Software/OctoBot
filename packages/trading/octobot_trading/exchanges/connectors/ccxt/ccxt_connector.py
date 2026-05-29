@@ -169,6 +169,11 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                 raise octobot_trading.errors.FailedMarketStatusRequest(
                     f"No spot markets found for {self.exchange_manager.exchange_name}: {len(symbols)} fetched markets: {logged_symbols}"
                 )
+    
+    async def load_markets_for_symbols(self, symbols: list[str]) -> list[dict]:
+        if not self.client.has.get('obLoadMarketsForSymbols'):
+            raise octobot_trading.errors.NotSupported("This exchange doesn't support lazyLoadMarkets")
+        return await self.client.ob_load_markets_for_symbols(symbols)
 
     async def _filtered_if_necessary_load_markets(
         self,
@@ -472,6 +477,13 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         except Exception as e:
             self.logger.error(f"Fail to get market status of {symbol}: {html_util.get_html_summary_if_relevant(e)}")
             return {}
+
+    async def get_dex_pairs(self, symbols: list[str], **kwargs: dict) -> list[dict]:
+        if not self.client.has.get('obFetchDexPairs'):
+            raise octobot_trading.errors.NotSupported("This exchange doesn't support obFetchDexPairs")
+        return self.adapter.adapt_dex_pairs(
+            await self.client.ob_fetch_dex_pairs(symbols, **kwargs)
+        )
 
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_account_id(self, **kwargs: dict) -> str:

@@ -1902,6 +1902,77 @@ async def test_register_pair_requirement_on_reference_exchange():
             assert commons_enums.TimeFrames.FOUR_HOURS in time_frames
             assert len(time_frames) == 2
 
+        # Test 9: Lazy-load markets before registration when exchange uses lazyLoadMarkets
+        lazy_load_symbol = "MCADE/WETH@BASE!HYDREX"
+        mock_ref_price_9 = mock.Mock(spec=advanced_reference_price_import.AdvancedPriceSource)
+        mock_ref_price_9.pair = lazy_load_symbol
+        mock_ref_price_9.initialize_if_required = mock.AsyncMock()
+        mock_ref_price_9.get_dependencies = mock.Mock(return_value=[
+            exchange_operators.ExchangeDataDependency(
+                symbol=lazy_load_symbol,
+                time_frame=None,
+                data_source=trading_constants.MARK_PRICE_CHANNEL
+            ),
+            exchange_operators.ExchangeDataDependency(
+                symbol=lazy_load_symbol,
+                time_frame=commons_enums.TimeFrames.ONE_HOUR.value,
+                data_source=trading_constants.OHLCV_CHANNEL
+            ),
+        ])
+        producer._hedging_engine = None
+        loaded_symbols = {lazy_load_symbol, "ETH/USDT"}
+        call_sequence = []
+        initial_symbols = set(exchange_manager.exchange.symbols)
+
+        async def _record_connector_load_markets(symbols):
+            call_sequence.append("load_markets_for_symbols")
+            exchange_manager.exchange.symbols.update(loaded_symbols)
+            return []
+
+        async def _record_register(*args, **kwargs):
+            call_sequence.append("register_new_pairs_on_exchange_manager")
+
+        with mock.patch.object(
+            exchange_manager.exchange, "lazy_load_markets", mock.Mock(return_value=True)
+        ), mock.patch.object(
+            exchange_manager.exchange, "get_all_available_symbols", mock.Mock(return_value=loaded_symbols)
+        ), mock.patch.object(
+            exchange_manager.exchange.connector, "load_markets_for_symbols",
+            mock.AsyncMock(side_effect=_record_connector_load_markets), create=True
+        ) as load_markets_mock, mock.patch.object(
+            trading_api, "register_new_pairs_on_exchange_manager", mock.AsyncMock(side_effect=_record_register)
+        ) as register_mock:
+            await producer._register_pair_requirement_on_reference_exchange(
+                exchange_manager, [mock_ref_price_9]
+            )
+            load_markets_mock.assert_awaited_once_with([lazy_load_symbol])
+            assert set(exchange_manager.client_symbols) == initial_symbols | loaded_symbols
+            assert call_sequence.index("load_markets_for_symbols") < call_sequence.index("register_new_pairs_on_exchange_manager")
+            assert register_mock.await_count == 2
+
+        # Test 9b: Do not lazy-load when exchange does not use lazyLoadMarkets
+        mock_ref_price_9b = mock.Mock(spec=advanced_reference_price_import.AdvancedPriceSource)
+        mock_ref_price_9b.pair = "ETH/USDT"
+        mock_ref_price_9b.initialize_if_required = mock.AsyncMock()
+        mock_ref_price_9b.get_dependencies = mock.Mock(return_value=[
+            exchange_operators.ExchangeDataDependency(
+                symbol="ETH/USDT",
+                time_frame=None,
+                data_source=trading_constants.MARK_PRICE_CHANNEL
+            )
+        ])
+        with mock.patch.object(
+            exchange_manager.exchange, "lazy_load_markets", mock.Mock(return_value=False)
+        ), mock.patch.object(
+            exchange_manager.exchange.connector, "load_markets_for_symbols", mock.AsyncMock(), create=True
+        ) as load_markets_mock, mock.patch.object(
+            trading_api, "register_new_pairs_on_exchange_manager", mock.AsyncMock()
+        ):
+            await producer._register_pair_requirement_on_reference_exchange(
+                exchange_manager, [mock_ref_price_9b]
+            )
+            load_markets_mock.assert_not_called()
+
 
 async def test_ensure_dependencies():
     symbol = "BTC/USDT"

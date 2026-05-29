@@ -265,6 +265,16 @@ class ExchangeConstantsMarketStatusColumns(enum.Enum):
     INFO = "info"
 
 
+class ExchangeConstantsDexPairsColumns(enum.Enum):
+    SYMBOL = "symbol"
+    NETWORK = "network"
+    DEX = "dex"
+    BASE_TOKEN_ADDRESS = "baseTokenAddress"
+    QUOTE_TOKEN_ADDRESS = "quoteTokenAddress"
+    PRICE = "price"
+    QUOTE_LIQUIDITY = "quoteLiquidity"
+
+
 class ExchangeConstantsMarketStatusInfoColumns(enum.Enum):
     # binance specific
     FILTERS = "filters"
@@ -688,6 +698,8 @@ class ExchangeClientOptions(enum.StrEnum):
     REMOVE_MARKET_STATUS_PRICE_LIMITS = "removeMarketStatusPriceLimits"
     ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE = "adaptMarketStatusForContractSize"
     SUPPORTS_MARKETS_CACHE = "supportsMarketsCache"
+    SUPPORTS_ALL_SYMBOLS_LISTING = "supportsAllSymbolsListing"
+    LAZY_LOAD_MARKETS = "lazyLoadMarkets"
     INCLUDE_DISABLED_SYMBOLS_IN_AVAILABLE_SYMBOLS = "includeDisabledSymbolsInAvailableSymbols"
     ENABLE_SPOT_BUY_MARKET_WITH_COST = "enableSpotBuyMarketWithCost"
     REQUIRE_ORDER_FEES_FROM_TRADES = "requireOrderFeesFromTrades"
@@ -725,7 +737,6 @@ class ExchangeClientOptions(enum.StrEnum):
     HAS_BROKER = "hasBroker"
     SUPPORTS_FORCED_SIGNING_ALL_REQUESTS = "supportsForcedSigningAllRequests"
     ENABLE_FORCED_SIGNING_ALL_REQUESTS = "enableForcedSigningAllRequests"
-    REQUIRES_CONFIGURATION = "requiresConfiguration"
     SUPPORTED_ELEMENTS = "supportedElements"
 
 
@@ -734,13 +745,6 @@ class ExchangeSupportedElements(enum.StrEnum):
     SPOT = "spot"
     ORDERS = "orders"
     BUNDLED_ORDERS = "bundled_orders"
-
-
-class DEXExchangeConfigKeys(enum.StrEnum):
-    CHAIN_ID = "chain_id"
-    DEX_ID = "dex_id"
-    BASE_TOKEN_ADDRESSES = "base_token_addresses"
-    QUOTE_TOKEN_ADDRESSES = "quote_token_addresses"
 
 
 DEFAULT_EXCHANGE_OPTION_VALUES = {
@@ -753,6 +757,10 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE: False,
     # set True when the exchange supports markets cache (true by default for ccxt)
     ExchangeClientOptions.SUPPORTS_MARKETS_CACHE: True,
+    # set True when the exchange is loading markets only when needed, for a given list of symbols (false by default for ccxt)
+    ExchangeClientOptions.LAZY_LOAD_MARKETS: False,
+    # set True when the exchange supports all symbols listing (True for CEXes, depends on DEXes)
+    ExchangeClientOptions.SUPPORTS_ALL_SYMBOLS_LISTING: True,
     # set True when disabled symbols should still be considered
     # (ex: mexc with its temporary api trading disabled symbols)
     ExchangeClientOptions.INCLUDE_DISABLED_SYMBOLS_IN_AVAILABLE_SYMBOLS: False,
@@ -831,8 +839,6 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.SUPPORTS_FORCED_SIGNING_ALL_REQUESTS: False,
     # set True when the exchange requires signing all requests (when supported)
     ExchangeClientOptions.ENABLE_FORCED_SIGNING_ALL_REQUESTS: False,
-    # set True when the exchange requires configuration to work properly
-    ExchangeClientOptions.REQUIRES_CONFIGURATION: False,
     ExchangeClientOptions.SUPPORTED_ELEMENTS: {
         ExchangeSupportedElements.FUTURES: {
             ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],

@@ -37,15 +37,6 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_operator as exch
 class ExchangeDataDependency(octobot_trading.dsl.SymbolDependency):
     data_source: str = octobot_trading.constants.OHLCV_CHANNEL
 
-    def resolve_symbol(
-        self, exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager]
-    ):
-        if exchange_manager is not None:
-            unified_symbol = exchange_manager.get_exchange_symbol(self.symbol, error_on_missing=False)
-            if unified_symbol != self.symbol:
-                self.alias = self.symbol
-                self.symbol = unified_symbol
-
     def __hash__(self) -> int:
         return hash((self.symbol, self.time_frame, self.data_source))
 

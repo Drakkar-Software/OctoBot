@@ -18,6 +18,7 @@ import octobot_trading.constants
 import octobot_trading.errors
 import octobot_trading.exchange_data
 import octobot_trading.exchanges
+import octobot_trading.dsl.dsl_dependencies as dsl_dependencies
 import octobot_flow.entities
 import octobot.community.supabase_backend.enums as community_enums
 
@@ -25,6 +26,7 @@ import octobot_tentacles_manager.api
 import octobot_protocol.models as protocol_models
 import octobot_protocol.models.market_making_configuration as market_making_configuration_model
 
+import tentacles.Meta.DSL_operators.exchange_operators as exchange_operators
 import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as \
     simple_market_making_trading
 import tentacles.Trading.Mode.simple_market_making_trading_mode.advanced_reference_price as \
@@ -93,6 +95,9 @@ async def _fill_market_making_data_by_symbol(
                     except octobot_commons.errors.DSLInterpreterError as err:
                         raise ValueError(f"Invalid {source.pair} reference price formula: {err}") from err
                     dependencies.update(source.get_dependencies(exchange_manager))
+                    await dsl_dependencies.resolve_missing_dependencies_if_required(
+                        dependencies, exchange_manager
+                    )
 
             dependency_symbol_alias_by_symbol = {
                 dependency.symbol: dependency.alias
@@ -628,7 +633,8 @@ async def get_reference_price_by_pair(
         except (NotImplementedError, TypeError, ValueError) as err:
             error_by_pair[pair] = f"{err}"
             continue
-        if not reference_price_by_pair[pair]:
+        reference_price = reference_price_by_pair[pair]
+        if not reference_price or reference_price.is_nan():
             error_by_pair[pair] = (
                 f"{pair} reference price on {mm_exchange} can't be computed from the following "
                 f"price sources: {price_by_source}"
@@ -685,7 +691,7 @@ async def _get_price_and_predicted_order_book(
     )
     books_by_symbol = {}
     for pair, reference_price in reference_price_by_pair.items():
-        if not reference_price:
+        if not reference_price or reference_price.is_nan():
             continue
         mm_data = mm_data_by_exchange[mm_exchange].get(pair)
         _adapt_volume_if_necessary(mm_data, reference_price)

@@ -19,7 +19,6 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from octobot_protocol.models.dex_config import DEXConfig
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -33,8 +32,7 @@ class ExchangeConfig(BaseModel):
     exchange: StrictStr
     sandboxed: StrictBool
     url: Optional[StrictStr] = None
-    dex_config: Optional[DEXConfig] = None
-    __properties: ClassVar[List[str]] = ["id", "name", "exchange", "sandboxed", "url", "dex_config"]
+    __properties: ClassVar[List[str]] = ["id", "name", "exchange", "sandboxed", "url"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -75,9 +73,6 @@ class ExchangeConfig(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of dex_config
-        if self.dex_config:
-            _dict['dex_config'] = self.dex_config.to_dict()
         return _dict
 
     @classmethod
@@ -94,8 +89,7 @@ class ExchangeConfig(BaseModel):
             "name": obj.get("name"),
             "exchange": obj.get("exchange"),
             "sandboxed": obj.get("sandboxed") if obj.get("sandboxed") is not None else False,
-            "url": obj.get("url"),
-            "dex_config": DEXConfig.from_dict(obj["dex_config"]) if obj.get("dex_config") is not None else None
+            "url": obj.get("url")
         })
         return _obj
 

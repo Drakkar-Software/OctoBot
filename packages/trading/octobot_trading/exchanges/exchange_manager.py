@@ -291,8 +291,8 @@ class ExchangeManager(util.Initializable):
         if self.exchange.symbols and self.exchange.time_frames:
             self.client_symbols = list(self.exchange.symbols)
             self.client_time_frames = list(self.exchange.time_frames)
-        elif not self.exchange_only and not self.exchange.get_option_value(
-            enums.ExchangeClientOptions.REQUIRES_CONFIGURATION
+        elif not self.exchange_only and self.exchange.get_option_value(
+            enums.ExchangeClientOptions.SUPPORTS_ALL_SYMBOLS_LISTING
         ):
             err_message = "Failed to load exchange symbols or time frames"
             self.logger.error(err_message)
@@ -304,6 +304,10 @@ class ExchangeManager(util.Initializable):
                               f"{symbol} exists on {self.exchange.name}")
             return False
         return symbol in self.client_symbols
+
+    async def load_markets_for_symbols_and_refresh_client_symbols(self, symbols: list[str]) -> None:
+        await self.exchange.load_markets_for_symbols(symbols)
+        self.client_symbols = list(self.exchange.symbols)
 
     def time_frame_exists(self, time_frame):
         if not self.client_time_frames:

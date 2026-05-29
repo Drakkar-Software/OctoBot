@@ -41,8 +41,6 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_ma
     simple_market_making_trading
 import octobot_protocol.models as protocol_models
 
-from tentacles.Trading.Mode.simple_market_making_trading_mode.tests.api.conftest import dex_exchange_config_dict
-
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -944,57 +942,6 @@ def test_format_market_making_volume_by_symbol_multiple_symbols_mixed():
             market_making_constants.ERROR_KEY: "XRP/USDT not found in binance all market data (price ticker empty or not found). XRP/USDT market is likely missing or disabled on binance",
         }
     }
-
-
-class TestExchangeConfigDexConfig:
-    def test_model_validate_parses_nested_dex_config(self):
-        exchange_config = protocol_models.ExchangeConfig.model_validate(dex_exchange_config_dict())
-
-        assert isinstance(exchange_config.dex_config, protocol_models.DEXConfig)
-        assert exchange_config.dex_config.chain_id == "ethereum"
-        assert exchange_config.dex_config.dex_id == "uniswap"
-        assert exchange_config.dex_config.base_token_addresses == ["0xbase"]
-        assert exchange_config.dex_config.quote_token_addresses == ["0xquote"]
-
-    def test_model_validate_without_dex_config_defaults_to_none(self):
-        exchange_config = protocol_models.ExchangeConfig.model_validate(
-            {
-                "id": "binance-config-1",
-                "name": "binance",
-                "exchange": "binance",
-                "sandboxed": False,
-            }
-        )
-
-        assert exchange_config.dex_config is None
-
-    def test_model_dump_serializes_dex_config_for_adapter(self):
-        exchange_config = protocol_models.ExchangeConfig.model_validate(dex_exchange_config_dict())
-        dumped_dex_config = exchange_config.model_dump()["dex_config"]
-
-        for dex_config_key in trading_enums.DEXExchangeConfigKeys:
-            assert dex_config_key.value in dumped_dex_config
-        assert exchanges.has_dex_exchange_config(dumped_dex_config) is True
-
-
-class TestGetMarketMakingExchangeOnlyProfileDataDexConfig:
-    async def test_registers_dex_exchange_tentacle_from_exchange_config(self):
-        exchange_config = protocol_models.ExchangeConfig.model_validate(dex_exchange_config_dict())
-
-        profile_data = await market_making_core.get_market_making_exchange_only_profile_data(
-            [exchange_config],
-            None,
-        )
-
-        market_making_tentacle_name = simple_market_making_trading.SimpleMarketMakingTradingMode.get_name()
-        dex_tentacles = [
-            tentacle for tentacle in profile_data.tentacles if tentacle.name != market_making_tentacle_name
-        ]
-
-        assert len(dex_tentacles) == 1
-        assert dex_tentacles[0].config == exchanges.get_dex_exchange_config(
-            exchange_config.model_dump()["dex_config"]
-        )
 
 
 def _market_making_ticker(**overrides) -> dict:

@@ -129,11 +129,15 @@ def compute_base_and_quote_volume(
         base_volume = decimal.Decimal(str(base_volume))
         if not quote_volume or decimal.Decimal(str(quote_volume)).is_nan():
             # compute from the other if missing
+            if reference_price.is_nan():
+                raise ValueError(f"Reference price is nan {reference_price=}")
             quote_volume = base_volume * reference_price
     if quote_volume:
         quote_volume = decimal.Decimal(str(quote_volume))
         if not base_volume or decimal.Decimal(str(base_volume)).is_nan():
             # compute from the other if missing
+            if reference_price.is_nan():
+                raise ValueError(f"Reference price is nan {reference_price=}")
             base_volume = quote_volume / reference_price
     if not (base_volume and quote_volume) or (base_volume.is_nan() or quote_volume.is_nan()):
         raise ValueError(

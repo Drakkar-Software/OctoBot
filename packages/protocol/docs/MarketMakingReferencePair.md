@@ -7,7 +7,7 @@ Reference price source for market making (exchange pair, weighting, and optional
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **exchange** | **str** | Exchange id, or a sentinel such as local exchange price when supported by the trading mode. | 
-**pair** | **str** |  | 
+**pair** | **str** | Pair symbol (e.g. &#39;BTC/USDT&#39; for a CEX or &#39;WETH/USDC@ETH-UNISWAP&#39; for a DEX). | 
 **weight** | **float** |  | [optional] 
 **formula** | **str** | Optional formula overriding the default latest price for this source. | [optional] 
 **time_frame** | [**TimeFrame**](TimeFrame.md) |  | [optional] 

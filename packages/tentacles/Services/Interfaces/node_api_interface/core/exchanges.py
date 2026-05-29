@@ -2,6 +2,7 @@ import enum
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.profiles.profile_data
+import octobot_commons.symbols.symbol_util as commons_symbols
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums
 import octobot_trading.exchanges
@@ -45,6 +46,57 @@ async def get_traded_pairs_and_timeframes_by_exchange(
                 ),
             }
     return traded_pairs_and_tf_by_exchange
+
+
+def _dex_pair_matches_input_trading_pair(
+    dex_pair: dict,
+    requested,
+    dex_pairs_columns: type[octobot_trading.enums.ExchangeConstantsDexPairsColumns],
+) -> bool:
+    return (
+        dex_pair[dex_pairs_columns.BASE_TOKEN_ADDRESS.value].lower() == requested.base.lower()
+        and dex_pair[dex_pairs_columns.QUOTE_TOKEN_ADDRESS.value].lower() == requested.quote.lower()
+    ) or (
+        dex_pair[dex_pairs_columns.SYMBOL.value] == requested.merged_str_base_and_quote_only_symbol()
+    )
+
+
+def dex_pairs_for_input_symbol(dex_pairs: list[dict], input_symbol: str) -> list[dict]:
+    requested = commons_symbols.parse_symbol(input_symbol)
+    dex_pairs_columns = octobot_trading.enums.ExchangeConstantsDexPairsColumns
+    return [
+        dex_pair for dex_pair in dex_pairs
+        if _dex_pair_matches_input_trading_pair(dex_pair, requested, dex_pairs_columns)
+        and (not requested.network or dex_pair[dex_pairs_columns.NETWORK.value] == requested.network)
+        and (
+            not requested.dex
+            or requested.is_any_dex()
+            or dex_pair[dex_pairs_columns.DEX.value] == requested.dex
+        )
+    ]
+
+
+async def get_dex_pairs_for_symbols(
+    exchange_config: protocol_models.ExchangeConfig,
+    symbols: list[str],
+    trading_type: protocol_models.TradingType = protocol_models.TradingType.SPOT,
+) -> dict[str, list[dict]]:
+    tentacles_setup_config = octobot_tentacles_manager.api.get_full_tentacles_setup_config()
+    profile_data = _get_exchange_profile_data(exchange_config, trading_type=trading_type)
+    exchange = profile_data.exchanges[0]
+    local_exchange_type = octobot_trading.enums.ExchangeTypes(exchange.exchange_type)
+    exchange_data = octobot_trading.exchanges.exchange_data_factory(
+        exchange.internal_name,
+        exchange_type=local_exchange_type.value,
+    )
+    async with octobot_trading.exchanges.exchange_manager_from_exchange_data(
+        exchange_data, profile_data, tentacles_setup_config, None
+    ) as exchange_manager:
+        dex_pairs = await exchange_manager.exchange.get_dex_pairs(symbols)
+        return {
+            input_symbol: dex_pairs_for_input_symbol(dex_pairs, input_symbol)
+            for input_symbol in symbols
+        }
 
 
 def _get_exchange_profile_data(
