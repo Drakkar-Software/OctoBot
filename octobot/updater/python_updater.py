@@ -1,18 +1,3 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
-#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
-#
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  OctoBot is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import json
 import os
 import subprocess
@@ -32,7 +17,7 @@ class PythonUpdater(updater_class.Updater):
         self.use_git = os.path.isdir(".git")
 
     async def get_latest_version(self):
-        if os.getenv("ENABLE_PYTHON_UPDATER", False):
+        if os.getenv("ENABLE_PYTHON_UPDATER", "False").lower() == "true":
             if self.use_git:
                 try:
                     self._run_git_fetch()
@@ -51,10 +36,10 @@ class PythonUpdater(updater_class.Updater):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(self._get_latest_pypi_release_url()) as resp:
+                    if resp.status != 200:
+                        raise Exception(f"Failed to fetch latest pypi package data: HTTP {resp.status}")
                     text = await resp.text()
-                    if resp.status == 200:
-                        return json.loads(text)
-            return None
+                    return json.loads(text)
         except Exception as e:
             self.logger.debug(f"Error when fetching latest pypi package data : {e}")
 
@@ -73,7 +58,7 @@ class PythonUpdater(updater_class.Updater):
 
     async def update_impl(self) -> bool:
         try:
-            if os.getenv("ENABLE_PYTHON_UPDATER", False):
+            if os.getenv("ENABLE_PYTHON_UPDATER", "False").lower() == "true":
                 if self.use_git:
                     self._run_git_checkout_tag(self._run_git_get_latest_tag())
                     return True
