@@ -14,63 +14,93 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import os
 from collections.abc import Callable
 
 from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
 from starfish_server.config.schema import ConfigEndpointOptions, SyncConfig
+from starfish_server.router.cap_resolver import create_cap_cert_role_resolver, CapAuthError
+from starfish_server.auth.nonce_cache import create_in_memory_nonce_cache
+from starfish_server.auth.revocation_store import create_in_memory_revocation_store
 
-import octobot_sync.auth as auth
+import starfish_identities
+
 import octobot_sync.constants as constants
 import octobot_sync.sync as sync
 
 
-class NamespaceRewriteMiddleware:
-    """Rewrite /<ns>/<ver>/<rest> -> /<ver>/<ns>/<rest>. Mimics the nginx
-    rewrite used in production so signed canonicals match server routes."""
+_VERSION_MARKER = f"/{constants.STARFISH_SERVER_MAJOR_VERSION}/"
 
-    def __init__(self, app, namespaces: list[str]):
+
+class SignedPathMiddleware:
+    """Normalize the inbound path to the cap-signed form (``/v1/...``).
+
+    The Starfish cap resolver verifies each request signature against
+    ``request.url.path``. The client signs the bare ``/v1/{namespace}/...`` path
+    (it has no knowledge of where the server mounts the app), so any prefix the
+    server adds — a Starlette ``/sync`` mount in-process, an nginx ``location`` in
+    production — must be stripped before the resolver sees the path, or every
+    signature mismatches. We slice from the leading ``/v1/`` segment and clear
+    ``root_path`` so ``request.url.path`` equals exactly what the client signed,
+    independent of how the app is mounted. (Replaces the v2
+    ``NamespaceRewriteMiddleware``, which rewrote the old ``/{ns}/v1`` shape.)
+    """
+
+    def __init__(self, app):
         self.app = app
-        self.namespaces = list(namespaces)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
-            path = scope.get("path", "")
-            root_path = scope.get("root_path", "")
-            # Starlette sets root_path to the mount prefix but leaves path unchanged;
-            # effective_path is what Starlette routes against (path minus root_path).
-            if root_path and path.startswith(root_path) and (len(path) == len(root_path) or path[len(root_path)] == "/"):
-                effective = path[len(root_path):] or "/"
-            else:
-                effective = path
-            ver = constants.STARFISH_SERVER_MAJOR_VERSION
-            for ns in self.namespaces:
-                prefix = f"/{ns}/{ver}"
-                if effective == prefix or effective.startswith(prefix + "/"):
-                    rest = effective[len(prefix):]
-                    new_effective = f"/{ver}/{ns}{rest}"
-                    new_path = root_path + new_effective
-                    scope = dict(scope)
-                    scope["path"] = new_path
-                    if scope.get("raw_path") is not None:
-                        scope["raw_path"] = new_path.encode("ascii")
-                    break
+            full = (scope.get("root_path", "") or "") + scope.get("path", "")
+            idx = full.find(_VERSION_MARKER)
+            if idx != -1:
+                new_path = full[idx:]
+                scope = dict(scope)
+                scope["path"] = new_path
+                scope["root_path"] = ""
+                if scope.get("raw_path") is not None:
+                    scope["raw_path"] = new_path.encode("latin-1")
         await self.app(scope, receive, send)
 
 
+def _build_role_resolver(is_allowed_user_id: Callable[[str], bool] | None):
+    """Cap-cert role resolver (device caps), optionally gated by a userId allowlist.
+
+    The allowlist is a coarse, service-level gate: cap scoping already confines
+    each caller to its own ``users/{user_id}/*`` paths, so this only decides who
+    may use the server at all. Allowed userIds are derived from the node's own
+    wallet keys (see ``node_api``), keyed on the same identity the cap resolver
+    binds (``AuthResult.identity`` == the device cap's ``issUserId``).
+    """
+    resolver = create_cap_cert_role_resolver(
+        nonce_cache=create_in_memory_nonce_cache(),
+        revocation_store=create_in_memory_revocation_store(),
+        plugins=[starfish_identities.identities_server_plugin],
+        allow_anonymous=False,
+        # Pre-auth body ceiling, enforced BEFORE the per-collection maxBodyBytes.
+        # Defaults to 64KB, which would 413 large private documents; raise it to
+        # the largest collection limit so per-collection maxBodyBytes governs.
+        max_body_bytes=constants.MAX_BODY_SIZE_PRIVATE,
+    )
+    if is_allowed_user_id is None:
+        return resolver
+
+    async def gated_resolver(request):
+        result = await resolver(request)
+        if result.identity and not is_allowed_user_id(result.identity):
+            raise CapAuthError(403, "user not allowed")
+        return result
+
+    return gated_resolver
+
+
 def create_app(
-    nonce: auth.NonceStore,
     object_store: AbstractObjectStore,
     collections_path: str | None = None,
-    is_allowed: Callable[[str], bool] | None = None,
-    encryption_secret: str | None = None,
+    is_allowed_user_id: Callable[[str], bool] | None = None,
     sync_config: SyncConfig | None = None,
 ):
-    if encryption_secret is None:
-        encryption_secret = os.environ.get("ENCRYPTION_SECRET")
-
     if sync_config is None:
         sync_config = sync.load_sync_config(collections_path)
 
@@ -80,9 +110,7 @@ def create_app(
         SyncRouterOptions(
             store=object_store,
             config=sync_config,
-            role_resolver=sync.create_role_resolver(nonce, is_allowed=is_allowed),
-            encryption_secret=encryption_secret,
-            identity_encryption_info=constants.HKDF_INFO_USER_DATA,
+            role_resolver=_build_role_resolver(is_allowed_user_id),
             config_endpoint=ConfigEndpointOptions(auth="public"),
         )
     )
@@ -92,7 +120,7 @@ def create_app(
     async def health():
         return {"ok": True}
 
-    namespaces = list((sync_config.namespaces or {}).keys())
-    if namespaces:
-        return NamespaceRewriteMiddleware(app, namespaces=namespaces)
-    return app
+    # Always wrap: the cap resolver verifies the request signature against
+    # request.url.path, which must equal the client-signed /v1/... path
+    # regardless of how this app is mounted (see SignedPathMiddleware).
+    return SignedPathMiddleware(app)

@@ -56,6 +56,44 @@ def _derive_key(secret: str, salt: str, info: bytes) -> bytes:
     return hkdf.derive(secret.encode("utf-8"))
 
 
+class SecretEncryptor:
+    """v3 starfish ``Encryptor`` (``encrypt``/``decrypt`` over dicts) keyed by an
+    HKDF of ``(secret, salt, info)``. Backs one-shot encrypted shares: the SDK's
+    ``SyncManager`` calls ``encrypt(payload)`` before push and ``decrypt(stored)``
+    after pull. Self-consistent ``{iv, data}`` envelope — no v2 wire-compat
+    requirement (shares are ephemeral)."""
+
+    def __init__(self, secret: str, salt: str, info: str) -> None:
+        _require_non_empty_secret(secret)
+        self._key = _derive_key(secret, salt, info.encode("utf-8"))
+
+    def encrypt(self, data: dict[str, typing.Any]) -> dict[str, str]:
+        initialization_vector = os.urandom(constants.IV_BYTES)
+        ciphertext = AESGCM(self._key).encrypt(
+            initialization_vector, json.dumps(data).encode("utf-8"), None
+        )
+        return {
+            constants.BLOB_IV_KEY: base64.b64encode(initialization_vector).decode("ascii"),
+            constants.BLOB_DATA_KEY: base64.b64encode(ciphertext).decode("ascii"),
+        }
+
+    def decrypt(self, wrapper: dict[str, typing.Any]) -> dict[str, typing.Any]:
+        try:
+            initialization_vector = base64.b64decode(wrapper[constants.BLOB_IV_KEY])
+            ciphertext = base64.b64decode(wrapper[constants.BLOB_DATA_KEY])
+        except (KeyError, binascii.Error, ValueError) as err:
+            raise sync_errors.OctobotSyncCryptoFormatError(
+                f"Invalid encrypted share envelope: {err}"
+            ) from err
+        try:
+            plaintext = AESGCM(self._key).decrypt(initialization_vector, ciphertext, None)
+        except InvalidTag as err:
+            raise sync_errors.OctobotSyncCryptoDecryptError(
+                "Failed to decrypt share payload"
+            ) from err
+        return json.loads(plaintext.decode("utf-8"))
+
+
 def _collection_aes_key(wallet_private_key: str, collection: str) -> bytes:
     return _derive_key(
         wallet_private_key,

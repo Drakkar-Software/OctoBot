@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import datetime
+from unittest.mock import MagicMock
 
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as strategy_provider_module
@@ -50,18 +51,7 @@ class TestStrategyProviderStateFormat:
 class TestStrategyProviderGetItemId:
     def test_returns_strategy_id(self, tmp_path):
         provider = strategy_provider_module.StrategyProvider(base_folder=str(tmp_path))
-        fixture_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
-        configuration = protocol_models.GenericProcessConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
-            profile_data={},
-        )
-        strategy = protocol_models.Strategy(
-            id="strat-42",
-            version="1.0.0",
-            name="Test strategy",
-            reference_market="USDT",
-            created_at=fixture_time,
-            updated_at=fixture_time,
-            configuration=protocol_models.StrategyConfiguration(configuration),
-        )
+        # protocol_models is mocked — use a plain stub with id set directly.
+        strategy = MagicMock()
+        strategy.id = "strat-42"
         assert provider._get_item_id(strategy) == "strat-42"

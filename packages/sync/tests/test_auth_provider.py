@@ -14,69 +14,83 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-"""Tests for StarfishAuthProvider."""
-
-import time
+"""Tests for WalletCapProvider (Starfish v3 cap-cert auth)."""
 
 import pytest
-import web3
 
 import octobot_sync.auth as auth
-import octobot_sync.chain.evm as evm
 import octobot_sync.constants as constants
 
 
-@pytest.fixture
-def wallet():
-    return evm.create_evm_wallet()
+# Well-known Hardhat test key #1 — public, safe to embed in tests.
+_TEST_PRIVATE_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+_ALT_CHALLENGE = "octobot:sync-bootstrap-alt"
 
 
 @pytest.fixture
-def provider(wallet):
-    return auth.StarfishAuthProvider(wallet.private_key)
+def provider():
+    return auth.WalletCapProvider(_TEST_PRIVATE_KEY)
 
 
-def test_address_matches_private_key(wallet, provider):
-    assert provider.address == evm.address_from_evm_key(wallet.private_key)
+def test_user_id_is_string(provider):
+    assert isinstance(provider.user_id, str)
+    assert len(provider.user_id) > 0
 
 
-async def test_call_returns_all_headers(provider):
-    headers = await provider(method="GET", path="/v1/pull/test", body=None)
-    expected_keys = {
-        constants.HEADER_PUBKEY,
-        constants.HEADER_SIGNATURE,
-        constants.HEADER_TIMESTAMP,
-        constants.HEADER_NONCE,
-    }
-    assert set(headers.keys()) == expected_keys
+def test_user_id_is_stable_for_same_key(provider):
+    """Same key + same challenge must always produce the same user_id."""
+    second = auth.WalletCapProvider(_TEST_PRIVATE_KEY)
+    assert provider.user_id == second.user_id
 
 
-async def test_signature_is_verifiable(wallet, provider):
-    headers = await provider(method="POST", path="/v1/push/test", body='{"data": 1}')
-    body_hash = auth.hash_body('{"data": 1}')
-    canonical = auth.build_canonical(
-        "POST",
-        "/v1/push/test",
-        headers[constants.HEADER_TIMESTAMP],
-        headers[constants.HEADER_NONCE],
-        body_hash,
-    )
-    recovered = web3.Account.recover_message(
-        auth.eip191_message(canonical),
-        signature=headers[constants.HEADER_SIGNATURE],
-    )
-    assert recovered.lower() == wallet.address.lower()
+def test_user_id_differs_for_different_challenge():
+    """Different challenge => different derived identity => different user_id."""
+    default_provider = auth.WalletCapProvider(_TEST_PRIVATE_KEY)
+    alt_provider = auth.WalletCapProvider(_TEST_PRIVATE_KEY, challenge=_ALT_CHALLENGE)
+    assert default_provider.user_id != alt_provider.user_id
 
 
-async def test_nonce_unique_per_call(provider):
-    h1 = await provider(method="GET", path="/", body=None)
-    h2 = await provider(method="GET", path="/", body=None)
-    assert h1[constants.HEADER_NONCE] != h2[constants.HEADER_NONCE]
+async def test_get_cap_returns_cap_dict(provider):
+    result = await provider.get_cap()
+    assert isinstance(result, dict)
+    assert "cap" in result
+    assert "dev_ed_priv_hex" in result
 
 
-async def test_timestamp_is_current(provider):
-    before_ms = int(time.time() * 1000)
-    headers = await provider(method="GET", path="/", body=None)
-    after_ms = int(time.time() * 1000)
-    ts = int(headers[constants.HEADER_TIMESTAMP])
-    assert before_ms <= ts <= after_ms
+async def test_get_cap_kind_is_device(provider):
+    result = await provider.get_cap()
+    cap = result["cap"]
+    assert isinstance(cap, dict)
+    assert cap.get("kind") == "device"
+
+
+async def test_get_cap_iss_user_id_matches_provider_user_id(provider):
+    result = await provider.get_cap()
+    cap = result["cap"]
+    assert cap.get("issUserId") == provider.user_id
+
+
+async def test_get_cap_is_callable_multiple_times(provider):
+    """get_cap() must be callable repeatedly (mint fresh cap each time)."""
+    cap1 = await provider.get_cap()
+    cap2 = await provider.get_cap()
+    assert cap1["cap"]["kind"] == "device"
+    assert cap2["cap"]["kind"] == "device"
+
+
+def test_derive_user_id_matches_provider_user_id():
+    uid_via_func = auth.derive_user_id(_TEST_PRIVATE_KEY)
+    uid_via_provider = auth.WalletCapProvider(_TEST_PRIVATE_KEY).user_id
+    assert uid_via_func == uid_via_provider
+
+
+def test_derive_root_identity_returns_root_identity():
+    root = auth.derive_root_identity(_TEST_PRIVATE_KEY)
+    assert hasattr(root, "user_id")
+    assert root.user_id == auth.derive_user_id(_TEST_PRIVATE_KEY)
+
+
+def test_derive_user_id_custom_challenge():
+    uid_default = auth.derive_user_id(_TEST_PRIVATE_KEY)
+    uid_alt = auth.derive_user_id(_TEST_PRIVATE_KEY, challenge=_ALT_CHALLENGE)
+    assert uid_default != uid_alt

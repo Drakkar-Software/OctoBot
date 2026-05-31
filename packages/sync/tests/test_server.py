@@ -3,7 +3,7 @@
 import json
 import os
 
-import mock
+from unittest import mock
 import pytest
 
 import octobot_sync.crypto as sync_crypto
@@ -34,19 +34,19 @@ def _make_context(
     )
 
 
-class TestGetAddress:
+class TestGetIdentity:
     def test_returns_identity_when_present(self):
         context = _make_context(identity="0xabc")
-        assert server._get_address(context) == "0xabc"
+        assert server._get_identity(context) == "0xabc"
 
     def test_raises_when_context_is_none(self):
         with pytest.raises(errors.OctobotSyncIdentityMissingError):
-            server._get_address(None)
+            server._get_identity(None)
 
     def test_raises_when_identity_is_none(self):
         context = _make_context(identity=None)
         with pytest.raises(errors.OctobotSyncIdentityMissingError):
-            server._get_address(context)
+            server._get_identity(context)
 
 
 class TestGetData:
@@ -215,13 +215,24 @@ class TestPutData:
         )
         body = json.dumps({"v": 1, "data": encrypted, "timestamps": {}, "hash": "x"})
         context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
+
+        # Build real action stubs since protocol_models is mocked in conftest.
+        action1 = mock.MagicMock()
+        action1.id = "act-1"
+        action2 = mock.MagicMock()
+        action2.id = "act-2"
+        fake_state = mock.MagicMock()
+        fake_state.user_actions = [action1, action2]
+
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
             mock.patch(
                 "octobot_sync.server._get_wallet_private_key",
                 return_value=_TEST_WALLET_PRIVATE_KEY,
             ),
+            mock.patch("octobot_sync.server.protocol_models") as mock_pm,
         ):
+            mock_pm.UserActionsState.from_json.return_value = fake_state
             mock_proto.execute_user_action = mock.AsyncMock()
             await server.put_data("users/0xwallet/actions", body, context)
         assert mock_proto.execute_user_action.await_count == 2
@@ -245,6 +256,12 @@ class TestPutData:
         body = json.dumps({"v": 1, "data": encrypted, "timestamps": {}, "hash": "x"})
         context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
         mock_logger = mock.MagicMock()
+
+        fail_action = mock.MagicMock()
+        fail_action.id = "fail-action"
+        fake_state = mock.MagicMock()
+        fake_state.user_actions = [fail_action]
+
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
             mock.patch("octobot_sync.server._get_logger", return_value=mock_logger),
@@ -252,7 +269,9 @@ class TestPutData:
                 "octobot_sync.server._get_wallet_private_key",
                 return_value=_TEST_WALLET_PRIVATE_KEY,
             ),
+            mock.patch("octobot_sync.server.protocol_models") as mock_pm,
         ):
+            mock_pm.UserActionsState.from_json.return_value = fake_state
             mock_proto.execute_user_action = mock.AsyncMock(side_effect=RuntimeError("boom"))
             await server.put_data("users/0xwallet/actions", body, context)
         mock_logger.exception.assert_called_once()
@@ -423,9 +442,13 @@ class TestBuildObjectStore:
                 "S3_BUCKET": "bucket",
                 "S3_REGION": "us-east-1",
             }
-            with mock.patch.dict(os.environ, env, clear=False):
+            sentinel = mock.MagicMock(spec=S3ObjectStore)
+            with (
+                mock.patch.dict(os.environ, env, clear=False),
+                mock.patch("octobot_sync.server.S3ObjectStore", return_value=sentinel),
+            ):
                 store = server.build_object_store()
-            assert isinstance(store, S3ObjectStore)
+            assert store is sentinel
         finally:
             server._get_data = original_get
             server._put_data = original_put
@@ -452,20 +475,15 @@ class TestBuildDefaultSyncApp:
         with (
             mock.patch("octobot_sync.server.build_object_store", return_value=mock.MagicMock()) as mock_build,
             mock.patch("octobot_sync.server.sync_app") as mock_sync_app,
-            mock.patch("octobot_sync.server.auth") as mock_auth,
         ):
             mock_sync_app.create_app.return_value = sentinel_app
-            mock_auth.NonceStore.return_value = mock.MagicMock()
-            mock_auth.MemoryStorageAdapter.return_value = mock.MagicMock()
             result = server.build_default_sync_app(
-                is_allowed=None,
-                encryption_secret="secret",
+                is_allowed_user_id=None,
                 sync_config=None,
             )
         assert result is sentinel_app
         mock_build.assert_called_once()
         mock_sync_app.create_app.assert_called_once()
         call_kwargs = mock_sync_app.create_app.call_args
-        assert call_kwargs.kwargs["encryption_secret"] == "secret"
-        assert call_kwargs.kwargs["is_allowed"] is None
+        assert call_kwargs.kwargs["is_allowed_user_id"] is None
         assert call_kwargs.kwargs["sync_config"] is None

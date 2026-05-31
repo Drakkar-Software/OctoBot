@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-"""Shared fixtures for e2e tests."""
+"""Shared fixtures for e2e tests (require S3_ENDPOINT in environment)."""
 
 import os
 from pathlib import Path
@@ -23,10 +23,10 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 
 import octobot_sync.app as sync_app
-import octobot_sync.auth as auth
 
-USER_PUBKEY = "0xE2eUserPubkey"
-OTHER_PUBKEY = "0xE2eOtherPubkey"
+# Well-known Hardhat test key #1 — safe to embed in tests.
+USER_PRIVATE_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+OTHER_PRIVATE_KEY = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
 
 COLLECTIONS_PATH = str(Path(__file__).resolve().parent.parent / "fixtures" / "collections.json")
 
@@ -55,14 +55,12 @@ async def s3_store():
 
 
 @pytest.fixture
-def app(s3_store, monkeypatch):
-    monkeypatch.setenv("ENCRYPTION_SECRET", "e2e-encryption-secret")
-    nonce = auth.NonceStore(auth.MemoryStorageAdapter())
-    return sync_app.create_app(nonce, s3_store, collections_path=COLLECTIONS_PATH)
+def app(s3_store):
+    return sync_app.create_app(s3_store, collections_path=COLLECTIONS_PATH)
 
 
 @pytest.fixture
 async def client(app):
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(transport=transport, base_url="http://test/sync") as ac:
         yield ac

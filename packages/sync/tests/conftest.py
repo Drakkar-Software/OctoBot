@@ -14,45 +14,95 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-"""Shared test fixtures."""
+"""Shared test fixtures and module stubs.
 
-import time
+Heavy OctoBot dependencies (supabase, numpy, octobot_node, octobot_protocol)
+are not present in the sync-package venv. We install lightweight MagicMock
+stubs into sys.modules here — before any test files are imported — so that
+octobot_sync.app, octobot_sync.server, and octobot_sync.sync.* can be
+collected and run without those optional runtime deps.
+"""
+
+import sys
+import types
+from unittest.mock import MagicMock
+
+# ---------------------------------------------------------------------------
+# sys.modules stubs — must run at conftest import time (before test collection)
+# ---------------------------------------------------------------------------
+
+
+def _make_stub(name: str) -> MagicMock:
+    m = MagicMock()
+    m.__path__ = []        # marks it as a package so sub-imports don't fail
+    m.__package__ = name
+    m.__spec__ = None      # prevents importlib from treating it as real
+    sys.modules[name] = m
+    return m
+
+
+_STUB_MODULES = [
+    # OctoBot community (requires supabase_auth / numpy / sortedcontainers)
+    "octobot",
+    "octobot.community",
+    "octobot.community.authentication",
+    # octobot_protocol — node protocol models, not in sync venv
+    "octobot_protocol",
+    "octobot_protocol.models",
+    # octobot_node — node-specific constants and protocol, not in sync venv
+    "octobot_node",
+    "octobot_node.constants",
+    "octobot_node.protocol",
+    "octobot_node.protocol.user_actions",
+    "octobot_node.protocol.user_data",
+    "octobot_node.protocol.accounts",
+    "octobot_node.protocol.accounts_authentication",
+    "octobot_node.protocol.accounts_trading",
+]
+
+for _mod_name in _STUB_MODULES:
+    if _mod_name not in sys.modules:
+        _make_stub(_mod_name)
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers and fixtures
+# ---------------------------------------------------------------------------
 
 import pytest
 
-import octobot_sync.auth as auth
-import octobot_sync.constants as constants
-
-
-TEST_PUBKEY = "0xTestPubkey1234567890abcdef"
-
-
-@pytest.fixture
-def memory_storage():
-    return auth.MemoryStorageAdapter()
-
-
-@pytest.fixture
-def nonce_store(memory_storage):
-    return auth.NonceStore(memory_storage)
-
 
 class MemoryObjectStore:
-    """Minimal AbstractObjectStore for testing."""
+    """Minimal in-memory AbstractObjectStore for testing.
+
+    All methods accept *context=None* so the Starfish router, which calls
+    store methods with ``context=<StoreContext>``, doesn't get a TypeError.
+    """
 
     def __init__(self) -> None:
         self._store: dict[str, str] = {}
 
-    async def get_string(self, key: str) -> str | None:
+    async def get_string(self, key: str, *, context=None) -> str | None:
         return self._store.get(key)
 
     async def put(
-        self, key: str, body: str, *, content_type: str | None = None, cache_control: str | None = None
+        self,
+        key: str,
+        body: str,
+        *,
+        content_type: str | None = None,
+        cache_control: str | None = None,
+        context=None,
     ) -> None:
         self._store[key] = body
 
     async def list_keys(
-        self, prefix: str, *, start_after: str | None = None, limit: int | None = None
+        self,
+        prefix: str,
+        *,
+        start_after: str | None = None,
+        limit: int | None = None,
+        context=None,
     ) -> list[str]:
         keys = sorted(k for k in self._store if k.startswith(prefix))
         if start_after:
@@ -61,10 +111,10 @@ class MemoryObjectStore:
             keys = keys[:limit]
         return keys
 
-    async def delete(self, key: str) -> None:
+    async def delete(self, key: str, *, context=None) -> None:
         self._store.pop(key, None)
 
-    async def delete_many(self, keys: list[str]) -> None:
+    async def delete_many(self, keys: list[str], *, context=None) -> None:
         for k in keys:
             self._store.pop(k, None)
 
@@ -72,28 +122,3 @@ class MemoryObjectStore:
 @pytest.fixture
 def memory_object_store():
     return MemoryObjectStore()
-
-
-def make_auth_headers(
-    pubkey: str = TEST_PUBKEY,
-    method: str = "GET",
-    path: str = "/",
-    body: str = "",
-) -> dict[str, str]:
-    """Build auth headers with a deterministic fake signature.
-
-    Callers must patch web3.Account.recover_message
-    to return the expected pubkey for the canonical string produced by these headers.
-    """
-    ts = str(int(time.time() * 1000))
-    nonce = f"test-nonce-{time.time()}"
-    body_hash = auth.hash_body(body)
-    canonical = auth.build_canonical(method, path, ts, nonce, body_hash)
-    signature = f"sig-{ts}"
-
-    return {
-        constants.HEADER_PUBKEY: pubkey,
-        constants.HEADER_SIGNATURE: signature,
-        constants.HEADER_TIMESTAMP: ts,
-        constants.HEADER_NONCE: nonce,
-    }, canonical, signature

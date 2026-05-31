@@ -14,35 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from octobot_sync.auth import canonical
-from octobot_sync.auth.canonical import (
-    build_canonical,
-    eip191_message,
-    hash_body,
-)
-
-from octobot_sync.auth import nonce
-from octobot_sync.auth.nonce import (
-    NonceStore,
-)
-
-from octobot_sync.auth import storage
-from octobot_sync.auth.storage import (
-    AbstractStorageAdapter,
-    MemoryStorageAdapter,
-)
-
 from octobot_sync.auth import provider
 from octobot_sync.auth.provider import (
-    StarfishAuthProvider,
+    WalletCapProvider,
+    derive_root_identity,
+    derive_user_id,
 )
 
 __all__ = [
-    "build_canonical",
-    "eip191_message",
-    "hash_body",
-    "NonceStore",
-    "AbstractStorageAdapter",
-    "MemoryStorageAdapter",
-    "StarfishAuthProvider",
+    "WalletCapProvider",
+    "derive_root_identity",
+    "derive_user_id",
 ]

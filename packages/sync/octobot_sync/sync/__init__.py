@@ -20,11 +20,6 @@ from octobot_sync.sync.collections import (
     is_replicable_collection,
 )
 
-from octobot_sync.sync import role_resolver
-from octobot_sync.sync.role_resolver import (
-    create_role_resolver,
-)
-
 import octobot_sync.sync.collection_backend as collection_backend
 import octobot_sync.sync.collection_providers as collection_providers
 
@@ -41,7 +36,6 @@ DuplicateItemError = collection_backend.DuplicateItemError
 __all__ = [
     "load_sync_config",
     "is_replicable_collection",
-    "create_role_resolver",
     "BaseLocalCollectionStorage",
     "BaseLocalCollectionProvider",
     "CollectionStorageError",

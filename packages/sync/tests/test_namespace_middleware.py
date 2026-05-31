@@ -14,123 +14,99 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-"""Tests for NamespaceRewriteMiddleware."""
+"""Tests for SignedPathMiddleware.
+
+The middleware strips any prefix that appears before the leading /v1/ segment
+and clears root_path so the cap resolver sees exactly what the client signed.
+"""
 
 import pytest
 
-from octobot_sync.app import NamespaceRewriteMiddleware
+from octobot_sync.app import SignedPathMiddleware
 
 
-def _make_scope(path: str, raw_path: bytes | None = None, scope_type: str = "http") -> dict:
-    scope = {"type": scope_type, "path": path}
+def _make_scope(
+    path: str,
+    root_path: str = "",
+    raw_path: bytes | None = None,
+    scope_type: str = "http",
+) -> dict:
+    scope = {"type": scope_type, "path": path, "root_path": root_path}
     if raw_path is not None:
         scope["raw_path"] = raw_path
     return scope
 
 
-async def _call(middleware: NamespaceRewriteMiddleware, scope: dict) -> dict:
+async def _run(scope: dict) -> dict:
     captured = {}
 
     async def inner(s, receive, send):
         captured.update(s)
 
-    await middleware(scope, None, None)
-    # The inner app is the one that receives the (possibly rewritten) scope.
-    # We need to capture via a different approach: pass a capturing inner app.
-    return captured
-
-
-async def _run(namespaces: list[str], scope: dict) -> dict:
-    captured = {}
-
-    async def inner(s, receive, send):
-        captured.update(s)
-
-    mw = NamespaceRewriteMiddleware(inner, namespaces=namespaces)
+    mw = SignedPathMiddleware(inner)
     await mw(scope, None, None)
     return captured
 
 
-async def test_namespace_path_rewritten():
-    result = await _run(["octobot"], _make_scope("/octobot/v1/push/x"))
+async def test_strips_prefix_before_v1():
+    """When mounted at /sync, the /sync prefix must be stripped."""
+    result = await _run(_make_scope("/sync/v1/octobot/push/x", root_path="/sync"))
     assert result["path"] == "/v1/octobot/push/x"
+    assert result["root_path"] == ""
 
 
-async def test_namespace_raw_path_rewritten():
-    result = await _run(
-        ["octobot"],
-        _make_scope("/octobot/v1/push/x", raw_path=b"/octobot/v1/push/x"),
+async def test_strips_mount_prefix_combined_with_root_path():
+    """root_path + path together must find /v1/ and keep from there."""
+    result = await _run(_make_scope("/v1/octobot/pull/y", root_path=""))
+    assert result["path"] == "/v1/octobot/pull/y"
+
+
+async def test_path_without_v1_unchanged():
+    """A path that has no /v1/ segment is passed through unchanged."""
+    result = await _run(_make_scope("/health"))
+    assert result["path"] == "/health"
+
+
+async def test_bare_v1_path_unchanged():
+    """/v1/... paths without a mount prefix are passed through unchanged."""
+    result = await _run(_make_scope("/v1/octobot/push/data"))
+    assert result["path"] == "/v1/octobot/push/data"
+
+
+async def test_non_http_scope_unchanged():
+    scope = {"type": "lifespan", "path": "/v1/push/x"}
+    result = await _run(scope)
+    # Non-http scopes must not be touched
+    assert result["path"] == "/v1/push/x"
+
+
+async def test_raw_path_updated_when_present():
+    scope = _make_scope(
+        "/sync/v1/octobot/push/x",
+        root_path="/sync",
+        raw_path=b"/sync/v1/octobot/push/x",
     )
+    result = await _run(scope)
     assert result["path"] == "/v1/octobot/push/x"
     assert result["raw_path"] == b"/v1/octobot/push/x"
 
 
-async def test_non_namespace_path_unchanged():
-    result = await _run(["octobot"], _make_scope("/v1/push/x"))
-    assert result["path"] == "/v1/push/x"
-
-
-async def test_health_path_unchanged():
-    result = await _run(["octobot"], _make_scope("/health"))
-    assert result["path"] == "/health"
-
-
-async def test_exact_prefix_match():
-    result = await _run(["octobot"], _make_scope("/octobot/v1"))
-    assert result["path"] == "/v1/octobot"
-
-
-async def test_non_http_scope_unchanged():
-    scope = {"type": "lifespan", "path": "/octobot/v1/push/x"}
-    result = await _run(["octobot"], scope)
-    assert result["path"] == "/octobot/v1/push/x"
-
-
-async def test_multiple_namespaces():
-    result_a = await _run(["foo", "bar"], _make_scope("/foo/v1/push/x"))
-    assert result_a["path"] == "/v1/foo/push/x"
-
-    result_b = await _run(["foo", "bar"], _make_scope("/bar/v1/push/x"))
-    assert result_b["path"] == "/v1/bar/push/x"
-
-
-async def test_raw_path_none_not_set():
-    scope = {"type": "http", "path": "/octobot/v1/push/x"}
-    result = await _run(["octobot"], scope)
-    assert result["path"] == "/v1/octobot/push/x"
+async def test_raw_path_not_set_when_not_in_scope():
+    scope = _make_scope("/prefix/v1/octobot/pull/z", root_path="/prefix")
+    # raw_path not provided in scope
+    assert "raw_path" not in scope
+    result = await _run(scope)
+    assert result["path"] == "/v1/octobot/pull/z"
     assert "raw_path" not in result
 
 
-async def test_with_root_path_from_starlette_mount():
-    # Starlette Mount sets root_path to the stripped prefix but leaves path unchanged.
-    # Middleware must compute effective_path = path - root_path before matching.
-    scope = {"type": "http", "path": "/sync/octobot/v1/push/x", "root_path": "/sync"}
-    result = await _run(["octobot"], scope)
-    # new effective = /v1/octobot/push/x, so new path = /sync + /v1/octobot/push/x
-    assert result["path"] == "/sync/v1/octobot/push/x"
-    assert result["root_path"] == "/sync"
-
-
-async def test_with_root_path_non_namespace_unchanged():
-    # /health doesn't match any namespace prefix; path must be left as-is.
-    scope = {"type": "http", "path": "/sync/health", "root_path": "/sync"}
-    result = await _run(["octobot"], scope)
+async def test_health_after_mount_unchanged():
+    """A /health path under a mounted app must not be mangled."""
+    result = await _run(_make_scope("/sync/health", root_path="/sync"))
     assert result["path"] == "/sync/health"
 
 
-async def test_starlette_mount_full_routing():
-    from starlette.applications import Starlette
-    from starlette.responses import PlainTextResponse
-    from starlette.routing import Mount
-    from starlette.testclient import TestClient
-
-    async def inner_asgi(scope, receive, send):
-        assert scope["path"] == "/sync/v1/octobot/push/x"
-        resp = PlainTextResponse("ok")
-        await resp(scope, receive, send)
-
-    mw = NamespaceRewriteMiddleware(inner_asgi, namespaces=["octobot"])
-    outer = Starlette(routes=[Mount("/sync", app=mw)])
-    client = TestClient(outer, raise_server_exceptions=True)
-    resp = client.get("/sync/octobot/v1/push/x")
-    assert resp.status_code == 200
+async def test_root_path_cleared_after_strip():
+    """After stripping, root_path must be reset to empty string."""
+    result = await _run(_make_scope("/mount/v1/octobot/pull/x", root_path="/mount"))
+    assert result["root_path"] == ""

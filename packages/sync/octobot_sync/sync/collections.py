@@ -20,12 +20,29 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 
 from starfish_server.config.loader import load_config_file
-from starfish_server.config.schema import SyncConfig, CollectionConfig, NamespaceConfig
+from starfish_server.config.schema import (
+    SyncConfig,
+    CollectionConfig,
+    NamespaceConfig,
+    AppendOnlyConfig,
+)
+from starfish_server.constants import ROLE_ROOT_DEVICE
 
 import octobot_sync.constants as constants
 import octobot_sync.enums as enums
 
 logger = logging.get_logger("Collections")
+
+# --- TEMPORARY: append-only product signals collection ---------------------
+# Scaffolding to store signals as an append-only (by_timestamp) log, keyed by
+# PRODUCT (not user identity): every push appends the payload as a {ts, data}
+# element rather than overwriting, and pulls fetch only newer elements via
+# ?checkpoint=. The path is product-scoped, so it carries no {identity} segment
+# and cannot use the "self" role; access is granted to the node's self-signed
+# root device cap (ROLE_ROOT_DEVICE). This whole block (the constant and the
+# CollectionConfig entry below) is temporary and will be REMOVED once the signals
+# storage design is finalized.
+_TEMP_SIGNALS_COLLECTION = "product-signals"
 
 DEFAULT_SYNC_CONFIG = SyncConfig(
     version=1,
@@ -96,7 +113,27 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     writeRoles=["self"],
                     encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
-                )
+                ),
+                # TEMPORARY (see _TEMP_SIGNALS_COLLECTION above) — product-scoped
+                # append-only signals log. by_timestamp: each push is stored as a
+                # {ts, data} element under the "items" array; pulls filter by
+                # ?checkpoint=. Keyed by product (productId + version), not user
+                # identity. requireAuthorSignature is disabled so the existing
+                # (cap-authenticated, but non-author-signing) push path can write
+                # without per-element author-proof plumbing. Remove this entry when
+                # the signals design is finalized.
+                CollectionConfig(
+                    name=_TEMP_SIGNALS_COLLECTION,
+                    storagePath="products/{product_id}/{version}/signals",
+                    readRoles=[ROLE_ROOT_DEVICE],
+                    writeRoles=[ROLE_ROOT_DEVICE],
+                    encryption="none",
+                    maxBodyBytes=constants.MAX_BODY_SIZE_SIGNAL,
+                    appendOnly=AppendOnlyConfig(
+                        type="by_timestamp",
+                        requireAuthorSignature=False,
+                    ),
+                ),
             ]
         )
     },

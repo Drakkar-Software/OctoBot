@@ -120,7 +120,6 @@ class TradingSignalsRepository(community_repository.CommunityRepository):
                 push_path=_sync_signals_path("push", trading_signal.strategy_id),
                 pull_path=_sync_signals_path("pull", trading_signal.strategy_id),
                 payload=octobot_commons.json_util.sanitize(payload.to_dict()),
-                sign_data=self.authenticator._sync_data_signer,
                 on_conflict=_merge_trading_signal_documents,
             )
         except Exception as upload_error:

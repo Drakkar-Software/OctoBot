@@ -16,7 +16,6 @@
 
 import os
 import typing
-import secrets
 import json
 from collections.abc import Awaitable, Callable
 
@@ -26,19 +25,20 @@ from starfish_server.storage.base import AbstractObjectStore, StoreContext
 from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
 from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
 
-import octobot_commons.configuration as commons_configuration
-import octobot_commons.constants as commons_constants
 import octobot_commons.logging as logging
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_node.constants as node_constants
 import octobot.community.authentication as community_authentication
-import octobot.community.wallet_backend.errors as wallet_backend_errors
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
 import octobot_sync.crypto as sync_crypto
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
+
+# Re-exported for callers (e.g. node_api) that build the userId allowlist from
+# the node's own wallet keys — must use the same derivation as the client.
+derive_user_id = auth.derive_user_id
 
 import octobot_protocol.models as protocol_models
 
@@ -53,7 +53,7 @@ _get_data: Callable[[str, StoreContext | None], Awaitable[str | None]] | None = 
 _put_data: Callable[[str, str, StoreContext | None], Awaitable[None]] | None = None
 
 
-def _get_address(context: StoreContext | None) -> str:
+def _get_identity(context: StoreContext | None) -> str:
     if context and context.identity:
         return context.identity
     raise errors.OctobotSyncIdentityMissingError("Identity is missing from the context")
@@ -71,23 +71,28 @@ def _get_account_id(context: StoreContext | None) -> str:
     raise errors.OctobotSyncAccountIdMissingError("account_id is missing from the context")
 
 
-def _get_wallet_private_key(address: str) -> str:
-    try:
-        wallet = community_authentication.CommunityAuthentication.instance().get_wallet(address)
-    except wallet_backend_errors.WalletNotFoundError as err:
-        raise errors.OctobotSyncWalletNotFoundError(
-            f"Wallet not found for address: {address}"
-        ) from err
-    return wallet.private_key
+def _get_wallet_private_key(user_id: str) -> str:
+    # Under cap-cert auth the storage identity is the Starfish user_id
+    # (sha256(rootEdPub)[:32]), not the EVM address — the address never reaches
+    # the wire. The node holds its own wallets' keys, so resolve the wallet by
+    # re-deriving each local wallet's user_id with the SAME bootstrap challenge
+    # the client uses (octobot_sync.auth.derive_user_id). Linear in #local
+    # wallets, which is small; deterministic, so no cache is required.
+    for wallet in community_authentication.CommunityAuthentication.instance().list_wallets():
+        if auth.derive_user_id(wallet.private_key) == user_id:
+            return wallet.private_key
+    raise errors.OctobotSyncWalletNotFoundError(
+        f"Wallet not found for user_id: {user_id}"
+    )
 
 
-def _encrypt(data: str, address: str, collection: str) -> str:
-    wallet_private_key = _get_wallet_private_key(address)
+def _encrypt(data: str, user_id: str, collection: str) -> str:
+    wallet_private_key = _get_wallet_private_key(user_id)
     return sync_crypto.encrypt_utf8_json_to_wire(data, wallet_private_key, collection)
 
 
-def _decrypt(data: str, address: str, collection: str) -> str:
-    wallet_private_key = _get_wallet_private_key(address)
+def _decrypt(data: str, user_id: str, collection: str) -> str:
+    wallet_private_key = _get_wallet_private_key(user_id)
     return sync_crypto.decrypt_wire_to_utf8_json(data, wallet_private_key, collection)
 
 
@@ -143,22 +148,22 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     match collection:
         case enums.Collections.USER_DATA.value:
             user_data_state = await user_data_protocol.get_user_data_state(
-                _get_address(context)
+                _get_identity(context)
             )
             plaintext = user_data_state.to_json()
         case enums.Collections.USER_ACCOUNTS.value:
             encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
-                _get_address(context)
+                _get_identity(context)
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
         case enums.Collections.USER_ACCOUNTS_AUTH.value:
             encrypted_blob = accounts_auth_protocol.get_accounts_authentication_state_encrypted(
-                _get_address(context)
+                _get_identity(context)
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
         case enums.Collections.USER_ACCOUNTS_TRADING.value:
             encrypted_blob = accounts_trading_protocol.get_account_trading_state_encrypted(
-                _get_address(context),
+                _get_identity(context),
                 _get_account_id(context),
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
@@ -184,7 +189,7 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
         return _wrap_as_stored_document(already_encrypted_payload, already_encrypted_payload)
     if plaintext is None:
         return None
-    encrypted = _encrypt(plaintext, _get_address(context), collection)
+    encrypted = _encrypt(plaintext, _get_identity(context), collection)
     return _wrap_as_stored_document(encrypted, plaintext)
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
@@ -193,13 +198,13 @@ async def put_data(key: str, body: str, context: StoreContext | None = None) -> 
         case enums.Collections.USER_ACTIONS.value:
             encrypted_payload = _unwrap_stored_document_data(body)
             user_actions_state = protocol_models.UserActionsState.from_json(
-                _decrypt(encrypted_payload, _get_address(context), collection)
+                _decrypt(encrypted_payload, _get_identity(context), collection)
             )
             if user_actions_state.user_actions:
                 for action in user_actions_state.user_actions:
                     try:
                         await user_actions_protocol.execute_user_action(
-                            action, _get_address(context)
+                            action, _get_identity(context)
                         )
                     except Exception as exc:
                         _get_logger().exception(
@@ -268,32 +273,12 @@ def build_object_store() -> AbstractObjectStore:
     return FilesystemObjectStore(FilesystemStorageOptions(base_dir=data_dir))
 
 
-def get_or_generate_encryption_secret(config: commons_configuration.Configuration) -> str:
-    env_secret = os.environ.get("ENCRYPTION_SECRET")
-    if env_secret:
-        return env_secret
-    sync_section = config.config.get(commons_constants.CONFIG_SYNC) or {}
-    secret = sync_section.get(commons_constants.CONFIG_SYNC_ENCRYPTION_SECRET)
-    if not secret:
-        secret = secrets.token_hex(32)
-        config.config.setdefault(commons_constants.CONFIG_SYNC, {})[
-            commons_constants.CONFIG_SYNC_ENCRYPTION_SECRET
-        ] = secret
-        config.save()
-        _get_logger().info("Generated new sync encryption secret and stored in config.json")
-    return secret
-
-
 def build_default_sync_app(
-    is_allowed: Callable[[str], bool] | None = None,
-    encryption_secret: str | None = None,
+    is_allowed_user_id: Callable[[str], bool] | None = None,
     sync_config: SyncConfig | None = None,
 ):
-    nonce = auth.NonceStore(auth.MemoryStorageAdapter())
     return sync_app.create_app(
-        nonce,
         build_object_store(),
-        is_allowed=is_allowed,
-        encryption_secret=encryption_secret,
+        is_allowed_user_id=is_allowed_user_id,
         sync_config=sync_config,
     )

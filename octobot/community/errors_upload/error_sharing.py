@@ -37,25 +37,24 @@ ERRORS_PULL_PATH_TEMPLATE = "/v1/pull/users/{pubkey}/errors/{errorId}"
 ENCRYPTION_INFO = "octobot-error-data"
 
 
-def _get_client_and_address() -> tuple[sync_client.StarfishClient, str, any] | None:
+def _get_client_and_user_id() -> tuple[sync_client.StarfishClient, str] | None:
     authenticator = authentication.Authenticator.get_instance_if_exists()
     if authenticator is None or authenticator._sync_client is None:
         return None
-    return authenticator._sync_client, authenticator._sync_address, authenticator._sync_data_signer
+    return authenticator._sync_client, authenticator._sync_user_id
 
 
 async def upload_error(
     client: sync_client.StarfishClient,
-    address: str,
+    user_id: str,
     error: Exception,
     *,
     context: dict[str, Any] | None = None,
     error_id: str | None = None,
-    sign_data=None,
 ) -> dict[str, Any] | None:
     error_secret, salt = sync_client.generate_share_credentials()
-    push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
-    pull_path = ERRORS_PULL_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
+    push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=user_id, errorId=salt)
+    pull_path = ERRORS_PULL_PATH_TEMPLATE.format(pubkey=user_id, errorId=salt)
 
     payload: dict[str, Any] = {
         "id": error_id or str(uuid.uuid4()),
@@ -79,7 +78,6 @@ async def upload_error(
             encryption_salt=salt,
             payload=payload,
             encryption_info=ENCRYPTION_INFO,
-            sign_data=sign_data,
         )
         if result is not None:
             result["errorId"] = salt
@@ -94,15 +92,15 @@ async def share_logs(
     export_path: str,
     log_paths: list[str] | None = None,
 ) -> dict[str, Any] | None:
-    result = _get_client_and_address()
+    result = _get_client_and_user_id()
     if result is None:
         logger.warning("Cannot share logs: no sync client configured")
         return None
-    client, address, data_signer = result
+    client, user_id = result
 
     error_secret, salt = sync_client.generate_share_credentials()
-    push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
-    pull_path = ERRORS_PULL_PATH_TEMPLATE.format(pubkey=address, errorId=salt)
+    push_path = ERRORS_PUSH_PATH_TEMPLATE.format(pubkey=user_id, errorId=salt)
+    pull_path = ERRORS_PULL_PATH_TEMPLATE.format(pubkey=user_id, errorId=salt)
 
     zip_path = f"{export_path}.zip"
     try:
@@ -139,7 +137,6 @@ async def share_logs(
             encryption_salt=salt,
             payload=payload,
             encryption_info=ENCRYPTION_INFO,
-            sign_data=data_signer,
         )
         if result is not None:
             result["errorId"] = salt

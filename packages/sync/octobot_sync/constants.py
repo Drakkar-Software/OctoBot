@@ -26,17 +26,15 @@ BLOB_DATA_KEY = "data"
 
 IV_BYTES = 12
 
-MAX_NONCE_LENGTH = 128
-MAX_PUBKEY_LENGTH = 256
-MAX_SIGNATURE_LENGTH = 512
-TIMESTAMP_WINDOW_MS = 10_000
-
-HEADER_PUBKEY = "X-Starfish-Pubkey"
-HEADER_SIGNATURE = "X-Starfish-Signature"
-HEADER_TIMESTAMP = "X-Starfish-Timestamp"
-HEADER_NONCE = "X-Starfish-Nonce"
+DEFAULT_ENCRYPTION_INFO = "starfish-e2e"
 COLLECTIONS_FILE = "collections.json"
 SYNC_NAMESPACE = "octobot"
 SYNC_MOUNT_PATH = "sync"
-DEFAULT_ENCRYPTION_INFO = "starfish-e2e"
 STARFISH_SERVER_MAJOR_VERSION = "v1"
+
+# App-specific bootstrap challenge: the EVM wallet signs this (EIP-191 personal_sign)
+# to derive its Starfish (Ed25519/X25519) identity. Namespacing the challenge to
+# OctoBot means the derived user_id is OctoBot-specific. MUST stay fixed forever —
+# changing it changes every user's derived identity — and MUST be identical on the
+# client (cap provider) and server (allowlist + bridge wallet resolver).
+SYNC_BOOTSTRAP_CHALLENGE = "octobot:sync-bootstrap"

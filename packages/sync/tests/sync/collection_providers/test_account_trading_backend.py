@@ -15,8 +15,9 @@
 #  License along with this library.
 
 import datetime
+import json
 
-import mock
+from unittest import mock
 import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 import octobot_sync.sync.collection_providers.user_account_trading_provider as trading_provider_module
@@ -39,6 +40,38 @@ def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
         "instance",
         return_value=auth,
     )
+
+
+class _FakeTradingState:
+    """Minimal stand-in for protocol_models.AccountTradingState.
+
+    Provides the to_json / from_json interface used by BaseLocalCollectionStorage.
+    """
+
+    def __init__(self, version: str, updated_at: datetime.datetime):
+        self.version = version
+        self.updated_at = updated_at
+
+    def to_json(self) -> str:
+        return json.dumps({
+            "version": self.version,
+            "updated_at": self.updated_at.isoformat(),
+        })
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "_FakeTradingState":
+        data = json.loads(json_str)
+        return cls(
+            version=data["version"],
+            updated_at=datetime.datetime.fromisoformat(data["updated_at"]),
+        )
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, _FakeTradingState)
+            and self.version == other.version
+            and self.updated_at == other.updated_at
+        )
 
 
 class TestAccountTradingProviderCollection:
@@ -72,44 +105,44 @@ class TestAccountTradingProviderStateFormat:
 
 
 class TestAccountTradingProviderLoadSaveState:
+    _VERSION = "1"
+
+    def _make_state(self, updated_at: datetime.datetime) -> _FakeTradingState:
+        return _FakeTradingState(version=self._VERSION, updated_at=updated_at)
+
     def test_save_and_load_state_per_account_id(self, tmp_path):
+        """Round-trip a fake state through save/load using the provider.
+
+        Uses _FakeTradingState (with real to_json/from_json) instead of the
+        mocked protocol_models, patching STATE_CLASS so load_state uses the
+        fake deserialiser.
+        """
         provider = trading_provider_module.AccountTradingProvider(base_folder=str(tmp_path))
         fixture_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
-        account_trading = protocol_models.AccountTrading(
-            updated_at=fixture_time,
-        )
-        trading_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
-            account_trading=[account_trading],
-        )
         updated_time = datetime.datetime(2026, 1, 16, tzinfo=datetime.UTC)
-        updated_account_trading = protocol_models.AccountTrading(
-            updated_at=updated_time,
-        )
-        updated_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
-            account_trading=[updated_account_trading],
-        )
-        with _patch_wallet():
+        trading_state = self._make_state(fixture_time)
+        updated_state = self._make_state(updated_time)
+
+        with (
+            _patch_wallet(),
+            mock.patch.object(trading_provider_module.AccountTradingProvider, "STATE_CLASS", _FakeTradingState),
+        ):
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, trading_state)
             loaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, updated_state)
             reloaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
-        assert loaded_state.account_trading[0].updated_at == fixture_time
-        assert reloaded_state.account_trading[0].updated_at == updated_time
+        assert loaded_state.updated_at == fixture_time
+        assert reloaded_state.updated_at == updated_time
 
     def test_load_state_encrypted_reads_persisted_blob(self, tmp_path):
         provider = trading_provider_module.AccountTradingProvider(base_folder=str(tmp_path))
         fixture_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
-        trading_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
-            account_trading=[
-                protocol_models.AccountTrading(
-                    updated_at=fixture_time,
-                )
-            ],
-        )
-        with _patch_wallet():
+        trading_state = self._make_state(fixture_time)
+
+        with (
+            _patch_wallet(),
+            mock.patch.object(trading_provider_module.AccountTradingProvider, "STATE_CLASS", _FakeTradingState),
+        ):
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, trading_state)
             encrypted_blob = provider.load_state_encrypted(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
         assert "iv" in encrypted_blob
@@ -119,23 +152,13 @@ class TestAccountTradingProviderLoadSaveState:
         provider = trading_provider_module.AccountTradingProvider(base_folder=str(tmp_path))
         first_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
         second_time = datetime.datetime(2026, 1, 16, tzinfo=datetime.UTC)
-        first_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
-            account_trading=[
-                protocol_models.AccountTrading(
-                    updated_at=first_time,
-                )
-            ],
-        )
-        second_state = protocol_models.AccountTradingState(
-            version=node_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
-            account_trading=[
-                protocol_models.AccountTrading(
-                    updated_at=second_time,
-                )
-            ],
-        )
-        with _patch_wallet():
+        first_state = self._make_state(first_time)
+        second_state = self._make_state(second_time)
+
+        with (
+            _patch_wallet(),
+            mock.patch.object(trading_provider_module.AccountTradingProvider, "STATE_CLASS", _FakeTradingState),
+        ):
             provider.save_state(_TEST_ADDRESS, "acc-1", first_state)
             provider.save_state(_TEST_ADDRESS, "acc-2", second_state)
             loaded_first = provider.load_state(_TEST_ADDRESS, "acc-1")

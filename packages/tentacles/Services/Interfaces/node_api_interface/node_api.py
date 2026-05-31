@@ -93,10 +93,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         host = self.host
         port = self.port
         community_auth.CommunityAuthentication.instance()
-        sync_encryption_secret = sync_server.get_or_generate_encryption_secret(
-            self.get_bot_api().get_edited_config(dict_only=False)
-        )
-        self.app = self.create_app(sync_encryption_secret=sync_encryption_secret)
+        self.app = self.create_app()
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()
         cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()] if cors_origins_str else []
@@ -118,7 +115,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             self.server.should_exit = True
 
     @classmethod
-    def create_app(cls, sync_encryption_secret: str | None = None) -> FastAPI:
+    def create_app(cls) -> FastAPI:
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
@@ -138,11 +135,15 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         app.mount(
             "/sync",
             sync_server.build_default_sync_app(
-                is_allowed=lambda address: any(
-                    w.address.lower() == address
+                # Service-level allowlist: only the node's own wallets may use the
+                # sync server. Under cap-certs the request identity is the Starfish
+                # user_id, so derive each local wallet's user_id with the same
+                # bootstrap challenge the client uses (cap scoping then confines
+                # each caller to its own users/{user_id}/* paths).
+                is_allowed_user_id=lambda user_id: any(
+                    sync_server.derive_user_id(w.private_key) == user_id
                     for w in community_auth.CommunityAuthentication.instance().list_wallets()
                 ),
-                encryption_secret=sync_encryption_secret,
             ),
         )
 

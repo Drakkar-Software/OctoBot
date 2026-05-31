@@ -7,7 +7,7 @@
       "bundle": "personal",
       "readRoles": ["self"],
       "writeRoles": ["self"],
-      "encryption": "identity",
+      "encryption": "delegated",
       "maxBodyBytes": 10485760
     },
     {
@@ -16,7 +16,7 @@
       "bundle": "personal",
       "readRoles": ["self"],
       "writeRoles": ["self"],
-      "encryption": "identity",
+      "encryption": "delegated",
       "maxBodyBytes": 10485760
     },
     {
@@ -92,7 +92,7 @@
       "storagePath": "platform/internal/{identity}",
       "readRoles": ["self"],
       "writeRoles": ["admin"],
-      "encryption": "server",
+      "encryption": "delegated",
       "maxBodyBytes": 65536
     },
     {

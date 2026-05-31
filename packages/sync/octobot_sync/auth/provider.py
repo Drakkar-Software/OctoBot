@@ -14,39 +14,84 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import time
-import uuid
+"""Starfish v3 cap-cert identity, derived from an EVM wallet.
+
+The wallet signs a fixed challenge (deterministic EIP-191 ``personal_sign``);
+that signature is HKDF-expanded by ``starfish-identities`` into a stable
+Ed25519 + X25519 root identity (the EVM key never reaches the wire). The
+``WalletCapProvider`` then self-signs a device cap-cert per request, which the
+``StarfishClient`` uses to sign every request. ``user_id`` is the Starfish
+storage identity (``sha256(rootEdPub)[:32]``), replacing the EVM address.
+"""
+
+from typing import Any
 
 import web3
+from eth_account.messages import encode_defunct
 
-import octobot_sync.auth.canonical as canonical
+import starfish_identities
+
 import octobot_sync.constants as constants
 
 
-class StarfishAuthProvider:
-    def __init__(self, private_key: str) -> None:
-        self._private_key = private_key
-        self._address = web3.Account.from_key(private_key).address  # pylint: disable=no-value-for-parameter
+def _sign_bootstrap(private_key: str, challenge: str) -> bytes:
+    # Deterministic ECDSA (RFC 6979) — reproducible across devices/sessions.
+    signed = web3.Account.sign_message(  # pylint: disable=no-value-for-parameter
+        encode_defunct(text=challenge), private_key=private_key
+    )
+    return bytes(signed.signature)
+
+
+def derive_root_identity(
+    private_key: str, challenge: str = constants.SYNC_BOOTSTRAP_CHALLENGE
+) -> starfish_identities.RootIdentity:
+    """Derive the Starfish root identity for an EVM wallet private key.
+
+    Deterministic for a given (private_key, challenge): same wallet → same
+    identity → same ``user_id`` on every device. The client cap provider, the
+    server allowlist, and the server bridge wallet resolver MUST all call this
+    with the SAME challenge so their ``user_id`` values agree.
+    """
+    address = web3.Account.from_key(private_key).address  # pylint: disable=no-value-for-parameter
+    signature = _sign_bootstrap(private_key, challenge)
+    return starfish_identities.derive_root_identity_from_evm_signature(
+        address, signature, challenge=challenge
+    )
+
+
+def derive_user_id(
+    private_key: str, challenge: str = constants.SYNC_BOOTSTRAP_CHALLENGE
+) -> str:
+    """Return the Starfish ``user_id`` an EVM wallet key derives to."""
+    return derive_root_identity(private_key, challenge).user_id
+
+
+class WalletCapProvider:
+    """``CapProvider`` for ``StarfishClient``: signs requests with a device cap
+    self-minted from the wallet-derived root identity.
+
+    The raw bootstrap signature is private-key-equivalent — it is consumed once
+    in :func:`derive_root_identity` and never stored here; only the derived
+    identity material is kept in memory.
+    """
+
+    def __init__(
+        self, private_key: str, challenge: str = constants.SYNC_BOOTSTRAP_CHALLENGE
+    ) -> None:
+        self._root = derive_root_identity(private_key, challenge)
 
     @property
-    def address(self) -> str:
-        return self._address
+    def user_id(self) -> str:
+        return self._root.user_id
 
-    async def sign_payload(self, data: str) -> str:
-        signed = web3.Account.sign_message(canonical.eip191_message(data), private_key=self._private_key)  # pylint: disable=no-value-for-parameter
-        return signed.signature.hex()
-
-    async def __call__(
-        self, *, method: str, path: str, body: str | None
-    ) -> dict[str, str]:
-        ts = str(int(time.time() * 1000))
-        nonce = str(uuid.uuid4())
-        body_hash = canonical.hash_body(body)
-        msg = canonical.build_canonical(method, path, ts, nonce, body_hash)
-        signed = web3.Account.sign_message(canonical.eip191_message(msg), private_key=self._private_key)  # pylint: disable=no-value-for-parameter
-        return {
-            constants.HEADER_PUBKEY: self._address,
-            constants.HEADER_SIGNATURE: signed.signature.hex(),
-            constants.HEADER_TIMESTAMP: ts,
-            constants.HEADER_NONCE: nonce,
-        }
+    async def get_cap(self) -> dict[str, Any]:
+        # Mint a fresh, full-scope device cap on each call so a long-running bot
+        # never presents an expired cap (mint_device_cap sets a TTL); minting is
+        # a single Ed25519 signature.
+        cap = starfish_identities.mint_device_cap(
+            self._root.keys.ed_priv,
+            self._root.keys.ed_pub,
+            {"edPubHex": self._root.keys.ed_pub, "kemPubHex": self._root.keys.kem_pub},
+            starfish_identities.scopes.root_all(),
+        )
+        return {"cap": cap, "dev_ed_priv_hex": self._root.keys.ed_priv}

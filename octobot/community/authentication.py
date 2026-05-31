@@ -129,8 +129,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
         self._fetch_account_task: typing.Optional[asyncio.Task] = None
         self._sync_client = None
-        self._sync_address: str = ""
-        self._sync_data_signer = None
+        self._sync_user_id: str = ""
         self._sync_client_lock = threading.Lock()
         self._wallet_backend: wallet_backend.WalletBackend = wallet_backend.WalletBackend(
             self.configuration_storage.sync_storage, self.logger
@@ -699,7 +698,7 @@ class CommunityAuthentication(authentication.Authenticator):
                     self.logger.debug("No sync server URL configured, skipping sync client init")
                     return
                 wallet = self.get_wallet(address)
-                self._sync_client, self._sync_address, self._sync_data_signer = sync_client.create_sync_client(
+                self._sync_client, self._sync_user_id = sync_client.create_sync_client(
                     private_key=wallet.private_key,
                     sync_url=sync_url,
                 )
@@ -732,11 +731,9 @@ class CommunityAuthentication(authentication.Authenticator):
                         "No sync server URL configured, skipping auto sync client init"
                     )
                     return False
-                self._sync_client, self._sync_address, self._sync_data_signer = (
-                    sync_client.create_sync_client(
-                        private_key=wallet.private_key,
-                        sync_url=sync_url,
-                    )
+                self._sync_client, self._sync_user_id = sync_client.create_sync_client(
+                    private_key=wallet.private_key,
+                    sync_url=sync_url,
                 )
             return True
         except wallet_backend.WalletError as e:
