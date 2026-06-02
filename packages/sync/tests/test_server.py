@@ -3,7 +3,7 @@
 import json
 import os
 
-from unittest import mock
+import mock
 import pytest
 
 import octobot_sync.crypto as sync_crypto

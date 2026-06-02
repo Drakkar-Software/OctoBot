@@ -17,7 +17,7 @@
 import datetime
 import json
 
-from unittest import mock
+import mock
 import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 import octobot_sync.sync.collection_providers.user_account_trading_provider as trading_provider_module

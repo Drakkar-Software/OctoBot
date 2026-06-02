@@ -17,7 +17,7 @@
 import typing
 
 import cachetools
-from unittest import mock
+import mock
 import pydantic
 
 import octobot.community.authentication as community_authentication

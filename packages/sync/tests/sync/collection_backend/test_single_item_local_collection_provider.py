@@ -16,7 +16,7 @@
 
 import typing
 
-from unittest import mock
+import mock
 import pydantic
 
 import octobot_sync.constants as sync_constants

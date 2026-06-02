@@ -26,8 +26,7 @@ import octobot.community.errors_upload.error_sharing as error_sharing
 pytestmark = pytest.mark.asyncio
 
 _FAKE_CLIENT = mock.MagicMock()
-_FAKE_ADDRESS = "0xdeadbeef"
-_FAKE_SIGNER = mock.MagicMock()
+_FAKE_USER_ID = "0xdeadbeef"
 _PUSH_RESULT = {"hash": "abc123"}
 
 
@@ -40,11 +39,11 @@ def _make_zip_bytes(filenames: list[str]) -> bytes:
 
 
 @pytest.fixture
-def mock_client_and_address():
+def mock_client_and_user_id():
     with mock.patch.object(
         error_sharing,
-        "_get_client_and_address",
-        return_value=(_FAKE_CLIENT, _FAKE_ADDRESS, _FAKE_SIGNER),
+        "_get_client_and_user_id",
+        return_value=(_FAKE_CLIENT, _FAKE_USER_ID),
     ):
         yield
 
@@ -59,7 +58,7 @@ def mock_push():
 async def test_upload_error_returns_result(mock_push):
     error = ValueError("boom")
 
-    result = await error_sharing.upload_error(_FAKE_CLIENT, _FAKE_ADDRESS, error)
+    result = await error_sharing.upload_error(_FAKE_CLIENT, _FAKE_USER_ID, error)
 
     mock_push.assert_awaited_once()
     _, kwargs = mock_push.call_args
@@ -79,7 +78,7 @@ async def test_upload_error_with_context_and_error_id(mock_push):
     ctx = {"workflow": "abc"}
 
     result = await error_sharing.upload_error(
-        _FAKE_CLIENT, _FAKE_ADDRESS, error,
+        _FAKE_CLIENT, _FAKE_USER_ID, error,
         context=ctx, error_id="fixed-id"
     )
 
@@ -96,17 +95,17 @@ async def test_upload_error_returns_none_on_push_failure():
         "push_payload",
         mock.AsyncMock(side_effect=Exception("network error")),
     ):
-        result = await error_sharing.upload_error(_FAKE_CLIENT, _FAKE_ADDRESS, ValueError("x"))
+        result = await error_sharing.upload_error(_FAKE_CLIENT, _FAKE_USER_ID, ValueError("x"))
     assert result is None
 
 
 async def test_share_logs_returns_none_when_no_client():
-    with mock.patch.object(error_sharing, "_get_client_and_address", return_value=None):
-        result = await error_sharing.share_logs("/tmp/export")  # no passphrase param
+    with mock.patch.object(error_sharing, "_get_client_and_user_id", return_value=None):
+        result = await error_sharing.share_logs("/tmp/export")
     assert result is None
 
 
-async def test_share_logs_uses_make_archive_when_no_log_paths(mock_client_and_address, mock_push):
+async def test_share_logs_uses_make_archive_when_no_log_paths(mock_client_and_user_id, mock_push):
     zip_bytes = _make_zip_bytes(["OctoBot.log"])
 
     with (
@@ -125,7 +124,7 @@ async def test_share_logs_uses_make_archive_when_no_log_paths(mock_client_and_ad
     assert result["errorId"] is not None
 
 
-async def test_share_logs_zips_provided_log_paths(mock_client_and_address, mock_push, tmp_path):
+async def test_share_logs_zips_provided_log_paths(mock_client_and_user_id, mock_push, tmp_path):
     log_file = tmp_path / "abc-123.log"
     log_file.write_text("automation log line")
     missing_file = str(tmp_path / "missing.log")
@@ -146,7 +145,7 @@ async def test_share_logs_zips_provided_log_paths(mock_client_and_address, mock_
     assert result["errorId"] is not None
 
 
-async def test_share_logs_with_log_paths_skips_make_archive(mock_client_and_address, mock_push, tmp_path):
+async def test_share_logs_with_log_paths_skips_make_archive(mock_client_and_user_id, mock_push, tmp_path):
     log_file = tmp_path / "wf.log"
     log_file.write_text("wf log")
 
@@ -159,7 +158,7 @@ async def test_share_logs_with_log_paths_skips_make_archive(mock_client_and_addr
     make_archive.assert_not_called()
 
 
-async def test_share_logs_with_empty_log_paths(mock_client_and_address, mock_push, tmp_path):
+async def test_share_logs_with_empty_log_paths(mock_client_and_user_id, mock_push, tmp_path):
     result = await error_sharing.share_logs(
         str(tmp_path / "export"),
         log_paths=[],
@@ -173,7 +172,7 @@ async def test_share_logs_with_empty_log_paths(mock_client_and_address, mock_pus
     assert result is not None
 
 
-async def test_share_logs_returns_none_on_push_failure(mock_client_and_address, tmp_path):
+async def test_share_logs_returns_none_on_push_failure(mock_client_and_user_id, tmp_path):
     log_file = tmp_path / "wf.log"
     log_file.write_text("wf log")
 

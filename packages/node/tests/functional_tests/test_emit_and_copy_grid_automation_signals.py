@@ -103,9 +103,9 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
             storagePath="products/{strategyId}/signals/{version}",
             # OctoBot-Sync ``create_role_resolver`` grants role ``user`` (``self`` is only
             # added for paths that include ``{identity}`` matching the caller).
-            readRoles=["user"],
-            writeRoles=["user"],
-            encryption="identity",
+            readRoles=["public"],
+            writeRoles=["public"],
+            encryption="none",
             maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
         )
         extended_octobot = sync_collections_module.NamespaceConfig(
@@ -544,8 +544,7 @@ class TestEmitAndCopyGridAutomationSignals:
                     return_value=_grid_functional_test_sync_config(),
                 ):
                     sync_asgi_app = octobot_sync_server_module.build_default_sync_app(
-                        is_allowed=lambda _address: True,
-                        encryption_secret=_FUNCTIONAL_TEST_SYNC_ENCRYPTION_SECRET,
+                        is_allowed_user_id=lambda _address: True,
                     )
                     # StarfishClient builds URLs as ``{base}/sync/v1/{namespace}/...``.
                     # Mount sync_asgi_app under /sync to match the SYNC_MOUNT_PATH prefix.
