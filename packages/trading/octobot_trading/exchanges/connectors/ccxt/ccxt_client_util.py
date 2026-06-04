@@ -63,7 +63,7 @@ def create_client(
         exchange_type = exchange_util.get_exchange_type(exchange_manager)
         logger.info(
             f"Creating {'' if should_be_authenticated_exchange else 'un'}authenticated {exchange_class.__name__} "
-            f"{exchange_type.name} exchange with ccxt in version {ccxt.__version__}"
+            f"{exchange_type.name} exchange with octobot-ccxt in version {ccxt.__version__}"
         )
     if exchange_manager.ignore_config or exchange_manager.check_config(exchange_manager.exchange_name):
         try:
