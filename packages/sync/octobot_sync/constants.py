@@ -38,3 +38,11 @@ STARFISH_SERVER_MAJOR_VERSION = "v1"
 # changing it changes every user's derived identity — and MUST be identical on the
 # client (cap provider) and server (allowlist + bridge wallet resolver).
 SYNC_BOOTSTRAP_CHALLENGE = "octobot:sync-bootstrap"
+
+EXCHANGE_ACCOUNTS_STATE_VERSION = "1.0.0"
+USER_ACCOUNTS_AUTH_STATE_VERSION = "1.0.0"
+USER_ACCOUNTS_TRADING_STATE_VERSION = "1.0.0"
+USER_STRATEGIES_STATE_VERSION = "1.0.0"
+USER_DATA_STATE_VERSION = "1.0.0"
+USER_ACTIONS_STATE_VERSION = "1.0.0"
+DEBUG_STATE_VERSION = "1.0.0"

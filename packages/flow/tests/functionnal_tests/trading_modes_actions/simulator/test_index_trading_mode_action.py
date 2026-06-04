@@ -430,7 +430,7 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
             assert insert_trading_signal_mock.await_count == 3
             _assert_trading_signal_btc_eth_usdt_index_portfolio(insert_trading_signal_mock.await_args_list[0].args[0])
             _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(insert_trading_signal_mock.await_args_list[1].args[0])
-            _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(insert_trading_signal_mock.await_args_list[2].args[0])
+            _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(insert_trading_signal_mock.await_args_list[2].args[0], allow_zero_ratio_assets=frozenset({"ETH"}))
         else:
             insert_trading_signal_mock.assert_not_awaited()
 

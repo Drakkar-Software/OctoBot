@@ -21,7 +21,7 @@ import octobot_commons
 _FULL_SYMBOL_GROUPS_REGEX = r"([^//]*)\/([^:]*):?([^-]*)-?([^-]*)-?([^-]*)-?([^-]*)"
 
 
-# pylint: disable=R0902
+# pylint: disable=R0902,R0913
 class Symbol:
     #                             base   /  quote : settlement-identifier-strike price-type
     # Inspired from CCXT https://docs.ccxt.com/#/README?id=contract-naming-conventions:
@@ -84,7 +84,7 @@ class Symbol:
         Parse the specified symbol
         :param symbol_str: the symbol to parse
         """
-        trading_symbol, self.network, self.dex = _extract_network_and_dex(
+        trading_symbol, self.network, self.dex = extract_network_and_dex(
             symbol_str, self.network_separator, self.dex_separator
         )
         if self.settlement_separator in trading_symbol:
@@ -258,11 +258,18 @@ class Symbol:
         return str(self)
 
 
-def _extract_network_and_dex(
+def extract_network_and_dex(
     symbol_str: str,
     network_separator: str = octobot_commons.NETWORK_SEPARATOR,
     dex_separator: str = octobot_commons.DEX_SEPARATOR,
 ) -> typing.Tuple[str, typing.Optional[str], typing.Optional[str]]:
+    """
+    Split a symbol into its trading part and optional network/DEX suffix.
+    :param symbol_str: the symbol to parse (e.g. ``BTC/USDT@SOL!RAYDIUM``)
+    :param network_separator: separator before the network suffix (default ``@``)
+    :param dex_separator: separator between network and dex (default ``!``)
+    :return: trading symbol, network name (or None), dex name (or None)
+    """
     if network_separator not in symbol_str:
         return symbol_str, None, None
     trading_symbol, network_and_dex = symbol_str.rsplit(network_separator, 1)

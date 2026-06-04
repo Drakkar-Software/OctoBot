@@ -257,6 +257,10 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             try:
                 await self._load_markets(self.client, reload, market_filter=market_filter)
                 ccxt_client_util.set_ccxt_client_cache(self.client, authenticated_cache)
+            except ccxt.async_support.OBIPWhitelistError as err:
+                raise octobot_trading.errors.InvalidAPIKeyIPWhitelistError(
+                    f"Invalid IP whitelist error: {html_util.get_html_summary_if_relevant(err)}"
+                ) from err
             except (
                 ccxt.async_support.AuthenticationError,
                 ccxt.async_support.ArgumentsRequired,
@@ -282,10 +286,6 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                 raise octobot_trading.errors.NetworkError(
                     f"Failed to load_symbol_markets: {err.__class__.__name__} "
                     f"on {html_util.get_html_summary_if_relevant(err)}"
-                ) from err
-            except ccxt.async_support.OBIPWhitelistError as err:
-                raise octobot_trading.errors.InvalidAPIKeyIPWhitelistError(
-                    f"Invalid IP whitelist error: {html_util.get_html_summary_if_relevant(err)}"
                 ) from err
             except ccxt.async_support.ExchangeError as err:
                 # includes AuthenticationError but also auth error not identified as such by ccxt

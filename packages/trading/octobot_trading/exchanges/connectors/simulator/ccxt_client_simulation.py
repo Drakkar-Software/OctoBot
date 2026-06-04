@@ -18,6 +18,7 @@ import typing
 import cachetools
 import ccxt.async_support as async_ccxt
 
+import octobot_commons.logging as commons_logging
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 import octobot_trading.enums as enums
 
@@ -44,20 +45,31 @@ def get_contract_size(market_status: dict) -> decimal.Decimal:
 def get_option_value(
     exchange_name: str, option_key: enums.ExchangeClientOptions
 ) -> typing.Union[bool, float, int, str, None]:
-    return ccxt_client_util.get_option_value(_temp_client(exchange_name), option_key)
+    return ccxt_client_util.get_option_value(_temp_client(exchange_name, allow_fallback=True), option_key)
 
 
 @cachetools.cached(cachetools.LRUCache(maxsize=256))
 def supports_bundled_orders(exchange_name: str, exchange_type: enums.ExchangeTypes, order_type: enums.TradeOrderType) -> bool:
     return ccxt_client_util.supports_bundled_orders(
-        _temp_client(exchange_name), exchange_type, order_type
+        _temp_client(exchange_name, allow_fallback=True), exchange_type, order_type
     )
 
 
-def _temp_client(exchange_name: str, additional_client_config: typing.Optional[dict] = None) -> async_ccxt.Exchange:
-    exchange_class = ccxt_client_util.ccxt_exchange_class_factory(exchange_name)
-    config = {
-        **(additional_client_config or {}),
-        **ccxt_client_util.get_custom_domain_config(exchange_class)
-    }
-    return exchange_class(config)
+def _temp_client(
+    exchange_name: str, additional_client_config: typing.Optional[dict] = None, allow_fallback: bool = False
+) -> async_ccxt.Exchange:
+    try:
+        exchange_class = ccxt_client_util.ccxt_exchange_class_factory(exchange_name)
+        config = {
+            **(additional_client_config or {}),
+            **ccxt_client_util.get_custom_domain_config(exchange_class)
+        }
+        return exchange_class(config)
+    except AttributeError as err:
+        if not allow_fallback:
+            raise
+        commons_logging.get_logger("ccxt_client_simulation").warning(
+            f"Error creating temporary client for {exchange_name}: {err}. Using fallback generic exchange."
+        )
+        return async_ccxt.Exchange()
+    

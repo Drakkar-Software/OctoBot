@@ -43,7 +43,7 @@ def merge_symbol(symbol: str) -> str:
     :param symbol: the specified symbol
     :return: merged currency and market without /
     """
-    trading_symbol, _, _ = octobot_commons.symbols.symbol._extract_network_and_dex(symbol)
+    trading_symbol, _, _ = octobot_commons.symbols.symbol.extract_network_and_dex(symbol)
     return trading_symbol.replace(octobot_commons.MARKET_SEPARATOR, "").replace(
         octobot_commons.SETTLEMENT_ASSET_SEPARATOR, "_"
     )
@@ -118,7 +118,7 @@ def convert_symbol(
     :return:
     """
     if base_and_quote_only:
-        symbol, _, _ = octobot_commons.symbols.symbol._extract_network_and_dex(symbol)
+        symbol, _, _ = octobot_commons.symbols.symbol.extract_network_and_dex(symbol)
         symbol = symbol.split(octobot_commons.SETTLEMENT_ASSET_SEPARATOR)[0]
     if should_uppercase:
         return symbol.replace(symbol_separator, new_symbol_separator).upper()

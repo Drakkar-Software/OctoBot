@@ -139,8 +139,8 @@ class TestAccountTradingProviderLoadSaveState:
             loaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, updated_state)
             reloaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
-        assert loaded_state.updated_at == fixture_time
-        assert reloaded_state.updated_at == updated_time
+        assert loaded_state.account_trading[0].updated_at == fixture_time
+        assert reloaded_state.account_trading[0].updated_at == updated_time
 
     def test_load_state_encrypted_reads_persisted_blob(self, tmp_path):
         provider = trading_provider_module.AccountTradingProvider(base_folder=str(tmp_path))

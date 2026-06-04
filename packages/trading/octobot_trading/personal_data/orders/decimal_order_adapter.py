@@ -21,7 +21,6 @@ import octobot_commons.symbols as commons_symbols
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
 import octobot_trading.enums as enums
-import octobot_trading.exchanges as exchanges
 import octobot_trading.personal_data as personal_data
 from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc
 
