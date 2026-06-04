@@ -18,6 +18,7 @@ from octobot.community.wallet_backend import community_wallet
 from octobot.community.wallet_backend.community_wallet import (
     WalletBackend,
     WalletInfo,
+    WalletEntry,
 )
 from octobot.community.wallet_backend import errors
 from octobot.community.wallet_backend.errors import (
@@ -43,6 +44,7 @@ from octobot.community.wallet_backend.wallet_storage import (
 __all__ = [
     "WalletBackend",
     "WalletInfo",
+    "WalletEntry",
     "WalletError",
     "WalletAlreadyExistsError",
     "AdminWalletAlreadyExistsError",
