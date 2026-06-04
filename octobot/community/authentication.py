@@ -638,8 +638,11 @@ class CommunityAuthentication(authentication.Authenticator):
         finally:
             self.initialized_event.set()
 
-    def list_wallets(self) -> list:
+    def list_wallets(self) -> list[wallet_backend.WalletInfo]:
         return self._wallet_backend.list_wallets()
+
+    def list_wallet_entries(self) -> list[wallet_backend.WalletEntry]:
+        return self._wallet_backend.list_wallet_entries()
 
     def is_node_wallet_configured(self) -> bool:
         return bool(self._wallet_backend.list_wallets())

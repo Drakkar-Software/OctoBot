@@ -80,7 +80,7 @@ def _get_wallet_private_key(user_id: str) -> str:
     # re-deriving each local wallet's user_id with the SAME bootstrap challenge
     # the client uses (octobot_sync.auth.derive_user_id). Linear in #local
     # wallets, which is small; deterministic, so no cache is required.
-    for wallet in community_authentication.CommunityAuthentication.instance().list_wallets():
+    for wallet in community_authentication.CommunityAuthentication.instance().list_wallet_entries():
         if auth.derive_user_id(wallet.private_key) == user_id:
             return wallet.private_key
     raise errors.OctobotSyncWalletNotFoundError(
@@ -186,6 +186,10 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 _get_identity(context)
             )
             plaintext = debug_state.to_json()
+        case enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value:
+            # Append-only plaintext log: StoredDocument.data is a dict (items
+            # array), not wallet ciphertext — return the persisted doc as-is.
+            return await _get_opaque_store().get_string(key)
         case _:
             # Opaque storage: collections with no protocol bridge are persisted
             # as client-encrypted ciphertext and the node never decrypts them.
@@ -222,6 +226,10 @@ async def put_data(key: str, body: str, context: StoreContext | None = None) -> 
                         _get_logger().exception(
                             exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
                         )
+        case enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value:
+            # Append-only plaintext log: persist the full StoredDocument body
+            # (data is a dict), not an unwrapped ciphertext string.
+            await _get_opaque_store().put(key, body, content_type="application/json")
         case _:
             # Opaque storage: persist the client ciphertext as-is. The node
             # never decrypts these collections — wallet-key decryption happens

@@ -105,6 +105,10 @@ class WalletBackend:
                 return entry
         return None
 
+    def list_wallet_entries(self) -> list[WalletEntry]:
+        """Return all wallet entries, including private key and passphrase hash."""
+        return self._get_node_wallets_list()
+
     def list_wallets(self) -> list[WalletInfo]:
         """Return public wallet info (no key material)."""
         return [
