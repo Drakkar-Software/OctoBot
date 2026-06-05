@@ -1,13 +1,15 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import type { DebugState, Strategy } from "@/client"
 import {
   buildDebugExportFilename,
+  downloadDebugStateJson,
+  formatImportedSnapshotContents,
   getDebugStateLatestUpdatedAt,
   parseDebugStateJson,
   sanitizeDebugExportFilename,
   summarizeImportedDebugState,
-} from "@/lib/debug-import"
+} from "@/lib/debug/import"
 
 const minimalDebugStateJson = JSON.stringify({
   version: "1.0.0",
@@ -205,5 +207,57 @@ describe("buildDebugExportFilename", () => {
   it("includes wallet suffix", () => {
     const name = buildDebugExportFilename("0x1234567890abcdef")
     expect(name).toMatch(/^debug-state-\d{8}T\d{4}-90abcdef\.json$/)
+  })
+})
+
+describe("formatImportedSnapshotContents", () => {
+  it("formats section counts as a comma-separated summary", () => {
+    expect(
+      formatImportedSnapshotContents({
+        automations: 1,
+        userActions: 2,
+        accounts: 3,
+        exchangeConfigs: 4,
+        strategies: 5,
+      }),
+    ).toBe(
+      "1 automations, 2 user actions, 3 accounts, 4 exchange configs, 5 strategies",
+    )
+  })
+})
+
+describe("downloadDebugStateJson", () => {
+  it("creates a download link for the debug state JSON", () => {
+    const click = vi.fn()
+    const appendChild = vi.fn()
+    const removeChild = vi.fn()
+    const createObjectURL = vi.fn(() => "blob:debug")
+    const revokeObjectURL = vi.fn()
+    const link = {
+      href: "",
+      download: "",
+      click,
+    }
+
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL })
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => link),
+      body: {
+        appendChild,
+        removeChild,
+      },
+    })
+
+    downloadDebugStateJson(
+      {
+        version: "1.0.0",
+        debug: { automations: [], user_actions: [] },
+      },
+      "snapshot.json",
+    )
+
+    expect(createObjectURL).toHaveBeenCalled()
+    expect(click).toHaveBeenCalled()
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:debug")
   })
 })

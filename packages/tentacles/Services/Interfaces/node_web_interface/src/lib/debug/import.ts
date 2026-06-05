@@ -4,7 +4,7 @@ import type {
   DebugState,
   UserAction,
 } from "@/client"
-import { resolveOneOfInstance } from "@/lib/debug-protocol-oneof"
+import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 
 export type ParseDebugStateJsonResult =
   | { state: DebugState }
@@ -122,10 +122,10 @@ export function parseDebugStateJson(text: string): ParseDebugStateJsonResult {
 
   const debugRecord = parsed.debug
   if (!Array.isArray(debugRecord.automations)) {
-    return { error: 'debug.automations must be an array' }
+    return { error: "debug.automations must be an array" }
   }
   if (!Array.isArray(debugRecord.user_actions)) {
-    return { error: 'debug.user_actions must be an array' }
+    return { error: "debug.user_actions must be an array" }
   }
 
   const debug = normalizeDebugLists(parsed.debug as Debug)
@@ -191,6 +191,18 @@ export function summarizeImportedDebugState(
       strategies: debug?.local_strategies?.length ?? 0,
     },
   }
+}
+
+export function formatImportedSnapshotContents(
+  counts: ImportedDebugSummary["counts"],
+): string {
+  return [
+    `${counts.automations} automations`,
+    `${counts.userActions} user actions`,
+    `${counts.accounts} accounts`,
+    `${counts.exchangeConfigs} exchange configs`,
+    `${counts.strategies} strategies`,
+  ].join(", ")
 }
 
 export function sanitizeDebugExportFilename(filename: string): string {
