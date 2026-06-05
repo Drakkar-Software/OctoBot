@@ -8,6 +8,7 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.errors
+import octobot_flow.jobs.exchange_account_job as exchange_account_job_module
 import octobot_flow.logic.configuration
 import octobot_flow.logic.dsl
 import octobot_flow.repositories.exchange
@@ -57,6 +58,7 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         # await self._process_on_filled_and_cancelled_orders_actions()
         # # 3. update strategy if necessary
         changed_elements, next_execution_scheduled_to = await self._execute_actions()
+        await self._fetch_trades_after_execution_if_needed(changed_elements)
         # if octobot_flow.enums.ChangedElements.ORDERS in changed_elements:
         #     TODO implement to remove after POC 4
         #     # 4. process on filled and cancelled orders actions again if necessary
@@ -67,6 +69,29 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         # 6. register execution completion
         if self._update_execution_details:
             self.automation_state.automation.execution.complete_execution(next_execution_scheduled_to)
+
+    async def _fetch_trades_after_execution_if_needed(
+        self,
+        changed_elements: list[octobot_flow.enums.ChangedElements],
+    ) -> None:
+        if (
+            not self.automation_state.has_exchange()
+            or self.automation_state.exchange_account_details.is_simulated()
+            or (account_elements := self.automation_state.automation.exchange_account_elements) is None
+        ):
+            return
+        changed = octobot_flow.enums.ChangedElements
+        if not (
+            changed.ORDERS in changed_elements
+            or changed.PORTFOLIO in changed_elements
+            or account_elements.orders.missing_orders
+        ):
+            return
+        trades = await exchange_account_job_module.ExchangeAccountJob.fetch_trades_from_orders(
+            self,
+            account_elements.orders,
+        )
+        account_elements.append_new_trades_deduped(trades)
 
     async def _execute_actions(self) -> tuple[list[octobot_flow.enums.ChangedElements], float]:
         actions_executor = octobot_flow.logic.actions.ActionsExecutor(

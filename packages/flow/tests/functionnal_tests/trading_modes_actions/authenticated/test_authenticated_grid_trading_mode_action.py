@@ -431,6 +431,15 @@ async def test_authenticated_grid_init_from_empty_state(init_action: dict):
                 )
                 _assert_grid_ladder_prices(buy_orders, sell_orders, price_col)
 
+            trades = after_grid_execution_dump["automation"]["exchange_account_elements"]["trades"]
+            assert len(trades) >= 1
+            trade_id_column = trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value
+            exchange_id_column = trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
+            symbol_column = trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value
+            for trade in trades:
+                assert trade.get(trade_id_column) or trade.get(exchange_id_column)
+                assert trade.get(symbol_column)
+
             # 3. trigger again: nothing to do
             async with octobot_flow.jobs.AutomationJob(cleanup_dump, [], [], {}) as automation_job:
                 await automation_job.run()

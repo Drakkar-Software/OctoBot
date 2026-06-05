@@ -14,6 +14,9 @@ import octobot_trading.personal_data as trading_personal_data
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
 import octobot_copy.exchange as copy_exchange
+import octobot_copy.orders_mirroring.mirrored_order_replication_failure as mirrored_order_replication_failure
+import octobot_copy.orders_mirroring.mirrored_order_replication_failure_util as mirrored_order_replication_failure_util
+import octobot_copy.orders_mirroring.mirrored_quantity_compute_result as mirrored_quantity_compute_result
 
 
 class OrdersSynchronizer:
@@ -486,6 +489,7 @@ class OrdersSynchronizer:
         replaced_cancelled_count = 0
         already_synchronized_count = 0
         skipped_grace_upserts: list[tuple[str, typing.Any]] = []
+        replication_failures: list[mirrored_order_replication_failure.MirroredOrderReplicationFailure] = []
         for order in replicable:
             order_symbol = order.symbol
             if order_symbol in skip_symbols_for_upsert:
@@ -495,25 +499,48 @@ class OrdersSynchronizer:
                         order.id,
                     )
                 )
+                replication_failures.append(
+                    mirrored_order_replication_failure_util.replication_failure_from_order(
+                        order, "grace_period_active"
+                    )
+                )
                 continue
             try:
-                batch, replace_count, already_count = await self._upsert_mirrored_reference_order(order)
+                batch, replace_count, already_count, replication_failure = (
+                    await self._upsert_mirrored_reference_order(order)
+                )
                 created.extend(batch)
                 replaced_cancelled_count += replace_count
                 already_synchronized_count += already_count
-            except (
-                trading_errors.MissingMinimalExchangeTradeVolume,
-                trading_errors.OrderCreationError,
-            ) as err:
+                if replication_failure is not None:
+                    replication_failures.append(replication_failure)
+            except trading_errors.MissingMinimalExchangeTradeVolume as err:
                 self._get_logger().exception(
                     err,
                     True,
                     f"Skipping synched reference order mirror: {err} ({err.__class__.__name__})",
                 )
+                replication_failures.append(
+                    mirrored_order_replication_failure_util.replication_failure_from_order(
+                        order, "min_volume"
+                    )
+                )
+            except trading_errors.OrderCreationError as err:
+                self._get_logger().exception(
+                    err,
+                    True,
+                    f"Skipping synched reference order mirror: {err} ({err.__class__.__name__})",
+                )
+                replication_failures.append(
+                    mirrored_order_replication_failure_util.replication_failure_from_order(
+                        order, "creation_error"
+                    )
+                )
         if skipped_grace_upserts:
             skipped_summary = ", ".join(
-                f"{symbol}:{reference_order_id}"
-                for symbol, reference_order_id in skipped_grace_upserts
+                mirrored_order_replication_failure_util.format_replication_failure_entry(failure)
+                for failure in replication_failures
+                if failure.short_reason == "grace_period_active"
             )
             self._get_logger().info(
                 "Skipped reference mirror upsert for %s order(s) (mirrored orphan grace period active): %s",
@@ -522,12 +549,18 @@ class OrdersSynchronizer:
             )
         total_cancelled = orphan_cancelled_count + replaced_cancelled_count
         total_created = len(created)
-        self._get_logger().info(
+        completion_message = (
             f"Order mirror completed: {total_cancelled} cancelled "
             f"[{orphan_cancelled_count} orphan(s), {replaced_cancelled_count} replaced], "
             f"{total_created} created, "
             f"{already_synchronized_count} already synchronized orders."
         )
+        failures_summary = mirrored_order_replication_failure_util.format_replication_failures_summary(
+            replication_failures
+        )
+        if failures_summary:
+            completion_message = f"{completion_message} {failures_summary}"
+        self._get_logger().info(completion_message)
         return created
 
     async def _cancel_mirrored_orphan_orders(
@@ -745,7 +778,10 @@ class OrdersSynchronizer:
             )
         return None
 
-    async def _upsert_mirrored_reference_order(self, order: protocol_models.Order) -> tuple[list, int, int]:
+    async def _upsert_mirrored_reference_order(
+        self,
+        order: protocol_models.Order,
+    ) -> tuple[list, int, int, typing.Optional[mirrored_order_replication_failure.MirroredOrderReplicationFailure]]:
         raw = trading_personal_data.exchange_columns_dict_from_protocol_order(order)
         symbol = order.symbol
         side, trader_order_type = trading_personal_data.parse_order_type(raw)
@@ -753,7 +789,7 @@ class OrdersSynchronizer:
             self._get_logger().info(
                 f"Skipping reference order mirror: unsupported type for {symbol} ({trader_order_type})"
             )
-            return [], 0, 0
+            return [], 0, 0, None
         reference_order_id = str(order.id)
         existing = self._find_open_order_by_bot_order_id(reference_order_id)
         replicable_orders = self._get_replicable_reference_orders()
@@ -764,22 +800,30 @@ class OrdersSynchronizer:
                 f"Skipping mirrored order creation (late reference fill on copier): symbol={symbol} "
                 f"reference_order_id={reference_order_id}"
             )
-            return [], 0, 0
+            return [], 0, 0, None
         scaled_quantity = self._scale_mirrored_order_quantity(order, symbol, side)
         if scaled_quantity is None or scaled_quantity <= trading_constants.ZERO:
-            return [], 0, 0
+            return mirrored_order_replication_failure_util.upsert_failure_return(
+                self._get_logger(),
+                order,
+                "zero_scaled_quantity",
+                trader_order_type,
+                **mirrored_order_replication_failure_util.mirror_scale_failure_context(
+                    order,
+                    symbol,
+                    side,
+                    scaled_quantity,
+                    self._reference_account,
+                    self._exchange_interface,
+                ),
+            )
         current_price_val = order.price
         order_target_price = (
             decimal.Decimal(str(current_price_val))
             if current_price_val not in (None, "")
             else trading_constants.ZERO
         )
-        (
-            ideal_quantity,
-            resolved_type,
-            market_or_limit_price,
-            current_price,
-        ) = await self._compute_mirrored_quantity_type_and_price(
+        compute_result = await self._compute_mirrored_quantity_type_and_price(
             symbol,
             side,
             scaled_quantity,
@@ -787,13 +831,25 @@ class OrdersSynchronizer:
             trader_order_type,
             open_mirrored_order=existing,
         )
+        ideal_quantity = compute_result.ideal_quantity
+        resolved_type = compute_result.resolved_trader_order_type
+        market_or_limit_price = compute_result.limit_price
+        current_price = compute_result.current_price
         if ideal_quantity <= trading_constants.ZERO:
-            self._get_logger().error(
-                f"Skipping mirrored order: target quantity is zero: symbol={symbol} "
-                f"order_id={reference_order_id} side={side} type={trader_order_type} "
-                f"protocol_order: {raw}"
+            short_reason = compute_result.zero_short_reason or "zero_target_quantity"
+            return mirrored_order_replication_failure_util.upsert_failure_return(
+                self._get_logger(),
+                order,
+                short_reason,
+                trader_order_type,
+                scaled_quantity=scaled_quantity,
+                ideal_quantity=ideal_quantity,
+                order_target_price=order_target_price,
+                available_market_holding=compute_result.available_market_holding,
+                available_symbol_holding=compute_result.available_symbol_holding,
+                total_symbol_holding=compute_result.total_symbol_holding,
+                quote_for_cap=compute_result.quote_for_cap,
             )
-            return [], 0, 0
         replace_reason: typing.Optional[str] = None
         if existing is not None:
             replace_reason = self._mirrored_order_target_mismatch_reason(
@@ -811,7 +867,7 @@ class OrdersSynchronizer:
                     f"order_id={existing.order_id} side={existing.side} type={existing.order_type} "
                     f"(reference_id={reference_order_id})"
                 )
-                return [], 0, 1
+                return [], 0, 1, None
         replaced_cancelled = 0
         if existing is not None:
             self._get_logger().info(
@@ -826,6 +882,7 @@ class OrdersSynchronizer:
                 f"order_id={existing.order_id} side={existing.side} type={existing.order_type} "
                 f"(reference_id={reference_order_id})"
             )
+        pre_adapt_quantity = ideal_quantity
         symbol_market = self._exchange_interface.market.get_market_status(symbol, with_fixer=False)
         market_or_limit_price, ideal_quantity = (
             self._exchange_interface.orders.adapt_order_quantity_and_target_price_for_order_creation(
@@ -836,7 +893,16 @@ class OrdersSynchronizer:
                 adapt_price_for_limit_orders=False,
             )
         )
-        created, _ = await self._exchange_interface.orders.create_orders(
+        if ideal_quantity <= trading_constants.ZERO:
+            return mirrored_order_replication_failure_util.upsert_failure_return(
+                self._get_logger(),
+                order,
+                "post_adapt_zero_quantity",
+                trader_order_type,
+                pre_adapt_quantity=pre_adapt_quantity,
+                post_adapt_quantity=ideal_quantity,
+            )
+        created, orders_should_have_been_created = await self._exchange_interface.orders.create_orders(
             resolved_type,
             symbol,
             current_price,
@@ -847,14 +913,23 @@ class OrdersSynchronizer:
             order_id=reference_order_id,
             raise_all_creation_error=True,
         )
-        out = [o for o in created if o is not None]
+        out = [created_order for created_order in created if created_order is not None]
+        if not out and ideal_quantity > trading_constants.ZERO:
+            return mirrored_order_replication_failure_util.upsert_failure_return(
+                self._get_logger(),
+                order,
+                "create_returned_empty",
+                trader_order_type,
+                ideal_quantity=ideal_quantity,
+                orders_should_have_been_created=orders_should_have_been_created,
+            )
         for created_order in out:
             self._get_logger().info(
                 f"Created mirrored order: symbol={created_order.symbol} "
                 f"bot_order_id={created_order.order_id} side={created_order.side} type={created_order.order_type} "
                 f"quantity={created_order.origin_quantity} (reference_id={reference_order_id})"
             )
-        return out, replaced_cancelled, 0
+        return out, replaced_cancelled, 0, None
 
     async def _compute_mirrored_quantity_type_and_price(
         self,
@@ -864,7 +939,7 @@ class OrdersSynchronizer:
         order_target_price: decimal.Decimal,
         trader_order_type: trading_enums.TraderOrderType,
         open_mirrored_order: typing.Optional[trading_personal_data.Order] = None,
-    ) -> tuple[decimal.Decimal, trading_enums.TraderOrderType, decimal.Decimal, decimal.Decimal]:
+    ) -> mirrored_quantity_compute_result.MirroredQuantityComputeResult:
         # Buys cap using free quote for new orders (sibling buys reserve quote). When re-checking an open
         # mirrored buy, add this order's locked quote back so ideal size matches portfolio semantics.
         # New sells use total base (sibling sell locks still count). Open mirrored sells use available
@@ -914,6 +989,7 @@ class OrdersSynchronizer:
             if resolved_trade_type is trading_enums.TradeOrderType.MARKET
             else effective_target_price
         )
+        quote_for_cap: typing.Optional[decimal.Decimal] = None
         if side is trading_enums.TradeOrderSide.BUY:
             quote_for_cap = available_market_holding
             if (
@@ -939,7 +1015,13 @@ class OrdersSynchronizer:
             target_quantity = min(scaled_quantity, base_budget)
         else:
             target_quantity = min(scaled_quantity, total_symbol_holding)
+        zero_short_reason: typing.Optional[str] = None
         if target_quantity <= trading_constants.ZERO:
+            zero_short_reason = (
+                "insufficient_quote"
+                if side is trading_enums.TradeOrderSide.BUY
+                else "insufficient_base"
+            )
             target_quantity = trading_constants.ZERO
         else:
             adapted_order_chunks, _ = (
@@ -954,6 +1036,7 @@ class OrdersSynchronizer:
                 adapted_order_chunks,
             )
             if not adapted_details:
+                zero_short_reason = "below_min_volume"
                 target_quantity = trading_constants.ZERO
             else:
                 target_quantity = sum(
@@ -961,7 +1044,18 @@ class OrdersSynchronizer:
                     trading_constants.ZERO,
                 )
                 limit_price = adapted_details[0][1]
-        return target_quantity, resolved_trader_order_type, limit_price, current_price
+        return mirrored_quantity_compute_result.MirroredQuantityComputeResult(
+            ideal_quantity=target_quantity,
+            resolved_trader_order_type=resolved_trader_order_type,
+            limit_price=limit_price,
+            current_price=current_price,
+            zero_short_reason=zero_short_reason,
+            scaled_quantity=scaled_quantity,
+            available_market_holding=available_market_holding,
+            available_symbol_holding=available_symbol_holding,
+            total_symbol_holding=total_symbol_holding,
+            quote_for_cap=quote_for_cap,
+        )
 
     def _get_logger(self) -> logging.BotLogger:
         return logging.get_logger(self.__class__.__name__)

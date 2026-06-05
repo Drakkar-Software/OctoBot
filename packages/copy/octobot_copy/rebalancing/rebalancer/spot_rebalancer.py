@@ -82,7 +82,10 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
                 )
             )
             if not adapted_chunks:
-                # dust amounts: delta_base is too small to be traded
+                self._get_logger().warning(
+                    f"Skipping {symbol} efficient rebalance sell: delta_base={delta_base} is below "
+                    "minimum trade size after exchange adaptation"
+                )
                 return None
             sell_orders = await modes_util.convert_asset_to_target_asset(
                 base_currency,
@@ -94,6 +97,10 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
                 exchange_manager=exchange_manager,
             )
             if not sell_orders:
+                self._get_logger().warning(
+                    f"Skipping {symbol} efficient rebalance sell: asset conversion produced no orders "
+                    f"for delta_base={delta_base}"
+                )
                 return None
             await self._exchange_interface.orders.wait_for_orders_to_fill(sell_orders)
             return sell_orders
@@ -109,12 +116,19 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
                     ideal_price,
                     dependencies,
                 )
-            except trading_errors.MissingMinimalExchangeTradeVolume:
+            except trading_errors.MissingMinimalExchangeTradeVolume as err:
                 # e.g. free quote is mostly locked in open (mirrored) orders: delta buy is not
                 # executable at min size; fall back to legacy sell-all-then-buy.
+                self._get_logger().warning(
+                    f"Skipping {symbol} efficient rebalance buy: {err} ({err.__class__.__name__}); "
+                    "falling back to legacy rebalance pipeline"
+                )
                 return None
             if not buy_orders:
-                # buy order is too small to be traded
+                self._get_logger().warning(
+                    f"Skipping {symbol} efficient rebalance buy: target_base_quantity={target_base_quantity} "
+                    "is too small to trade"
+                )
                 return None
             await self._exchange_interface.orders.wait_for_orders_to_fill(buy_orders)
             return buy_orders
@@ -165,6 +179,11 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
             effective_current_symbol_holding = current_symbol_holding # should be >0 ??
         ideal_quantity = target_quantity - effective_current_symbol_holding
         if ideal_quantity <= trading_constants.ZERO:
+            self._get_logger().warning(
+                f"Skipping {symbol} order creation: {ideal_quantity=} = "
+                f"target_quantity - effective_current_symbol_holding = "
+                f"{target_quantity} - {effective_current_symbol_holding}"
+            )
             return []
         if ideal_quantity < ideal_amount * decimal.Decimal("0.9"):
             self._get_logger().warning(

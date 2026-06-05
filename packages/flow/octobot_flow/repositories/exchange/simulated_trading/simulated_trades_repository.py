@@ -5,4 +5,3 @@ class SimulatedTradesRepository(trades_repository_import.TradesRepository):
 
     async def fetch_trades(self, symbols: list[str]) -> list[dict]:
         return []
-

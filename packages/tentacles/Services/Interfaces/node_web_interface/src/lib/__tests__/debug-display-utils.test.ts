@@ -330,9 +330,11 @@ describe("getTradingSummariesForAutomation", () => {
     expect(matched.map((s) => s.account_id)).toEqual(["acc-a", "acc-b"])
   })
 
-  it("merges orders and trades from multiple bound accounts", () => {
+  it("merges orders and trades from multiple bound accounts when summaries match", () => {
     const automation = makeAutomation({
       exchange_account_ids: ["acc-a", "acc-b"],
+      orders: [{ id: sampleOrder.id, symbol: sampleOrder.symbol }],
+      trades: [{ id: sampleTrade.trade_id, symbol: sampleTrade.symbol }],
     })
     expect(getDetailedOrdersForAutomation(automation, summaries)).toHaveLength(1)
     expect(getDetailedTradesForAutomation(automation, summaries)).toHaveLength(1)
@@ -449,7 +451,10 @@ describe("formatTradesTradingTooltip", () => {
 describe("getAutomationOrdersTooltipContent", () => {
   it("prefers detailed orders from summaries", () => {
     const text = getAutomationOrdersTooltipContent(
-      makeAutomation({ exchange_account_ids: ["acc-a"] }),
+      makeAutomation({
+        exchange_account_ids: ["acc-a"],
+        orders: [{ id: sampleOrder.id, symbol: sampleOrder.symbol }],
+      }),
       [
         {
           account_id: "acc-a",
@@ -462,6 +467,33 @@ describe("getAutomationOrdersTooltipContent", () => {
     )
     expect(text).toContain("BTC/USDT")
     expect(text).not.toContain('"symbol"')
+  })
+
+  it("shows only orders listed on the automation, not other account orders", () => {
+    const extraOrder: Order = {
+      ...sampleOrder,
+      id: "order-extra",
+      exchange_id: "exchange-extra",
+      symbol: "SOL/USDT",
+    }
+    const text = getAutomationOrdersTooltipContent(
+      makeAutomation({
+        exchange_account_ids: ["acc-a"],
+        orders: [{ id: sampleOrder.id, symbol: sampleOrder.symbol }],
+      }),
+      [
+        {
+          account_id: "acc-a",
+          account_trading: {
+            updated_at: "2026-01-01T00:00:00Z",
+            orders: [sampleOrder, extraOrder],
+          },
+        },
+      ],
+    )
+    expect(text).toContain("BTC/USDT")
+    expect(text).not.toContain("SOL/USDT")
+    expect(text?.split("\n").filter((line) => line.includes("@")).length).toBe(1)
   })
 
   it("falls back to automation order summaries when account_tradings have no orders", () => {
@@ -494,7 +526,10 @@ describe("getAutomationTradesTooltipContent", () => {
 
   it("formats detailed trades from summaries", () => {
     const text = getAutomationTradesTooltipContent(
-      makeAutomation({ exchange_account_ids: ["acc-b"] }),
+      makeAutomation({
+        exchange_account_ids: ["acc-b"],
+        trades: [{ id: sampleTrade.trade_id, symbol: sampleTrade.symbol }],
+      }),
       [
         {
           account_id: "acc-b",
@@ -509,6 +544,36 @@ describe("getAutomationTradesTooltipContent", () => {
     expect(text).toContain(
       formatTradingTooltipDateTimeForTest(sampleTrade.executed_at),
     )
+  })
+
+  it("shows only trades listed on the automation, not other account trades", () => {
+    const extraTrade: Trade = {
+      ...sampleTrade,
+      id: "trade-extra",
+      trade_id: "ex-trade-extra",
+      symbol: "BTC/USDT",
+    }
+    const text = getAutomationTradesTooltipContent(
+      makeAutomation({
+        exchange_account_ids: ["acc-b"],
+        trades: [
+          { id: sampleTrade.trade_id, symbol: sampleTrade.symbol },
+          { id: "ex-trade-other", symbol: "XRP/USDT" },
+        ],
+      }),
+      [
+        {
+          account_id: "acc-b",
+          account_trading: {
+            updated_at: "2026-01-02T12:00:00Z",
+            trades: [sampleTrade, extraTrade],
+          },
+        },
+      ],
+    )
+    expect(text).toContain("ETH/USDT")
+    expect(text).not.toContain("BTC/USDT")
+    expect(text?.split("\n").filter((line) => line.includes("executed:")).length).toBe(1)
   })
 })
 
