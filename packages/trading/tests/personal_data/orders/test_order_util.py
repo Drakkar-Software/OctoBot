@@ -24,6 +24,7 @@ import octobot_trading.enums as enums
 import octobot_trading.constants as constants
 import octobot_trading.errors
 import octobot_trading.personal_data as personal_data
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.personal_data.orders.order_util as order_util
 import octobot_trading.personal_data.orders.order_factory as order_factory
 
@@ -1136,3 +1137,36 @@ class TestCreateAndRegisterChainedOrderOnBaseOrder:
             logger_mock.info.assert_called_once_with(self._DISABLED_FEES_LOG_MESSAGE)
         else:
             logger_mock.info.assert_not_called()
+
+
+class TestGetSymbolsFromOrders:
+    @staticmethod
+    def _order(symbol: str) -> dict:
+        return {
+            constants.STORAGE_ORIGIN_VALUE: {
+                enums.ExchangeConstantsOrderColumns.SYMBOL.value: symbol,
+            },
+        }
+
+    def test_returns_empty_when_no_orders(self):
+        orders = exchange_data_import.OrdersDetails()
+        assert order_util.get_symbols_from_orders(orders) == []
+
+    def test_collects_symbols_from_open_orders(self):
+        orders = exchange_data_import.OrdersDetails(
+            open_orders=[self._order("BTC/USDC"), self._order("ETH/USDC")],
+        )
+        assert order_util.get_symbols_from_orders(orders) == [
+            "BTC/USDC",
+            "ETH/USDC",
+        ]
+
+    def test_collects_symbols_from_open_and_missing_orders_deduplicated(self):
+        orders = exchange_data_import.OrdersDetails(
+            open_orders=[self._order("BTC/USDC")],
+            missing_orders=[self._order("BTC/USDC"), self._order("ETH/USDC")],
+        )
+        assert order_util.get_symbols_from_orders(orders) == [
+            "BTC/USDC",
+            "ETH/USDC",
+        ]

@@ -141,7 +141,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
                 # each caller to its own users/{user_id}/* paths).
                 is_allowed_user_id=lambda user_id: any(
                     sync_server.derive_user_id(w.private_key) == user_id
-                    for w in community_auth.CommunityAuthentication.instance().list_wallets()
+                    for w in community_auth.CommunityAuthentication.instance().list_wallet_entries()
                 ),
             ),
         )

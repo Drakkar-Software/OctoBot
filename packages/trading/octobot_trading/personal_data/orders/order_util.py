@@ -23,6 +23,7 @@ import collections
 
 import octobot_commons.symbols as symbol_util
 import octobot_commons.constants as commons_constants
+import octobot_commons.list_util as list_util
 import octobot_commons.logging as logging
 import octobot_commons.timestamp_util as timestamp_util
 import octobot_trading.constants as constants
@@ -33,6 +34,7 @@ import octobot_trading.personal_data.orders.states.fill_order_state as fill_orde
 import octobot_trading.personal_data.orders.order as order_import
 import octobot_trading.personal_data.orders.order_factory as order_factory
 import octobot_trading.personal_data.orders.triggers.price_trigger as price_trigger
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.exchanges.util.exchange_market_status_fixer as exchange_market_status_fixer
 import octobot_trading.signals as signals
 from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc
@@ -949,4 +951,15 @@ def get_symbol_count(raw_trades_or_raw_orders: list[dict]) -> dict[str, int]:
             for element in raw_trades_or_raw_orders
         )
     )
+
+
+def get_symbols_from_orders(orders: exchange_data_import.OrdersDetails) -> list[str]:
+    symbols: list[str] = []
+    order_columns = enums.ExchangeConstantsOrderColumns
+    for order in orders.open_orders + orders.missing_orders:
+        storage = order.get(constants.STORAGE_ORIGIN_VALUE, order)
+        order_symbol = storage.get(order_columns.SYMBOL.value)
+        if order_symbol:
+            symbols.append(order_symbol)
+    return list_util.deduplicate(symbols)
 

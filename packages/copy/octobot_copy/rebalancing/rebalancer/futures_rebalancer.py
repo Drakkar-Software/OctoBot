@@ -53,6 +53,10 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
         size_difference = ideal_amount - effective_current_position_size
 
         if size_difference <= trading_constants.ZERO:
+            self._get_logger().warning(
+                f"Skipping {symbol} futures position increase: size_difference={size_difference} "
+                f"(ideal_amount={ideal_amount}, effective_current_position_size={effective_current_position_size})"
+            )
             return []
 
         side = trading_enums.TradeOrderSide.BUY  # Always open long positions for targeted coins
@@ -62,6 +66,10 @@ class FuturesRebalancer(base_rebalancer.AbstractRebalancer):
 
         order_quantity = min(size_difference, max_order_size)
         if order_quantity <= trading_constants.ZERO:
+            self._get_logger().warning(
+                f"Skipping {symbol} futures order creation: order_quantity={order_quantity} after "
+                f"capping size_difference={size_difference} with max_order_size={max_order_size}"
+            )
             return []
 
         is_price_close_to_market = order_target_price >= current_price * (decimal.Decimal(1) - self.PRICE_THRESHOLD_TO_USE_MARKET_ORDER)

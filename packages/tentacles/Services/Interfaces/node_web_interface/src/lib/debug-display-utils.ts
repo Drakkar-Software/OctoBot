@@ -105,22 +105,66 @@ export function getTradingSummariesForAutomation(
   return summaries.filter((summary) => idSet.has(summary.account_id))
 }
 
+function buildTradingSummaryIdSet<T extends { id: string }>(
+  summaries: T[],
+): Set<string> {
+  return new Set(summaries.map((summary) => summary.id))
+}
+
+function tradeBelongsToAutomationSummaries(
+  trade: Trade,
+  summaryIds: Set<string>,
+): boolean {
+  return summaryIds.has(trade.trade_id) || summaryIds.has(trade.id)
+}
+
+function orderBelongsToAutomationSummaries(
+  order: Order,
+  summaryIds: Set<string>,
+): boolean {
+  return summaryIds.has(order.exchange_id) || summaryIds.has(order.id)
+}
+
+function filterTradesToAutomationSummaries(
+  trades: Trade[],
+  automationTradeSummaries: TradeSummary[],
+): Trade[] {
+  const summaryIds = buildTradingSummaryIdSet(automationTradeSummaries)
+  if (!summaryIds.size) return trades
+  return trades.filter((trade) =>
+    tradeBelongsToAutomationSummaries(trade, summaryIds),
+  )
+}
+
+function filterOrdersToAutomationSummaries(
+  orders: Order[],
+  automationOrderSummaries: OrderSummary[],
+): Order[] {
+  const summaryIds = buildTradingSummaryIdSet(automationOrderSummaries)
+  if (!summaryIds.size) return orders
+  return orders.filter((order) =>
+    orderBelongsToAutomationSummaries(order, summaryIds),
+  )
+}
+
 export function getDetailedOrdersForAutomation(
   automation: AutomationState,
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): Order[] {
-  return getTradingSummariesForAutomation(automation, summaries).flatMap(
+  const detailed = getTradingSummariesForAutomation(automation, summaries).flatMap(
     (summary) => summary.account_trading?.orders ?? [],
   )
+  return filterOrdersToAutomationSummaries(detailed, automation.orders ?? [])
 }
 
 export function getDetailedTradesForAutomation(
   automation: AutomationState,
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): Trade[] {
-  return getTradingSummariesForAutomation(automation, summaries).flatMap(
+  const detailed = getTradingSummariesForAutomation(automation, summaries).flatMap(
     (summary) => summary.account_trading?.trades ?? [],
   )
+  return filterTradesToAutomationSummaries(detailed, automation.trades ?? [])
 }
 
 export function getAccountTradingForAccountId(
@@ -313,32 +357,88 @@ export function formatTradesTradingTooltip(
   return sortTradesForTooltip(trades).map(formatTradeLine).join("\n\n")
 }
 
+function formatAutomationFilteredOrdersTooltip(
+  matched: AccountTradingWithAccountId[],
+  automationOrderSummaries: OrderSummary[],
+): string | null {
+  const summaryIds = buildTradingSummaryIdSet(automationOrderSummaries)
+  return formatTradingBlocksFromSummaries(
+    matched,
+    (summary) => {
+      const orders = summary.account_trading?.orders ?? []
+      if (!summaryIds.size) return sortOrdersForTooltip(orders)
+      return sortOrdersForTooltip(
+        orders.filter((order) =>
+          orderBelongsToAutomationSummaries(order, summaryIds),
+        ),
+      )
+    },
+    formatOrderLine,
+  )
+}
+
+function formatAutomationFilteredTradesTooltip(
+  matched: AccountTradingWithAccountId[],
+  automationTradeSummaries: TradeSummary[],
+): string | null {
+  const summaryIds = buildTradingSummaryIdSet(automationTradeSummaries)
+  return formatTradingBlocksFromSummaries(
+    matched,
+    (summary) => {
+      const trades = summary.account_trading?.trades ?? []
+      if (!summaryIds.size) return sortTradesForTooltip(trades)
+      return sortTradesForTooltip(
+        trades.filter((trade) =>
+          tradeBelongsToAutomationSummaries(trade, summaryIds),
+        ),
+      )
+    },
+    formatTradeLine,
+  )
+}
+
 export function getAutomationOrdersTooltipContent(
   automation: AutomationState,
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): string | null {
+  const automationOrderSummaries = automation.orders ?? []
   const matched = getTradingSummariesForAutomation(automation, summaries)
+  const summaryIds = buildTradingSummaryIdSet(automationOrderSummaries)
   const detailed = matched.flatMap(
     (summary) => summary.account_trading?.orders ?? [],
   )
-  if (detailed.length) {
-    return formatOrdersTradingTooltip(detailed, matched)
+  const filtered = summaryIds.size
+    ? filterOrdersToAutomationSummaries(detailed, automationOrderSummaries)
+    : detailed
+  if (filtered.length) {
+    return formatAutomationFilteredOrdersTooltip(
+      matched,
+      automationOrderSummaries,
+    )
   }
-  return formatAutomationOrderSummariesTooltip(automation.orders ?? [])
+  return formatAutomationOrderSummariesTooltip(automationOrderSummaries)
 }
 
 export function getAutomationTradesTooltipContent(
   automation: AutomationState,
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): string | null {
+  const automationTradeSummaries = automation.trades ?? []
   const matched = getTradingSummariesForAutomation(automation, summaries)
+  const summaryIds = buildTradingSummaryIdSet(automationTradeSummaries)
   const detailed = matched.flatMap(
     (summary) => summary.account_trading?.trades ?? [],
   )
-  if (detailed.length) {
-    return formatTradesTradingTooltip(detailed, matched)
+  const filtered = summaryIds.size
+    ? filterTradesToAutomationSummaries(detailed, automationTradeSummaries)
+    : detailed
+  if (filtered.length) {
+    return formatAutomationFilteredTradesTooltip(
+      matched,
+      automationTradeSummaries,
+    )
   }
-  return formatAutomationTradeSummariesTooltip(automation.trades ?? [])
+  return formatAutomationTradeSummariesTooltip(automationTradeSummaries)
 }
 
 export function formatAssetsPortfolioTooltip(

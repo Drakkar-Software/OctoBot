@@ -695,8 +695,8 @@ class TestMirroredOrderSelfLockCreditCompute:
                 open_mirrored_order=open_order,
             )
 
-        ideal_without, _, _, _ = asyncio.run(run_compute(None))
-        ideal_with, _, _, _ = asyncio.run(run_compute(open_buy))
+        ideal_without = asyncio.run(run_compute(None)).ideal_quantity
+        ideal_with = asyncio.run(run_compute(open_buy)).ideal_quantity
         assert ideal_without == decimal.Decimal("0.25")
         assert ideal_with == decimal.Decimal("1")
 
@@ -732,7 +732,180 @@ class TestMirroredOrderSelfLockCreditCompute:
             )
 
         scaled = decimal.Decimal("2")
-        ideal_without, _, _, _ = asyncio.run(run_compute(None, scaled))
-        ideal_with, _, _, _ = asyncio.run(run_compute(open_sell, scaled))
+        ideal_without = asyncio.run(run_compute(None, scaled)).ideal_quantity
+        ideal_with = asyncio.run(run_compute(open_sell, scaled)).ideal_quantity
         assert ideal_without == decimal.Decimal("2")
         assert ideal_with == decimal.Decimal("1.05")
+
+
+class TestMirroredOrderSkipLogging:
+    @staticmethod
+    def _configure_exchange_interface(exchange_if: mock.MagicMock) -> None:
+        exchange_if.portfolio.reference_market = "USDT"
+        exchange_if.market.get_potentially_outdated_price = mock.Mock(
+            return_value=(decimal.Decimal("2000"), False)
+        )
+        exchange_if.portfolio.get_currency_portfolio_total = mock.Mock(
+            side_effect=lambda currency: (
+                decimal.Decimal("10000") if currency == "USDT" else decimal.Decimal("1")
+            )
+        )
+
+    @staticmethod
+    def _buy_reference_with_usdt_total(usdt_total: float) -> protocol_models.CopiedAccount:
+        return _copied_account(
+            copied_assets=[
+                protocol_models.CopiedAsset(name="ETH", total=1.0, available=1.0, ratio=0.5),
+                protocol_models.CopiedAsset(
+                    name="USDT",
+                    total=usdt_total,
+                    available=usdt_total,
+                    ratio=0.5,
+                ),
+            ],
+            orders=[],
+        )
+
+    def test_logs_when_scaled_quantity_unavailable(self, caplog):
+        caplog.set_level(logging.WARNING)
+        limit_order = _replicable_buy_limit_order(order_id="order-scale-fail")
+        reference = self._buy_reference_with_usdt_total(0.0)
+        exchange_if = mock.MagicMock()
+        self._configure_exchange_interface(exchange_if)
+        exchange_if.portfolio.get_currency_portfolio_total = mock.Mock(
+            return_value=decimal.Decimal("1000")
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+
+        async def run_upsert():
+            return await synchronizer._upsert_mirrored_reference_order(limit_order)
+
+        _, _, _, replication_failure = asyncio.run(run_upsert())
+        assert replication_failure is not None
+        assert replication_failure.short_reason == "zero_scaled_quantity"
+        assert any(
+            "zero_scaled_quantity" in record.message and "reference_total=0" in record.message
+            for record in caplog.records
+        )
+
+    def test_logs_when_buy_capped_to_zero_by_available_quote(self, caplog):
+        caplog.set_level(logging.WARNING)
+        limit_order = _replicable_buy_limit_order(order_id="order-quote-fail")
+        reference = self._buy_reference_with_usdt_total(10000.0)
+        mark_price = decimal.Decimal("2000")
+        symbol_market = mock.Mock()
+        total_row = (
+            decimal.Decimal("1"),
+            decimal.Decimal("10000"),
+            decimal.Decimal("5"),
+            mark_price,
+            symbol_market,
+        )
+        available_row = (
+            decimal.Decimal("1"),
+            trading_constants.ZERO,
+            trading_constants.ZERO,
+            mark_price,
+            symbol_market,
+        )
+        exchange_if = mock.MagicMock()
+        self._configure_exchange_interface(exchange_if)
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        exchange_if.orders.get_pre_order_data = mock.AsyncMock(
+            side_effect=[total_row, available_row]
+        )
+        exchange_if.orders.check_and_adapt_order_details_if_necessary = mock.Mock(
+            side_effect=lambda symbol, quantity, limit_price: ([(quantity, limit_price)], symbol_market)
+        )
+        exchange_if.market.is_market_open_for_order_type = mock.Mock(return_value=True)
+
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+
+        async def run_upsert():
+            return await synchronizer._upsert_mirrored_reference_order(limit_order)
+
+        _, _, _, replication_failure = asyncio.run(run_upsert())
+        assert replication_failure is not None
+        assert replication_failure.short_reason == "insufficient_quote"
+        assert any(
+            "insufficient_quote" in record.message and "available_market_holding=0" in record.message
+            for record in caplog.records
+        )
+
+    def test_synchronize_summary_lists_failed_replications_with_reason(self, caplog):
+        caplog.set_level(logging.INFO)
+        first_order = _replicable_buy_limit_order(
+            order_id="11111111-1111-1111-1111-111111111111",
+            price=decimal.Decimal("50745.57"),
+        )
+        second_order = _replicable_buy_limit_order(
+            order_id="22222222-2222-2222-2222-222222222222",
+            price=decimal.Decimal("49245.57"),
+        )
+        reference = _copied_account(
+            copied_assets=[
+                protocol_models.CopiedAsset(name="ETH", total=1.0, available=1.0, ratio=0.5),
+                protocol_models.CopiedAsset(name="USDT", total=500.0, available=500.0, ratio=0.5),
+            ],
+            orders=[first_order, second_order],
+        )
+        mark_price = decimal.Decimal("60000")
+        symbol_market = mock.Mock()
+
+        total_row = (
+            decimal.Decimal("1"),
+            decimal.Decimal("169"),
+            decimal.Decimal("0.002"),
+            mark_price,
+            symbol_market,
+        )
+        available_row = (
+            decimal.Decimal("1"),
+            trading_constants.ZERO,
+            trading_constants.ZERO,
+            mark_price,
+            symbol_market,
+        )
+        pre_order_data_rows = [total_row, available_row] * 4
+
+        exchange_if = mock.MagicMock()
+        self._configure_exchange_interface(exchange_if)
+        exchange_if.portfolio.get_currency_portfolio_total = mock.Mock(
+            side_effect=lambda currency: decimal.Decimal("169") if currency == "USDT" else decimal.Decimal("1")
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        exchange_if.orders.get_pre_order_data = mock.AsyncMock(side_effect=pre_order_data_rows)
+        exchange_if.orders.check_and_adapt_order_details_if_necessary = mock.Mock(
+            side_effect=lambda symbol, quantity, limit_price: ([(quantity, limit_price)], symbol_market)
+        )
+        exchange_if.market.is_market_open_for_order_type = mock.Mock(return_value=True)
+
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        synchronizer.cancel_orders_pending_synchronization = mock.AsyncMock(return_value=0)
+
+        asyncio.run(synchronizer.synchronize())
+
+        completion_logs = [
+            record.message
+            for record in caplog.records
+            if record.message.startswith("Order mirror completed:")
+        ]
+        assert len(completion_logs) == 1
+        completion_message = completion_logs[0]
+        assert "Failed to replicate 2 order(s):" in completion_message
+        assert "buy ETH/USDT @ 50745.57 [11111111-1111-1111-1111-111111111111] (insufficient_quote)" in completion_message
+        assert "buy ETH/USDT @ 49245.57 [22222222-2222-2222-2222-222222222222] (insufficient_quote)" in completion_message
