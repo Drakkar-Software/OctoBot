@@ -11,7 +11,7 @@ import type {
   Trade,
   TradeSummary,
 } from "@/client"
-import { resolveOneOfInstance } from "@/lib/debug-protocol-oneof"
+import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 
 export function getAccountExchangeConfigIds(account: Account): string[] {
   const specifics = account.specifics
@@ -592,15 +592,6 @@ const DEBUG_KNOWN_STATUS_TOKENS = new Set([
   "invalid",
   "unknown",
 ])
-
-export function matchesColumnFilter(
-  cellText: string,
-  filter: string | undefined,
-): boolean {
-  const q = filter?.trim().toLowerCase()
-  if (!q) return true
-  return cellText.toLowerCase().includes(q)
-}
 
 /** Status filters use exact match for known tokens to avoid cross-column substring noise. */
 

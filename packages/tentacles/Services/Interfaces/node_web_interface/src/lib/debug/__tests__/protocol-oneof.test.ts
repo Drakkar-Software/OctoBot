@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { resolveOneOfInstance } from "@/lib/debug-protocol-oneof"
+import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 
 describe("resolveOneOfInstance", () => {
   it("returns flat configuration payloads without a oneOf envelope", () => {

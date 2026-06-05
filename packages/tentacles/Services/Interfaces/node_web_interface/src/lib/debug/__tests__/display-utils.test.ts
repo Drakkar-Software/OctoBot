@@ -9,15 +9,22 @@ import type {
   DetailedAssetsForTradingType,
   Order,
   Trade,
+  Strategy,
 } from "@/client"
 import {
   flattenDetailedAssets,
+  countAccountAssets,
+  formatAssetsPerTradingType,
   formatAssetsPortfolioTooltip,
   formatAssetsSymbolsSummary,
   formatDebugStatusTooltip,
+  formatDebugStatusFilterText,
   formatOrdersTradingTooltip,
   formatTradesTradingTooltip,
+  getAccountExchangeConfigIds,
   getAccountExchangeNames,
+  getAccountTradingForAccountId,
+  getAccountsReferencingExchangeConfig,
   getAccountOrdersCount,
   getAccountOrdersTooltipContent,
   getAccountTradesCount,
@@ -27,12 +34,13 @@ import {
   getDetailedOrdersForAutomation,
   getDetailedTradesForAutomation,
   getDebugStatusDisplay,
+  getStrategyConfigurationType,
   getTradingSummariesForAutomation,
   debugTableCellClass,
   getDebugTableColumnAlignClass,
-  matchesColumnFilter,
   matchesDebugStatusColumnFilter,
-} from "@/lib/debug-display-utils"
+} from "@/lib/debug/display-utils"
+import { matchesColumnFilter } from "@/lib/table"
 
 function makeAssets(
   groups: Array<{
@@ -704,5 +712,96 @@ describe("getAccountExchangeNames", () => {
         exchangeConfigs,
       ),
     ).toBe("—")
+  })
+})
+
+describe("getAccountExchangeConfigIds", () => {
+  it("reads ids from flat exchange account specifics", () => {
+    expect(
+      getAccountExchangeConfigIds({
+        id: "acc-1",
+        name: "Main",
+        is_simulated: false,
+        created_at: "2026-01-01T00:00:00Z",
+        specifics: {
+          account_type: "exchange",
+          remote_account_id: "remote",
+          exchange_config_ids: ["cfg-1"],
+        },
+      } as Account),
+    ).toEqual(["cfg-1"])
+  })
+})
+
+describe("formatAssetsPerTradingType", () => {
+  it("returns em dash when assets are missing", () => {
+    expect(formatAssetsPerTradingType(null)).toBe("—")
+  })
+
+  it("formats counts per trading type", () => {
+    expect(
+      formatAssetsPerTradingType([
+        { trading_type: "spot", assets: [{ symbol: "BTC", available: 1, total: 1 }] },
+      ]),
+    ).toBe("spot: 1")
+  })
+})
+
+describe("countAccountAssets", () => {
+  it("counts flattened asset entries", () => {
+    expect(
+      countAccountAssets([
+        { symbol: "BTC", available: 1, total: 1 },
+        { symbol: "ETH", available: 1, total: 1 },
+      ]),
+    ).toBe(2)
+  })
+})
+
+describe("getAccountTradingForAccountId", () => {
+  it("returns the matching account trading summary", () => {
+    const summary = {
+      account_id: "acc-1",
+      account_trading: { updated_at: "2026-01-01T00:00:00Z" },
+    }
+    expect(getAccountTradingForAccountId("acc-1", [summary])).toBe(summary)
+  })
+})
+
+describe("formatDebugStatusFilterText", () => {
+  it("includes both raw status and label when they differ", () => {
+    expect(formatDebugStatusFilterText("periodic")).toContain("Recurring")
+  })
+})
+
+describe("getAccountsReferencingExchangeConfig", () => {
+  it("lists account names linked to the config", () => {
+    const accounts: Account[] = [
+      {
+        id: "acc-1",
+        name: "Main",
+        is_simulated: false,
+        created_at: "2026-01-01T00:00:00Z",
+        specifics: {
+          account_type: "exchange",
+          remote_account_id: "remote",
+          exchange_config_ids: ["cfg-1"],
+        },
+      } as Account,
+    ]
+    expect(getAccountsReferencingExchangeConfig("cfg-1", accounts)).toBe("Main")
+  })
+})
+
+describe("getStrategyConfigurationType", () => {
+  it("reads configuration_type from flat strategy configuration", () => {
+    expect(
+      getStrategyConfigurationType({
+        id: "s1",
+        version: "1",
+        reference_market: "USDT",
+        configuration: { configuration_type: "grid", symbol: "BTC/USDT" },
+      } as Strategy),
+    ).toBe("grid")
   })
 })
