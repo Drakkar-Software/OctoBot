@@ -482,6 +482,11 @@ class OrdersSynchronizer:
 
     async def synchronize(self) -> list:
         """Align copier open orders with reference_account.orders (synched mirror rows)."""
+        async with self._exchange_interface.portfolio.mirror_sync_available_updates():
+            return await self._synchronize_impl()
+
+    async def _synchronize_impl(self) -> list:
+        """Align copier open orders with reference_account.orders (synched mirror rows)."""
         replicable = self._get_replicable_reference_orders()
         orphan_cancelled_count = await self.cancel_orders_pending_synchronization(replicable)
         skip_symbols_for_upsert = self._reference_symbols_skipped_while_grace_orphans_uncancelled(replicable)
