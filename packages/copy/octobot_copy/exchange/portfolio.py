@@ -1,3 +1,4 @@
+import contextlib
 import decimal
 import typing
 
@@ -58,6 +59,21 @@ class PortfolioInterface:
         return await self._exchange_manager.exchange_personal_data.portfolio_manager.refresh_real_trader_portfolio(
             force_manual_refresh=True
         )
+
+    @contextlib.asynccontextmanager
+    async def mirror_sync_available_updates(self):
+        """
+        On live trading, portfolio available is not updated on each order cancel/create.
+        During mirror sync, temporarily track available locally (simulator semantics), then
+        reconcile once from the exchange when the context exits.
+        """
+        portfolio_manager = self._exchange_manager.exchange_personal_data.portfolio_manager
+        if portfolio_manager.enable_portfolio_available_update_from_order:
+            yield
+            return
+        with portfolio_manager.disabled_portfolio_update_from_order(enable_available_funds_update=True):
+            yield
+        await self.refresh_portfolio()
 
     def _get_logger(self) -> commons_logging.BotLogger:
         return commons_logging.get_logger(self.__class__.__name__)

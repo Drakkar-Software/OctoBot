@@ -118,3 +118,21 @@ async def backtesting_trader(backtesting_config, backtesting_exchange_manager):
     )
     await trader_instance.initialize()
     return backtesting_config, backtesting_exchange_manager, trader_instance
+
+
+@pytest_asyncio.fixture
+async def live_trading_trader(backtesting_config, backtesting_exchange_manager):
+    """
+    Backtesting exchange with live portfolio configuration: TraderSimulator drives order
+    execution on ExchangeSimulator while enable_portfolio_available_update_from_order stays
+    False (same as production live trading after an exchange balance refresh).
+    """
+    trader_instance = octobot_trading.exchanges.TraderSimulator(
+        backtesting_config,
+        backtesting_exchange_manager,
+    )
+    await trader_instance.initialize()
+    portfolio_manager = backtesting_exchange_manager.exchange_personal_data.portfolio_manager
+    portfolio_manager.enable_portfolio_available_update_from_order = False
+    assert portfolio_manager.enable_portfolio_available_update_from_order is False
+    return backtesting_config, backtesting_exchange_manager, trader_instance

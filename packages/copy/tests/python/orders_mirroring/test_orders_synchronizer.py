@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License along with
 #  OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import contextlib
 import decimal
 import logging
 import time
@@ -72,6 +73,11 @@ def _eth_usdt_pair_assets(
         protocol_models.CopiedAsset(name="ETH", total=eth_value, available=eth_value, ratio=eth_ratio),
         protocol_models.CopiedAsset(name="USDT", total=usdt_value, available=usdt_value, ratio=usdt_ratio),
     ]
+
+
+@contextlib.asynccontextmanager
+async def _passthrough_mirror_sync_available_updates():
+    yield
 
 
 def _exchange_interface_stub(*, currency_totals: dict[str, decimal.Decimal], market_price: decimal.Decimal):
@@ -889,6 +895,7 @@ class TestMirroredOrderSkipLogging:
             side_effect=lambda symbol, quantity, limit_price: ([(quantity, limit_price)], symbol_market)
         )
         exchange_if.market.is_market_open_for_order_type = mock.Mock(return_value=True)
+        exchange_if.portfolio.mirror_sync_available_updates = _passthrough_mirror_sync_available_updates
 
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
             reference,
