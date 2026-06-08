@@ -552,21 +552,35 @@ class OrdersSynchronizer:
                 len(skipped_grace_upserts),
                 skipped_summary,
             )
-        total_cancelled = orphan_cancelled_count + replaced_cancelled_count
-        total_created = len(created)
-        completion_message = (
-            f"Order mirror completed: {total_cancelled} cancelled "
-            f"[{orphan_cancelled_count} orphan(s), {replaced_cancelled_count} replaced], "
-            f"{total_created} created, "
-            f"{already_synchronized_count} already synchronized orders."
+        completion_message = mirrored_order_replication_failure_util.format_order_mirror_completion_message(
+            orphan_cancelled_count=orphan_cancelled_count,
+            replaced_cancelled_count=replaced_cancelled_count,
+            total_created=len(created),
+            already_synchronized_count=already_synchronized_count,
+            replication_failures=replication_failures,
         )
-        failures_summary = mirrored_order_replication_failure_util.format_replication_failures_summary(
-            replication_failures
-        )
-        if failures_summary:
-            completion_message = f"{completion_message} {failures_summary}"
         self._get_logger().info(completion_message)
         return created
+
+    def _format_grace_deferral_order_details(
+        self,
+        orphan_orders: list[trading_personal_data.Order],
+        late_fill_orders: list[protocol_models.Order],
+    ) -> str:
+        detail_parts: list[str] = []
+        if orphan_orders:
+            detail_parts.append(
+                "orphan order(s): "
+                f"{mirrored_order_replication_failure_util.format_mirrored_orphan_orders_summary(orphan_orders)}"
+            )
+        if late_fill_orders:
+            detail_parts.append(
+                "late-reference-fill candidate(s): "
+                f"{mirrored_order_replication_failure_util.format_late_reference_fill_candidates_summary(late_fill_orders)}"
+            )
+        if not detail_parts:
+            return ""
+        return "; " + "; ".join(detail_parts)
 
     async def _cancel_mirrored_orphan_orders(
         self,
@@ -665,9 +679,11 @@ class OrdersSynchronizer:
             orphan_orders = []
             orphan_count = 0
             grace_total = late_reference_fill_count
+            continuation_details = self._format_grace_deferral_order_details([], late_fill_orders)
             self._get_logger().info(
                 f"Mirrored orphan grace ineligible for orphan deferral; {cancelled} orphan order(s) cancelled. "
                 f"Continuing grace window for {late_reference_fill_count} late-reference-fill candidate(s)"
+                f"{continuation_details}"
             )
 
         # Grace window start time is derived from reference historical_snapshots + updated_at (not wall time here).
@@ -683,10 +699,12 @@ class OrdersSynchronizer:
         # Still inside grace window: wait for copier fills / alignment.
         if (now - started_at) < grace_seconds:
             remaining_seconds = grace_seconds - (now - started_at)
+            deferral_details = self._format_grace_deferral_order_details(orphan_orders, late_fill_orders)
             self._get_logger().info(
                 f"Mirrored orphan cancel deferred: {orphan_count} orphan(s), "
                 f"{late_reference_fill_count} late-reference-fill candidate(s), "
                 f"{remaining_seconds:.1f}s grace remaining"
+                f"{deferral_details}"
             )
             self._mirrored_orphan_cancel_was_deferred_in_episode = True
             return 0

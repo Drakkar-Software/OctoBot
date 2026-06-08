@@ -6,6 +6,7 @@ import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_protocol.models as protocol_models
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
+import octobot_trading.personal_data as trading_personal_data
 
 import octobot_copy.entities as copy_entities
 import octobot_copy.exchange as copy_exchange
@@ -48,6 +49,22 @@ def format_replication_failure_entry(
     )
 
 
+def _format_order_list_summary(
+    order_count: int,
+    entries: str,
+    *,
+    prefix: str,
+) -> str:
+    if order_count == 0:
+        return ""
+    summary = f"{prefix} {order_count} order(s): {entries}."
+    displayed_count = min(order_count, REPLICATION_FAILURES_SUMMARY_LIMIT)
+    remaining_count = order_count - displayed_count
+    if remaining_count > 0:
+        summary = f"{summary[:-1]} … and {remaining_count} more."
+    return summary
+
+
 def format_replication_failures_summary(
     replication_failures: list[mirrored_order_replication_failure.MirroredOrderReplicationFailure],
 ) -> str:
@@ -57,11 +74,101 @@ def format_replication_failures_summary(
     entries = ", ".join(
         format_replication_failure_entry(failure) for failure in displayed_failures
     )
-    remaining_count = len(replication_failures) - len(displayed_failures)
-    summary = f"Failed to replicate {len(replication_failures)} order(s): {entries}."
+    return _format_order_list_summary(
+        len(replication_failures),
+        entries,
+        prefix="Failed to replicate",
+    )
+
+
+def format_order_mirror_completion_message(
+    *,
+    orphan_cancelled_count: int,
+    replaced_cancelled_count: int,
+    total_created: int,
+    already_synchronized_count: int,
+    replication_failures: list[mirrored_order_replication_failure.MirroredOrderReplicationFailure],
+) -> str:
+    total_cancelled = orphan_cancelled_count + replaced_cancelled_count
+    completion_message = (
+        f"Order mirror completed: {total_cancelled} cancelled "
+        f"[{orphan_cancelled_count} orphan(s), {replaced_cancelled_count} replaced], "
+        f"{total_created} created, "
+        f"{already_synchronized_count} already synchronized orders."
+    )
+    grace_failures = [
+        failure
+        for failure in replication_failures
+        if failure.short_reason == "grace_period_active"
+    ]
+    real_failures = [
+        failure
+        for failure in replication_failures
+        if failure.short_reason != "grace_period_active"
+    ]
+    failures_summary = format_replication_failures_summary(real_failures)
+    if failures_summary:
+        completion_message = f"{completion_message} {failures_summary}"
+    grace_summary = format_grace_period_deferred_summary(grace_failures)
+    if grace_summary:
+        completion_message = f"{completion_message} {grace_summary}"
+    return completion_message
+
+
+def format_grace_period_deferred_summary(
+    grace_period_failures: list[mirrored_order_replication_failure.MirroredOrderReplicationFailure],
+) -> str:
+    if not grace_period_failures:
+        return ""
+    displayed_failures = grace_period_failures[:REPLICATION_FAILURES_SUMMARY_LIMIT]
+    entries = ", ".join(
+        format_replication_failure_entry(failure) for failure in displayed_failures
+    )
+    return _format_order_list_summary(
+        len(grace_period_failures),
+        entries,
+        prefix="Grace period active for",
+    )
+
+
+def format_late_reference_fill_candidates_summary(
+    orders: list[protocol_models.Order],
+) -> str:
+    if not orders:
+        return ""
+    displayed_orders = orders[:REPLICATION_FAILURES_SUMMARY_LIMIT]
+    entries = ", ".join(
+        format_replication_failure_entry(
+            replication_failure_from_order(order, "late_reference_fill_candidate")
+        )
+        for order in displayed_orders
+    )
+    remaining_count = len(orders) - len(displayed_orders)
     if remaining_count > 0:
-        summary = f"{summary[:-1]} … and {remaining_count} more."
-    return summary
+        entries = f"{entries} … and {remaining_count} more"
+    return entries
+
+
+def format_mirrored_orphan_order_entry(order: trading_personal_data.Order) -> str:
+    side_value = getattr(order.side, "value", order.side)
+    side = str(side_value)
+    price = order.origin_price
+    return f"{side} {order.symbol} @ {price} [copier order_id={order.order_id}]"
+
+
+def format_mirrored_orphan_orders_summary(
+    orphan_orders: list[trading_personal_data.Order],
+) -> str:
+    if not orphan_orders:
+        return ""
+    displayed_orders = orphan_orders[:REPLICATION_FAILURES_SUMMARY_LIMIT]
+    entries = ", ".join(
+        format_mirrored_orphan_order_entry(orphan_order) for orphan_order in displayed_orders
+    )
+    remaining_count = len(orphan_orders) - len(displayed_orders)
+    if remaining_count > 0:
+        entries = f"{entries} … and {remaining_count} more"
+    return entries
 
 
 def log_skipped_mirror_action(
