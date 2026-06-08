@@ -24,8 +24,8 @@ from octobot_protocol.models.automation_metadata import AutomationMetadata
 from octobot_protocol.models.detailed_assets_for_trading_type import DetailedAssetsForTradingType
 from octobot_protocol.models.order_summary import OrderSummary
 from octobot_protocol.models.position_summary import PositionSummary
-from octobot_protocol.models.task_status import TaskStatus
 from octobot_protocol.models.trade_summary import TradeSummary
+from octobot_protocol.models.workflow_status import WorkflowStatus
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -35,7 +35,7 @@ class AutomationState(BaseModel):
     AutomationState
     """ # noqa: E501
     id: StrictStr
-    status: TaskStatus
+    status: WorkflowStatus
     error: Optional[StrictStr] = None
     error_message: Optional[StrictStr] = None
     metadata: AutomationMetadata

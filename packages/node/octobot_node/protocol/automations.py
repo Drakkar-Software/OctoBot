@@ -67,10 +67,10 @@ def to_protocol_automations_state(
 
 
 def _resolve_automation_status(
-    flow_status: protocol_models.TaskStatus,
+    flow_status: protocol_models.WorkflowStatus,
     workflow_status: str,
     workflow_output: typing.Optional[workflow_params.AutomationWorkflowOutput],
-) -> protocol_models.TaskStatus:
+) -> protocol_models.WorkflowStatus:
     active_statuses = (
         dbos.WorkflowStatusString.ENQUEUED.value,
         dbos.WorkflowStatusString.PENDING.value,
@@ -78,21 +78,21 @@ def _resolve_automation_status(
     if workflow_status in active_statuses:
         return flow_status
     if workflow_status == dbos.WorkflowStatusString.CANCELLED.value:
-        return protocol_models.TaskStatus.CANCELED
+        return protocol_models.WorkflowStatus.CANCELED
     if workflow_status in (
         dbos.WorkflowStatusString.ERROR.value,
         dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED.value,
     ):
-        return protocol_models.TaskStatus.FAILED
+        return protocol_models.WorkflowStatus.FAILED
     if workflow_status == dbos.WorkflowStatusString.SUCCESS.value:
         if workflow_output is not None and workflow_output.error:
-            return protocol_models.TaskStatus.FAILED
-        if flow_status == protocol_models.TaskStatus.FAILED:
-            return protocol_models.TaskStatus.FAILED
-        return protocol_models.TaskStatus.COMPLETED
-    if flow_status in (protocol_models.TaskStatus.FAILED, protocol_models.TaskStatus.CANCELED):
+            return protocol_models.WorkflowStatus.FAILED
+        if flow_status == protocol_models.WorkflowStatus.FAILED:
+            return protocol_models.WorkflowStatus.FAILED
+        return protocol_models.WorkflowStatus.COMPLETED
+    if flow_status in (protocol_models.WorkflowStatus.FAILED, protocol_models.WorkflowStatus.CANCELED):
         return flow_status
-    return protocol_models.TaskStatus.COMPLETED
+    return protocol_models.WorkflowStatus.COMPLETED
 
 
 def _resolve_automation_errors(
@@ -138,7 +138,7 @@ def _merge_task_errors_when_workflow_errors_absent(
 def _base_protocol_automation_state(task: node_models.Task) -> protocol_models.AutomationState:
     return protocol_models.AutomationState(
         id=task.id,
-        status=protocol_models.TaskStatus.PENDING,
+        status=protocol_models.WorkflowStatus.PENDING,
         metadata=protocol_models.AutomationMetadata(
             name=task.name or "",
             description="",
@@ -252,19 +252,19 @@ def _metadata_updated_at_from_execution(
     return octobot_commons_timestamp_util.utc_datetime_from_timestamp(latest_timestamp)
 
 
-def _automation_task_status(flow_automation_state: flow_entities.AutomationState) -> protocol_models.TaskStatus:
+def _automation_task_status(flow_automation_state: flow_entities.AutomationState) -> protocol_models.WorkflowStatus:
     execution = flow_automation_state.automation.execution
     actions_dag = flow_automation_state.automation.actions_dag
     post_actions = flow_automation_state.automation.post_actions
     if execution.execution_error:
-        return protocol_models.TaskStatus.FAILED
+        return protocol_models.WorkflowStatus.FAILED
     if any(_flow_action_reports_error(action) for action in actions_dag.actions):
-        return protocol_models.TaskStatus.FAILED
+        return protocol_models.WorkflowStatus.FAILED
     if actions_dag.completed_all_actions() or post_actions.stop_automation:
-        return protocol_models.TaskStatus.COMPLETED
+        return protocol_models.WorkflowStatus.COMPLETED
     if execution.current_execution.triggered_at > 0 or any(action.is_completed() for action in actions_dag.actions):
-        return protocol_models.TaskStatus.RUNNING
-    return protocol_models.TaskStatus.PENDING
+        return protocol_models.WorkflowStatus.RUNNING
+    return protocol_models.WorkflowStatus.PENDING
 
 
 def _protocol_action_from_flow(
@@ -274,20 +274,20 @@ def _protocol_action_from_flow(
     executable_ids: typing.Optional[set[str]],
 ) -> protocol_models.Action:
     if _flow_action_reports_error(flow_action):
-        action_status = protocol_models.TaskStatus.FAILED
+        action_status = protocol_models.WorkflowStatus.FAILED
     elif flow_action.is_completed():
-        action_status = protocol_models.TaskStatus.COMPLETED
+        action_status = protocol_models.WorkflowStatus.COMPLETED
     elif priority_lane:
-        action_status = protocol_models.TaskStatus.RUNNING
+        action_status = protocol_models.WorkflowStatus.RUNNING
     else:
         if executable_ids is None:
             raise ValueError(
                 "executable_ids is required when priority_lane is False."
             )
         action_status = (
-            protocol_models.TaskStatus.RUNNING
+            protocol_models.WorkflowStatus.RUNNING
             if flow_action.id in executable_ids
-            else protocol_models.TaskStatus.PENDING
+            else protocol_models.WorkflowStatus.PENDING
         )
     if isinstance(flow_action, flow_entities.DSLScriptActionDetails):
         action_type = "dsl_script"

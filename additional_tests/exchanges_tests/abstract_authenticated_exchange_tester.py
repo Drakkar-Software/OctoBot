@@ -771,7 +771,7 @@ class AbstractAuthenticatedExchangeTester:
     async def inner_test_get_my_recent_trades(self):
         trades = await self.get_my_recent_trades()
         if self.CHECK_EMPTY_ACCOUNT or self.EXPECT_EMPTY_RECENT_TRADES:
-            assert trades == []
+            assert trades == [], f"{trades} != []"
             return
         assert trades
         self.check_raw_trades(trades)

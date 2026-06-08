@@ -18,13 +18,6 @@ export const LATEST_ACTION_DISPLAY_LENGTH = 22
 export const AUTOMATION_NAME_DISPLAY_LENGTH = 20
 export const USER_ACTION_ID_DISPLAY_LENGTH = 32
 
-/** Short tooltips (assets, status errors): no overflow so Radix collision sizing does not force a scrollbar. */
-export const COMPACT_TOOLTIP_CONTENT_CLASS =
-  "font-mono text-xs text-left max-w-md whitespace-pre-line break-all p-3 [text-wrap:wrap]"
-
-export const SCROLLABLE_TOOLTIP_INNER_CLASS =
-  "max-h-[min(90vh,var(--radix-tooltip-content-available-height,90vh))] overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all p-3 font-mono text-xs text-left [text-wrap:wrap]"
-
 export const AUTOMATION_ASSETS_MAX_VISIBLE = 2
 
 export const AUTOMATION_COMPACT_COLUMN_CLASS = "w-0 px-2"

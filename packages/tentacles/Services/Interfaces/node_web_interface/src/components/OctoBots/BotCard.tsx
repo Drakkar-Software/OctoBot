@@ -3,7 +3,7 @@ import { memo } from "react"
 
 import type {
   Task_Output as Task,
-  octobot_node__models__TaskStatus as TaskStatus,
+  TaskStatus,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"

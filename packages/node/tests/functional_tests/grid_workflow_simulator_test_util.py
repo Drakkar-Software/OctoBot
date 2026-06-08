@@ -467,7 +467,7 @@ if IMPORTED_OCTOBOT_FLOW_GRID_DEPS:
         protocol_automation: protocol_models_module.AutomationState,
         exchange_account_elements: typing.Any,
         *,
-        expected_automation_task_status: protocol_models_module.TaskStatus,
+        expected_automation_task_status: protocol_models_module.WorkflowStatus,
         expected_order_symbol: str = "BTC/USDC",
         expected_exchange_account_id: str | None = None,
     ) -> None:

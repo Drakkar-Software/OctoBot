@@ -28,7 +28,7 @@ class TestGetDebugState:
         sample_automations = [
             protocol_models.AutomationState(
                 id="auto-1",
-                status=protocol_models.TaskStatus.RUNNING,
+                status=protocol_models.WorkflowStatus.RUNNING,
                 metadata=protocol_models.AutomationMetadata(
                     name="auto",
                     description="auto description",
@@ -138,7 +138,7 @@ class TestGetDebugState:
     async def test_redacts_auth_details_in_automations(self):
         automation_with_auth = protocol_models.AutomationState(
             id="auto-auth",
-            status=protocol_models.TaskStatus.COMPLETED,
+            status=protocol_models.WorkflowStatus.COMPLETED,
             metadata=protocol_models.AutomationMetadata(
                 name="auto",
                 description="",
@@ -147,7 +147,7 @@ class TestGetDebugState:
                 protocol_models.Action(
                     id="action-1",
                     action_type="apply_configuration",
-                    status=protocol_models.TaskStatus.COMPLETED,
+                    status=protocol_models.WorkflowStatus.COMPLETED,
                     configuration={
                         "exchange_account_details": {
                             "auth_details": {
@@ -211,12 +211,12 @@ class TestGetDebugState:
         dsl_action = protocol_models.Action(
             id="dsl-1",
             action_type="dsl_script",
-            status=protocol_models.TaskStatus.COMPLETED,
+            status=protocol_models.WorkflowStatus.COMPLETED,
             dsl='run_octobot_process("acc", {}, [{"api_key": "leak"}])',
         )
         automation = protocol_models.AutomationState(
             id="auto-dsl",
-            status=protocol_models.TaskStatus.COMPLETED,
+            status=protocol_models.WorkflowStatus.COMPLETED,
             metadata=protocol_models.AutomationMetadata(name="auto", description=""),
             actions=[dsl_action],
         )
@@ -266,7 +266,7 @@ class TestGetDebugState:
         config_action = protocol_models.Action(
             id="action-1",
             action_type="apply_configuration",
-            status=protocol_models.TaskStatus.COMPLETED,
+            status=protocol_models.WorkflowStatus.COMPLETED,
             configuration={
                 "exchange_account_details": {
                     "auth_details": {},
@@ -275,7 +275,7 @@ class TestGetDebugState:
         )
         automation = protocol_models.AutomationState(
             id="auto-sim",
-            status=protocol_models.TaskStatus.COMPLETED,
+            status=protocol_models.WorkflowStatus.COMPLETED,
             metadata=protocol_models.AutomationMetadata(name="auto", description=""),
             actions=[config_action],
         )
@@ -372,7 +372,7 @@ class TestGetDebugState:
     async def test_ignores_exchange_account_ids_when_automation_not_running(self):
         completed_automation = protocol_models.AutomationState(
             id="auto-completed",
-            status=protocol_models.TaskStatus.COMPLETED,
+            status=protocol_models.WorkflowStatus.COMPLETED,
             metadata=protocol_models.AutomationMetadata(name="auto", description=""),
             exchange_account_ids=["acc-ignored"],
         )

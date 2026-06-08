@@ -652,7 +652,7 @@ class TestSchedulerGetAutomationStates:
 
         assert len(automation_states) == 1
         assert automation_states[0].id == PARENT_ID
-        assert automation_states[0].status == protocol_models.TaskStatus.FAILED
+        assert automation_states[0].status == protocol_models.WorkflowStatus.FAILED
         assert "DBOSUnexpectedStepError" in (automation_states[0].error or "")
         assert automation_states[0].error_message is None
 

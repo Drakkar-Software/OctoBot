@@ -36,7 +36,7 @@ def _minimal_protocol_base() -> protocol_models.AutomationState:
     updated = datetime.datetime(2020, 1, 3, tzinfo=datetime.UTC)
     return protocol_models.AutomationState(
         id="task-1",
-        status=protocol_models.TaskStatus.PENDING,
+        status=protocol_models.WorkflowStatus.PENDING,
         metadata=protocol_models.AutomationMetadata(
             name="task-name",
             description="task-description",
@@ -119,44 +119,44 @@ class TestFillProtocolAutomationStateMetadataUpdatedAt:
 class TestResolveAutomationStatusFromWorkflow:
     def test_error_overrides_running_flow_status(self):
         resolved = automations_protocol._resolve_automation_status(
-            protocol_models.TaskStatus.RUNNING,
+            protocol_models.WorkflowStatus.RUNNING,
             dbos.WorkflowStatusString.ERROR.value,
             None,
         )
-        assert resolved == protocol_models.TaskStatus.FAILED
+        assert resolved == protocol_models.WorkflowStatus.FAILED
 
     def test_cancelled_maps_to_canceled(self):
         resolved = automations_protocol._resolve_automation_status(
-            protocol_models.TaskStatus.RUNNING,
+            protocol_models.WorkflowStatus.RUNNING,
             dbos.WorkflowStatusString.CANCELLED.value,
             None,
         )
-        assert resolved == protocol_models.TaskStatus.CANCELED
+        assert resolved == protocol_models.WorkflowStatus.CANCELED
 
     def test_success_overrides_stale_running_to_completed(self):
         resolved = automations_protocol._resolve_automation_status(
-            protocol_models.TaskStatus.RUNNING,
+            protocol_models.WorkflowStatus.RUNNING,
             dbos.WorkflowStatusString.SUCCESS.value,
             None,
         )
-        assert resolved == protocol_models.TaskStatus.COMPLETED
+        assert resolved == protocol_models.WorkflowStatus.COMPLETED
 
     def test_success_with_output_error_maps_to_failed(self):
         workflow_output = workflow_params.AutomationWorkflowOutput(error="boom")
         resolved = automations_protocol._resolve_automation_status(
-            protocol_models.TaskStatus.RUNNING,
+            protocol_models.WorkflowStatus.RUNNING,
             dbos.WorkflowStatusString.SUCCESS.value,
             workflow_output,
         )
-        assert resolved == protocol_models.TaskStatus.FAILED
+        assert resolved == protocol_models.WorkflowStatus.FAILED
 
     def test_pending_keeps_running_flow_status(self):
         resolved = automations_protocol._resolve_automation_status(
-            protocol_models.TaskStatus.RUNNING,
+            protocol_models.WorkflowStatus.RUNNING,
             dbos.WorkflowStatusString.PENDING.value,
             None,
         )
-        assert resolved == protocol_models.TaskStatus.RUNNING
+        assert resolved == protocol_models.WorkflowStatus.RUNNING
 
 
 class TestResolveAutomationErrors:
@@ -242,7 +242,7 @@ class TestToProtocolAutomationStateWithoutContent:
         assert state.id == "task-none-content"
         assert state.metadata.name == "automation-without-body"
         assert state.actions is None
-        assert state.status == protocol_models.TaskStatus.COMPLETED
+        assert state.status == protocol_models.WorkflowStatus.COMPLETED
         assert state.error is None
         assert state.error_message is None
 
@@ -258,7 +258,7 @@ class TestToProtocolAutomationStateWithoutContent:
             workflow_status=dbos.WorkflowStatusString.ERROR.value,
             workflow_error="DBOSUnexpectedStepError",
         )
-        assert state.status == protocol_models.TaskStatus.FAILED
+        assert state.status == protocol_models.WorkflowStatus.FAILED
         assert state.error == "DBOSUnexpectedStepError"
         assert state.error_message is None
 
@@ -314,7 +314,7 @@ class TestToProtocolAutomationStateErrors:
             workflow_status=dbos.WorkflowStatusString.SUCCESS.value,
             workflow_output=workflow_output,
         )
-        assert state.status == protocol_models.TaskStatus.FAILED
+        assert state.status == protocol_models.WorkflowStatus.FAILED
         assert state.error == "no_trading_signal"
         assert state.error_message == "No trading signal available"
 
@@ -331,7 +331,7 @@ class TestToProtocolAutomationStateErrors:
             workflow_status=dbos.WorkflowStatusString.SUCCESS.value,
             workflow_output=workflow_output,
         )
-        assert state.status == protocol_models.TaskStatus.COMPLETED
+        assert state.status == protocol_models.WorkflowStatus.COMPLETED
         assert state.error is None
         assert state.error_message is None
 
@@ -368,7 +368,7 @@ class TestToProtocolAutomationStateErrors:
             workflow_status=dbos.WorkflowStatusString.ERROR.value,
             workflow_error="DBOSUnexpectedStepError",
         )
-        assert state.status == protocol_models.TaskStatus.FAILED
+        assert state.status == protocol_models.WorkflowStatus.FAILED
         assert state.error == "DBOSUnexpectedStepError"
         assert state.error_message is None
 
@@ -380,7 +380,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
             automation=_minimal_automation_details(execution=execution),
         )
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
-        assert filled.status == protocol_models.TaskStatus.FAILED
+        assert filled.status == protocol_models.WorkflowStatus.FAILED
 
     def test_failed_when_dag_action_error_status(self):
         action = flow_entities.ConfiguredActionDetails(
@@ -395,7 +395,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
             ),
         )
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
-        assert filled.status == protocol_models.TaskStatus.FAILED
+        assert filled.status == protocol_models.WorkflowStatus.FAILED
 
     def test_completed_when_all_actions_completed(self):
         action = flow_entities.DSLScriptActionDetails(
@@ -410,7 +410,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
             ),
         )
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
-        assert filled.status == protocol_models.TaskStatus.COMPLETED
+        assert filled.status == protocol_models.WorkflowStatus.COMPLETED
 
     def test_running_when_triggered(self):
         trigger = flow_entities.TriggerDetails(scheduled_to=1, triggered_at=2)
@@ -424,7 +424,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
             ),
         )
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
-        assert filled.status == protocol_models.TaskStatus.RUNNING
+        assert filled.status == protocol_models.WorkflowStatus.RUNNING
 
     def test_pending_when_not_started(self):
         flow_state = flow_entities.AutomationState(
@@ -437,7 +437,7 @@ class TestFillProtocolAutomationStateAutomationStatus:
             ),
         )
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
-        assert filled.status == protocol_models.TaskStatus.PENDING
+        assert filled.status == protocol_models.WorkflowStatus.PENDING
 
 
 class TestFillProtocolAutomationStateDagActions:
@@ -459,8 +459,8 @@ class TestFillProtocolAutomationStateDagActions:
         assert filled.actions is not None
         assert len(filled.actions) == 2
         by_id = {action.id: action for action in filled.actions}
-        assert by_id["ready"].status == protocol_models.TaskStatus.RUNNING
-        assert by_id["blocked"].status == protocol_models.TaskStatus.PENDING
+        assert by_id["ready"].status == protocol_models.WorkflowStatus.RUNNING
+        assert by_id["blocked"].status == protocol_models.WorkflowStatus.PENDING
 
     def test_dsl_and_configured_action_mapping(self):
         dsl_action = flow_entities.DSLScriptActionDetails(id="d1", dsl_script="noop()")
@@ -502,7 +502,7 @@ class TestFillProtocolAutomationStatePriorityActions:
         assert filled.priority_actions is not None
         assert len(filled.priority_actions) == 1
         assert filled.priority_actions[0].id == "priority_action"
-        assert filled.priority_actions[0].status == protocol_models.TaskStatus.RUNNING
+        assert filled.priority_actions[0].status == protocol_models.WorkflowStatus.RUNNING
 
 
 class TestFillProtocolAutomationStateExchanges:

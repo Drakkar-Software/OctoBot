@@ -7,7 +7,7 @@ AutomationState
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
-**status** | [**TaskStatus**](TaskStatus.md) |  | 
+**status** | [**WorkflowStatus**](WorkflowStatus.md) |  | 
 **error** | **str** |  | [optional] 
 **error_message** | **str** |  | [optional] 
 **metadata** | [**AutomationMetadata**](AutomationMetadata.md) |  | 

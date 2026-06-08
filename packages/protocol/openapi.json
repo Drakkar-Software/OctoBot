@@ -8,8 +8,8 @@
   "paths": {},
   "components": {
     "schemas": {
-      "TaskStatus": {
-        "description": "TaskStatus",
+      "WorkflowStatus": {
+        "description": "WorkflowStatus",
         "type": "string",
         "enum": [
           "pending",
@@ -396,7 +396,7 @@
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/TaskStatus"
+            "$ref": "#/components/schemas/WorkflowStatus"
           },
           "dsl": {
             "type": "string"
@@ -517,7 +517,7 @@
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/TaskStatus"
+            "$ref": "#/components/schemas/WorkflowStatus"
           },
           "error": {
             "type": "string"

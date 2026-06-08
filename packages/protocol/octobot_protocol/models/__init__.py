@@ -114,7 +114,6 @@ from octobot_protocol.models.strategy_action_result import StrategyActionResult
 from octobot_protocol.models.strategy_action_result_error_message import StrategyActionResultErrorMessage
 from octobot_protocol.models.strategy_configuration import StrategyConfiguration
 from octobot_protocol.models.strategy_reference import StrategyReference
-from octobot_protocol.models.task_status import TaskStatus
 from octobot_protocol.models.time_frame import TimeFrame
 from octobot_protocol.models.trade import Trade
 from octobot_protocol.models.trade_summary import TradeSummary
@@ -129,4 +128,5 @@ from octobot_protocol.models.user_action_status import UserActionStatus
 from octobot_protocol.models.user_action_type import UserActionType
 from octobot_protocol.models.user_actions_state import UserActionsState
 from octobot_protocol.models.user_data_state import UserDataState
+from octobot_protocol.models.workflow_status import WorkflowStatus
 

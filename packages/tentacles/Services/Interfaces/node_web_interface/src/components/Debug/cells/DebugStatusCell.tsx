@@ -1,5 +1,4 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { COMPACT_TOOLTIP_CONTENT_CLASS } from "@/lib/debug/constants"
 import {
   formatDebugStatusTooltip,
   getDebugStatusDisplay,
@@ -34,7 +33,7 @@ export function DebugStatusCell({
           {emoji}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className={COMPACT_TOOLTIP_CONTENT_CLASS}>
+      <TooltipContent side="top" className="tooltip-compact-content">
         {tooltip}
       </TooltipContent>
     </Tooltip>

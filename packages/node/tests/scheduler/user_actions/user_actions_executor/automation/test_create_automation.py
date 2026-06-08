@@ -376,13 +376,13 @@ class TestCreateAutomationExecutor:
             protocol_models.Action(
                 id="w1",
                 action_type="dsl",
-                status=protocol_models.TaskStatus.PENDING,
+                status=protocol_models.WorkflowStatus.PENDING,
                 dsl="wait(1)",
             ),
             protocol_models.Action(
                 id="w2",
                 action_type="dsl",
-                status=protocol_models.TaskStatus.PENDING,
+                status=protocol_models.WorkflowStatus.PENDING,
                 dsl="wait(2)",
             ),
         ]

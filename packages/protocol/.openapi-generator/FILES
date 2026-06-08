@@ -99,7 +99,6 @@ docs/StrategyActionResult.md
 docs/StrategyActionResultErrorMessage.md
 docs/StrategyConfiguration.md
 docs/StrategyReference.md
-docs/TaskStatus.md
 docs/TimeFrame.md
 docs/Trade.md
 docs/TradeSummary.md
@@ -114,6 +113,7 @@ docs/UserActionStatus.md
 docs/UserActionType.md
 docs/UserActionsState.md
 docs/UserDataState.md
+docs/WorkflowStatus.md
 octobot_protocol/__init__.py
 octobot_protocol/api/__init__.py
 octobot_protocol/models/__init__.py
@@ -218,7 +218,6 @@ octobot_protocol/models/strategy_action_result.py
 octobot_protocol/models/strategy_action_result_error_message.py
 octobot_protocol/models/strategy_configuration.py
 octobot_protocol/models/strategy_reference.py
-octobot_protocol/models/task_status.py
 octobot_protocol/models/time_frame.py
 octobot_protocol/models/trade.py
 octobot_protocol/models/trade_summary.py
@@ -233,6 +232,7 @@ octobot_protocol/models/user_action_status.py
 octobot_protocol/models/user_action_type.py
 octobot_protocol/models/user_actions_state.py
 octobot_protocol/models/user_data_state.py
+octobot_protocol/models/workflow_status.py
 test/__init__.py
 test/test_account.py
 test/test_account_action_result.py
@@ -335,7 +335,6 @@ test/test_strategy_action_result.py
 test/test_strategy_action_result_error_message.py
 test/test_strategy_configuration.py
 test/test_strategy_reference.py
-test/test_task_status.py
 test/test_time_frame.py
 test/test_trade.py
 test/test_trade_summary.py
@@ -350,3 +349,4 @@ test/test_user_action_status.py
 test/test_user_action_type.py
 test/test_user_actions_state.py
 test/test_user_data_state.py
+test/test_workflow_status.py
