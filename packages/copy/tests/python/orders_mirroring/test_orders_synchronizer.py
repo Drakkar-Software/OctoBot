@@ -453,6 +453,8 @@ class TestApplyGraceGraceEpisodeClearedLogging:
                 )
         assert self._EPISODE_CLEARED_SNIPPET not in caplog.text
         assert self._CANCEL_DEFERRED_SNIPPET in caplog.text
+        assert "ref-late-1" in caplog.text
+        assert "late-reference-fill candidate(s):" in caplog.text
 
         caplog.clear()
         with mock.patch(
@@ -496,6 +498,64 @@ class TestApplyGraceGraceEpisodeClearedLogging:
             with caplog.at_level(logging.INFO):
                 asyncio.run(synchronizer._apply_grace_policy_and_cancel_mirrored_orphans([], []))
         assert self._EPISODE_CLEARED_SNIPPET not in caplog.text
+
+
+class TestSynchronizeGracePeriodCompletionLogging:
+    def _grace_period_synchronize_setup(self, *, frozen_reference_time: float):
+        order = _replicable_buy_limit_order()
+        assets = _eth_usdt_pair_assets()
+        compliant_snapshot = _copied_account(
+            updated_at=frozen_reference_time - 1.0,
+            copied_assets=assets,
+            orders=[],
+        )
+        reference = _copied_account(
+            updated_at=frozen_reference_time,
+            copied_assets=assets,
+            orders=[order],
+            historical_snapshots=[compliant_snapshot],
+        )
+        currency_totals = {
+            "ETH": decimal.Decimal("2"),
+            "USDT": decimal.Decimal("8000"),
+        }
+        exchange_if = _exchange_interface_stub(
+            currency_totals=currency_totals,
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        exchange_if.portfolio.mirror_sync_available_updates = _passthrough_mirror_sync_available_updates
+        copy_settings = copy_entities.AccountCopySettings(
+            mirrored_orphan_cancel_grace_seconds=60.0,
+            mirrored_orphan_grace_abort_threshold=3,
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_settings,
+        )
+        return synchronizer
+
+    def test_completion_uses_grace_summary_not_replication_failure(self, caplog):
+        frozen_t0 = 1_700_000_000.0
+        synchronizer = self._grace_period_synchronize_setup(frozen_reference_time=frozen_t0)
+        with mock.patch(
+            "octobot_copy.orders_mirroring.orders_synchronizer.time.time",
+            return_value=frozen_t0,
+        ):
+            with caplog.at_level(logging.INFO):
+                asyncio.run(synchronizer.synchronize())
+
+        completion_logs = [
+            record.message
+            for record in caplog.records
+            if record.message.startswith("Order mirror completed:")
+        ]
+        assert len(completion_logs) == 1
+        completion_message = completion_logs[0]
+        assert "Grace period active for" in completion_message
+        assert "ref-late-1" in completion_message
+        assert "Failed to replicate" not in completion_message
 
 
 def _replicable_buy_limit_order_id(order_id: str) -> protocol_models.Order:

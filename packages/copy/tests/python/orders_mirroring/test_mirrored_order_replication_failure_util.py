@@ -145,6 +145,68 @@ class TestFormatReplicationFailureEntry:
         )
 
 
+class TestFormatGracePeriodDeferredSummary:
+    def test_empty_when_no_grace_failures(self):
+        assert mirrored_order_replication_failure_util.format_grace_period_deferred_summary([]) == ""
+
+    def test_single_grace_failure_summary(self):
+        failure = _failure(short_reason="grace_period_active")
+
+        summary = mirrored_order_replication_failure_util.format_grace_period_deferred_summary([failure])
+
+        assert summary == (
+            "Grace period active for 1 order(s): buy ETH/USDT @ 50745.57 "
+            "[aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee] (grace_period_active)."
+        )
+        assert "Failed to replicate" not in summary
+
+    def test_truncates_beyond_summary_limit(self):
+        failures = [
+            _failure(
+                order_id=f"{index:08d}-0000-0000-0000-000000000000",
+                short_reason="grace_period_active",
+            )
+            for index in range(
+                mirrored_order_replication_failure_util.REPLICATION_FAILURES_SUMMARY_LIMIT + 1
+            )
+        ]
+
+        summary = mirrored_order_replication_failure_util.format_grace_period_deferred_summary(failures)
+
+        assert summary.startswith(
+            f"Grace period active for {mirrored_order_replication_failure_util.REPLICATION_FAILURES_SUMMARY_LIMIT + 1} order(s):"
+        )
+        assert summary.endswith("… and 1 more.")
+        assert "Failed to replicate" not in summary
+
+
+class TestFormatLateReferenceFillCandidatesSummary:
+    def test_empty_when_no_orders(self):
+        assert mirrored_order_replication_failure_util.format_late_reference_fill_candidates_summary([]) == ""
+
+    def test_formats_reference_order_details(self):
+        order = _reference_limit_order(order_id="late-fill-order-1")
+
+        summary = mirrored_order_replication_failure_util.format_late_reference_fill_candidates_summary([order])
+
+        assert summary == (
+            "buy ETH/USDT @ 50745.57 [late-fill-order-1] (late_reference_fill_candidate)"
+        )
+
+
+class TestFormatMirroredOrphanOrderEntry:
+    def test_formats_copier_orphan_order(self):
+        orphan_order = mock.Mock()
+        orphan_order.symbol = "ETH/USDT"
+        orphan_order.side = trading_enums.TradeOrderSide.SELL
+        orphan_order.origin_price = decimal.Decimal("2000")
+        orphan_order.order_id = "copier-orphan-1"
+
+        entry = mirrored_order_replication_failure_util.format_mirrored_orphan_order_entry(orphan_order)
+
+        assert entry == "sell ETH/USDT @ 2000 [copier order_id=copier-orphan-1]"
+
+
 class TestFormatReplicationFailuresSummary:
     def test_empty_when_no_failures(self):
         assert mirrored_order_replication_failure_util.format_replication_failures_summary([]) == ""
