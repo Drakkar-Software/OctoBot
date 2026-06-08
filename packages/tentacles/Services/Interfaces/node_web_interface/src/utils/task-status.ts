@@ -1,6 +1,6 @@
 import type {
   Task_Output as Task,
-  octobot_node__models__TaskStatus as TaskStatus,
+  TaskStatus,
 } from "@/client"
 import { getActiveExecution, getStatusGroup } from "@/utils/executions"
 

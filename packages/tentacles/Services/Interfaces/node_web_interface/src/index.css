@@ -253,4 +253,13 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
   }
+
+  /* Short tooltips (assets, status errors): no overflow so Radix collision sizing does not force a scrollbar. */
+  .tooltip-compact-content {
+    @apply font-mono text-xs text-left max-w-md whitespace-pre-line break-all p-3 [text-wrap:wrap];
+  }
+
+  .tooltip-scrollable-inner {
+    @apply max-h-[min(90vh,var(--radix-tooltip-content-available-height,90vh))] overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all p-3 font-mono text-xs text-left [text-wrap:wrap];
+  }
 }

@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
 **action_type** | **str** |  | 
-**status** | [**TaskStatus**](TaskStatus.md) |  | 
+**status** | [**WorkflowStatus**](WorkflowStatus.md) |  | 
 **dsl** | **str** |  | [optional] 
 **configuration** | **Dict[str, object]** |  | [optional] 
 **result** | **str** |  | [optional] 

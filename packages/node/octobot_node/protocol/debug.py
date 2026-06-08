@@ -100,7 +100,7 @@ def _account_ids_bound_to_running_automations(
     seen_account_ids: set[str] = set()
     bound_account_ids: list[str] = []
     for automation in automations:
-        if automation.status != protocol_models.TaskStatus.RUNNING:
+        if automation.status != protocol_models.WorkflowStatus.RUNNING:
             continue
         if not automation.exchange_account_ids:
             continue

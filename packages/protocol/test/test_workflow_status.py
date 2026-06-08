@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.task_status import TaskStatus
+from octobot_protocol.models.workflow_status import WorkflowStatus
 
-class TestTaskStatus(unittest.TestCase):
-    """TaskStatus unit test stubs"""
+class TestWorkflowStatus(unittest.TestCase):
+    """WorkflowStatus unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,9 +25,9 @@ class TestTaskStatus(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testTaskStatus(self):
-        """Test TaskStatus"""
-        # inst = TaskStatus()
+    def testWorkflowStatus(self):
+        """Test WorkflowStatus"""
+        # inst = WorkflowStatus()
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,6 @@
-# TaskStatus
+# WorkflowStatus
 
-TaskStatus
+WorkflowStatus
 
 ## Enum
 

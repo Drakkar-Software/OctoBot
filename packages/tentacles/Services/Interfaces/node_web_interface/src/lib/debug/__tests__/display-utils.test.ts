@@ -205,6 +205,10 @@ describe("getDebugStatusDisplay", () => {
       emoji: "✅",
       label: "Completed",
     })
+    expect(getDebugStatusDisplay("canceled")).toEqual({
+      emoji: "⚪",
+      label: "Canceled",
+    })
   })
 
   it("maps account statuses", () => {

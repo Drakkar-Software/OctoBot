@@ -20,7 +20,7 @@ import json
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from octobot_protocol.models.task_status import TaskStatus
+from octobot_protocol.models.workflow_status import WorkflowStatus
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class Action(BaseModel):
     """ # noqa: E501
     id: StrictStr
     action_type: StrictStr
-    status: TaskStatus
+    status: WorkflowStatus
     dsl: Optional[StrictStr] = None
     configuration: Optional[Dict[str, Any]] = None
     result: Optional[StrictStr] = None

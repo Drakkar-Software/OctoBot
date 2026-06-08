@@ -40,7 +40,7 @@ After changing `openapi.json`, regenerate the languages you ship so consumers st
 
 Component schemas (subject to change when the spec changes):
 
-- **Enums / simple types:** `TaskStatus`, `Side`, `OrderType`, `OrderStatus`, `PositionStatus`, `AccountType`
+- **Enums / simple types:** `WorkflowStatus`, `Side`, `OrderType`, `OrderStatus`, `PositionStatus`, `AccountType`
 - **Trading:** `Order`, `OrderGroup`, `OrderSummary`, `Trade`, `TradeSummary`, `Position`, `PositionSummary`, `TrailingProfile`, `CancelPolicy`, `ActiveOrderSwapStrategy`
 - **Accounts & assets:** `Account`, `AccountsState`, `ExchangeAccount`, `BlockchainAccount`, `GenericAccount`, `CopiedAccount`, `CopiedAsset`, `Asset`
 - **Automations:** `AutomationState`, `AutomationsState`, `AutomationMetadata`, `Action`

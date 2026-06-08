@@ -317,7 +317,7 @@ class TestTriggerTaskGridDbosIntegration:
             grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
                 protocol_state_after_step1,
                 elems_after_grid,
-                expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+                expected_automation_task_status=octobot_protocol_models.WorkflowStatus.RUNNING,
                 expected_exchange_account_id=_GRID_ACCOUNT_ID,
             )
             grid_sim_util.assert_protocol_automation_metadata_name(
@@ -387,7 +387,7 @@ class TestTriggerTaskGridDbosIntegration:
             grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
                 protocol_state_after_signal,
                 elements_after_signal,
-                expected_automation_task_status=octobot_protocol_models.TaskStatus.RUNNING,
+                expected_automation_task_status=octobot_protocol_models.WorkflowStatus.RUNNING,
             )
             grid_sim_util.assert_protocol_automation_metadata_name(
                 protocol_state_after_signal,
@@ -452,8 +452,8 @@ class TestTriggerTaskGridDbosIntegration:
             )
             observed_protocol_status = protocol_state_after_stop_send.status
             acceptable_protocol_statuses = (
-                octobot_protocol_models.TaskStatus.RUNNING,
-                octobot_protocol_models.TaskStatus.COMPLETED,
+                octobot_protocol_models.WorkflowStatus.RUNNING,
+                octobot_protocol_models.WorkflowStatus.COMPLETED,
             )
             if observed_protocol_status not in acceptable_protocol_statuses:
                 pytest.fail(
@@ -518,7 +518,7 @@ class TestTriggerTaskGridDbosIntegration:
             grid_sim_util.assert_protocol_automation_matches_exchange_account_elements(
                 protocol_state_final,
                 final_elements,
-                expected_automation_task_status=octobot_protocol_models.TaskStatus.COMPLETED,
+                expected_automation_task_status=octobot_protocol_models.WorkflowStatus.COMPLETED,
                 expected_exchange_account_id=_GRID_ACCOUNT_ID,
             )
             grid_sim_util.assert_protocol_automation_metadata_name(

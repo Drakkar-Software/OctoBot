@@ -19,7 +19,7 @@ _TEST_WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
 def _minimal_automation_state(automation_identifier: str) -> protocol_models.AutomationState:
     return protocol_models.AutomationState(
         id=automation_identifier,
-        status=protocol_models.TaskStatus.RUNNING,
+        status=protocol_models.WorkflowStatus.RUNNING,
         metadata=protocol_models.AutomationMetadata(name="test-automation", description="test-description"),
     )
 
