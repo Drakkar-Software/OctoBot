@@ -338,6 +338,36 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
         assert status == 200
         _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
 
+    async def test_dexscreener_cross_pair_address_formula_with_unified_dex_reference_pair(self):
+        request_data = _predicted_order_book_request(
+            exchanges=[
+                _bingx_exchange(),
+                {
+                    "id": "dexscreener-config",
+                    "name": DEXSCREENER_EXCHANGE_NAME,
+                    "exchange": DEXSCREENER_EXCHANGE_NAME,
+                    "sandboxed": False,
+                },
+            ],
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": DEXSCREENER_EXCHANGE_NAME,
+                            "pair": DEX_BTCB_USDT_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": CROSS_PAIR_ADDRESS_FORMULA,
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
 
 class TestDispatchMarketMakingRequestMarketMakingVolume:
     async def test_bingx_with_bingx_price_source(self):

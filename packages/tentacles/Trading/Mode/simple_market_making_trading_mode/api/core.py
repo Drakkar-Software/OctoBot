@@ -99,11 +99,13 @@ async def _fill_market_making_data_by_symbol(
                         dependencies, exchange_manager
                     )
 
-            dependency_symbol_alias_by_symbol = {
-                dependency.symbol: dependency.alias
-                for dependency in dependencies
-                if dependency.symbol
-            }
+            for dependency in dependencies:
+                if not dependency.symbol:
+                    continue
+                if dependency.alias:
+                    dependency_symbol_alias_by_symbol[dependency.symbol] = dependency.alias
+                elif dependency.symbol not in dependency_symbol_alias_by_symbol:
+                    dependency_symbol_alias_by_symbol[dependency.symbol] = None
             available_symbols = set(exchange_manager.exchange.get_all_available_symbols(active_only=True))
             symbols_to_skip_ticker_fetch = {
                 source.pair
