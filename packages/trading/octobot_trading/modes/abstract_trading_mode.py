@@ -363,8 +363,10 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
 
     async def manual_trigger(self, data) -> None:
         kwargs = {
-            "trigger_source": common_enums.TriggerSource.MANUAL.value
+            "trigger_source": common_enums.TriggerSource.MANUAL.value,
         }
+        if not self.get_is_symbol_wildcard() and self.symbol:
+            kwargs["symbol"] = self.symbol
         kwargs.update(data.get("kwargs", {}))
         for producer in self.producers:
             await producer.trigger(**kwargs)

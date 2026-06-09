@@ -1563,7 +1563,8 @@
             "type": "string",
             "enum": [
               "Maximum evaluators signals based",
-              "Time based"
+              "Time based",
+              "Always trigger long"
             ]
           },
           "use_init_entry_orders": {

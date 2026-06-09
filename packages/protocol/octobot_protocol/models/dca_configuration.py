@@ -48,8 +48,8 @@ class DCAConfiguration(BaseModel):
     @field_validator('trigger_mode')
     def trigger_mode_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['Maximum evaluators signals based', 'Time based']):
-            raise ValueError("must be one of enum values ('Maximum evaluators signals based', 'Time based')")
+        if value not in set(['Maximum evaluators signals based', 'Time based', 'Always trigger long']):
+            raise ValueError("must be one of enum values ('Maximum evaluators signals based', 'Time based', 'Always trigger long')")
         return value
 
     model_config = ConfigDict(

@@ -11,6 +11,7 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_copy.enums as copy_enums
 import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models
+import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
 
 import octobot_node.errors as node_errors
@@ -168,6 +169,37 @@ def _expected_copy_dsl_script(*, strategy_id: str) -> str:
         f"copy_exchange_account(strategy_id={json.dumps(strategy_id)}, "
         "reference_market='', reference_account='', account_copy_settings='{}')"
     )
+
+
+def _functional_dca_configuration() -> protocol_models.DCAConfiguration:
+    return protocol_models.DCAConfiguration(
+        configuration_type=protocol_models.ActionConfigurationType.DCA,
+        symbols=["BTC/USDC", "ETH/USDC"],
+        buy_orders_count=2,
+        percent_amount_per_buy_order=8,
+        profit_target_percent=1.75,
+        buy_order_price_discount_percent=1.5,
+        enable_stop_loss=False,
+        stop_loss_price_discount_percent=0,
+        trigger_mode="Always trigger long",
+        use_init_entry_orders=True,
+        time_frames=[],
+        evaluators=[],
+    )
+
+
+def _expected_dca_dsl_script(
+    *,
+    dca_configuration: protocol_models.DCAConfiguration,
+) -> str:
+    return action_details_factory.dca_action_factory(
+        flow_entities.ConfiguredActionDetails(
+            id="action_init",
+            action="apply_configuration",
+            config={},
+        ),
+        dca_configuration,
+    ).dsl_script
 
 
 def _assert_task_content_matches_actions(
@@ -516,20 +548,54 @@ class TestCreateAutomationExecutor:
         assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["min_spread"] == 0.5
         assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["max_spread"] == 1.0
 
+    def test_dca_returns_init_and_dca_dsl(self):
+        dca_configuration = _functional_dca_configuration()
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="dca-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-dca", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        assert len(actions) == 2
+        assert isinstance(stored.configuration.actual_instance, protocol_models.DCAConfiguration)
+        main_action = actions[1]
+        assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
+        assert actions[0].id == "action_init"
+        assert main_action.id == "action_1"
+        _assert_init_action_matches_minimal_account(
+            init_action_details=actions[0],
+            user_action_id="ua-dca",
+            account_id="acc-1",
+            protocol_account=account,
+            strategy_reference=strat_ref,
+        )
+        expected_dsl_script = _expected_dca_dsl_script(dca_configuration=dca_configuration)
+        assert main_action.dsl_script == expected_dsl_script
+        assert dca_trading.DCATradingMode.TRADING_PAIRS in expected_dsl_script
+        assert "BTC/USDC" in expected_dsl_script
+        assert "ETH/USDC" in expected_dsl_script
+        assert dca_trading.TriggerMode.ALWAYS_TRIGGER_LONG.value in expected_dsl_script
+        assert len(main_action.dependencies) == 1
+        assert main_action.dependencies[0].action_id == "action_init"
+
     def test_unsupported_types_raise_dedicated_errors(self):
-        dca = protocol_models.DCAConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.DCA,
-            symbols=["BTC/USDT"],
-            buy_orders_count=1,
-            percent_amount_per_buy_order=10,
-            profit_target_percent=1,
-            buy_order_price_discount_percent=1,
-            enable_stop_loss=False,
-            stop_loss_price_discount_percent=1,
-            trigger_mode="Time based",
-            use_init_entry_orders=True,
-            time_frames=[],
-            evaluators=[],
+        generic_process = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+            profile_data={},
         )
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
@@ -540,10 +606,10 @@ class TestCreateAutomationExecutor:
                 account_id="acc-1",
             ),
         )
-        user_action = _user_action_with_context(action_id="ua-dca", payload=create_payload)
+        user_action = _user_action_with_context(action_id="ua-unsupported", payload=create_payload)
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
 
-        stored = _stored_strategy_matching_reference(strat_ref, dca)
+        stored = _stored_strategy_matching_reference(strat_ref, generic_process)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
             _STRATEGY_PROVIDER_INSTANCE_PATCH,
         ) as strategy_mock:
@@ -721,44 +787,40 @@ class TestCreateAutomationExecutor:
         assert inner.created_automation_id == scheduled_task.id
 
     @pytest.mark.asyncio
-    async def test_execute_unsupported_automation_configuration_records_failure_in_provider(self):
-        dca = protocol_models.DCAConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.DCA,
-            symbols=["BTC/USDT"],
-            buy_orders_count=1,
-            percent_amount_per_buy_order=10,
-            profit_target_percent=1,
-            buy_order_price_discount_percent=1,
-            enable_stop_loss=False,
-            stop_loss_price_discount_percent=1,
-            trigger_mode="Time based",
-            use_init_entry_orders=True,
-            time_frames=[],
-            evaluators=[],
-        )
+    async def test_execute_dca_builds_actions_and_stages_automation_task_for_workflow(self):
+        dca_configuration = _functional_dca_configuration()
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
             configuration=_automation_configuration(
-                name="unsupported-automation",
+                name="execute-dca-automation",
                 strategy_reference=strat_ref,
                 account_id="acc-1",
             ),
         )
         user_action = _user_action_with_context(action_id="ua-dca-exec", payload=create_payload)
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
-        stored = _stored_strategy_matching_reference(strat_ref, dca)
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
             _STRATEGY_PROVIDER_INSTANCE_PATCH,
         ) as strategy_mock:
             _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
             strategy_mock.return_value.get_item.return_value = stored
-            with pytest.raises(node_errors.UnsupportedAutomationConfigurationTypeError):
-                await executor.execute(user_action)
+            await executor.execute(user_action)
+
+        scheduled_task = executor.post_actions.to_create_automation_task
+        assert scheduled_task is not None
+        _assert_task_content_matches_actions(
+            task=scheduled_task,
+            user_action=user_action,
+            expected_action_count=2,
+        )
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,
-            expected_status=protocol_models.UserActionStatus.FAILED,
+            expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="automation",
-            expect_error_details=True,
-            expected_error_message=protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION,
+            expect_error_details=False,
         )
+        inner = user_action.result.actual_instance
+        assert isinstance(inner, protocol_models.AutomationActionResult)
+        assert inner.created_automation_id == scheduled_task.id

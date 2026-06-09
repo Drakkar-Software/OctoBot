@@ -1,9 +1,12 @@
 import datetime
+import decimal
 import json
+import typing
 
 import octobot_commons.configuration.fields_utils as fields_utils
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.str_util as str_util
 import octobot_commons.profiles.profile_data as commons_profile_data
 import octobot_copy.enums as copy_enums
 import octobot_flow.entities as flow_entities
@@ -20,6 +23,12 @@ import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_a
 _ACTION_ID_INIT = "action_init"
 _ACTION_ID_MAIN = "action_1"
 _ACTION_ID_COPY = "action_copy_exchange_account"
+
+
+def _dsl_serializable_config_value(config_value: typing.Any) -> typing.Any:
+    if isinstance(config_value, decimal.Decimal):
+        return float(config_value)
+    return config_value
 
 
 def _protocol_account_updated_at_unix_seconds(protocol_account: protocol_models.Account) -> float:
@@ -118,6 +127,55 @@ def copy_action_factory(
     )
     return flow_entities.DSLScriptActionDetails(
         id=_ACTION_ID_COPY,
+        dsl_script=dsl_script,
+        dependencies=[{"action_id": init_action.id}],
+    )
+
+
+def dca_action_factory(
+    init_action: flow_entities.AbstractActionDetails,
+    dca_configuration: protocol_models.DCAConfiguration,
+) -> flow_entities.AbstractActionDetails:
+    import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
+
+    buy_orders_count = int(dca_configuration.buy_orders_count)
+    use_init_entry_orders = bool(dca_configuration.use_init_entry_orders)
+    if use_init_entry_orders:
+        secondary_entry_orders_count = max(buy_orders_count - 1, 0)
+    else:
+        secondary_entry_orders_count = buy_orders_count
+    use_secondary_entry_orders = secondary_entry_orders_count > 0
+    trigger_mode = dca_trading.TriggerMode(dca_configuration.trigger_mode)
+    tentacle_config = dca_trading.DCATradingMode.get_default_config(
+        buy_amount=f"{int(dca_configuration.percent_amount_per_buy_order)}t%",
+        use_init_entry_orders=use_init_entry_orders,
+        use_secondary_entry_orders=use_secondary_entry_orders,
+        secondary_entry_orders_count=secondary_entry_orders_count,
+        secondary_entry_orders_amount="7%t",
+        secondary_entry_orders_price_percent=1.0,
+        exit_limit_orders_price_percent=float(dca_configuration.profit_target_percent),
+        entry_limit_orders_price_percent=float(dca_configuration.buy_order_price_discount_percent),
+        enable_stop_loss=bool(dca_configuration.enable_stop_loss),
+        stop_loss_price=float(dca_configuration.stop_loss_price_discount_percent),
+        use_take_profit_exit_orders=True,
+        trigger_mode=trigger_mode,
+        max_asset_holding_percent=50,
+    )
+    tentacle_config[dca_trading.DCATradingMode.ENABLE_HEALTH_CHECK] = True
+    tentacle_config[dca_trading.DCATradingMode.TRADING_PAIRS] = list(dca_configuration.symbols or [])
+    tentacle_config[dca_trading.DCATradingMode.TIME_FRAMES] = [
+        time_frame.value if hasattr(time_frame, "value") else str(time_frame)
+        for time_frame in (dca_configuration.time_frames or [])
+    ]
+    dca_operator = str_util.camel_to_snake(dca_trading.DCATradingMode.get_name())
+    config_parts = ", ".join(
+        f"{config_key}={dsl_interpreter.format_parameter_value(_dsl_serializable_config_value(config_value))}"
+        for config_key, config_value in tentacle_config.items()
+        if config_value is not None
+    )
+    dsl_script = f"{dca_operator}({config_parts})"
+    return flow_entities.DSLScriptActionDetails(
+        id=_ACTION_ID_MAIN,
         dsl_script=dsl_script,
         dependencies=[{"action_id": init_action.id}],
     )

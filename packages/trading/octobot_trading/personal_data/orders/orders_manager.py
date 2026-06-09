@@ -24,6 +24,7 @@ import octobot_trading.enums as enums
 import octobot_trading.constants as constants
 import octobot_trading.util as util
 import octobot_trading.errors as errors
+import octobot_trading.storage.orders_storage as orders_storage
 import octobot_trading.personal_data.orders.order as order_class
 import octobot_trading.personal_data.orders.order_factory as order_factory
 import octobot_trading.personal_data.orders.order_util as order_util
@@ -276,15 +277,18 @@ class OrdersManager(util.Initializable):
         pending_groups = {}
         for order_details in exchange_data.orders_details.open_orders:
             if constants.STORAGE_ORIGIN_VALUE in order_details:
+                formatted_order_dict = orders_storage.from_order_document(order_details)
                 order = order_factory.create_order_from_order_raw_in_storage_details_without_related_elements(
-                    exchange_manager, order_details
+                    exchange_manager, formatted_order_dict
                 )
                 await orders_storage_operations.create_orders_storage_related_elements(
-                    order, order_details, exchange_manager, pending_groups
+                    order, formatted_order_dict, exchange_manager, pending_groups
                 )
             else:
                 # simple order dict (order just fetched from exchange)
                 order = order_factory.create_order_instance_from_raw(self.trader, order_details)
+
+            print(f"Order upserted: {id(order)}: {order.to_string()}")
             await self.upsert_order_instance(order)
 
     # private methods

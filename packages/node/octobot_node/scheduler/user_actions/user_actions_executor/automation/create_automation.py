@@ -138,10 +138,8 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         )
 
         match inner_configuration:
-            case protocol_models.DCAConfiguration():
-                raise node_errors.UnsupportedAutomationConfigurationTypeError(
-                    f"Unsupported automation configuration type: {protocol_models.ActionConfigurationType.DCA.value!r}"
-                )
+            case protocol_models.DCAConfiguration() as dca_configuration:
+                return [init_action, action_details_factory.dca_action_factory(init_action, dca_configuration)]
             case protocol_models.GenericProcessConfiguration():
                 raise node_errors.UnsupportedAutomationConfigurationTypeError(
                     f"Unsupported automation configuration type: {protocol_models.ActionConfigurationType.GENERIC_PROCESS.value!r}"
