@@ -162,7 +162,7 @@ async def test_cap_signed_product_append_only_collection():
         path = "products/prod-123/v1/signals"
         await client.append(f"/push/{path}", {"n": 1})
         await client.append(f"/push/{path}", {"n": 2})
-        items = await client.pull(f"/pull/{path}", append_field="items")
+        items = await client.pull(f"/pull/{path}", append_field="items", full=True)
         payloads = [el["data"] if isinstance(el, dict) and "data" in el else el for el in items]
         assert {"n": 1} in payloads and {"n": 2} in payloads
     finally:

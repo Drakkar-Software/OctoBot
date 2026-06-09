@@ -116,7 +116,7 @@ async def test_append_signals_roundtrip_via_server_callbacks(starfish_client):
         payload=second_signal,
         timestamp=2000,
     )
-    items = await starfish_client.pull(_pull_path(), append_field="items")
+    items = await starfish_client.pull(_pull_path(), append_field="items", full=True)
     payloads = [
         element["data"] if isinstance(element, dict) and "data" in element else element
         for element in items
