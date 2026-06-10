@@ -17,6 +17,7 @@ import octobot_flow.logic.configuration
 import octobot_flow.logic.dsl
 import octobot_flow.repositories.community
 import octobot_flow.encryption
+
 import octobot_flow.jobs.exchange_account_job as exchange_account_job_import
 import octobot_flow.jobs.automation_runner_job as automation_runner_job_import
 
@@ -266,8 +267,15 @@ class AutomationJob:
             f"account with id: {exchange_account_details.exchange_details.exchange_account_id}"
         )
         self._logger.info(f"Initializing all required data for {exchange_summary}.")
+        to_execute_actions_ids = {
+            executable_action.id for executable_action in to_execute_actions
+        }
+        actions_for_exchange_data_fetch = to_execute_actions + [
+            action for action in self.fetched_actions
+            if action.id not in to_execute_actions_ids
+        ]
         exchange_account_job = exchange_account_job_import.ExchangeAccountJob(
-            self.automation_state, self.fetched_actions
+            self.automation_state, actions_for_exchange_data_fetch
         )
         symbols = set(
             exchange_account_job.get_all_actions_symbols(minimal_profile_data)
@@ -275,6 +283,9 @@ class AutomationJob:
                 to_execute_actions, minimal_profile_data
             )
         )
+        account_elements = self.automation_state.automation.exchange_account_elements
+        if account_elements is not None:
+            symbols.update(account_elements.get_open_orders_symbols())
         async with exchange_account_job.account_exchange_context(
             octobot_flow.logic.configuration.create_profile_data(
                 self.automation_state.exchange_account_details,

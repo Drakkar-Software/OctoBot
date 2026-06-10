@@ -384,6 +384,9 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
     def get_dsl_state(self) -> dict:
         return {}
 
+    def get_dsl_recall_reset_to_action_id(self, param_by_name: dict) -> typing.Optional[str]:
+        return None
+
     def enabled_health_check_in_config(self) -> bool:
         try:
             return self.trading_config.get(self.ENABLE_HEALTH_CHECK, False)

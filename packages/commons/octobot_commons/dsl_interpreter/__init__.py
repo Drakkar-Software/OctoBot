@@ -47,12 +47,15 @@ from octobot_commons.dsl_interpreter.operators import (
     ProcessBoundOperatorMixin,
     is_process_bound,
     NestedInterpretationMixin,
+    DynamicDependency,
+    DynamicDependenciesOperatorMixin,
 )
 from octobot_commons.dsl_interpreter.interpreter_dependency import (
     InterpreterDependency,
 )
 from octobot_commons.dsl_interpreter.parameters_util import (
     format_parameter_value,
+    get_dsl_statement_operator_name,
     resove_operator_params,
     apply_resolved_parameter_value,
     add_resolved_parameter_value,
@@ -87,6 +90,7 @@ __all__ = [
     "NestedInterpretationMixin",
     "InterpreterDependency",
     "format_parameter_value",
+    "get_dsl_statement_operator_name",
     "resove_operator_params",
     "apply_resolved_parameter_value",
     "add_resolved_parameter_value",
@@ -94,4 +98,6 @@ __all__ = [
     "has_unresolved_parameters",
     "ReCallingOperatorResult",
     "ReCallingOperatorResultKeys",
+    "DynamicDependency",
+    "DynamicDependenciesOperatorMixin",
 ]

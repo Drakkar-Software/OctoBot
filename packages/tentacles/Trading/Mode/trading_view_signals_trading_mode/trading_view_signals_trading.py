@@ -382,7 +382,10 @@ class TradingViewSignalsModeProducer(dsl_trading_mode.DSLTradingModeProducer):
         # do not register on matrix or candles channels
         return []
 
-    async def set_final_eval(self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str):
+    async def set_final_eval(
+        self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str,
+        strategy_evaluations: typing.Optional[list] = None,
+    ):
         # Ignore matrix calls
         pass
 

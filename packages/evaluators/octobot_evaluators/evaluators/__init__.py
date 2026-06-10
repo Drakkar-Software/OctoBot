@@ -33,6 +33,11 @@ from octobot_evaluators.evaluators.evaluator_factory import (
     create_evaluators,
     create_temporary_evaluator_with_local_config,
 )
+from octobot_evaluators.util.evaluator_result import EvaluatorResult
+from octobot_evaluators.evaluators.evaluator_dsl_factory import (
+    create_evaluator_operator,
+    create_all_evaluator_operators,
+)
 from octobot_evaluators.evaluators.realtime_evaluator import (
     RealTimeEvaluator,
 )
@@ -82,5 +87,8 @@ __all__ = [
     "create_and_start_all_type_evaluators",
     "create_evaluators",
     "create_temporary_evaluator_with_local_config",
+    "EvaluatorResult",
+    "create_evaluator_operator",
+    "create_all_evaluator_operators",
     "evaluator_class_str_to_matrix_type_dict",
 ]

@@ -267,6 +267,7 @@ MAX_TRADES_COUNT = int(os.getenv("MAX_TRADES_COUNT", "10000"))    # larger value
 # History
 DEFAULT_SAVED_HISTORICAL_TIMEFRAMES = [commons_enums.TimeFrames.ONE_DAY]
 HISTORICAL_CANDLES_FETCH_DEFAULT_TIMEOUT = 30
+DEFAULT_CANDLES_HISTORY_SIZE = int(os.getenv("DEFAULT_CANDLES_HISTORY_SIZE", "200"))
 MIN_CANDLES_HISTORY_SIZE = 2  # ensure that at least 2 candles are fetch to avoid issues were candles are not yet
 # available on exchange ending up in empty candles fetch
 

@@ -21,6 +21,7 @@ import typing
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
+import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_commons.list_util as list_util
 import octobot_commons.evaluators_util as evaluators_util
 import octobot_commons.signals as commons_signals
@@ -586,8 +587,19 @@ class DCATradingModeProducer(trading_modes.AbstractTradingModeProducer):
                     evaluations.append(evaluators_api.get_value(evaluated_strategy_node))
         return evaluations
 
-    async def set_final_eval(self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str):
-        evaluations = self._analyze_strategies(matrix_id, cryptocurrency, symbol)
+    async def set_final_eval(
+        self,
+        matrix_id: str,
+        cryptocurrency: str,
+        symbol: str,
+        time_frame,
+        trigger_source: str,
+        strategy_evaluations: typing.Optional[list[float]] = None,
+    ):
+        if strategy_evaluations is not None:
+            evaluations = strategy_evaluations
+        else:
+            evaluations = self._analyze_strategies(matrix_id, cryptocurrency, symbol)
         should_trigger_long = (
             self._should_trigger_init_entry()
             or self.trading_mode.trigger_mode == TriggerMode.ALWAYS_TRIGGER_LONG
@@ -1113,6 +1125,20 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
     def get_tentacle_config_traded_symbols(cls, trading_config: dict, reference_market: str) -> list[str]:
         trading_pairs = trading_config.get(cls.TRADING_PAIRS) or []
         return list_util.deduplicate([symbol for symbol in trading_pairs if symbol])
+
+    def get_time_before_next_execution(self) -> float:
+        configured_time_frames = self.trading_config.get(self.TIME_FRAMES) or []
+        if configured_time_frames:
+            sorted_time_frames = time_frame_manager.sort_time_frames(configured_time_frames)
+            minimum_time_frame = sorted_time_frames[0]
+            minimum_time_frame_minutes = commons_enums.TimeFramesMinutes[minimum_time_frame]
+            return minimum_time_frame_minutes * commons_constants.MINUTE_TO_SECONDS
+        return super().get_time_before_next_execution()
+
+    def get_dsl_recall_reset_to_action_id(self, param_by_name: dict) -> typing.Optional[str]:
+        if self.trigger_mode is not TriggerMode.MAXIMUM_EVALUATORS_SIGNALS_BASED:
+            return None
+        return param_by_name.get("dag_reset_to_action_id")
 
     @classmethod
     def get_dsl_dependencies(

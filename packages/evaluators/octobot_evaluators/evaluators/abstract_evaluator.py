@@ -110,6 +110,8 @@ class AbstractEvaluator(tentacles_management.AbstractTentacle):
         # Cleared when starting an async evaluation (using self.async_evaluation()) and set afterwards
         self._is_evaluation_completed: typing.Optional[asyncio.Event] = None
 
+        self._evaluation_push_enabled = True
+
     def post_init(self, tentacles_setup_config):
         """
         Automatically called after __init__ when post_init is True (default) in evaluator_factory
@@ -298,37 +300,38 @@ class AbstractEvaluator(tentacles_management.AbstractTentacle):
         :return: None
         """
         try:
-            if eval_note is None:
-                eval_note = self.eval_note if self.eval_note is not None else common_constants.START_PENDING_EVAL_NOTE
+            if self._evaluation_push_enabled:
+                if eval_note is None:
+                    eval_note = self.eval_note if self.eval_note is not None else common_constants.START_PENDING_EVAL_NOTE
 
-            if self.use_cache():
-                cache_client = cache_client or util.local_cache_client(self, symbol, time_frame)
-                if self.eval_note == common_constants.DO_NOT_OVERRIDE_CACHE:
-                    self.eval_note, missing = await cache_client.get_cached_value(cache_key=eval_time)
-                    cache_client.ensure_no_missing_cached_value(missing)
-                    eval_note = self.eval_note
-                elif cache_if_available and eval_note != common_constants.DO_NOT_CACHE:
-                    await cache_client.set_cached_value(eval_note, cache_key=eval_time, flush_if_necessary=True)
-            self.ensure_eval_note_is_not_expired()
-            if notify:
-                # skip warning when evaluation is not to be broadcasted (might be a simple reset)
-                self._log_on_invalid_eval_not_time(self.exchange_name, self.matrix_id, symbol, eval_time, time_frame)
-            await evaluator_channels.get_chan(constants.MATRIX_CHANNEL,
-                                              self.matrix_id).get_internal_producer().send_eval_note(
-                matrix_id=self.matrix_id,
-                evaluator_name=self.get_name(),
-                evaluator_type=self.evaluator_type.value,
-                eval_note=eval_note,
-                eval_note_type=self.get_eval_type(),
-                eval_time=eval_time,
-                eval_note_description=eval_note_description,
-                eval_note_metadata=eval_note_metadata,
-                exchange_name=self.exchange_name,
-                cryptocurrency=cryptocurrency,
-                symbol=symbol,
-                time_frame=time_frame,
-                notify=notify,
-                origin_consumer=origin_consumer)
+                if self.use_cache():
+                    cache_client = cache_client or util.local_cache_client(self, symbol, time_frame)
+                    if self.eval_note == common_constants.DO_NOT_OVERRIDE_CACHE:
+                        self.eval_note, missing = await cache_client.get_cached_value(cache_key=eval_time)
+                        cache_client.ensure_no_missing_cached_value(missing)
+                        eval_note = self.eval_note
+                    elif cache_if_available and eval_note != common_constants.DO_NOT_CACHE:
+                        await cache_client.set_cached_value(eval_note, cache_key=eval_time, flush_if_necessary=True)
+                self.ensure_eval_note_is_not_expired()
+                if notify:
+                    # skip warning when evaluation is not to be broadcasted (might be a simple reset)
+                    self._log_on_invalid_eval_not_time(self.exchange_name, self.matrix_id, symbol, eval_time, time_frame)
+                await evaluator_channels.get_chan(constants.MATRIX_CHANNEL,
+                                                  self.matrix_id).get_internal_producer().send_eval_note(
+                    matrix_id=self.matrix_id,
+                    evaluator_name=self.get_name(),
+                    evaluator_type=self.evaluator_type.value,
+                    eval_note=eval_note,
+                    eval_note_type=self.get_eval_type(),
+                    eval_time=eval_time,
+                    eval_note_description=eval_note_description,
+                    eval_note_metadata=eval_note_metadata,
+                    exchange_name=self.exchange_name,
+                    cryptocurrency=cryptocurrency,
+                    symbol=symbol,
+                    time_frame=time_frame,
+                    notify=notify,
+                    origin_consumer=origin_consumer)
         except commons_errors.NoCacheValue:
             self.logger.warning(f"Evaluation as \"{common_constants.DO_NOT_OVERRIDE_CACHE}\" "
                                 f"but the is no cache to publish an evaluation from")
@@ -432,6 +435,22 @@ class AbstractEvaluator(tentacles_management.AbstractTentacle):
         :return:
         """
         self.specific_config = {}
+
+    @classmethod
+    def get_dsl_dependencies(
+        cls,
+        evaluator_config: dict,
+        config: dict,
+        previous_state: typing.Optional[dict],
+    ) -> list:
+        """
+        Overwrite in subclasses if necessary.
+        :param evaluator_config: resolved evaluator operator parameters
+        :param config: global config
+        :param previous_state: previous DSL execution state if any
+        :return: dependencies for the DSL interpreter
+        """
+        return []
 
     @classmethod
     def get_evaluator_priority(cls, tentacles_setup_config) -> float:
@@ -596,6 +615,15 @@ class AbstractEvaluator(tentacles_management.AbstractTentacle):
                                   data):
         # Used to communicate between evaluators
         pass
+
+    @contextlib.contextmanager
+    def disabled_evaluation_push(self):
+        previous_value = self._evaluation_push_enabled
+        self._evaluation_push_enabled = False
+        try:
+            yield
+        finally:
+            self._evaluation_push_enabled = previous_value
 
     @contextlib.asynccontextmanager
     async def async_evaluation(self):

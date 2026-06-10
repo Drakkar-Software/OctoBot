@@ -8,15 +8,18 @@ Name | Type | Description | Notes
 **configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | generic_workflow | 
 **pair_settings** | [**List[MarketMakingSymbolConfiguration]**](MarketMakingSymbolConfiguration.md) |  | 
 **symbols** | **List[str]** |  | 
-**buy_orders_count** | **float** |  | 
-**percent_amount_per_buy_order** | **float** |  | 
-**profit_target_percent** | **float** |  | 
-**buy_order_price_discount_percent** | **float** |  | 
-**enable_stop_loss** | **bool** |  | [default to False]
-**stop_loss_price_discount_percent** | **float** |  | 
-**trigger_mode** | **str** |  | 
-**use_init_entry_orders** | **bool** |  | [default to True]
-**time_frames** | [**List[TimeFrame]**](TimeFrame.md) |  | 
+**entry_order_amount** | **str** | Amout to buy, can be in %t, %s, in q, in base, etc | 
+**exit_limit_orders_price_percent** | **float** |  | 
+**entry_limit_orders_price_percent** | **float** |  | 
+**secondary_entry_orders_count** | **float** |  | [default to 0]
+**secondary_entry_orders_amount** | **str** | Amout to buy, can be in %t, %s, in q, in base, etc | [default to '0%t']
+**secondary_entry_orders_price_percent** | **float** |  | [default to 10]
+**enable_stop_loss** | **bool** |  | [optional] [default to False]
+**stop_loss_price_discount_percent** | **float** |  | [optional] [default to 10]
+**trigger_mode** | **str** |  | [optional] [default to 'Maximum evaluators signals based']
+**use_init_entry_orders** | **bool** |  | [optional] [default to True]
+**max_asset_holding_percent** | **float** |  | [optional] [default to 50]
+**strategies** | [**List[StrategyEvaluatorConfiguration]**](StrategyEvaluatorConfiguration.md) |  | 
 **evaluators** | [**List[EvaluatorConfiguration]**](EvaluatorConfiguration.md) |  | 
 **coins** | [**List[IndexCoin]**](IndexCoin.md) |  | 
 **rebalance_trigger_min_percent** | **float** |  | 

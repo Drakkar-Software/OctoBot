@@ -25,6 +25,12 @@ class ChangedElements(enum.Enum):
     TRANSACTIONS = "transactions"
 
 
+class ActionDependencyParameter(enum.Enum):
+    ACTION_ID = "action_id"
+    PARAMETER = "parameter"
+    RESULT_PATH = "result_path"
+
+
 class ActionType(enum.Enum):
     APPLY_CONFIGURATION = "apply_configuration"
     UNKNOWN = "unknown"

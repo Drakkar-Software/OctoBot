@@ -34,7 +34,7 @@ from ccxt.base.types import (
 import octobot_trading.exchanges.adapters as adapters
 import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
-import octobot_trading.personal_data as personal_data
+import octobot_trading.personal_data.portfolios.portfolio_util as portfolio_util
 import octobot_trading.constants as constants
 import octobot_trading.enums as enums
 from octobot_trading.enums import ExchangeConstantsOrderColumns as ecoc
@@ -199,7 +199,7 @@ class CCXTAdapter(adapters.AbstractAdapter):
         fixed.pop(ccxt_constants.CCXT_INFO, None)
         fixed.pop(ccxt_enums.ExchangeConstantsCCXTColumns.DATETIME.value, None)
         fixed.pop(ccxt_enums.ExchangeConstantsCCXTColumns.TIMESTAMP.value, None)
-        return personal_data.parse_decimal_portfolio(fixed)
+        return portfolio_util.parse_decimal_portfolio(fixed)
 
     def fix_order_book(self, raw: CCXTOrderBook, **kwargs) -> dict:
         fixed = super().fix_order_book(raw, **kwargs)

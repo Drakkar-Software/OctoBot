@@ -128,7 +128,13 @@ def _strategy_traded_symbols(
             for pair_setting in (inner_configuration.pair_settings or [])
         ]
     if isinstance(inner_configuration, protocol_models.DCAConfiguration):
-        return list(inner_configuration.symbols or [])
+        traded_symbols = list(inner_configuration.symbols or [])
+        if traded_symbols:
+            return traded_symbols
+        evaluator_symbols: list[str] = []
+        for evaluator_configuration in inner_configuration.evaluators or []:
+            evaluator_symbols.extend(evaluator_configuration.symbols or [])
+        return list(dict.fromkeys(evaluator_symbols))
     if isinstance(inner_configuration, protocol_models.GridConfiguration):
         return [inner_configuration.symbol]
     raise node_errors.InvalidAutomationConfigurationError(

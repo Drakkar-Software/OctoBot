@@ -153,7 +153,7 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
     async def _fetch_ohlcvs(self):
         repository = self.get_exchange_repository_factory().get_ohlcv_repository()
         history_size = scripting_library.get_required_candles_count(
-            self.profile_data_provider.get_profile_data(), trading_constants.MIN_CANDLES_HISTORY_SIZE
+            self.profile_data_provider.get_profile_data(), trading_constants.DEFAULT_CANDLES_HISTORY_SIZE
         )
         symbols = self._get_traded_symbols()
         time_frames = self._get_time_frames()
@@ -259,7 +259,13 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         )
 
     def _get_time_frames(self) -> list[str]:
-        return scripting_library.get_time_frames(self.profile_data_provider.get_profile_data())
+        profile_data = self.profile_data_provider.get_profile_data()
+        time_frames = list(scripting_library.get_time_frames(profile_data))
+        for action_time_frame in octobot_flow.logic.dsl.get_actions_time_frames_dependencies(
+            self.actions, profile_data
+        ):
+            time_frames.append(action_time_frame.value)
+        return list_util.deduplicate(time_frames)
 
     def _ensure_exchange_dependencies(self):
         if not self.fetched_dependencies.fetched_exchange_data:

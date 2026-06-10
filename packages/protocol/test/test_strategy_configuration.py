@@ -84,19 +84,30 @@ class TestStrategyConfiguration(unittest.TestCase):
                 symbols = [
                     ''
                     ],
-                buy_orders_count = 1,
-                percent_amount_per_buy_order = 0,
-                profit_target_percent = 0,
-                buy_order_price_discount_percent = 0,
+                entry_order_amount = '',
+                exit_limit_orders_price_percent = 0,
+                entry_limit_orders_price_percent = 0,
+                secondary_entry_orders_count = 0,
+                secondary_entry_orders_amount = '0%t',
+                secondary_entry_orders_price_percent = 0,
                 enable_stop_loss = True,
                 stop_loss_price_discount_percent = 0,
                 trigger_mode = 'Maximum evaluators signals based',
                 use_init_entry_orders = True,
-                time_frames = [
-                    '1m'
+                max_asset_holding_percent = 0,
+                strategies = [
+                    octobot_protocol.models.strategy_evaluator_configuration.StrategyEvaluatorConfiguration(
+                        time_frames = [
+                            '1m'
+                            ], 
+                        configuration = null, )
                     ],
                 evaluators = [
                     octobot_protocol.models.evaluator_configuration.EvaluatorConfiguration(
+                        symbols = [
+                            ''
+                            ], 
+                        include_in_construction_candle = True, 
                         configuration = null, )
                     ],
                 coins = [
@@ -178,19 +189,25 @@ class TestStrategyConfiguration(unittest.TestCase):
                 symbols = [
                     ''
                     ],
-                buy_orders_count = 1,
-                percent_amount_per_buy_order = 0,
-                profit_target_percent = 0,
-                buy_order_price_discount_percent = 0,
-                enable_stop_loss = True,
-                stop_loss_price_discount_percent = 0,
-                trigger_mode = 'Maximum evaluators signals based',
-                use_init_entry_orders = True,
-                time_frames = [
-                    '1m'
+                entry_order_amount = '',
+                exit_limit_orders_price_percent = 0,
+                entry_limit_orders_price_percent = 0,
+                secondary_entry_orders_count = 0,
+                secondary_entry_orders_amount = '0%t',
+                secondary_entry_orders_price_percent = 0,
+                strategies = [
+                    octobot_protocol.models.strategy_evaluator_configuration.StrategyEvaluatorConfiguration(
+                        time_frames = [
+                            '1m'
+                            ], 
+                        configuration = null, )
                     ],
                 evaluators = [
                     octobot_protocol.models.evaluator_configuration.EvaluatorConfiguration(
+                        symbols = [
+                            ''
+                            ], 
+                        include_in_construction_candle = True, 
                         configuration = null, )
                     ],
                 coins = [

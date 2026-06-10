@@ -154,6 +154,36 @@ def is_dca_entry_baseline(buy_count: int, sell_count: int, trade_count: int) -> 
     return buy_count == 4 and sell_count == 0 and trade_count == 0
 
 
+def is_btc_only_entry_baseline(buy_count: int, sell_count: int, trade_count: int) -> bool:
+    return buy_count == 2 and sell_count == 0 and trade_count == 0
+
+
+def is_cycle2_post_fill_state(buy_count: int, sell_count: int, trade_count: int) -> bool:
+    return buy_count >= 1 and sell_count >= 1 and trade_count >= 1
+
+
+def is_cycle2_after_lowest_btc_buy_fill(open_orders: list[dict]) -> bool:
+    btc_counts = count_open_orders_for_symbol(open_orders, BTC_USDC)
+    return btc_counts["buy"] == 1
+
+
+def count_open_orders_for_symbol(open_orders: list[dict], symbol: str) -> dict[str, int]:
+    buy_orders = sorted_orders_by_side_and_symbol(
+        open_orders,
+        trading_enums_module.TradeOrderSide.BUY.value,
+        symbol,
+    )
+    sell_orders = sorted_orders_by_side_and_symbol(
+        open_orders,
+        trading_enums_module.TradeOrderSide.SELL.value,
+        symbol,
+    )
+    return {
+        "buy": len(buy_orders),
+        "sell": len(sell_orders),
+    }
+
+
 def is_dca_after_symbol_fill_progress(
     buy_count: int,
     sell_count: int,
@@ -196,16 +226,91 @@ def dca_configuration_for_functional_no_evaluator() -> protocol_models_module.DC
     return protocol_models_module.DCAConfiguration(
         configuration_type=protocol_models_module.ActionConfigurationType.DCA,
         symbols=list(TRADED_SYMBOLS),
-        buy_orders_count=2,
-        percent_amount_per_buy_order=8,
-        profit_target_percent=1.75,
-        buy_order_price_discount_percent=1.5,
+        entry_order_amount="8%t",
+        exit_limit_orders_price_percent=1.75,
+        entry_limit_orders_price_percent=1.5,
+        secondary_entry_orders_count=1,
+        secondary_entry_orders_amount="7%t",
+        secondary_entry_orders_price_percent=1.0,
         enable_stop_loss=False,
         stop_loss_price_discount_percent=0,
         trigger_mode="Always trigger long",
         use_init_entry_orders=True,
-        time_frames=[],
+        strategies=[],
         evaluators=[],
+    )
+
+
+FUNCTIONAL_MAXIMUM_EVALUATORS_TIME_FRAME = "1h"
+
+_RSI_EVALUATOR_FUNCTIONAL_CONFIG = protocol_models_module.RSIMomentumEvaluatorConfiguration(
+    configuration_type=protocol_models_module.EvaluatorType.RSIMOMENTUMEVALUATOR,
+    period_length=12,
+    long_threshold=50,
+    short_threshold=70,
+)
+_EMA_EVALUATOR_FUNCTIONAL_CONFIG = protocol_models_module.EMAMomentumEvaluatorConfiguration(
+    configuration_type=protocol_models_module.EvaluatorType.EMAMOMENTUMEVALUATOR,
+    period_length=10,
+    price_threshold_percent=1.0,
+    reverse_signal=False,
+)
+_STRATEGY_EVALUATOR_FUNCTIONAL_CONFIG = protocol_models_module.StrategyEvaluatorConfiguration(
+    time_frames=[FUNCTIONAL_MAXIMUM_EVALUATORS_TIME_FRAME],
+    configuration=protocol_models_module.StrategyEvaluatorConfigurationConfiguration(
+        protocol_models_module.SimpleStrategyEvaluatorConfiguration(
+            configuration_type=protocol_models_module.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR,
+        )
+    ),
+)
+
+
+def dca_configuration_for_functional_maximum_evaluators() -> protocol_models_module.DCAConfiguration:
+    return protocol_models_module.DCAConfiguration(
+        configuration_type=protocol_models_module.ActionConfigurationType.DCA,
+        symbols=[],
+        entry_order_amount="8%t",
+        exit_limit_orders_price_percent=1.75,
+        entry_limit_orders_price_percent=1.5,
+        secondary_entry_orders_count=1,
+        secondary_entry_orders_amount="7%t",
+        secondary_entry_orders_price_percent=1.0,
+        enable_stop_loss=False,
+        stop_loss_price_discount_percent=0,
+        trigger_mode="Maximum evaluators signals based",
+        use_init_entry_orders=False,
+        strategies=[_STRATEGY_EVALUATOR_FUNCTIONAL_CONFIG],
+        evaluators=[
+            protocol_models_module.EvaluatorConfiguration(
+                symbols=list(TRADED_SYMBOLS),
+                include_in_construction_candle=False,
+                configuration=protocol_models_module.EvaluatorConfigurationConfiguration(
+                    _RSI_EVALUATOR_FUNCTIONAL_CONFIG,
+                ),
+            ),
+            protocol_models_module.EvaluatorConfiguration(
+                symbols=list(TRADED_SYMBOLS),
+                include_in_construction_candle=False,
+                configuration=protocol_models_module.EvaluatorConfigurationConfiguration(
+                    _EMA_EVALUATOR_FUNCTIONAL_CONFIG,
+                ),
+            ),
+        ],
+    )
+
+
+def seeded_dca_strategy_for_functional_wallet_with_evaluators(
+    *,
+    stored_strategy_id: str,
+) -> protocol_models_module.Strategy:
+    return protocol_models_module.Strategy(
+        id=stored_strategy_id,
+        version=workflow_common_module.SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
+        name="Simulator DCA maximum-evaluators automation strategy",
+        reference_market="USDC",
+        configuration=protocol_models_module.StrategyConfiguration(
+            dca_configuration_for_functional_maximum_evaluators(),
+        ),
     )
 
 

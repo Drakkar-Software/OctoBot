@@ -33,7 +33,8 @@ class DSLTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
 
 class DSLTradingModeProducer(trading_modes.AbstractTradingModeProducer):
     async def set_final_eval(
-        self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str
+        self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str,
+        strategy_evaluations: typing.Optional[list] = None,
     ):
         self.logger.info(
             f"Executing DSL script trigger by {matrix_id=}, {cryptocurrency=}, {symbol=}, {time_frame=}, {trigger_source=}"

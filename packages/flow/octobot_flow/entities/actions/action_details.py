@@ -108,6 +108,9 @@ class AbstractActionDetails(octobot_commons.dataclasses.FlexibleDataclass):
         self.error_message = None
         self.executed_at = None
 
+    def can_be_reset(self) -> bool:
+        return True
+
     def update_configuration(self, action: "AbstractActionDetails"):
         raise NotImplementedError("update_configuration is not implemented")
 
@@ -166,6 +169,10 @@ class ConfiguredActionDetails(AbstractActionDetails):
         self.action = action.action
         self.config = dict(action.config) if action.config is not None else None
         self.result = action.result
+
+    def can_be_reset(self) -> bool:
+        # apply_configuration action cannot be reset
+        return self.action != octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value
 
 
 def parse_action_details(action_details: dict) -> AbstractActionDetails:

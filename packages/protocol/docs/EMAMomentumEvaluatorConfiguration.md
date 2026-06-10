@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **configuration_type** | [**EvaluatorType**](EvaluatorType.md) | EMAMomentumEvaluator | 
 **period_length** | **float** |  | 
 **price_threshold_percent** | **float** |  | 
-**reverse_signal** | **bool** |  | [default to False]
+**reverse_signal** | **bool** | When true, emits a short signal when the current price is bellow the EMA. | [default to False]
 
 ## Example
 

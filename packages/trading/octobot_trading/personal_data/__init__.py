@@ -57,6 +57,7 @@ from octobot_trading.personal_data.orders import (
     get_short_order_summary,
     get_enriched_orders_by_exchange_id,
     get_symbol_count,
+    get_symbols_from_orders,
     to_protocol_order,
     exchange_columns_dict_from_protocol_order,
     apply_order_storage_details_if_any,
@@ -239,6 +240,8 @@ from octobot_trading.personal_data.trades import (
     compute_win_rate,
     aggregate_trades_by_exchange_order_id,
     get_real_or_estimated_trade_fee,
+    trade_identity_key,
+    merge_trades_deduped,
 )
 from octobot_trading.personal_data import transactions
 from octobot_trading.personal_data.transactions import (
@@ -332,6 +335,7 @@ __all__ = [
     "get_short_order_summary",
     "get_enriched_orders_by_exchange_id",
     "get_symbol_count",
+    "get_symbols_from_orders",
     "to_protocol_order",
     "exchange_columns_dict_from_protocol_order",
     "apply_order_storage_details_if_any",
@@ -484,6 +488,8 @@ __all__ = [
     "compute_win_rate",
     "aggregate_trades_by_exchange_order_id",
     "get_real_or_estimated_trade_fee",
+    "trade_identity_key",
+    "merge_trades_deduped",
     "ExchangePersonalData",
     "get_asset_price_from_converter_or_tickers",
     "resolve_sub_portfolios",

@@ -35,10 +35,17 @@ class TestEvaluatorConfiguration(unittest.TestCase):
         model = EvaluatorConfiguration()
         if include_optional:
             return EvaluatorConfiguration(
+                symbols = [
+                    ''
+                    ],
+                include_in_construction_candle = True,
                 configuration = None
             )
         else:
             return EvaluatorConfiguration(
+                symbols = [
+                    ''
+                    ],
                 configuration = None,
         )
         """

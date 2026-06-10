@@ -272,6 +272,7 @@ async def exchange_manager_from_exchange_data(
     profile_data: commons_profiles.ProfileData,
     tentacles_setup_config: tentacles_setup_configuration.TentaclesSetupConfiguration,
     price_fallback: typing.Optional[typing.Callable[["octobot_trading.exchanges.ExchangeData", str], float]] = None,
+    matrix_id: typing.Optional[str] = None,
 ) -> typing.AsyncGenerator[
     typing.Optional["octobot_trading.exchanges.exchange_manager.ExchangeManager"],
     None
@@ -287,6 +288,8 @@ async def exchange_manager_from_exchange_data(
             authentication_required,
             tentacles_setup_config,
         )
+        if matrix_id is not None:
+            builder.has_matrix(matrix_id)
         exchange_config_by_exchange = profile_data.get_config_by_tentacle()
         exchange_config = builder.config[common_constants.CONFIG_EXCHANGES][exchange_data.exchange_details.name]
         ignore_config = (

@@ -139,6 +139,18 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
 
         match inner_configuration:
             case protocol_models.DCAConfiguration() as dca_configuration:
+                if dca_configuration.evaluators:
+                    if not action_details_factory.is_maximum_evaluators_dca_with_evaluators(
+                        dca_configuration
+                    ):
+                        raise node_errors.InvalidAutomationConfigurationError(
+                            "DCA configuration with evaluators requires trigger_mode "
+                            "'Maximum evaluators signals based' and exactly one strategy evaluator."
+                        )
+                    return action_details_factory.maximum_evaluators_dca_automation_actions_factory(
+                        init_action,
+                        dca_configuration,
+                    )
                 return [init_action, action_details_factory.dca_action_factory(init_action, dca_configuration)]
             case protocol_models.GenericProcessConfiguration():
                 raise node_errors.UnsupportedAutomationConfigurationTypeError(

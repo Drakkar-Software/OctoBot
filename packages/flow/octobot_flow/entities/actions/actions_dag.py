@@ -1,37 +1,10 @@
 import dataclasses
-import typing
 
-import octobot_commons.dsl_interpreter
 import octobot_commons.dataclasses
 
 import octobot_flow.entities.actions.action_details as action_details
-import octobot_flow.enums
+import octobot_flow.entities.actions.actions_dependencies as actions_dependencies
 import octobot_flow.errors
-
-
-def _navigate_dict_path(root: typing.Any, path: list[str]) -> typing.Any:
-    cursor = root
-    for i, key in enumerate(path):
-        if isinstance(cursor, dict):
-            try:
-                cursor = cursor[key]
-            except KeyError as err:
-                raise octobot_flow.errors.ActionDependencyError(
-                    f"Dependency result has no path {path[: i + 1]!r} (missing key: {key} in {list(cursor)})"
-                ) from err
-        elif isinstance(cursor, list) and key.isdigit():
-            idx = int(key)
-            if idx >= len(cursor):
-                raise octobot_flow.errors.ActionDependencyError(
-                    f"Dependency result path {path[:i]!r} list index {idx!r} out of range (len={len(cursor)})"
-                )
-            cursor = cursor[idx]
-        else:
-            raise octobot_flow.errors.ActionDependencyError(
-                f"Dependency result path {path[:i]!r} is not a dict or list (got {type(cursor).__name__}), "
-                f"cannot apply segment {key!r}"
-            )
-    return cursor
 
 
 @dataclasses.dataclass
@@ -64,10 +37,11 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
         """Return actions that can be executed: not yet executed, and either have no
         dependencies or all their dependencies have results (executed_at is set).
         """
+        dependencies_resolver = actions_dependencies.ActionsDependenciesResolver(self.get_actions_by_id())
         return [
             action 
             for action in self.actions
-            if not action.is_completed() and self.filled_all_dependencies(action)
+            if not action.is_completed() and dependencies_resolver.filled_all_dependencies(action)
         ]
 
     def completed_all_actions(self) -> bool:
@@ -80,30 +54,6 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
             if not action.is_completed()
         ]
 
-    def _get_dependents_map(self) -> dict[str, set[str]]:
-        """Return a map: action_id -> set of action_ids that directly depend on it."""
-        dependents: dict[str, set[str]] = {action.id: set() for action in self.actions}
-        for action in self.actions:
-            for dep in action.dependencies:
-                dependents.setdefault(dep.action_id, set()).add(action.id)
-        return dependents
-
-    def _get_transitive_dependents(self, action_id: str, dependents_map: dict[str, set[str]]) -> set[str]:
-        """Return all action_ids that depend on the given action_id (directly or indirectly)."""
-        result: set[str] = set()
-        to_visit = [action_id]
-        visited: set[str] = set()
-        while to_visit:
-            current = to_visit.pop()
-            if current in visited:
-                continue
-            visited.add(current)
-            for dependent_id in dependents_map.get(current, set()):
-                if dependent_id not in visited:
-                    result.add(dependent_id)
-                    to_visit.append(dependent_id)
-        return result
-
     def reset_to(self, action_id: str):
         """
         Reset the action identified by action_id and all DAG actions that depend
@@ -114,22 +64,13 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
             raise octobot_flow.errors.ActionDependencyNotFoundError(
                 f"Action {action_id} not found in DAG"
             )
-        dependents_map = self._get_dependents_map()
-        to_reset = self._get_transitive_dependents(action_id, dependents_map) | {action_id}
+        dependencies_resolver = actions_dependencies.ActionsDependenciesResolver(actions_by_id)
+        to_reset = dependencies_resolver.get_transitive_dependents(action_id)
+        if actions_by_id[action_id].can_be_reset():
+            # also reset the action itself
+            to_reset.add(action_id)
         for aid in to_reset:
             actions_by_id[aid].reset()
-
-    def filled_all_dependencies(self, action: action_details.AbstractActionDetails) -> bool:
-        try:
-            actions_by_id = self.get_actions_by_id()
-            return all(
-                actions_by_id[dep.action_id].is_completed()
-                for dep in action.dependencies
-            )
-        except KeyError as err:
-            raise octobot_flow.errors.ActionDependencyNotFoundError(
-                f"Action {action.id} has dependencies with unknown action IDs: {err}"
-            ) from err
 
     def resolve_dsl_scripts(
         self, actions: list[action_details.AbstractActionDetails]
@@ -139,48 +80,10 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
         If the DSL script is not set, return None.
         """
         actions_by_id = self.get_actions_by_id()
+        dependencies_resolver = actions_dependencies.ActionsDependenciesResolver(actions_by_id)
         for action in actions:
             if isinstance(action, action_details.DSLScriptActionDetails):
-                self._resolve_dsl_script(action, actions_by_id)
-
-    def _resolve_dsl_script(
-        self,
-        action: action_details.DSLScriptActionDetails,
-        actions_by_id: dict[str, action_details.AbstractActionDetails]
-    ):
-        resolved_dsl_script = str(action.dsl_script)
-        for dependency in action.dependencies:
-            dependency_action = actions_by_id[dependency.action_id]
-            if dependency_action.error_status != octobot_flow.enums.ActionErrorStatus.NO_ERROR.value:
-                raise octobot_flow.errors.ActionDependencyError(
-                    f"Dependency {dependency.parameter} returned an error: {dependency_action.error_status}"
-                )
-            if not dependency.parameter:
-                # no parameter name: this dependency is not a parameter: it just needs to have been executed
-                continue
-            value = dependency_action.result
-            if dependency.result_path:
-                value = _navigate_dict_path(value, dependency.result_path)
-            resolved_dsl_script = octobot_commons.dsl_interpreter.apply_resolved_parameter_value(
-                resolved_dsl_script, dependency.parameter, value
-            )
-        reschedule_params = action.get_rescheduled_parameters()
-        for rescheduled_parameter, rescheduled_value in reschedule_params.items():
-            if script_override := octobot_commons.dsl_interpreter.ReCallingOperatorResult.get_script_override(rescheduled_value):
-                # the script override is the new DSL script to execute for this action call
-                resolved_dsl_script = script_override
-        for rescheduled_parameter, rescheduled_value in reschedule_params.items():
-            operator = octobot_commons.dsl_interpreter.ReCallingOperatorResult.get_keyword(
-                rescheduled_value
-            )
-            if not operator:
-                raise octobot_flow.errors.ActionDependencyError(
-                    f"Dependency {rescheduled_parameter} returned a re-calling operator result with no keyword value: {rescheduled_value}"
-                )
-            resolved_dsl_script = octobot_commons.dsl_interpreter.add_resolved_parameter_value(
-                resolved_dsl_script, operator, rescheduled_parameter, rescheduled_value
-            )
-        action.resolved_dsl_script = resolved_dsl_script
+                dependencies_resolver.resolve_dsl_script(action)
 
     def __repr__(self) -> str:
         return (

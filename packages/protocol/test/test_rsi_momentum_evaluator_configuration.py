@@ -38,7 +38,8 @@ class TestRSIMomentumEvaluatorConfiguration(unittest.TestCase):
                 configuration_type = 'RSIMomentumEvaluator',
                 period_length = 1,
                 short_threshold = 0,
-                long_threshold = 0
+                long_threshold = 0,
+                trend_change_identifier = True
             )
         else:
             return RSIMomentumEvaluatorConfiguration(

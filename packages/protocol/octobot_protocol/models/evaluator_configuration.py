@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.evaluator_configuration_configuration import EvaluatorConfigurationConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,8 +28,10 @@ class EvaluatorConfiguration(BaseModel):
     """
     EvaluatorConfiguration
     """ # noqa: E501
+    symbols: List[StrictStr]
+    include_in_construction_candle: Optional[StrictBool] = False
     configuration: EvaluatorConfigurationConfiguration
-    __properties: ClassVar[List[str]] = ["configuration"]
+    __properties: ClassVar[List[str]] = ["symbols", "include_in_construction_candle", "configuration"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -85,6 +87,8 @@ class EvaluatorConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "symbols": obj.get("symbols"),
+            "include_in_construction_candle": obj.get("include_in_construction_candle") if obj.get("include_in_construction_candle") is not None else False,
             "configuration": EvaluatorConfigurationConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         })
         return _obj

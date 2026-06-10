@@ -17,7 +17,9 @@ import dataclasses
 import typing
 
 import octobot_commons.dsl_interpreter as dsl_interpreter
-import octobot_trading.exchanges
+
+if typing.TYPE_CHECKING:
+    import octobot_trading.exchanges
 
 
 @dataclasses.dataclass
@@ -27,7 +29,8 @@ class SymbolDependency(dsl_interpreter.InterpreterDependency):
     time_frame: typing.Optional[str] = None
 
     def resolve_symbol(
-        self, exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager]
+        self,
+        exchange_manager: typing.Optional["octobot_trading.exchanges.ExchangeManager"],
     ):
         if exchange_manager is not None:
             unified_symbol = exchange_manager.get_exchange_symbol(self.symbol, error_on_missing=False)
@@ -49,7 +52,7 @@ class CopyTradingDependency(dsl_interpreter.InterpreterDependency):
 
 async def resolve_missing_dependencies(
     dependencies: typing.Iterable[SymbolDependency],
-    exchange_manager: octobot_trading.exchanges.ExchangeManager,
+    exchange_manager: "octobot_trading.exchanges.ExchangeManager",
 ) -> None:
     unresolved_dependencies = set(
         dependency
@@ -73,7 +76,7 @@ async def resolve_missing_dependencies(
 
 async def resolve_missing_dependencies_if_required(
     dependencies: typing.Iterable[SymbolDependency],
-    exchange_manager: octobot_trading.exchanges.ExchangeManager,
+    exchange_manager: "octobot_trading.exchanges.ExchangeManager",
 ) -> None:
     if not exchange_manager.exchange.supports_all_symbols_listing():
         await resolve_missing_dependencies(dependencies, exchange_manager)

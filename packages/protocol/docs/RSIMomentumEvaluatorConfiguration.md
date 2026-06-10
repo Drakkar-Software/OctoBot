@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **period_length** | **float** |  | 
 **short_threshold** | **float** |  | 
 **long_threshold** | **float** |  | 
+**trend_change_identifier** | **bool** |  | [optional] [default to False]
 
 ## Example
 

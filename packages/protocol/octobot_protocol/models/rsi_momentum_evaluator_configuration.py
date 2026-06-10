@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Any, ClassVar, Dict, List, Union
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from octobot_protocol.models.evaluator_type import EvaluatorType
 from typing import Optional, Set
@@ -33,7 +33,8 @@ class RSIMomentumEvaluatorConfiguration(BaseModel):
     period_length: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
     short_threshold: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
     long_threshold: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    __properties: ClassVar[List[str]] = ["configuration_type", "period_length", "short_threshold", "long_threshold"]
+    trend_change_identifier: Optional[StrictBool] = False
+    __properties: ClassVar[List[str]] = ["configuration_type", "period_length", "short_threshold", "long_threshold", "trend_change_identifier"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -89,7 +90,8 @@ class RSIMomentumEvaluatorConfiguration(BaseModel):
             "configuration_type": obj.get("configuration_type"),
             "period_length": obj.get("period_length"),
             "short_threshold": obj.get("short_threshold"),
-            "long_threshold": obj.get("long_threshold")
+            "long_threshold": obj.get("long_threshold"),
+            "trend_change_identifier": obj.get("trend_change_identifier") if obj.get("trend_change_identifier") is not None else False
         })
         return _obj
 

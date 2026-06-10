@@ -1446,6 +1446,10 @@
             "type": "number",
             "minimum": 0,
             "maximum": 100
+          },
+          "trend_change_identifier": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -1474,6 +1478,7 @@
           },
           "reverse_signal": {
             "type": "boolean",
+            "description": "When true, emits a short signal when the current price is bellow the EMA.",
             "default": false
           }
         }
@@ -1482,9 +1487,20 @@
         "description": "EvaluatorConfiguration",
         "type": "object",
         "required": [
+          "symbols",
           "configuration"
         ],
         "properties": {
+          "symbols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "include_in_construction_candle": {
+            "type": "boolean",
+            "default": false
+          },
           "configuration": {
             "oneOf": [
               {
@@ -1504,21 +1520,110 @@
           }
         }
       },
+      "StrategyEvaluatorType": {
+        "description": "StrategyEvaluatorType",
+        "type": "string",
+        "enum": [
+          "SimpleStrategyEvaluator",
+          "TechnicalAnalysisStrategyEvaluator"
+        ]
+      },
+      "TimeFrameAndWeight": {
+        "description": "TimeFrameAndWeight",
+        "type": "object",
+        "required": [
+          "time_frame",
+          "weight"
+        ],
+        "properties": {
+          "time_frame": {
+            "$ref": "#/components/schemas/TimeFrame"
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "TechnicalAnalysisStrategyEvaluatorConfiguration": {
+        "description": "TechnicalAnalysisStrategyEvaluatorConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "time_frames_to_weight"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/StrategyEvaluatorType",
+            "description": "TechnicalAnalysisStrategyEvaluator"
+          },
+          "time_frames_to_weight": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeFrameAndWeight"
+            }
+          }
+        }
+      },
+      "SimpleStrategyEvaluatorConfiguration": {
+        "description": "SimpleStrategyEvaluatorConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/StrategyEvaluatorType",
+            "description": "SimpleStrategyEvaluator"
+          }
+        }
+      },
+      "StrategyEvaluatorConfiguration": {
+        "description": "StrategyEvaluatorConfiguration",
+        "type": "object",
+        "required": [
+          "time_frames",
+          "configuration"
+        ],
+        "properties": {
+          "time_frames": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeFrame"
+            }
+          },
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimpleStrategyEvaluatorConfiguration"
+              },
+              {
+                "$ref": "#/components/schemas/TechnicalAnalysisStrategyEvaluatorConfiguration"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "configuration_type",
+              "mapping": {
+                "SimpleStrategyEvaluator": "#/components/schemas/SimpleStrategyEvaluatorConfiguration",
+                "TechnicalAnalysisStrategyEvaluator": "#/components/schemas/TechnicalAnalysisStrategyEvaluatorConfiguration"
+              }
+            }
+          }
+        }
+      },
       "DCAConfiguration": {
         "description": "DCAConfiguration",
         "type": "object",
         "required": [
           "configuration_type",
           "symbols",
-          "buy_orders_count",
-          "percent_amount_per_buy_order",
-          "profit_target_percent",
-          "buy_order_price_discount_percent",
-          "enable_stop_loss",
-          "stop_loss_price_discount_percent",
-          "trigger_mode",
-          "use_init_entry_orders",
-          "time_frames",
+          "entry_order_amount",
+          "exit_limit_orders_price_percent",
+          "entry_limit_orders_price_percent",
+          "secondary_entry_orders_count",
+          "secondary_entry_orders_amount",
+          "secondary_entry_orders_price_percent",
+          "strategies",
           "evaluators"
         ],
         "properties": {
@@ -1532,23 +1637,34 @@
               "type": "string"
             }
           },
-          "buy_orders_count": {
-            "type": "number",
-            "minimum": 1
+          "entry_order_amount": {
+            "type": "string",
+            "description": "Amout to buy, can be in %t, %s, in q, in base, etc"
           },
-          "percent_amount_per_buy_order": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "profit_target_percent": {
+          "exit_limit_orders_price_percent": {
             "type": "number",
             "minimum": 0
           },
-          "buy_order_price_discount_percent": {
+          "entry_limit_orders_price_percent": {
             "type": "number",
             "minimum": 0,
             "maximum": 100
+          },
+          "secondary_entry_orders_count": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "secondary_entry_orders_amount": {
+            "type": "string",
+            "description": "Amout to buy, can be in %t, %s, in q, in base, etc",
+            "default": "0%t"
+          },
+          "secondary_entry_orders_price_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 10
           },
           "enable_stop_loss": {
             "type": "boolean",
@@ -1557,7 +1673,8 @@
           "stop_loss_price_discount_percent": {
             "type": "number",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "default": 10
           },
           "trigger_mode": {
             "type": "string",
@@ -1565,16 +1682,23 @@
               "Maximum evaluators signals based",
               "Time based",
               "Always trigger long"
-            ]
+            ],
+            "default": "Maximum evaluators signals based"
           },
           "use_init_entry_orders": {
             "type": "boolean",
             "default": true
           },
-          "time_frames": {
+          "max_asset_holding_percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 50
+          },
+          "strategies":{
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TimeFrame"
+              "$ref": "#/components/schemas/StrategyEvaluatorConfiguration"
             }
           },
           "evaluators": {

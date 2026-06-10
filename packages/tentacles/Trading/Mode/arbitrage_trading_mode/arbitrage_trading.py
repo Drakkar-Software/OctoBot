@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 import decimal
+import typing
 
 import async_channel.constants as channel_constants
 import async_channel.channels as channel_instances
@@ -577,7 +578,10 @@ class ArbitrageModeProducer(trading_modes.AbstractTradingModeProducer):
             f"{registered_exchange_name} exchange as price data feed reference to identify arbitrage opportunities."
         )
 
-    async def set_final_eval(self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str):
+    async def set_final_eval(
+        self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str,
+        strategy_evaluations: typing.Optional[list] = None,
+    ):
         # Ignore matrix calls
         pass
 

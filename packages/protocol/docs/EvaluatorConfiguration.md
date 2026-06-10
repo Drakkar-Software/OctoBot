@@ -6,6 +6,8 @@ EvaluatorConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**symbols** | **List[str]** |  | 
+**include_in_construction_candle** | **bool** |  | [optional] [default to False]
 **configuration** | [**EvaluatorConfigurationConfiguration**](EvaluatorConfigurationConfiguration.md) |  | 
 
 ## Example

@@ -35,7 +35,10 @@ def are_all_actions_process_bound_only(
             dsl_executor_instance._interpreter.prepare(action.resolved_dsl_script or action.dsl_script)
         except commons_errors.DSLInterpreterError as err:
             common_logging.get_logger(__name__).info(
-                "Process-bound check: DSL script skipped for action %s: %s", action.id, action.dsl_script, err
+                "Process-bound check: DSL script skipped for action %s (%s): %s",
+                action.id,
+                action.dsl_script,
+                err,
             )
             continue
         top_operator = dsl_executor_instance.get_top_operator()

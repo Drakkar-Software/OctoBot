@@ -213,6 +213,7 @@ class ExchangeManager(util.Initializable):
         """
         await self.trader.initialize()
         self.exchange_symbols_data.initialize_from_exchange_data(exchange_data, price_by_symbol)
+        await self.exchange_symbols_data.initialize_candles_from_exchange_data(exchange_data)
         self.exchange_personal_data.portfolio_manager.portfolio_value_holder.initialize_from_exchange_data(
             exchange_data, price_by_symbol
         )

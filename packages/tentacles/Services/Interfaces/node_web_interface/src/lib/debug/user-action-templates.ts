@@ -6,6 +6,7 @@ import type {
   AutomationConfiguration,
   AutomationSignalType,
   CopyConfiguration,
+  DCAConfiguration,
   CreateAccountAuthConfiguration,
   CreateAccountConfiguration,
   CreateAutomationConfiguration,
@@ -20,16 +21,23 @@ import type {
   EditAutomationConfiguration,
   EditExchangeConfigConfiguration,
   EditStrategyConfiguration,
+  EvaluatorConfiguration,
+  EvaluatorConfigurationConfiguration,
+  EMAMomentumEvaluatorConfiguration,
   ExchangeAccount,
   ExchangeConfig,
   GenericProcessConfiguration,
   GridConfiguration,
   IndexConfiguration,
   RefreshAccountsConfiguration,
+  RSIMomentumEvaluatorConfiguration,
   SignalAutomationConfiguration,
+  SimpleStrategyEvaluatorConfiguration,
   StopAutomationConfiguration,
   Strategy,
   StrategyConfiguration,
+  StrategyEvaluatorConfiguration,
+  StrategyEvaluatorConfigurationConfiguration,
   StrategyReference,
   UserAction,
   UserActionConfiguration,
@@ -43,6 +51,7 @@ export type UserActionTemplateKey =
   | "strategy_create_grid"
   | "strategy_create_index"
   | "strategy_create_copy"
+  | "strategy_create_dca"
 
 export const DEFAULT_USER_ACTION_TEMPLATE_KEY: UserActionTemplateKey =
   DEFAULT_USER_ACTION_TYPE
@@ -69,6 +78,10 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   { value: "strategy_create_grid", label: "Strategy create (grid)" },
   { value: "strategy_create_index", label: "Strategy create (index)" },
   { value: "strategy_create_copy", label: "Strategy create (copy trading)" },
+  {
+    value: "strategy_create_dca",
+    label: "Strategy create (DCA, 2 evaluators)",
+  },
   { value: "strategy_edit", label: "Strategy edit" },
   { value: "strategy_delete", label: "Strategy delete" },
 ]
@@ -112,6 +125,7 @@ type StrategyConfigurationVariant =
   | GridConfiguration
   | IndexConfiguration
   | CopyConfiguration
+  | DCAConfiguration
   | GenericProcessConfiguration
 
 function assertNever(value: never): never {
@@ -123,6 +137,22 @@ function asStrategyConfiguration(
   configuration: StrategyConfigurationVariant,
 ): StrategyConfiguration {
   return configuration as StrategyConfiguration
+}
+
+/** OpenAPI oneOf bridge: runtime JSON uses flat evaluator configuration objects. */
+function asEvaluatorConfigurationConfiguration(
+  configuration:
+    | RSIMomentumEvaluatorConfiguration
+    | EMAMomentumEvaluatorConfiguration,
+): EvaluatorConfigurationConfiguration {
+  return configuration as EvaluatorConfigurationConfiguration
+}
+
+/** OpenAPI oneOf bridge: runtime JSON uses flat strategy evaluator configuration objects. */
+function asStrategyEvaluatorConfigurationConfiguration(
+  configuration: SimpleStrategyEvaluatorConfiguration,
+): StrategyEvaluatorConfigurationConfiguration {
+  return configuration as StrategyEvaluatorConfigurationConfiguration
 }
 
 /** OpenAPI oneOf bridge: runtime JSON uses flat exchange account specifics. */
@@ -236,12 +266,13 @@ function sampleStrategyShell(
   id: string,
   name: string,
   configuration: StrategyConfigurationVariant,
+  referenceMarket = "USDT",
 ): Strategy {
   return {
     id,
     version: "1.0.0",
     name,
-    reference_market: "USDT",
+    reference_market: referenceMarket,
     created_at: currentIsoTimestamp(),
     updated_at: currentIsoTimestamp(),
     configuration: asStrategyConfiguration(configuration),
@@ -286,6 +317,60 @@ function sampleCopyStrategyConfiguration(id = "<strategy-id>"): Strategy {
   } satisfies CopyConfiguration)
 }
 
+const DCA_TRADED_SYMBOLS = ["BTC/USDC", "ETH/USDC"] as const
+
+function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
+  return sampleStrategyShell(
+    id,
+    "My DCA strategy (2 evaluators)",
+    {
+      configuration_type: "dca",
+      symbols: [],
+      entry_order_amount: "8%t",
+      exit_limit_orders_price_percent: 1.75,
+      entry_limit_orders_price_percent: 1.5,
+      secondary_entry_orders_count: 1,
+      secondary_entry_orders_amount: "7%t",
+      secondary_entry_orders_price_percent: 1.0,
+      enable_stop_loss: false,
+      stop_loss_price_discount_percent: 0,
+      trigger_mode: "Maximum evaluators signals based",
+      use_init_entry_orders: false,
+      strategies: [
+        {
+          time_frames: ["1h"],
+          configuration: asStrategyEvaluatorConfigurationConfiguration({
+            configuration_type: "SimpleStrategyEvaluator",
+          } satisfies SimpleStrategyEvaluatorConfiguration),
+        } satisfies StrategyEvaluatorConfiguration,
+      ],
+      evaluators: [
+        {
+          symbols: [...DCA_TRADED_SYMBOLS],
+          include_in_construction_candle: false,
+          configuration: asEvaluatorConfigurationConfiguration({
+            configuration_type: "RSIMomentumEvaluator",
+            period_length: 12,
+            long_threshold: 50,
+            short_threshold: 70,
+          } satisfies RSIMomentumEvaluatorConfiguration),
+        } satisfies EvaluatorConfiguration,
+        {
+          symbols: [...DCA_TRADED_SYMBOLS],
+          include_in_construction_candle: false,
+          configuration: asEvaluatorConfigurationConfiguration({
+            configuration_type: "EMAMomentumEvaluator",
+            period_length: 10,
+            price_threshold_percent: 1.0,
+            reverse_signal: false,
+          } satisfies EMAMomentumEvaluatorConfiguration),
+        } satisfies EvaluatorConfiguration,
+      ],
+    } satisfies DCAConfiguration,
+    "USDC",
+  )
+}
+
 export function buildUserActionTemplate(
   templateKey: UserActionTemplateKey,
 ): UserAction {
@@ -315,6 +400,16 @@ export function buildUserActionTemplate(
       {
         action_type: "strategy_create",
         configuration: sampleCopyStrategyConfiguration(newResourceId()),
+      } satisfies CreateStrategyConfiguration,
+    )
+  }
+
+  if (templateKey === "strategy_create_dca") {
+    return userAction(
+      "ua-manual-strategy_create_dca",
+      {
+        action_type: "strategy_create",
+        configuration: sampleDcaStrategyConfiguration(newResourceId()),
       } satisfies CreateStrategyConfiguration,
     )
   }

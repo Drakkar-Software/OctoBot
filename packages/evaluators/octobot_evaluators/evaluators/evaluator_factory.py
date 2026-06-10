@@ -18,6 +18,7 @@ import typing
 
 import octobot_commons.tentacles_management as tentacles_management
 import octobot_commons.constants as common_constants
+import octobot_commons.enums as common_enums
 import octobot_commons.logging as logging
 
 import octobot_evaluators.api as api
@@ -107,6 +108,54 @@ def _get_symbols_to_create(evaluator_class, symbols_by_crypto_currencies, crypto
 
 def _get_time_frames_to_create(evaluator_class, time_frames):
     return time_frames if time_frames and not evaluator_class.get_is_time_frame_wildcard() else [None]
+
+
+def _get_all_symbols_by_crypto_currencies(
+    cryptocurrency: typing.Optional[str],
+    symbol: typing.Optional[str],
+) -> dict:
+    if cryptocurrency is None or symbol is None:
+        return {}
+    return {cryptocurrency: {symbol}}
+
+
+def _parse_time_frame(time_frame):
+    if time_frame is None:
+        return None
+    if isinstance(time_frame, common_enums.TimeFrames):
+        return time_frame
+    return common_enums.TimeFrames(time_frame)
+
+
+async def create_dsl_evaluator(
+    evaluator_class,
+    tentacles_setup_config: object,
+    matrix_id: str,
+    exchange_name: str,
+    evaluator_configuration: dict,
+    bot_id: str,
+    symbol: typing.Optional[str] = None,
+    time_frame: typing.Optional[str] = None,
+    cryptocurrency: typing.Optional[str] = None,
+):
+    parsed_time_frame = _parse_time_frame(time_frame)
+    time_frames = [parsed_time_frame] if parsed_time_frame is not None else None
+    return await create_evaluator(
+        evaluator_class,
+        tentacles_setup_config,
+        bot_id=bot_id,
+        matrix_id=matrix_id,
+        exchange_name=exchange_name,
+        cryptocurrency=cryptocurrency,
+        symbol=symbol,
+        time_frame=parsed_time_frame,
+        all_symbols_by_crypto_currencies=_get_all_symbols_by_crypto_currencies(
+            cryptocurrency,
+            symbol,
+        ),
+        time_frames=time_frames,
+        evaluator_configuration=evaluator_configuration,
+    )
 
 
 async def create_evaluator(

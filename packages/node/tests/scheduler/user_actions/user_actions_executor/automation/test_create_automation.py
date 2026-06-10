@@ -8,7 +8,9 @@ import pytest
 
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.str_util as str_util
 import octobot_copy.enums as copy_enums
+import tentacles.Evaluator.TA.momentum_evaluator.momentum as momentum_evaluator
 import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models
 import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
@@ -175,16 +177,81 @@ def _functional_dca_configuration() -> protocol_models.DCAConfiguration:
     return protocol_models.DCAConfiguration(
         configuration_type=protocol_models.ActionConfigurationType.DCA,
         symbols=["BTC/USDC", "ETH/USDC"],
-        buy_orders_count=2,
-        percent_amount_per_buy_order=8,
-        profit_target_percent=1.75,
-        buy_order_price_discount_percent=1.5,
+        entry_order_amount="8%t",
+        exit_limit_orders_price_percent=1.75,
+        entry_limit_orders_price_percent=1.5,
+        secondary_entry_orders_count=1,
+        secondary_entry_orders_amount="7%t",
+        secondary_entry_orders_price_percent=1.0,
         enable_stop_loss=False,
         stop_loss_price_discount_percent=0,
         trigger_mode="Always trigger long",
         use_init_entry_orders=True,
-        time_frames=[],
+        strategies=[],
         evaluators=[],
+    )
+
+
+def _maximum_evaluators_dca_configuration(
+    *,
+    strategies: list[protocol_models.StrategyEvaluatorConfiguration] | None = None,
+    evaluators: list[protocol_models.EvaluatorConfiguration] | None = None,
+) -> protocol_models.DCAConfiguration:
+    resolved_strategies = strategies
+    if resolved_strategies is None:
+        resolved_strategies = [
+            protocol_models.StrategyEvaluatorConfiguration(
+                time_frames=["1h"],
+                configuration=protocol_models.StrategyEvaluatorConfigurationConfiguration(
+                    protocol_models.SimpleStrategyEvaluatorConfiguration(
+                        configuration_type=protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR,
+                    )
+                ),
+            )
+        ]
+    resolved_evaluators = evaluators
+    if resolved_evaluators is None:
+        resolved_evaluators = [
+            protocol_models.EvaluatorConfiguration(
+                symbols=["BTC/USDC", "ETH/USDC"],
+                include_in_construction_candle=False,
+                configuration=protocol_models.EvaluatorConfigurationConfiguration(
+                    protocol_models.RSIMomentumEvaluatorConfiguration(
+                        configuration_type=protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR,
+                        period_length=12,
+                        long_threshold=50,
+                        short_threshold=70,
+                    )
+                ),
+            ),
+            protocol_models.EvaluatorConfiguration(
+                symbols=["BTC/USDC", "ETH/USDC"],
+                include_in_construction_candle=False,
+                configuration=protocol_models.EvaluatorConfigurationConfiguration(
+                    protocol_models.EMAMomentumEvaluatorConfiguration(
+                        configuration_type=protocol_models.EvaluatorType.EMAMOMENTUMEVALUATOR,
+                        period_length=10,
+                        price_threshold_percent=1.0,
+                        reverse_signal=False,
+                    )
+                ),
+            ),
+        ]
+    return protocol_models.DCAConfiguration(
+        configuration_type=protocol_models.ActionConfigurationType.DCA,
+        symbols=[],
+        entry_order_amount="8%t",
+        exit_limit_orders_price_percent=1.75,
+        entry_limit_orders_price_percent=1.5,
+        secondary_entry_orders_count=1,
+        secondary_entry_orders_amount="7%t",
+        secondary_entry_orders_price_percent=1.0,
+        enable_stop_loss=False,
+        stop_loss_price_discount_percent=0,
+        trigger_mode="Maximum evaluators signals based",
+        use_init_entry_orders=False,
+        strategies=resolved_strategies,
+        evaluators=resolved_evaluators,
     )
 
 
@@ -294,7 +361,7 @@ class TestCreateAutomationExecutor:
         main_action = actions[1]
         assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
         assert actions[0].id == "action_init"
-        assert main_action.id == "action_1"
+        assert main_action.id == f"{protocol_models.ActionConfigurationType.INDEX.value}_1"
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
             user_action_id="ua-idx",
@@ -338,7 +405,7 @@ class TestCreateAutomationExecutor:
 
         assert len(actions) == 2
         assert actions[0].id == "action_init"
-        assert actions[1].id == "action_copy_exchange_account"
+        assert actions[1].id == f"{protocol_models.ActionConfigurationType.COPY.value}_1"
         assert isinstance(actions[1], flow_entities.DSLScriptActionDetails)
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
@@ -389,7 +456,7 @@ class TestCreateAutomationExecutor:
         main_action = actions[1]
         assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
         assert actions[0].id == "action_init"
-        assert main_action.id == "action_1"
+        assert main_action.id == f"{protocol_models.ActionConfigurationType.GRID.value}_1"
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
             user_action_id="ua-grid",
@@ -537,6 +604,7 @@ class TestCreateAutomationExecutor:
             protocol_account=account,
             strategy_reference=strat_ref,
         )
+        assert main_action.id == f"{protocol_models.ActionConfigurationType.MARKET_MAKING.value}_1"
         assert len(main_action.dependencies) == 1
         assert main_action.dependencies[0].action_id == "action_init"
         assert main_action.dsl_script == expected_dsl
@@ -575,7 +643,7 @@ class TestCreateAutomationExecutor:
         main_action = actions[1]
         assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
         assert actions[0].id == "action_init"
-        assert main_action.id == "action_1"
+        assert main_action.id == f"{protocol_models.ActionConfigurationType.DCA.value}_1"
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
             user_action_id="ua-dca",
@@ -591,6 +659,129 @@ class TestCreateAutomationExecutor:
         assert dca_trading.TriggerMode.ALWAYS_TRIGGER_LONG.value in expected_dsl_script
         assert len(main_action.dependencies) == 1
         assert main_action.dependencies[0].action_id == "action_init"
+
+    def test_maximum_evaluators_dca_returns_init_evaluators_strategy_and_dca(self):
+        dca_configuration = _maximum_evaluators_dca_configuration()
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="maximum-evaluators-dca-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-max-eval-dca", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        assert len(actions) == 5
+        actions_by_id = {action.id: action for action in actions}
+        rsi_action_id = f"{protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR.value}_1"
+        ema_action_id = f"{protocol_models.EvaluatorType.EMAMOMENTUMEVALUATOR.value}_1"
+        strategy_action_id = f"{protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR.value}_1"
+        dca_action_id = f"{protocol_models.ActionConfigurationType.DCA.value}_1"
+        assert set(actions_by_id) == {
+            "action_init",
+            rsi_action_id,
+            ema_action_id,
+            strategy_action_id,
+            dca_action_id,
+        }
+        rsi_action = actions_by_id[rsi_action_id]
+        ema_action = actions_by_id[ema_action_id]
+        strategy_action = actions_by_id[strategy_action_id]
+        dca_action = actions_by_id[dca_action_id]
+        assert len(rsi_action.dependencies) == 1
+        assert rsi_action.dependencies[0].action_id == "action_init"
+        assert len(ema_action.dependencies) == 1
+        assert ema_action.dependencies[0].action_id == "action_init"
+        assert {dependency.action_id for dependency in strategy_action.dependencies} == {
+            "action_init",
+            rsi_action_id,
+            ema_action_id,
+        }
+        assert {dependency.action_id for dependency in dca_action.dependencies} == {
+            "action_init",
+            strategy_action_id,
+        }
+        rsi_operator = str_util.camel_to_snake(
+            momentum_evaluator.RSIMomentumEvaluator.get_name()
+        )
+        ema_operator = str_util.camel_to_snake(
+            momentum_evaluator.EMAMomentumEvaluator.get_name()
+        )
+        assert f"{rsi_operator}(" in rsi_action.dsl_script
+        assert "trend_change_identifier=False" in rsi_action.dsl_script
+        assert "time_frames=['1h']" in rsi_action.dsl_script
+        assert f"{ema_operator}(" in ema_action.dsl_script
+        assert "simple_strategy_evaluator(" in strategy_action.dsl_script
+        assert "_dynamic_dependencies=" in strategy_action.dsl_script
+        assert "dag_reset_to_action_id='action_init'" in dca_action.dsl_script
+        assert "time_frames=['1h']" in dca_action.dsl_script
+        assert "trading_pairs=[]" in dca_action.dsl_script
+        assert "_dynamic_dependencies=" in dca_action.dsl_script
+
+    def test_maximum_evaluators_dca_raises_when_multiple_strategies(self):
+        duplicate_strategy = protocol_models.StrategyEvaluatorConfiguration(
+            time_frames=["1h"],
+            configuration=protocol_models.StrategyEvaluatorConfigurationConfiguration(
+                protocol_models.SimpleStrategyEvaluatorConfiguration(
+                    configuration_type=protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR,
+                )
+            ),
+        )
+        dca_configuration = _maximum_evaluators_dca_configuration(
+            strategies=[duplicate_strategy, duplicate_strategy],
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="too-many-strategies-dca",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-too-many-strategies", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            with pytest.raises(node_errors.InvalidAutomationConfigurationError):
+                executor._create_automation_actions(user_action)
+
+    def test_maximum_evaluators_dca_raises_when_evaluators_without_strategy(self):
+        dca_configuration = _maximum_evaluators_dca_configuration(strategies=[])
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="evaluators-without-strategy-dca",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-no-strategy", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            with pytest.raises(node_errors.InvalidAutomationConfigurationError):
+                executor._create_automation_actions(user_action)
 
     def test_unsupported_types_raise_dedicated_errors(self):
         generic_process = protocol_models.GenericProcessConfiguration(

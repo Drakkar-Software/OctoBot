@@ -63,15 +63,17 @@ def _minimal_dca_configuration(**symbol_overrides) -> protocol_models.DCAConfigu
     payload = {
         "configuration_type": protocol_models.ActionConfigurationType.DCA,
         "symbols": ["BTC/USDT"],
-        "buy_orders_count": 2,
-        "percent_amount_per_buy_order": 10,
-        "profit_target_percent": 5,
-        "buy_order_price_discount_percent": 1,
+        "entry_order_amount": "10%t",
+        "exit_limit_orders_price_percent": 5,
+        "entry_limit_orders_price_percent": 1,
+        "secondary_entry_orders_count": 1,
+        "secondary_entry_orders_amount": "7%t",
+        "secondary_entry_orders_price_percent": 1.0,
         "enable_stop_loss": False,
         "stop_loss_price_discount_percent": 0,
         "trigger_mode": "Time based",
         "use_init_entry_orders": True,
-        "time_frames": [],
+        "strategies": [],
         "evaluators": [],
     }
     payload.update(symbol_overrides)
@@ -234,3 +236,42 @@ class TestDetailedAssetsFromAccount:
                 account,
                 protocol_models.TradingType.SPOT,
             )
+
+
+def _evaluator_configuration_with_symbols(symbols: list[str]) -> protocol_models.EvaluatorConfiguration:
+    return protocol_models.EvaluatorConfiguration(
+        symbols=symbols,
+        include_in_construction_candle=False,
+        configuration=protocol_models.EvaluatorConfigurationConfiguration(
+            protocol_models.RSIMomentumEvaluatorConfiguration(
+                configuration_type=protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR,
+                period_length=12,
+                long_threshold=50,
+                short_threshold=70,
+            )
+        ),
+    )
+
+
+class TestStrategyTradedSymbols:
+    def test_dca_returns_explicit_symbols_when_set(self):
+        dca_configuration = _minimal_dca_configuration(
+            symbols=["BTC/USDT"],
+            evaluators=[_evaluator_configuration_with_symbols(["ETH/USDT"])],
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(dca_configuration) == [
+            "BTC/USDT"
+        ]
+
+    def test_dca_falls_back_to_evaluator_symbols_when_symbols_empty(self):
+        dca_configuration = _minimal_dca_configuration(
+            symbols=[],
+            evaluators=[
+                _evaluator_configuration_with_symbols(["BTC/USDT", "ETH/USDT"]),
+                _evaluator_configuration_with_symbols(["ETH/USDT"]),
+            ],
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(dca_configuration) == [
+            "BTC/USDT",
+            "ETH/USDT",
+        ]

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import mock
+import numpy
 import pytest
 
 import octobot_commons.constants as constants
@@ -60,6 +61,11 @@ class TestFormatParameterValue:
     def test_dict(self):
         assert parameters_util.format_parameter_value({"a": 1}) == "{'a': 1}"
         assert parameters_util.format_parameter_value({}) == "{}"
+
+    def test_numpy_scalar_in_dict(self):
+        assert parameters_util.format_parameter_value(
+            {"eval_note": numpy.float64(-1.0), "symbol": "BTC/USDC"}
+        ) == "{'eval_note': -1.0, 'symbol': 'BTC/USDC'}"
 
     def test_other_type_uses_repr(self):
         class Custom:
@@ -429,3 +435,11 @@ class TestHasUnresolvedParameters:
     def test_returns_true_when_placeholder_alone(self):
         script = constants.UNRESOLVED_PARAMETER_PLACEHOLDER
         assert parameters_util.has_unresolved_parameters(script) is True
+
+
+class TestGetDslStatementOperatorName:
+    def test_extracts_operator_name_from_dsl_script(self):
+        assert (
+            parameters_util.get_dsl_statement_operator_name("dma_evaluator(symbol='BTC/USDC')")
+            == "dma_evaluator"
+        )

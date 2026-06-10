@@ -32,7 +32,7 @@ class EMAMomentumEvaluatorConfiguration(BaseModel):
     configuration_type: EvaluatorType = Field(description="EMAMomentumEvaluator")
     period_length: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
     price_threshold_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    reverse_signal: StrictBool
+    reverse_signal: StrictBool = Field(description="When true, emits a short signal when the current price is bellow the EMA.")
     __properties: ClassVar[List[str]] = ["configuration_type", "period_length", "price_threshold_percent", "reverse_signal"]
 
     model_config = ConfigDict(

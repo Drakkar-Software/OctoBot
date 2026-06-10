@@ -13,13 +13,48 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import ast
 import re
 import typing
 import json
 
+import numpy
+
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 import octobot_commons.errors
 import octobot_commons.constants
+
+
+def _normalize_dsl_serializable_value(value: typing.Any) -> typing.Any:
+    """
+    Convert nested values to types that repr() into valid DSL literals.
+    """
+    if isinstance(value, numpy.generic):
+        return value.item()
+    if isinstance(value, dict):
+        return {
+            key: _normalize_dsl_serializable_value(nested_value)
+            for key, nested_value in value.items()
+        }
+    if isinstance(value, list):
+        return [_normalize_dsl_serializable_value(nested_value) for nested_value in value]
+    return value
+
+
+def get_dsl_statement_operator_name(dsl_script: str) -> str:
+    """
+    Extract the root operator name from a single-call DSL expression.
+    """
+    try:
+        parsed_expression = ast.parse(dsl_script, mode="eval")
+    except SyntaxError as error:
+        raise ValueError(f"Cannot parse DSL script operator name from: {dsl_script}") from error
+    if not isinstance(parsed_expression.body, ast.Call):
+        raise ValueError(f"DSL script is not a single operator call: {dsl_script}")
+    function_node = parsed_expression.body.func
+    if isinstance(function_node, ast.Name):
+        return function_node.id
+    raise ValueError(f"Cannot extract operator name from DSL script: {dsl_script}")
 
 
 def format_parameter_value(value: typing.Any) -> str: # pylint: disable=too-many-return-statements
@@ -31,6 +66,8 @@ def format_parameter_value(value: typing.Any) -> str: # pylint: disable=too-many
         return "None"
     if isinstance(value, bool):
         return "True" if value else "False"
+    if isinstance(value, numpy.generic):
+        return repr(value.item())
     if isinstance(value, (int, float)):
         return repr(value)
     if isinstance(value, str):
@@ -43,9 +80,9 @@ def format_parameter_value(value: typing.Any) -> str: # pylint: disable=too-many
         except (json.JSONDecodeError, TypeError):
             return repr(value)
     if isinstance(value, list):
-        return repr(value)
+        return repr(_normalize_dsl_serializable_value(value))
     if isinstance(value, dict):
-        return repr(value)
+        return repr(_normalize_dsl_serializable_value(value))
     return repr(value)
 
 

@@ -16,6 +16,7 @@
 import typing
 import decimal
 
+import octobot_commons.enums as commons_enums
 import octobot_commons.logging as logging
 
 import octobot_trading.exchange_data.exchange_symbol_data as exchange_symbol_data_import
@@ -49,6 +50,22 @@ class ExchangeSymbolsData:
                 self.get_exchange_symbol_data(market.symbol).prices_manager.set_mark_price(
                     decimal.Decimal(str(price)), enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value
                 )
+
+    async def initialize_candles_from_exchange_data(
+        self, exchange_data: "exchange_data_import.ExchangeData"
+    ) -> None:
+        for market in exchange_data.markets:
+            if not market.time_frame or not market.close:
+                continue
+            time_frame = commons_enums.TimeFrames(market.time_frame)
+            formatted_candles = market.get_formatted_candles()
+            if not formatted_candles:
+                continue
+            await self.get_exchange_symbol_data(market.symbol).handle_candles_update(
+                time_frame,
+                formatted_candles,
+                replace_all=True,
+            )
 
     async def stop(self):
         self.exchange_manager = None # type: ignore

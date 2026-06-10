@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import typing
 
 import async_channel.constants as channel_constants
 import octobot_commons.constants as commons_constants
@@ -488,7 +489,10 @@ class DipAnalyserTradingModeProducer(trading_modes.AbstractTradingModeProducer):
             self.trading_mode.flush_trading_mode_consumers()
         await super().stop()
 
-    async def set_final_eval(self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str):
+    async def set_final_eval(
+        self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str,
+        strategy_evaluations: typing.Optional[list] = None,
+    ):
         # Strategies analysis
         for evaluated_strategy_node in matrix.get_tentacles_value_nodes(
                 matrix_id,

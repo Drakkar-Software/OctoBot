@@ -12,7 +12,6 @@ os.environ["USE_MINIMAL_LIBS"] = "true"
 os.environ["ALLOW_FUNDS_TRANSFER"] = "True"
 
 import ccxt.async_support as ccxt_async
-import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 import octobot.community as community
 import octobot.community.local_authenticator as local_community_auth
 
@@ -374,7 +373,8 @@ def empty_copy_exchange_account_action(
 
 
 @pytest.fixture
-def isolated_exchange_cache():
+def isolated_exchange_cache(): 
+    import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
     with ccxt_clients_cache.isolated_empty_cache():
         yield
 

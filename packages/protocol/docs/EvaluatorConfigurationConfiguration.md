@@ -9,8 +9,9 @@ Name | Type | Description | Notes
 **period_length** | **float** |  | 
 **short_threshold** | **float** |  | 
 **long_threshold** | **float** |  | 
+**trend_change_identifier** | **bool** |  | [optional] [default to False]
 **price_threshold_percent** | **float** |  | 
-**reverse_signal** | **bool** |  | [default to False]
+**reverse_signal** | **bool** | When true, emits a short signal when the current price is bellow the EMA. | [default to False]
 
 ## Example
 

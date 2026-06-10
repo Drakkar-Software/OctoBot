@@ -247,6 +247,34 @@ async def wait_for_stop_success_output(
     pytest.fail(f"Timed out waiting for stop completion for {automation_id}")
 
 
+async def enqueue_forced_trigger_and_await(
+    scheduler: typing.Any,
+    *,
+    automation_id: str,
+    wallet_address: str,
+    user_action_id: str,
+    timeout_seconds: float = 10.0,
+) -> protocol_models_module.UserAction:
+    signal_user_action = build_forced_trigger_signal_user_action(
+        automation_id=automation_id,
+        user_action_id=user_action_id,
+    )
+    try:
+        await asyncio.wait_for(
+            enqueue_user_action_workflow_and_await_terminal_result(
+                scheduler,
+                signal_user_action,
+                wallet_address,
+            ),
+            timeout=timeout_seconds,
+        )
+    except TimeoutError as exc:
+        raise AssertionError(
+            f"execute_user_action forced-trigger signal timed out for {user_action_id!r}"
+        ) from exc
+    return signal_user_action
+
+
 async def enqueue_user_action_workflow_and_await_terminal_result(
     scheduler: typing.Any,
     user_action_bundle: typing.Any,

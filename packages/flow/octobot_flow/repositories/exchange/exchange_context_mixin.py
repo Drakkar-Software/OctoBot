@@ -8,6 +8,7 @@ import octobot_trading.api
 import octobot_trading.exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_tentacles_manager.api
+import octobot_evaluators.api as evaluators_api
 import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.repositories.exchange.exchange_repository_factory as exchange_repository_factory
@@ -72,7 +73,11 @@ class ExchangeContextMixin:
         exchange_data = self.automation_state.exchange_account_details.to_minimal_exchange_data(
             portfolio_content
         )
+        if self.fetched_dependencies.fetched_exchange_data:
+            exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
+        matrix_id = None
         try:
+            matrix_id = evaluators_api.create_matrix()
             if self.USE_PREDICTIVE_ORDERS_SYNC:
                 # make all markets available to the strategy, it will use the required ones
                 self.init_predictive_orders_exchange_data(exchange_data)
@@ -82,6 +87,7 @@ class ExchangeContextMixin:
                 profile_data,
                 tentacles_setup_config,
                 price_fallback=self._get_price_from_cached_tickers,
+                matrix_id=matrix_id,
             ) as exchange_manager:
                 portfolio_config = {
                     asset: portfolio_element[common_constants.PORTFOLIO_TOTAL]
@@ -102,6 +108,8 @@ class ExchangeContextMixin:
                 else:
                     yield exchange_manager
         finally:
+            if matrix_id is not None:
+                evaluators_api.del_matrix(matrix_id)
             self._exchange_manager = None
 
     def get_exchange_config(self) -> dict:

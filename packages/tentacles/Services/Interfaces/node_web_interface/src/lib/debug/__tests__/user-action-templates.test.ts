@@ -37,6 +37,46 @@ describe("buildUserActionTemplate", () => {
     const action = buildUserActionTemplate("strategy_create_grid")
     expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
   })
+
+  it("builds a DCA strategy create template with two evaluators", () => {
+    const action = buildUserActionTemplate("strategy_create_dca")
+    expect(action.id).toBe("ua-manual-strategy_create_dca")
+    expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(strategy.reference_market).toBe("USDC")
+
+    const dcaConfiguration = strategy.configuration as Record<string, unknown>
+    expect(dcaConfiguration.configuration_type).toBe("dca")
+    expect(dcaConfiguration.trigger_mode).toBe("Maximum evaluators signals based")
+    expect(dcaConfiguration.symbols).toEqual([])
+    expect(dcaConfiguration.use_init_entry_orders).toBe(false)
+
+    const evaluators = dcaConfiguration.evaluators as Array<{
+      symbols: string[]
+      configuration: { configuration_type: string }
+    }>
+    expect(evaluators).toHaveLength(2)
+    expect(evaluators[0].configuration.configuration_type).toBe(
+      "RSIMomentumEvaluator",
+    )
+    expect(evaluators[1].configuration.configuration_type).toBe(
+      "EMAMomentumEvaluator",
+    )
+    expect(evaluators[0].symbols).toEqual(["BTC/USDC", "ETH/USDC"])
+
+    const strategies = dcaConfiguration.strategies as Array<{
+      time_frames: string[]
+      configuration: { configuration_type: string }
+    }>
+    expect(strategies).toHaveLength(1)
+    expect(strategies[0].time_frames).toEqual(["1h"])
+    expect(strategies[0].configuration.configuration_type).toBe(
+      "SimpleStrategyEvaluator",
+    )
+  })
 })
 
 describe("buildUserActionTemplateJson", () => {

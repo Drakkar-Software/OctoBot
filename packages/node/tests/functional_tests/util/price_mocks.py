@@ -64,6 +64,76 @@ def fetch_ohlcv_side_effect_for_close_price(
     return patched_fetch_ohlcv
 
 
+def fetch_ohlcv_side_effect_for_declining_closes(
+    get_start_close_for_symbol: typing.Callable[[str], typing.Union[int, float]],
+    decline_per_candle: typing.Union[float, typing.Callable[[str], float]],
+):
+    async def patched_fetch_ohlcv(
+        symbol: str,
+        time_frame: str,
+        limit: int,
+        _tickers: dict[str, dict[str, typing.Any]],
+    ):
+        time_frame_seconds = common_enums_module.TimeFramesMinutes[
+            common_enums_module.TimeFrames(time_frame)
+        ] * 60
+        candle_count = max(int(limit or 1), 15)
+        start_close = float(get_start_close_for_symbol(symbol))
+        symbol_decline_per_candle = (
+            decline_per_candle(symbol)
+            if callable(decline_per_candle)
+            else decline_per_candle
+        )
+        local_time = time.time()
+        current_candle_open_time = local_time - (local_time % time_frame_seconds)
+        first_candle_open_time = current_candle_open_time - (candle_count - 1) * time_frame_seconds
+        times = [
+            float(first_candle_open_time + step_index * time_frame_seconds)
+            for step_index in range(candle_count)
+        ]
+        closes = [
+            start_close - (symbol_decline_per_candle * step_index)
+            for step_index in range(candle_count)
+        ]
+        if candle_count >= 2:
+            closes[-1] = closes[-2] - (symbol_decline_per_candle * 10)
+        ohlc = list(closes)
+        return exchange_data_module.MarketDetails(
+            symbol=symbol,
+            time_frame=time_frame,
+            close=closes,
+            open=ohlc,
+            high=ohlc,
+            low=ohlc,
+            volume=[0.0] * candle_count,
+            time=times,
+        )
+
+    return patched_fetch_ohlcv
+
+
+def patched_fetch_ohlcv_with_mode_toggle(
+    *,
+    declining_fetch_ohlcv,
+    fixed_close_fetch_ohlcv,
+    ohlcv_fetch_mode: dict[str, bool],
+    use_declining_mode_key: str = "use_declining_for_history",
+):
+    async def patched_fetch_ohlcv(
+        symbol: str,
+        time_frame: str,
+        limit: int,
+        tickers: dict[str, dict[str, typing.Any]],
+    ):
+        if ohlcv_fetch_mode.get(use_declining_mode_key) and (
+            limit is None or int(limit) != 1
+        ):
+            return await declining_fetch_ohlcv(symbol, time_frame, limit, tickers)
+        return await fixed_close_fetch_ohlcv(symbol, time_frame, limit, tickers)
+
+    return patched_fetch_ohlcv
+
+
 def fetch_ohlcv_side_effect_for_close_prices(
     get_close_price_for_symbol: typing.Callable[[str], typing.Union[int, float]],
 ):

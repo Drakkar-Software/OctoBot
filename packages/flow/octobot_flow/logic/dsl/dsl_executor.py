@@ -9,6 +9,7 @@ import octobot_commons.logging
 import octobot_trading.exchanges
 import octobot_trading.dsl
 import octobot_trading.modes as trading_modes
+import octobot_evaluators.evaluators as evaluators
 
 import octobot_flow.entities
 import octobot_flow.errors
@@ -41,6 +42,11 @@ class DSLExecutor(AbstractActionExecutor):
         if dsl_script:
             self._interpreter.prepare(dsl_script)
 
+    def _get_matrix_id(self) -> typing.Optional[str]:
+        if self._exchange_manager is None:
+            return None
+        return octobot_trading.exchanges.Exchanges.instance().get_matrix_id(self._exchange_manager)
+
     def get_flow_operator_classes(
         self,
     ) -> list[typing.Type[octobot_commons.dsl_interpreter.Operator]]:
@@ -57,6 +63,9 @@ class DSLExecutor(AbstractActionExecutor):
             )
             + dsl_operators.create_fetch_order_operators(self._exchange_manager)
             + dsl_operators.create_blockchain_wallet_operators(self._exchange_manager)
+            + evaluators.create_all_evaluator_operators(
+                self._exchange_manager, self._dependencies_config, self._get_matrix_id()
+            )
             + trading_modes.create_all_trading_mode_operators(
                 self._exchange_manager, self._dependencies_config
             )

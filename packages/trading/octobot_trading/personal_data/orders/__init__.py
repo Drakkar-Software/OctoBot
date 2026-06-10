@@ -147,6 +147,7 @@ from octobot_trading.personal_data.orders.order_util import (
     create_and_register_chained_order_on_base_order,
     get_enriched_orders_by_exchange_id,
     get_symbol_count,
+    get_symbols_from_orders,
 )
 from octobot_trading.personal_data.orders import protocol
 from octobot_trading.personal_data.orders.protocol import (
@@ -302,4 +303,5 @@ __all__ = [
     "get_symbol_count",
     "to_protocol_order",
     "exchange_columns_dict_from_protocol_order",
+    "get_symbols_from_orders",
 ]

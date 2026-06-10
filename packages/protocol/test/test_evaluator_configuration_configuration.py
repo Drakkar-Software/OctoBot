@@ -39,6 +39,7 @@ class TestEvaluatorConfigurationConfiguration(unittest.TestCase):
                 period_length = 1,
                 short_threshold = 0,
                 long_threshold = 0,
+                trend_change_identifier = True,
                 price_threshold_percent = 0,
                 reverse_signal = True
             )

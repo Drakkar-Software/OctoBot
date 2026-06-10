@@ -987,7 +987,10 @@ class DailyTradingModeProducer(trading_modes.AbstractTradingModeProducer):
             self.trading_mode.flush_trading_mode_consumers()
         await super().stop()
 
-    async def set_final_eval(self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str):
+    async def set_final_eval(
+        self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str,
+        strategy_evaluations: typing.Optional[list] = None,
+    ):
         strategies_analysis_note_counter = 0
         evaluation = commons_constants.INIT_EVAL_NOTE
         # Strategies analysis

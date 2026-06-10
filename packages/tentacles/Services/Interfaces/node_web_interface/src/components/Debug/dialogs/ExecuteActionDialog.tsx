@@ -109,8 +109,8 @@ export function ExecuteActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>
             {copyOnly ? "User action" : "Execute user action"}
           </DialogTitle>
@@ -120,9 +120,9 @@ export function ExecuteActionDialog({
               : "POST a UserAction JSON body to the debug endpoint."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           {!copyOnly && (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex shrink-0 flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">
                 Action type
               </label>
@@ -146,14 +146,16 @@ export function ExecuteActionDialog({
             </div>
           )}
           <LineNumberTextarea
+            className="min-h-[220px] shrink-0"
+            textareaClassName="min-h-[220px]"
             value={jsonText}
             onChange={(event) => setJsonText(event.target.value)}
           />
+          {validationError && (
+            <p className="shrink-0 text-sm text-destructive">{validationError}</p>
+          )}
         </div>
-        {validationError && (
-          <p className="text-sm text-destructive">{validationError}</p>
-        )}
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

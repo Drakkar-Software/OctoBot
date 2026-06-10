@@ -18,11 +18,11 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from octobot_protocol.models.evaluator_configuration import EvaluatorConfiguration
-from octobot_protocol.models.time_frame import TimeFrame
+from octobot_protocol.models.strategy_evaluator_configuration import StrategyEvaluatorConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -33,21 +33,27 @@ class DCAConfiguration(BaseModel):
     """ # noqa: E501
     configuration_type: ActionConfigurationType = Field(description="dca")
     symbols: List[StrictStr]
-    buy_orders_count: Union[Annotated[float, Field(strict=True, ge=1)], Annotated[int, Field(strict=True, ge=1)]]
-    percent_amount_per_buy_order: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    profit_target_percent: Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]
-    buy_order_price_discount_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    enable_stop_loss: StrictBool
-    stop_loss_price_discount_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    trigger_mode: StrictStr
-    use_init_entry_orders: StrictBool
-    time_frames: List[TimeFrame]
+    entry_order_amount: StrictStr = Field(description="Amout to buy, can be in %t, %s, in q, in base, etc")
+    exit_limit_orders_price_percent: Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]
+    entry_limit_orders_price_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
+    secondary_entry_orders_count: Union[Annotated[float, Field(strict=True, ge=0)], Annotated[int, Field(strict=True, ge=0)]]
+    secondary_entry_orders_amount: StrictStr = Field(description="Amout to buy, can be in %t, %s, in q, in base, etc")
+    secondary_entry_orders_price_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
+    enable_stop_loss: Optional[StrictBool] = False
+    stop_loss_price_discount_percent: Optional[Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]] = 10
+    trigger_mode: Optional[StrictStr] = 'Maximum evaluators signals based'
+    use_init_entry_orders: Optional[StrictBool] = True
+    max_asset_holding_percent: Optional[Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]] = 50
+    strategies: List[StrategyEvaluatorConfiguration]
     evaluators: List[EvaluatorConfiguration]
-    __properties: ClassVar[List[str]] = ["configuration_type", "symbols", "buy_orders_count", "percent_amount_per_buy_order", "profit_target_percent", "buy_order_price_discount_percent", "enable_stop_loss", "stop_loss_price_discount_percent", "trigger_mode", "use_init_entry_orders", "time_frames", "evaluators"]
+    __properties: ClassVar[List[str]] = ["configuration_type", "symbols", "entry_order_amount", "exit_limit_orders_price_percent", "entry_limit_orders_price_percent", "secondary_entry_orders_count", "secondary_entry_orders_amount", "secondary_entry_orders_price_percent", "enable_stop_loss", "stop_loss_price_discount_percent", "trigger_mode", "use_init_entry_orders", "max_asset_holding_percent", "strategies", "evaluators"]
 
     @field_validator('trigger_mode')
     def trigger_mode_validate_enum(cls, value):
         """Validates the enum"""
+        if value is None:
+            return value
+
         if value not in set(['Maximum evaluators signals based', 'Time based', 'Always trigger long']):
             raise ValueError("must be one of enum values ('Maximum evaluators signals based', 'Time based', 'Always trigger long')")
         return value
@@ -91,6 +97,13 @@ class DCAConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in strategies (list)
+        _items = []
+        if self.strategies:
+            for _item_strategies in self.strategies:
+                if _item_strategies:
+                    _items.append(_item_strategies.to_dict())
+            _dict['strategies'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in evaluators (list)
         _items = []
         if self.evaluators:
@@ -112,15 +125,18 @@ class DCAConfiguration(BaseModel):
         _obj = cls.model_validate({
             "configuration_type": obj.get("configuration_type"),
             "symbols": obj.get("symbols"),
-            "buy_orders_count": obj.get("buy_orders_count"),
-            "percent_amount_per_buy_order": obj.get("percent_amount_per_buy_order"),
-            "profit_target_percent": obj.get("profit_target_percent"),
-            "buy_order_price_discount_percent": obj.get("buy_order_price_discount_percent"),
+            "entry_order_amount": obj.get("entry_order_amount"),
+            "exit_limit_orders_price_percent": obj.get("exit_limit_orders_price_percent"),
+            "entry_limit_orders_price_percent": obj.get("entry_limit_orders_price_percent"),
+            "secondary_entry_orders_count": obj.get("secondary_entry_orders_count") if obj.get("secondary_entry_orders_count") is not None else 0,
+            "secondary_entry_orders_amount": obj.get("secondary_entry_orders_amount") if obj.get("secondary_entry_orders_amount") is not None else '0%t',
+            "secondary_entry_orders_price_percent": obj.get("secondary_entry_orders_price_percent") if obj.get("secondary_entry_orders_price_percent") is not None else 10,
             "enable_stop_loss": obj.get("enable_stop_loss") if obj.get("enable_stop_loss") is not None else False,
-            "stop_loss_price_discount_percent": obj.get("stop_loss_price_discount_percent"),
-            "trigger_mode": obj.get("trigger_mode"),
+            "stop_loss_price_discount_percent": obj.get("stop_loss_price_discount_percent") if obj.get("stop_loss_price_discount_percent") is not None else 10,
+            "trigger_mode": obj.get("trigger_mode") if obj.get("trigger_mode") is not None else 'Maximum evaluators signals based',
             "use_init_entry_orders": obj.get("use_init_entry_orders") if obj.get("use_init_entry_orders") is not None else True,
-            "time_frames": obj.get("time_frames"),
+            "max_asset_holding_percent": obj.get("max_asset_holding_percent") if obj.get("max_asset_holding_percent") is not None else 50,
+            "strategies": [StrategyEvaluatorConfiguration.from_dict(_item) for _item in obj["strategies"]] if obj.get("strategies") is not None else None,
             "evaluators": [EvaluatorConfiguration.from_dict(_item) for _item in obj["evaluators"]] if obj.get("evaluators") is not None else None
         })
         return _obj
