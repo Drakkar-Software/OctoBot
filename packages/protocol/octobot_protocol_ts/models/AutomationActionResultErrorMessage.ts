@@ -14,4 +14,4 @@
 /**
 * AutomationActionResultErrorMessage
 */
-export type AutomationActionResultErrorMessage = 'automation_not_found' | 'invalid_configuration' | 'strategy_not_found' | 'strategy_version_not_found' | 'account_not_found' | 'internal_error'
+export type AutomationActionResultErrorMessage = 'automation_not_found' | 'invalid_configuration' | 'strategy_not_found' | 'strategy_version_not_found' | 'unknown_trading_type' | 'ambiguous_trading_type' | 'ambiguous_exchange_config' | 'account_not_found' | 'account_authentication_details_not_found' | 'internal_error'

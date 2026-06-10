@@ -10,20 +10,16 @@
  * Do not edit the class manually.
  */
 
-import { StrategyConfiguration } from '../models/StrategyConfiguration';
 
 /**
-* Strategy
+* ExchangeConfig
 */
-export class Strategy {
+export class ExchangeConfig {
     'id': string;
-    'version': string;
-    'name'?: string;
-    'description'?: string;
-    'created_at'?: string;
-    'updated_at'?: string;
-    'reference_market': string;
-    'configuration': StrategyConfiguration;
+    'name': string;
+    'exchange': string;
+    'sandboxed': boolean;
+    'url'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -37,50 +33,32 @@ export class Strategy {
             "format": ""
         },
         {
-            "name": "version",
-            "baseName": "version",
-            "type": "string",
-            "format": ""
-        },
-        {
             "name": "name",
             "baseName": "name",
             "type": "string",
             "format": ""
         },
         {
-            "name": "description",
-            "baseName": "description",
+            "name": "exchange",
+            "baseName": "exchange",
             "type": "string",
             "format": ""
         },
         {
-            "name": "created_at",
-            "baseName": "created_at",
-            "type": "Date",
-            "format": "date-time"
-        },
-        {
-            "name": "updated_at",
-            "baseName": "updated_at",
-            "type": "Date",
-            "format": "date-time"
-        },
-        {
-            "name": "reference_market",
-            "baseName": "reference_market",
-            "type": "string",
+            "name": "sandboxed",
+            "baseName": "sandboxed",
+            "type": "boolean",
             "format": ""
         },
         {
-            "name": "configuration",
-            "baseName": "configuration",
-            "type": "StrategyConfiguration",
+            "name": "url",
+            "baseName": "url",
+            "type": "string",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return Strategy.attributeTypeMap;
+        return ExchangeConfig.attributeTypeMap;
     }
 
     public constructor() {

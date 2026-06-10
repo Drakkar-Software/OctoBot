@@ -10,18 +10,15 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
+import { HistoricalAssetsForTradingType } from '../models/HistoricalAssetsForTradingType';
 
 /**
-* ExchangeAccount
+* PortfolioHistoricalValue
 */
-export class ExchangeAccount {
-    /**
-    * exchange
-    */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+export class PortfolioHistoricalValue {
+    'timestamp': string;
+    'total': number;
+    'assets'?: Array<HistoricalAssetsForTradingType>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,30 +26,28 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
+            "name": "timestamp",
+            "baseName": "timestamp",
+            "type": "Date",
+            "format": "date-time"
+        },
+        {
+            "name": "total",
+            "baseName": "total",
+            "type": "number",
             "format": ""
         },
         {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "assets",
+            "baseName": "assets",
+            "type": "Array<HistoricalAssetsForTradingType>",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return PortfolioHistoricalValue.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
-
-

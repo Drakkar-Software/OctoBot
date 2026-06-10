@@ -10,18 +10,14 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
+import { AccountTrading } from '../models/AccountTrading';
 
 /**
-* ExchangeAccount
+* AccountTradingState
 */
-export class ExchangeAccount {
-    /**
-    * exchange
-    */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+export class AccountTradingState {
+    'version': string;
+    'account_trading': AccountTrading;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,30 +25,22 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
-            "format": ""
-        },
-        {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
+            "name": "version",
+            "baseName": "version",
             "type": "string",
             "format": ""
         },
         {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "account_trading",
+            "baseName": "account_trading",
+            "type": "AccountTrading",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return AccountTradingState.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
-
-

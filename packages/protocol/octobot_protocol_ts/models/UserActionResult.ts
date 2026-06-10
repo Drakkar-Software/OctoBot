@@ -11,14 +11,17 @@
  */
 
 import { AccountActionResult } from '../models/AccountActionResult';
+import { AccountAuthActionResult } from '../models/AccountAuthActionResult';
 import { AutomationActionResult } from '../models/AutomationActionResult';
+import { ExchangeConfigActionResult } from '../models/ExchangeConfigActionResult';
+import { StrategyActionResult } from '../models/StrategyActionResult';
 
 /**
  * @type UserActionResult
  * Type
  * @export
  */
-export type UserActionResult = AccountActionResult | AutomationActionResult;
+export type UserActionResult = AccountActionResult | AccountAuthActionResult | AutomationActionResult | ExchangeConfigActionResult | StrategyActionResult;
 
 /**
 * @type UserActionResultClass
@@ -29,7 +32,13 @@ export class UserActionResultClass {
 
     static readonly mapping: {[index: string]: string} | undefined = {
         "account": "AccountActionResult",
+        "account_auth": "AccountAuthActionResult",
         "automation": "AutomationActionResult",
+        "exchange_config": "ExchangeConfigActionResult",
+        "strategy": "StrategyActionResult",
     };
 }
+
+
+
 

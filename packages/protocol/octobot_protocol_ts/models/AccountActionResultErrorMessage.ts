@@ -14,4 +14,4 @@
 /**
 * AccountActionResultErrorMessage
 */
-export type AccountActionResultErrorMessage = 'account_not_found' | 'invalid_configuration' | 'internal_error'
+export type AccountActionResultErrorMessage = 'account_not_found' | 'invalid_configuration' | 'duplicate_item' | 'account_authentication_details_not_found' | 'internal_error'

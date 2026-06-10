@@ -20,6 +20,9 @@ export class MarketMakingReferencePair {
     * Exchange id, or a sentinel such as local exchange price when supported by the trading mode.
     */
     'exchange': string;
+    /**
+    * Pair symbol (e.g. \'BTC/USDT\' for a CEX or \'WETH/USDC@ETH-UNISWAP\' for a DEX).
+    */
     'pair': string;
     'weight'?: number;
     /**

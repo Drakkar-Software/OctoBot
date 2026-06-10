@@ -17,7 +17,7 @@ import { TrailingProfileType } from '../models/TrailingProfileType';
 */
 export class TrailingProfile {
     'type': TrailingProfileType;
-    'details'?: any;
+    'specifics'?: any;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -31,8 +31,8 @@ export class TrailingProfile {
             "format": ""
         },
         {
-            "name": "details",
-            "baseName": "details",
+            "name": "specifics",
+            "baseName": "specifics",
             "type": "any",
             "format": ""
         }    ];

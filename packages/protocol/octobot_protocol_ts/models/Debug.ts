@@ -11,15 +11,22 @@
  */
 
 import { Account } from '../models/Account';
+import { AccountTradingWithAccountId } from '../models/AccountTradingWithAccountId';
+import { AutomationState } from '../models/AutomationState';
 import { ExchangeConfig } from '../models/ExchangeConfig';
+import { Strategy } from '../models/Strategy';
+import { UserAction } from '../models/UserAction';
 
 /**
-* AccountsState
+* Debug view of all automations and user actions
 */
-export class AccountsState {
-    'version': string;
+export class Debug {
+    'automations': Array<AutomationState>;
+    'user_actions': Array<UserAction>;
     'accounts'?: Array<Account>;
     'exchange_configs'?: Array<ExchangeConfig>;
+    'account_tradings'?: Array<AccountTradingWithAccountId>;
+    'local_strategies'?: Array<Strategy>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -27,9 +34,15 @@ export class AccountsState {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "version",
-            "baseName": "version",
-            "type": "string",
+            "name": "automations",
+            "baseName": "automations",
+            "type": "Array<AutomationState>",
+            "format": ""
+        },
+        {
+            "name": "user_actions",
+            "baseName": "user_actions",
+            "type": "Array<UserAction>",
             "format": ""
         },
         {
@@ -43,10 +56,22 @@ export class AccountsState {
             "baseName": "exchange_configs",
             "type": "Array<ExchangeConfig>",
             "format": ""
+        },
+        {
+            "name": "account_tradings",
+            "baseName": "account_tradings",
+            "type": "Array<AccountTradingWithAccountId>",
+            "format": ""
+        },
+        {
+            "name": "local_strategies",
+            "baseName": "local_strategies",
+            "type": "Array<Strategy>",
+            "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return AccountsState.attributeTypeMap;
+        return Debug.attributeTypeMap;
     }
 
     public constructor() {

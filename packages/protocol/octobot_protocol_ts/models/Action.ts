@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import { TaskStatus } from '../models/TaskStatus';
+import { WorkflowStatus } from '../models/WorkflowStatus';
 
 /**
 * Action
@@ -18,7 +18,7 @@ import { TaskStatus } from '../models/TaskStatus';
 export class Action {
     'id': string;
     'action_type': string;
-    'status': TaskStatus;
+    'status': WorkflowStatus;
     'dsl'?: string;
     'configuration'?: { [key: string]: any; };
     'result'?: string;
@@ -45,7 +45,7 @@ export class Action {
         {
             "name": "status",
             "baseName": "status",
-            "type": "TaskStatus",
+            "type": "WorkflowStatus",
             "format": ""
         },
         {

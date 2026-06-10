@@ -10,18 +10,19 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
+import { ExchangeConfig } from '../models/ExchangeConfig';
+import { UserActionType } from '../models/UserActionType';
 
 /**
-* ExchangeAccount
+* EditExchangeConfigConfiguration
 */
-export class ExchangeAccount {
+export class EditExchangeConfigConfiguration {
     /**
-    * exchange
+    * exchange_config_edit
     */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+    'action_type': 'exchange_config_edit';
+    'id': string;
+    'configuration'?: ExchangeConfig;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,26 +30,26 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
+            "name": "action_type",
+            "baseName": "action_type",
+            "type": "UserActionType",
             "format": ""
         },
         {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
+            "name": "id",
+            "baseName": "id",
             "type": "string",
             "format": ""
         },
         {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "configuration",
+            "baseName": "configuration",
+            "type": "ExchangeConfig",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return EditExchangeConfigConfiguration.attributeTypeMap;
     }
 
     public constructor() {

@@ -12,6 +12,6 @@
 
 
 /**
-* UserActionResultType
+* AccountAuthActionResultErrorMessage
 */
-export type UserActionResultType = 'automation' | 'account' | 'exchange_config' | 'strategy' | 'account_auth'
+export type AccountAuthActionResultErrorMessage = 'account_auth_not_found' | 'invalid_configuration' | 'duplicate_item' | 'internal_error'

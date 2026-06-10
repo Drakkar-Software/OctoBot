@@ -12,6 +12,6 @@
 
 
 /**
-* TaskStatus
+* AutomationSignalType
 */
-export type TaskStatus = 'pending' | 'scheduled' | 'periodic' | 'running' | 'completed' | 'failed'
+export type AutomationSignalType = 'actions' | 'trading_signal' | 'forced_trigger'

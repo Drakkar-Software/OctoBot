@@ -10,18 +10,18 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
+import { Order } from '../models/Order';
+import { Position } from '../models/Position';
+import { Trade } from '../models/Trade';
 
 /**
-* ExchangeAccount
+* AccountTrading
 */
-export class ExchangeAccount {
-    /**
-    * exchange
-    */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+export class AccountTrading {
+    'updated_at': string;
+    'orders'?: Array<Order>;
+    'trades'?: Array<Trade>;
+    'positions'?: Array<Position>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,30 +29,34 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
+            "name": "updated_at",
+            "baseName": "updated_at",
+            "type": "Date",
+            "format": "date-time"
+        },
+        {
+            "name": "orders",
+            "baseName": "orders",
+            "type": "Array<Order>",
             "format": ""
         },
         {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
-            "type": "string",
+            "name": "trades",
+            "baseName": "trades",
+            "type": "Array<Trade>",
             "format": ""
         },
         {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "positions",
+            "baseName": "positions",
+            "type": "Array<Position>",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return AccountTrading.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
-
-

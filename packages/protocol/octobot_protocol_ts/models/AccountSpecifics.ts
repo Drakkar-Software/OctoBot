@@ -15,17 +15,17 @@ import { ExchangeAccount } from '../models/ExchangeAccount';
 import { GenericAccount } from '../models/GenericAccount';
 
 /**
- * @type AccountDetails
+ * @type AccountSpecifics
  * Type
  * @export
  */
-export type AccountDetails = BlockchainAccount | ExchangeAccount | GenericAccount;
+export type AccountSpecifics = BlockchainAccount | ExchangeAccount | GenericAccount;
 
 /**
-* @type AccountDetailsClass
+* @type AccountSpecificsClass
 * @export
 */
-export class AccountDetailsClass {
+export class AccountSpecificsClass {
     static readonly discriminator: string | undefined = "account_type";
 
     static readonly mapping: {[index: string]: string} | undefined = {

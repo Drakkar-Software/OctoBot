@@ -10,12 +10,22 @@
  * Do not edit the class manually.
  */
 
+import { CreateAccountAuthConfiguration } from '../models/CreateAccountAuthConfiguration';
 import { CreateAccountConfiguration } from '../models/CreateAccountConfiguration';
 import { CreateAutomationConfiguration } from '../models/CreateAutomationConfiguration';
+import { CreateExchangeConfigConfiguration } from '../models/CreateExchangeConfigConfiguration';
+import { CreateStrategyConfiguration } from '../models/CreateStrategyConfiguration';
+import { DeleteAccountAuthConfiguration } from '../models/DeleteAccountAuthConfiguration';
 import { DeleteAccountConfiguration } from '../models/DeleteAccountConfiguration';
+import { DeleteExchangeConfigConfiguration } from '../models/DeleteExchangeConfigConfiguration';
+import { DeleteStrategyConfiguration } from '../models/DeleteStrategyConfiguration';
+import { EditAccountAuthConfiguration } from '../models/EditAccountAuthConfiguration';
 import { EditAccountConfiguration } from '../models/EditAccountConfiguration';
 import { EditAutomationConfiguration } from '../models/EditAutomationConfiguration';
+import { EditExchangeConfigConfiguration } from '../models/EditExchangeConfigConfiguration';
+import { EditStrategyConfiguration } from '../models/EditStrategyConfiguration';
 import { RefreshAccountsConfiguration } from '../models/RefreshAccountsConfiguration';
+import { SignalAutomationConfiguration } from '../models/SignalAutomationConfiguration';
 import { StopAutomationConfiguration } from '../models/StopAutomationConfiguration';
 
 /**
@@ -23,7 +33,7 @@ import { StopAutomationConfiguration } from '../models/StopAutomationConfigurati
  * Type
  * @export
  */
-export type UserActionConfiguration = CreateAccountConfiguration | CreateAutomationConfiguration | DeleteAccountConfiguration | EditAccountConfiguration | EditAutomationConfiguration | RefreshAccountsConfiguration | StopAutomationConfiguration;
+export type UserActionConfiguration = CreateAccountAuthConfiguration | CreateAccountConfiguration | CreateAutomationConfiguration | CreateExchangeConfigConfiguration | CreateStrategyConfiguration | DeleteAccountAuthConfiguration | DeleteAccountConfiguration | DeleteExchangeConfigConfiguration | DeleteStrategyConfiguration | EditAccountAuthConfiguration | EditAccountConfiguration | EditAutomationConfiguration | EditExchangeConfigConfiguration | EditStrategyConfiguration | RefreshAccountsConfiguration | SignalAutomationConfiguration | StopAutomationConfiguration;
 
 /**
 * @type UserActionConfigurationClass
@@ -33,15 +43,35 @@ export class UserActionConfigurationClass {
     static readonly discriminator: string | undefined = "action_type";
 
     static readonly mapping: {[index: string]: string} | undefined = {
+        "account_auth_create": "CreateAccountAuthConfiguration",
+        "account_auth_delete": "DeleteAccountAuthConfiguration",
+        "account_auth_edit": "EditAccountAuthConfiguration",
         "account_create": "CreateAccountConfiguration",
         "account_delete": "DeleteAccountConfiguration",
         "account_edit": "EditAccountConfiguration",
         "accounts_refresh": "RefreshAccountsConfiguration",
         "automation_create": "CreateAutomationConfiguration",
         "automation_edit": "EditAutomationConfiguration",
+        "automation_signal": "SignalAutomationConfiguration",
         "automation_stop": "StopAutomationConfiguration",
+        "exchange_config_create": "CreateExchangeConfigConfiguration",
+        "exchange_config_delete": "DeleteExchangeConfigConfiguration",
+        "exchange_config_edit": "EditExchangeConfigConfiguration",
+        "strategy_create": "CreateStrategyConfiguration",
+        "strategy_delete": "DeleteStrategyConfiguration",
+        "strategy_edit": "EditStrategyConfiguration",
     };
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

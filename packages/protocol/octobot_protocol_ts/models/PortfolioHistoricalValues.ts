@@ -10,16 +10,14 @@
  * Do not edit the class manually.
  */
 
+import { PortfolioHistoricalValue } from '../models/PortfolioHistoricalValue';
 
 /**
-* Asset
+* PortfolioHistoricalValues
 */
-export class Asset {
-    'symbol': string;
-    'total': number;
-    'available': number;
-    'value'?: number;
-    'unit'?: string;
+export class PortfolioHistoricalValues {
+    'unit': string;
+    'values': Array<PortfolioHistoricalValue>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -27,38 +25,20 @@ export class Asset {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "symbol",
-            "baseName": "symbol",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "total",
-            "baseName": "total",
-            "type": "number",
-            "format": ""
-        },
-        {
-            "name": "available",
-            "baseName": "available",
-            "type": "number",
-            "format": ""
-        },
-        {
-            "name": "value",
-            "baseName": "value",
-            "type": "number",
-            "format": ""
-        },
-        {
             "name": "unit",
             "baseName": "unit",
             "type": "string",
             "format": ""
+        },
+        {
+            "name": "values",
+            "baseName": "values",
+            "type": "Array<PortfolioHistoricalValue>",
+            "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return Asset.attributeTypeMap;
+        return PortfolioHistoricalValues.attributeTypeMap;
     }
 
     public constructor() {

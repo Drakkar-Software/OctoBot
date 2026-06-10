@@ -10,20 +10,19 @@
  * Do not edit the class manually.
  */
 
-import { StrategyConfiguration } from '../models/StrategyConfiguration';
 
 /**
-* Strategy
+* AccountAuthentication
 */
-export class Strategy {
+export class AccountAuthentication {
     'id': string;
-    'version': string;
-    'name'?: string;
-    'description'?: string;
-    'created_at'?: string;
     'updated_at'?: string;
-    'reference_market': string;
-    'configuration': StrategyConfiguration;
+    'api_key'?: string;
+    'api_secret'?: string;
+    'api_passphrase'?: string;
+    'public_key'?: string;
+    'private_key'?: string;
+    'seed_phrase'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -37,50 +36,50 @@ export class Strategy {
             "format": ""
         },
         {
-            "name": "version",
-            "baseName": "version",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "name",
-            "baseName": "name",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "description",
-            "baseName": "description",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "created_at",
-            "baseName": "created_at",
-            "type": "Date",
-            "format": "date-time"
-        },
-        {
             "name": "updated_at",
             "baseName": "updated_at",
             "type": "Date",
             "format": "date-time"
         },
         {
-            "name": "reference_market",
-            "baseName": "reference_market",
+            "name": "api_key",
+            "baseName": "api_key",
             "type": "string",
             "format": ""
         },
         {
-            "name": "configuration",
-            "baseName": "configuration",
-            "type": "StrategyConfiguration",
+            "name": "api_secret",
+            "baseName": "api_secret",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "api_passphrase",
+            "baseName": "api_passphrase",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "public_key",
+            "baseName": "public_key",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "private_key",
+            "baseName": "private_key",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "seed_phrase",
+            "baseName": "seed_phrase",
+            "type": "string",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return Strategy.attributeTypeMap;
+        return AccountAuthentication.attributeTypeMap;
     }
 
     public constructor() {

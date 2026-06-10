@@ -10,18 +10,14 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
+import { Debug } from '../models/Debug';
 
 /**
-* ExchangeAccount
+* DebugState
 */
-export class ExchangeAccount {
-    /**
-    * exchange
-    */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+export class DebugState {
+    'version': string;
+    'debug'?: Debug;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,30 +25,22 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
-            "format": ""
-        },
-        {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
+            "name": "version",
+            "baseName": "version",
             "type": "string",
             "format": ""
         },
         {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "debug",
+            "baseName": "debug",
+            "type": "Debug",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return DebugState.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
-
-

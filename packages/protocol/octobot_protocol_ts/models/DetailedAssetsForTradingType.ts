@@ -10,18 +10,15 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
+import { DetailedAsset } from '../models/DetailedAsset';
+import { TradingType } from '../models/TradingType';
 
 /**
-* ExchangeAccount
+* DetailedAssetsForTradingType
 */
-export class ExchangeAccount {
-    /**
-    * exchange
-    */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+export class DetailedAssetsForTradingType {
+    'trading_type': TradingType;
+    'assets': Array<DetailedAsset>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,26 +26,20 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
+            "name": "trading_type",
+            "baseName": "trading_type",
+            "type": "TradingType",
             "format": ""
         },
         {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "assets",
+            "baseName": "assets",
+            "type": "Array<DetailedAsset>",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return DetailedAssetsForTradingType.attributeTypeMap;
     }
 
     public constructor() {

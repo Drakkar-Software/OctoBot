@@ -10,8 +10,9 @@
  * Do not edit the class manually.
  */
 
-import { AccountDetails } from '../models/AccountDetails';
+import { AccountSpecifics } from '../models/AccountSpecifics';
 import { AccountState } from '../models/AccountState';
+import { DetailedAssetsForTradingType } from '../models/DetailedAssetsForTradingType';
 
 /**
 * Account
@@ -23,8 +24,13 @@ export class Account {
     'description'?: string;
     'state'?: AccountState;
     'created_at': string;
-    'updated_at': string;
-    'details'?: AccountDetails;
+    'updated_at'?: string;
+    /**
+    * The id of the account authentication bound to this account
+    */
+    'authentication_id'?: string;
+    'assets'?: Array<DetailedAssetsForTradingType>;
+    'specifics'?: AccountSpecifics;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -74,9 +80,21 @@ export class Account {
             "format": "date-time"
         },
         {
-            "name": "details",
-            "baseName": "details",
-            "type": "AccountDetails",
+            "name": "authentication_id",
+            "baseName": "authentication_id",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "assets",
+            "baseName": "assets",
+            "type": "Array<DetailedAssetsForTradingType>",
+            "format": ""
+        },
+        {
+            "name": "specifics",
+            "baseName": "specifics",
+            "type": "AccountSpecifics",
             "format": ""
         }    ];
 

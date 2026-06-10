@@ -11,25 +11,27 @@
  */
 
 import { Action } from '../models/Action';
-import { Asset } from '../models/Asset';
 import { AutomationMetadata } from '../models/AutomationMetadata';
+import { DetailedAssetsForTradingType } from '../models/DetailedAssetsForTradingType';
 import { OrderSummary } from '../models/OrderSummary';
 import { PositionSummary } from '../models/PositionSummary';
-import { TaskStatus } from '../models/TaskStatus';
 import { TradeSummary } from '../models/TradeSummary';
+import { WorkflowStatus } from '../models/WorkflowStatus';
 
 /**
 * AutomationState
 */
 export class AutomationState {
     'id': string;
-    'status': TaskStatus;
+    'status': WorkflowStatus;
+    'error'?: string;
+    'error_message'?: string;
     'metadata': AutomationMetadata;
     'actions'?: Array<Action>;
     'priority_actions'?: Array<Action>;
     'exchanges'?: Array<string>;
     'exchange_account_ids'?: Array<string>;
-    'assets'?: Array<Asset>;
+    'assets'?: Array<DetailedAssetsForTradingType>;
     'orders'?: Array<OrderSummary>;
     'trades'?: Array<TradeSummary>;
     'positions'?: Array<PositionSummary>;
@@ -48,7 +50,19 @@ export class AutomationState {
         {
             "name": "status",
             "baseName": "status",
-            "type": "TaskStatus",
+            "type": "WorkflowStatus",
+            "format": ""
+        },
+        {
+            "name": "error",
+            "baseName": "error",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "error_message",
+            "baseName": "error_message",
+            "type": "string",
             "format": ""
         },
         {
@@ -84,7 +98,7 @@ export class AutomationState {
         {
             "name": "assets",
             "baseName": "assets",
-            "type": "Array<Asset>",
+            "type": "Array<DetailedAssetsForTradingType>",
             "format": ""
         },
         {

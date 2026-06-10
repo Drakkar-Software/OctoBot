@@ -14,4 +14,4 @@
 /**
 * UserActionType
 */
-export type UserActionType = 'automation_create' | 'automation_edit' | 'automation_stop' | 'account_create' | 'account_edit' | 'account_delete' | 'accounts_refresh'
+export type UserActionType = 'automation_create' | 'automation_edit' | 'automation_stop' | 'automation_signal' | 'account_create' | 'account_edit' | 'account_delete' | 'accounts_refresh' | 'exchange_config_create' | 'exchange_config_edit' | 'exchange_config_delete' | 'strategy_create' | 'strategy_edit' | 'strategy_delete' | 'account_auth_create' | 'account_auth_edit' | 'account_auth_delete'

@@ -10,18 +10,14 @@
  * Do not edit the class manually.
  */
 
-import { AccountType } from '../models/AccountType';
 
 /**
-* ExchangeAccount
+* DetailedAsset
 */
-export class ExchangeAccount {
-    /**
-    * exchange
-    */
-    'account_type': 'exchange';
-    'remote_account_id': string;
-    'exchange_config_ids': Array<string>;
+export class DetailedAsset {
+    'symbol': string;
+    'total': number;
+    'available': number;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -29,30 +25,28 @@ export class ExchangeAccount {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "account_type",
-            "baseName": "account_type",
-            "type": "AccountType",
-            "format": ""
-        },
-        {
-            "name": "remote_account_id",
-            "baseName": "remote_account_id",
+            "name": "symbol",
+            "baseName": "symbol",
             "type": "string",
             "format": ""
         },
         {
-            "name": "exchange_config_ids",
-            "baseName": "exchange_config_ids",
-            "type": "Array<string>",
+            "name": "total",
+            "baseName": "total",
+            "type": "number",
+            "format": ""
+        },
+        {
+            "name": "available",
+            "baseName": "available",
+            "type": "number",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return ExchangeAccount.attributeTypeMap;
+        return DetailedAsset.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
-
-

@@ -11,7 +11,6 @@
  */
 
 import { AccountType } from '../models/AccountType';
-import { Asset } from '../models/Asset';
 
 /**
 * GenericAccount
@@ -21,7 +20,6 @@ export class GenericAccount {
     * generic
     */
     'account_type': 'generic';
-    'assets'?: Array<Asset>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -32,12 +30,6 @@ export class GenericAccount {
             "name": "account_type",
             "baseName": "account_type",
             "type": "AccountType",
-            "format": ""
-        },
-        {
-            "name": "assets",
-            "baseName": "assets",
-            "type": "Array<Asset>",
             "format": ""
         }    ];
 

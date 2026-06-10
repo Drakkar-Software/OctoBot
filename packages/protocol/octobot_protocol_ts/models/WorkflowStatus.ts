@@ -12,6 +12,6 @@
 
 
 /**
-* UserActionResultType
+* WorkflowStatus
 */
-export type UserActionResultType = 'automation' | 'account' | 'exchange_config' | 'strategy' | 'account_auth'
+export type WorkflowStatus = 'pending' | 'scheduled' | 'periodic' | 'running' | 'completed' | 'canceled' | 'failed'

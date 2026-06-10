@@ -22,9 +22,7 @@ export class BlockchainAccount {
     'account_type': 'blockchain';
     'blockchain': string;
     'network'?: string;
-    'public_key'?: string;
-    'private_key'?: string;
-    'passphrase'?: string;
+    'exchange_config_ids'?: Array<string>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -50,21 +48,9 @@ export class BlockchainAccount {
             "format": ""
         },
         {
-            "name": "public_key",
-            "baseName": "public_key",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "private_key",
-            "baseName": "private_key",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "passphrase",
-            "baseName": "passphrase",
-            "type": "string",
+            "name": "exchange_config_ids",
+            "baseName": "exchange_config_ids",
+            "type": "Array<string>",
             "format": ""
         }    ];
 

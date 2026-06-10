@@ -17,7 +17,7 @@ import { CancelPolicyType } from '../models/CancelPolicyType';
 */
 export class CancelPolicy {
     'type': CancelPolicyType;
-    'details'?: any;
+    'specifics'?: any;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -31,8 +31,8 @@ export class CancelPolicy {
             "format": ""
         },
         {
-            "name": "details",
-            "baseName": "details",
+            "name": "specifics",
+            "baseName": "specifics",
             "type": "any",
             "format": ""
         }    ];
