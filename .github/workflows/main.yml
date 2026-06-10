@@ -504,6 +504,38 @@ jobs:
           workingDirectory: docs
           command: versions deploy --yes
 
+  publish-npm:
+    name: Publish npm packages
+    needs: [ build, tests ]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required for npm trusted publishing (OIDC, no token needed)
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm (trusted publishing requires >= 11.5.1)
+        run: npm install -g npm@latest
+
+      - name: Publish octobot-protocol if version not already on npm
+        working-directory: packages/protocol/octobot_protocol_ts
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published — nothing to do."
+          else
+            echo "Publishing $NAME@$VERSION..."
+            npm publish --access public
+          fi
+
   version:
     needs: [ build, tests ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -757,6 +789,7 @@ jobs:
       - release
       - version
       - docs
+      - publish-npm
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
