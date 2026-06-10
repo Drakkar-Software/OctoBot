@@ -21,8 +21,8 @@ const targets = {
     keep: new Set(["package.json"]),
   },
   rust: {
-    dir: path.join(protocolDir, "octobot_protocol_rs"),
-    keep: new Set(),
+    dir: path.join(protocolDir, "crates", "octobot_protocol_rs"),
+    keep: new Set(["Cargo.toml", "README.md"]),
   },
   test: {
     dir: path.join(protocolDir, "test"),
