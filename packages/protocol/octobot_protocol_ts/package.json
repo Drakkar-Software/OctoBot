@@ -2,6 +2,11 @@
   "name": "@drakkar.software/octobot-protocol",
   "version": "0.4.0",
   "description": "TypeScript types generated from OctoBot OpenAPI schema",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/OctoBot.git",
+    "directory": "packages/protocol/octobot_protocol_ts"
+  },
   "types": "./models/index.ts",
   "files": ["models"],
   "license": "GPL-3.0",
