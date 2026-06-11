@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type ApiError, type SetupResult, SetupService } from "@/client"
+import { clearAuth } from "@/hooks/useAuth"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -103,8 +104,17 @@ function SetupWallet() {
       sessionStorage.setItem("setup_in_progress", "true")
       navigate({ to: "/setup/first-bot" })
     },
-    onError: (error) => {
-      handleError.bind(showErrorToast)(error as ApiError)
+    onError: async (error) => {
+      const apiError = error as ApiError
+      if (apiError.status === 409) {
+        // The node was already configured (e.g. session still had setup_in_progress set
+        // after a previous successful setup). Clean up and redirect to login.
+        sessionStorage.removeItem("setup_in_progress")
+        await clearAuth()
+        navigate({ to: "/login" })
+        return
+      }
+      handleError.bind(showErrorToast)(apiError)
     },
   })
 

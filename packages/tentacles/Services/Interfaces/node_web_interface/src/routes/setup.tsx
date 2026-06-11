@@ -1,19 +1,23 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { SetupService } from "@/client"
 import { isLoggedIn } from "@/hooks/useAuth"
+import { getSetupRedirect } from "@/lib/setup-guard"
 
 export const Route = createFileRoute("/setup")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     let configured = false
     try {
-      const status = await SetupService.getSetupStatus()
-      configured = status.configured
+      configured = (await SetupService.getSetupStatus()).configured
     } catch {
       // network error — stay on setup
     }
-    if (configured && !sessionStorage.getItem("setup_in_progress")) {
-      throw redirect({ to: isLoggedIn() ? "/" : "/login" })
-    }
+    const target = getSetupRedirect({
+      configured,
+      setupInProgress: !!sessionStorage.getItem("setup_in_progress"),
+      loggedIn: isLoggedIn(),
+      pathname: location.pathname,
+    })
+    if (target) throw redirect({ to: target })
   },
   component: () => <Outlet />,
   head: () => ({
