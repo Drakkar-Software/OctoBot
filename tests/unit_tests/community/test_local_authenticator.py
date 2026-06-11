@@ -24,6 +24,7 @@ import octobot.constants as octobot_constants
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot.community.supabase_backend.configuration_storage as configuration_storage_module
 import octobot.community.wallet_backend as wallet_backend_module
+import octobot_sync.auth as sync_auth
 
 
 class TestGetUserConfiguration:
@@ -65,6 +66,44 @@ class TestGetUserConfiguration:
         wallet_backend = wallet_backend_module.WalletBackend(sync_storage, mock.Mock())
         loaded_wallet = wallet_backend.get_wallet_for_bot(wallet_address)
         assert loaded_wallet.address.lower() == wallet_address
+
+    def test_get_wallet_by_user_id_resolves_by_derived_identity(self, tmp_path):
+        private_key = "aa" * 32
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "community": {
+                        "wallets": {
+                            octobot_constants.CHAIN_TYPE: {
+                                octobot_constants.CHAIN_NETWORK: [
+                                    {
+                                        "address": "0xd9eeee68cb71d51f74ee1e5c3c78770ed5a2f1c3",
+                                        "private_key": private_key,
+                                        "passphrase_hash": "salt:hash",
+                                        "is_admin": True,
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with mock.patch(
+            "octobot_commons.configuration.config_file_manager.get_user_config",
+            return_value=str(config_path),
+        ):
+            configuration = local_authenticator_module.get_user_configuration()
+
+        sync_storage = configuration_storage_module.SyncConfigurationStorage(configuration)
+        wallet_backend = wallet_backend_module.WalletBackend(sync_storage, mock.Mock())
+        user_id = sync_auth.derive_user_id(private_key)
+        wallet = wallet_backend.get_wallet_by_user_id(user_id)
+        assert wallet.private_key == private_key
+        with pytest.raises(wallet_backend_module.WalletNotFoundError):
+            wallet_backend.get_wallet_by_user_id("not-a-known-user-id")
 
     def test_save_is_disabled(self, tmp_path):
         config_path = tmp_path / "config.json"

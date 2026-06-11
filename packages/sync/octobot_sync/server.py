@@ -30,9 +30,11 @@ import octobot_commons.logging as logging
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_sync.constants as sync_constants
 import octobot.community.authentication as community_authentication
+import octobot.community.wallet_backend.errors as wallet_backend_errors
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
+import octobot_sync.chain as sync_chain
 import octobot_sync.crypto as sync_crypto
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
@@ -75,18 +77,16 @@ def _get_account_id(context: StoreContext | None) -> str:
 
 
 def _get_wallet_private_key(user_id: str) -> str:
-    # Under cap-cert auth the storage identity is the Starfish user_id
-    # (sha256(rootEdPub)[:32]), not the EVM address — the address never reaches
-    # the wire. The node holds its own wallets' keys, so resolve the wallet by
-    # re-deriving each local wallet's user_id with the SAME bootstrap challenge
-    # the client uses (octobot_sync.auth.derive_user_id). Linear in #local
-    # wallets, which is small; deterministic, so no cache is required.
-    for wallet in community_authentication.CommunityAuthentication.instance().list_wallet_entries():
-        if auth.derive_user_id(wallet.private_key) == user_id:
-            return wallet.private_key
-    raise errors.OctobotSyncWalletNotFoundError(
-        f"Wallet not found for user_id: {user_id}"
-    )
+    # Under cap-cert auth the storage identity is the Starfish user_id, not the
+    # EVM address — resolution by derived user_id lives in the wallet backend.
+    try:
+        return community_authentication.CommunityAuthentication.instance().get_wallet_by_user_id(
+            user_id
+        ).private_key
+    except wallet_backend_errors.WalletNotFoundError as err:
+        raise errors.OctobotSyncWalletNotFoundError(
+            f"Wallet not found for user_id: {user_id}"
+        ) from err
 
 
 def _encrypt(data: str, user_id: str, collection: str) -> str:
@@ -137,8 +137,9 @@ async def _user_actions_after_write(event: WriteEvent) -> None:
     action = protocol_models.UserAction.from_json(plaintext)
     if action is None:
         return
+    evm_address = sync_chain.address_from_evm_key(wallet_private_key).lower()
     try:
-        await user_actions_protocol.execute_user_action(action, identity)
+        await user_actions_protocol.execute_user_action(action, evm_address)
     except Exception as exc:
         _get_logger().exception(
             exc, True, f"Unexpected error executing user action: {action.id}: {exc}"

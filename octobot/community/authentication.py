@@ -690,6 +690,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_wallet(self, address: str) -> sync_chain.Wallet:
         return self._wallet_backend.get_wallet_for_bot(address)
 
+    def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
+        return self._wallet_backend.get_wallet_by_user_id(user_id)
+
     def init_sync_client_for_wallet(self, address: str) -> None:
         """Initialize the sync client for the given wallet address without passphrase."""
         if self._sync_client is not None:

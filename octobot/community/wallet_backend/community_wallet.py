@@ -22,6 +22,7 @@ import threading
 import typing
 
 import octobot_commons.dataclasses as commons_dataclasses
+import octobot_sync.auth as sync_auth
 import octobot_sync.chain as sync_chain
 from octobot.community.wallet_backend.errors import (
     AdminWalletAlreadyExistsError,
@@ -200,6 +201,21 @@ class WalletBackend:
         if entry is None:
             raise WalletNotFoundError(f"Wallet {address} not found")
         return self._wallet_from_entry(entry)
+
+    def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
+        """Return the wallet whose derived Starfish ``user_id`` matches *user_id*.
+
+        Under cap-cert auth the storage identity is the Starfish user_id
+        (sha256(rootEdPub)[:32]), not the EVM address — the address never
+        reaches the wire. Resolve by re-deriving each local wallet's user_id
+        with the SAME bootstrap challenge the client uses
+        (octobot_sync.auth.derive_user_id). Linear in #local wallets, which is
+        small; deterministic, so no cache is required.
+        """
+        for entry in self._get_node_wallets_list():
+            if sync_auth.derive_user_id(entry.private_key) == user_id:
+                return self._wallet_from_entry(entry)
+        raise WalletNotFoundError(f"Wallet not found for user_id: {user_id}")
 
     def remove_wallet(self, address: str) -> None:
         normalized = address.lower()

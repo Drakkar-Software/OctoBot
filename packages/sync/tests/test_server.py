@@ -246,13 +246,15 @@ class TestUserActionsAfterWrite:
                 "octobot_sync.server._get_wallet_private_key",
                 return_value=_TEST_WALLET_PRIVATE_KEY,
             ),
+            mock.patch("octobot_sync.server.sync_chain") as mock_chain,
             mock.patch("octobot_sync.server.protocol_models") as mock_pm,
         ):
+            mock_chain.address_from_evm_key.return_value = "0xderived"
             mock_pm.UserAction.from_json.return_value = action
             mock_proto.execute_user_action = mock.AsyncMock()
             await server._user_actions_after_write(event)
         mock_pm.UserAction.from_json.assert_called_once_with(plain_body)
-        mock_proto.execute_user_action.assert_awaited_once_with(action, "0xwallet")
+        mock_proto.execute_user_action.assert_awaited_once_with(action, "0xderived")
 
     @pytest.mark.asyncio
     async def test_user_actions_logs_exception_on_failure(self):
@@ -281,8 +283,10 @@ class TestUserActionsAfterWrite:
                 "octobot_sync.server._get_wallet_private_key",
                 return_value=_TEST_WALLET_PRIVATE_KEY,
             ),
+            mock.patch("octobot_sync.server.sync_chain") as mock_chain,
             mock.patch("octobot_sync.server.protocol_models") as mock_pm,
         ):
+            mock_chain.address_from_evm_key.return_value = "0xderived"
             mock_pm.UserAction.from_json.return_value = fail_action
             mock_proto.execute_user_action = mock.AsyncMock(side_effect=RuntimeError("boom"))
             await server._user_actions_after_write(event)
