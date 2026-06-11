@@ -14,6 +14,7 @@ import octobot_sync.errors as errors
 from starfish_server.storage.base import StoreContext
 from starfish_server.storage.s3 import S3ObjectStore
 from starfish_server.storage.filesystem import FilesystemObjectStore
+from starfish_protocol.plugins import WriteEvent
 
 
 _TEST_WALLET_PRIVATE_KEY = "test-server-private-key"
@@ -218,31 +219,26 @@ class TestGetData:
         assert isinstance(json.loads(result)["data"], dict)
 
 
-class TestPutData:
+class TestUserActionsAfterWrite:
     @pytest.mark.asyncio
-    async def test_user_actions_executes_each_action(self):
-        plain_body = json.dumps({
-            "version": "1",
-            "user_actions": [
-                {"id": "act-1"},
-                {"id": "act-2"},
-            ],
-        })
-        encrypted = sync_crypto.encrypt_utf8_json_to_wire(
-            plain_body,
+    async def test_user_actions_executes_appended_action(self):
+        plain_body = json.dumps({"id": "act-1"})
+        element = sync_crypto.encrypt_bytes_to_blob_dict(
+            plain_body.encode("utf-8"),
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACTIONS.value,
         )
-        body = json.dumps({"v": 1, "data": encrypted, "timestamps": {}, "hash": "x"})
-        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
+        event = WriteEvent(
+            collection=enums.Collections.USER_ACTIONS.value,
+            hash="x",
+            timestamp=0,
+            params={"identity": "0xwallet"},
+            body=element,
+        )
 
-        # Build real action stubs since protocol_models is mocked in conftest.
-        action1 = mock.MagicMock()
-        action1.id = "act-1"
-        action2 = mock.MagicMock()
-        action2.id = "act-2"
-        fake_state = mock.MagicMock()
-        fake_state.user_actions = [action1, action2]
+        # Build a real action stub since protocol_models is mocked in conftest.
+        action = mock.MagicMock()
+        action.id = "act-1"
 
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
@@ -252,35 +248,31 @@ class TestPutData:
             ),
             mock.patch("octobot_sync.server.protocol_models") as mock_pm,
         ):
-            mock_pm.UserActionsState.from_json.return_value = fake_state
+            mock_pm.UserAction.from_json.return_value = action
             mock_proto.execute_user_action = mock.AsyncMock()
-            await server.put_data("users/0xwallet/actions", body, context)
-        assert mock_proto.execute_user_action.await_count == 2
-        calls = mock_proto.execute_user_action.await_args_list
-        assert calls[0].args[0].id == "act-1"
-        assert calls[0].args[1] == "0xwallet"
-        assert calls[1].args[0].id == "act-2"
-        assert calls[1].args[1] == "0xwallet"
+            await server._user_actions_after_write(event)
+        mock_pm.UserAction.from_json.assert_called_once_with(plain_body)
+        mock_proto.execute_user_action.assert_awaited_once_with(action, "0xwallet")
 
     @pytest.mark.asyncio
     async def test_user_actions_logs_exception_on_failure(self):
-        plain_body = json.dumps({
-            "version": "1",
-            "user_actions": [{"id": "fail-action"}],
-        })
-        encrypted = sync_crypto.encrypt_utf8_json_to_wire(
-            plain_body,
+        plain_body = json.dumps({"id": "fail-action"})
+        element = sync_crypto.encrypt_bytes_to_blob_dict(
+            plain_body.encode("utf-8"),
             _TEST_WALLET_PRIVATE_KEY,
             enums.Collections.USER_ACTIONS.value,
         )
-        body = json.dumps({"v": 1, "data": encrypted, "timestamps": {}, "hash": "x"})
-        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACTIONS.value)
+        event = WriteEvent(
+            collection=enums.Collections.USER_ACTIONS.value,
+            hash="x",
+            timestamp=0,
+            params={"identity": "0xwallet"},
+            body=element,
+        )
         mock_logger = mock.MagicMock()
 
         fail_action = mock.MagicMock()
         fail_action.id = "fail-action"
-        fake_state = mock.MagicMock()
-        fake_state.user_actions = [fail_action]
 
         with (
             mock.patch("octobot_sync.server.user_actions_protocol") as mock_proto,
@@ -291,11 +283,13 @@ class TestPutData:
             ),
             mock.patch("octobot_sync.server.protocol_models") as mock_pm,
         ):
-            mock_pm.UserActionsState.from_json.return_value = fake_state
+            mock_pm.UserAction.from_json.return_value = fail_action
             mock_proto.execute_user_action = mock.AsyncMock(side_effect=RuntimeError("boom"))
-            await server.put_data("users/0xwallet/actions", body, context)
+            await server._user_actions_after_write(event)
         mock_logger.exception.assert_called_once()
 
+
+class TestPutData:
     @pytest.mark.asyncio
     async def test_unmatched_collection_writes_to_opaque_store(self):
         """Any collection without a protocol-bridge case persists the unwrapped

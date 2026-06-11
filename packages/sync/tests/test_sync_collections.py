@@ -128,3 +128,8 @@ def test_fallback_to_default_config():
     assert signals.append_only is not None
     assert signals.append_only.type == "by_timestamp"
     assert signals.append_only.require_author_signature is False
+    actions = by_name["user-actions"]
+    assert actions.append_only is not None
+    assert actions.append_only.type == "by_timestamp"
+    assert actions.append_only.persist is False
+    assert actions.append_only.require_author_signature is False

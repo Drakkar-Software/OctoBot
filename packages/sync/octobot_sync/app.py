@@ -20,6 +20,7 @@ from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
 from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
 from starfish_server.config.schema import ConfigEndpointOptions, SyncConfig
+from starfish_protocol.plugins import ServerPlugin
 from starfish_server.router.cap_resolver import create_cap_cert_role_resolver, CapAuthError
 from starfish_server.auth.nonce_cache import create_in_memory_nonce_cache
 from starfish_server.auth.revocation_store import create_in_memory_revocation_store
@@ -100,6 +101,7 @@ def create_app(
     collections_path: str | None = None,
     is_allowed_user_id: Callable[[str], bool] | None = None,
     sync_config: SyncConfig | None = None,
+    plugins: list[ServerPlugin] | None = None,
 ):
     if sync_config is None:
         sync_config = sync.load_sync_config(collections_path)
@@ -112,6 +114,7 @@ def create_app(
             config=sync_config,
             role_resolver=_build_role_resolver(is_allowed_user_id),
             config_endpoint=ConfigEndpointOptions(auth="public"),
+            plugins=plugins,
         )
     )
     app.include_router(sync_router, prefix=f"/{constants.STARFISH_SERVER_MAJOR_VERSION}")

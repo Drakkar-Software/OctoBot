@@ -94,6 +94,11 @@ DEFAULT_SYNC_CONFIG = SyncConfig(
                     writeRoles=["self"],
                     encryption="delegated",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
+                    appendOnly=AppendOnlyConfig(
+                        type="by_timestamp",
+                        persist=False,
+                        requireAuthorSignature=False,
+                    ),
                 ),
                 CollectionConfig(
                     name=enums.Collections.DEBUG.value,

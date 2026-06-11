@@ -24,6 +24,7 @@ from starfish_server.protocol.types import DOCUMENT_VERSION
 from starfish_server.storage.base import AbstractObjectStore, StoreContext
 from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
 from starfish_server.storage.filesystem import FilesystemObjectStore, FilesystemStorageOptions
+from starfish_protocol.plugins import ServerPlugin, WriteEvent
 
 import octobot_commons.logging as logging
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
@@ -93,11 +94,6 @@ def _encrypt(data: str, user_id: str, collection: str) -> str:
     return sync_crypto.encrypt_utf8_json_to_wire(data, wallet_private_key, collection)
 
 
-def _decrypt(data: str, user_id: str, collection: str) -> str:
-    wallet_private_key = _get_wallet_private_key(user_id)
-    return sync_crypto.decrypt_wire_to_utf8_json(data, wallet_private_key, collection)
-
-
 def _wrap_as_stored_document(encrypted_payload: str, plaintext_for_hash: str) -> str:
     """Wrap a server-encrypted payload in the StoredDocument shape that
     starfish_server.protocol.pull expects: ``{"v","data","timestamps","hash"}``.
@@ -125,6 +121,34 @@ def _unwrap_stored_document_data(body: str) -> str:
             f"Push body missing string 'data' field; got {type(payload).__name__}"
         )
     return payload
+
+
+async def _user_actions_after_write(event: WriteEvent) -> None:
+    if event.collection != enums.Collections.USER_ACTIONS.value:
+        return
+    element = event.body
+    if element is None:
+        return
+    identity = event.params["identity"]
+    wallet_private_key = _get_wallet_private_key(identity)
+    plaintext = sync_crypto.decrypt_blob_dict_to_bytes(
+        dict(element), wallet_private_key, event.collection
+    ).decode("utf-8")
+    action = protocol_models.UserAction.from_json(plaintext)
+    if action is None:
+        return
+    try:
+        await user_actions_protocol.execute_user_action(action, identity)
+    except Exception as exc:
+        _get_logger().exception(
+            exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
+        )
+
+
+user_actions_plugin = ServerPlugin(
+    name="octobot-user-actions",
+    after_write=_user_actions_after_write,
+)
 
 
 _opaque_store: FilesystemObjectStore | None = None
@@ -211,21 +235,6 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     collection = _get_collection(context)
     match collection:
-        case enums.Collections.USER_ACTIONS.value:
-            encrypted_payload = _unwrap_stored_document_data(body)
-            user_actions_state = protocol_models.UserActionsState.from_json(
-                _decrypt(encrypted_payload, _get_identity(context), collection)
-            )
-            if user_actions_state.user_actions:
-                for action in user_actions_state.user_actions:
-                    try:
-                        await user_actions_protocol.execute_user_action(
-                            action, _get_identity(context)
-                        )
-                    except Exception as exc:
-                        _get_logger().exception(
-                            exc, True, f"Unexpected error executing user action: {action.id}: {exc}"
-                        )
         case enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value:
             # Append-only plaintext log: persist the full StoredDocument body
             # (data is a dict), not an unwrapped ciphertext string.
@@ -301,4 +310,5 @@ def build_default_sync_app(
         build_object_store(),
         is_allowed_user_id=is_allowed_user_id,
         sync_config=sync_config,
+        plugins=[user_actions_plugin],
     )
