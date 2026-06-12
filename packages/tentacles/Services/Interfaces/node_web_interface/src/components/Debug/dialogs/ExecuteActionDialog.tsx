@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { Copy } from "lucide-react"
+import { Copy, TriangleAlert } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import { type ApiError, DebugService, type UserAction } from "@/client"
@@ -31,7 +31,29 @@ import {
   type UserActionTemplateKey,
   userActionTemplateKeyFromActionType,
 } from "@/lib/debug/user-action-templates"
-import { handleError } from "@/utils"
+function getApiErrorMessage(error: ApiError): string {
+  const errorDetail = (error.body as { detail?: unknown } | undefined)?.detail
+  if (typeof errorDetail === "string" && errorDetail.length > 0) {
+    return errorDetail
+  }
+  if (Array.isArray(errorDetail) && errorDetail.length > 0) {
+    const firstDetail = errorDetail[0] as { msg?: string }
+    if (firstDetail.msg) return firstDetail.msg
+  }
+  return error.message || "Something went wrong."
+}
+
+function ExecuteActionDialogError({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="flex max-h-32 shrink-0 items-start gap-2 overflow-y-auto rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+    >
+      <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+      <p className="min-w-0 whitespace-pre-wrap break-words">{message}</p>
+    </div>
+  )
+}
 
 type ExecuteActionDialogProps = {
   open: boolean
@@ -55,15 +77,18 @@ export function ExecuteActionDialog({
   const [jsonText, setJsonText] = useState(() =>
     buildUserActionTemplateJson(DEFAULT_USER_ACTION_TEMPLATE_KEY),
   )
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const { showSuccessToast } = useCustomToast()
 
   const validationError = useMemo(
     () => validateUserActionJson(jsonText),
     [jsonText],
   )
+  const displayedError = validationError ?? submitError
 
   useEffect(() => {
     if (open) {
+      setSubmitError(null)
       if (draft) {
         setSelectedTemplateKey(userActionTemplateKeyFromActionType(draft.actionType))
         setJsonText(draft.jsonText)
@@ -76,6 +101,7 @@ export function ExecuteActionDialog({
 
   const handleTemplateKeyChange = (value: UserActionTemplateKey) => {
     setSelectedTemplateKey(value)
+    setSubmitError(null)
     setJsonText(buildUserActionTemplateJson(value))
   }
 
@@ -91,7 +117,7 @@ export function ExecuteActionDialog({
       onSuccess()
     },
     onError: (error) => {
-      handleError.bind(showErrorToast)(error as ApiError)
+      setSubmitError(getApiErrorMessage(error as ApiError))
     },
   })
 
@@ -149,12 +175,13 @@ export function ExecuteActionDialog({
             className="min-h-[220px] shrink-0"
             textareaClassName="min-h-[220px]"
             value={jsonText}
-            onChange={(event) => setJsonText(event.target.value)}
+            onChange={(event) => {
+              setSubmitError(null)
+              setJsonText(event.target.value)
+            }}
           />
-          {validationError && (
-            <p className="shrink-0 text-sm text-destructive">{validationError}</p>
-          )}
         </div>
+        {displayedError && <ExecuteActionDialogError message={displayedError} />}
         <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

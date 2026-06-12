@@ -80,6 +80,8 @@ describe("buildUserActionTemplate", () => {
     const dcaConfig = tradingConfiguration.config as Record<string, unknown>
     expect(dcaConfig.trigger_mode).toBe("Maximum evaluators signals based")
     expect(dcaConfig.use_init_entry_orders).toBe(false)
+    expect(dcaConfig.use_stop_losses).toBe(false)
+    expect(dcaConfig.stop_loss_price_percent).toBe(10)
     expect(dcaConfig.trading_pairs).toEqual([])
 
     const evaluators = tradingConfiguration.evaluators as Array<{
