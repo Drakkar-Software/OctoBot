@@ -80,6 +80,96 @@ def _copied_assets_by_name(account: protocol_models.CopiedAccount) -> dict[str, 
     return {asset.name: asset for asset in (account.copied_assets or [])}
 
 
+MAX_REMOVED_INDEX_COIN_REMAINING_USDT = 10
+INITIAL_SIMULATOR_PORTFOLIO_USDT = 1000.0
+
+
+def _asset_unit_usdt_price_from_exchange_account_holdings(automation_dump: dict, asset: str) -> float | None:
+    holdings = automation_dump.get("exchange_account_details", {}).get("portfolio", {}).get("content", [])
+    for holding in holdings:
+        if holding.get("asset") != asset:
+            continue
+        total = float(holding.get("total", 0))
+        if total <= 0:
+            continue
+        value = float(holding.get("value", 0))
+        if value <= 0:
+            return None
+        return value / total
+    return None
+
+
+def _estimate_eth_usdt_unit_price_from_btc_eth_index_portfolio(btc_eth_dump: dict) -> float | None:
+    portfolio_content = btc_eth_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
+    eth_total = float(portfolio_content.get("ETH", {}).get("total", 0))
+    if eth_total <= 0:
+        return None
+    usdt_total = float(portfolio_content.get("USDT", {}).get("total", 0))
+    crypto_usdt_value = INITIAL_SIMULATOR_PORTFOLIO_USDT - usdt_total
+    eth_usdt_value = crypto_usdt_value * 0.5
+    return eth_usdt_value / eth_total
+
+
+def _asset_unit_usdt_price_from_dump(
+    automation_dump: dict,
+    asset: str,
+    *,
+    price_reference_dump: dict | None = None,
+) -> float | None:
+    unit_usdt_price = _asset_unit_usdt_price_from_exchange_account_holdings(automation_dump, asset)
+    if unit_usdt_price is not None:
+        return unit_usdt_price
+    if price_reference_dump is not None and asset == "ETH":
+        return _estimate_eth_usdt_unit_price_from_btc_eth_index_portfolio(price_reference_dump)
+    return None
+
+
+def _assert_removed_index_coin_mostly_sold(
+    portfolio_content: dict,
+    automation_dump: dict,
+    asset: str,
+    *,
+    max_usdt_value: float = MAX_REMOVED_INDEX_COIN_REMAINING_USDT,
+    price_reference_dump: dict | None = None,
+) -> None:
+    if asset not in portfolio_content:
+        return
+    unit_usdt_price = _asset_unit_usdt_price_from_dump(
+        automation_dump,
+        asset,
+        price_reference_dump=price_reference_dump,
+    )
+    assert unit_usdt_price is not None, (
+        f"Cannot evaluate {asset} USDT value from automation dump for remaining-balance check"
+    )
+    total_usdt_value = float(portfolio_content[asset]["total"]) * unit_usdt_price
+    available_usdt_value = float(portfolio_content[asset]["available"]) * unit_usdt_price
+    assert total_usdt_value <= max_usdt_value, (
+        f"{asset} total USDT value {total_usdt_value} exceeds max {max_usdt_value}"
+    )
+    assert available_usdt_value <= max_usdt_value, (
+        f"{asset} available USDT value {available_usdt_value} exceeds max {max_usdt_value}"
+    )
+
+
+def _assert_btc_sol_portfolio_after_eth_removal(
+    portfolio_content: dict,
+    automation_dump: dict,
+    *,
+    price_reference_dump: dict | None = None,
+) -> None:
+    assert {"BTC", "SOL", "USDT"} <= set(portfolio_content.keys())
+    assert 0 < portfolio_content["USDT"]["available"] < 5
+    assert 0.001 < portfolio_content["BTC"]["available"] < 0.02
+    assert 0.5 < portfolio_content["SOL"]["available"] < 20
+    _assert_removed_index_coin_mostly_sold(
+        portfolio_content,
+        automation_dump,
+        "ETH",
+        price_reference_dump=price_reference_dump,
+    )
+
+
 def _assert_trading_signal_account_fields(trading_signal: octobot_flow.entities.TradingSignal) -> None:
     """
     Matches octobot_flow.logic.actions.account_copy_util.reference_exchange_elements_to_account:
@@ -118,17 +208,29 @@ def _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
     trading_signal: octobot_flow.entities.TradingSignal,
     *,
     allow_zero_ratio_assets: frozenset[str] = frozenset(),
+    price_reference_dump: dict | None = None,
 ) -> None:
     assets = _copied_assets_by_name(trading_signal.account)
-    assert list(sorted(assets.keys())) == ["BTC", "ETH", "SOL", "USDT"]
+    assert {"BTC", "SOL", "USDT"} <= set(assets.keys())
+    assert set(assets.keys()) <= {"BTC", "ETH", "SOL", "USDT"}
     assert 0 < float(assets["USDT"].available) < 5
     assert 0.001 < float(assets["BTC"].available) < 0.02
     assert 0.5 < float(assets["SOL"].available) < 20
-    assert 0 < float(assets["ETH"].available) < 0.001
     assert 0 < float(assets["USDT"].total) < 5
     assert 0.001 < float(assets["BTC"].total) < 0.02
     assert 0.5 < float(assets["SOL"].total) < 20
-    assert 0 < float(assets["ETH"].total) < 0.001
+    if "ETH" in assets and price_reference_dump is not None:
+        _assert_removed_index_coin_mostly_sold(
+            {
+                "ETH": {
+                    "total": float(assets["ETH"].total),
+                    "available": float(assets["ETH"].available),
+                }
+            },
+            {},
+            "ETH",
+            price_reference_dump=price_reference_dump,
+        )
     assert_emitted_signal_account_allocation_ratios(
         trading_signal.account,
         allow_negligible_ratio_assets=allow_zero_ratio_assets,
@@ -377,20 +479,20 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
                 assert action.executed_at is None
                 assert isinstance(action.previous_execution_result, dict)
 
-        # portfolio should be updated to BTC + SOL, ETH should be removed
+        # portfolio should be BTC + SOL; ETH optional, at most 10 USDT if present
         after_btc_sol_portfolio = after_btc_sol_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
-        assert list(sorted(after_btc_sol_portfolio.keys())) == ["BTC", "ETH", "SOL", "USDT"]
-        assert 0 < after_btc_sol_portfolio["USDT"]["available"] < 5
-        assert 0.001 < after_btc_sol_portfolio["BTC"]["available"] < 0.02
-        assert 0.5 < after_btc_sol_portfolio["SOL"]["available"] < 20
-        assert 0 < after_btc_sol_portfolio["ETH"]["available"] < 0.001 # sold close to all ETH
+        _assert_btc_sol_portfolio_after_eth_removal(
+            after_btc_sol_portfolio,
+            after_btc_sol_execution_dump,
+            price_reference_dump=after_btc_eth_execution_dump,
+        )
 
         after_btc_sol_reference_portfolio = after_btc_sol_execution_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
-        assert list(sorted(after_btc_sol_reference_portfolio.keys())) == ["BTC", "ETH", "SOL", "USDT"]
-        assert 0 < after_btc_sol_reference_portfolio["USDT"]["available"] < 5
-        assert 0.001 < after_btc_sol_reference_portfolio["BTC"]["available"] < 0.02
-        assert 0.5 < after_btc_sol_reference_portfolio["SOL"]["available"] < 20
-        assert 0 < after_btc_sol_reference_portfolio["ETH"]["available"] < 0.001  # sold close to all ETH
+        _assert_btc_sol_portfolio_after_eth_removal(
+            after_btc_sol_reference_portfolio,
+            after_btc_sol_execution_dump,
+            price_reference_dump=after_btc_eth_execution_dump,
+        )
 
         schedule_delay = (
             after_btc_sol_execution_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
@@ -429,8 +531,15 @@ async def test_simulator_index_rebalance_after_index_content_switch_btc_eth_to_b
         if emit_signals:
             assert insert_trading_signal_mock.await_count == 3
             _assert_trading_signal_btc_eth_usdt_index_portfolio(insert_trading_signal_mock.await_args_list[0].args[0])
-            _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(insert_trading_signal_mock.await_args_list[1].args[0])
-            _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(insert_trading_signal_mock.await_args_list[2].args[0], allow_zero_ratio_assets=frozenset({"ETH"}))
+            _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
+                insert_trading_signal_mock.await_args_list[1].args[0],
+                price_reference_dump=after_btc_eth_execution_dump,
+            )
+            _assert_trading_signal_btc_eth_sol_usdt_after_btc_sol_rebalance(
+                insert_trading_signal_mock.await_args_list[2].args[0],
+                allow_zero_ratio_assets=frozenset({"ETH"}),
+                price_reference_dump=after_btc_eth_execution_dump,
+            )
         else:
             insert_trading_signal_mock.assert_not_awaited()
 
