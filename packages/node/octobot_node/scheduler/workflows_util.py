@@ -201,10 +201,43 @@ def filter_by_wallet(
     raise ValueError(f"Unsupported scheduler queue for wallet filter: {queue!r}")
 
 
+def parse_automation_child_workflow_index(workflow_id: str) -> int:
+    """
+    Return the child iteration index encoded in a workflow ID.
+    Parent-only IDs (no suffix after PARENT_WORKFLOW_ID_LENGTH) map to 0.
+    Child IDs use a single ``_N`` or ``-N`` suffix (digits only after the separator).
+    """
+    suffix = workflow_id[octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH:]
+    if not suffix:
+        return 0
+    if len(suffix) >= 2 and suffix[0] in "_-" and suffix[1:].isdigit():
+        return int(suffix[1:])
+    raise ValueError(
+        f"Invalid child workflow suffix format in workflow ID: {workflow_id!r}."
+    )
+
+
+def _automation_child_workflow_sort_key(
+    workflow_status: dbos_lib.WorkflowStatus,
+) -> tuple[int, int]:
+    try:
+        child_index = parse_automation_child_workflow_index(workflow_status.workflow_id)
+    except ValueError:
+        # Unrelated workflow IDs can share the parent UUID prefix (e.g. ``uuid-4-4``).
+        child_index = -1
+    return child_index, workflow_status.updated_at or 0
+
+
+def get_latest_child_workflow(
+    workflows: list[dbos_lib.WorkflowStatus],
+) -> dbos_lib.WorkflowStatus:
+    return sorted(workflows, key=_automation_child_workflow_sort_key)[-1]
+
+
 def get_latest_workflow(
     workflows: list[dbos_lib.WorkflowStatus],
 ) -> dbos_lib.WorkflowStatus:
-    return sorted(workflows, key=lambda w: w.updated_at or 0)[-1]
+    return get_latest_child_workflow(workflows)
 
 
 def get_automation_copied_strategy_ids(workflow_status: dbos_lib.WorkflowStatus) -> list[str]:

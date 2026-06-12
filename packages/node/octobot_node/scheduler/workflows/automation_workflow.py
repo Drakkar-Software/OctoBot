@@ -33,6 +33,7 @@ import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context
 import octobot_node.constants as constants
 import octobot_node.scheduler.workflows.params as params
+import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.errors as errors
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
@@ -383,20 +384,10 @@ class AutomationWorkflow:
         if workflow_id is None:
             raise errors.WorkflowInputError("Missing current workflow ID while scheduling next iteration.")
         parent_workflow_id = workflow_id[:constants.PARENT_WORKFLOW_ID_LENGTH]
-        suffix = workflow_id[constants.PARENT_WORKFLOW_ID_LENGTH:]
-        if not suffix:
-            current_child_id = 0
-        elif suffix[0] in "_-":
-            try:
-                current_child_id = int(suffix[1:])
-            except ValueError as error:
-                raise errors.WorkflowInputError(
-                    f"Invalid non-numeric child workflow suffix in workflow ID: '{workflow_id}'."
-                ) from error
-        else:
-            raise errors.WorkflowInputError(
-                f"Invalid child workflow suffix format in workflow ID: '{workflow_id}'."
-            )
+        try:
+            current_child_id = workflows_util.parse_automation_child_workflow_index(workflow_id)
+        except ValueError as error:
+            raise errors.WorkflowInputError(str(error)) from error
         next_child_id = current_child_id + 1
         return f"{parent_workflow_id}_{next_child_id}"
 
