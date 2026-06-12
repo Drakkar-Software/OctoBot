@@ -24,6 +24,7 @@ import octobot_sync.sync.collection_backend.abstract_local_collection_provider a
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_backend.state_model as state_model
+import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading
 
 
 T = typing.TypeVar("T")
@@ -45,6 +46,12 @@ class BaseLocalCollectionProvider(
     one collection field preserve other fields on save.
     """
     ITEMS_KEY: str = None  # type: ignore
+    MODEL_SANITIZERS: typing.ClassVar[
+        typing.Optional[dict[type, tolerant_state_loading.ModelSanitizer]]
+    ] = None
+    MODEL_FALLBACKS: typing.ClassVar[
+        typing.Optional[dict[type, tolerant_state_loading.ModelFallback]]
+    ] = None
 
     @staticmethod
     def _create_storage(
@@ -102,7 +109,13 @@ class BaseLocalCollectionProvider(
         try:
             persisted_state = typing.cast(
                 S,
-                self._storage.load_state(address, wallet_private_key, self.STATE_CLASS),
+                self._storage.load_state(
+                    address,
+                    wallet_private_key,
+                    self.STATE_CLASS,
+                    model_sanitizers=self.MODEL_SANITIZERS,
+                    model_fallbacks=self.MODEL_FALLBACKS,
+                ),
             )
         except collection_errors.CollectionNoDataError:
             persisted_state = self._empty_state()

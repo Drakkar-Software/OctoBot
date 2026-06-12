@@ -29,6 +29,7 @@ import octobot_sync.errors as sync_errors
 
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_backend.state_model as state_model
+import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading
 
 
 class BaseLocalCollectionStorage:
@@ -87,7 +88,18 @@ class BaseLocalCollectionStorage:
         )
 
     def _decrypt(
-        self, blob: dict[str, typing.Any], wallet_private_key: str, state_model: type[state_model.StateModel],
+        self,
+        blob: dict[str, typing.Any],
+        wallet_private_key: str,
+        state_model: type[state_model.StateModel],
+        *,
+        strict: bool = False,
+        model_sanitizers: typing.Optional[
+            dict[type, tolerant_state_loading.ModelSanitizer]
+        ] = None,
+        model_fallbacks: typing.Optional[
+            dict[type, tolerant_state_loading.ModelFallback]
+        ] = None,
     ) -> state_model.StateModel:
         try:
             plaintext_bytes = sync_crypto.decrypt_blob_dict_to_bytes(
@@ -105,7 +117,15 @@ class BaseLocalCollectionStorage:
             ) from err
 
         try:
-            decrypted_state = state_model.from_json(plaintext_bytes.decode("utf-8"))
+            if strict:
+                decrypted_state = state_model.from_json(plaintext_bytes.decode("utf-8"))
+            else:
+                decrypted_state = tolerant_state_loading.TolerantStateLoader(
+                    state_model,
+                    collection=self.collection,
+                    model_sanitizers=model_sanitizers,
+                    model_fallbacks=model_fallbacks,
+                ).from_json(plaintext_bytes.decode("utf-8"))
         except Exception as err:
             raise collection_errors.CollectionFileFormatError(
                 f"Decrypted {self.collection} payload is not valid JSON: {err}"
@@ -116,6 +136,35 @@ class BaseLocalCollectionStorage:
                 f"Decrypted {self.collection} payload did not produce a state model"
             )
         return decrypted_state
+
+    def load_state(
+        self,
+        storage_key: str,
+        wallet_private_key: str,
+        state_model: type[state_model.StateModel],
+        *,
+        strict: bool = False,
+        model_sanitizers: typing.Optional[
+            dict[type, tolerant_state_loading.ModelSanitizer]
+        ] = None,
+        model_fallbacks: typing.Optional[
+            dict[type, tolerant_state_loading.ModelFallback]
+        ] = None,
+    ) -> state_model.StateModel:
+        """
+        Load and decrypt the state dict for a given storage key.
+
+        Raises ``CollectionNoDataError`` when the backing file does not exist.
+        """
+        blob = self._read_blob(storage_key)
+        return self._decrypt(
+            blob,
+            wallet_private_key,
+            state_model,
+            strict=strict,
+            model_sanitizers=model_sanitizers,
+            model_fallbacks=model_fallbacks,
+        )
 
     def _read_blob(self, storage_key: str) -> dict[str, typing.Any]:
         """Read the raw encrypted blob from disk.
@@ -133,17 +182,6 @@ class BaseLocalCollectionStorage:
                 f"{self.collection} file must contain an encrypted blob object"
             )
         return raw
-
-    def load_state(
-        self, storage_key: str, wallet_private_key: str, state_model: type[state_model.StateModel],
-    ) -> state_model.StateModel:
-        """
-        Load and decrypt the state dict for a given storage key.
-
-        Raises ``CollectionNoDataError`` when the backing file does not exist.
-        """
-        blob = self._read_blob(storage_key)
-        return self._decrypt(blob, wallet_private_key, state_model)
 
     def load_items_encrypted(self, storage_key: str) -> dict[str, str]:
         """
