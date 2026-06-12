@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import mock
+import decimal
 import numpy
 import pytest
 
@@ -40,6 +41,15 @@ class TestFormatParameterValue:
     def test_float(self):
         assert parameters_util.format_parameter_value(3.14) == "3.14"
         assert parameters_util.format_parameter_value(1.0) == "1.0"
+
+    def test_decimal(self):
+        assert parameters_util.format_parameter_value(decimal.Decimal("1.75")) == "1.75"
+        assert parameters_util.format_parameter_value(decimal.Decimal("0.05")) == "0.05"
+
+    def test_decimal_in_dict(self):
+        assert parameters_util.format_parameter_value(
+            {"stop_loss_price_percent": decimal.Decimal("0.1")}
+        ) == "{'stop_loss_price_percent': 0.1}"
 
     def test_plain_string(self):
         assert parameters_util.format_parameter_value("hello") == "'hello'"

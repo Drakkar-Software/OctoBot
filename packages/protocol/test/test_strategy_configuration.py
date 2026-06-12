@@ -81,49 +81,28 @@ class TestStrategyConfiguration(unittest.TestCase):
                             max_negative_percent_price_change = 0, 
                             max_positive_percent_price_change = 0, ), )
                     ],
+                name = '',
+                config = { },
                 symbols = [
                     ''
                     ],
-                entry_order_amount = '',
-                exit_limit_orders_price_percent = 0,
-                entry_limit_orders_price_percent = 0,
-                secondary_entry_orders_count = 0,
-                secondary_entry_orders_amount = '0%t',
-                secondary_entry_orders_price_percent = 0,
-                enable_stop_loss = True,
-                stop_loss_price_discount_percent = 0,
-                trigger_mode = 'Maximum evaluators signals based',
-                use_init_entry_orders = True,
-                max_asset_holding_percent = 0,
                 strategies = [
                     octobot_protocol.models.strategy_evaluator_configuration.StrategyEvaluatorConfiguration(
+                        name = '', 
+                        config = { }, 
                         time_frames = [
                             '1m'
-                            ], 
-                        configuration = null, )
+                            ], )
                     ],
                 evaluators = [
                     octobot_protocol.models.evaluator_configuration.EvaluatorConfiguration(
+                        name = '', 
+                        config = { }, 
                         symbols = [
                             ''
                             ], 
-                        include_in_construction_candle = True, 
-                        configuration = null, )
+                        include_in_construction_candle = True, )
                     ],
-                coins = [
-                    octobot_protocol.models.index_coin.IndexCoin(
-                        name = '', 
-                        ratio = 0, )
-                    ],
-                rebalance_trigger_min_percent = 0,
-                symbol = '',
-                spread = 0,
-                increment = 0,
-                buy_count = 1,
-                sell_count = 1,
-                enable_trailing_up = True,
-                enable_trailing_down = True,
-                order_by_order_trailing = True,
                 strategy_id = '',
                 profile_data = octobot_protocol.models.profile_data.profile_data(),
                 actions = [
@@ -186,44 +165,8 @@ class TestStrategyConfiguration(unittest.TestCase):
                             max_negative_percent_price_change = 0, 
                             max_positive_percent_price_change = 0, ), )
                     ],
-                symbols = [
-                    ''
-                    ],
-                entry_order_amount = '',
-                exit_limit_orders_price_percent = 0,
-                entry_limit_orders_price_percent = 0,
-                secondary_entry_orders_count = 0,
-                secondary_entry_orders_amount = '0%t',
-                secondary_entry_orders_price_percent = 0,
-                strategies = [
-                    octobot_protocol.models.strategy_evaluator_configuration.StrategyEvaluatorConfiguration(
-                        time_frames = [
-                            '1m'
-                            ], 
-                        configuration = null, )
-                    ],
-                evaluators = [
-                    octobot_protocol.models.evaluator_configuration.EvaluatorConfiguration(
-                        symbols = [
-                            ''
-                            ], 
-                        include_in_construction_candle = True, 
-                        configuration = null, )
-                    ],
-                coins = [
-                    octobot_protocol.models.index_coin.IndexCoin(
-                        name = '', 
-                        ratio = 0, )
-                    ],
-                rebalance_trigger_min_percent = 0,
-                symbol = '',
-                spread = 0,
-                increment = 0,
-                buy_count = 1,
-                sell_count = 1,
-                enable_trailing_up = True,
-                enable_trailing_down = True,
-                order_by_order_trailing = True,
+                name = '',
+                config = { },
                 strategy_id = '',
                 profile_data = octobot_protocol.models.profile_data.profile_data(),
                 actions = [

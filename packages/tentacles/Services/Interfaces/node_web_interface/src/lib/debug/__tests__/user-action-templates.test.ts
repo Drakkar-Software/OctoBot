@@ -36,6 +36,30 @@ describe("buildUserActionTemplate", () => {
   it("builds a grid strategy create template", () => {
     const action = buildUserActionTemplate("strategy_create_grid")
     expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
+    expect(tradingConfiguration.name).toBe("GridTradingMode")
+    expect(tradingConfiguration.symbols).toEqual(["BTC/USDT"])
+  })
+
+  it("builds an index strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_index")
+    expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
+    expect(tradingConfiguration.name).toBe("IndexTradingMode")
+
+    const config = tradingConfiguration.config as Record<string, unknown>
+    expect(config.index_content).toEqual([{ name: "BTC", value: 1.0 }])
+    expect(config.rebalance_trigger_min_percent).toBe(5.0)
   })
 
   it("builds a DCA strategy create template with two evaluators", () => {
@@ -48,34 +72,34 @@ describe("buildUserActionTemplate", () => {
     ).configuration
     expect(strategy.reference_market).toBe("USDC")
 
-    const dcaConfiguration = strategy.configuration as Record<string, unknown>
-    expect(dcaConfiguration.configuration_type).toBe("dca")
-    expect(dcaConfiguration.trigger_mode).toBe("Maximum evaluators signals based")
-    expect(dcaConfiguration.symbols).toEqual([])
-    expect(dcaConfiguration.use_init_entry_orders).toBe(false)
+    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
+    expect(tradingConfiguration.name).toBe("DCATradingMode")
+    expect(tradingConfiguration.symbols).toEqual([])
 
-    const evaluators = dcaConfiguration.evaluators as Array<{
+    const dcaConfig = tradingConfiguration.config as Record<string, unknown>
+    expect(dcaConfig.trigger_mode).toBe("Maximum evaluators signals based")
+    expect(dcaConfig.use_init_entry_orders).toBe(false)
+    expect(dcaConfig.trading_pairs).toEqual([])
+
+    const evaluators = tradingConfiguration.evaluators as Array<{
+      name: string
+      config: Record<string, unknown>
       symbols: string[]
-      configuration: { configuration_type: string }
     }>
     expect(evaluators).toHaveLength(2)
-    expect(evaluators[0].configuration.configuration_type).toBe(
-      "RSIMomentumEvaluator",
-    )
-    expect(evaluators[1].configuration.configuration_type).toBe(
-      "EMAMomentumEvaluator",
-    )
+    expect(evaluators[0].name).toBe("RSIMomentumEvaluator")
+    expect(evaluators[1].name).toBe("EMAMomentumEvaluator")
     expect(evaluators[0].symbols).toEqual(["BTC/USDC", "ETH/USDC"])
 
-    const strategies = dcaConfiguration.strategies as Array<{
+    const strategies = tradingConfiguration.strategies as Array<{
+      name: string
+      config: Record<string, unknown>
       time_frames: string[]
-      configuration: { configuration_type: string }
     }>
     expect(strategies).toHaveLength(1)
     expect(strategies[0].time_frames).toEqual(["1h"])
-    expect(strategies[0].configuration.configuration_type).toBe(
-      "SimpleStrategyEvaluator",
-    )
+    expect(strategies[0].name).toBe("SimpleStrategyEvaluator")
   })
 })
 
@@ -174,7 +198,12 @@ describe("buildAutomationCreateUserActionJsonForStrategy", () => {
       version: "2.0.0",
       name: "Grid",
       reference_market: "USDT",
-      configuration: { configuration_type: "grid", symbol: "BTC/USDT" },
+      configuration: {
+        configuration_type: "trading_tentacles",
+        name: "GridTradingMode",
+        config: { pair_settings: [] },
+        symbols: ["BTC/USDT"],
+      },
     } as Strategy
     const json = JSON.parse(
       buildAutomationCreateUserActionJsonForStrategy(strategy),

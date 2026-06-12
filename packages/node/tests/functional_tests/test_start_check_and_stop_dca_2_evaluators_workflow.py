@@ -12,7 +12,9 @@ import pytest
 import octobot_commons.dsl_interpreter as dsl_interpreter_module
 import octobot_protocol.models as octobot_protocol_models
 
+import tentacles.Evaluator.Strategies.mixed_strategies_evaluator.mixed_strategies as mixed_strategies_evaluator
 import tentacles.Evaluator.TA.momentum_evaluator.momentum as momentum_evaluator
+import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
 
 from .util import dag_assertions as dag_assertions_module
 from .util import dca_workflow as dca_sim_util
@@ -26,6 +28,7 @@ import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_trading.enums as trading_enums_module
 
 from tests.scheduler import temp_dbos_scheduler
+from tests.scheduler.user_actions.user_actions_executor.util import trading_tentacles_test_utils
 
 
 _T_ENQUEUE_SECONDS = 5.0
@@ -42,12 +45,18 @@ _DCA_MID_RUN_PROTOCOL_STATUSES = (
     octobot_protocol_models.WorkflowStatus.COMPLETED,
 )
 _FUNCTIONAL_TIME_FRAME = dca_sim_util.FUNCTIONAL_MAXIMUM_EVALUATORS_TIME_FRAME
-_RSI_ACTION_ID = f"{octobot_protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR.value}_1"
-_EMA_ACTION_ID = f"{octobot_protocol_models.EvaluatorType.EMAMOMENTUMEVALUATOR.value}_1"
-_STRATEGY_ACTION_ID = (
-    f"{octobot_protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR.value}_1"
+_RSI_ACTION_ID = trading_tentacles_test_utils.tentacle_action_id(
+    momentum_evaluator.RSIMomentumEvaluator.get_name()
 )
-_DCA_ACTION_ID = f"{octobot_protocol_models.ActionConfigurationType.DCA.value}_1"
+_EMA_ACTION_ID = trading_tentacles_test_utils.tentacle_action_id(
+    momentum_evaluator.EMAMomentumEvaluator.get_name()
+)
+_STRATEGY_ACTION_ID = trading_tentacles_test_utils.tentacle_action_id(
+    mixed_strategies_evaluator.SimpleStrategyEvaluator.get_name()
+)
+_DCA_ACTION_ID = trading_tentacles_test_utils.tentacle_action_id(
+    dca_trading.DCATradingMode.get_name()
+)
 
 
 class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:

@@ -6,9 +6,10 @@ EvaluatorConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**name** | **str** | Evaluator tentacle class name, e.g. RSIMomentumEvaluator | 
+**config** | **Dict[str, object]** |  | 
 **symbols** | **List[str]** |  | 
 **include_in_construction_candle** | **bool** |  | [optional] [default to False]
-**configuration** | [**EvaluatorConfigurationConfiguration**](EvaluatorConfigurationConfiguration.md) |  | 
 
 ## Example
 

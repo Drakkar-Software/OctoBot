@@ -17,23 +17,26 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Any, ClassVar, Dict, List, Union
-from typing_extensions import Annotated
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
-from octobot_protocol.models.index_coin import IndexCoin
+from octobot_protocol.models.evaluator_configuration import EvaluatorConfiguration
+from octobot_protocol.models.strategy_evaluator_configuration import StrategyEvaluatorConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class IndexConfiguration(BaseModel):
+class TradingTentaclesConfiguration(BaseModel):
     """
-    IndexConfiguration
+    TradingTentaclesConfiguration
     """ # noqa: E501
-    configuration_type: ActionConfigurationType = Field(description="index")
-    coins: List[IndexCoin]
-    rebalance_trigger_min_percent: Union[Annotated[float, Field(le=100, strict=True, ge=0)], Annotated[int, Field(le=100, strict=True, ge=0)]]
-    __properties: ClassVar[List[str]] = ["configuration_type", "coins", "rebalance_trigger_min_percent"]
+    configuration_type: ActionConfigurationType = Field(description="trading_tentacles")
+    name: StrictStr = Field(description="Trading mode tentacle class name, e.g. DCATradingMode, GridTradingMode")
+    config: Dict[str, Any]
+    symbols: Optional[List[StrictStr]] = None
+    strategies: Optional[List[StrategyEvaluatorConfiguration]] = None
+    evaluators: Optional[List[EvaluatorConfiguration]] = None
+    __properties: ClassVar[List[str]] = ["configuration_type", "name", "config", "symbols", "strategies", "evaluators"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -53,7 +56,7 @@ class IndexConfiguration(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of IndexConfiguration from a JSON string"""
+        """Create an instance of TradingTentaclesConfiguration from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -74,18 +77,25 @@ class IndexConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in coins (list)
+        # override the default output from pydantic by calling `to_dict()` of each item in strategies (list)
         _items = []
-        if self.coins:
-            for _item_coins in self.coins:
-                if _item_coins:
-                    _items.append(_item_coins.to_dict())
-            _dict['coins'] = _items
+        if self.strategies:
+            for _item_strategies in self.strategies:
+                if _item_strategies:
+                    _items.append(_item_strategies.to_dict())
+            _dict['strategies'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in evaluators (list)
+        _items = []
+        if self.evaluators:
+            for _item_evaluators in self.evaluators:
+                if _item_evaluators:
+                    _items.append(_item_evaluators.to_dict())
+            _dict['evaluators'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of IndexConfiguration from a dict"""
+        """Create an instance of TradingTentaclesConfiguration from a dict"""
         if obj is None:
             return None
 
@@ -94,8 +104,11 @@ class IndexConfiguration(BaseModel):
 
         _obj = cls.model_validate({
             "configuration_type": obj.get("configuration_type"),
-            "coins": [IndexCoin.from_dict(_item) for _item in obj["coins"]] if obj.get("coins") is not None else None,
-            "rebalance_trigger_min_percent": obj.get("rebalance_trigger_min_percent")
+            "name": obj.get("name"),
+            "config": obj.get("config"),
+            "symbols": obj.get("symbols"),
+            "strategies": [StrategyEvaluatorConfiguration.from_dict(_item) for _item in obj["strategies"]] if obj.get("strategies") is not None else None,
+            "evaluators": [EvaluatorConfiguration.from_dict(_item) for _item in obj["evaluators"]] if obj.get("evaluators") is not None else None
         })
         return _obj
 

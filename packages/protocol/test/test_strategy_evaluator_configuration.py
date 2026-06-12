@@ -35,17 +35,19 @@ class TestStrategyEvaluatorConfiguration(unittest.TestCase):
         model = StrategyEvaluatorConfiguration()
         if include_optional:
             return StrategyEvaluatorConfiguration(
+                name = '',
+                config = { },
                 time_frames = [
                     '1m'
-                    ],
-                configuration = None
+                    ]
             )
         else:
             return StrategyEvaluatorConfiguration(
+                name = '',
+                config = { },
                 time_frames = [
                     '1m'
                     ],
-                configuration = None,
         )
         """
 

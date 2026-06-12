@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from octobot_protocol.models.evaluator_configuration_configuration import EvaluatorConfigurationConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,10 +27,11 @@ class EvaluatorConfiguration(BaseModel):
     """
     EvaluatorConfiguration
     """ # noqa: E501
+    name: StrictStr = Field(description="Evaluator tentacle class name, e.g. RSIMomentumEvaluator")
+    config: Dict[str, Any]
     symbols: List[StrictStr]
     include_in_construction_candle: Optional[StrictBool] = False
-    configuration: EvaluatorConfigurationConfiguration
-    __properties: ClassVar[List[str]] = ["symbols", "include_in_construction_candle", "configuration"]
+    __properties: ClassVar[List[str]] = ["name", "config", "symbols", "include_in_construction_candle"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -72,9 +72,6 @@ class EvaluatorConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of configuration
-        if self.configuration:
-            _dict['configuration'] = self.configuration.to_dict()
         return _dict
 
     @classmethod
@@ -87,9 +84,10 @@ class EvaluatorConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "name": obj.get("name"),
+            "config": obj.get("config"),
             "symbols": obj.get("symbols"),
-            "include_in_construction_candle": obj.get("include_in_construction_candle") if obj.get("include_in_construction_candle") is not None else False,
-            "configuration": EvaluatorConfigurationConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
+            "include_in_construction_candle": obj.get("include_in_construction_candle") if obj.get("include_in_construction_candle") is not None else False
         })
         return _obj
 

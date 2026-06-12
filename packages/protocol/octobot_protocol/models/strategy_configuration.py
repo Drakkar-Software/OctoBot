@@ -18,17 +18,15 @@ import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
 from octobot_protocol.models.copy_configuration import CopyConfiguration
-from octobot_protocol.models.dca_configuration import DCAConfiguration
 from octobot_protocol.models.generic_process_configuration import GenericProcessConfiguration
 from octobot_protocol.models.generic_workflow_configuration import GenericWorkflowConfiguration
-from octobot_protocol.models.grid_configuration import GridConfiguration
-from octobot_protocol.models.index_configuration import IndexConfiguration
 from octobot_protocol.models.market_making_configuration import MarketMakingConfiguration
+from octobot_protocol.models.trading_tentacles_configuration import TradingTentaclesConfiguration
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-STRATEGYCONFIGURATION_ONE_OF_SCHEMAS = ["CopyConfiguration", "DCAConfiguration", "GenericProcessConfiguration", "GenericWorkflowConfiguration", "GridConfiguration", "IndexConfiguration", "MarketMakingConfiguration"]
+STRATEGYCONFIGURATION_ONE_OF_SCHEMAS = ["CopyConfiguration", "GenericProcessConfiguration", "GenericWorkflowConfiguration", "MarketMakingConfiguration", "TradingTentaclesConfiguration"]
 
 class StrategyConfiguration(BaseModel):
     """
@@ -36,20 +34,16 @@ class StrategyConfiguration(BaseModel):
     """
     # data type: MarketMakingConfiguration
     oneof_schema_1_validator: Optional[MarketMakingConfiguration] = None
-    # data type: DCAConfiguration
-    oneof_schema_2_validator: Optional[DCAConfiguration] = None
-    # data type: IndexConfiguration
-    oneof_schema_3_validator: Optional[IndexConfiguration] = None
-    # data type: GridConfiguration
-    oneof_schema_4_validator: Optional[GridConfiguration] = None
+    # data type: TradingTentaclesConfiguration
+    oneof_schema_2_validator: Optional[TradingTentaclesConfiguration] = None
     # data type: CopyConfiguration
-    oneof_schema_5_validator: Optional[CopyConfiguration] = None
+    oneof_schema_3_validator: Optional[CopyConfiguration] = None
     # data type: GenericProcessConfiguration
-    oneof_schema_6_validator: Optional[GenericProcessConfiguration] = None
+    oneof_schema_4_validator: Optional[GenericProcessConfiguration] = None
     # data type: GenericWorkflowConfiguration
-    oneof_schema_7_validator: Optional[GenericWorkflowConfiguration] = None
-    actual_instance: Optional[Union[CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration]] = None
-    one_of_schemas: Set[str] = { "CopyConfiguration", "DCAConfiguration", "GenericProcessConfiguration", "GenericWorkflowConfiguration", "GridConfiguration", "IndexConfiguration", "MarketMakingConfiguration" }
+    oneof_schema_5_validator: Optional[GenericWorkflowConfiguration] = None
+    actual_instance: Optional[Union[CopyConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, MarketMakingConfiguration, TradingTentaclesConfiguration]] = None
+    one_of_schemas: Set[str] = { "CopyConfiguration", "GenericProcessConfiguration", "GenericWorkflowConfiguration", "MarketMakingConfiguration", "TradingTentaclesConfiguration" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -80,19 +74,9 @@ class StrategyConfiguration(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `MarketMakingConfiguration`")
         else:
             match += 1
-        # validate data type: DCAConfiguration
-        if not isinstance(v, DCAConfiguration):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `DCAConfiguration`")
-        else:
-            match += 1
-        # validate data type: IndexConfiguration
-        if not isinstance(v, IndexConfiguration):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `IndexConfiguration`")
-        else:
-            match += 1
-        # validate data type: GridConfiguration
-        if not isinstance(v, GridConfiguration):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `GridConfiguration`")
+        # validate data type: TradingTentaclesConfiguration
+        if not isinstance(v, TradingTentaclesConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `TradingTentaclesConfiguration`")
         else:
             match += 1
         # validate data type: CopyConfiguration
@@ -112,10 +96,10 @@ class StrategyConfiguration(BaseModel):
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in StrategyConfiguration with oneOf schemas: CopyConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, MarketMakingConfiguration, TradingTentaclesConfiguration. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in StrategyConfiguration with oneOf schemas: CopyConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, MarketMakingConfiguration, TradingTentaclesConfiguration. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -140,11 +124,6 @@ class StrategyConfiguration(BaseModel):
             instance.actual_instance = CopyConfiguration.from_json(json_str)
             return instance
 
-        # check if data type is `DCAConfiguration`
-        if _data_type == "DCAConfiguration":
-            instance.actual_instance = DCAConfiguration.from_json(json_str)
-            return instance
-
         # check if data type is `GenericProcessConfiguration`
         if _data_type == "GenericProcessConfiguration":
             instance.actual_instance = GenericProcessConfiguration.from_json(json_str)
@@ -155,19 +134,14 @@ class StrategyConfiguration(BaseModel):
             instance.actual_instance = GenericWorkflowConfiguration.from_json(json_str)
             return instance
 
-        # check if data type is `GridConfiguration`
-        if _data_type == "GridConfiguration":
-            instance.actual_instance = GridConfiguration.from_json(json_str)
-            return instance
-
-        # check if data type is `IndexConfiguration`
-        if _data_type == "IndexConfiguration":
-            instance.actual_instance = IndexConfiguration.from_json(json_str)
-            return instance
-
         # check if data type is `MarketMakingConfiguration`
         if _data_type == "MarketMakingConfiguration":
             instance.actual_instance = MarketMakingConfiguration.from_json(json_str)
+            return instance
+
+        # check if data type is `TradingTentaclesConfiguration`
+        if _data_type == "TradingTentaclesConfiguration":
+            instance.actual_instance = TradingTentaclesConfiguration.from_json(json_str)
             return instance
 
         # deserialize data into MarketMakingConfiguration
@@ -176,21 +150,9 @@ class StrategyConfiguration(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into DCAConfiguration
+        # deserialize data into TradingTentaclesConfiguration
         try:
-            instance.actual_instance = DCAConfiguration.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into IndexConfiguration
-        try:
-            instance.actual_instance = IndexConfiguration.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into GridConfiguration
-        try:
-            instance.actual_instance = GridConfiguration.from_json(json_str)
+            instance.actual_instance = TradingTentaclesConfiguration.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
@@ -215,10 +177,10 @@ class StrategyConfiguration(BaseModel):
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into StrategyConfiguration with oneOf schemas: CopyConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, MarketMakingConfiguration, TradingTentaclesConfiguration. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into StrategyConfiguration with oneOf schemas: CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into StrategyConfiguration with oneOf schemas: CopyConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, MarketMakingConfiguration, TradingTentaclesConfiguration. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -232,7 +194,7 @@ class StrategyConfiguration(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], CopyConfiguration, DCAConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, GridConfiguration, IndexConfiguration, MarketMakingConfiguration]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], CopyConfiguration, GenericProcessConfiguration, GenericWorkflowConfiguration, MarketMakingConfiguration, TradingTentaclesConfiguration]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

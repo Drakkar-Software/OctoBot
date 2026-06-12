@@ -27,9 +27,7 @@ class ActionConfigurationType(str, Enum):
     allowed enum values
     """
     MARKET_MAKING = 'market_making'
-    DCA = 'dca'
-    INDEX = 'index'
-    GRID = 'grid'
+    TRADING_TENTACLES = 'trading_tentacles'
     COPY = 'copy'
     GENERIC_PROCESS = 'generic_process'
     GENERIC_WORKFLOW = 'generic_workflow'

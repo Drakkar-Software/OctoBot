@@ -6,8 +6,9 @@ StrategyEvaluatorConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**name** | **str** | Strategy evaluator tentacle class name, e.g. SimpleStrategyEvaluator | 
+**config** | **Dict[str, object]** |  | 
 **time_frames** | [**List[TimeFrame]**](TimeFrame.md) |  | 
-**configuration** | [**StrategyEvaluatorConfigurationConfiguration**](StrategyEvaluatorConfigurationConfiguration.md) |  | 
 
 ## Example
 

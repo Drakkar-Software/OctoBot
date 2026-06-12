@@ -6,7 +6,6 @@ import type {
   AutomationConfiguration,
   AutomationSignalType,
   CopyConfiguration,
-  DCAConfiguration,
   CreateAccountAuthConfiguration,
   CreateAccountConfiguration,
   CreateAutomationConfiguration,
@@ -22,23 +21,17 @@ import type {
   EditExchangeConfigConfiguration,
   EditStrategyConfiguration,
   EvaluatorConfiguration,
-  EvaluatorConfigurationConfiguration,
-  EMAMomentumEvaluatorConfiguration,
   ExchangeAccount,
   ExchangeConfig,
   GenericProcessConfiguration,
-  GridConfiguration,
-  IndexConfiguration,
   RefreshAccountsConfiguration,
-  RSIMomentumEvaluatorConfiguration,
   SignalAutomationConfiguration,
-  SimpleStrategyEvaluatorConfiguration,
   StopAutomationConfiguration,
   Strategy,
   StrategyConfiguration,
   StrategyEvaluatorConfiguration,
-  StrategyEvaluatorConfigurationConfiguration,
   StrategyReference,
+  TradingTentaclesConfiguration,
   UserAction,
   UserActionConfiguration,
   UserActionType,
@@ -122,10 +115,8 @@ type DebugUserActionConfiguration =
   | DeleteExchangeConfigConfiguration
 
 type StrategyConfigurationVariant =
-  | GridConfiguration
-  | IndexConfiguration
+  | TradingTentaclesConfiguration
   | CopyConfiguration
-  | DCAConfiguration
   | GenericProcessConfiguration
 
 function assertNever(value: never): never {
@@ -137,22 +128,6 @@ function asStrategyConfiguration(
   configuration: StrategyConfigurationVariant,
 ): StrategyConfiguration {
   return configuration as StrategyConfiguration
-}
-
-/** OpenAPI oneOf bridge: runtime JSON uses flat evaluator configuration objects. */
-function asEvaluatorConfigurationConfiguration(
-  configuration:
-    | RSIMomentumEvaluatorConfiguration
-    | EMAMomentumEvaluatorConfiguration,
-): EvaluatorConfigurationConfiguration {
-  return configuration as EvaluatorConfigurationConfiguration
-}
-
-/** OpenAPI oneOf bridge: runtime JSON uses flat strategy evaluator configuration objects. */
-function asStrategyEvaluatorConfigurationConfiguration(
-  configuration: SimpleStrategyEvaluatorConfiguration,
-): StrategyEvaluatorConfigurationConfiguration {
-  return configuration as StrategyEvaluatorConfigurationConfiguration
 }
 
 /** OpenAPI oneOf bridge: runtime JSON uses flat exchange account specifics. */
@@ -279,6 +254,15 @@ function sampleStrategyShell(
   } satisfies Strategy
 }
 
+function sampleTradingTentaclesStrategyShell(
+  id: string,
+  name: string,
+  tradingConfiguration: TradingTentaclesConfiguration,
+  referenceMarket = "USDT",
+): Strategy {
+  return sampleStrategyShell(id, name, tradingConfiguration, referenceMarket)
+}
+
 function sampleGenericProcessStrategyConfiguration(
   id = "<strategy-id>",
 ): Strategy {
@@ -288,26 +272,70 @@ function sampleGenericProcessStrategyConfiguration(
   } satisfies GenericProcessConfiguration)
 }
 
+function sampleGridPairSettings(
+  symbol: string,
+  flatSpread: number,
+  flatIncrement: number,
+  buyCount: number,
+  sellCount: number,
+  enableTrailingUp: boolean,
+  enableTrailingDown: boolean,
+  orderByOrderTrailing: boolean,
+): Record<string, unknown> {
+  return {
+    pair: symbol,
+    flat_spread: flatSpread,
+    flat_increment: flatIncrement,
+    buy_orders_count: buyCount,
+    sell_orders_count: sellCount,
+    sell_funds: 0,
+    buy_funds: 0,
+    starting_price: 0,
+    buy_volume_per_order: 0,
+    sell_volume_per_order: 0,
+    ignore_exchange_fees: true,
+    reinvest_profits: true,
+    mirror_order_delay: 0,
+    use_existing_orders_only: false,
+    allow_funds_redispatch: false,
+    enable_trailing_up: enableTrailingUp,
+    enable_trailing_down: enableTrailingDown,
+    order_by_order_trailing: orderByOrderTrailing,
+    funds_redispatch_interval: 24,
+  }
+}
+
 function sampleGridStrategyConfiguration(id = "<strategy-id>"): Strategy {
-  return sampleStrategyShell(id, "My grid strategy", {
-    configuration_type: "grid",
-    symbol: "BTC/USDT",
-    spread: 3000,
-    increment: 1000,
-    buy_count: 4,
-    sell_count: 4,
-    enable_trailing_up: false,
-    enable_trailing_down: false,
-    order_by_order_trailing: false,
-  } satisfies GridConfiguration)
+  return sampleTradingTentaclesStrategyShell(id, "My grid strategy", {
+    configuration_type: "trading_tentacles",
+    name: "GridTradingMode",
+    config: {
+      pair_settings: [
+        sampleGridPairSettings(
+          "BTC/USDT",
+          3000,
+          1000,
+          4,
+          4,
+          false,
+          false,
+          false,
+        ),
+      ],
+    },
+    symbols: ["BTC/USDT"],
+  } satisfies TradingTentaclesConfiguration)
 }
 
 function sampleIndexStrategyConfiguration(id = "<strategy-id>"): Strategy {
-  return sampleStrategyShell(id, "My index strategy", {
-    configuration_type: "index",
-    coins: [{ name: "BTC", ratio: 1.0 }],
-    rebalance_trigger_min_percent: 5.0,
-  } satisfies IndexConfiguration)
+  return sampleTradingTentaclesStrategyShell(id, "My index strategy", {
+    configuration_type: "trading_tentacles",
+    name: "IndexTradingMode",
+    config: {
+      index_content: [{ name: "BTC", value: 1.0 }],
+      rebalance_trigger_min_percent: 5.0,
+    },
+  } satisfies TradingTentaclesConfiguration)
 }
 
 function sampleCopyStrategyConfiguration(id = "<strategy-id>"): Strategy {
@@ -320,53 +348,57 @@ function sampleCopyStrategyConfiguration(id = "<strategy-id>"): Strategy {
 const DCA_TRADED_SYMBOLS = ["BTC/USDC", "ETH/USDC"] as const
 
 function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
-  return sampleStrategyShell(
+  return sampleTradingTentaclesStrategyShell(
     id,
     "My DCA strategy (2 evaluators)",
     {
-      configuration_type: "dca",
+      configuration_type: "trading_tentacles",
+      name: "DCATradingMode",
+      config: {
+        buy_order_amount: "8%t",
+        exit_limit_orders_price_percent: 1.75,
+        entry_limit_orders_price_percent: 1.5,
+        secondary_entry_orders_count: 1,
+        secondary_entry_orders_amount: "7%t",
+        secondary_entry_orders_price_percent: 1.0,
+        enable_stop_loss: false,
+        stop_loss_price_discount_percent: 0,
+        trigger_mode: "Maximum evaluators signals based",
+        use_init_entry_orders: false,
+        trading_pairs: [],
+        time_frames: ["1h"],
+      },
       symbols: [],
-      entry_order_amount: "8%t",
-      exit_limit_orders_price_percent: 1.75,
-      entry_limit_orders_price_percent: 1.5,
-      secondary_entry_orders_count: 1,
-      secondary_entry_orders_amount: "7%t",
-      secondary_entry_orders_price_percent: 1.0,
-      enable_stop_loss: false,
-      stop_loss_price_discount_percent: 0,
-      trigger_mode: "Maximum evaluators signals based",
-      use_init_entry_orders: false,
       strategies: [
         {
+          name: "SimpleStrategyEvaluator",
+          config: {},
           time_frames: ["1h"],
-          configuration: asStrategyEvaluatorConfigurationConfiguration({
-            configuration_type: "SimpleStrategyEvaluator",
-          } satisfies SimpleStrategyEvaluatorConfiguration),
         } satisfies StrategyEvaluatorConfiguration,
       ],
       evaluators: [
         {
-          symbols: [...DCA_TRADED_SYMBOLS],
-          include_in_construction_candle: false,
-          configuration: asEvaluatorConfigurationConfiguration({
-            configuration_type: "RSIMomentumEvaluator",
+          name: "RSIMomentumEvaluator",
+          config: {
             period_length: 12,
             long_threshold: 50,
             short_threshold: 70,
-          } satisfies RSIMomentumEvaluatorConfiguration),
-        } satisfies EvaluatorConfiguration,
-        {
+          },
           symbols: [...DCA_TRADED_SYMBOLS],
           include_in_construction_candle: false,
-          configuration: asEvaluatorConfigurationConfiguration({
-            configuration_type: "EMAMomentumEvaluator",
+        } satisfies EvaluatorConfiguration,
+        {
+          name: "EMAMomentumEvaluator",
+          config: {
             period_length: 10,
             price_threshold_percent: 1.0,
             reverse_signal: false,
-          } satisfies EMAMomentumEvaluatorConfiguration),
+          },
+          symbols: [...DCA_TRADED_SYMBOLS],
+          include_in_construction_candle: false,
         } satisfies EvaluatorConfiguration,
       ],
-    } satisfies DCAConfiguration,
+    } satisfies TradingTentaclesConfiguration,
     "USDC",
   )
 }

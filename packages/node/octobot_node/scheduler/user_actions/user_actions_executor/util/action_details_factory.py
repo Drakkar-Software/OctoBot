@@ -1,14 +1,11 @@
 import datetime
-import decimal
 import json
 import typing
 
 import octobot_commons.configuration.fields_utils as fields_utils
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
-import octobot_commons.str_util as str_util
 import octobot_commons.profiles.profile_data as commons_profile_data
-import octobot_copy.enums as copy_enums
 import octobot_evaluators.evaluators.evaluator_dsl_factory as evaluator_dsl_factory
 import octobot_flow.entities as flow_entities
 import octobot_flow.entities.accounts.exchange_account_details as flow_exchange_account_details
@@ -19,15 +16,10 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
 import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
+import octobot_node.scheduler.user_actions.user_actions_executor.util.trading_tentacles_config as trading_tentacles_config
 
 
 _ACTION_ID_INIT = "action_init"
-
-
-def _dsl_serializable_config_value(config_value: typing.Any) -> typing.Any:
-    if isinstance(config_value, decimal.Decimal):
-        return float(config_value)
-    return config_value
 
 
 def _protocol_account_updated_at_unix_seconds(protocol_account: protocol_models.Account) -> float:
@@ -53,28 +45,26 @@ def _action_dependency(
     return dependency
 
 
-def _configuration_instance_from_wrapper(
-    configuration_wrapper: typing.Any,
-    *,
-    error_context: str,
-) -> typing.Any:
-    if configuration_wrapper is None or configuration_wrapper.actual_instance is None:
-        raise node_errors.InvalidAutomationConfigurationError(
-            f"{error_context}.configuration.actual_instance is required."
-        )
-    return configuration_wrapper.actual_instance
+def _next_action_id_for_tentacle_name(
+    tentacle_name: str,
+    tentacle_name_counters: dict[str, int],
+) -> str:
+    normalized_tentacle_name = trading_tentacles_config.normalize_tentacle_name(tentacle_name)
+    tentacle_name_counters[normalized_tentacle_name] = (
+        tentacle_name_counters.get(normalized_tentacle_name, 0) + 1
+    )
+    return f"{normalized_tentacle_name}_{tentacle_name_counters[normalized_tentacle_name]}"
 
 
-def _tentacle_config_from_protocol_configuration_instance(
-    configuration_instance: typing.Any,
-) -> dict[str, typing.Any]:
-    tentacle_config = dict(configuration_instance.to_dict())
-    tentacle_config.pop("configuration_type", None)
-    return tentacle_config
-
-
-def _operator_name_from_configuration_instance(configuration_instance: typing.Any) -> str:
-    return str_util.camel_to_snake(configuration_instance.configuration_type.value)
+def _action_id_from_configuration(
+    configuration: typing.Any,
+    configuration_type_counters: dict[str, int] | None = None,
+) -> str:
+    counters: dict[str, int] = {} if configuration_type_counters is None else configuration_type_counters
+    return _next_action_id_for_configuration_type(
+        configuration.configuration_type.value,
+        counters,
+    )
 
 
 def _next_action_id_for_configuration_type(
@@ -87,15 +77,59 @@ def _next_action_id_for_configuration_type(
     return f"{configuration_type_value}_{configuration_type_counters[configuration_type_value]}"
 
 
-def _action_id_from_configuration(
-    configuration: typing.Any,
-    configuration_type_counters: dict[str, int] | None = None,
-) -> str:
-    counters: dict[str, int] = {} if configuration_type_counters is None else configuration_type_counters
-    return _next_action_id_for_configuration_type(
-        configuration.configuration_type.value,
-        counters,
+def _tentacle_config_dict(config: dict[str, typing.Any] | None) -> dict[str, typing.Any]:
+    if config is None:
+        return {}
+    return dict(config)
+
+
+def _dsl_kwargs_from_config_dict(tentacle_config: dict[str, typing.Any]) -> str:
+    config_parts = [
+        f"{config_key}={dsl_interpreter.format_parameter_value(config_value)}"
+        for config_key, config_value in tentacle_config.items()
+        if config_value is not None
+    ]
+    return ", ".join(config_parts)
+
+
+def _dsl_script_from_name_and_config(tentacle_name: str, config: dict[str, typing.Any] | None) -> str:
+    operator_name = trading_tentacles_config.normalize_tentacle_name(tentacle_name)
+    config_kwargs = _dsl_kwargs_from_config_dict(_tentacle_config_dict(config))
+    if config_kwargs:
+        return f"{operator_name}({config_kwargs})"
+    return f"{operator_name}()"
+
+
+def validate_trading_tentacles_strategies_evaluators(
+    trading_configuration: protocol_models.TradingTentaclesConfiguration,
+) -> protocol_models.StrategyEvaluatorConfiguration | None:
+    strategies = list(trading_configuration.strategies or [])
+    evaluators = list(trading_configuration.evaluators or [])
+    if evaluators:
+        if not strategies:
+            raise node_errors.InvalidTradingTentaclesConfigurationError(
+                "Trading tentacles configuration with evaluators requires exactly one strategy evaluator."
+            )
+        if len(strategies) > 1:
+            raise node_errors.InvalidTradingTentaclesConfigurationError(
+                f"Trading tentacles configuration supports at most one strategy evaluator, got {len(strategies)}."
+            )
+        return strategies[0]
+    if strategies:
+        raise node_errors.InvalidTradingTentaclesConfigurationError(
+            "Trading tentacles configuration without evaluators must not include strategy evaluators."
+        )
+    return None
+
+
+def validate_tentacles_config(
+    trading_configuration: protocol_models.TradingTentaclesConfiguration,
+) -> protocol_models.StrategyEvaluatorConfiguration | None:
+    strategy_evaluator_configuration = validate_trading_tentacles_strategies_evaluators(
+        trading_configuration
     )
+    trading_tentacles_config.validate_trading_tentacles_configuration(trading_configuration)
+    return strategy_evaluator_configuration
 
 
 def init_action_factory(
@@ -155,28 +189,6 @@ def init_action_factory(
     )
 
 
-def index_action_factory(
-    init_action: flow_entities.AbstractActionDetails,
-    index_configuration: protocol_models.IndexConfiguration,
-) -> flow_entities.AbstractActionDetails:
-    index_content = [
-        {
-            copy_enums.DistributionKeys.NAME: coin.name,
-            copy_enums.DistributionKeys.VALUE: coin.ratio,
-        }
-        for coin in (index_configuration.coins or [])
-    ]
-    dsl_script = (
-        f"index_trading_mode(index_content={json.dumps(index_content)}, "
-        f"rebalance_trigger_min_percent={index_configuration.rebalance_trigger_min_percent})"
-    )
-    return flow_entities.DSLScriptActionDetails(
-        id=_action_id_from_configuration(index_configuration),
-        dsl_script=dsl_script,
-        dependencies=[_action_dependency(init_action.id)],
-    )
-
-
 def copy_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     copy_configuration: protocol_models.CopyConfiguration,
@@ -201,70 +213,6 @@ def _protocol_time_frame_values(
     ]
 
 
-def _validate_maximum_evaluators_dca_configuration(
-    dca_configuration: protocol_models.DCAConfiguration,
-) -> protocol_models.StrategyEvaluatorConfiguration:
-    strategies = list(dca_configuration.strategies or [])
-    evaluators = list(dca_configuration.evaluators or [])
-    if not evaluators:
-        raise node_errors.InvalidAutomationConfigurationError(
-            "Maximum evaluators DCA requires at least one evaluator."
-        )
-    if not strategies:
-        raise node_errors.InvalidAutomationConfigurationError(
-            "DCA configuration with evaluators requires exactly one strategy evaluator configuration."
-        )
-    if len(strategies) > 1:
-        raise node_errors.InvalidAutomationConfigurationError(
-            f"DCA configuration supports at most one strategy evaluator, got {len(strategies)}."
-        )
-    return strategies[0]
-
-
-def is_maximum_evaluators_dca_with_evaluators(
-    dca_configuration: protocol_models.DCAConfiguration,
-) -> bool:
-    import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
-
-    if not dca_configuration.evaluators:
-        return False
-    return dca_configuration.trigger_mode == dca_trading.TriggerMode.MAXIMUM_EVALUATORS_SIGNALS_BASED.value
-
-
-def _build_dca_tentacle_config(
-    dca_configuration: protocol_models.DCAConfiguration,
-    *,
-    time_frames: list[str],
-    trading_pairs: list[str],
-    dag_reset_to_action_id: str | None = None,
-) -> dict[str, typing.Any]:
-    import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
-
-    secondary_entry_orders_count = int(dca_configuration.secondary_entry_orders_count)
-    trigger_mode = dca_trading.TriggerMode(dca_configuration.trigger_mode)
-    tentacle_config = dca_trading.DCATradingMode.get_default_config(
-        buy_amount=dca_configuration.entry_order_amount,
-        use_init_entry_orders=bool(dca_configuration.use_init_entry_orders),
-        use_secondary_entry_orders=secondary_entry_orders_count > 0,
-        secondary_entry_orders_count=secondary_entry_orders_count,
-        secondary_entry_orders_amount=dca_configuration.secondary_entry_orders_amount,
-        secondary_entry_orders_price_percent=float(dca_configuration.secondary_entry_orders_price_percent),
-        exit_limit_orders_price_percent=float(dca_configuration.exit_limit_orders_price_percent),
-        entry_limit_orders_price_percent=float(dca_configuration.entry_limit_orders_price_percent),
-        enable_stop_loss=bool(dca_configuration.enable_stop_loss),
-        stop_loss_price=float(dca_configuration.stop_loss_price_discount_percent),
-        use_take_profit_exit_orders=True,
-        trigger_mode=trigger_mode,
-        max_asset_holding_percent=float(dca_configuration.max_asset_holding_percent),
-    )
-    tentacle_config[dca_trading.DCATradingMode.ENABLE_HEALTH_CHECK] = False
-    tentacle_config[dca_trading.DCATradingMode.TRADING_PAIRS] = list(trading_pairs)
-    tentacle_config[dca_trading.DCATradingMode.TIME_FRAMES] = list(time_frames)
-    if dag_reset_to_action_id is not None:
-        tentacle_config["dag_reset_to_action_id"] = dag_reset_to_action_id
-    return tentacle_config
-
-
 def evaluator_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     evaluator_configuration: protocol_models.EvaluatorConfiguration,
@@ -272,12 +220,8 @@ def evaluator_action_factory(
     time_frames: list[str],
     action_id: str,
 ) -> flow_entities.AbstractActionDetails:
-    configuration_instance = _configuration_instance_from_wrapper(
-        evaluator_configuration.configuration,
-        error_context="EvaluatorConfiguration",
-    )
-    operator_name = _operator_name_from_configuration_instance(configuration_instance)
-    tentacle_config = _tentacle_config_from_protocol_configuration_instance(configuration_instance)
+    operator_name = trading_tentacles_config.normalize_tentacle_name(evaluator_configuration.name)
+    tentacle_config = _tentacle_config_dict(evaluator_configuration.config)
     symbols_list = ", ".join(f"{symbol!r}" for symbol in (evaluator_configuration.symbols or []))
     time_frames_list = ", ".join(f"{time_frame!r}" for time_frame in time_frames)
     dsl_parameter_parts = [
@@ -286,7 +230,7 @@ def evaluator_action_factory(
     ]
     for config_key, config_value in tentacle_config.items():
         dsl_parameter_parts.append(
-            f"{config_key}={dsl_interpreter.format_parameter_value(_dsl_serializable_config_value(config_value))}"
+            f"{config_key}={dsl_interpreter.format_parameter_value(config_value)}"
         )
     if evaluator_configuration.include_in_construction_candle:
         dsl_parameter_parts.append(
@@ -308,18 +252,14 @@ def strategy_evaluator_action_factory(
     *,
     action_id: str,
 ) -> flow_entities.AbstractActionDetails:
-    configuration_instance = _configuration_instance_from_wrapper(
-        strategy_evaluator_configuration.configuration,
-        error_context="StrategyEvaluatorConfiguration",
-    )
-    operator_name = _operator_name_from_configuration_instance(configuration_instance)
+    operator_name = trading_tentacles_config.normalize_tentacle_name(strategy_evaluator_configuration.name)
     time_frames = _protocol_time_frame_values(strategy_evaluator_configuration.time_frames or [])
     time_frames_list = ", ".join(f"{time_frame!r}" for time_frame in time_frames)
-    tentacle_config = _tentacle_config_from_protocol_configuration_instance(configuration_instance)
+    tentacle_config = _tentacle_config_dict(strategy_evaluator_configuration.config)
     dsl_parameter_parts = [f"{evaluator_dsl_factory.TIME_FRAMES_PARAM}=[{time_frames_list}]"]
     for config_key, config_value in tentacle_config.items():
         dsl_parameter_parts.append(
-            f"{config_key}={dsl_interpreter.format_parameter_value(_dsl_serializable_config_value(config_value))}"
+            f"{config_key}={dsl_interpreter.format_parameter_value(config_value)}"
         )
     unresolved_placeholder = commons_constants.UNRESOLVED_PARAMETER_PLACEHOLDER
     dynamic_dependencies_key = dsl_interpreter.DynamicDependenciesOperatorMixin.DYNAMIC_DEPENDENCIES_KEY
@@ -338,33 +278,46 @@ def strategy_evaluator_action_factory(
     )
 
 
-def maximum_evaluators_dca_action_factory(
+def trading_tentacles_action_factory(
+    init_action: flow_entities.AbstractActionDetails,
+    trading_configuration: protocol_models.TradingTentaclesConfiguration,
+    *,
+    action_id: str | None = None,
+) -> flow_entities.AbstractActionDetails:
+    if action_id is None:
+        tentacle_name_counters: dict[str, int] = {}
+        resolved_action_id = _next_action_id_for_tentacle_name(
+            trading_configuration.name,
+            tentacle_name_counters,
+        )
+    else:
+        resolved_action_id = action_id
+    dsl_script = _dsl_script_from_name_and_config(
+        trading_configuration.name,
+        trading_configuration.config,
+    )
+    return flow_entities.DSLScriptActionDetails(
+        id=resolved_action_id,
+        dsl_script=dsl_script,
+        dependencies=[_action_dependency(init_action.id)],
+    )
+
+
+def _trading_tentacles_with_evaluators_trading_mode_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     strategy_action: flow_entities.AbstractActionDetails,
-    dca_configuration: protocol_models.DCAConfiguration,
+    trading_configuration: protocol_models.TradingTentaclesConfiguration,
     *,
-    strategy_evaluator_configuration: protocol_models.StrategyEvaluatorConfiguration,
     action_id: str,
 ) -> flow_entities.AbstractActionDetails:
-    import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
-
-    time_frames = _protocol_time_frame_values(strategy_evaluator_configuration.time_frames or [])
-    tentacle_config = _build_dca_tentacle_config(
-        dca_configuration,
-        time_frames=time_frames,
-        trading_pairs=[],
-        dag_reset_to_action_id=_ACTION_ID_INIT,
-    )
-    config_parts = ", ".join(
-        f"{config_key}={dsl_interpreter.format_parameter_value(_dsl_serializable_config_value(config_value))}"
-        for config_key, config_value in tentacle_config.items()
-        if config_value is not None
-    )
+    tentacle_config = _tentacle_config_dict(trading_configuration.config)
+    tentacle_config["dag_reset_to_action_id"] = _ACTION_ID_INIT
+    config_parts = _dsl_kwargs_from_config_dict(tentacle_config)
     unresolved_placeholder = commons_constants.UNRESOLVED_PARAMETER_PLACEHOLDER
     dynamic_dependencies_key = dsl_interpreter.DynamicDependenciesOperatorMixin.DYNAMIC_DEPENDENCIES_KEY
-    dca_operator = str_util.camel_to_snake(dca_trading.DCATradingMode.get_name())
+    operator_name = trading_tentacles_config.normalize_tentacle_name(trading_configuration.name)
     dsl_script = (
-        f"{dca_operator}({config_parts}, {dynamic_dependencies_key}={unresolved_placeholder})"
+        f"{operator_name}({config_parts}, {dynamic_dependencies_key}={unresolved_placeholder})"
     )
     return flow_entities.DSLScriptActionDetails(
         id=action_id,
@@ -379,22 +332,22 @@ def maximum_evaluators_dca_action_factory(
     )
 
 
-def maximum_evaluators_dca_automation_actions_factory(
+def trading_tentacles_with_evaluators_actions_factory(
     init_action: flow_entities.AbstractActionDetails,
-    dca_configuration: protocol_models.DCAConfiguration,
+    trading_configuration: protocol_models.TradingTentaclesConfiguration,
 ) -> list[flow_entities.AbstractActionDetails]:
-    strategy_evaluator_configuration = _validate_maximum_evaluators_dca_configuration(dca_configuration)
-    time_frames = _protocol_time_frame_values(strategy_evaluator_configuration.time_frames or [])
-    configuration_type_counters: dict[str, int] = {}
-    evaluator_actions: list[flow_entities.AbstractActionDetails] = []
-    for evaluator_configuration in (dca_configuration.evaluators or []):
-        configuration_instance = _configuration_instance_from_wrapper(
-            evaluator_configuration.configuration,
-            error_context="EvaluatorConfiguration",
+    strategy_evaluator_configuration = validate_tentacles_config(trading_configuration)
+    if strategy_evaluator_configuration is None:
+        raise node_errors.InvalidAutomationConfigurationError(
+            "Trading tentacles evaluators orchestration requires at least one evaluator."
         )
-        evaluator_action_id = _next_action_id_for_configuration_type(
-            configuration_instance.configuration_type.value,
-            configuration_type_counters,
+    time_frames = _protocol_time_frame_values(strategy_evaluator_configuration.time_frames or [])
+    tentacle_name_counters: dict[str, int] = {}
+    evaluator_actions: list[flow_entities.AbstractActionDetails] = []
+    for evaluator_configuration in (trading_configuration.evaluators or []):
+        evaluator_action_id = _next_action_id_for_tentacle_name(
+            evaluator_configuration.name,
+            tentacle_name_counters,
         )
         evaluator_actions.append(
             evaluator_action_factory(
@@ -404,13 +357,9 @@ def maximum_evaluators_dca_automation_actions_factory(
                 action_id=evaluator_action_id,
             )
         )
-    strategy_configuration_instance = _configuration_instance_from_wrapper(
-        strategy_evaluator_configuration.configuration,
-        error_context="StrategyEvaluatorConfiguration",
-    )
-    strategy_action_id = _next_action_id_for_configuration_type(
-        strategy_configuration_instance.configuration_type.value,
-        configuration_type_counters,
+    strategy_action_id = _next_action_id_for_tentacle_name(
+        strategy_evaluator_configuration.name,
+        tentacle_name_counters,
     )
     strategy_action = strategy_evaluator_action_factory(
         init_action,
@@ -418,71 +367,17 @@ def maximum_evaluators_dca_automation_actions_factory(
         evaluator_actions,
         action_id=strategy_action_id,
     )
-    dca_action_id = _next_action_id_for_configuration_type(
-        dca_configuration.configuration_type.value,
-        configuration_type_counters,
+    trading_mode_action_id = _next_action_id_for_tentacle_name(
+        trading_configuration.name,
+        tentacle_name_counters,
     )
-    dca_action = maximum_evaluators_dca_action_factory(
+    trading_mode_action = _trading_tentacles_with_evaluators_trading_mode_action_factory(
         init_action,
         strategy_action,
-        dca_configuration,
-        strategy_evaluator_configuration=strategy_evaluator_configuration,
-        action_id=dca_action_id,
+        trading_configuration,
+        action_id=trading_mode_action_id,
     )
-    return [init_action, *evaluator_actions, strategy_action, dca_action]
-
-
-def dca_action_factory(
-    init_action: flow_entities.AbstractActionDetails,
-    dca_configuration: protocol_models.DCAConfiguration,
-) -> flow_entities.AbstractActionDetails:
-    import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
-
-    tentacle_config = _build_dca_tentacle_config(
-        dca_configuration,
-        time_frames=[],
-        trading_pairs=list(dca_configuration.symbols or []),
-    )
-    dca_operator = str_util.camel_to_snake(dca_trading.DCATradingMode.get_name())
-    config_parts = ", ".join(
-        f"{config_key}={dsl_interpreter.format_parameter_value(_dsl_serializable_config_value(config_value))}"
-        for config_key, config_value in tentacle_config.items()
-        if config_value is not None
-    )
-    dsl_script = f"{dca_operator}({config_parts})"
-    return flow_entities.DSLScriptActionDetails(
-        id=_action_id_from_configuration(dca_configuration),
-        dsl_script=dsl_script,
-        dependencies=[_action_dependency(init_action.id)],
-    )
-
-
-def grid_action_factory(
-    init_action: flow_entities.AbstractActionDetails,
-    grid_configuration: protocol_models.GridConfiguration,
-) -> flow_entities.AbstractActionDetails:
-    # avoid forcing tentacles import
-    import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
-    pair_settings = [
-        grid_trading.GridTradingMode.get_default_pair_config(
-            grid_configuration.symbol,
-            float(grid_configuration.spread),
-            float(grid_configuration.increment),
-            int(grid_configuration.buy_count),
-            int(grid_configuration.sell_count),
-            bool(grid_configuration.enable_trailing_up),
-            bool(grid_configuration.enable_trailing_down),
-            bool(grid_configuration.order_by_order_trailing),
-        )
-    ]
-    dsl_script = (
-        f"grid_trading_mode(pair_settings={dsl_interpreter.format_parameter_value(pair_settings)})"
-    )
-    return flow_entities.DSLScriptActionDetails(
-        id=_action_id_from_configuration(grid_configuration),
-        dsl_script=dsl_script,
-        dependencies=[_action_dependency(init_action.id)],
-    )
+    return [init_action, *evaluator_actions, strategy_action, trading_mode_action]
 
 
 def generic_workflow_actions_factory(
