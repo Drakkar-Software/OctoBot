@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List
-from octobot_protocol.models.strategy_evaluator_configuration_configuration import StrategyEvaluatorConfigurationConfiguration
 from octobot_protocol.models.time_frame import TimeFrame
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,9 +28,10 @@ class StrategyEvaluatorConfiguration(BaseModel):
     """
     StrategyEvaluatorConfiguration
     """ # noqa: E501
+    name: StrictStr = Field(description="Strategy evaluator tentacle class name, e.g. SimpleStrategyEvaluator")
+    config: Dict[str, Any]
     time_frames: List[TimeFrame]
-    configuration: StrategyEvaluatorConfigurationConfiguration
-    __properties: ClassVar[List[str]] = ["time_frames", "configuration"]
+    __properties: ClassVar[List[str]] = ["name", "config", "time_frames"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -72,9 +72,6 @@ class StrategyEvaluatorConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of configuration
-        if self.configuration:
-            _dict['configuration'] = self.configuration.to_dict()
         return _dict
 
     @classmethod
@@ -87,8 +84,9 @@ class StrategyEvaluatorConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "time_frames": obj.get("time_frames"),
-            "configuration": StrategyEvaluatorConfigurationConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
+            "name": obj.get("name"),
+            "config": obj.get("config"),
+            "time_frames": obj.get("time_frames")
         })
         return _obj
 

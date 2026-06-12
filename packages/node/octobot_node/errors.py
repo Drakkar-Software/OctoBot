@@ -78,6 +78,14 @@ class InvalidAutomationConfigurationError(UserActionError):
     """Raised when the automation configuration is invalid or cannot be translated to actions."""
 
 
+class InvalidTradingTentaclesConfigurationError(InvalidAutomationConfigurationError):
+    """Raised when the trading tentacles configuration is invalid or cannot be translated to actions."""
+
+
+class UnknownTentacleConfigurationError(InvalidAutomationConfigurationError):
+    """Raised when the tentacle configuration is unknown."""
+
+
 class ActiveAutomationWorkflowNotFoundError(UserActionError):
     """Raised when no pending/enqueued automation workflow matches the stop request (parent id / wallet filter)."""
 

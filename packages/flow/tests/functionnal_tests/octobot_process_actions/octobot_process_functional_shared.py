@@ -13,8 +13,8 @@ import pytest
 import octobot_flow.jobs
 import octobot_flow.entities
 import octobot_flow.enums
-import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
 import tests.functionnal_tests as functionnal_tests
+import tests.functionnal_tests.tentacle_test_configs as tentacle_test_configs
 
 pytestmark = pytest.mark.asyncio
 
@@ -66,23 +66,13 @@ GRID_BINANCEUS_PROFILE_DATA = {
     },
     "trading": {"reference_market": "USDT", "risk": 1.0, "paused": False},
     "tentacles": [
-        {
-            "name": "GridTradingMode",
-            "config": {
-                "pair_settings": [
-                    grid_trading.GridTradingMode.get_default_pair_config(
-                        "BTC/USDT",
-                        float(GRID_SPREAD),
-                        float(GRID_INCREMENT),
-                        2,
-                        2,
-                        False,
-                        False,
-                        False,
-                    )
-                ]
-            },
-        },
+        tentacle_test_configs.grid_trading_mode_profile_tentacle(
+            symbol="BTC/USDT",
+            spread=float(GRID_SPREAD),
+            increment=float(GRID_INCREMENT),
+            buy_count=2,
+            sell_count=2,
+        ),
     ],
     "options": {},
     "distribution": "default",
@@ -133,23 +123,13 @@ def _grid_binanceus_profile_data(buy_orders: int, sell_orders: int) -> dict:
     """Copy of grid simulator profile with configurable GridTradingMode buy/sell counts."""
     data = copy.deepcopy(GRID_BINANCEUS_PROFILE_DATA)
     data["tentacles"] = [
-        {
-            "name": "GridTradingMode",
-            "config": {
-                "pair_settings": [
-                    grid_trading.GridTradingMode.get_default_pair_config(
-                        "BTC/USDT",
-                        float(GRID_SPREAD),
-                        float(GRID_INCREMENT),
-                        buy_orders,
-                        sell_orders,
-                        False,
-                        False,
-                        False,
-                    )
-                ]
-            },
-        },
+        tentacle_test_configs.grid_trading_mode_profile_tentacle(
+            symbol="BTC/USDT",
+            spread=float(GRID_SPREAD),
+            increment=float(GRID_INCREMENT),
+            buy_count=buy_orders,
+            sell_count=sell_orders,
+        ),
     ]
     return data
 

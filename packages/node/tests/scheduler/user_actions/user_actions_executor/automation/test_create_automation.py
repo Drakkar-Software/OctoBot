@@ -9,12 +9,13 @@ import pytest
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.str_util as str_util
-import octobot_copy.enums as copy_enums
 import tentacles.Evaluator.TA.momentum_evaluator.momentum as momentum_evaluator
+import tentacles.Evaluator.Strategies.mixed_strategies_evaluator.mixed_strategies as mixed_strategies_evaluator
 import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models
 import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
+import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
 
 import octobot_node.errors as node_errors
 import octobot_node.models as node_models
@@ -23,6 +24,7 @@ import octobot_node.scheduler.user_actions.user_actions_executor.util.action_det
 
 from ..account import account_executor_test_utils
 from .. import provider_assertions
+from ..util import trading_tentacles_test_utils
 
 _ACCOUNT_PROVIDER_INSTANCE_PATCH = (
     "octobot_sync.sync.collection_providers.AccountProvider.instance"
@@ -132,38 +134,18 @@ def _assert_init_action_matches_minimal_account(
     assert init_config["exchange_account_details"]["portfolio"]["unit"] == "USDT"
 
 
-def _expected_index_dsl_script(
+def _expected_trading_tentacles_dsl_script(
     *,
-    coins: list[protocol_models.IndexCoin],
-    rebalance_trigger_min_percent: float,
+    trading_configuration: protocol_models.TradingTentaclesConfiguration,
 ) -> str:
-    index_content = [
-        {
-            copy_enums.DistributionKeys.NAME: coin.name,
-            copy_enums.DistributionKeys.VALUE: coin.ratio,
-        }
-        for coin in coins
-    ]
-    return (
-        f"index_trading_mode(index_content={json.dumps(index_content)}, "
-        f"rebalance_trigger_min_percent={rebalance_trigger_min_percent})"
-    )
-
-
-def _expected_grid_dsl_script(*, grid_configuration: protocol_models.GridConfiguration) -> str:
-    pair_settings = [
-        grid_trading.GridTradingMode.get_default_pair_config(
-            grid_configuration.symbol,
-            float(grid_configuration.spread),
-            float(grid_configuration.increment),
-            int(grid_configuration.buy_count),
-            int(grid_configuration.sell_count),
-            bool(grid_configuration.enable_trailing_up),
-            bool(grid_configuration.enable_trailing_down),
-            bool(grid_configuration.order_by_order_trailing),
-        )
-    ]
-    return f"grid_trading_mode(pair_settings={dsl_interpreter.format_parameter_value(pair_settings)})"
+    return action_details_factory.trading_tentacles_action_factory(
+        flow_entities.ConfiguredActionDetails(
+            id="action_init",
+            action="apply_configuration",
+            config={},
+        ),
+        trading_configuration,
+    ).dsl_script
 
 
 def _expected_copy_dsl_script(*, strategy_id: str) -> str:
@@ -171,102 +153,6 @@ def _expected_copy_dsl_script(*, strategy_id: str) -> str:
         f"copy_exchange_account(strategy_id={json.dumps(strategy_id)}, "
         "reference_market='', reference_account='', account_copy_settings='{}')"
     )
-
-
-def _functional_dca_configuration() -> protocol_models.DCAConfiguration:
-    return protocol_models.DCAConfiguration(
-        configuration_type=protocol_models.ActionConfigurationType.DCA,
-        symbols=["BTC/USDC", "ETH/USDC"],
-        entry_order_amount="8%t",
-        exit_limit_orders_price_percent=1.75,
-        entry_limit_orders_price_percent=1.5,
-        secondary_entry_orders_count=1,
-        secondary_entry_orders_amount="7%t",
-        secondary_entry_orders_price_percent=1.0,
-        enable_stop_loss=False,
-        stop_loss_price_discount_percent=0,
-        trigger_mode="Always trigger long",
-        use_init_entry_orders=True,
-        strategies=[],
-        evaluators=[],
-    )
-
-
-def _maximum_evaluators_dca_configuration(
-    *,
-    strategies: list[protocol_models.StrategyEvaluatorConfiguration] | None = None,
-    evaluators: list[protocol_models.EvaluatorConfiguration] | None = None,
-) -> protocol_models.DCAConfiguration:
-    resolved_strategies = strategies
-    if resolved_strategies is None:
-        resolved_strategies = [
-            protocol_models.StrategyEvaluatorConfiguration(
-                time_frames=["1h"],
-                configuration=protocol_models.StrategyEvaluatorConfigurationConfiguration(
-                    protocol_models.SimpleStrategyEvaluatorConfiguration(
-                        configuration_type=protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR,
-                    )
-                ),
-            )
-        ]
-    resolved_evaluators = evaluators
-    if resolved_evaluators is None:
-        resolved_evaluators = [
-            protocol_models.EvaluatorConfiguration(
-                symbols=["BTC/USDC", "ETH/USDC"],
-                include_in_construction_candle=False,
-                configuration=protocol_models.EvaluatorConfigurationConfiguration(
-                    protocol_models.RSIMomentumEvaluatorConfiguration(
-                        configuration_type=protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR,
-                        period_length=12,
-                        long_threshold=50,
-                        short_threshold=70,
-                    )
-                ),
-            ),
-            protocol_models.EvaluatorConfiguration(
-                symbols=["BTC/USDC", "ETH/USDC"],
-                include_in_construction_candle=False,
-                configuration=protocol_models.EvaluatorConfigurationConfiguration(
-                    protocol_models.EMAMomentumEvaluatorConfiguration(
-                        configuration_type=protocol_models.EvaluatorType.EMAMOMENTUMEVALUATOR,
-                        period_length=10,
-                        price_threshold_percent=1.0,
-                        reverse_signal=False,
-                    )
-                ),
-            ),
-        ]
-    return protocol_models.DCAConfiguration(
-        configuration_type=protocol_models.ActionConfigurationType.DCA,
-        symbols=[],
-        entry_order_amount="8%t",
-        exit_limit_orders_price_percent=1.75,
-        entry_limit_orders_price_percent=1.5,
-        secondary_entry_orders_count=1,
-        secondary_entry_orders_amount="7%t",
-        secondary_entry_orders_price_percent=1.0,
-        enable_stop_loss=False,
-        stop_loss_price_discount_percent=0,
-        trigger_mode="Maximum evaluators signals based",
-        use_init_entry_orders=False,
-        strategies=resolved_strategies,
-        evaluators=resolved_evaluators,
-    )
-
-
-def _expected_dca_dsl_script(
-    *,
-    dca_configuration: protocol_models.DCAConfiguration,
-) -> str:
-    return action_details_factory.dca_action_factory(
-        flow_entities.ConfiguredActionDetails(
-            id="action_init",
-            action="apply_configuration",
-            config={},
-        ),
-        dca_configuration,
-    ).dsl_script
 
 
 def _assert_task_content_matches_actions(
@@ -294,9 +180,8 @@ class TestCreateAutomationExecutor:
             version=version,
             emit_signals=True,
         )
-        idx = protocol_models.IndexConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.INDEX,
-            coins=[protocol_models.IndexCoin(name="BTC", ratio=1.0)],
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
             rebalance_trigger_min_percent=5.0,
         )
         create_payload = protocol_models.CreateAutomationConfiguration(
@@ -329,9 +214,8 @@ class TestCreateAutomationExecutor:
         )
 
     def test_index_returns_init_and_index_action(self):
-        idx = protocol_models.IndexConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.INDEX,
-            coins=[protocol_models.IndexCoin(name="BTC", ratio=1.0)],
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
             rebalance_trigger_min_percent=5.0,
         )
         strat_ref = _default_strategy_reference()
@@ -357,11 +241,13 @@ class TestCreateAutomationExecutor:
 
         assert len(actions) == 2
         index_configuration = stored.configuration.actual_instance
-        assert isinstance(index_configuration, protocol_models.IndexConfiguration)
+        assert isinstance(index_configuration, protocol_models.TradingTentaclesConfiguration)
         main_action = actions[1]
         assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
         assert actions[0].id == "action_init"
-        assert main_action.id == f"{protocol_models.ActionConfigurationType.INDEX.value}_1"
+        assert main_action.id == trading_tentacles_test_utils.tentacle_action_id(
+            index_trading.IndexTradingMode.get_name()
+        )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
             user_action_id="ua-idx",
@@ -369,9 +255,8 @@ class TestCreateAutomationExecutor:
             protocol_account=account,
             strategy_reference=strat_ref,
         )
-        assert main_action.dsl_script == _expected_index_dsl_script(
-            coins=index_configuration.coins,
-            rebalance_trigger_min_percent=index_configuration.rebalance_trigger_min_percent,
+        assert main_action.dsl_script == _expected_trading_tentacles_dsl_script(
+            trading_configuration=index_configuration,
         )
         assert len(main_action.dependencies) == 1
         assert main_action.dependencies[0].action_id == "action_init"
@@ -419,17 +304,7 @@ class TestCreateAutomationExecutor:
         assert actions[1].dependencies[0].action_id == "action_init"
 
     def test_grid_returns_init_and_grid_action(self):
-        grid_configuration = protocol_models.GridConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.GRID,
-            symbol="BTC/USDT",
-            spread=6,
-            increment=2,
-            buy_count=2,
-            sell_count=2,
-            enable_trailing_up=False,
-            enable_trailing_down=False,
-            order_by_order_trailing=False,
-        )
+        grid_configuration = trading_tentacles_test_utils.grid_trading_configuration()
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
@@ -452,11 +327,13 @@ class TestCreateAutomationExecutor:
             actions = executor._create_automation_actions(user_action)
 
         assert len(actions) == 2
-        assert isinstance(stored.configuration.actual_instance, protocol_models.GridConfiguration)
+        assert isinstance(stored.configuration.actual_instance, protocol_models.TradingTentaclesConfiguration)
         main_action = actions[1]
         assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
         assert actions[0].id == "action_init"
-        assert main_action.id == f"{protocol_models.ActionConfigurationType.GRID.value}_1"
+        assert main_action.id == trading_tentacles_test_utils.tentacle_action_id(
+            grid_trading.GridTradingMode.get_name()
+        )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
             user_action_id="ua-grid",
@@ -464,8 +341,8 @@ class TestCreateAutomationExecutor:
             protocol_account=account,
             strategy_reference=strat_ref,
         )
-        assert main_action.dsl_script == _expected_grid_dsl_script(
-            grid_configuration=grid_configuration,
+        assert main_action.dsl_script == _expected_trading_tentacles_dsl_script(
+            trading_configuration=grid_configuration,
         )
         assert len(main_action.dependencies) == 1
         assert main_action.dependencies[0].action_id == "action_init"
@@ -617,7 +494,7 @@ class TestCreateAutomationExecutor:
         assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["max_spread"] == 1.0
 
     def test_dca_returns_init_and_dca_dsl(self):
-        dca_configuration = _functional_dca_configuration()
+        dca_configuration = trading_tentacles_test_utils.functional_dca_trading_configuration()
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
@@ -639,11 +516,13 @@ class TestCreateAutomationExecutor:
             actions = executor._create_automation_actions(user_action)
 
         assert len(actions) == 2
-        assert isinstance(stored.configuration.actual_instance, protocol_models.DCAConfiguration)
+        assert isinstance(stored.configuration.actual_instance, protocol_models.TradingTentaclesConfiguration)
         main_action = actions[1]
         assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
         assert actions[0].id == "action_init"
-        assert main_action.id == f"{protocol_models.ActionConfigurationType.DCA.value}_1"
+        assert main_action.id == trading_tentacles_test_utils.tentacle_action_id(
+            dca_trading.DCATradingMode.get_name()
+        )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
             user_action_id="ua-dca",
@@ -651,7 +530,9 @@ class TestCreateAutomationExecutor:
             protocol_account=account,
             strategy_reference=strat_ref,
         )
-        expected_dsl_script = _expected_dca_dsl_script(dca_configuration=dca_configuration)
+        expected_dsl_script = _expected_trading_tentacles_dsl_script(
+            trading_configuration=dca_configuration,
+        )
         assert main_action.dsl_script == expected_dsl_script
         assert dca_trading.DCATradingMode.TRADING_PAIRS in expected_dsl_script
         assert "BTC/USDC" in expected_dsl_script
@@ -661,7 +542,7 @@ class TestCreateAutomationExecutor:
         assert main_action.dependencies[0].action_id == "action_init"
 
     def test_maximum_evaluators_dca_returns_init_evaluators_strategy_and_dca(self):
-        dca_configuration = _maximum_evaluators_dca_configuration()
+        dca_configuration = trading_tentacles_test_utils.maximum_evaluators_trading_configuration()
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
@@ -684,10 +565,18 @@ class TestCreateAutomationExecutor:
 
         assert len(actions) == 5
         actions_by_id = {action.id: action for action in actions}
-        rsi_action_id = f"{protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR.value}_1"
-        ema_action_id = f"{protocol_models.EvaluatorType.EMAMOMENTUMEVALUATOR.value}_1"
-        strategy_action_id = f"{protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR.value}_1"
-        dca_action_id = f"{protocol_models.ActionConfigurationType.DCA.value}_1"
+        rsi_action_id = trading_tentacles_test_utils.tentacle_action_id(
+            momentum_evaluator.RSIMomentumEvaluator.get_name()
+        )
+        ema_action_id = trading_tentacles_test_utils.tentacle_action_id(
+            momentum_evaluator.EMAMomentumEvaluator.get_name()
+        )
+        strategy_action_id = trading_tentacles_test_utils.tentacle_action_id(
+            mixed_strategies_evaluator.SimpleStrategyEvaluator.get_name()
+        )
+        dca_action_id = trading_tentacles_test_utils.tentacle_action_id(
+            dca_trading.DCATradingMode.get_name()
+        )
         assert set(actions_by_id) == {
             "action_init",
             rsi_action_id,
@@ -719,26 +608,24 @@ class TestCreateAutomationExecutor:
             momentum_evaluator.EMAMomentumEvaluator.get_name()
         )
         assert f"{rsi_operator}(" in rsi_action.dsl_script
-        assert "trend_change_identifier=False" in rsi_action.dsl_script
+        assert (
+            f"{momentum_evaluator.RSIMomentumEvaluator.PERIOD_LENGTH}=12"
+            in rsi_action.dsl_script
+        )
         assert "time_frames=['1h']" in rsi_action.dsl_script
         assert f"{ema_operator}(" in ema_action.dsl_script
         assert "simple_strategy_evaluator(" in strategy_action.dsl_script
         assert "_dynamic_dependencies=" in strategy_action.dsl_script
         assert "dag_reset_to_action_id='action_init'" in dca_action.dsl_script
         assert "time_frames=['1h']" in dca_action.dsl_script
-        assert "trading_pairs=[]" in dca_action.dsl_script
+        assert f"{dca_trading.DCATradingMode.TRADING_PAIRS}=[]" in dca_action.dsl_script
         assert "_dynamic_dependencies=" in dca_action.dsl_script
 
     def test_maximum_evaluators_dca_raises_when_multiple_strategies(self):
-        duplicate_strategy = protocol_models.StrategyEvaluatorConfiguration(
+        duplicate_strategy = trading_tentacles_test_utils.simple_strategy_evaluator_configuration(
             time_frames=["1h"],
-            configuration=protocol_models.StrategyEvaluatorConfigurationConfiguration(
-                protocol_models.SimpleStrategyEvaluatorConfiguration(
-                    configuration_type=protocol_models.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR,
-                )
-            ),
         )
-        dca_configuration = _maximum_evaluators_dca_configuration(
+        dca_configuration = trading_tentacles_test_utils.maximum_evaluators_trading_configuration(
             strategies=[duplicate_strategy, duplicate_strategy],
         )
         strat_ref = _default_strategy_reference()
@@ -758,11 +645,13 @@ class TestCreateAutomationExecutor:
         ) as strategy_mock:
             _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
             strategy_mock.return_value.get_item.return_value = stored
-            with pytest.raises(node_errors.InvalidAutomationConfigurationError):
+            with pytest.raises(node_errors.InvalidTradingTentaclesConfigurationError):
                 executor._create_automation_actions(user_action)
 
     def test_maximum_evaluators_dca_raises_when_evaluators_without_strategy(self):
-        dca_configuration = _maximum_evaluators_dca_configuration(strategies=[])
+        dca_configuration = trading_tentacles_test_utils.maximum_evaluators_trading_configuration(
+            strategies=[],
+        )
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
@@ -780,7 +669,50 @@ class TestCreateAutomationExecutor:
         ) as strategy_mock:
             _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
             strategy_mock.return_value.get_item.return_value = stored
-            with pytest.raises(node_errors.InvalidAutomationConfigurationError):
+            with pytest.raises(node_errors.InvalidTradingTentaclesConfigurationError):
+                executor._create_automation_actions(user_action)
+
+    def test_trading_tentacles_raises_when_strategies_without_evaluators(self):
+        traded_symbols = ["BTC/USDC"]
+        dca_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
+            name=dca_trading.DCATradingMode.get_name(),
+            config=trading_tentacles_test_utils.dca_tentacle_config(
+                **{
+                    dca_trading.DCATradingModeProducer.TRIGGER_MODE: (
+                        dca_trading.TriggerMode.ALWAYS_TRIGGER_LONG.value
+                    ),
+                    dca_trading.DCATradingMode.TRADING_PAIRS: traded_symbols,
+                }
+            ),
+            symbols=traded_symbols,
+            strategies=[
+                trading_tentacles_test_utils.simple_strategy_evaluator_configuration(
+                    time_frames=["1h"],
+                )
+            ],
+            evaluators=[],
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="strategies-without-evaluators-dca",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(
+            action_id="ua-strategies-without-evaluators",
+            payload=create_payload,
+        )
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            with pytest.raises(node_errors.InvalidTradingTentaclesConfigurationError):
                 executor._create_automation_actions(user_action)
 
     def test_unsupported_types_raise_dedicated_errors(self):
@@ -848,9 +780,8 @@ class TestCreateAutomationExecutor:
         )
 
     def test_strategy_version_mismatch_raises_mapped_user_action_error_async(self):
-        idx = protocol_models.IndexConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.INDEX,
-            coins=[protocol_models.IndexCoin(name="BTC", ratio=1.0)],
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
             rebalance_trigger_min_percent=5.0,
         )
         strat_ref = _default_strategy_reference(version=_DEFAULT_STORED_STRATEGY_VERSION)
@@ -895,9 +826,8 @@ class TestCreateAutomationExecutor:
 
     def test_create_automation_task_wraps_actions_in_state_envelope(self):
         automation_name = "named-automation"
-        idx = protocol_models.IndexConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.INDEX,
-            coins=[protocol_models.IndexCoin(name="ETH", ratio=1.0)],
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("ETH", 1.0)],
             rebalance_trigger_min_percent=3.0,
         )
         strat_ref = _default_strategy_reference()
@@ -929,16 +859,14 @@ class TestCreateAutomationExecutor:
         )
         parsed = json.loads(task.content or "{}")
         action_dicts = parsed["state"]["automation"]["actions_dag"]["actions"]
-        assert action_dicts[1]["dsl_script"] == _expected_index_dsl_script(
-            coins=[protocol_models.IndexCoin(name="ETH", ratio=1.0)],
-            rebalance_trigger_min_percent=3.0,
+        assert action_dicts[1]["dsl_script"] == _expected_trading_tentacles_dsl_script(
+            trading_configuration=idx,
         )
 
     @pytest.mark.asyncio
     async def test_execute_builds_actions_and_stages_automation_task_for_workflow(self):
-        idx = protocol_models.IndexConfiguration(
-            configuration_type=protocol_models.ActionConfigurationType.INDEX,
-            coins=[protocol_models.IndexCoin(name="BTC", ratio=1.0)],
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
             rebalance_trigger_min_percent=5.0,
         )
         strat_ref = _default_strategy_reference()
@@ -979,7 +907,7 @@ class TestCreateAutomationExecutor:
 
     @pytest.mark.asyncio
     async def test_execute_dca_builds_actions_and_stages_automation_task_for_workflow(self):
-        dca_configuration = _functional_dca_configuration()
+        dca_configuration = trading_tentacles_test_utils.functional_dca_trading_configuration()
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,

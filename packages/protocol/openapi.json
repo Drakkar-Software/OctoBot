@@ -1130,9 +1130,7 @@
         "type": "string",
         "enum": [
           "market_making",
-          "dca",
-          "index",
-          "grid",
+          "trading_tentacles",
           "copy",
           "generic_process",
           "generic_workflow"
@@ -1411,86 +1409,23 @@
           }
         }
       },
-      "EvaluatorType": {
-        "description": "EvaluatorType",
-        "type": "string",
-        "enum": [
-          "RSIMomentumEvaluator",
-          "EMAMomentumEvaluator"
-        ]
-      },
-      "RSIMomentumEvaluatorConfiguration": {
-        "description": "RSIMomentumEvaluatorConfiguration",
-        "type": "object",
-        "required": [
-          "configuration_type",
-          "period_length",
-          "short_threshold",
-          "long_threshold"
-        ],
-        "properties": {
-          "configuration_type": {
-            "$ref": "#/components/schemas/EvaluatorType",
-            "description": "RSIMomentumEvaluator"
-          },
-          "period_length": {
-            "type": "number",
-            "minimum": 1
-          },
-          "short_threshold": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "long_threshold": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "trend_change_identifier": {
-            "type": "boolean",
-            "default": false
-          }
-        }
-      },
-      "EMAMomentumEvaluatorConfiguration": {
-        "description": "EMAMomentumEvaluatorConfiguration",
-        "type": "object",
-        "required": [
-          "configuration_type",
-          "period_length",
-          "price_threshold_percent",
-          "reverse_signal"
-        ],
-        "properties": {
-          "configuration_type": {
-            "$ref": "#/components/schemas/EvaluatorType",
-            "description": "EMAMomentumEvaluator"
-          },
-          "period_length": {
-            "type": "number",
-            "minimum": 1
-          },
-          "price_threshold_percent": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "reverse_signal": {
-            "type": "boolean",
-            "description": "When true, emits a short signal when the current price is bellow the EMA.",
-            "default": false
-          }
-        }
-      },
       "EvaluatorConfiguration": {
         "description": "EvaluatorConfiguration",
         "type": "object",
         "required": [
-          "symbols",
-          "configuration"
+          "name",
+          "config",
+          "symbols"
         ],
         "properties": {
+          "name": {
+            "type": "string",
+            "description": "Evaluator tentacle class name, e.g. RSIMomentumEvaluator"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "symbols": {
             "type": "array",
             "items": {
@@ -1500,81 +1435,6 @@
           "include_in_construction_candle": {
             "type": "boolean",
             "default": false
-          },
-          "configuration": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/RSIMomentumEvaluatorConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/EMAMomentumEvaluatorConfiguration"
-              }
-            ],
-            "discriminator": {
-              "propertyName": "configuration_type",
-              "mapping": {
-                "RSIMomentumEvaluator": "#/components/schemas/RSIMomentumEvaluatorConfiguration",
-                "EMAMomentumEvaluator": "#/components/schemas/EMAMomentumEvaluatorConfiguration"
-              }
-            }
-          }
-        }
-      },
-      "StrategyEvaluatorType": {
-        "description": "StrategyEvaluatorType",
-        "type": "string",
-        "enum": [
-          "SimpleStrategyEvaluator",
-          "TechnicalAnalysisStrategyEvaluator"
-        ]
-      },
-      "TimeFrameAndWeight": {
-        "description": "TimeFrameAndWeight",
-        "type": "object",
-        "required": [
-          "time_frame",
-          "weight"
-        ],
-        "properties": {
-          "time_frame": {
-            "$ref": "#/components/schemas/TimeFrame"
-          },
-          "weight": {
-            "type": "number",
-            "minimum": 0
-          }
-        }
-      },
-      "TechnicalAnalysisStrategyEvaluatorConfiguration": {
-        "description": "TechnicalAnalysisStrategyEvaluatorConfiguration",
-        "type": "object",
-        "required": [
-          "configuration_type",
-          "time_frames_to_weight"
-        ],
-        "properties": {
-          "configuration_type": {
-            "$ref": "#/components/schemas/StrategyEvaluatorType",
-            "description": "TechnicalAnalysisStrategyEvaluator"
-          },
-          "time_frames_to_weight": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TimeFrameAndWeight"
-            }
-          }
-        }
-      },
-      "SimpleStrategyEvaluatorConfiguration": {
-        "description": "SimpleStrategyEvaluatorConfiguration",
-        "type": "object",
-        "required": [
-          "configuration_type"
-        ],
-        "properties": {
-          "configuration_type": {
-            "$ref": "#/components/schemas/StrategyEvaluatorType",
-            "description": "SimpleStrategyEvaluator"
           }
         }
       },
@@ -1582,54 +1442,47 @@
         "description": "StrategyEvaluatorConfiguration",
         "type": "object",
         "required": [
-          "time_frames",
-          "configuration"
+          "name",
+          "config",
+          "time_frames"
         ],
         "properties": {
+          "name": {
+            "type": "string",
+            "description": "Strategy evaluator tentacle class name, e.g. SimpleStrategyEvaluator"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "time_frames": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TimeFrame"
             }
-          },
-          "configuration": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/SimpleStrategyEvaluatorConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/TechnicalAnalysisStrategyEvaluatorConfiguration"
-              }
-            ],
-            "discriminator": {
-              "propertyName": "configuration_type",
-              "mapping": {
-                "SimpleStrategyEvaluator": "#/components/schemas/SimpleStrategyEvaluatorConfiguration",
-                "TechnicalAnalysisStrategyEvaluator": "#/components/schemas/TechnicalAnalysisStrategyEvaluatorConfiguration"
-              }
-            }
           }
         }
       },
-      "DCAConfiguration": {
-        "description": "DCAConfiguration",
+      "TradingTentaclesConfiguration": {
+        "description": "TradingTentaclesConfiguration",
         "type": "object",
         "required": [
           "configuration_type",
-          "symbols",
-          "entry_order_amount",
-          "exit_limit_orders_price_percent",
-          "entry_limit_orders_price_percent",
-          "secondary_entry_orders_count",
-          "secondary_entry_orders_amount",
-          "secondary_entry_orders_price_percent",
-          "strategies",
-          "evaluators"
+          "name",
+          "config"
         ],
         "properties": {
           "configuration_type": {
             "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "dca"
+            "description": "trading_tentacles"
+          },
+          "name": {
+            "type": "string",
+            "description": "Trading mode tentacle class name, e.g. DCATradingMode, GridTradingMode"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
           },
           "symbols": {
             "type": "array",
@@ -1637,65 +1490,7 @@
               "type": "string"
             }
           },
-          "entry_order_amount": {
-            "type": "string",
-            "description": "Amout to buy, can be in %t, %s, in q, in base, etc"
-          },
-          "exit_limit_orders_price_percent": {
-            "type": "number",
-            "minimum": 0
-          },
-          "entry_limit_orders_price_percent": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "secondary_entry_orders_count": {
-            "type": "number",
-            "minimum": 0,
-            "default": 0
-          },
-          "secondary_entry_orders_amount": {
-            "type": "string",
-            "description": "Amout to buy, can be in %t, %s, in q, in base, etc",
-            "default": "0%t"
-          },
-          "secondary_entry_orders_price_percent": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100,
-            "default": 10
-          },
-          "enable_stop_loss": {
-            "type": "boolean",
-            "default": false
-          },
-          "stop_loss_price_discount_percent": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100,
-            "default": 10
-          },
-          "trigger_mode": {
-            "type": "string",
-            "enum": [
-              "Maximum evaluators signals based",
-              "Time based",
-              "Always trigger long"
-            ],
-            "default": "Maximum evaluators signals based"
-          },
-          "use_init_entry_orders": {
-            "type": "boolean",
-            "default": true
-          },
-          "max_asset_holding_percent": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100,
-            "default": 50
-          },
-          "strategies":{
+          "strategies": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StrategyEvaluatorConfiguration"
@@ -1706,24 +1501,6 @@
             "items": {
               "$ref": "#/components/schemas/EvaluatorConfiguration"
             }
-          }
-        }
-      },
-      "IndexCoin": {
-        "description": "IndexCoin",
-        "type": "object",
-        "required": [
-          "name",
-          "ratio"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "ratio": {
-            "type": "number",
-            "minimum": 0,
-            "default": 1
           }
         }
       },
@@ -1741,88 +1518,6 @@
           },
           "strategy_id": {
             "type": "string"
-          }
-        }
-      },
-      "IndexConfiguration": {
-        "description": "IndexConfiguration",
-        "type": "object",
-        "required": [
-          "configuration_type",
-          "coins",
-          "rebalance_trigger_min_percent"
-        ],
-        "properties": {
-          "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "index"
-          },
-          "coins": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IndexCoin"
-            }
-          },
-          "rebalance_trigger_min_percent": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          }
-        }
-      },
-      "GridConfiguration": {
-        "description": "GridConfiguration",
-        "type": "object",
-        "required": [
-          "configuration_type",
-          "symbol",
-          "spread",
-          "increment",
-          "buy_count",
-          "sell_count",
-          "enable_trailing_up",
-          "enable_trailing_down",
-          "order_by_order_trailing"
-        ],
-        "properties": {
-          "configuration_type": {
-            "$ref": "#/components/schemas/ActionConfigurationType",
-            "description": "grid"
-          },
-          "symbol": {
-            "type": "string"
-          },
-          "spread": {
-            "type": "number",
-            "description": "Price difference between the closest buy and sell orders. Denominated in the quote currency (600 for a 600 USDT spread on BTC/USDT).",
-            "minimum": 0
-          },
-          "increment": {
-            "type": "number",
-            "description": "Price difference between two orders of the same side. Denominated in the quote currency (200 for a 200 USDT spread on BTC/USDT).",
-            "minimum": 0
-          },
-          "buy_count": {
-            "type": "number",
-            "description": "Number of initial buy orders to create. Make sure to have enough funds to create that many orders.",
-            "minimum": 1
-          },
-          "sell_count": {
-            "type": "number",
-            "description": "Number of initial sell orders to create. Make sure to have enough funds to create that many orders.",
-            "minimum": 1
-          },
-          "enable_trailing_up": {
-            "type": "boolean",
-            "default": true
-          },
-          "enable_trailing_down": {
-            "type": "boolean",
-            "default": false
-          },
-          "order_by_order_trailing": {
-            "type": "boolean",
-            "default": true
           }
         }
       },
@@ -2655,13 +2350,7 @@
                 "$ref": "#/components/schemas/MarketMakingConfiguration"
               },
               {
-                "$ref": "#/components/schemas/DCAConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/IndexConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/GridConfiguration"
+                "$ref": "#/components/schemas/TradingTentaclesConfiguration"
               },
               {
                 "$ref": "#/components/schemas/CopyConfiguration"
@@ -2677,9 +2366,7 @@
               "propertyName": "configuration_type",
               "mapping": {
                 "MarketMakingConfiguration": "#/components/schemas/MarketMakingConfiguration",
-                "DCAConfiguration": "#/components/schemas/DCAConfiguration",
-                "IndexConfiguration": "#/components/schemas/IndexConfiguration",
-                "GridConfiguration": "#/components/schemas/GridConfiguration",
+                "TradingTentaclesConfiguration": "#/components/schemas/TradingTentaclesConfiguration",
                 "CopyConfiguration": "#/components/schemas/CopyConfiguration",
                 "GenericProcessConfiguration": "#/components/schemas/GenericProcessConfiguration",
                 "GenericWorkflowConfiguration": "#/components/schemas/GenericWorkflowConfiguration"

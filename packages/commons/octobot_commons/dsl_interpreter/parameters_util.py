@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import ast
+import decimal
 import re
 import typing
 import json
@@ -33,6 +34,8 @@ def _normalize_dsl_serializable_value(value: typing.Any) -> typing.Any:
         return value.__name__
     if isinstance(value, numpy.generic):
         return value.item()
+    if isinstance(value, decimal.Decimal):
+        return float(value)
     if isinstance(value, dict):
         return {
             key: _normalize_dsl_serializable_value(nested_value)
@@ -70,6 +73,8 @@ def format_parameter_value(value: typing.Any) -> str: # pylint: disable=too-many
         return "True" if value else "False"
     if isinstance(value, numpy.generic):
         return repr(value.item())
+    if isinstance(value, decimal.Decimal):
+        return repr(float(value))
     if isinstance(value, (int, float)):
         return repr(value)
     if isinstance(value, str):

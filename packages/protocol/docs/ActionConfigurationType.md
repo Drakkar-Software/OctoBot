@@ -6,11 +6,7 @@ ActionConfigurationType
 
 * `MARKET_MAKING` (value: `'market_making'`)
 
-* `DCA` (value: `'dca'`)
-
-* `INDEX` (value: `'index'`)
-
-* `GRID` (value: `'grid'`)
+* `TRADING_TENTACLES` (value: `'trading_tentacles'`)
 
 * `COPY` (value: `'copy'`)
 

@@ -3,12 +3,20 @@ import typing
 
 import pytest
 
+import octobot_copy.enums as copy_enums
 import octobot_protocol.models as protocol_models
+import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
+import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
+import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
+import tentacles.Trading.Mode.staggered_orders_trading_mode.staggered_orders_trading as staggered_orders_trading
+import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as simple_market_making_trading
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver_module
+import octobot_node.scheduler.user_actions.user_actions_executor.util.trading_tentacles_config as trading_tentacles_config
 
 from ..account import account_executor_test_utils
+from . import trading_tentacles_test_utils
 
 
 def _strategy_with_configuration(
@@ -59,25 +67,60 @@ def _exchange_account_with_config_ids(
     )
 
 
-def _minimal_dca_configuration(**symbol_overrides) -> protocol_models.DCAConfiguration:
-    payload = {
-        "configuration_type": protocol_models.ActionConfigurationType.DCA,
-        "symbols": ["BTC/USDT"],
-        "entry_order_amount": "10%t",
-        "exit_limit_orders_price_percent": 5,
-        "entry_limit_orders_price_percent": 1,
-        "secondary_entry_orders_count": 1,
-        "secondary_entry_orders_amount": "7%t",
-        "secondary_entry_orders_price_percent": 1.0,
-        "enable_stop_loss": False,
-        "stop_loss_price_discount_percent": 0,
-        "trigger_mode": "Time based",
-        "use_init_entry_orders": True,
-        "strategies": [],
-        "evaluators": [],
-    }
-    payload.update(symbol_overrides)
-    return protocol_models.DCAConfiguration(**payload)
+def _minimal_market_making_configuration(
+    *trading_pairs: str,
+) -> protocol_models.MarketMakingConfiguration:
+    return protocol_models.MarketMakingConfiguration(
+        configuration_type=protocol_models.ActionConfigurationType.MARKET_MAKING,
+        pair_settings=[
+            protocol_models.MarketMakingSymbolConfiguration(
+                trading_pair=trading_pair,
+                exchange="binanceus",
+                reference_price=[
+                    protocol_models.MarketMakingReferencePair(
+                        exchange="binanceus",
+                        pair=trading_pair,
+                    )
+                ],
+                min_spread=0.5,
+                max_spread=1.0,
+                bids_count=1,
+                asks_count=1,
+                orders_distribution=protocol_models.MarketMakingOrdersDistribution.LINEAR,
+                funds_distribution=protocol_models.MarketMakingFundsDistribution.FLAT,
+            )
+            for trading_pair in trading_pairs
+        ],
+    )
+
+
+def _grid_configuration_from_pair_settings_only(
+    pair_settings: list[dict[str, typing.Any]],
+    *,
+    trading_mode_name: str | None = None,
+) -> protocol_models.TradingTentaclesConfiguration:
+    return trading_tentacles_test_utils.trading_tentacles_configuration(
+        name=trading_mode_name or grid_trading.GridTradingMode.get_name(),
+        config={
+            grid_trading.GridTradingMode.CONFIG_PAIR_SETTINGS: pair_settings,
+        },
+        symbols=None,
+    )
+
+
+def _trading_tentacles_configuration_with_name(
+    *,
+    trading_mode_name: str,
+    config: dict[str, typing.Any],
+    symbols: list[str] | None = None,
+    evaluators: list[protocol_models.EvaluatorConfiguration] | None = None,
+) -> protocol_models.TradingTentaclesConfiguration:
+    return trading_tentacles_test_utils.trading_tentacles_configuration(
+        name=trading_mode_name,
+        config=config,
+        symbols=symbols,
+        evaluators=evaluators,
+    )
 
 
 class TestGetPrimaryExchangeConfigId:
@@ -109,12 +152,29 @@ class TestGetExchangeConfig:
 class TestTradingTypeFromStrategy:
     def test_index_configuration_is_always_spot(self):
         strategy = _strategy_with_configuration(
-            protocol_models.IndexConfiguration(
-                configuration_type=protocol_models.ActionConfigurationType.INDEX,
-                coins=[protocol_models.IndexCoin(name="BTC", ratio=1)],
-                rebalance_trigger_min_percent=5,
+            trading_tentacles_test_utils.index_trading_configuration(
+                coins=[("BTC", 1.0)],
+                rebalance_trigger_min_percent=5.0,
             )
         )
+        assert (
+            exchange_account_resolver_module.trading_type_from_strategy(strategy)
+            == protocol_models.TradingType.SPOT
+        )
+
+    @pytest.mark.parametrize(
+        "trading_mode_name",
+        [
+            index_trading.IndexTradingMode.get_name(),
+            trading_tentacles_config.normalize_tentacle_name(index_trading.IndexTradingMode.get_name()),
+        ],
+    )
+    def test_index_configuration_snake_case_name_is_always_spot(self, trading_mode_name: str):
+        index_configuration = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
+            rebalance_trigger_min_percent=5.0,
+        ).model_copy(update={"name": trading_mode_name})
+        strategy = _strategy_with_configuration(index_configuration)
         assert (
             exchange_account_resolver_module.trading_type_from_strategy(strategy)
             == protocol_models.TradingType.SPOT
@@ -149,17 +209,7 @@ class TestTradingTypeFromStrategy:
 
     def test_all_spot_symbols_return_spot(self):
         strategy = _strategy_with_configuration(
-            protocol_models.GridConfiguration(
-                configuration_type=protocol_models.ActionConfigurationType.GRID,
-                symbol="BTC/USDT",
-                spread=100,
-                increment=50,
-                buy_count=2,
-                sell_count=2,
-                enable_trailing_up=False,
-                enable_trailing_down=False,
-                order_by_order_trailing=False,
-            )
+            trading_tentacles_test_utils.grid_trading_configuration(symbol="BTC/USDT")
         )
         assert (
             exchange_account_resolver_module.trading_type_from_strategy(strategy)
@@ -168,7 +218,7 @@ class TestTradingTypeFromStrategy:
 
     def test_all_futures_symbols_return_futures(self):
         strategy = _strategy_with_configuration(
-            _minimal_dca_configuration(symbols=["BTC/USDT:USDT"]),
+            trading_tentacles_test_utils.minimal_dca_trading_configuration(symbols=["BTC/USDT:USDT"]),
         )
         assert (
             exchange_account_resolver_module.trading_type_from_strategy(strategy)
@@ -177,7 +227,9 @@ class TestTradingTypeFromStrategy:
 
     def test_all_option_symbols_return_options(self):
         strategy = _strategy_with_configuration(
-            _minimal_dca_configuration(symbols=["BTC/USDT:USDT-211225-60000-P"]),
+            trading_tentacles_test_utils.minimal_dca_trading_configuration(
+                symbols=["BTC/USDT:USDT-211225-60000-P"],
+            ),
         )
         assert (
             exchange_account_resolver_module.trading_type_from_strategy(strategy)
@@ -186,14 +238,16 @@ class TestTradingTypeFromStrategy:
 
     def test_mixed_symbol_types_raise_ambiguous_trading_type(self):
         strategy = _strategy_with_configuration(
-            _minimal_dca_configuration(symbols=["BTC/USDT", "BTC/USDT:USDT"]),
+            trading_tentacles_test_utils.minimal_dca_trading_configuration(
+                symbols=["BTC/USDT", "BTC/USDT:USDT"],
+            ),
         )
         with pytest.raises(node_errors.AmbiguousTradingTypeError):
             exchange_account_resolver_module.trading_type_from_strategy(strategy)
 
     def test_empty_symbols_raise_unknown_trading_type(self):
         strategy = _strategy_with_configuration(
-            _minimal_dca_configuration(symbols=[]),
+            trading_tentacles_test_utils.minimal_dca_trading_configuration(symbols=[]),
         )
         with pytest.raises(node_errors.UnknownTradingTypeError):
             exchange_account_resolver_module.trading_type_from_strategy(strategy)
@@ -238,40 +292,238 @@ class TestDetailedAssetsFromAccount:
             )
 
 
-def _evaluator_configuration_with_symbols(symbols: list[str]) -> protocol_models.EvaluatorConfiguration:
-    return protocol_models.EvaluatorConfiguration(
-        symbols=symbols,
-        include_in_construction_candle=False,
-        configuration=protocol_models.EvaluatorConfigurationConfiguration(
-            protocol_models.RSIMomentumEvaluatorConfiguration(
-                configuration_type=protocol_models.EvaluatorType.RSIMOMENTUMEVALUATOR,
-                period_length=12,
-                long_threshold=50,
-                short_threshold=70,
-            )
-        ),
-    )
-
-
 class TestStrategyTradedSymbols:
     def test_dca_returns_explicit_symbols_when_set(self):
-        dca_configuration = _minimal_dca_configuration(
+        dca_configuration = trading_tentacles_test_utils.minimal_dca_trading_configuration(
             symbols=["BTC/USDT"],
-            evaluators=[_evaluator_configuration_with_symbols(["ETH/USDT"])],
+            evaluators=[
+                trading_tentacles_test_utils.evaluator_configuration_with_symbols(["ETH/USDT"])
+            ],
         )
         assert exchange_account_resolver_module._strategy_traded_symbols(dca_configuration) == [
             "BTC/USDT"
         ]
 
     def test_dca_falls_back_to_evaluator_symbols_when_symbols_empty(self):
-        dca_configuration = _minimal_dca_configuration(
+        dca_configuration = trading_tentacles_test_utils.minimal_dca_trading_configuration(
             symbols=[],
             evaluators=[
-                _evaluator_configuration_with_symbols(["BTC/USDT", "ETH/USDT"]),
-                _evaluator_configuration_with_symbols(["ETH/USDT"]),
+                trading_tentacles_test_utils.evaluator_configuration_with_symbols(
+                    ["BTC/USDT", "ETH/USDT"]
+                ),
+                trading_tentacles_test_utils.evaluator_configuration_with_symbols(["ETH/USDT"]),
             ],
         )
         assert exchange_account_resolver_module._strategy_traded_symbols(dca_configuration) == [
             "BTC/USDT",
             "ETH/USDT",
         ]
+
+    def test_market_making_returns_pair_settings_trading_pairs(self):
+        market_making_configuration = _minimal_market_making_configuration(
+            "BTC/USDT",
+            "ETH/USDT",
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(
+            market_making_configuration
+        ) == ["BTC/USDT", "ETH/USDT"]
+
+    @pytest.mark.parametrize(
+        "trading_mode_name",
+        [
+            dca_trading.DCATradingMode.get_name(),
+            trading_tentacles_config.normalize_tentacle_name(dca_trading.DCATradingMode.get_name()),
+        ],
+    )
+    def test_dca_returns_config_trading_pairs_when_top_level_symbols_missing(
+        self,
+        trading_mode_name: str,
+    ):
+        dca_configuration = _trading_tentacles_configuration_with_name(
+            trading_mode_name=trading_mode_name,
+            config={
+                dca_trading.DCATradingMode.TRADING_PAIRS: ["BTC/USDT", "ETH/USDT"],
+            },
+            symbols=None,
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(dca_configuration) == [
+            "BTC/USDT",
+            "ETH/USDT",
+        ]
+
+    def test_unknown_trading_mode_without_evaluators_returns_empty(self):
+        trading_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
+            name="CustomTradingMode",
+            config={"symbol": "BTC/USDT"},
+            symbols=None,
+            evaluators=[],
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(trading_configuration) == []
+
+    @pytest.mark.parametrize(
+        "trading_mode_name",
+        [
+            grid_trading.GridTradingMode.get_name(),
+            trading_tentacles_config.normalize_tentacle_name(grid_trading.GridTradingMode.get_name()),
+        ],
+    )
+    def test_grid_returns_pair_settings_pairs_when_top_level_symbols_missing(
+        self,
+        trading_mode_name: str,
+    ):
+        grid_configuration = _grid_configuration_from_pair_settings_only(
+            [
+                grid_trading.GridTradingMode.get_default_pair_config(
+                    "BTC/USDT",
+                    6,
+                    2,
+                    2,
+                    2,
+                    False,
+                    False,
+                    False,
+                ),
+                grid_trading.GridTradingMode.get_default_pair_config(
+                    "ETH/USDT",
+                    6,
+                    2,
+                    2,
+                    2,
+                    False,
+                    False,
+                    False,
+                ),
+            ],
+            trading_mode_name=trading_mode_name,
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(grid_configuration) == [
+            "BTC/USDT",
+            "ETH/USDT",
+        ]
+
+    @pytest.mark.parametrize(
+        "trading_mode_name",
+        [
+            staggered_orders_trading.StaggeredOrdersTradingMode.get_name(),
+            trading_tentacles_config.normalize_tentacle_name(
+                staggered_orders_trading.StaggeredOrdersTradingMode.get_name()
+            ),
+        ],
+    )
+    def test_staggered_orders_returns_pair_settings_pairs(
+        self,
+        trading_mode_name: str,
+    ):
+        staggered_configuration = _trading_tentacles_configuration_with_name(
+            trading_mode_name=trading_mode_name,
+            config={
+                staggered_orders_trading.StaggeredOrdersTradingMode.CONFIG_PAIR_SETTINGS: [
+                    {
+                        staggered_orders_trading.StaggeredOrdersTradingMode.CONFIG_PAIR: "BTC/USDT"
+                    },
+                    {
+                        staggered_orders_trading.StaggeredOrdersTradingMode.CONFIG_PAIR: "ETH/USDT"
+                    },
+                ],
+            },
+            symbols=None,
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(
+            staggered_configuration
+        ) == ["BTC/USDT", "ETH/USDT"]
+
+    @pytest.mark.parametrize(
+        "trading_mode_name",
+        [
+            simple_market_making_trading.SimpleMarketMakingTradingMode.get_name(),
+            trading_tentacles_config.normalize_tentacle_name(
+                simple_market_making_trading.SimpleMarketMakingTradingMode.get_name()
+            ),
+        ],
+    )
+    def test_simple_market_making_returns_trading_pair_from_pair_settings(
+        self,
+        trading_mode_name: str,
+    ):
+        simple_market_making_configuration = _trading_tentacles_configuration_with_name(
+            trading_mode_name=trading_mode_name,
+            config={
+                simple_market_making_trading.SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS: [
+                    {
+                        simple_market_making_trading.SimpleMarketMakingTradingMode.CONFIG_PAIR: (
+                            "BTC/USDT"
+                        )
+                    },
+                    {
+                        simple_market_making_trading.SimpleMarketMakingTradingMode.CONFIG_PAIR: (
+                            "ETH/USDT"
+                        )
+                    },
+                ],
+            },
+            symbols=None,
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(
+            simple_market_making_configuration
+        ) == ["BTC/USDT", "ETH/USDT"]
+
+    @pytest.mark.parametrize(
+        "trading_mode_name",
+        [
+            index_trading.IndexTradingMode.get_name(),
+            trading_tentacles_config.normalize_tentacle_name(index_trading.IndexTradingMode.get_name()),
+        ],
+    )
+    def test_index_returns_symbols_from_index_content(
+        self,
+        trading_mode_name: str,
+    ):
+        index_configuration = _trading_tentacles_configuration_with_name(
+            trading_mode_name=trading_mode_name,
+            config={
+                index_trading.IndexTradingModeProducer.INDEX_CONTENT: [
+                    {
+                        copy_enums.DistributionKeys.NAME: "BTC",
+                        copy_enums.DistributionKeys.VALUE: 1.0,
+                    }
+                ],
+            },
+            symbols=None,
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(
+            index_configuration,
+            reference_market="USDT",
+        ) == ["BTC/USDT"]
+
+    def test_pair_settings_deduplicates_symbols(self):
+        grid_configuration = _grid_configuration_from_pair_settings_only(
+            [
+                {"pair": "BTC/USDT"},
+                {"pair": "ETH/USDT"},
+                {"pair": "BTC/USDT"},
+            ]
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(grid_configuration) == [
+            "BTC/USDT",
+            "ETH/USDT",
+        ]
+
+    def test_returns_empty_list_when_no_symbol_source_found(self):
+        trading_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
+            name=dca_trading.DCATradingMode.get_name(),
+            config={},
+            symbols=None,
+            evaluators=[],
+        )
+        assert exchange_account_resolver_module._strategy_traded_symbols(trading_configuration) == []
+
+    def test_raises_for_unsupported_configuration_type(self):
+        copy_configuration = protocol_models.CopyConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.COPY,
+            strategy_id="copied-strategy",
+        )
+        with pytest.raises(
+            node_errors.InvalidAutomationConfigurationError,
+            match="Unsupported strategy configuration type for trading type inference: CopyConfiguration",
+        ):
+            exchange_account_resolver_module._strategy_traded_symbols(copy_configuration)

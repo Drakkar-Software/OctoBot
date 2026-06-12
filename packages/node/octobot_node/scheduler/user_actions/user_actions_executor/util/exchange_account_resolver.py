@@ -24,6 +24,7 @@ import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers as collection_providers
 
 import octobot_node.errors as node_errors
+import octobot_node.scheduler.user_actions.user_actions_executor.util.trading_tentacles_config as trading_tentacles_config
 
 
 def get_primary_exchange_config_id(
@@ -67,8 +68,12 @@ def trading_type_from_strategy(
         )
     inner_configuration = configuration_wrapper.actual_instance
 
-    if isinstance(inner_configuration, protocol_models.IndexConfiguration):
-        return protocol_models.TradingType.SPOT
+    if isinstance(inner_configuration, protocol_models.TradingTentaclesConfiguration):
+        trading_mode_class = trading_tentacles_config.get_trading_mode_class_from_tentacle_name(
+            inner_configuration.name
+        )
+        if trading_mode_class is not None and trading_mode_class.__name__ == "IndexTradingMode":
+            return protocol_models.TradingType.SPOT
     if isinstance(
         inner_configuration,
         (
@@ -79,7 +84,10 @@ def trading_type_from_strategy(
     ):
         return None
 
-    traded_symbols = _strategy_traded_symbols(inner_configuration)
+    traded_symbols = _strategy_traded_symbols(
+        inner_configuration,
+        reference_market=strategy.reference_market,
+    )
     return _trading_type_from_traded_symbols(traded_symbols)
 
 
@@ -121,22 +129,19 @@ def detailed_assets_from_account(
 
 def _strategy_traded_symbols(
     inner_configuration: typing.Any,
+    *,
+    reference_market: str | None = None,
 ) -> list[str]:
     if isinstance(inner_configuration, protocol_models.MarketMakingConfiguration):
         return [
             pair_setting.trading_pair
             for pair_setting in (inner_configuration.pair_settings or [])
         ]
-    if isinstance(inner_configuration, protocol_models.DCAConfiguration):
-        traded_symbols = list(inner_configuration.symbols or [])
-        if traded_symbols:
-            return traded_symbols
-        evaluator_symbols: list[str] = []
-        for evaluator_configuration in inner_configuration.evaluators or []:
-            evaluator_symbols.extend(evaluator_configuration.symbols or [])
-        return list(dict.fromkeys(evaluator_symbols))
-    if isinstance(inner_configuration, protocol_models.GridConfiguration):
-        return [inner_configuration.symbol]
+    if isinstance(inner_configuration, protocol_models.TradingTentaclesConfiguration):
+        return trading_tentacles_config.get_trading_tentacles_traded_symbols(
+            inner_configuration,
+            reference_market=reference_market,
+        )
     raise node_errors.InvalidAutomationConfigurationError(
         f"Unsupported strategy configuration type for trading type inference: {type(inner_configuration).__name__}."
     )

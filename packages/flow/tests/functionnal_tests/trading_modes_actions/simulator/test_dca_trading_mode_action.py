@@ -30,6 +30,7 @@ import tentacles.Evaluator.TA.momentum_evaluator.momentum as momentum_evaluator
 import tentacles.Evaluator.Strategies.mixed_strategies_evaluator.mixed_strategies as mixed_strategies_evaluator
 
 import tests.functionnal_tests as functionnal_tests
+import tests.functionnal_tests.tentacle_test_configs as tentacle_test_configs
 from tests.functionnal_tests import (
     assert_emitted_signal_account_allocation_ratios,
     automation_state_dict,
@@ -64,58 +65,27 @@ RSI_EVALUATOR_DSL_OPERATOR = str_util.camel_to_snake(momentum_evaluator.RSIMomen
 STRATEGY_EVALUATOR_DSL_OPERATOR = str_util.camel_to_snake(mixed_strategies_evaluator.SimpleStrategyEvaluator.get_name())
 
 # BinanceUS smart-DCA product shape: BTC/USDC + ETH/USDC, fixed ticker closes patched in tests.
-BINANCEUS_DCA_TENTACLE_CONFIG = {
-    "trigger_mode": dca_trading.TriggerMode.ALWAYS_TRIGGER_LONG.value,
-    "use_stop_losses": False,
-    "buy_order_amount": "8t%",
-    "enable_health_check": True,
-    "use_init_entry_orders": True,
-    "minutes_before_next_buy": 10080,
-    "use_market_entry_orders": False,
-    "max_asset_holding_percent": 50,
-    "use_secondary_exit_orders": False,
-    "use_secondary_entry_orders": True,
-    "secondary_exit_orders_count": 0,
-    "use_take_profit_exit_orders": True,
-    "secondary_entry_orders_count": 1,
-    "secondary_entry_orders_amount": "7%t",
-    "exit_limit_orders_price_percent": 1.75,
-    "entry_limit_orders_price_percent": 1.5,
-    "secondary_exit_orders_price_percent": 0.7,
-    "secondary_entry_orders_price_percent": 1,
-    dca_trading.DCATradingMode.TRADING_PAIRS: [BTC_USDC, ETH_USDC],
-}
+BINANCEUS_DCA_TENTACLE_CONFIG = tentacle_test_configs.binanceus_dca_tentacle_config(
+    **{
+        dca_trading.DCATradingMode.TRADING_PAIRS: [BTC_USDC, ETH_USDC],
+    }
+)
 
-BINANCEUS_DCA_MAXIMUM_EVALUATORS_CONFIG = {
-    **BINANCEUS_DCA_TENTACLE_CONFIG,
-    "trigger_mode": dca_trading.TriggerMode.MAXIMUM_EVALUATORS_SIGNALS_BASED.value,
-    "use_init_entry_orders": False,
-    "time_frames": [common_enums.TimeFrames.TWO_HOURS.value],
-    "dag_reset_to_action_id": "action_init",
-}
+BINANCEUS_DCA_MAXIMUM_EVALUATORS_CONFIG = tentacle_test_configs.binanceus_dca_maximum_evaluators_config()
 
-BINANCEUS_DCA_MAXIMUM_EVALUATORS_FROM_STRATEGY_SYMBOLS_CONFIG = {
-    **BINANCEUS_DCA_MAXIMUM_EVALUATORS_CONFIG,
-    dca_trading.DCATradingMode.TRADING_PAIRS: [],
-}
+BINANCEUS_DCA_MAXIMUM_EVALUATORS_FROM_STRATEGY_SYMBOLS_CONFIG = (
+    tentacle_test_configs.binanceus_dca_maximum_evaluators_config(
+        **{
+            dca_trading.DCATradingMode.TRADING_PAIRS: [],
+        }
+    )
+)
 
-DMA_EVALUATOR_CONFIG = {
-    "long_period_length": 10,
-    "short_period_length": 5,
-}
+DMA_EVALUATOR_CONFIG = tentacle_test_configs.dma_evaluator_config()
 
-RSI_EVALUATOR_CONFIG = {
-    "period_length": 12,
-    "long_threshold": 50,
-    "short_threshold": 70,
-    "trend_change_identifier": False,
-}
+RSI_EVALUATOR_CONFIG = tentacle_test_configs.rsi_evaluator_config()
 
-STRATEGY_EVALUATOR_CONFIG = {
-    "background_social_evaluators": [],
-    "required_time_frames": [common_enums.TimeFrames.TWO_HOURS.value],
-    "required_candles_count": 15,
-}
+STRATEGY_EVALUATOR_CONFIG = tentacle_test_configs.strategy_evaluator_config()
 
 
 def _close_to_decimal(close: typing.Union[int, float, decimal.Decimal]) -> decimal.Decimal:

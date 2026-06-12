@@ -13,6 +13,8 @@ import octobot_trading.constants as trading_constants_module
 import octobot_trading.enums as trading_enums_module
 import octobot_protocol.models as protocol_models_module
 
+from tests.scheduler.user_actions.user_actions_executor.util import trading_tentacles_test_utils
+
 from . import price_mocks as price_mocks_module
 from . import workflow_common as workflow_common_module
 
@@ -222,80 +224,17 @@ def tickers_repository_fetch_tickers_close_override(
     )
 
 
-def dca_configuration_for_functional_no_evaluator() -> protocol_models_module.DCAConfiguration:
-    return protocol_models_module.DCAConfiguration(
-        configuration_type=protocol_models_module.ActionConfigurationType.DCA,
-        symbols=list(TRADED_SYMBOLS),
-        entry_order_amount="8%t",
-        exit_limit_orders_price_percent=1.75,
-        entry_limit_orders_price_percent=1.5,
-        secondary_entry_orders_count=1,
-        secondary_entry_orders_amount="7%t",
-        secondary_entry_orders_price_percent=1.0,
-        enable_stop_loss=False,
-        stop_loss_price_discount_percent=0,
-        trigger_mode="Always trigger long",
-        use_init_entry_orders=True,
-        strategies=[],
-        evaluators=[],
-    )
+def dca_configuration_for_functional_no_evaluator() -> protocol_models_module.TradingTentaclesConfiguration:
+    return trading_tentacles_test_utils.functional_dca_trading_configuration()
 
 
 FUNCTIONAL_MAXIMUM_EVALUATORS_TIME_FRAME = "1h"
 
-_RSI_EVALUATOR_FUNCTIONAL_CONFIG = protocol_models_module.RSIMomentumEvaluatorConfiguration(
-    configuration_type=protocol_models_module.EvaluatorType.RSIMOMENTUMEVALUATOR,
-    period_length=12,
-    long_threshold=50,
-    short_threshold=70,
-)
-_EMA_EVALUATOR_FUNCTIONAL_CONFIG = protocol_models_module.EMAMomentumEvaluatorConfiguration(
-    configuration_type=protocol_models_module.EvaluatorType.EMAMOMENTUMEVALUATOR,
-    period_length=10,
-    price_threshold_percent=1.0,
-    reverse_signal=False,
-)
-_STRATEGY_EVALUATOR_FUNCTIONAL_CONFIG = protocol_models_module.StrategyEvaluatorConfiguration(
-    time_frames=[FUNCTIONAL_MAXIMUM_EVALUATORS_TIME_FRAME],
-    configuration=protocol_models_module.StrategyEvaluatorConfigurationConfiguration(
-        protocol_models_module.SimpleStrategyEvaluatorConfiguration(
-            configuration_type=protocol_models_module.StrategyEvaluatorType.SIMPLESTRATEGYEVALUATOR,
-        )
-    ),
-)
 
-
-def dca_configuration_for_functional_maximum_evaluators() -> protocol_models_module.DCAConfiguration:
-    return protocol_models_module.DCAConfiguration(
-        configuration_type=protocol_models_module.ActionConfigurationType.DCA,
-        symbols=[],
-        entry_order_amount="8%t",
-        exit_limit_orders_price_percent=1.75,
-        entry_limit_orders_price_percent=1.5,
-        secondary_entry_orders_count=1,
-        secondary_entry_orders_amount="7%t",
-        secondary_entry_orders_price_percent=1.0,
-        enable_stop_loss=False,
-        stop_loss_price_discount_percent=0,
-        trigger_mode="Maximum evaluators signals based",
-        use_init_entry_orders=False,
-        strategies=[_STRATEGY_EVALUATOR_FUNCTIONAL_CONFIG],
-        evaluators=[
-            protocol_models_module.EvaluatorConfiguration(
-                symbols=list(TRADED_SYMBOLS),
-                include_in_construction_candle=False,
-                configuration=protocol_models_module.EvaluatorConfigurationConfiguration(
-                    _RSI_EVALUATOR_FUNCTIONAL_CONFIG,
-                ),
-            ),
-            protocol_models_module.EvaluatorConfiguration(
-                symbols=list(TRADED_SYMBOLS),
-                include_in_construction_candle=False,
-                configuration=protocol_models_module.EvaluatorConfigurationConfiguration(
-                    _EMA_EVALUATOR_FUNCTIONAL_CONFIG,
-                ),
-            ),
-        ],
+def dca_configuration_for_functional_maximum_evaluators() -> protocol_models_module.TradingTentaclesConfiguration:
+    return trading_tentacles_test_utils.maximum_evaluators_trading_configuration(
+        traded_symbols=list(TRADED_SYMBOLS),
+        time_frame=FUNCTIONAL_MAXIMUM_EVALUATORS_TIME_FRAME,
     )
 
 

@@ -9,6 +9,8 @@ import uuid
 
 import octobot_protocol.models as protocol_models_module
 
+from tests.scheduler.user_actions.user_actions_executor.util import trading_tentacles_test_utils
+
 from . import workflow_common as workflow_common_module
 
 GRID_INCREMENT = 200
@@ -52,9 +54,8 @@ def seeded_copy_follower_strategy_for_functional_wallet(
     )
 
 
-def grid_configuration_matching_simulator_constants() -> protocol_models_module.GridConfiguration:
-    return protocol_models_module.GridConfiguration(
-        configuration_type=protocol_models_module.ActionConfigurationType.GRID,
+def grid_configuration_matching_simulator_constants() -> protocol_models_module.TradingTentaclesConfiguration:
+    return trading_tentacles_test_utils.grid_trading_configuration(
         symbol="BTC/USDC",
         spread=GRID_SPREAD,
         increment=GRID_INCREMENT,
