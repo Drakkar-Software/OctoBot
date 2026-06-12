@@ -224,7 +224,7 @@ def get_workflows_by_parent_id(
 
 
 def get_automation_state_reader(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["octobot_flow.parsers.AutomationStateReader"]:
-    """Get the automation state from the workflow status (input task content)."""
+    """Get the resolved automation state for a workflow row (input or terminal output)."""
     try:
         import octobot_flow.entities
         import octobot_flow.parsers
@@ -243,13 +243,58 @@ def get_automation_id(workflow_status: dbos_lib.WorkflowStatus) -> typing.Option
     return None
 
 
+def parse_automation_workflow_output(
+    workflow_status: dbos_lib.WorkflowStatus,
+) -> typing.Optional[params.AutomationWorkflowOutput]:
+    if not workflow_status.output:
+        return None
+    try:
+        return params.AutomationWorkflowOutput.from_dict(json.loads(workflow_status.output))
+    except (json.JSONDecodeError, TypeError, ValueError) as error:
+        logger.warning(
+            "Failed to parse automation workflow output for %s: %s",
+            workflow_status.workflow_id,
+            error,
+        )
+        return None
+
+
+def get_resolved_automation_task(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[models.Task]:
+    """
+    Return the task whose content reflects the authoritative automation state for this workflow row.
+
+    Running iterations expose state from workflow input. Completed SUCCESS/ERROR iterations expose
+    state from workflow output so protocol consumers match end-of-iteration exchange snapshots.
+    """
+    input_task = get_automation_input_task(workflow_status)
+    workflow_output = parse_automation_workflow_output(workflow_status)
+    if (
+        workflow_output is not None
+        and workflow_output.state is not None
+        and workflow_status.status
+        in (
+            dbos_lib.WorkflowStatusString.SUCCESS.value,
+            dbos_lib.WorkflowStatusString.ERROR.value,
+        )
+    ):
+        return models.Task(
+            name=input_task.name if input_task is not None else None,
+            content=workflow_output.state,
+            content_metadata=workflow_output.state_metadata,
+            type=models.TaskType.EXECUTE_ACTIONS.value,
+        )
+    return input_task
+
+
 def get_automation_state_dict(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[dict]:
-    if inputs := get_automation_workflow_inputs(workflow_status):
+    resolved_task = get_resolved_automation_task(workflow_status)
+    if resolved_task is None:
+        return None
+    with task_context.encrypted_task(resolved_task):
         try:
-            return get_automation_dict(inputs.task.content)[STATE_KEY]
+            return get_automation_dict(resolved_task.content)[STATE_KEY]
         except ValueError:
             return None
-    return None
 
 
 def get_automation_input_task(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[models.Task]:

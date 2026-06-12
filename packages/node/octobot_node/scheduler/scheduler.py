@@ -370,16 +370,19 @@ class Scheduler:
         workflow_status: dbos.WorkflowStatus,
     ) -> tuple[workflow_params.AutomationWorkflowOutput, octobot_node.models.Task]:
         output = (
-            workflow_params.AutomationWorkflowOutput.from_dict(json.loads(workflow_status.output))
-            if workflow_status.output else workflow_params.AutomationWorkflowOutput()
+            workflows_util.parse_automation_workflow_output(workflow_status)
+            or workflow_params.AutomationWorkflowOutput()
         )
+        resolved_task = workflows_util.get_resolved_automation_task(workflow_status)
+        if resolved_task is not None:
+            return output, resolved_task
         input_task = workflows_util.get_automation_input_task(workflow_status)
         task_name = input_task.name if input_task is not None else None
         return output, octobot_node.models.Task(
             name=task_name,
             content=output.state,
             content_metadata=output.state_metadata,
-            type="execute_actions",
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
         )
 
     def _build_export_result_from_status(
@@ -505,11 +508,8 @@ class Scheduler:
         )
         sources: list[automations_protocol.AutomationStateSource] = []
         for workflow in workflows:
-            workflow_output = None
-            if workflow.output:
-                workflow_output, task = self._parse_output_and_task_from_workflow_output(workflow)
-            else:
-                task = workflows_util.get_automation_input_task(workflow)
+            workflow_output = workflows_util.parse_automation_workflow_output(workflow)
+            task = workflows_util.get_resolved_automation_task(workflow)
             if task:
                 task.id = workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
                 sources.append(automations_protocol.AutomationStateSource(
