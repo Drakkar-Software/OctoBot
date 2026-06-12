@@ -36,6 +36,7 @@ class TestExchangeConfigActionResult(unittest.TestCase):
         if include_optional:
             return ExchangeConfigActionResult(
                 updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                created_exchange_config_id = '',
                 error_message = 'exchange_config_not_found',
                 error_details = '',
                 result_type = 'automation'

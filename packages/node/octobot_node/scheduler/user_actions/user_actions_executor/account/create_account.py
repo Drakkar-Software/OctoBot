@@ -52,4 +52,4 @@ class CreateAccountActionExecutor(account_user_action_executor.AccountUserAction
             self._wallet_address,
             checked_account,
         )
-        self._mark_user_action_completed(user_action)
+        self._mark_user_action_completed(user_action, created_account_id=checked_account.id)

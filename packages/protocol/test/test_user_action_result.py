@@ -39,7 +39,11 @@ class TestUserActionResult(unittest.TestCase):
                 error_message = 'account_auth_not_found',
                 error_details = '',
                 created_automation_id = '',
-                result_type = 'automation'
+                result_type = 'automation',
+                created_account_id = '',
+                created_exchange_config_id = '',
+                created_strategy_id = '',
+                created_account_auth_id = ''
             )
         else:
             return UserActionResult(

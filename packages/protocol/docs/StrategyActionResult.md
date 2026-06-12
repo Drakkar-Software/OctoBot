@@ -7,6 +7,7 @@ StrategyActionResult
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **result_type** | [**UserActionResultType**](UserActionResultType.md) | strategy | 
+**created_strategy_id** | **str** |  | [optional] 
 **updated_at** | **datetime** |  | 
 **error_message** | [**StrategyActionResultErrorMessage**](StrategyActionResultErrorMessage.md) |  | [optional] 
 **error_details** | **str** |  | [optional] 

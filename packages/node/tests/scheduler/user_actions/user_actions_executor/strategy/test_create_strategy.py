@@ -57,6 +57,7 @@ class TestCreateStrategyActionExecutorExecute:
             expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="strategy",
             expect_error_details=False,
+            expected_created_id="new-strategy",
         )
 
     @pytest.mark.asyncio

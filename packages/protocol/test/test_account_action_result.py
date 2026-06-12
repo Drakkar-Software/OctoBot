@@ -36,6 +36,7 @@ class TestAccountActionResult(unittest.TestCase):
         if include_optional:
             return AccountActionResult(
                 updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                created_account_id = '',
                 error_message = 'account_not_found',
                 error_details = '',
                 result_type = 'automation'

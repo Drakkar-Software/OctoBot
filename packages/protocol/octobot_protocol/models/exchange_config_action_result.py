@@ -31,10 +31,11 @@ class ExchangeConfigActionResult(BaseModel):
     ExchangeConfigActionResult
     """ # noqa: E501
     updated_at: datetime
+    created_exchange_config_id: Optional[StrictStr] = None
     error_message: Optional[ExchangeConfigActionResultErrorMessage] = None
     error_details: Optional[StrictStr] = None
     result_type: UserActionResultType
-    __properties: ClassVar[List[str]] = ["updated_at", "error_message", "error_details", "result_type"]
+    __properties: ClassVar[List[str]] = ["updated_at", "created_exchange_config_id", "error_message", "error_details", "result_type"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -88,6 +89,7 @@ class ExchangeConfigActionResult(BaseModel):
 
         _obj = cls.model_validate({
             "updated_at": obj.get("updated_at"),
+            "created_exchange_config_id": obj.get("created_exchange_config_id"),
             "error_message": obj.get("error_message"),
             "error_details": obj.get("error_details"),
             "result_type": obj.get("result_type")

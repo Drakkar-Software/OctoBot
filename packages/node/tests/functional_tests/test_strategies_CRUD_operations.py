@@ -261,6 +261,7 @@ class TestExecuteUserActionStrategyCrud:
                     created_inner = created_latest.result.actual_instance
                     assert isinstance(created_inner, protocol_models.StrategyActionResult)
                     assert created_inner.error_message is None
+                    assert created_inner.created_strategy_id == _FUNCTIONAL_STRATEGY_ID
 
                     persisted_created_strategy = strategy_provider.get_item(
                         wallet_address,

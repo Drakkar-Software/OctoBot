@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import typing
+
 import octobot_commons.timestamp_util as timestamp_util
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
@@ -67,12 +69,18 @@ class AccountAuthUserActionExecutor(user_actions_executor_base.UserActionExecuto
             return protocol_models.AccountAuthActionResultErrorMessage.INVALID_CONFIGURATION
         return protocol_models.AccountAuthActionResultErrorMessage(super()._get_error_message(exc))
 
-    def _mark_user_action_completed(self, user_action: protocol_models.UserAction) -> None:
+    def _mark_user_action_completed(
+        self,
+        user_action: protocol_models.UserAction,
+        *,
+        created_account_auth_id: typing.Optional[str] = None,
+    ) -> None:
         now = timestamp_util.utc_now_datetime()
         user_action.status = protocol_models.UserActionStatus.COMPLETED
         user_action.result = protocol_models.UserActionResult(
             actual_instance=protocol_models.AccountAuthActionResult(
                 updated_at=now,
                 result_type=protocol_models.UserActionResultType.ACCOUNT_AUTH,
+                created_account_auth_id=created_account_auth_id,
             )
         )

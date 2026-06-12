@@ -50,4 +50,7 @@ class CreateStrategyActionExecutor(
             self._wallet_address,
             create_payload.configuration,
         )
-        self._mark_user_action_completed(user_action)
+        self._mark_user_action_completed(
+            user_action,
+            created_strategy_id=create_payload.configuration.id,
+        )

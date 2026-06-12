@@ -50,4 +50,7 @@ class CreateExchangeConfigActionExecutor(
             self._wallet_address,
             create_payload.configuration,
         )
-        self._mark_user_action_completed(user_action)
+        self._mark_user_action_completed(
+            user_action,
+            created_exchange_config_id=create_payload.configuration.id,
+        )

@@ -50,4 +50,7 @@ class CreateAccountAuthActionExecutor(
             self._wallet_address,
             account_auth_user_action_executor.with_updated_at(create_payload.configuration),
         )
-        self._mark_user_action_completed(user_action)
+        self._mark_user_action_completed(
+            user_action,
+            created_account_auth_id=create_payload.configuration.id,
+        )

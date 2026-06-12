@@ -1983,6 +1983,9 @@
             "$ref": "#/components/schemas/UserActionResultType",
             "description": "strategy"
           },
+          "created_strategy_id": {
+            "type": "string"
+          },
           "updated_at": {
             "type": "string",
             "format": "date-time"
@@ -2104,6 +2107,9 @@
             "type": "string",
             "format": "date-time"
           },
+          "created_account_id": {
+            "type": "string"
+          },
           "error_message": {
             "$ref": "#/components/schemas/AccountActionResultErrorMessage"
           },
@@ -2137,6 +2143,9 @@
             "type": "string",
             "format": "date-time"
           },
+          "created_exchange_config_id": {
+            "type": "string"
+          },
           "error_message": {
             "$ref": "#/components/schemas/ExchangeConfigActionResultErrorMessage"
           },
@@ -2169,6 +2178,9 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "created_account_auth_id": {
+            "type": "string"
           },
           "error_message": {
             "$ref": "#/components/schemas/AccountAuthActionResultErrorMessage"

@@ -7,6 +7,7 @@ ExchangeConfigActionResult
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **updated_at** | **datetime** |  | 
+**created_exchange_config_id** | **str** |  | [optional] 
 **error_message** | [**ExchangeConfigActionResultErrorMessage**](ExchangeConfigActionResultErrorMessage.md) |  | [optional] 
 **error_details** | **str** |  | [optional] 
 **result_type** | [**UserActionResultType**](UserActionResultType.md) |  | 

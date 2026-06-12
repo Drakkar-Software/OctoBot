@@ -70,6 +70,7 @@ class TestCreateAccountAuthActionExecutorExecute:
             expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="account_auth",
             expect_error_details=False,
+            expected_created_id="new-auth",
         )
 
     @pytest.mark.asyncio

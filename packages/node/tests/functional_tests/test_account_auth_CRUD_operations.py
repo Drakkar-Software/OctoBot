@@ -255,6 +255,7 @@ class TestExecuteUserActionAccountAuthCrud:
                     created_inner = created_latest.result.actual_instance
                     assert isinstance(created_inner, protocol_models.AccountAuthActionResult)
                     assert created_inner.error_message is None
+                    assert created_inner.created_account_auth_id == _FUNCTIONAL_AUTH_ID
 
                     persisted_created_auth = auth_provider.get_item(
                         wallet_address,

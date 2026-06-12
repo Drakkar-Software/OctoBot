@@ -57,6 +57,7 @@ class TestCreateAccountActionExecutorExecute:
             expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="account",
             expect_error_details=False,
+            expected_created_id="new-acc",
         )
 
     @pytest.mark.asyncio

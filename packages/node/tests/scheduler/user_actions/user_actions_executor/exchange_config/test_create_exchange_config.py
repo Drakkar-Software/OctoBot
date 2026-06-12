@@ -59,6 +59,7 @@ class TestCreateExchangeConfigActionExecutorExecute:
             expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="exchange_config",
             expect_error_details=False,
+            expected_created_id="new-config",
         )
 
     @pytest.mark.asyncio

@@ -7,6 +7,7 @@ AccountActionResult
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **updated_at** | **datetime** |  | 
+**created_account_id** | **str** |  | [optional] 
 **error_message** | [**AccountActionResultErrorMessage**](AccountActionResultErrorMessage.md) |  | [optional] 
 **error_details** | **str** |  | [optional] 
 **result_type** | [**UserActionResultType**](UserActionResultType.md) |  | 

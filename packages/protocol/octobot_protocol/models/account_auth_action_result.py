@@ -31,10 +31,11 @@ class AccountAuthActionResult(BaseModel):
     AccountAuthActionResult
     """ # noqa: E501
     updated_at: datetime
+    created_account_auth_id: Optional[StrictStr] = None
     error_message: Optional[AccountAuthActionResultErrorMessage] = None
     error_details: Optional[StrictStr] = None
     result_type: UserActionResultType = Field(description="account_auth")
-    __properties: ClassVar[List[str]] = ["updated_at", "error_message", "error_details", "result_type"]
+    __properties: ClassVar[List[str]] = ["updated_at", "created_account_auth_id", "error_message", "error_details", "result_type"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -88,6 +89,7 @@ class AccountAuthActionResult(BaseModel):
 
         _obj = cls.model_validate({
             "updated_at": obj.get("updated_at"),
+            "created_account_auth_id": obj.get("created_account_auth_id"),
             "error_message": obj.get("error_message"),
             "error_details": obj.get("error_details"),
             "result_type": obj.get("result_type")

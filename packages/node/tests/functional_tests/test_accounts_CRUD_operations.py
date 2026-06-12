@@ -403,6 +403,7 @@ class TestExecuteUserActionAccountCrud:
                 assert created_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
                 assert created_inner.error_message is None
                 assert created_inner.error_details is None
+                assert created_inner.created_account_id == "functional-account-1"
 
                 persisted_created_account = account_provider.get_item(wallet_address, "functional-account-1")
                 assert persisted_created_account.name == "Functional account"

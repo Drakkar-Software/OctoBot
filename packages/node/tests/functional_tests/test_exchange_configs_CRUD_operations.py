@@ -348,6 +348,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     created_inner = created_latest.result.actual_instance
                     assert isinstance(created_inner, protocol_models.ExchangeConfigActionResult)
                     assert created_inner.error_message is None
+                    assert created_inner.created_exchange_config_id == _FUNCTIONAL_EXCHANGE_CONFIG_ID
 
                     persisted_created_config = account_provider.get_exchange_config(
                         wallet_address,

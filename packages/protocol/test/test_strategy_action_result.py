@@ -36,6 +36,7 @@ class TestStrategyActionResult(unittest.TestCase):
         if include_optional:
             return StrategyActionResult(
                 result_type = 'automation',
+                created_strategy_id = '',
                 updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 error_message = 'strategy_not_found',
                 error_details = ''

@@ -27,6 +27,7 @@ def assert_user_action_terminal_state(
     result_channel: typing.Literal["account", "account_auth", "automation", "exchange_config", "strategy"],
     expect_error_details: bool,
     expected_error_message: typing.Any | None = None,
+    expected_created_id: str | None = None,
 ) -> protocol_models.UserAction:
     stored = user_action
     assert stored.status == expected_status
@@ -60,4 +61,21 @@ def assert_user_action_terminal_state(
         assert inner.error_message is None
     if expected_error_message is not None:
         assert inner.error_message == expected_error_message
+    if expected_created_id is not None:
+        assert expected_status == protocol_models.UserActionStatus.COMPLETED
+        if result_channel == "account":
+            assert isinstance(inner, protocol_models.AccountActionResult)
+            assert inner.created_account_id == expected_created_id
+        elif result_channel == "exchange_config":
+            assert isinstance(inner, protocol_models.ExchangeConfigActionResult)
+            assert inner.created_exchange_config_id == expected_created_id
+        elif result_channel == "strategy":
+            assert isinstance(inner, protocol_models.StrategyActionResult)
+            assert inner.created_strategy_id == expected_created_id
+        elif result_channel == "account_auth":
+            assert isinstance(inner, protocol_models.AccountAuthActionResult)
+            assert inner.created_account_auth_id == expected_created_id
+        else:
+            assert isinstance(inner, protocol_models.AutomationActionResult)
+            assert inner.created_automation_id == expected_created_id
     return stored

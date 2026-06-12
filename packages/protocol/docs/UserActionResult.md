@@ -10,6 +10,10 @@ Name | Type | Description | Notes
 **error_details** | **str** |  | [optional] 
 **created_automation_id** | **str** |  | [optional] 
 **result_type** | [**UserActionResultType**](UserActionResultType.md) | account_auth | 
+**created_account_id** | **str** |  | [optional] 
+**created_exchange_config_id** | **str** |  | [optional] 
+**created_strategy_id** | **str** |  | [optional] 
+**created_account_auth_id** | **str** |  | [optional] 
 
 ## Example
 

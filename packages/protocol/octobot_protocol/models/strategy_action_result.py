@@ -31,10 +31,11 @@ class StrategyActionResult(BaseModel):
     StrategyActionResult
     """ # noqa: E501
     result_type: UserActionResultType = Field(description="strategy")
+    created_strategy_id: Optional[StrictStr] = None
     updated_at: datetime
     error_message: Optional[StrategyActionResultErrorMessage] = None
     error_details: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["result_type", "updated_at", "error_message", "error_details"]
+    __properties: ClassVar[List[str]] = ["result_type", "created_strategy_id", "updated_at", "error_message", "error_details"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -88,6 +89,7 @@ class StrategyActionResult(BaseModel):
 
         _obj = cls.model_validate({
             "result_type": obj.get("result_type"),
+            "created_strategy_id": obj.get("created_strategy_id"),
             "updated_at": obj.get("updated_at"),
             "error_message": obj.get("error_message"),
             "error_details": obj.get("error_details")
