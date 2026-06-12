@@ -214,14 +214,14 @@ def _assert_evaluator_results_for_traded_symbols(
     *,
     eval_note: float,
     evaluator_name: str,
-    time_frame: str = common_enums.TimeFrames.TWO_HOURS.value,
+    time_frame: typing.Optional[str] = common_enums.TimeFrames.TWO_HOURS.value,
 ) -> None:
     assert len(_evaluator_results(action)) == len(TRADED_SYMBOLS)
     for traded_symbol in TRADED_SYMBOLS:
         evaluator_result = _evaluator_result_for_symbol(action, traded_symbol)
         assert evaluator_result["eval_note"] == eval_note
         assert evaluator_result["evaluator_name"] == evaluator_name
-        assert evaluator_result["time_frame"] == time_frame
+        assert evaluator_result.get("time_frame") == time_frame
 
 
 def _maximum_evaluators_dca_action(
@@ -1614,6 +1614,7 @@ async def test_simulator_dca_init_from_empty_state_2_evaluators_1_strategy_and_f
             actions_dag.get_actions_by_id()["action_strategy"],
             eval_note=-1,
             evaluator_name=mixed_strategies_evaluator.SimpleStrategyEvaluator.get_name(),
+            time_frame=None,
         )
         assert {action.id for action in actions_dag.get_executable_actions()} == {"action_dca"}
         assert _open_orders_from_dump(after_strategy_dump) == []

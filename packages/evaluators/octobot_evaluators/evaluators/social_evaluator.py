@@ -20,9 +20,6 @@ import async_channel.channels as channels
 
 import octobot_evaluators.evaluators as evaluator
 
-import octobot_services.api as service_api
-import octobot_trading.api as exchange_api
-
 
 class SocialEvaluator(evaluator.AbstractEvaluator):
     __metaclass__ = evaluator.AbstractEvaluator
@@ -44,6 +41,8 @@ class SocialEvaluator(evaluator.AbstractEvaluator):
         if self.SERVICE_FEED_CLASS is None:
             self.logger.error("SERVICE_FEED_CLASS is required to use a service feed. Consumer can't start.")
         else:
+            import octobot_services.api as service_api
+            import octobot_trading.api as exchange_api
             await super().start(self.bot_id)
             service_feed = service_api.get_service_feed(self.SERVICE_FEED_CLASS, self.bot_id)
             if service_feed is not None:

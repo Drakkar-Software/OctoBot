@@ -67,7 +67,6 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
         symbol: typing.Optional[str],
         time_frame,
         trigger_source: str,
-        strategy_evaluations: typing.Optional[list] = None,
     ) -> None:
         self._global_strategy_data = self._collect_global_strategy_data(matrix_id)
         self._crypto_strategy_data = self._collect_crypto_strategy_data(matrix_id)

@@ -24,9 +24,11 @@ import octobot_commons.errors as commons_errors
 import octobot_commons.str_util as str_util
 
 import octobot_evaluators.api as evaluator_api
+import octobot_evaluators.constants as evaluators_constants
 import octobot_evaluators.enums as evaluators_enums
 import octobot_evaluators.evaluators as evaluators
 import octobot_evaluators.evaluators.evaluator_dsl_factory as evaluator_dsl_factory
+import octobot_evaluators.matrix.matrix_manager as matrix_manager
 import octobot_trading.dsl as trading_dsl
 
 import tests.static.fake_evaluators as fake_evaluators
@@ -91,21 +93,49 @@ def _operator_with_exchange_manager(matrix_id="matrix-1"):
 
 
 class TestEvaluatorResult:
+    def test_eval_note_type_as_str_serializes_type_objects(self):
+        assert evaluator_dsl_factory.evaluator_result.eval_note_type_as_str(float) == "float"
+        assert evaluator_dsl_factory.evaluator_result.eval_note_type_as_str("float") == "float"
+        assert evaluator_dsl_factory.evaluator_result.eval_note_type_as_str(None) is None
+
     def test_to_dict_from_dict_round_trip(self):
         evaluator_result = evaluator_dsl_factory.EvaluatorResult(
-            eval_note=-1,
             symbol="BTC/USDC",
             time_frame="2h",
             evaluator_name="FakeOHLCVEvaluator",
             evaluator_type=evaluators_enums.EvaluatorMatrixTypes.TA.value,
             cryptocurrency="BTC",
+            eval_note=-1,
+            eval_note_type=evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
+            eval_time=1234.0,
+            eval_note_description="desc",
+            eval_note_metadata={"k": "v"},
         )
         parsed_result = evaluator_dsl_factory.EvaluatorResult.from_dict(
             evaluator_result.to_dict(include_default_values=False)
         )
         assert parsed_result.eval_note == evaluator_result.eval_note
+        assert parsed_result.eval_note_type == evaluator_result.eval_note_type
+        assert parsed_result.eval_time == evaluator_result.eval_time
+        assert parsed_result.eval_note_description == evaluator_result.eval_note_description
+        assert parsed_result.eval_note_metadata == evaluator_result.eval_note_metadata
         assert parsed_result.symbol == evaluator_result.symbol
         assert parsed_result.evaluator_name == evaluator_result.evaluator_name
+
+    def test_from_dict_applies_defaults_for_missing_eval_fields(self):
+        parsed_result = evaluator_dsl_factory.EvaluatorResult.from_dict({
+            "symbol": "BTC/USDC",
+            "time_frame": "2h",
+            "evaluator_name": "FakeOHLCVEvaluator",
+            "evaluator_type": evaluators_enums.EvaluatorMatrixTypes.TA.value,
+            "cryptocurrency": "BTC",
+            "eval_note": -1,
+        })
+        assert parsed_result.eval_note == -1
+        assert parsed_result.eval_note_type is None
+        assert parsed_result.eval_time == 0
+        assert parsed_result.eval_note_description is None
+        assert parsed_result.eval_note_metadata is None
 
 
 class TestEnsureDslBotStorageRegistered:
@@ -376,6 +406,9 @@ class TestPreCompute:
         fake_evaluator_instance = mock.MagicMock(spec=evaluators.TAEvaluator)
         fake_evaluator_instance.evaluator_type = evaluators_enums.EvaluatorMatrixTypes.TA
         fake_evaluator_instance.get_name.return_value = FakeEvaluatorAlpha.get_name()
+        fake_evaluator_instance.get_eval_type.return_value = (
+            evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE
+        )
         fake_evaluator_instance.eval_note = 1
         with mock.patch.object(
             dsl_interpreter.PreComputingCallOperator,
@@ -406,6 +439,7 @@ class TestPreCompute:
                         await operator.pre_compute()
         assert operator.value == [{
             "eval_note": 1,
+            "eval_note_type": "float",
             "symbol": "BTC/USDC",
             "time_frame": "2h",
             "evaluator_name": "FakeEvaluatorAlpha",
@@ -545,23 +579,23 @@ class TestExecuteStrategyEvaluator:
             )
             for injected_result in (
                 evaluator_dsl_factory.EvaluatorResult(
-                    eval_note=1,
                     symbol="BTC/USDC",
                     time_frame="1h",
                     evaluator_name=fake_evaluators.FAKE_DUMMY_EVALUATOR_A,
                     evaluator_type=evaluators_enums.EvaluatorMatrixTypes.TA.value,
                     cryptocurrency="BTC",
+                    eval_note=1,
                 ),
                 evaluator_dsl_factory.EvaluatorResult(
-                    eval_note=-1,
                     symbol="BTC/USDC",
                     time_frame="1h",
                     evaluator_name=fake_evaluators.FAKE_DUMMY_EVALUATOR_B,
                     evaluator_type=evaluators_enums.EvaluatorMatrixTypes.TA.value,
                     cryptocurrency="BTC",
+                    eval_note=-1,
                 ),
             ):
-                evaluator_dsl_factory._seed_matrix_from_injected_evaluator_result(
+                matrix_manager.seed_matrix_from_evaluator_result(
                     matrix_id,
                     exchange_manager.exchange_name,
                     injected_result,

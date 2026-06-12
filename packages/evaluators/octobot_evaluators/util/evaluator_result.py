@@ -19,11 +19,25 @@ import typing
 import octobot_commons.dataclasses as commons_dataclasses
 
 
+def eval_note_type_as_str(eval_note_type: typing.Any) -> typing.Optional[str]:
+    if eval_note_type is None:
+        return None
+    if isinstance(eval_note_type, str):
+        return eval_note_type
+    if isinstance(eval_note_type, type):
+        return eval_note_type.__name__
+    return str(eval_note_type)
+
+
 @dataclasses.dataclass
 class EvaluatorResult(commons_dataclasses.MinimizableDataclass):
-    eval_note: typing.Any
     symbol: typing.Optional[str]
     time_frame: typing.Optional[str]
     evaluator_name: str
     evaluator_type: str
     cryptocurrency: typing.Optional[str]
+    eval_note: typing.Optional[typing.Any] = None
+    eval_note_type: typing.Optional[str] = None
+    eval_time: float = 0
+    eval_note_description: typing.Optional[str] = None
+    eval_note_metadata: typing.Optional[typing.Any] = None

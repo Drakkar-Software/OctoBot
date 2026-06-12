@@ -67,7 +67,7 @@ class DSLExecutor(AbstractActionExecutor):
                 self._exchange_manager, self._dependencies_config, self._get_matrix_id()
             )
             + trading_modes.create_all_trading_mode_operators(
-                self._exchange_manager, self._dependencies_config
+                self._exchange_manager, self._dependencies_config, self._get_matrix_id()
             )
             + dsl_operators.create_copy_exchange_account_operators(
                 copier_exchange_manager=self._exchange_manager,

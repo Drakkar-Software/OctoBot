@@ -24,6 +24,7 @@ import octobot_commons.errors as commons_errors
 import octobot_commons.str_util as str_util
 
 import octobot_evaluators.enums as evaluators_enums
+import octobot_evaluators.util.evaluator_result as evaluator_result
 import octobot_trading.modes.mode_dsl_factory as trading_mode_dsl_factory
 
 
@@ -133,12 +134,17 @@ def _trading_mode_mock(
     return m
 
 
-def _operator_with_exchange_manager():
+_TEST_MATRIX_ID = "test-matrix-id"
+
+
+def _operator_with_exchange_manager(matrix_id=_TEST_MATRIX_ID):
     exchange_manager = mock.Mock()
+    exchange_manager.exchange_name = "binance"
     op_cls = trading_mode_dsl_factory.create_trading_mode_operator(
         FakeTradingModeBeta,
         exchange_manager,
         {"profile": True},
+        matrix_id,
     )
     return op_cls(), exchange_manager
 
@@ -196,59 +202,6 @@ class TestGetTradingModeSymbols:
             exchange_manager,
         )
         assert symbols == []
-
-
-class TestStrategyEvalNotesFromEvaluationResults:
-    def test_empty_input_returns_empty_list(self):
-        assert trading_mode_dsl_factory._strategy_eval_notes_from_evaluation_results([], None) == []
-
-    def test_returns_all_eval_notes_when_no_symbol_filter(self):
-        strategy_evaluation_results = [
-            {
-                "eval_note": 1.0,
-                "symbol": "BTC/USDT",
-                "time_frame": "1h",
-                "evaluator_name": "RSI",
-                "evaluator_type": "TA",
-                "cryptocurrency": None,
-            },
-            {
-                "eval_note": -1.0,
-                "symbol": "ETH/USDT",
-                "time_frame": "1h",
-                "evaluator_name": "RSI",
-                "evaluator_type": "TA",
-                "cryptocurrency": None,
-            },
-        ]
-        assert trading_mode_dsl_factory._strategy_eval_notes_from_evaluation_results(
-            strategy_evaluation_results,
-            None,
-        ) == [1.0, -1.0]
-
-    def test_filters_by_trading_mode_symbol(self):
-        strategy_evaluation_results = [
-            {
-                "eval_note": 1.0,
-                "symbol": "BTC/USDT",
-                "time_frame": "1h",
-                "evaluator_name": "RSI",
-                "evaluator_type": "TA",
-                "cryptocurrency": None,
-            },
-            {
-                "eval_note": -1.0,
-                "symbol": "ETH/USDT",
-                "time_frame": "1h",
-                "evaluator_name": "RSI",
-                "evaluator_type": "TA",
-                "cryptocurrency": None,
-            },
-        ]
-        assert trading_mode_dsl_factory._strategy_eval_notes_from_evaluation_results(
-            strategy_evaluation_results,
-            "BTC/USDT",
-        ) == [1.0]
 
 
 class TestCreateOperatorParametersFromUserInputs:
@@ -620,6 +573,7 @@ class TestCreateAllTradingModeOperators:
             ops = trading_mode_dsl_factory.create_all_trading_mode_operators(
                 mock.sentinel.em,
                 {"c": 2},
+                _TEST_MATRIX_ID,
             )
         assert len(ops) == 2
         names = {cls.get_name() for cls in ops}
@@ -633,6 +587,7 @@ class TestCreateAllTradingModeOperators:
             inst = op_cls()
             assert inst.get_exchange_manager() is mock.sentinel.em
             assert inst.get_config() == {"c": 2}
+            assert inst.get_matrix_id() == _TEST_MATRIX_ID
 
 
 class TestPreCompute:
@@ -641,6 +596,7 @@ class TestPreCompute:
             FakeTradingModeBeta,
             None,
             {},
+            _TEST_MATRIX_ID,
         )
         op = OpCls()
         with mock.patch.object(
@@ -651,6 +607,79 @@ class TestPreCompute:
             with pytest.raises(commons_errors.DSLInterpreterError) as excinfo:
                 await op.pre_compute()
         assert "Exchange manager is required" in str(excinfo.value)
+
+    async def test_raises_when_matrix_id_is_none(self):
+        OpCls = trading_mode_dsl_factory.create_trading_mode_operator(
+            FakeTradingModeBeta,
+            mock.Mock(),
+            {},
+            None,
+        )
+        op = OpCls()
+        with mock.patch.object(
+            dsl_interpreter.PreComputingCallOperator,
+            "pre_compute",
+            new_callable=mock.AsyncMock,
+        ):
+            with pytest.raises(commons_errors.DSLInterpreterError) as excinfo:
+                await op.pre_compute()
+        assert "Matrix id is required" in str(excinfo.value)
+
+    async def test_seeds_matrix_from_dynamic_dependencies_before_execution(self):
+        op, exchange_manager = _operator_with_exchange_manager()
+        tm = _trading_mode_mock()
+        tm.symbol = "BTC/USDT"
+        strategy_result = {
+            "eval_note": 1.0,
+            "symbol": "BTC/USDT",
+            "time_frame": "1h",
+            "evaluator_name": "SimpleStrategyEvaluator",
+            "evaluator_type": evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value,
+            "cryptocurrency": "BTC",
+        }
+        with mock.patch.object(
+            dsl_interpreter.PreComputingCallOperator,
+            "pre_compute",
+            mock.AsyncMock(),
+        ):
+            with mock.patch.object(
+                op,
+                "get_computed_value_by_parameter",
+                return_value={},
+            ):
+                with mock.patch.object(
+                    op,
+                    "get_last_execution_result",
+                    return_value={"prior": True},
+                ):
+                    with mock.patch.object(
+                        op,
+                        "get_dynamic_dependencies",
+                        return_value=[mock.Mock(result=strategy_result)],
+                    ):
+                        with mock.patch(
+                            "octobot_trading.modes.mode_dsl_factory.evaluator_api.seed_matrix_from_evaluator_result",
+                        ) as seed_mock:
+                            with mock.patch.object(
+                                op,
+                                "_create_trading_modes",
+                                mock.AsyncMock(return_value=[tm]),
+                            ):
+                                await op.pre_compute()
+        seed_mock.assert_called_once_with(
+            _TEST_MATRIX_ID,
+            exchange_manager.exchange_name,
+            evaluator_result.EvaluatorResult.from_dict(strategy_result),
+        )
+        tm.manual_trigger.assert_awaited_once_with(
+            {
+                "trigger_source": common_enums.TriggerSource.MANUAL.value,
+                "kwargs": {
+                    "matrix_id": _TEST_MATRIX_ID,
+                    "cryptocurrency": "BTC",
+                },
+            },
+        )
 
     async def test_sets_value_and_invokes_manual_trigger_for_each_mode(self):
         op, em = _operator_with_exchange_manager()
@@ -692,13 +721,13 @@ class TestPreCompute:
         tm_a.manual_trigger.assert_awaited_once_with(
             {
                 "trigger_source": common_enums.TriggerSource.MANUAL.value,
-                "kwargs": {},
+                "kwargs": {"matrix_id": _TEST_MATRIX_ID},
             },
         )
         tm_b.manual_trigger.assert_awaited_once_with(
             {
                 "trigger_source": common_enums.TriggerSource.MANUAL.value,
-                "kwargs": {},
+                "kwargs": {"matrix_id": _TEST_MATRIX_ID},
             },
         )
         assert op.value is not dsl_interpreter.UNINITIALIZED_VALUE

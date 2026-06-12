@@ -129,29 +129,6 @@ def _get_cryptocurrency_from_symbol(
     return symbols_util.parse_symbol(symbol).base
 
 
-def _seed_matrix_from_injected_evaluator_result(
-    matrix_id: str,
-    exchange_name: str,
-    injected_result: EvaluatorResult,
-) -> None:
-    if injected_result.evaluator_name is None or injected_result.eval_note is None:
-        return
-    tentacle_path = matrix_manager.get_matrix_default_value_path(
-        injected_result.evaluator_name,
-        injected_result.evaluator_type,
-        exchange_name=exchange_name,
-        cryptocurrency=injected_result.cryptocurrency,
-        symbol=injected_result.symbol,
-        time_frame=injected_result.time_frame,
-    )
-    matrix_manager.set_tentacle_value(
-        matrix_id,
-        tentacle_path,
-        evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE,
-        injected_result.eval_note,
-    )
-
-
 class EvaluatorOperator(
     dsl_interpreter.PreComputingCallOperator,
     dsl_interpreter.ReCallableOperatorMixin,
@@ -356,6 +333,12 @@ class EvaluatorOperator(
         eval_note: typing.Any,
     ) -> dict:
         evaluator_type = evaluator_instance.evaluator_type
+        # Strategy evaluations are symbol-scoped in the matrix, no time frame should be associated with them
+        result_time_frame = (
+            None
+            if isinstance(evaluator_instance, evaluators.StrategyEvaluator)
+            else time_frame
+        )
         matrix_manager.set_tentacle_value(
             matrix_id,
             matrix_manager.get_matrix_default_value_path(
@@ -364,18 +347,21 @@ class EvaluatorOperator(
                 exchange_name=exchange_manager.exchange_name,
                 cryptocurrency=cryptocurrency,
                 symbol=symbol,
-                time_frame=time_frame,
+                time_frame=result_time_frame,
             ),
             evaluator_type.value,
             eval_note,
         )
         return EvaluatorResult(
-            eval_note=eval_note,
             symbol=symbol,
-            time_frame=time_frame,
+            time_frame=result_time_frame,
             evaluator_name=evaluator_instance.get_name(),
             evaluator_type=evaluator_type.value,
             cryptocurrency=cryptocurrency,
+            eval_note=eval_note,
+            eval_note_type=evaluator_result.eval_note_type_as_str(
+                evaluator_instance.get_eval_type()
+            ),
         ).to_dict(include_default_values=False)
 
     async def _execute_evaluator_for_context(
@@ -588,7 +574,7 @@ class EvaluatorOperator(
                     "Cryptocurrency override is only valid for a single symbol"
                 )
         for dynamic_dependency in self.get_dynamic_dependencies(param_by_name):
-            _seed_matrix_from_injected_evaluator_result(
+            matrix_manager.seed_matrix_from_evaluator_result(
                 matrix_id,
                 exchange_manager.exchange_name,
                 EvaluatorResult.from_dict(dynamic_dependency.result),

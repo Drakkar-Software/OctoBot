@@ -26,7 +26,9 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.list_util as list_util
 import octobot_commons.str_util as str_util
+import octobot_commons.symbols as symbols_util
 import octobot_evaluators.util.evaluator_result as evaluator_result
+import octobot_evaluators.api.matrix as evaluator_api
 import octobot_trading.dsl as trading_dsl
 import octobot_trading.personal_data as personal_data
 import octobot_trading.modes.modes_factory as modes_factory
@@ -39,26 +41,6 @@ if typing.TYPE_CHECKING:
 STATE_KEY = "state"
 ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION = "enable_initial_portfolio_optimization"
 DAG_RESET_TO_ACTION_ID = "dag_reset_to_action_id"
-
-
-def _strategy_eval_notes_from_evaluation_results(
-    strategy_evaluation_results: list[typing.Any],
-    trading_mode_symbol: str | None,
-) -> list[typing.Any]:
-    parsed_strategy_evaluations = [
-        evaluator_result.EvaluatorResult.from_dict(strategy_evaluation_result)
-        for strategy_evaluation_result in strategy_evaluation_results
-    ]
-    if trading_mode_symbol:
-        parsed_strategy_evaluations = [
-            parsed_evaluation
-            for parsed_evaluation in parsed_strategy_evaluations
-            if parsed_evaluation.symbol == trading_mode_symbol
-        ]
-    return [
-        parsed_evaluation.eval_note
-        for parsed_evaluation in parsed_strategy_evaluations
-    ]
 
 
 def _create_operator_parameters_from_user_inputs(
@@ -148,6 +130,9 @@ class TradingModeOperator(
         self,
     ) -> dict:
         raise NotImplementedError("get_config must be implemented")
+
+    def get_matrix_id(self) -> typing.Optional[str]:
+        raise NotImplementedError("get_matrix_id must be implemented")
 
     async def _optimize_initial_portfolio(
         self,
@@ -248,20 +233,15 @@ class TradingModeOperator(
     async def _execute_trading_mode(
         self,
         trading_mode: "octobot_trading.modes.abstract_trading_mode.AbstractTradingMode",
+        matrix_id: str,
         param_by_name: dict[str, typing.Any],
     ) -> dsl_interpreter.ReCallingOperatorResult:
         last_execution_time = time.time()
-        manual_trigger_kwargs = {}
-        dynamic_dependencies = self.get_dynamic_dependencies(param_by_name)
-        strategy_evaluation_results = [
-            dynamic_dependency.result
-            for dynamic_dependency in dynamic_dependencies
-        ]
-        if strategy_evaluation_results:
-            manual_trigger_kwargs["strategy_evaluations"] = _strategy_eval_notes_from_evaluation_results(
-                strategy_evaluation_results,
-                trading_mode.symbol,
-            )
+        manual_trigger_kwargs = {"matrix_id": matrix_id}
+        if isinstance(trading_mode.symbol, str):
+            manual_trigger_kwargs["cryptocurrency"] = symbols_util.parse_symbol(
+                trading_mode.symbol
+            ).base
         await trading_mode.manual_trigger({
             "trigger_source": common_enums.TriggerSource.MANUAL.value,
             "kwargs": manual_trigger_kwargs,
@@ -296,11 +276,22 @@ class TradingModeOperator(
     async def pre_compute(self) -> None:
         await super().pre_compute()
         exchange_manager = self.get_exchange_manager()
+        matrix_id = self.get_matrix_id()
         if exchange_manager is None:
             raise commons_errors.DSLInterpreterError(
                 "Exchange manager is required to execute trading mode operator"
             )
+        if matrix_id is None:
+            raise commons_errors.DSLInterpreterError(
+                "Matrix id is required to execute trading mode operator"
+            )
         param_by_name = self.get_computed_value_by_parameter()
+        for dynamic_dependency in self.get_dynamic_dependencies(param_by_name):
+            evaluator_api.seed_matrix_from_evaluator_result(
+                matrix_id,
+                exchange_manager.exchange_name,
+                evaluator_result.EvaluatorResult.from_dict(dynamic_dependency.result),
+            )
         trading_modes = await self._create_trading_modes(
             self.get_trading_mode_class(),
             param_by_name,
@@ -321,7 +312,9 @@ class TradingModeOperator(
 
         recallable_results: list[dsl_interpreter.ReCallingOperatorResult] = []
         for trading_mode in trading_modes:
-            recallable_result = await self._execute_trading_mode(trading_mode, param_by_name)
+            recallable_result = await self._execute_trading_mode(
+                trading_mode, matrix_id, param_by_name
+            )
             recallable_results.append(recallable_result)
         self.value = self.get_results_summary(recallable_results)
 
@@ -382,12 +375,15 @@ def create_trading_mode_operator(
     trading_mode_class: type,
     exchange_manager: typing.Optional["octobot_trading.exchanges.ExchangeManager"],
     config: dict,
+    matrix_id: typing.Optional[str] = None,
 ) -> type:
     """
     Create a DSL operator class that, when called, instantiates and executes
     the given trading mode.
     :param trading_mode_class: The trading mode class to execute
     :param exchange_manager: The exchange manager to use for execution
+    :param config: The configuration to use for trading mode execution
+    :param matrix_id: The matrix id to use for trading mode execution
     :return: A DSL operator class for registration with an Interpreter
     """
     _operator_parameters: list[dsl_interpreter.OperatorParameter] = []
@@ -406,6 +402,9 @@ def create_trading_mode_operator(
 
         def get_config(self) -> dict:
             return config
+
+        def get_matrix_id(self) -> typing.Optional[str]:
+            return matrix_id
 
     class _TradingModeOperatorImpl(
         _ContextProviderMixin, TradingModeOperator
@@ -457,16 +456,21 @@ def create_trading_mode_operator(
 def create_all_trading_mode_operators(
     exchange_manager: typing.Optional["octobot_trading.exchanges.ExchangeManager"],
     config: dict,
+    matrix_id: typing.Optional[str] = None,
 ) -> list[type]:
     """
     Create DSL operators for all available trading modes.
     :param exchange_manager: The exchange manager to use for trading mode execution
+    :param config: The configuration to use for trading mode execution
+    :param matrix_id: The matrix id to use for trading mode execution
     :return: List of DSL operator classes for registration with an Interpreter
     """
 
     operators = []
     for trading_mode_class in modes_factory.get_all_concrete_trading_mode_classes():
         operators.append(
-            create_trading_mode_operator(trading_mode_class, exchange_manager, config)
+            create_trading_mode_operator(
+                trading_mode_class, exchange_manager, config, matrix_id
+            )
         )
     return operators

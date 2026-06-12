@@ -565,7 +565,6 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
 
     async def set_final_eval(
         self, matrix_id: str, cryptocurrency: str, symbol: str, time_frame, trigger_source: str,
-        strategy_evaluations: typing.Optional[list] = None,
     ):
         # nothing to do: this is not a strategy related trading mode
         pass

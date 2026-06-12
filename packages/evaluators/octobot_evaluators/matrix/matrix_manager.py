@@ -25,6 +25,7 @@ import octobot_evaluators.enums as enums
 import octobot_evaluators.constants as constants
 import octobot_evaluators.errors as errors
 import octobot_evaluators.matrix as matrix
+import octobot_evaluators.util.evaluator_result as evaluator_result
 
 
 def get_matrix(matrix_id: str) -> matrix.Matrix:
@@ -51,6 +52,45 @@ def set_tentacle_value(matrix_id: str, tentacle_path, tentacle_type, tentacle_va
     get_matrix(matrix_id).set_node_value(value=tentacle_value, value_type=tentacle_type,
                                          value_path=tentacle_path, timestamp=timestamp,
                                          description=description, metadata=metadata)
+
+
+def seed_matrix_from_evaluator_result(
+    matrix_id: str,
+    exchange_name: str,
+    injected_result: evaluator_result.EvaluatorResult,
+) -> None:
+    """
+    Write an evaluator result into the matrix at its default value path.
+    :param matrix_id: the matrix id
+    :param exchange_name: the exchange name
+    :param injected_result: the evaluator result to seed
+    """
+    if injected_result.evaluator_name is None or injected_result.eval_note is None:
+        return
+    eval_note_type = injected_result.eval_note_type
+    if isinstance(eval_note_type, str):
+        eval_note_type = {
+            "float": float,
+            "int": int,
+            "str": str,
+        }.get(eval_note_type, constants.EVALUATOR_EVAL_DEFAULT_TYPE)
+    tentacle_path = get_matrix_default_value_path(
+        injected_result.evaluator_name,
+        injected_result.evaluator_type,
+        exchange_name=exchange_name,
+        cryptocurrency=injected_result.cryptocurrency,
+        symbol=injected_result.symbol,
+        time_frame=injected_result.time_frame,
+    )
+    set_tentacle_value(
+        matrix_id,
+        tentacle_path,
+        eval_note_type or constants.EVALUATOR_EVAL_DEFAULT_TYPE,
+        injected_result.eval_note,
+        timestamp=injected_result.eval_time,
+        description=injected_result.eval_note_description,
+        metadata=injected_result.eval_note_metadata,
+    )
 
 
 def get_tentacle_node(matrix_id: str, tentacle_path):

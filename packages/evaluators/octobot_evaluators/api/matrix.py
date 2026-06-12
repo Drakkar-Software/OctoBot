@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_evaluators.matrix as matrix
+import octobot_evaluators.util.evaluator_result as evaluator_result
 
 
 def get_matrix(matrix_id) -> matrix.Matrix:
@@ -48,3 +49,20 @@ def get_type(matrix_node) -> object:
 
 def get_time(matrix_node) -> object:
     return matrix_node.node_value_time
+
+def seed_matrix_from_evaluator_result(
+    matrix_id: str,
+    exchange_name: str,
+    injected_result: evaluator_result.EvaluatorResult,
+) -> None:
+    """
+    Write an evaluator result into the matrix at its default value path.
+    :param matrix_id: the matrix id
+    :param exchange_name: the exchange name
+    :param injected_result: the evaluator result to seed
+    """
+    return matrix.seed_matrix_from_evaluator_result(
+        matrix_id,
+        exchange_name,
+        injected_result,
+    )

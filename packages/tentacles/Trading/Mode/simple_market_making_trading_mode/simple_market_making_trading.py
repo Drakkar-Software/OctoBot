@@ -23,6 +23,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.tree as commons_tree
 import octobot_commons.constants as commons_constants
 import octobot_commons.symbols.symbol_util as symbol_util
+import octobot_commons.list_util as list_util
 import octobot_commons.errors as commons_errors
 
 import octobot_trading.constants as trading_constants
@@ -378,6 +379,13 @@ class SimpleMarketMakingTradingMode(market_making_trading.MarketMakingTradingMod
             for pair_setting in self.trading_config.get(self.CONFIG_PAIR_SETTINGS, [])
             if self.is_exchange_compatible_pair_setting(pair_setting, self.exchange_manager.exchange_name)
         ]
+
+    @classmethod
+    def get_tentacle_config_traded_symbols(cls, trading_config: dict, reference_market: str) -> list[str]:
+        return list_util.deduplicate([
+            pair_setting[cls.CONFIG_PAIR]
+            for pair_setting in trading_config.get(cls.CONFIG_PAIR_SETTINGS, [])
+        ])
 
     @classmethod
     def get_price_sources_by_exchange(

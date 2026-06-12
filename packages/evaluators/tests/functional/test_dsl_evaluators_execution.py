@@ -219,7 +219,15 @@ class TestEvaluatorDslInterpreterFakeMatrixReadingStrategyEvaluator:
                 fake_evaluators.FakeMatrixReadingStrategyEvaluator.get_name()
             )
             assert evaluator_result["symbol"] == "BTC/USDC"
-            assert evaluator_result["time_frame"] == "1h"
+            assert evaluator_result.get("time_frame") is None
+            strategy_path = matrix_manager.get_matrix_default_value_path(
+                fake_evaluators.FakeMatrixReadingStrategyEvaluator.get_name(),
+                evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value,
+                exchange_name="binanceus",
+                cryptocurrency="BTC",
+                symbol="BTC/USDC",
+            )
+            assert matrix_manager.get_tentacle_value(matrix_id, strategy_path) == 0.75
             dummy_a_path = matrix_manager.get_matrix_default_value_path(
                 fake_evaluators.FAKE_DUMMY_EVALUATOR_A,
                 evaluators_enums.EvaluatorMatrixTypes.TA.value,

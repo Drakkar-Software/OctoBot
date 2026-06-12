@@ -29,6 +29,8 @@ def _normalize_dsl_serializable_value(value: typing.Any) -> typing.Any:
     """
     Convert nested values to types that repr() into valid DSL literals.
     """
+    if isinstance(value, type):
+        return value.__name__
     if isinstance(value, numpy.generic):
         return value.item()
     if isinstance(value, dict):

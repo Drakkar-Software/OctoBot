@@ -569,7 +569,12 @@ class DCATradingModeProducer(trading_modes.AbstractTradingModeProducer):
             self.task.cancel()
         await super().stop()
 
-    def _analyze_strategies(self, matrix_id: typing.Optional[str], cryptocurrency: str, symbol: str) -> list[float]:
+    def _analyze_strategies(
+        self,
+        matrix_id: typing.Optional[str],
+        cryptocurrency: str,
+        symbol: str,
+    ) -> list[float]:
         evaluations = []
         if matrix_id:
             for evaluated_strategy_node in matrix.get_tentacles_value_nodes(
@@ -578,7 +583,7 @@ class DCATradingModeProducer(trading_modes.AbstractTradingModeProducer):
                                             exchange_name=self.exchange_name,
                                             tentacle_type=evaluators_enums.EvaluatorMatrixTypes.STRATEGIES.value),
                 cryptocurrency=cryptocurrency,
-                symbol=symbol
+                symbol=symbol,
             ):
 
                 if evaluators_util.check_valid_eval_note(evaluators_api.get_value(evaluated_strategy_node),
@@ -594,12 +599,8 @@ class DCATradingModeProducer(trading_modes.AbstractTradingModeProducer):
         symbol: str,
         time_frame,
         trigger_source: str,
-        strategy_evaluations: typing.Optional[list[float]] = None,
     ):
-        if strategy_evaluations is not None:
-            evaluations = strategy_evaluations
-        else:
-            evaluations = self._analyze_strategies(matrix_id, cryptocurrency, symbol)
+        evaluations = self._analyze_strategies(matrix_id, cryptocurrency, symbol)
         should_trigger_long = (
             self._should_trigger_init_entry()
             or self.trading_mode.trigger_mode == TriggerMode.ALWAYS_TRIGGER_LONG

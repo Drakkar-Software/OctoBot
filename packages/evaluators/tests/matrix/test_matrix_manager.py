@@ -25,9 +25,142 @@ from octobot_evaluators.matrix.matrix_manager import get_tentacle_path, get_tent
     get_tentacle_nodes, get_tentacles_value_nodes, get_matrix_default_value_path, set_tentacle_value, \
     get_tentacle_value, get_tentacle_node, get_available_symbols, \
     is_tentacle_value_valid, is_tentacles_values_valid, get_evaluations_by_evaluator, get_available_time_frames, \
-    delete_tentacle_node
+    delete_tentacle_node, seed_matrix_from_evaluator_result
+import octobot_evaluators.util.evaluator_result as evaluator_result
+import octobot_evaluators.constants as evaluators_constants
 from octobot_evaluators.errors import UnsetTentacleEvaluation
 from octobot_evaluators.matrix.matrices import Matrices
+
+
+class TestSeedMatrixFromEvaluatorResult:
+    def test_skips_when_evaluator_name_or_eval_note_is_missing(self):
+        matrix = Matrix()
+        Matrices.instance().add_matrix(matrix)
+        try:
+            seed_matrix_from_evaluator_result(
+                matrix.matrix_id,
+                "binance",
+                evaluator_result.EvaluatorResult(
+                    symbol="BTC/USDT",
+                    time_frame="1h",
+                    evaluator_name=None,
+                    evaluator_type="TA",
+                    cryptocurrency="BTC",
+                    eval_note=1,
+                ),
+            )
+            seed_matrix_from_evaluator_result(
+                matrix.matrix_id,
+                "binance",
+                evaluator_result.EvaluatorResult(
+                    symbol="BTC/USDT",
+                    time_frame="1h",
+                    evaluator_name="RSI",
+                    evaluator_type="TA",
+                    cryptocurrency="BTC",
+                    eval_note=None,
+                ),
+            )
+            assert get_tentacle_nodes(matrix.matrix_id) == []
+        finally:
+            Matrices.instance().del_matrix(matrix.matrix_id)
+
+    def test_forwards_all_evaluator_result_fields(self):
+        matrix = Matrix()
+        Matrices.instance().add_matrix(matrix)
+        eval_time = 12345.0
+        try:
+            seed_matrix_from_evaluator_result(
+                matrix.matrix_id,
+                "binance",
+                evaluator_result.EvaluatorResult(
+                    symbol="BTC/USDT",
+                    time_frame=None,
+                    evaluator_name="TestStrategy",
+                    evaluator_type="STRATEGIES",
+                    cryptocurrency="BTC",
+                    eval_note=0.5,
+                    eval_note_type=str,
+                    eval_time=eval_time,
+                    eval_note_description="test description",
+                    eval_note_metadata={"key": "value"},
+                ),
+            )
+            tentacle_path = get_matrix_default_value_path(
+                "TestStrategy",
+                "STRATEGIES",
+                exchange_name="binance",
+                cryptocurrency="BTC",
+                symbol="BTC/USDT",
+            )
+            value_node = get_tentacle_node(matrix.matrix_id, tentacle_path)
+            assert value_node.node_value == 0.5
+            assert value_node.node_type is str
+            assert value_node.node_value_time == eval_time
+            assert value_node.node_description == "test description"
+            assert value_node.node_metadata == {"key": "value"}
+        finally:
+            Matrices.instance().del_matrix(matrix.matrix_id)
+
+    def test_resolves_string_eval_note_type_from_serialized_result(self):
+        matrix = Matrix()
+        Matrices.instance().add_matrix(matrix)
+        try:
+            seed_matrix_from_evaluator_result(
+                matrix.matrix_id,
+                "binance",
+                evaluator_result.EvaluatorResult(
+                    symbol="BTC/USDT",
+                    time_frame="1h",
+                    evaluator_name="RSI",
+                    evaluator_type="TA",
+                    cryptocurrency="BTC",
+                    eval_note=1,
+                    eval_note_type="float",
+                ),
+            )
+            tentacle_path = get_matrix_default_value_path(
+                "RSI",
+                "TA",
+                exchange_name="binance",
+                cryptocurrency="BTC",
+                symbol="BTC/USDT",
+                time_frame="1h",
+            )
+            value_node = get_tentacle_node(matrix.matrix_id, tentacle_path)
+            assert value_node.node_type == evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE
+        finally:
+            Matrices.instance().del_matrix(matrix.matrix_id)
+
+    def test_uses_default_eval_note_type_when_not_provided(self):
+        matrix = Matrix()
+        Matrices.instance().add_matrix(matrix)
+        try:
+            seed_matrix_from_evaluator_result(
+                matrix.matrix_id,
+                "binance",
+                evaluator_result.EvaluatorResult(
+                    symbol="ETH/USDT",
+                    time_frame="4h",
+                    evaluator_name="RSI",
+                    evaluator_type="TA",
+                    cryptocurrency="ETH",
+                    eval_note=-1,
+                ),
+            )
+            tentacle_path = get_matrix_default_value_path(
+                "RSI",
+                "TA",
+                exchange_name="binance",
+                cryptocurrency="ETH",
+                symbol="ETH/USDT",
+                time_frame="4h",
+            )
+            value_node = get_tentacle_node(matrix.matrix_id, tentacle_path)
+            assert value_node.node_type == evaluators_constants.EVALUATOR_EVAL_DEFAULT_TYPE
+            assert value_node.node_value_time == 0
+        finally:
+            Matrices.instance().del_matrix(matrix.matrix_id)
 
 
 @pytest.mark.asyncio

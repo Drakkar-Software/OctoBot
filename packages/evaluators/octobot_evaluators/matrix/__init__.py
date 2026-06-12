@@ -25,6 +25,7 @@ from octobot_evaluators.matrix import channel
 
 from octobot_evaluators.matrix.matrix_manager import (
     get_matrix,
+    seed_matrix_from_evaluator_result,
     set_tentacle_value,
     get_tentacle_node,
     delete_tentacle_node,
@@ -56,6 +57,7 @@ from octobot_evaluators.matrix.channel import (
 
 __all__ = [
     "get_matrix",
+    "seed_matrix_from_evaluator_result",
     "set_tentacle_value",
     "get_tentacle_node",
     "delete_tentacle_node",

@@ -288,7 +288,6 @@ class OrdersManager(util.Initializable):
                 # simple order dict (order just fetched from exchange)
                 order = order_factory.create_order_instance_from_raw(self.trader, order_details)
 
-            print(f"Order upserted: {id(order)}: {order.to_string()}")
             await self.upsert_order_instance(order)
 
     # private methods

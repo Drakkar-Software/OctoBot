@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import math
+import typing
 
 import tulipy
 import numpy
@@ -221,6 +222,8 @@ class DeathAndGoldenCrossEvaluator(evaluators.TAEvaluator):
 
 # evaluates position of the current (2 unit) average trend relatively to the 5 units average and 10 units average trend
 class DoubleMovingAverageTrendEvaluator(evaluators.TAEvaluator):
+    LONG_PERIOD_LENGTH = "long_period_length"
+    SHORT_PERIOD_LENGTH = "short_period_length"
 
     def __init__(self, tentacles_setup_config):
         super().__init__(tentacles_setup_config)
@@ -231,12 +234,25 @@ class DoubleMovingAverageTrendEvaluator(evaluators.TAEvaluator):
         """
         Called right before starting the evaluator, should define all the evaluator's user inputs
         """
-        self.slow_period_length = self.UI.user_input("long_period_length", enums.UserInputTypes.INT,
-                                                     self.slow_period_length,
-                                                     inputs, min_val=1, title="Slow SMA length")
-        self.fast_period_length = self.UI.user_input("short_period_length", enums.UserInputTypes.INT,
-                                                     self.fast_period_length,
-                                                     inputs, min_val=1, title="Fast SMA length")
+        self.slow_period_length = self.UI.user_input(
+            self.LONG_PERIOD_LENGTH, enums.UserInputTypes.INT,
+            self.slow_period_length,
+            inputs, min_val=1, title="Slow SMA length")
+        self.fast_period_length = self.UI.user_input(
+            self.SHORT_PERIOD_LENGTH, enums.UserInputTypes.INT,
+            self.fast_period_length,
+            inputs, min_val=1, title="Fast SMA length")
+
+    @classmethod
+    def get_default_config(
+        cls,
+        long_period_length: typing.Optional[int] = None,
+        short_period_length: typing.Optional[int] = None,
+    ) -> dict:
+        return {
+            cls.LONG_PERIOD_LENGTH: long_period_length if long_period_length is not None else 10,
+            cls.SHORT_PERIOD_LENGTH: short_period_length if short_period_length is not None else 5,
+        }
 
     async def ohlcv_callback(self, exchange: str, exchange_id: str,
                              cryptocurrency: str, symbol: str, time_frame, candle, inc_in_construction_data):
