@@ -2384,7 +2384,7 @@ async def test_register_pair_requirement_on_reference_exchanges():
                 other_exchange_manager, {price_topic: {"ETH/USDT"}}
             )
 
-        # Test 4: Other exchange without formula - pending symbols should stay empty
+        # Test 4: Other exchange without formula - still wait for mark price dependencies
         mock_ref_price_spec_without_formula = mock.Mock()
         mock_ref_price_spec_without_formula.initialize_if_required = mock.AsyncMock()
         mock_ref_price_spec_without_formula.get_dependencies = mock.Mock(return_value=[])
@@ -2409,7 +2409,7 @@ async def test_register_pair_requirement_on_reference_exchanges():
             await producer._register_pair_requirement_on_reference_exchanges()
 
             wait_for_symbols_init_mock.assert_awaited_once_with(
-                other_exchange_manager, {price_topic: set()}
+                other_exchange_manager, {price_topic: {"ETH/USDT"}}
             )
 
         # Test 5: Local exchange with formula - pending symbols should stay empty

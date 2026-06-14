@@ -1,7 +1,7 @@
 numpy==2.4.2
 
 # Exchange connection requirements
-octobot-ccxt==0.0.1 # always ensure real exchanges tests (in tests_additional and authenticated exchange tests) are passing before changing the ccxt version
+octobot-ccxt==0.0.2 # always ensure real exchanges tests (in tests_additional and authenticated exchange tests) are passing before changing the ccxt version
 
 cryptography # Never specify a version (managed by https://github.com/Drakkar-Software/OctoBot-PyPi-Linux-Deployer)
 

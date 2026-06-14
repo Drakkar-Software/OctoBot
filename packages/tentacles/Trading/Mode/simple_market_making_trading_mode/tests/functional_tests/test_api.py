@@ -1,7 +1,7 @@
 #  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
-#  Functional integration tests for predicted_order_book and market_making_volume (live BingX + Dexscreener).
+#  Functional integration tests for predicted_order_book and market_making_volume (live BingX + Dexscreener + DefiLlama).
 
 import typing
 
@@ -16,6 +16,7 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.api.constants as
 
 BINGX_EXCHANGE_NAME = "bingx"
 DEXSCREENER_EXCHANGE_NAME = "dexscreener"
+DEFILLAMA_EXCHANGE_NAME = "defillama"
 BINGX_TRADING_PAIR = "BTC/USDT"
 DEX_TRADING_PAIR = "BTCB/USDT"
 
@@ -36,6 +37,13 @@ BSC_ANY_DEX_SYMBOL_SUFFIX = (
     f"{octobot_commons.DEX_SEPARATOR}{octobot_commons.ANY_DEX_WILDCARD}"
 )
 DEX_BTCB_USDT_ANY_DEX_TRADING_PAIR = f"{DEX_TRADING_PAIR}{BSC_ANY_DEX_SYMBOL_SUFFIX}"
+BSC_NO_DEX_SYMBOL_SUFFIX = f"{octobot_commons.NETWORK_SEPARATOR}{BSC_NETWORK_NAME}"
+DEX_BTCB_USDT_ADDRESS_NO_DEX = (
+    f"{BTCB_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_NO_DEX_SYMBOL_SUFFIX}"
+)
+DEX_BTCB_USDT_ADDRESS_ANY_DEX = (
+    f"{BTCB_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_ANY_DEX_SYMBOL_SUFFIX}"
+)
 
 CROSS_PAIR_SYMBOL_FORMULA = (
     f"price('{BTCB_TOKEN_ADDRESS}/{WBNB_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}')"
@@ -61,6 +69,15 @@ def _bingx_exchange() -> dict:
         "id": "bingx-config",
         "name": BINGX_EXCHANGE_NAME,
         "exchange": BINGX_EXCHANGE_NAME,
+        "sandboxed": False,
+    }
+
+
+def _defillama_exchange() -> dict:
+    return {
+        "id": "defillama-config",
+        "name": DEFILLAMA_EXCHANGE_NAME,
+        "exchange": DEFILLAMA_EXCHANGE_NAME,
         "sandboxed": False,
     }
 
@@ -368,6 +385,40 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
         assert status == 200
         _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
 
+    @pytest.mark.parametrize(
+        "defillama_pair,reference_formula",
+        [
+            pytest.param(DEX_BTCB_USDT_ADDRESS_NO_DEX, "", id="direct_no_dex"),
+            pytest.param(DEX_BTCB_USDT_ADDRESS_ANY_DEX, "", id="direct_any_dex"),
+            pytest.param(
+                DEX_BTCB_USDT_ADDRESS_ANY_DEX,
+                CROSS_PAIR_ANY_DEX_ADDRESS_FORMULA,
+                id="cross_pair_address_formula",
+            ),
+        ],
+    )
+    async def test_defillama_predicted_order_book(self, defillama_pair, reference_formula):
+        request_data = _predicted_order_book_request(
+            exchanges=[_bingx_exchange(), _defillama_exchange()],
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": DEFILLAMA_EXCHANGE_NAME,
+                            "pair": defillama_pair,
+                            "weight": 1,
+                            "formula": reference_formula,
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
 
 class TestDispatchMarketMakingRequestMarketMakingVolume:
     async def test_bingx_with_bingx_price_source(self):
@@ -443,6 +494,28 @@ class TestDispatchMarketMakingRequestMarketMakingVolume:
                             "pair": BINGX_TRADING_PAIR,
                             "weight": 1,
                             "formula": DIRECT_WBTC_USDT_ADDRESS_FORMULA,
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_market_making_volume(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
+    async def test_bingx_with_defillama_direct_btcb_usdt_no_dex(self):
+        request_data = _market_making_volume_request(
+            exchanges=[_bingx_exchange(), _defillama_exchange()],
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": DEFILLAMA_EXCHANGE_NAME,
+                            "pair": DEX_BTCB_USDT_ADDRESS_NO_DEX,
+                            "weight": 1,
+                            "formula": "",
                         }
                     ],
                 )

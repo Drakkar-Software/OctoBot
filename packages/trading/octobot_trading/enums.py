@@ -724,6 +724,7 @@ class ExchangeClientOptions(enum.StrEnum):
     FUNDING_IN_TICKER = "fundingInTicker"
     CAN_MISS_TICKERS_IN_ALL_TICKERS = "canMissTickersInAllTickers"
     REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS = "requiresSymbolsParamToFetchTickers"
+    NO_VOLUME_IN_TICKER = "noVolumeInTicker"
     MAX_FETCHED_OHLCV_COUNT = "maxFetchedOhlcvCount"
     FUNDING_WITH_MARK_PRICE = "fundingWithMarkPrice"
     MAX_INCREASED_POSITION_QUANTITY_MULTIPLIER = "maxIncreasedPositionQuantityMultiplier"
@@ -809,6 +810,8 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     # set when the exchange returns nothing when fetching historical candles with a too early start time
     # (will iterate historical OHLCV requests over this window)
     ExchangeClientOptions.MAX_FETCHED_OHLCV_COUNT: None,
+    # set True when the exchange doesn't return volume in ticker
+    ExchangeClientOptions.NO_VOLUME_IN_TICKER: False,
     # set True when the exchange can't fetch OHLCVs but can fetch tickers
     ExchangeClientOptions.CREATE_OHLCV_FROM_TICKERS: False,
     # Funding rate params

@@ -97,15 +97,18 @@ def _default_ticker_content_expectations() -> dict[str, TickerExpect]:
 
 def _merge_ticker_content_expectations(
     expectations: typing.Optional[TickerRequiredExpectations],
+    no_volume_in_ticker: bool = False,
 ) -> dict[str, TickerExpect]:
     merged = _default_ticker_content_expectations()
-    if expectations is None:
-        return merged
-    for field in dataclasses.fields(TickerRequiredExpectations):
-        override = getattr(expectations, field.name)
-        if override is not None:
-            column = _TICKER_EXPECT_ATTR_TO_COLUMN[field.name]
-            merged[column] = override
+    if expectations is not None:
+        for field in dataclasses.fields(TickerRequiredExpectations):
+            override = getattr(expectations, field.name)
+            if override is not None:
+                column = _TICKER_EXPECT_ATTR_TO_COLUMN[field.name]
+                merged[column] = override
+    if no_volume_in_ticker:
+        merged[Ectc.BASE_VOLUME.value] = TickerExpect.NONE
+        merged[Ectc.QUOTE_VOLUME.value] = TickerExpect.NONE
     return merged
 
 
@@ -1010,9 +1013,17 @@ class RealExchangeTester:
         ticker_expectations: typing.Optional[TickerRequiredExpectations] = None,
     ):
         symbol = symbol or self.SYMBOL
-        ticker = await self.get_price_ticker(symbol=symbol)
-        self._check_ticker(ticker, symbol, extra_checks=extra_checks)
-        self._check_ticker_required_content(ticker, ticker_expectations=ticker_expectations)
+        async with self.get_exchange_manager() as exchange_manager:
+            no_volume_in_ticker = exchange_manager.exchange.get_option_value(
+                trading_enums.ExchangeClientOptions.NO_VOLUME_IN_TICKER
+            )
+            ticker = await exchange_manager.exchange.get_price_ticker(symbol)
+        self._check_ticker(
+            ticker, symbol, extra_checks=extra_checks, no_volume_in_ticker=no_volume_in_ticker,
+        )
+        self._check_ticker_required_content(
+            ticker, ticker_expectations=ticker_expectations, no_volume_in_ticker=no_volume_in_ticker,
+        )
 
     @classmethod
     def _check_ticker(
@@ -1020,6 +1031,7 @@ class RealExchangeTester:
         ticker, symbol,
         extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
         allowed_failed_tickers_typing_checks_percentage: int = 0,
+        no_volume_in_ticker: bool = False,
     ):
         assert ticker[Ectc.SYMBOL.value] == symbol, (
             f"ticker symbol mismatch: expected {symbol!r}, got {ticker.get(Ectc.SYMBOL.value)!r}"
@@ -1078,8 +1090,9 @@ class RealExchangeTester:
         ticker,
         *,
         ticker_expectations: typing.Optional[TickerRequiredExpectations] = None,
+        no_volume_in_ticker: bool = False,
     ):
-        content = _merge_ticker_content_expectations(ticker_expectations)
+        content = _merge_ticker_content_expectations(ticker_expectations, no_volume_in_ticker=no_volume_in_ticker)
         for column, expect in content.items():
             if expect == TickerExpect.SKIP:
                 continue
@@ -1098,8 +1111,13 @@ class RealExchangeTester:
         symbols: typing.Optional[list[str]] = None,
         extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
         allowed_failed_tickers_typing_checks_percentage: int = 0,
+        ticker_expectations: typing.Optional[TickerRequiredExpectations] = None,
     ):
-        tickers = await self.get_all_currencies_price_ticker(symbols=symbols)
+        async with self.get_exchange_manager() as exchange_manager:
+            no_volume_in_ticker = exchange_manager.exchange.get_option_value(
+                trading_enums.ExchangeClientOptions.NO_VOLUME_IN_TICKER
+            )
+            tickers = await exchange_manager.exchange.get_all_currencies_price_ticker(symbols=symbols)
         if symbols:
             assert sorted(tickers.keys()) == sorted(symbols)
         for symbol, ticker in tickers.items():
@@ -1107,7 +1125,14 @@ class RealExchangeTester:
                 ticker, symbol,
                 extra_checks=extra_checks,
                 allowed_failed_tickers_typing_checks_percentage=allowed_failed_tickers_typing_checks_percentage,
+                no_volume_in_ticker=no_volume_in_ticker,
             )
+            if ticker_expectations is not None or no_volume_in_ticker:
+                self._check_ticker_required_content(
+                    ticker,
+                    ticker_expectations=ticker_expectations,
+                    no_volume_in_ticker=no_volume_in_ticker,
+                )
 
     async def get_user_recent_trades(self):
         async with self.get_exchange_manager() as exchange_manager:

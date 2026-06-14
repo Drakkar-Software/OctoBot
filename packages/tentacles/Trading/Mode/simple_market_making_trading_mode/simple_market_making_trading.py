@@ -1049,10 +1049,11 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
                         exchange_manager,
                         reference_price_spec.get_dependencies(exchange_manager)
                     )
-                    if exchange_manager is not self.exchange_manager and reference_price_spec.formula:
-                        # only consider waiting for symbol init when using formula on other exchanges 
-                        # to handle indirect symbol dependencies
-                        all_symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value].update(symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value])
+                    if exchange_manager is not self.exchange_manager:
+                        # wait for mark price init on reference exchanges (defillama, etc.)
+                        all_symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value].update(
+                            symbols_by_pending_topic[commons_enums.InitializationEventExchangeTopics.PRICE.value]
+                        )
                 with self._dependencies_init():
                     await self._wait_for_symbols_init(exchange_manager, all_symbols_by_pending_topic)
 

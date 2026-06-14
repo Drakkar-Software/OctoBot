@@ -47,6 +47,9 @@ DEX_BTCB_USDT_ADDRESS_ANY_BEP20_DEX = (
     f"{DEX_BTCB_USDT_ADDRESS_PAIR}{octobot_commons.NETWORK_SEPARATOR}{BEP20_NETWORK}"
     f"{octobot_commons.DEX_SEPARATOR}{octobot_commons.ANY_DEX_WILDCARD}"
 )
+DEX_BTCB_USDT_ADDRESS_BEP20 = (
+    f"{DEX_BTCB_USDT_ADDRESS_PAIR}{octobot_commons.NETWORK_SEPARATOR}{BEP20_NETWORK}"
+)
 
 
 def _is_github_actions() -> bool:
@@ -155,6 +158,19 @@ def _dexscreener_query_params(symbols: list[str] | None = None) -> list[tuple[st
         ("id", "dexscreener-config"),
         ("name", "dexscreener-test"),
         ("exchange", "dexscreener"),
+        ("sandboxed", False),
+        ("trading_type", protocol_models.TradingType.SPOT.value),
+    ]
+    params.extend(("symbols", symbol) for symbol in requested_symbols)
+    return params
+
+
+def _defillama_query_params(symbols: list[str] | None = None) -> list[tuple[str, typing.Any]]:
+    requested_symbols = symbols or [DEX_BTCB_USDT_ADDRESS_BEP20]
+    params: list[tuple[str, typing.Any]] = [
+        ("id", "defillama-config"),
+        ("name", "defillama-test"),
+        ("exchange", "defillama"),
         ("sandboxed", False),
         ("trading_type", protocol_models.TradingType.SPOT.value),
     ]
@@ -353,4 +369,27 @@ class TestExchangesDexPairsIntegration:
             expected_base_token_address=BTCB_BSC_TOKEN_ADDRESS,
             expected_quote_token_address=USDT_BSC_TOKEN_ADDRESS,
         )
+        assert_response_headers(response)
+
+    def test_defillama_address_pairs_return_wildcard_venue(
+        self,
+        client: typing.Any,
+    ) -> None:
+        requested_symbols = [
+            DEX_BTCB_USDT_ADDRESS_BEP20,
+            DEX_BTCB_USDT_ADDRESS_ANY_BEP20_DEX,
+        ]
+        response = client.get(_DEX_PAIRS, params=_defillama_query_params(requested_symbols))
+        assert response.status_code == 200
+        body: dict = response.json()
+        assert set(body.keys()) == set(requested_symbols)
+        for input_symbol in requested_symbols:
+            _assert_dex_pairs_for_input_symbol(
+                body,
+                input_symbol,
+                expected_pair_count=1,
+                expected_dex=octobot_commons.ANY_DEX_WILDCARD,
+                expected_base_token_address=BTCB_BSC_TOKEN_ADDRESS,
+                expected_quote_token_address=USDT_BSC_TOKEN_ADDRESS,
+            )
         assert_response_headers(response)
