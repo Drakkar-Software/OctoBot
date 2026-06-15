@@ -55,14 +55,13 @@ class ExchangeSymbolsData:
         self, exchange_data: "exchange_data_import.ExchangeData"
     ) -> None:
         for market in exchange_data.markets:
-            if not market.time_frame or not market.close:
+            if not market.time_frame or not market.has_full_candles():
                 continue
-            time_frame = commons_enums.TimeFrames(market.time_frame)
             formatted_candles = market.get_formatted_candles()
             if not formatted_candles:
                 continue
             await self.get_exchange_symbol_data(market.symbol).handle_candles_update(
-                time_frame,
+                commons_enums.TimeFrames(market.time_frame),
                 formatted_candles,
                 replace_all=True,
             )

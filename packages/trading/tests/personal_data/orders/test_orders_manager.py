@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import copy
+import decimal
 import typing
 import pytest
 import pytest_asyncio
@@ -21,8 +22,10 @@ import time
 
 import octobot_trading.personal_data as personal_data
 import octobot_trading.exchanges as exchanges
+import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.constants as constants
 import octobot_trading.enums as enums
+import octobot_trading.storage.orders_storage as orders_storage
 
 from tests.exchanges import simulated_exchange_manager, simulated_trader
 
@@ -134,6 +137,35 @@ def _get_raw_order(order, status=None):
     order = copy.deepcopy(order)
     order["status"] = status or order["status"]
     return order
+
+
+def _build_exchange_data(open_orders):
+    return exchange_data_import.ExchangeData(
+        orders_details=exchange_data_import.OrdersDetails(open_orders=open_orders)
+    )
+
+
+def _build_storage_open_order_document(exchange_manager, trader_inst, **order_kwargs):
+    order = personal_data.BuyLimitOrder(trader_inst)
+    order.update(
+        order_type=enums.TraderOrderType.BUY_LIMIT,
+        symbol=DEFAULT_SYMBOL,
+        current_price=decimal.Decimal("70"),
+        quantity=decimal.Decimal("10"),
+        price=decimal.Decimal("70"),
+        exchange_order_id="storage-exchange-id",
+        **order_kwargs,
+    )
+    return orders_storage._format_order(order, exchange_manager)
+
+
+def _set_storage_origin_string_numerics(storage_order_document):
+    origin = storage_order_document[constants.STORAGE_ORIGIN_VALUE]
+    origin[enums.ExchangeConstantsOrderColumns.AMOUNT.value] = "10"
+    origin[enums.ExchangeConstantsOrderColumns.PRICE.value] = "70"
+    origin[enums.ExchangeConstantsOrderColumns.FILLED.value] = "0"
+    if origin.get(enums.ExchangeConstantsOrderColumns.FEE.value):
+        origin[enums.ExchangeConstantsOrderColumns.FEE.value][enums.FeePropertyColumns.COST.value] = "0.1"
 
 
 async def test_get_order(order_and_exchange_managers):
@@ -381,3 +413,113 @@ async def test_get_orders_to_cancel_from_policies(order_and_exchange_managers):
     )
     # now both orders should be cancelled
     assert orders_manager.get_orders_to_cancel_from_policies(two_orders) == two_orders
+
+
+class TestOrdersManagerInitializeFromExchangeData:
+    @staticmethod
+    async def _initialize_from_exchange_data(orders_manager, exchange_data):
+        await orders_manager.initialize_impl()
+        await orders_manager.initialize_from_exchange_data(exchange_data)
+
+    async def test_does_nothing_when_no_open_orders(self, order_and_exchange_managers):
+        orders_manager, _exchange_manager = order_and_exchange_managers
+        await self._initialize_from_exchange_data(orders_manager, _build_exchange_data([]))
+        assert len(orders_manager.orders) == 0
+
+    async def test_adds_simple_exchange_orders(self, order_and_exchange_managers):
+        orders_manager, _exchange_manager = order_and_exchange_managers
+        open_orders = [
+            _get_raw_order(RAW_ORDERS[1]),
+            _get_raw_order(RAW_ORDERS[2]),
+            _get_raw_order(RAW_ORDERS[3]),
+        ]
+        await self._initialize_from_exchange_data(orders_manager, _build_exchange_data(open_orders))
+        assert len(orders_manager.orders) == 3
+        assert orders_manager.get_order("2").symbol == DEFAULT_SYMBOL
+        assert orders_manager.get_order("3").symbol == DEFAULT_SYMBOL
+        assert orders_manager.get_order("4").symbol == DEFAULT_SYMBOL
+
+    async def test_restores_storage_orders(self, order_and_exchange_managers):
+        orders_manager, exchange_manager = order_and_exchange_managers
+        storage_tag = "storage-tag-test"
+        storage_order_document = _build_storage_open_order_document(
+            exchange_manager,
+            exchange_manager.trader,
+            tag=storage_tag,
+        )
+        storage_order_id = storage_order_document[constants.STORAGE_ORIGIN_VALUE][
+            enums.ExchangeConstantsOrderColumns.ID.value
+        ]
+        await self._initialize_from_exchange_data(
+            orders_manager, _build_exchange_data([storage_order_document])
+        )
+        restored_order = orders_manager.get_order(storage_order_id)
+        assert restored_order.tag == storage_tag
+        assert restored_order.symbol == DEFAULT_SYMBOL
+
+    async def test_restores_storage_order_groups(self, order_and_exchange_managers):
+        orders_manager, exchange_manager = order_and_exchange_managers
+        group = orders_manager.create_group(
+            personal_data.OneCancelsTheOtherOrderGroup,
+            group_name="plop",
+            active_order_swap_strategy=personal_data.StopFirstActiveOrderSwapStrategy(123),
+        )
+        storage_order_document = _build_storage_open_order_document(
+            exchange_manager,
+            exchange_manager.trader,
+            group=group,
+        )
+        storage_order_document[enums.StoredOrdersAttr.GROUP.value][
+            enums.StoredOrdersAttr.GROUP_ID.value
+        ] = "plop2"
+        storage_order_id = storage_order_document[constants.STORAGE_ORIGIN_VALUE][
+            enums.ExchangeConstantsOrderColumns.ID.value
+        ]
+        await self._initialize_from_exchange_data(
+            orders_manager, _build_exchange_data([storage_order_document])
+        )
+        restored_order = orders_manager.get_order(storage_order_id)
+        assert restored_order.order_group == personal_data.OneCancelsTheOtherOrderGroup(
+            "plop2",
+            orders_manager,
+            active_order_swap_strategy=personal_data.StopFirstActiveOrderSwapStrategy(123),
+        )
+        assert orders_manager.order_groups["plop2"].name == "plop2"
+        assert orders_manager.order_groups["plop2"].orders_manager is orders_manager
+
+    async def test_handles_mixed_order_types(self, order_and_exchange_managers):
+        orders_manager, exchange_manager = order_and_exchange_managers
+        raw_order = _get_raw_order(RAW_ORDERS[1])
+        storage_order_document = _build_storage_open_order_document(
+            exchange_manager,
+            exchange_manager.trader,
+            tag="mixed-storage-tag",
+        )
+        storage_order_id = storage_order_document[constants.STORAGE_ORIGIN_VALUE][
+            enums.ExchangeConstantsOrderColumns.ID.value
+        ]
+        await self._initialize_from_exchange_data(
+            orders_manager,
+            _build_exchange_data([raw_order, storage_order_document]),
+        )
+        assert len(orders_manager.orders) == 2
+        assert orders_manager.get_order("2").symbol == DEFAULT_SYMBOL
+        assert orders_manager.get_order(storage_order_id).tag == "mixed-storage-tag"
+
+    async def test_does_not_modify_exchange_data(self, order_and_exchange_managers):
+        orders_manager, exchange_manager = order_and_exchange_managers
+        storage_order_document = _build_storage_open_order_document(
+            exchange_manager,
+            exchange_manager.trader,
+            tag="immutable-storage-tag",
+        )
+        _set_storage_origin_string_numerics(storage_order_document)
+        storage_order_snapshot = copy.deepcopy(storage_order_document)
+        exchange_data = _build_exchange_data([storage_order_document])
+        exchange_data_snapshot = copy.deepcopy(exchange_data)
+        await self._initialize_from_exchange_data(orders_manager, exchange_data)
+        assert storage_order_document == storage_order_snapshot
+        assert exchange_data == exchange_data_snapshot
+        storage_origin = storage_order_document[constants.STORAGE_ORIGIN_VALUE]
+        assert isinstance(storage_origin[enums.ExchangeConstantsOrderColumns.AMOUNT.value], str)
+        assert isinstance(storage_origin[enums.ExchangeConstantsOrderColumns.PRICE.value], str)

@@ -17,6 +17,7 @@ import collections
 import uuid
 import typing
 import contextlib
+import copy
 
 import octobot_commons.logging as logging
 
@@ -277,7 +278,7 @@ class OrdersManager(util.Initializable):
         pending_groups = {}
         for order_details in exchange_data.orders_details.open_orders:
             if constants.STORAGE_ORIGIN_VALUE in order_details:
-                formatted_order_dict = orders_storage.from_order_document(order_details)
+                formatted_order_dict = orders_storage.from_order_document(copy.deepcopy(order_details))
                 order = order_factory.create_order_from_order_raw_in_storage_details_without_related_elements(
                     exchange_manager, formatted_order_dict
                 )
