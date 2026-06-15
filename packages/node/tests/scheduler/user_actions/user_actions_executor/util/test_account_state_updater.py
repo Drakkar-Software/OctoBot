@@ -6,6 +6,7 @@ import types
 
 import octobot_commons.constants as commons_constants
 import octobot_protocol.models as protocol_models
+import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
 import octobot_trading.enums as trading_enums
 
@@ -42,6 +43,26 @@ def _authentication() -> protocol_models.AccountAuthentication:
         api_key="plain-key",
         api_secret="plain-secret",
     )
+
+
+def _exchange_with_balance_and_permissions(
+  permissions: list[trading_enums.APIKeyRights] | None | trading_errors.NotSupported,
+) -> types.SimpleNamespace:
+    exchange = types.SimpleNamespace(
+        get_balance=mock.AsyncMock(
+            return_value={
+                "USDT": {
+                    commons_constants.PORTFOLIO_TOTAL: 1000.0,
+                    commons_constants.PORTFOLIO_AVAILABLE: 1000.0,
+                }
+            }
+        ),
+    )
+    if isinstance(permissions, trading_errors.NotSupported):
+        exchange.get_permissions = mock.AsyncMock(side_effect=permissions)
+    else:
+        exchange.get_permissions = mock.AsyncMock(return_value=permissions)
+    return exchange
 
 
 class TestAccountStateUpdaterCheckExchangeAccountState:
@@ -303,17 +324,10 @@ class TestAccountStateUpdaterCheckExchangeManagerState:
     @pytest.mark.asyncio
     async def test_returns_valid_state_when_exchange_checks_succeed(self):
         account = _sample_account()
-        exchange = types.SimpleNamespace(
-            get_balance=mock.AsyncMock(
-                return_value={
-                    "USDT": {
-                        commons_constants.PORTFOLIO_TOTAL: 1000.0,
-                        commons_constants.PORTFOLIO_AVAILABLE: 1000.0,
-                    }
-                }
-            ),
-            ensure_api_key_permissions=mock.AsyncMock(return_value=None),
-        )
+        exchange = _exchange_with_balance_and_permissions([
+            trading_enums.APIKeyRights.READING,
+            trading_enums.APIKeyRights.SPOT_TRADING,
+        ])
         exchange_manager = types.SimpleNamespace(exchange=exchange)
         account_state, assets = await account_state_updater_module._check_exchange_manager_state(
             exchange_manager,
@@ -321,6 +335,10 @@ class TestAccountStateUpdaterCheckExchangeManagerState:
         )
         assert account_state.status == protocol_models.AccountStatus.VALID
         assert account_state.message == protocol_models.AccountStatusMessage.VALID
+        assert account_state.permissions == [
+            protocol_models.AccountPermission.READ,
+            protocol_models.AccountPermission.SPOT_TRADING,
+        ]
         assert assets is not None
         assert len(assets) == 1
         assert assets[0].trading_type == protocol_models.TradingType.SPOT
@@ -329,6 +347,112 @@ class TestAccountStateUpdaterCheckExchangeManagerState:
         assert assets[0].assets[0].total == 1000.0
         assert assets[0].assets[0].available == 1000.0
         exchange.get_balance.assert_awaited_once()
+        exchange.get_permissions.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_populates_permissions_on_valid_check(self):
+        account = _sample_account()
+        exchange = _exchange_with_balance_and_permissions([
+            trading_enums.APIKeyRights.READING,
+            trading_enums.APIKeyRights.SPOT_TRADING,
+        ])
+        exchange_manager = types.SimpleNamespace(exchange=exchange)
+        account_state, _ = await account_state_updater_module._check_exchange_manager_state(
+            exchange_manager,
+            account,
+        )
+        assert account_state.permissions == [
+            protocol_models.AccountPermission.READ,
+            protocol_models.AccountPermission.SPOT_TRADING,
+        ]
+
+    @pytest.mark.asyncio
+    async def test_accepts_read_only_spot_account(self):
+        account = _sample_account()
+        exchange = _exchange_with_balance_and_permissions([
+            trading_enums.APIKeyRights.READING,
+        ])
+        exchange_manager = types.SimpleNamespace(exchange=exchange)
+        account_state, assets = await account_state_updater_module._check_exchange_manager_state(
+            exchange_manager,
+            account,
+        )
+        assert account_state.status == protocol_models.AccountStatus.VALID
+        assert account_state.message == protocol_models.AccountStatusMessage.VALID
+        assert account_state.permissions == [protocol_models.AccountPermission.READ]
+        assert assets is not None
+
+    @pytest.mark.asyncio
+    async def test_accepts_read_only_futures_account(self):
+        account = _sample_account(trading_type=protocol_models.TradingType.FUTURES)
+        exchange = _exchange_with_balance_and_permissions([
+            trading_enums.APIKeyRights.READING,
+        ])
+        exchange_manager = types.SimpleNamespace(exchange=exchange)
+        account_state, assets = await account_state_updater_module._check_exchange_manager_state(
+            exchange_manager,
+            account,
+        )
+        assert account_state.status == protocol_models.AccountStatus.VALID
+        assert account_state.message == protocol_models.AccountStatusMessage.VALID
+        assert account_state.permissions == [protocol_models.AccountPermission.READ]
+        assert assets is not None
+        assert assets[0].trading_type == protocol_models.TradingType.FUTURES
+
+    @pytest.mark.asyncio
+    async def test_valid_when_permissions_unsupported_assumes_optimistic_permissions(self):
+        account = _sample_account()
+        exchange = _exchange_with_balance_and_permissions(trading_errors.NotSupported())
+        exchange_manager = types.SimpleNamespace(exchange=exchange)
+        account_state, assets = await account_state_updater_module._check_exchange_manager_state(
+            exchange_manager,
+            account,
+        )
+        assert account_state.status == protocol_models.AccountStatus.VALID
+        assert account_state.message == protocol_models.AccountStatusMessage.VALID
+        assert account_state.permissions == [
+            protocol_models.AccountPermission.READ,
+            protocol_models.AccountPermission.SPOT_TRADING,
+            protocol_models.AccountPermission.FUTURES_TRADING,
+        ]
+        assert assets is not None
+
+    @pytest.mark.asyncio
+    async def test_invalid_when_missing_reading_includes_permissions(self):
+        account = _sample_account()
+        exchange = _exchange_with_balance_and_permissions([
+            trading_enums.APIKeyRights.SPOT_TRADING,
+        ])
+        exchange_manager = types.SimpleNamespace(exchange=exchange)
+        account_state, assets = await account_state_updater_module._check_exchange_manager_state(
+            exchange_manager,
+            account,
+        )
+        assert account_state.status == protocol_models.AccountStatus.INVALID
+        assert account_state.message == protocol_models.AccountStatusMessage.INVALID_API_KEYS
+        assert account_state.permissions == [protocol_models.AccountPermission.SPOT_TRADING]
+        assert assets is None
+
+    @pytest.mark.asyncio
+    async def test_invalid_withdrawal_includes_permissions(self):
+        account = _sample_account()
+        exchange = _exchange_with_balance_and_permissions([
+            trading_enums.APIKeyRights.READING,
+            trading_enums.APIKeyRights.WITHDRAWALS,
+        ])
+        exchange_manager = types.SimpleNamespace(exchange=exchange)
+        with mock.patch.object(trading_constants, "ALLOW_FUNDS_TRANSFER", False):
+            account_state, assets = await account_state_updater_module._check_exchange_manager_state(
+                exchange_manager,
+                account,
+            )
+        assert account_state.status == protocol_models.AccountStatus.INVALID
+        assert account_state.message == protocol_models.AccountStatusMessage.REVOKE_API_WITHDRAWAL_RIGHTS
+        assert account_state.permissions == [
+            protocol_models.AccountPermission.READ,
+            protocol_models.AccountPermission.WITHDRAW,
+        ]
+        assert assets is None
 
     @pytest.mark.asyncio
     async def test_maps_ip_whitelist_error(self):
@@ -346,7 +470,7 @@ class TestAccountStateUpdaterCheckExchangeManagerState:
         assert assets is None
 
     @pytest.mark.asyncio
-    async def test_maps_withdrawal_permissions_error(self):
+    async def test_maps_authentication_error_to_invalid_api_keys_without_read_permission(self):
         account = _sample_account()
         exchange = types.SimpleNamespace(
             get_balance=mock.AsyncMock(
@@ -359,8 +483,40 @@ class TestAccountStateUpdaterCheckExchangeManagerState:
             account,
         )
         assert account_state.status == protocol_models.AccountStatus.INVALID
-        assert account_state.message == protocol_models.AccountStatusMessage.REVOKE_API_WITHDRAWAL_RIGHTS
+        assert account_state.message == protocol_models.AccountStatusMessage.INVALID_API_KEYS
+        assert account_state.permissions == []
         assert assets is None
+
+
+class TestAccountStateUpdaterFetchApiKeyRights:
+    @pytest.mark.asyncio
+    async def test_returns_optimistic_rights_when_permissions_fetch_is_not_supported(self):
+        exchange = types.SimpleNamespace(
+            get_permissions=mock.AsyncMock(side_effect=trading_errors.NotSupported()),
+        )
+        api_key_rights = await account_state_updater_module._fetch_api_key_rights(exchange)
+        assert api_key_rights == [
+            trading_enums.APIKeyRights.READING,
+            trading_enums.APIKeyRights.SPOT_TRADING,
+            trading_enums.APIKeyRights.FUTURES_TRADING,
+        ]
+
+
+class TestAccountStateUpdaterAccountPermissionsFromApiKeyRights:
+    def test_maps_known_api_key_rights_to_account_permissions(self):
+        account_permissions = account_state_updater_module._account_permissions_from_api_key_rights([
+            trading_enums.APIKeyRights.READING,
+            trading_enums.APIKeyRights.SPOT_TRADING,
+            trading_enums.APIKeyRights.FUTURES_TRADING,
+            trading_enums.APIKeyRights.WITHDRAWALS,
+            trading_enums.APIKeyRights.MARGIN_TRADING,
+        ])
+        assert account_permissions == [
+            protocol_models.AccountPermission.READ,
+            protocol_models.AccountPermission.SPOT_TRADING,
+            protocol_models.AccountPermission.FUTURES_TRADING,
+            protocol_models.AccountPermission.WITHDRAW,
+        ]
 
 
 class TestAccountStateUpdaterAssetsFromBalance:

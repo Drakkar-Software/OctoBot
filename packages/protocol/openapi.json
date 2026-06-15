@@ -919,6 +919,17 @@
           "incompatible_account_referral"
         ]
       },
+      "AccountPermission": {
+        "description": "AccountPermission",
+        "type": "string",
+        "enum": [
+          "read",
+          "spot_trading",
+          "futures_trading",
+          "withdraw",
+          "internal_transfer"
+        ]
+      },
       "AccountState": {
         "description": "AccountState",
         "type": "object",
@@ -926,6 +937,12 @@
           "status"
         ],
         "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountPermission"
+            }
+          },
           "status": {
             "$ref": "#/components/schemas/AccountStatus"
           },

@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
+from octobot_protocol.models.account_permission import AccountPermission
 from octobot_protocol.models.account_status import AccountStatus
 from octobot_protocol.models.account_status_message import AccountStatusMessage
 from typing import Optional, Set
@@ -29,9 +30,10 @@ class AccountState(BaseModel):
     """
     AccountState
     """ # noqa: E501
+    permissions: Optional[List[AccountPermission]] = None
     status: AccountStatus
     message: Optional[AccountStatusMessage] = None
-    __properties: ClassVar[List[str]] = ["status", "message"]
+    __properties: ClassVar[List[str]] = ["permissions", "status", "message"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -84,6 +86,7 @@ class AccountState(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "permissions": obj.get("permissions"),
             "status": obj.get("status"),
             "message": obj.get("message")
         })

@@ -35,6 +35,9 @@ class TestAccountState(unittest.TestCase):
         model = AccountState()
         if include_optional:
             return AccountState(
+                permissions = [
+                    'read'
+                    ],
                 status = 'valid',
                 message = 'pending_validation'
             )

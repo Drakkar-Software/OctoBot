@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { AccountPermission } from '../models/AccountPermission';
 import { AccountStatus } from '../models/AccountStatus';
 import { AccountStatusMessage } from '../models/AccountStatusMessage';
 
@@ -17,6 +18,7 @@ import { AccountStatusMessage } from '../models/AccountStatusMessage';
 * AccountState
 */
 export class AccountState {
+    'permissions'?: Array<AccountPermission>;
     'status': AccountStatus;
     'message'?: AccountStatusMessage;
 
@@ -25,6 +27,12 @@ export class AccountState {
     static readonly mapping: {[index: string]: string} | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
+        {
+            "name": "permissions",
+            "baseName": "permissions",
+            "type": "Array<AccountPermission>",
+            "format": ""
+        },
         {
             "name": "status",
             "baseName": "status",

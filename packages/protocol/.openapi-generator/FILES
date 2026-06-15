@@ -4,6 +4,7 @@ docs/AccountActionResultErrorMessage.md
 docs/AccountAuthActionResult.md
 docs/AccountAuthActionResultErrorMessage.md
 docs/AccountAuthentication.md
+docs/AccountPermission.md
 docs/AccountReference.md
 docs/AccountSpecifics.md
 docs/AccountState.md
@@ -117,6 +118,7 @@ octobot_protocol/models/account_action_result_error_message.py
 octobot_protocol/models/account_auth_action_result.py
 octobot_protocol/models/account_auth_action_result_error_message.py
 octobot_protocol/models/account_authentication.py
+octobot_protocol/models/account_permission.py
 octobot_protocol/models/account_reference.py
 octobot_protocol/models/account_specifics.py
 octobot_protocol/models/account_state.py
@@ -228,6 +230,7 @@ test/test_account_action_result_error_message.py
 test/test_account_auth_action_result.py
 test/test_account_auth_action_result_error_message.py
 test/test_account_authentication.py
+test/test_account_permission.py
 test/test_account_reference.py
 test/test_account_specifics.py
 test/test_account_state.py

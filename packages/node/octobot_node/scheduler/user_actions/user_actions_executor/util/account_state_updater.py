@@ -4,6 +4,7 @@ import octobot_commons.profiles.profile_data as commons_profile_data
 import octobot_commons.timestamp_util as timestamp_util
 import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as trading_exchanges
@@ -21,6 +22,22 @@ _TRADING_TYPE_TO_EXCHANGE_TYPE: dict[protocol_models.TradingType, trading_enums.
     protocol_models.TradingType.MARGIN: trading_enums.ExchangeTypes.MARGIN,
 }
 
+_API_KEY_RIGHT_TO_ACCOUNT_PERMISSION: dict[
+    trading_enums.APIKeyRights,
+    protocol_models.AccountPermission,
+] = {
+    trading_enums.APIKeyRights.READING: protocol_models.AccountPermission.READ,
+    trading_enums.APIKeyRights.SPOT_TRADING: protocol_models.AccountPermission.SPOT_TRADING,
+    trading_enums.APIKeyRights.FUTURES_TRADING: protocol_models.AccountPermission.FUTURES_TRADING,
+    trading_enums.APIKeyRights.WITHDRAWALS: protocol_models.AccountPermission.WITHDRAW,
+}
+
+_OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED: list[trading_enums.APIKeyRights] = [
+    trading_enums.APIKeyRights.READING,
+    trading_enums.APIKeyRights.SPOT_TRADING,
+    trading_enums.APIKeyRights.FUTURES_TRADING,
+]
+
 
 def _exchange_type_from_trading_type(
     trading_type: protocol_models.TradingType,
@@ -28,8 +45,36 @@ def _exchange_type_from_trading_type(
     return _TRADING_TYPE_TO_EXCHANGE_TYPE[trading_type].value
 
 
-async def _ensure_api_key_permissions(exchange_manager) -> None:
-    await exchange_manager.exchange.ensure_api_key_permissions()
+async def _fetch_api_key_rights(exchange) -> list[trading_enums.APIKeyRights]:
+    try:
+        return await exchange.get_permissions()
+    except trading_errors.NotSupported:
+        return list(_OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED)
+
+
+def _account_permissions_from_api_key_rights(
+    api_key_rights: list[trading_enums.APIKeyRights],
+) -> list[protocol_models.AccountPermission]:
+    return [
+        account_permission
+        for api_key_right in api_key_rights
+        if (account_permission := _API_KEY_RIGHT_TO_ACCOUNT_PERMISSION.get(api_key_right)) is not None
+    ]
+
+
+def _validate_account_api_key_rights(api_key_rights: list[trading_enums.APIKeyRights]) -> None:
+    if not api_key_rights:
+        raise trading_errors.InvalidAPIKeyPermissionsError("No permissions found")
+    if trading_enums.APIKeyRights.READING not in api_key_rights:
+        raise trading_errors.InvalidAPIKeyPermissionsError("READING permission is required")
+    if (
+        trading_enums.APIKeyRights.WITHDRAWALS in api_key_rights
+        and not trading_constants.ALLOW_FUNDS_TRANSFER
+    ):
+        raise trading_errors.InvalidAPIKeyPermissionsError(
+            "WITHDRAWALS permission found, but funds transfer is disabled. "
+            "Please remove the permission or enable funds transfer."
+        )
 
 
 async def update_account_state(
@@ -164,14 +209,18 @@ async def _check_exchange_manager_state(
     exchange_manager,
     account: protocol_models.Account,
 ) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAssetsForTradingType] | None]:
+    permissions: list[protocol_models.AccountPermission] | None = None
     try:
         balance = await exchange_manager.exchange.get_balance()
-        await _ensure_api_key_permissions(exchange_manager)
+        api_key_rights = await _fetch_api_key_rights(exchange_manager.exchange)
+        permissions = _account_permissions_from_api_key_rights(api_key_rights)
+        _validate_account_api_key_rights(api_key_rights)
         assets = _assets_from_balance(balance, _trading_type_for_account_state_check(account))
         return (
             protocol_models.AccountState(
                 status=protocol_models.AccountStatus.VALID,
                 message=protocol_models.AccountStatusMessage.VALID,
+                permissions=permissions,
             ),
             assets,
         )
@@ -179,15 +228,18 @@ async def _check_exchange_manager_state(
         raise
     except trading_errors.InvalidAPIKeyIPWhitelistError:
         return _invalid_state(protocol_models.AccountStatusMessage.INVALID_API_IP_WHITELIST), None
-    except trading_errors.AuthenticationError as authentication_error:
-        authentication_message = str(authentication_error).lower()
-        if "withdrawal" in authentication_message:
-            return _invalid_state(protocol_models.AccountStatusMessage.REVOKE_API_WITHDRAWAL_RIGHTS), None
-        if any(permission_keyword in authentication_message for permission_keyword in ("permission", "trading")):
-            return _invalid_state(protocol_models.AccountStatusMessage.MISSING_API_TRADING_RIGHTS), None
-        return _invalid_state(protocol_models.AccountStatusMessage.INVALID_API_KEYS), None
+    except trading_errors.InvalidAPIKeyPermissionsError as permissions_error:
+        return _invalid_state_from_permissions_error(permissions), None
+    except trading_errors.AuthenticationError:
+        return _invalid_state(
+            protocol_models.AccountStatusMessage.INVALID_API_KEYS,
+            permissions=[],
+        ), None
     except Exception:
-        return _invalid_state(protocol_models.AccountStatusMessage.INTERNAL_SERVER_ERROR), None
+        return _invalid_state(
+            protocol_models.AccountStatusMessage.INTERNAL_SERVER_ERROR,
+            permissions=permissions,
+        ), None
 
 
 def _balance_currency_holdings(balance: dict) -> list[tuple[str, float, float]]:
@@ -231,8 +283,25 @@ def _assets_from_balance(
 
 def _invalid_state(
     status_message: protocol_models.AccountStatusMessage,
+    *,
+    permissions: list[protocol_models.AccountPermission] | None = None,
 ) -> protocol_models.AccountState:
     return protocol_models.AccountState(
         status=protocol_models.AccountStatus.INVALID,
         message=status_message,
+        permissions=permissions,
     )
+
+
+def _invalid_state_from_permissions_error(
+    permissions: list[protocol_models.AccountPermission] | None,
+) -> protocol_models.AccountState:
+    if (
+        permissions is not None
+        and protocol_models.AccountPermission.WITHDRAW in permissions
+        and not trading_constants.ALLOW_FUNDS_TRANSFER
+    ):
+        status_message = protocol_models.AccountStatusMessage.REVOKE_API_WITHDRAWAL_RIGHTS
+    else:
+        status_message = protocol_models.AccountStatusMessage.INVALID_API_KEYS
+    return _invalid_state(status_message, permissions=permissions or [])

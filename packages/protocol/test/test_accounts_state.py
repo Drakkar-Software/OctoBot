@@ -43,6 +43,9 @@ class TestAccountsState(unittest.TestCase):
                         is_simulated = True, 
                         description = '', 
                         state = octobot_protocol.models.account_state.AccountState(
+                            permissions = [
+                                'read'
+                                ], 
                             status = 'valid', 
                             message = 'pending_validation', ), 
                         created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 

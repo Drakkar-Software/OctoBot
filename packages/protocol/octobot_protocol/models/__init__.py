@@ -19,6 +19,7 @@ from octobot_protocol.models.account_action_result_error_message import AccountA
 from octobot_protocol.models.account_auth_action_result import AccountAuthActionResult
 from octobot_protocol.models.account_auth_action_result_error_message import AccountAuthActionResultErrorMessage
 from octobot_protocol.models.account_authentication import AccountAuthentication
+from octobot_protocol.models.account_permission import AccountPermission
 from octobot_protocol.models.account_reference import AccountReference
 from octobot_protocol.models.account_specifics import AccountSpecifics
 from octobot_protocol.models.account_state import AccountState

@@ -20,7 +20,9 @@ import octobot_node.scheduler.tasks as scheduler_tasks
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater_module
 import octobot_protocol.models as protocol_models
 import octobot_trading.errors as trading_errors
+import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.connectors.ccxt.ccxt_connector as ccxt_connector_module
+import octobot_trading.exchanges.types.rest_exchange as rest_exchange_module
 
 import tests.scheduler as scheduler_tests
 
@@ -91,6 +93,36 @@ async def _stub_get_balance_no_network(self, **kwargs):
             commons_constants.PORTFOLIO_AVAILABLE: _FUNCTIONAL_SOL_HOLDINGS,
         },
     }
+
+
+def _functional_valid_api_key_rights() -> list[trading_enums.APIKeyRights]:
+    return [
+        trading_enums.APIKeyRights.READING,
+        trading_enums.APIKeyRights.SPOT_TRADING,
+    ]
+
+
+def _arm_fetch_api_key_rights_errors(
+    fetch_api_key_rights_mock: mock.AsyncMock,
+    permission_errors: list[BaseException],
+    fetch_state: dict,
+) -> None:
+    pending_permission_errors = list(permission_errors)
+
+    async def _fetch_api_key_rights_with_pending_errors(exchange):
+        del exchange
+        if pending_permission_errors:
+            fetch_state["raised_errors"] += 1
+            raise pending_permission_errors.pop(0)
+        return _functional_valid_api_key_rights()
+
+    fetch_api_key_rights_mock.side_effect = _fetch_api_key_rights_with_pending_errors
+    fetch_api_key_rights_mock.return_value = mock.DEFAULT
+
+
+def _disarm_fetch_api_key_rights_errors(fetch_api_key_rights_mock: mock.AsyncMock) -> None:
+    fetch_api_key_rights_mock.side_effect = None
+    fetch_api_key_rights_mock.return_value = _functional_valid_api_key_rights()
 
 
 async def _run_user_action_to_completion(
@@ -288,16 +320,10 @@ class TestExecuteUserActionAccountCrud:
                 base_folder=str(test_user_root),
             )
 
-            # Step: Permission mock sequence — happy create OK; edit hits RetriableFailedRequest then whitelist error; refresh OK.
+            # Step: Permission mock — valid during create/refresh; edit failures armed before edit workflow.
             # RetriableFailedRequest is re-raised from account_state_updater (unlike RuntimeError, which is swallowed).
-            ensure_permissions_mock = mock.AsyncMock(
-                side_effect=[
-                    None,
-                    trading_errors.RetriableFailedRequest("transient edit failure"),
-                    trading_errors.InvalidAPIKeyIPWhitelistError("invalid api key ip whitelist"),
-                    None,
-                ]
-            )
+            fetch_api_key_rights_state = {"raised_errors": 0}
+            fetch_api_key_rights_mock = mock.AsyncMock(return_value=_functional_valid_api_key_rights())
 
             with (
                 mock.patch.object(
@@ -317,13 +343,18 @@ class TestExecuteUserActionAccountCrud:
                 ),
                 mock.patch.object(
                     account_state_updater_module,
-                    "_ensure_api_key_permissions",
-                    new=ensure_permissions_mock,
+                    "_fetch_api_key_rights",
+                    new=fetch_api_key_rights_mock,
                 ),
                 mock.patch.object(
                     account_state_updater_module,
                     "update_account_state",
                     side_effect=_update_account_state_fail_doomed_create,
+                ),
+                mock.patch.object(
+                    rest_exchange_module.RestExchange,
+                    "get_balance",
+                    _stub_get_balance_no_network,
                 ),
                 mock.patch.object(
                     ccxt_connector_module.CCXTConnector,
@@ -422,13 +453,21 @@ class TestExecuteUserActionAccountCrud:
                     account_id="functional-account-1",
                     account=edited_account,
                 )
+                _arm_fetch_api_key_rights_errors(
+                    fetch_api_key_rights_mock,
+                    [
+                        trading_errors.RetriableFailedRequest("transient edit failure"),
+                        trading_errors.InvalidAPIKeyIPWhitelistError("invalid api key ip whitelist"),
+                    ],
+                    fetch_api_key_rights_state,
+                )
                 edit_workflow_id = await scheduler_tasks.trigger_user_action_workflow(edit_action, wallet_address)
 
                 # Step 3 (mid retry) — While DBOS retries the step after RetriableFailedRequest, listing keeps edit as PENDING (input snapshot).
                 spin_deadline_seconds = asyncio.get_running_loop().time() + _USER_ACTION_LIST_POLL_TIMEOUT_SECONDS
                 saw_mid_retry_pending = False
                 while asyncio.get_running_loop().time() < spin_deadline_seconds:
-                    if ensure_permissions_mock.await_count >= 2:
+                    if fetch_api_key_rights_state["raised_errors"] >= 1:
                         listed_mid = await scheduler_api.list_user_actions(wallet_address, active_only=True)
                         _assert_listed_user_actions_match_expected_id_status_pairs(
                             listed_mid,
@@ -446,7 +485,7 @@ class TestExecuteUserActionAccountCrud:
 
                 assert saw_mid_retry_pending, (
                     "expected ua-account-edit listed as pending during DBOS retry backoff "
-                    f"(perm_mock.await_count={ensure_permissions_mock.await_count})"
+                    f"(raised_errors={fetch_api_key_rights_state['raised_errors']})"
                 )
 
                 # Step 3 (continued) — Finish edit: second permission outcome yields INVALID whitelist on persisted account.
@@ -482,7 +521,8 @@ class TestExecuteUserActionAccountCrud:
                 )
                 assert len(account_provider.list_items(wallet_address)) == 1
 
-                # Step 4 — Refresh: reruns checks with final permission mock returning OK; provider VALID again.
+                # Step 4 — Refresh: reruns checks with valid permissions again.
+                _disarm_fetch_api_key_rights_errors(fetch_api_key_rights_mock)
                 refresh_action = build_refresh_user_action(user_action_id="ua-account-refresh")
                 await _run_user_action_to_completion(wallet_address, refresh_action)
 

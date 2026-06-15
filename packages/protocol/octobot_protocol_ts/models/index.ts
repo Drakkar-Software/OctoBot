@@ -4,6 +4,7 @@ export * from "./AccountActionResultErrorMessage";
 export * from "./AccountAuthActionResult";
 export * from "./AccountAuthActionResultErrorMessage";
 export * from "./AccountAuthentication";
+export * from "./AccountPermission";
 export * from "./AccountReference";
 export * from "./AccountSpecifics";
 export * from "./AccountState";

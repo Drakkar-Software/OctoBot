@@ -6,6 +6,7 @@ AccountState
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**permissions** | [**List[AccountPermission]**](AccountPermission.md) |  | [optional] 
 **status** | [**AccountStatus**](AccountStatus.md) |  | 
 **message** | [**AccountStatusMessage**](AccountStatusMessage.md) |  | [optional] 
 
