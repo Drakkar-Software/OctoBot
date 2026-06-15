@@ -301,20 +301,18 @@ def from_order_document(order_document):
 
 
 def restore_order_storage_origin_value(origin_val):
-    origin_val[enums.ExchangeConstantsOrderColumns.AMOUNT.value] = \
-        decimal.Decimal(str(origin_val[enums.ExchangeConstantsOrderColumns.AMOUNT.value]))
-    origin_val[enums.ExchangeConstantsOrderColumns.COST.value] = \
-        decimal.Decimal(str(origin_val[enums.ExchangeConstantsOrderColumns.COST.value]))
-    origin_val[enums.ExchangeConstantsOrderColumns.FILLED.value] = \
-        decimal.Decimal(str(origin_val[enums.ExchangeConstantsOrderColumns.FILLED.value]))
-    origin_val[enums.ExchangeConstantsOrderColumns.PRICE.value] = \
-        decimal.Decimal(str(origin_val[enums.ExchangeConstantsOrderColumns.PRICE.value]))
-    if origin_val[enums.ExchangeConstantsOrderColumns.FEE.value] and \
-            enums.FeePropertyColumns.COST.value in origin_val[enums.ExchangeConstantsOrderColumns.FEE.value]:
-        origin_val[enums.ExchangeConstantsOrderColumns.FEE.value][enums.FeePropertyColumns.COST.value] = \
-            decimal.Decimal(str(
-                origin_val[enums.ExchangeConstantsOrderColumns.FEE.value][enums.FeePropertyColumns.COST.value]
-            ))
+    for column in (
+        enums.ExchangeConstantsOrderColumns.AMOUNT,
+        enums.ExchangeConstantsOrderColumns.COST,
+        enums.ExchangeConstantsOrderColumns.FILLED,
+        enums.ExchangeConstantsOrderColumns.PRICE,
+    ):
+        column_key = column.value
+        if column_key in origin_val:
+            origin_val[column_key] = decimal.Decimal(str(origin_val[column_key]))
+    fee = origin_val.get(enums.ExchangeConstantsOrderColumns.FEE.value)
+    if fee and enums.FeePropertyColumns.COST.value in fee:
+        fee[enums.FeePropertyColumns.COST.value] = decimal.Decimal(str(fee[enums.FeePropertyColumns.COST.value]))
     return origin_val
 
 
