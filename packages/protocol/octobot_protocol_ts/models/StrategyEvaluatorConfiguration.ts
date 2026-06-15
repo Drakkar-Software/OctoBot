@@ -10,19 +10,18 @@
  * Do not edit the class manually.
  */
 
-import { ActionConfigurationType } from '../models/ActionConfigurationType';
-import { IndexCoin } from '../models/IndexCoin';
+import { TimeFrame } from '../models/TimeFrame';
 
 /**
-* IndexConfiguration
+* StrategyEvaluatorConfiguration
 */
-export class IndexConfiguration {
+export class StrategyEvaluatorConfiguration {
     /**
-    * index
+    * Strategy evaluator tentacle class name, e.g. SimpleStrategyEvaluator
     */
-    'configuration_type': 'index';
-    'coins': Array<IndexCoin>;
-    'rebalance_trigger_min_percent': number;
+    'name': string;
+    'config': { [key: string]: any; };
+    'time_frames': Array<TimeFrame>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -30,30 +29,28 @@ export class IndexConfiguration {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "configuration_type",
-            "baseName": "configuration_type",
-            "type": "ActionConfigurationType",
+            "name": "name",
+            "baseName": "name",
+            "type": "string",
             "format": ""
         },
         {
-            "name": "coins",
-            "baseName": "coins",
-            "type": "Array<IndexCoin>",
+            "name": "config",
+            "baseName": "config",
+            "type": "{ [key: string]: any; }",
             "format": ""
         },
         {
-            "name": "rebalance_trigger_min_percent",
-            "baseName": "rebalance_trigger_min_percent",
-            "type": "number",
+            "name": "time_frames",
+            "baseName": "time_frames",
+            "type": "Array<TimeFrame>",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return IndexConfiguration.attributeTypeMap;
+        return StrategyEvaluatorConfiguration.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
-
-

@@ -10,24 +10,38 @@
  * Do not edit the class manually.
  */
 
+import { ActionConfigurationType } from '../models/ActionConfigurationType';
+import { EvaluatorConfiguration } from '../models/EvaluatorConfiguration';
+import { StrategyEvaluatorConfiguration } from '../models/StrategyEvaluatorConfiguration';
 
 /**
-* EvaluatorConfiguration
+* TradingTentaclesConfiguration
 */
-export class EvaluatorConfiguration {
+export class TradingTentaclesConfiguration {
     /**
-    * Evaluator tentacle class name, e.g. RSIMomentumEvaluator
+    * trading_tentacles
+    */
+    'configuration_type': 'trading_tentacles';
+    /**
+    * Trading mode tentacle class name, e.g. DCATradingMode, GridTradingMode
     */
     'name': string;
     'config': { [key: string]: any; };
-    'symbols': Array<string>;
-    'include_in_construction_candle'?: boolean;
+    'symbols'?: Array<string>;
+    'strategies'?: Array<StrategyEvaluatorConfiguration>;
+    'evaluators'?: Array<EvaluatorConfiguration>;
 
     static readonly discriminator: string | undefined = undefined;
 
     static readonly mapping: {[index: string]: string} | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
+        {
+            "name": "configuration_type",
+            "baseName": "configuration_type",
+            "type": "ActionConfigurationType",
+            "format": ""
+        },
         {
             "name": "name",
             "baseName": "name",
@@ -47,16 +61,24 @@ export class EvaluatorConfiguration {
             "format": ""
         },
         {
-            "name": "include_in_construction_candle",
-            "baseName": "include_in_construction_candle",
-            "type": "boolean",
+            "name": "strategies",
+            "baseName": "strategies",
+            "type": "Array<StrategyEvaluatorConfiguration>",
+            "format": ""
+        },
+        {
+            "name": "evaluators",
+            "baseName": "evaluators",
+            "type": "Array<EvaluatorConfiguration>",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return EvaluatorConfiguration.attributeTypeMap;
+        return TradingTentaclesConfiguration.attributeTypeMap;
     }
 
     public constructor() {
     }
 }
+
+

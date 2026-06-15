@@ -14,4 +14,4 @@
 /**
 * ActionConfigurationType
 */
-export type ActionConfigurationType = 'market_making' | 'dca' | 'index' | 'grid' | 'copy' | 'generic_process' | 'generic_workflow'
+export type ActionConfigurationType = 'market_making' | 'trading_tentacles' | 'copy' | 'generic_process' | 'generic_workflow'

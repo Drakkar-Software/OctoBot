@@ -11,19 +11,17 @@
  */
 
 import { CopyConfiguration } from '../models/CopyConfiguration';
-import { DCAConfiguration } from '../models/DCAConfiguration';
 import { GenericProcessConfiguration } from '../models/GenericProcessConfiguration';
 import { GenericWorkflowConfiguration } from '../models/GenericWorkflowConfiguration';
-import { GridConfiguration } from '../models/GridConfiguration';
-import { IndexConfiguration } from '../models/IndexConfiguration';
 import { MarketMakingConfiguration } from '../models/MarketMakingConfiguration';
+import { TradingTentaclesConfiguration } from '../models/TradingTentaclesConfiguration';
 
 /**
  * @type StrategyConfiguration
  * Type
  * @export
  */
-export type StrategyConfiguration = CopyConfiguration | DCAConfiguration | GenericProcessConfiguration | GenericWorkflowConfiguration | GridConfiguration | IndexConfiguration | MarketMakingConfiguration;
+export type StrategyConfiguration = CopyConfiguration | GenericProcessConfiguration | GenericWorkflowConfiguration | MarketMakingConfiguration | TradingTentaclesConfiguration;
 
 /**
 * @type StrategyConfigurationClass
@@ -34,16 +32,12 @@ export class StrategyConfigurationClass {
 
     static readonly mapping: {[index: string]: string} | undefined = {
         "CopyConfiguration": "CopyConfiguration",
-        "DCAConfiguration": "DCAConfiguration",
         "GenericProcessConfiguration": "GenericProcessConfiguration",
         "GenericWorkflowConfiguration": "GenericWorkflowConfiguration",
-        "GridConfiguration": "GridConfiguration",
-        "IndexConfiguration": "IndexConfiguration",
         "MarketMakingConfiguration": "MarketMakingConfiguration",
+        "TradingTentaclesConfiguration": "TradingTentaclesConfiguration",
     };
 }
-
-
 
 
 

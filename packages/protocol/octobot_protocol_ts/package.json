@@ -1,6 +1,6 @@
 {
   "name": "@drakkar.software/octobot-protocol",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "TypeScript types generated from OctoBot OpenAPI schema",
   "repository": {
     "type": "git",
