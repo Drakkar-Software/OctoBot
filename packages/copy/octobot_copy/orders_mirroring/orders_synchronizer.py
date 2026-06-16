@@ -791,8 +791,6 @@ class OrdersSynchronizer:
         replicable: list[protocol_models.Order],
         skip_symbols_for_upsert: set[str],
     ) -> set[str]:
-        if not skip_symbols_for_upsert:
-            return skip_symbols_for_upsert
         missing_count = self._count_unmirrored_reference_orders(replicable)
         threshold = self._copy_settings.mirrored_orphan_grace_abort_threshold
         if missing_count > threshold:

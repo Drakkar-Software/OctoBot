@@ -781,7 +781,7 @@ class TestSynchronizeBypassGraceWhenTooManyMissingMirrors:
         frozen_t0 = 1_700_000_000.0
         orders = [
             _replicable_buy_limit_order(order_id=f"ref-order-{order_index}")
-            for order_index in range(20)
+            for order_index in range(2)
         ]
         reference = _copied_account(
             updated_at=frozen_t0,
