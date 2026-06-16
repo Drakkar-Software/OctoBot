@@ -4,6 +4,7 @@ import typing
 import octobot_commons.logging as logging
 import octobot_protocol.models as protocol_models
 import octobot_trading.constants as trading_constants
+import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.personal_data as trading_personal_data
 
@@ -78,6 +79,16 @@ class AccountCopier:
                 self._get_logger().info("No rebalance needed")
             if rebalance_orders:
                 await self._copier_exchange_interface.portfolio.refresh_portfolio()
+            if (
+                rebalance_orders
+                and self._rebalance_included_market_order(rebalance_orders)
+                and self._orders_synchronizer.is_mirrored_orphan_grace_identified_for_reference_orders()
+            ):
+                self._get_logger().info(
+                    "Bypassing mirrored orphan grace after market rebalance; "
+                    "synchronizing reference open orders immediately"
+                )
+                self._orders_synchronizer.abort_mirrored_orphan_grace()
             synched_orders = await self._synchronize_reference_open_orders()
             all_orders: list = rebalance_orders + synched_orders
             return copy_entities.AccountCopyResult(created_orders=all_orders)
@@ -112,6 +123,13 @@ class AccountCopier:
 
     async def _synchronize_reference_open_orders(self) -> list[trading_personal_data.Order]:
         return await self._orders_synchronizer.synchronize()
+
+    def _rebalance_included_market_order(self, orders: list) -> bool:
+        market_order_types = (
+            trading_enums.TraderOrderType.BUY_MARKET,
+            trading_enums.TraderOrderType.SELL_MARKET,
+        )
+        return any(order.order_type in market_order_types for order in orders)
 
     def get_rebalancer_class(self) -> type[copy_rebalancing.AbstractRebalancer]:
         raise NotImplementedError("get_rebalancer_class is not implemented")

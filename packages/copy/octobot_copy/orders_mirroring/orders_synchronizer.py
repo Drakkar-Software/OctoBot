@@ -74,6 +74,18 @@ class OrdersSynchronizer:
     def abort_mirrored_orphan_grace(self) -> None:
         self._force_immediate_orphan_cancel_next = True
 
+    def is_mirrored_orphan_grace_identified(
+        self,
+        replicable: typing.Optional[list[protocol_models.Order]] = None,
+    ) -> bool:
+        """True when grace would defer orphan cancel and/or skip reference upserts on at least one symbol."""
+        if replicable is None:
+            replicable = self._get_replicable_reference_orders()
+        return bool(self._reference_symbols_skipped_while_grace_orphans_uncancelled(replicable))
+
+    def is_mirrored_orphan_grace_identified_for_reference_orders(self) -> bool:
+        return self.is_mirrored_orphan_grace_identified()
+
     def is_mirrored_orphan_grace_invalid_no_compliant_snapshot(self) -> bool:
         """
         True when ``historical_snapshots`` is non-empty but no stored snapshot aligns with the copier
@@ -488,8 +500,11 @@ class OrdersSynchronizer:
     async def _synchronize_impl(self) -> list:
         """Align copier open orders with reference_account.orders (synched mirror rows)."""
         replicable = self._get_replicable_reference_orders()
-        orphan_cancelled_count = await self.cancel_orders_pending_synchronization(replicable)
         skip_symbols_for_upsert = self._reference_symbols_skipped_while_grace_orphans_uncancelled(replicable)
+        skip_symbols_for_upsert = self._maybe_bypass_grace_for_missing_mirrored_reference_orders(
+            replicable, skip_symbols_for_upsert
+        )
+        orphan_cancelled_count = await self.cancel_orders_pending_synchronization(replicable)
         created: list = []
         replaced_cancelled_count = 0
         already_synchronized_count = 0
@@ -763,6 +778,31 @@ class OrdersSynchronizer:
             if str(order.order_id) == str(order_id):
                 return order
         return None
+
+    def _count_unmirrored_reference_orders(self, replicable: list[protocol_models.Order]) -> int:
+        missing_count = 0
+        for order in replicable:
+            if self._find_open_order_by_bot_order_id(str(order.id)) is None:
+                missing_count += 1
+        return missing_count
+
+    def _maybe_bypass_grace_for_missing_mirrored_reference_orders(
+        self,
+        replicable: list[protocol_models.Order],
+        skip_symbols_for_upsert: set[str],
+    ) -> set[str]:
+        if not skip_symbols_for_upsert:
+            return skip_symbols_for_upsert
+        missing_count = self._count_unmirrored_reference_orders(replicable)
+        threshold = self._copy_settings.mirrored_orphan_grace_abort_threshold
+        if missing_count > threshold:
+            self._get_logger().info(
+                f"Bypassing mirrored orphan grace: {missing_count} reference order(s) "
+                f"missing on copier (> abort threshold {threshold})"
+            )
+            self.abort_mirrored_orphan_grace()
+            return set()
+        return skip_symbols_for_upsert
 
     def _mirrored_order_target_mismatch_reason(
         self,
