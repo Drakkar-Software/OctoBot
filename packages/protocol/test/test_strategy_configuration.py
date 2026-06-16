@@ -83,9 +83,6 @@ class TestStrategyConfiguration(unittest.TestCase):
                     ],
                 name = '',
                 config = { },
-                symbols = [
-                    ''
-                    ],
                 strategies = [
                     octobot_protocol.models.strategy_evaluator_configuration.StrategyEvaluatorConfiguration(
                         name = '', 

@@ -9,7 +9,6 @@ Name | Type | Description | Notes
 **pair_settings** | [**List[MarketMakingSymbolConfiguration]**](MarketMakingSymbolConfiguration.md) |  | 
 **name** | **str** | Trading mode tentacle class name, e.g. DCATradingMode, GridTradingMode | 
 **config** | **Dict[str, object]** |  | 
-**symbols** | **List[str]** |  | [optional] 
 **strategies** | [**List[StrategyEvaluatorConfiguration]**](StrategyEvaluatorConfiguration.md) |  | [optional] 
 **evaluators** | [**List[EvaluatorConfiguration]**](EvaluatorConfiguration.md) |  | [optional] 
 **strategy_id** | **str** |  | 

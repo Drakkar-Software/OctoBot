@@ -15,6 +15,9 @@ import {
   userActionTemplateKeyFromActionType,
 } from "@/lib/debug/user-action-templates"
 
+const CANONICAL_UUID_V4_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
 describe("defaultSignalPayloadText", () => {
   it("returns sample payloads for payload signal types", () => {
     expect(defaultSignalPayloadText("actions")).toContain("dsl_script")
@@ -33,6 +36,61 @@ describe("buildUserActionTemplate", () => {
     })
   })
 
+  it("builds an automation create template with a random configuration id", () => {
+    const action = buildUserActionTemplate("automation_create")
+    expect(action.configuration).toMatchObject({ action_type: "automation_create" })
+
+    const automationConfiguration = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    const automationId = automationConfiguration.id
+    expect(typeof automationId).toBe("string")
+    const automationIdString = automationId as string
+    expect(automationIdString).toMatch(CANONICAL_UUID_V4_PATTERN)
+    expect(automationIdString).toBe(automationIdString.toLowerCase())
+  })
+
+  it("builds an automation edit template without configuration id", () => {
+    const action = buildUserActionTemplate("automation_edit")
+    expect(action.configuration).toMatchObject({
+      action_type: "automation_edit",
+      id: "<automation-id>",
+    })
+
+    const automationConfiguration = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(automationConfiguration).not.toHaveProperty("id")
+  })
+
+  it("builds an account create template with default USDC assets", () => {
+    const action = buildUserActionTemplate("account_create")
+    expect(action.configuration).toMatchObject({ action_type: "account_create" })
+
+    const accountConfiguration = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(accountConfiguration.assets).toEqual([
+      {
+        trading_type: "spot",
+        assets: [{ symbol: "USDC", total: 1000, available: 1000 }],
+      },
+    ])
+  })
+
+  it("builds an account edit template without assets", () => {
+    const action = buildUserActionTemplate("account_edit")
+    expect(action.configuration).toMatchObject({
+      action_type: "account_edit",
+      id: "<account-id>",
+    })
+
+    const accountConfiguration = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(accountConfiguration).not.toHaveProperty("assets")
+  })
+
   it("builds a grid strategy create template", () => {
     const action = buildUserActionTemplate("strategy_create_grid")
     expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
@@ -43,7 +101,11 @@ describe("buildUserActionTemplate", () => {
     const tradingConfiguration = strategy.configuration as Record<string, unknown>
     expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
     expect(tradingConfiguration.name).toBe("GridTradingMode")
-    expect(tradingConfiguration.symbols).toEqual(["BTC/USDT"])
+
+    const config = tradingConfiguration.config as Record<string, unknown>
+    const pairSettings = config.pair_settings as Array<Record<string, unknown>>
+    expect(pairSettings[0].pair).toBe("BTC/USDT")
+    expect(tradingConfiguration).not.toHaveProperty("symbols")
   })
 
   it("builds an index strategy create template", () => {
@@ -75,7 +137,7 @@ describe("buildUserActionTemplate", () => {
     const tradingConfiguration = strategy.configuration as Record<string, unknown>
     expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
     expect(tradingConfiguration.name).toBe("DCATradingMode")
-    expect(tradingConfiguration.symbols).toEqual([])
+    expect(tradingConfiguration).not.toHaveProperty("symbols")
 
     const dcaConfig = tradingConfiguration.config as Record<string, unknown>
     expect(dcaConfig.trigger_mode).toBe("Maximum evaluators signals based")
@@ -102,6 +164,48 @@ describe("buildUserActionTemplate", () => {
     expect(strategies).toHaveLength(1)
     expect(strategies[0].time_frames).toEqual(["1h"])
     expect(strategies[0].name).toBe("SimpleStrategyEvaluator")
+  })
+
+  it("builds a DCA always-long strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_dca_always_long")
+    expect(action.id).toBe("ua-manual-strategy_create_dca_always_long")
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    expect(tradingConfiguration.name).toBe("DCATradingMode")
+    expect(tradingConfiguration).not.toHaveProperty("symbols")
+    expect(tradingConfiguration).not.toHaveProperty("evaluators")
+    expect(tradingConfiguration).not.toHaveProperty("strategies")
+
+    const dcaConfig = tradingConfiguration.config as Record<string, unknown>
+    expect(dcaConfig.trigger_mode).toBe("Always trigger long")
+    expect(dcaConfig.use_init_entry_orders).toBe(true)
+    expect(dcaConfig.trading_pairs).toEqual(["BTC/USDC", "ETH/USDC"])
+    expect(dcaConfig.time_frames).toEqual(["1h"])
+  })
+
+  it("builds a market making strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_market_making")
+    expect(action.id).toBe("ua-manual-strategy_create_market_making")
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(strategy.reference_market).toBe("USDT")
+
+    const marketMakingConfiguration = strategy.configuration as Record<string, unknown>
+    expect(marketMakingConfiguration.configuration_type).toBe("market_making")
+
+    const pairSettings = marketMakingConfiguration.pair_settings as Array<
+      Record<string, unknown>
+    >
+    expect(pairSettings).toHaveLength(1)
+    expect(pairSettings[0].trading_pair).toBe("BTC/USDT")
+    expect(pairSettings[0].exchange).toBe("binance")
+    expect(pairSettings[0].min_spread).toBe(5)
+    expect(pairSettings[0].max_spread).toBe(20)
   })
 })
 
@@ -190,6 +294,7 @@ describe("buildAutomationCreateUserActionJsonForAccount", () => {
     }
     const json = JSON.parse(buildAutomationCreateUserActionJsonForAccount(account))
     expect(json.configuration.configuration.accounts).toEqual([{ id: "acc-1" }])
+    expect(json.configuration.configuration.id).toMatch(CANONICAL_UUID_V4_PATTERN)
   })
 })
 
@@ -204,7 +309,6 @@ describe("buildAutomationCreateUserActionJsonForStrategy", () => {
         configuration_type: "trading_tentacles",
         name: "GridTradingMode",
         config: { pair_settings: [] },
-        symbols: ["BTC/USDT"],
       },
     } as Strategy
     const json = JSON.parse(
@@ -215,5 +319,6 @@ describe("buildAutomationCreateUserActionJsonForStrategy", () => {
       version: "2.0.0",
       emit_signals: false,
     })
+    expect(json.configuration.configuration.id).toMatch(CANONICAL_UUID_V4_PATTERN)
   })
 })

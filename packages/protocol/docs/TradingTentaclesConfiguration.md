@@ -9,7 +9,6 @@ Name | Type | Description | Notes
 **configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | trading_tentacles | 
 **name** | **str** | Trading mode tentacle class name, e.g. DCATradingMode, GridTradingMode | 
 **config** | **Dict[str, object]** |  | 
-**symbols** | **List[str]** |  | [optional] 
 **strategies** | [**List[StrategyEvaluatorConfiguration]**](StrategyEvaluatorConfiguration.md) |  | [optional] 
 **evaluators** | [**List[EvaluatorConfiguration]**](EvaluatorConfiguration.md) |  | [optional] 
 

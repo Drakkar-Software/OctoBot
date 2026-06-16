@@ -106,7 +106,6 @@ def trading_tentacles_configuration(
     *,
     name: str,
     config: dict[str, typing.Any],
-    symbols: list[str] | None = None,
     strategies: list[protocol_models.StrategyEvaluatorConfiguration] | None = None,
     evaluators: list[protocol_models.EvaluatorConfiguration] | None = None,
 ) -> protocol_models.TradingTentaclesConfiguration:
@@ -114,25 +113,23 @@ def trading_tentacles_configuration(
         configuration_type=protocol_models.ActionConfigurationType.TRADING_TENTACLES,
         name=name,
         config=config,
-        symbols=symbols,
         strategies=strategies,
         evaluators=evaluators,
     )
 
 
 def minimal_dca_trading_configuration(**overrides) -> protocol_models.TradingTentaclesConfiguration:
-    symbols = overrides.pop("symbols", ["BTC/USDT"])
+    trading_pairs = overrides.pop("trading_pairs", ["BTC/USDT"])
     strategies = overrides.pop("strategies", [])
     evaluators = overrides.pop("evaluators", [])
     entry_order_amount = overrides.pop("entry_order_amount", "10%t")
     config = dca_tentacle_config()
     config[trading_constants.CONFIG_BUY_ORDER_AMOUNT] = entry_order_amount
-    config[dca_trading.DCATradingMode.TRADING_PAIRS] = list(symbols)
+    config[dca_trading.DCATradingMode.TRADING_PAIRS] = list(trading_pairs)
     config.update(overrides)
     return trading_tentacles_configuration(
         name=dca_trading.DCATradingMode.get_name(),
         config=config,
-        symbols=list(symbols),
         strategies=strategies,
         evaluators=evaluators,
     )
@@ -150,7 +147,6 @@ def functional_dca_trading_configuration() -> protocol_models.TradingTentaclesCo
                 dca_trading.DCATradingMode.TRADING_PAIRS: traded_symbols,
             }
         ),
-        symbols=traded_symbols,
     )
 
 
@@ -220,7 +216,6 @@ def grid_trading_configuration(
         config={
             grid_trading.GridTradingMode.CONFIG_PAIR_SETTINGS: pair_settings,
         },
-        symbols=[symbol],
     )
 
 

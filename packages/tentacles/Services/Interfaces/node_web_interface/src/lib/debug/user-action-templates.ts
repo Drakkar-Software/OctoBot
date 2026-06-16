@@ -15,6 +15,7 @@ import type {
   DeleteAccountConfiguration,
   DeleteExchangeConfigConfiguration,
   DeleteStrategyConfiguration,
+  DetailedAssetsForTradingType,
   EditAccountAuthConfiguration,
   EditAccountConfiguration,
   EditAutomationConfiguration,
@@ -24,6 +25,8 @@ import type {
   ExchangeAccount,
   ExchangeConfig,
   GenericProcessConfiguration,
+  MarketMakingConfiguration,
+  MarketMakingSymbolConfiguration,
   RefreshAccountsConfiguration,
   SignalAutomationConfiguration,
   StopAutomationConfiguration,
@@ -45,6 +48,8 @@ export type UserActionTemplateKey =
   | "strategy_create_index"
   | "strategy_create_copy"
   | "strategy_create_dca"
+  | "strategy_create_dca_always_long"
+  | "strategy_create_market_making"
 
 export const DEFAULT_USER_ACTION_TEMPLATE_KEY: UserActionTemplateKey =
   DEFAULT_USER_ACTION_TYPE
@@ -74,6 +79,14 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   {
     value: "strategy_create_dca",
     label: "Strategy create (DCA, 2 evaluators)",
+  },
+  {
+    value: "strategy_create_dca_always_long",
+    label: "Strategy create (DCA, always trigger long)",
+  },
+  {
+    value: "strategy_create_market_making",
+    label: "Strategy create (market making)",
   },
   { value: "strategy_edit", label: "Strategy edit" },
   { value: "strategy_delete", label: "Strategy delete" },
@@ -118,6 +131,7 @@ type StrategyConfigurationVariant =
   | TradingTentaclesConfiguration
   | CopyConfiguration
   | GenericProcessConfiguration
+  | MarketMakingConfiguration
 
 function assertNever(value: never): never {
   throw new Error(`Unexpected value: ${String(value)}`)
@@ -192,6 +206,13 @@ function sampleAutomationConfiguration(): AutomationConfiguration {
   } satisfies AutomationConfiguration
 }
 
+function sampleAutomationCreateConfiguration(): AutomationConfiguration {
+  return {
+    ...sampleAutomationConfiguration(),
+    id: newResourceId(),
+  } satisfies AutomationConfiguration
+}
+
 function sampleExchangeAccountSpecifics(): ExchangeAccount {
   return {
     account_type: "exchange",
@@ -211,6 +232,31 @@ function sampleAccountConfiguration(
     created_at: currentIsoTimestamp(),
     authentication_id: authId,
     specifics: asAccountSpecifics(sampleExchangeAccountSpecifics()),
+  } satisfies Account
+}
+
+function sampleDefaultAccountAssets(): Array<DetailedAssetsForTradingType> {
+  return [
+    {
+      trading_type: "spot",
+      assets: [
+        {
+          symbol: "USDC",
+          total: 1000,
+          available: 1000,
+        },
+      ],
+    },
+  ]
+}
+
+function sampleAccountCreateConfiguration(
+  id = "<account-id>",
+  authId: string | null = null,
+): Account {
+  return {
+    ...sampleAccountConfiguration(id, authId),
+    assets: sampleDefaultAccountAssets(),
   } satisfies Account
 }
 
@@ -323,7 +369,6 @@ function sampleGridStrategyConfiguration(id = "<strategy-id>"): Strategy {
         ),
       ],
     },
-    symbols: ["BTC/USDT"],
   } satisfies TradingTentaclesConfiguration)
 }
 
@@ -368,7 +413,6 @@ function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
         trading_pairs: [],
         time_frames: ["1h"],
       },
-      symbols: [],
       strategies: [
         {
           name: "SimpleStrategyEvaluator",
@@ -400,6 +444,78 @@ function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
       ],
     } satisfies TradingTentaclesConfiguration,
     "USDC",
+  )
+}
+
+function sampleDcaAlwaysLongStrategyConfiguration(id = "<strategy-id>"): Strategy {
+  return sampleTradingTentaclesStrategyShell(
+    id,
+    "My DCA strategy (always trigger long)",
+    {
+      configuration_type: "trading_tentacles",
+      name: "DCATradingMode",
+      config: {
+        buy_order_amount: "8%t",
+        exit_limit_orders_price_percent: 1.75,
+        entry_limit_orders_price_percent: 1.5,
+        secondary_entry_orders_count: 1,
+        secondary_entry_orders_amount: "7%t",
+        secondary_entry_orders_price_percent: 1.0,
+        use_stop_losses: false,
+        stop_loss_price_percent: 10,
+        trigger_mode: "Always trigger long",
+        use_init_entry_orders: true,
+        trading_pairs: [...DCA_TRADED_SYMBOLS],
+        time_frames: ["1h"],
+      },
+    } satisfies TradingTentaclesConfiguration,
+    "USDC",
+  )
+}
+
+function sampleMarketMakingSymbolConfiguration(
+  tradingPair: string,
+  exchange: string,
+): MarketMakingSymbolConfiguration {
+  return {
+    trading_pair: tradingPair,
+    exchange,
+    reference_price: [
+      {
+        exchange,
+        pair: tradingPair,
+        weight: 1,
+        formula: "",
+      },
+    ],
+    min_spread: 5,
+    max_spread: 20,
+    order_book_depth: {
+      cumulated_volume_percent: 6,
+      percent_daily_trading_volume: 1,
+    },
+    bids_count: 5,
+    asks_count: 5,
+    orders_distribution: "linear",
+    funds_distribution: "flat",
+    max_base_budget: 0,
+    max_quote_budget: 0,
+    min_base_budget: 100000,
+    min_quote_budget: 1000,
+  } satisfies MarketMakingSymbolConfiguration
+}
+
+function sampleMarketMakingStrategyConfiguration(id = "<strategy-id>"): Strategy {
+  const exchange = "binance"
+  const tradingPair = "BTC/USDT"
+  return sampleStrategyShell(
+    id,
+    "My market making strategy",
+    {
+      configuration_type: "market_making",
+      pair_settings: [sampleMarketMakingSymbolConfiguration(tradingPair, exchange)],
+    } satisfies MarketMakingConfiguration,
+    "USDT",
   )
 }
 
@@ -446,6 +562,26 @@ export function buildUserActionTemplate(
     )
   }
 
+  if (templateKey === "strategy_create_dca_always_long") {
+    return userAction(
+      "ua-manual-strategy_create_dca_always_long",
+      {
+        action_type: "strategy_create",
+        configuration: sampleDcaAlwaysLongStrategyConfiguration(newResourceId()),
+      } satisfies CreateStrategyConfiguration,
+    )
+  }
+
+  if (templateKey === "strategy_create_market_making") {
+    return userAction(
+      "ua-manual-strategy_create_market_making",
+      {
+        action_type: "strategy_create",
+        configuration: sampleMarketMakingStrategyConfiguration(newResourceId()),
+      } satisfies CreateStrategyConfiguration,
+    )
+  }
+
   const actionType: UserActionType = templateKey
   const id = `ua-manual-${actionType}`
 
@@ -453,7 +589,7 @@ export function buildUserActionTemplate(
     case "automation_create":
       return userAction(id, {
         action_type: actionType,
-        configuration: sampleAutomationConfiguration(),
+        configuration: sampleAutomationCreateConfiguration(),
       } satisfies CreateAutomationConfiguration)
     case "automation_edit":
       return userAction(id, {
@@ -475,7 +611,7 @@ export function buildUserActionTemplate(
     case "account_create":
       return userAction(id, {
         action_type: actionType,
-        configuration: sampleAccountConfiguration(newResourceId()),
+        configuration: sampleAccountCreateConfiguration(newResourceId()),
       } satisfies CreateAccountConfiguration)
     case "account_edit":
       return userAction(id, {
@@ -623,7 +759,7 @@ export function buildAutomationCreateUserActionJsonForAccount(
     userAction(`ua-create-automation-account-${account.id}`, {
       action_type: "automation_create",
       configuration: {
-        ...sampleAutomationConfiguration(),
+        ...sampleAutomationCreateConfiguration(),
         name: automationName,
         accounts: [{ id: account.id } satisfies AccountReference],
       },
@@ -639,7 +775,7 @@ export function buildAutomationCreateUserActionJsonForStrategy(
     userAction(`ua-create-automation-strategy-${strategy.id}`, {
       action_type: "automation_create",
       configuration: {
-        ...sampleAutomationConfiguration(),
+        ...sampleAutomationCreateConfiguration(),
         name: automationName,
         strategy: {
           id: strategy.id,

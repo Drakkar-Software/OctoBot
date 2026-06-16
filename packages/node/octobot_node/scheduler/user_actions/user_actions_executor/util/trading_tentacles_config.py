@@ -290,10 +290,6 @@ def get_trading_tentacles_traded_symbols(
     *,
     reference_market: str | None,
 ) -> list[str]:
-    top_level_symbols = list(trading_configuration.symbols or [])
-    if top_level_symbols:
-        return top_level_symbols
-
     trading_config = trading_configuration.config or {}
     resolved_reference_market = reference_market or commons_constants.DEFAULT_REFERENCE_MARKET
 

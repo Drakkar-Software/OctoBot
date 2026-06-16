@@ -691,7 +691,6 @@ class TestCreateAutomationExecutor:
                     dca_trading.DCATradingMode.TRADING_PAIRS: traded_symbols,
                 }
             ),
-            symbols=traded_symbols,
             strategies=[
                 trading_tentacles_test_utils.simple_strategy_evaluator_configuration(
                     time_frames=["1h"],

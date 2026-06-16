@@ -132,11 +132,11 @@ class Interpreter:
         try:
             tree = ast.parse(expression, mode="eval")
             self._operator_tree_or_constant = self._visit_node(tree.body)
-        except SyntaxError:
+        except SyntaxError as err:
             tree = ast.parse(expression, mode="single")
             if len(tree.body) != 1:
                 raise octobot_commons.errors.DSLInterpreterError(
-                    "Single statement required when using statement mode"
+                    f"Single statement required when using statement mode: {err}"
                 )
             self._operator_tree_or_constant = self._visit_node(tree.body[0])
 

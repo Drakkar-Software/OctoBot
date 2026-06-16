@@ -1501,12 +1501,6 @@
             "type": "object",
             "additionalProperties": true
           },
-          "symbols": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "strategies": {
             "type": "array",
             "items": {

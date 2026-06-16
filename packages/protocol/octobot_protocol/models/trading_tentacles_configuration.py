@@ -33,10 +33,9 @@ class TradingTentaclesConfiguration(BaseModel):
     configuration_type: ActionConfigurationType = Field(description="trading_tentacles")
     name: StrictStr = Field(description="Trading mode tentacle class name, e.g. DCATradingMode, GridTradingMode")
     config: Dict[str, Any]
-    symbols: Optional[List[StrictStr]] = None
     strategies: Optional[List[StrategyEvaluatorConfiguration]] = None
     evaluators: Optional[List[EvaluatorConfiguration]] = None
-    __properties: ClassVar[List[str]] = ["configuration_type", "name", "config", "symbols", "strategies", "evaluators"]
+    __properties: ClassVar[List[str]] = ["configuration_type", "name", "config", "strategies", "evaluators"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -106,7 +105,6 @@ class TradingTentaclesConfiguration(BaseModel):
             "configuration_type": obj.get("configuration_type"),
             "name": obj.get("name"),
             "config": obj.get("config"),
-            "symbols": obj.get("symbols"),
             "strategies": [StrategyEvaluatorConfiguration.from_dict(_item) for _item in obj["strategies"]] if obj.get("strategies") is not None else None,
             "evaluators": [EvaluatorConfiguration.from_dict(_item) for _item in obj["evaluators"]] if obj.get("evaluators") is not None else None
         })

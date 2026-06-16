@@ -38,9 +38,6 @@ class TestTradingTentaclesConfiguration(unittest.TestCase):
                 configuration_type = 'market_making',
                 name = '',
                 config = { },
-                symbols = [
-                    ''
-                    ],
                 strategies = [
                     octobot_protocol.models.strategy_evaluator_configuration.StrategyEvaluatorConfiguration(
                         name = '', 

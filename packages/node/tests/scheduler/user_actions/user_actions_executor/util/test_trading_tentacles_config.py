@@ -60,23 +60,10 @@ class TestGetTradingModeClassFromTentacleName:
 
 
 class TestGetTradingTentaclesTradedSymbols:
-    def test_returns_top_level_symbols_when_set(self):
-        trading_configuration = trading_tentacles_test_utils.minimal_dca_trading_configuration(
-            symbols=["BTC/USDT"],
-            evaluators=[
-                trading_tentacles_test_utils.evaluator_configuration_with_symbols(["ETH/USDT"]),
-            ],
-        )
-        assert trading_tentacles_config_module.get_trading_tentacles_traded_symbols(
-            trading_configuration,
-            reference_market="USDT",
-        ) == ["BTC/USDT"]
-
-    def test_returns_dca_config_trading_pairs_when_top_level_symbols_missing(self):
+    def test_returns_dca_config_trading_pairs(self):
         trading_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
             name=dca_trading.DCATradingMode.get_name(),
             config=trading_tentacles_test_utils.dca_tentacle_config(),
-            symbols=None,
         )
         assert trading_tentacles_config_module.get_trading_tentacles_traded_symbols(
             trading_configuration,
@@ -87,7 +74,6 @@ class TestGetTradingTentaclesTradedSymbols:
         trading_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
             name="CustomTradingMode",
             config={},
-            symbols=None,
             evaluators=[
                 trading_tentacles_test_utils.evaluator_configuration_with_symbols(
                     ["BTC/USDT", "ETH/USDT"]
@@ -102,7 +88,7 @@ class TestGetTradingTentaclesTradedSymbols:
     def test_grid_returns_pair_settings_symbols(self):
         trading_configuration = trading_tentacles_test_utils.grid_trading_configuration(
             symbol="ETH/USDT",
-        ).model_copy(update={"symbols": None})
+        )
         assert trading_tentacles_config_module.get_trading_tentacles_traded_symbols(
             trading_configuration,
             reference_market="USDT",
@@ -112,7 +98,7 @@ class TestGetTradingTentaclesTradedSymbols:
         trading_configuration = trading_tentacles_test_utils.index_trading_configuration(
             coins=[("BTC", 1.0)],
             rebalance_trigger_min_percent=5.0,
-        ).model_copy(update={"symbols": None})
+        )
         assert trading_tentacles_config_module.get_trading_tentacles_traded_symbols(
             trading_configuration,
             reference_market="USDT",
@@ -176,7 +162,6 @@ class TestValidateTradingModeName:
         trading_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
             name="CustomTradingMode",
             config={},
-            symbols=None,
             evaluators=[],
         )
         with pytest.raises(
@@ -249,7 +234,6 @@ class TestValidateTradingModeConfig:
             config={
                 dca_trading.DCATradingModeProducer.MAX_ASSET_HOLDING_PERCENT: "not-a-number",
             },
-            symbols=["BTC/USDT"],
         )
         with pytest.raises(node_errors.InvalidTradingTentaclesConfigurationError) as error_info:
             trading_tentacles_config_module.validate_trading_tentacles_configuration(
@@ -266,7 +250,6 @@ class TestValidateTradingModeConfig:
                 "unknown_key": "value",
                 dca_trading.DCATradingModeProducer.MAX_ASSET_HOLDING_PERCENT: "not-a-number",
             },
-            symbols=["BTC/USDT"],
         )
         with pytest.raises(node_errors.InvalidTradingTentaclesConfigurationError) as error_info:
             trading_tentacles_config_module.validate_trading_tentacles_configuration(
@@ -283,7 +266,6 @@ class TestValidateTradingModeConfig:
                 dca_trading.DCATradingMode.TRADING_PAIRS: None,
                 dca_trading.DCATradingModeProducer.MAX_ASSET_HOLDING_PERCENT: None,
             },
-            symbols=["BTC/USDT"],
         )
         trading_tentacles_config_module.validate_trading_tentacles_configuration(
             trading_configuration

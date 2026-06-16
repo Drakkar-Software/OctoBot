@@ -27,7 +27,6 @@ export class TradingTentaclesConfiguration {
     */
     'name': string;
     'config': { [key: string]: any; };
-    'symbols'?: Array<string>;
     'strategies'?: Array<StrategyEvaluatorConfiguration>;
     'evaluators'?: Array<EvaluatorConfiguration>;
 
@@ -52,12 +51,6 @@ export class TradingTentaclesConfiguration {
             "name": "config",
             "baseName": "config",
             "type": "{ [key: string]: any; }",
-            "format": ""
-        },
-        {
-            "name": "symbols",
-            "baseName": "symbols",
-            "type": "Array<string>",
             "format": ""
         },
         {
