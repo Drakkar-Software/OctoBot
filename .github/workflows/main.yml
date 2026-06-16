@@ -103,6 +103,14 @@ jobs:
         else
           echo "has_rust=false" >> $GITHUB_OUTPUT
         fi
+        # A rust *backend* (python extension built via maturin) is identified by a
+        # pyproject.toml alongside the crate; a plain rust crate (e.g. generated
+        # protocol types) has none and is exercised by cargo only.
+        if ls ${{ matrix.package }}/crates/*/pyproject.toml 1>/dev/null 2>&1; then
+          echo "has_rust_backend=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_rust_backend=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Set up Python ${{ matrix.version }}
       uses: actions/setup-python@v6
@@ -186,7 +194,7 @@ jobs:
         DISABLE_SENTRY: True
 
     - name: Run Rust backend tests
-      if: steps.detect.outputs.has_rust == 'true'
+      if: steps.detect.outputs.has_rust_backend == 'true'
       run: |
         cd ${{ matrix.package }}
         pytest tests --backend=rust -v
@@ -536,6 +544,47 @@ jobs:
             npm publish --access public
           fi
 
+  publish-crate:
+    name: Publish ${{ matrix.crate.name }} to crates.io
+    needs: [ build, tests ]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false          # one crate failing must not cancel the others
+      matrix:
+        crate:
+          - { name: octobot-protocol, dir: packages/protocol/crates/octobot_protocol_rs }
+          # add future crates here: - { name: <crate>, dir: <path> }
+    permissions:
+      contents: read
+      id-token: write   # required for crates.io trusted publishing (OIDC, no token needed)
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate.dir }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Authenticate to crates.io (OIDC trusted publishing)
+        uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: Publish ${{ matrix.crate.name }} if version not already on crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          NAME='${{ matrix.crate.name }}'
+          VERSION=$(cargo metadata --no-deps --format-version 1 | python3 -c "import sys,json;print(next(p['version'] for p in json.load(sys.stdin)['packages'] if p['name']=='$NAME'))")
+          if curl -sf -H "User-Agent: octobot-ci (paul@drakkar.software)" \
+               "https://crates.io/api/v1/crates/$NAME/$VERSION" >/dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published — nothing to do."
+          else
+            echo "Publishing $NAME@$VERSION..."
+            cargo publish -p "$NAME"
+          fi
+
   version:
     needs: [ build, tests ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -790,6 +839,7 @@ jobs:
       - version
       - docs
       - publish-npm
+      - publish-crate
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}

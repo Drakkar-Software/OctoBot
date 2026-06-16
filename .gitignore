@@ -95,6 +95,10 @@ docs/static/llms.txt
 # PyBuilder
 target/
 
+# Rust workspace lockfile — resolved fresh in CI, mirroring the no-committed-lockfile
+# convention used for the other protocol flavors
+Cargo.lock
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
