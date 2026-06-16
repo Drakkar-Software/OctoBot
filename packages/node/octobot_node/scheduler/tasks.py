@@ -13,10 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import asyncio
+import time
 import typing
 
 import octobot_flow.entities
+import octobot_node.constants as node_constants
 import octobot_node.enums
+import octobot_node.errors as node_errors
 import octobot_node.models
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
@@ -117,6 +121,67 @@ async def send_actions_to_automation_workflow(actions: list[dict], target_workfl
 async def send_forced_trigger_to_automation_workflow(target_workflow_id: str) -> None:
     await _send_automation_workflow_action_update(
         target_workflow_id,
+        octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
+        [],
+    )
+
+
+async def _send_to_active_automation_workflow(
+    parent_automation_id: str,
+    wallet_address: str,
+    actions_type: str,
+    actions_details: list[dict],
+) -> None:
+    """
+    Resolve the latest pending/enqueued child workflow and deliver a priority action update.
+
+    Retries briefly when the active child is between DBOS steps and temporarily absent from
+    pending/enqueued listings.
+    """
+    import octobot_node.scheduler  # avoid circular import
+    if not octobot_node.scheduler.is_initialized():
+        raise RuntimeError("Scheduler is not initialized")
+    scheduler = octobot_node.scheduler.SCHEDULER
+    delivery_deadline = time.monotonic() + node_constants.AUTOMATION_WORKFLOW_ACTIVE_SEND_RETRY_SECONDS
+    while time.monotonic() < delivery_deadline:
+        matching_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
+            wallet_address,
+            parent_automation_id,
+        )
+        if matching_workflow_ids:
+            await _send_automation_workflow_action_update(
+                matching_workflow_ids[0],
+                actions_type,
+                actions_details,
+            )
+            return
+        await asyncio.sleep(node_constants.AUTOMATION_WORKFLOW_ACTIVE_SEND_POLL_INTERVAL_SECONDS)
+    raise node_errors.ActiveAutomationWorkflowNotFoundError(
+        f"No active automation workflow for parent id {parent_automation_id!r} "
+        f"(wallet_address={wallet_address!r})."
+    )
+
+
+async def send_actions_to_active_automation(
+    parent_automation_id: str,
+    wallet_address: str,
+    actions: list[dict],
+) -> None:
+    await _send_to_active_automation_workflow(
+        parent_automation_id,
+        wallet_address,
+        octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
+        actions,
+    )
+
+
+async def send_forced_trigger_to_active_automation(
+    parent_automation_id: str,
+    wallet_address: str,
+) -> None:
+    await _send_to_active_automation_workflow(
+        parent_automation_id,
+        wallet_address,
         octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
         [],
     )

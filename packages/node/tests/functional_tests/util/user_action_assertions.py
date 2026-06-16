@@ -11,6 +11,22 @@ import octobot_protocol.models as protocol_models_module
 import octobot_node.scheduler
 
 
+def resolve_create_automation_metadata_id(
+    user_action: protocol_models_module.UserAction,
+) -> str:
+    """Metadata automation_id: configuration.id when set, else user_action.id."""
+    wrapper = user_action.configuration
+    if wrapper is None or wrapper.actual_instance is None:
+        return user_action.id
+    payload = wrapper.actual_instance
+    if not isinstance(payload, protocol_models_module.CreateAutomationConfiguration):
+        return user_action.id
+    configuration = payload.configuration
+    if configuration is not None and configuration.id:
+        return configuration.id
+    return user_action.id
+
+
 def merge_user_actions_latest_per_id(
     user_actions: list[protocol_models_module.UserAction],
 ) -> dict[str, protocol_models_module.UserAction]:

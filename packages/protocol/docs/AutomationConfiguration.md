@@ -6,6 +6,7 @@ AutomationConfiguration
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**id** | **str** |  | [optional] 
 **name** | **str** |  | 
 **description** | **str** |  | [optional] 
 **created_at** | **datetime** |  | 

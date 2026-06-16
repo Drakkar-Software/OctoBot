@@ -73,6 +73,7 @@ def build_create_grid_user_action(
     name: str,
     strategy_id: str | None = None,
     emit_signals: bool | None = None,
+    automation_id: str | None = None,
 ) -> protocol_models_module.UserAction:
     reference_strategy_identifier = strategy_id or SIMULATOR_GRID_DEFAULT_STRATEGY_ID
     strategy_reference = protocol_models_module.StrategyReference(
@@ -80,11 +81,16 @@ def build_create_grid_user_action(
         version=workflow_common_module.SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
         emit_signals=emit_signals if emit_signals is not None else False,
     )
+    automation_configuration_fields = {
+        "name": name,
+        "created_at": datetime.datetime(2026, 5, 10, 8, 0, 0, tzinfo=datetime.UTC),
+        "strategy": strategy_reference,
+        "accounts": [protocol_models_module.AccountReference(id=account_id)],
+    }
+    if automation_id is not None:
+        automation_configuration_fields["id"] = automation_id
     automation_configuration = protocol_models_module.AutomationConfiguration(
-        name=name,
-        created_at=datetime.datetime(2026, 5, 10, 8, 0, 0, tzinfo=datetime.UTC),
-        strategy=strategy_reference,
-        accounts=[protocol_models_module.AccountReference(id=account_id)],
+        **automation_configuration_fields,
     )
     payload = protocol_models_module.CreateAutomationConfiguration(
         action_type=protocol_models_module.UserActionType.AUTOMATION_CREATE,
@@ -108,6 +114,7 @@ def build_create_copy_follower_user_action(
         version=workflow_common_module.SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
     )
     automation_configuration = protocol_models_module.AutomationConfiguration(
+        id=automation_id,
         name=name,
         created_at=datetime.datetime(2026, 5, 10, 8, 1, 0, tzinfo=datetime.UTC),
         strategy=strategy_reference,
@@ -118,7 +125,7 @@ def build_create_copy_follower_user_action(
         configuration=automation_configuration,
     )
     return protocol_models_module.UserAction(
-        id=automation_id,
+        id=f"ua-copy-{uuid.uuid4()}",
         configuration=workflow_common_module.wrap_user_action_configuration(payload),
     )
 

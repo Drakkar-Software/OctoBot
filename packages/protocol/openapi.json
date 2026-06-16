@@ -1617,6 +1617,9 @@
           "accounts"
         ],
         "properties": {
+          "id": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -2062,6 +2065,7 @@
         "enum": [
           "automation_not_found",
           "invalid_configuration",
+          "invalid_automation_id",
           "strategy_not_found",
           "strategy_version_not_found",
           "unknown_trading_type",

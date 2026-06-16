@@ -62,6 +62,8 @@ class AutomationUserActionExecutor(user_actions_executor_base.UserActionExecutor
             return protocol_models.AutomationActionResultErrorMessage.AMBIGUOUS_TRADING_TYPE
         if isinstance(exc, node_errors.AmbiguousExchangeConfigError):
             return protocol_models.AutomationActionResultErrorMessage.AMBIGUOUS_EXCHANGE_CONFIG
+        if isinstance(exc, node_errors.InvalidAutomationIdError):
+            return protocol_models.AutomationActionResultErrorMessage.INVALID_AUTOMATION_ID
         if isinstance(
             exc,
             (

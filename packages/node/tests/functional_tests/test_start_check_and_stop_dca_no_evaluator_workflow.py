@@ -124,7 +124,9 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
             dca_deadline = time.monotonic() + _T_DCA_SECONDS
             automation_reader_matching: typing.Any = None
             workflow_row_matching: typing.Any = None
-            metadata_automation_id = create_user_action.id
+            metadata_automation_id = user_action_assertions_module.resolve_create_automation_metadata_id(
+                create_user_action,
+            )
             while time.monotonic() < dca_deadline:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 dca_predicate_met = False

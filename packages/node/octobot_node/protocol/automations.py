@@ -262,7 +262,11 @@ def _automation_task_status(flow_automation_state: flow_entities.AutomationState
         return protocol_models.WorkflowStatus.FAILED
     if actions_dag.completed_all_actions() or post_actions.stop_automation:
         return protocol_models.WorkflowStatus.COMPLETED
-    if execution.current_execution.triggered_at > 0 or any(action.is_completed() for action in actions_dag.actions):
+    if (
+        execution.current_execution.triggered_at > 0
+        or execution.previous_execution.triggered_at > 0
+        or any(action.is_completed() for action in actions_dag.actions)
+    ):
         return protocol_models.WorkflowStatus.RUNNING
     return protocol_models.WorkflowStatus.PENDING
 

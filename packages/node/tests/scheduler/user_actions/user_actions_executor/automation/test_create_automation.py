@@ -52,23 +52,30 @@ def _default_strategy_reference(
     )
 
 
+_DEFAULT_AUTOMATION_CONFIGURATION_ID = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
+
+
 def _automation_configuration(
     *,
     name: str,
     strategy_reference: protocol_models.StrategyReference,
     account_id: str,
     created_at: datetime.datetime | None = None,
+    automation_id: str | None = None,
 ) -> protocol_models.AutomationConfiguration:
-    return protocol_models.AutomationConfiguration(
-        name=name,
-        created_at=(
+    configuration_fields = {
+        "name": name,
+        "created_at": (
             created_at
             if created_at is not None
             else datetime.datetime(2026, 5, 14, 11, 30, tzinfo=datetime.UTC)
         ),
-        strategy=strategy_reference,
-        accounts=[protocol_models.AccountReference(id=account_id)],
-    )
+        "strategy": strategy_reference,
+        "accounts": [protocol_models.AccountReference(id=account_id)],
+    }
+    if automation_id is not None:
+        configuration_fields["id"] = automation_id
+    return protocol_models.AutomationConfiguration(**configuration_fields)
 
 
 def _stored_strategy_matching_reference(
@@ -107,7 +114,7 @@ def _user_action_with_context(
 def _assert_init_action_matches_minimal_account(
     *,
     init_action_details,
-    user_action_id: str,
+    expected_automation_id: str,
     account_id: str,
     protocol_account: protocol_models.Account,
     strategy_reference: protocol_models.StrategyReference,
@@ -115,7 +122,7 @@ def _assert_init_action_matches_minimal_account(
     assert init_action_details.id == "action_init"
     init_config = init_action_details.config
     metadata = init_config["automation"]["metadata"]
-    assert metadata["automation_id"] == user_action_id
+    assert metadata["automation_id"] == expected_automation_id
     assert metadata["strategy_id"] == strategy_reference.id
     assert metadata["strategy_version"] == strategy_reference.version
     assert metadata.get("emit_signals", False) is bool(strategy_reference.emit_signals)
@@ -158,7 +165,7 @@ def _expected_copy_dsl_script(*, strategy_id: str) -> str:
 def _assert_task_content_matches_actions(
     *,
     task: node_models.Task,
-    user_action: protocol_models.UserAction,
+    expected_automation_id: str,
     expected_action_count: int,
 ) -> None:
     assert task.wallet_address == _TEST_WALLET_ADDRESS
@@ -166,7 +173,7 @@ def _assert_task_content_matches_actions(
     envelope = json.loads(task.content or "{}")
     assert "state" in envelope
     state = envelope["state"]
-    assert state["automation"]["metadata"]["automation_id"] == user_action.id
+    assert state["automation"]["metadata"]["automation_id"] == expected_automation_id
     actions = state["automation"]["actions_dag"]["actions"]
     assert len(actions) == expected_action_count
 
@@ -207,7 +214,7 @@ class TestCreateAutomationExecutor:
 
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-strategy",
+            expected_automation_id="ua-strategy",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strategy_ref,
@@ -250,7 +257,7 @@ class TestCreateAutomationExecutor:
         )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-idx",
+            expected_automation_id="ua-idx",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strat_ref,
@@ -294,7 +301,7 @@ class TestCreateAutomationExecutor:
         assert isinstance(actions[1], flow_entities.DSLScriptActionDetails)
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-copy",
+            expected_automation_id="ua-copy",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strat_ref,
@@ -336,7 +343,7 @@ class TestCreateAutomationExecutor:
         )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-grid",
+            expected_automation_id="ua-grid",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strat_ref,
@@ -390,7 +397,7 @@ class TestCreateAutomationExecutor:
         assert [action.id for action in actions] == ["action_init", "w1", "w2"]
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-wf",
+            expected_automation_id="ua-wf",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strat_ref,
@@ -476,7 +483,7 @@ class TestCreateAutomationExecutor:
         )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-mm",
+            expected_automation_id="ua-mm",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strat_ref,
@@ -525,7 +532,7 @@ class TestCreateAutomationExecutor:
         )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
-            user_action_id="ua-dca",
+            expected_automation_id="ua-dca",
             account_id="acc-1",
             protocol_account=account,
             strategy_reference=strat_ref,
@@ -854,7 +861,7 @@ class TestCreateAutomationExecutor:
         assert task.name == automation_name
         _assert_task_content_matches_actions(
             task=task,
-            user_action=user_action,
+            expected_automation_id=user_action.id,
             expected_action_count=2,
         )
         parsed = json.loads(task.content or "{}")
@@ -892,7 +899,7 @@ class TestCreateAutomationExecutor:
         assert scheduled_task is not None
         _assert_task_content_matches_actions(
             task=scheduled_task,
-            user_action=user_action,
+            expected_automation_id=user_action.id,
             expected_action_count=2,
         )
         provider_assertions.assert_user_action_terminal_state(
@@ -931,7 +938,7 @@ class TestCreateAutomationExecutor:
         assert scheduled_task is not None
         _assert_task_content_matches_actions(
             task=scheduled_task,
-            user_action=user_action,
+            expected_automation_id=user_action.id,
             expected_action_count=2,
         )
         provider_assertions.assert_user_action_terminal_state(
@@ -943,3 +950,184 @@ class TestCreateAutomationExecutor:
         inner = user_action.result.actual_instance
         assert isinstance(inner, protocol_models.AutomationActionResult)
         assert inner.created_automation_id == scheduled_task.id
+
+    def test_configuration_id_used_for_automation_identity(self):
+        configuration_automation_id = _DEFAULT_AUTOMATION_CONFIGURATION_ID
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
+            rebalance_trigger_min_percent=5.0,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="config-id-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id=configuration_automation_id,
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-different", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = _stored_strategy_matching_reference(strat_ref, idx)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        _assert_init_action_matches_minimal_account(
+            init_action_details=actions[0],
+            expected_automation_id=configuration_automation_id,
+            account_id="acc-1",
+            protocol_account=account,
+            strategy_reference=strat_ref,
+        )
+        task = asyncio.run(executor._create_automation_task(user_action, actions))
+        assert task.id == configuration_automation_id
+        _assert_task_content_matches_actions(
+            task=task,
+            expected_automation_id=configuration_automation_id,
+            expected_action_count=2,
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_uses_configuration_id_for_created_automation_id(self):
+        configuration_automation_id = _DEFAULT_AUTOMATION_CONFIGURATION_ID
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
+            rebalance_trigger_min_percent=5.0,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="execute-config-id-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id=configuration_automation_id,
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-different-exec", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, idx)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            await executor.execute(user_action)
+
+        scheduled_task = executor.post_actions.to_create_automation_task
+        assert scheduled_task is not None
+        assert scheduled_task.id == configuration_automation_id
+        inner = user_action.result.actual_instance
+        assert isinstance(inner, protocol_models.AutomationActionResult)
+        assert inner.created_automation_id == configuration_automation_id
+
+    def test_missing_configuration_id_keeps_legacy_identity_split(self):
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
+            rebalance_trigger_min_percent=5.0,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="legacy-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-legacy", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, idx)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        _assert_init_action_matches_minimal_account(
+            init_action_details=actions[0],
+            expected_automation_id=user_action.id,
+            account_id="acc-1",
+            protocol_account=_minimal_exchange_account(account_id="acc-1"),
+            strategy_reference=strat_ref,
+        )
+        task = asyncio.run(executor._create_automation_task(user_action, actions))
+        assert task.id != user_action.id
+        _assert_task_content_matches_actions(
+            task=task,
+            expected_automation_id=user_action.id,
+            expected_action_count=2,
+        )
+
+    def test_invalid_configuration_id_rejects_non_uuid(self):
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="invalid-id-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id="not-a-uuid",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-invalid", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with pytest.raises(node_errors.InvalidAutomationIdError, match="valid UUID"):
+            executor._create_automation_actions(user_action)
+
+    @pytest.mark.parametrize(
+        "invalid_automation_id",
+        [
+            "741CE171-DAC9-40BE-83DC-B443C0EAF0E2",
+            "741ce171dac940be83dcb443c0eaf0e2",
+        ],
+    )
+    def test_invalid_configuration_id_rejects_non_canonical_uuid(self, invalid_automation_id: str):
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="non-canonical-id-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id=invalid_automation_id,
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-non-canonical", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with pytest.raises(
+            node_errors.InvalidAutomationIdError,
+            match="canonical lowercase UUID",
+        ):
+            executor._create_automation_actions(user_action)
+
+    @pytest.mark.asyncio
+    async def test_execute_fails_with_invalid_configuration_id(self):
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="invalid-id-execute",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id="not-a-uuid",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-invalid-exec", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with pytest.raises(node_errors.InvalidAutomationIdError):
+            await executor.execute(user_action)
+        provider_assertions.assert_user_action_terminal_state(
+            user_action=user_action,
+            expected_status=protocol_models.UserActionStatus.FAILED,
+            result_channel="automation",
+            expect_error_details=True,
+            expected_error_message=protocol_models.AutomationActionResultErrorMessage.INVALID_AUTOMATION_ID,
+        )

@@ -46,6 +46,7 @@ _POST_STOP_PROTOCOL_POLL_SECONDS = 0.05
 
 _GRID_ACCOUNT_ID = "functional_grid_account"
 _GRID_AUTOMATION_DISPLAY_NAME = "test_grid_trigger_automation"
+_GRID_AUTOMATION_CONFIGURATION_ID = "c3d4e5f6-a7b8-4901-c234-56789abcdef0"
 
 
 class TestTriggerTaskGridDbosIntegration:
@@ -73,6 +74,7 @@ class TestTriggerTaskGridDbosIntegration:
         create_user_action = grid_sim_util.build_create_grid_user_action(
             account_id=_GRID_ACCOUNT_ID,
             name=_GRID_AUTOMATION_DISPLAY_NAME,
+            automation_id=_GRID_AUTOMATION_CONFIGURATION_ID,
         )
 
         # Step 0 (continued) — Mock only market data and sync providers; DBOS scheduler and flow run for real.
@@ -125,12 +127,14 @@ class TestTriggerTaskGridDbosIntegration:
                 user_action_id=create_user_action.id,
                 expected_workflow_id=None,
             )
-
             # Step 2 — Poll until the simulator grid reaches baseline: 2 open buys, 2 open sells, 1 trade.
             grid_deadline = time.monotonic() + _T_GRID_SECONDS
             automation_reader_matching: typing.Any = None
             workflow_row_matching: typing.Any = None
-            metadata_automation_id = create_user_action.id
+            metadata_automation_id = user_action_assertions_module.resolve_create_automation_metadata_id(
+                create_user_action,
+            )
+            assert metadata_automation_id == _GRID_AUTOMATION_CONFIGURATION_ID
             while time.monotonic() < grid_deadline:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 grid_predicate_met = False
@@ -206,6 +210,7 @@ class TestTriggerTaskGridDbosIntegration:
                 user_action_id=create_user_action.id,
                 wallet_address=wallet_address,
             )
+            assert parent_automation_id == metadata_automation_id
             signal_user_action = workflow_common_module.build_forced_trigger_signal_user_action(
                 automation_id=parent_automation_id,
                 user_action_id="ua-signal-forced-grid-functional",

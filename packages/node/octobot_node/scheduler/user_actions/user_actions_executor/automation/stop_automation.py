@@ -16,11 +16,10 @@
 
 import octobot_protocol.models as protocol_models
 
-import octobot_node.enums as node_enums
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler as scheduler_module
-import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_node.scheduler.tasks as scheduler_tasks
 
 
 def _get_stop_automation_payload(
@@ -57,32 +56,9 @@ class StopAutomationActionExecutor(automation_user_action_executor.AutomationUse
             raise RuntimeError("Scheduler is not initialized")
 
         stop_payload = _get_stop_automation_payload(user_action)
-        scheduler = scheduler_module.SCHEDULER
-        matching_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
-            self._wallet_address,
+        await scheduler_tasks.send_actions_to_active_automation(
             stop_payload.id,
-        )
-        if not matching_workflow_ids:
-            raise node_errors.ActiveAutomationWorkflowNotFoundError(
-                f"No active automation workflow for parent id {stop_payload.id!r} "
-                f"(wallet_address={self._wallet_address!r})."
-            )
-        if len(matching_workflow_ids) > 1:
-            raise node_errors.AmbiguousActiveAutomationWorkflowError(
-                f"Expected exactly one active automation workflow for parent id {stop_payload.id!r}, "
-                f"got {len(matching_workflow_ids)}: {matching_workflow_ids!r} "
-                f"(wallet_address={self._wallet_address!r})."
-            )
-
-        target_workflow_id = matching_workflow_ids[0]
-        actions_details = _stop_priority_action_dict(user_action=user_action)
-        payload = workflow_params.AutomationWorkflowActionUpdate(
-            actions_type=node_enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
-            actions_details=actions_details,
-        ).to_dict(include_default_values=False)
-        await scheduler.INSTANCE.send_async(
-            target_workflow_id,
-            payload,
-            topic=node_enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
+            self._wallet_address,
+            _stop_priority_action_dict(user_action=user_action),
         )
         self._mark_user_action_completed(user_action)

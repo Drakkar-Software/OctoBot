@@ -58,7 +58,7 @@ import octobot_trading.enums as trading_enums_module
 
 from tests.scheduler import temp_dbos_scheduler
 
-_COPY_AUTOMATION_ID = "copy_grid_follower"
+_COPY_AUTOMATION_ID = "b2c3d4e5-f6a7-4890-b123-456789abcdef"
 _SHARED_STRATEGY_ID = "functional_test_copy_strategy"
 
 _MASTER_INIT_USDC = 10000.0
@@ -573,7 +573,9 @@ class TestEmitAndCopyGridAutomationSignals:
 
                             baseline_master_reader = await _poll_state_reader_until(
                                 temp_dbos_scheduler,
-                                master_user_action.id,
+                                user_action_assertions_module.resolve_create_automation_metadata_id(
+                                    master_user_action,
+                                ),
                                 lambda reader: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
                                     *workflow_common_module.buy_sell_trade_counts_from_exchange_elements(
                                         reader.state.automation.exchange_account_elements
@@ -598,7 +600,9 @@ class TestEmitAndCopyGridAutomationSignals:
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                                 if workflows_util_module.get_automation_id(workflow_row)
-                                == master_user_action.id
+                                == user_action_assertions_module.resolve_create_automation_metadata_id(
+                                    master_user_action,
+                                )
                             ]
                             assert master_workflow_rows_for_user_action_selector
                             master_workflow_row_for_user_action_selector = max(

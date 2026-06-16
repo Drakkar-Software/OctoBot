@@ -38,6 +38,7 @@ class TestEditAutomationConfiguration(unittest.TestCase):
                 id = '',
                 action_type = 'automation_create',
                 configuration = octobot_protocol.models.automation_configuration.AutomationConfiguration(
+                    id = '', 
                     name = '', 
                     description = '', 
                     created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
@@ -56,6 +57,7 @@ class TestEditAutomationConfiguration(unittest.TestCase):
                 id = '',
                 action_type = 'automation_create',
                 configuration = octobot_protocol.models.automation_configuration.AutomationConfiguration(
+                    id = '', 
                     name = '', 
                     description = '', 
                     created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 

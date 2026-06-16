@@ -25,9 +25,12 @@ import pytest
 
 import octobot_protocol.models as protocol_models
 
+import octobot_node.enums as node_enums
+import octobot_node.errors as node_errors
 import octobot_node.models
 import octobot_node.scheduler.tasks
 import octobot_node.scheduler.workflows.params as workflow_params_module
+import octobot_node.scheduler as scheduler_module
 
 from tests.scheduler import temp_dbos_scheduler
 
@@ -184,3 +187,98 @@ class TestTriggerUserActionWorkflow:
                 user_action=user_action_payload,
             ).to_dict(include_default_values=False)
             assert enqueue_keyword_arguments["inputs"] == expected_inputs_encoded
+
+
+class TestSendToActiveAutomationWorkflow:
+    _TEST_WALLET_ADDRESS = "0xaaabbbcccddd"
+    _TEST_PARENT_AUTOMATION_ID = "00000000-0000-4000-8000-000000000099"
+    _TEST_CHILD_WORKFLOW_ID = f"{_TEST_PARENT_AUTOMATION_ID}_2"
+
+    @pytest.mark.asyncio
+    async def test_send_actions_to_active_automation_retries_then_sends(self):
+        actions = [{"id": "action_1", "dsl_script": "noop()"}]
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.send_async = mock.AsyncMock()
+        resolve_mock = mock.AsyncMock(side_effect=[[], [self._TEST_CHILD_WORKFLOW_ID]])
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(scheduler_module.SCHEDULER, "INSTANCE", mock_dbos_instance),
+            mock.patch(
+                "octobot_node.scheduler.tasks.asyncio.sleep",
+                new_callable=mock.AsyncMock,
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                resolve_mock,
+            ),
+        ):
+            await octobot_node.scheduler.tasks.send_actions_to_active_automation(
+                self._TEST_PARENT_AUTOMATION_ID,
+                self._TEST_WALLET_ADDRESS,
+                actions,
+            )
+
+        assert resolve_mock.await_count >= 2
+        mock_dbos_instance.send_async.assert_awaited_once()
+        call_args = mock_dbos_instance.send_async.await_args
+        assert call_args.args[0] == self._TEST_CHILD_WORKFLOW_ID
+        assert call_args.kwargs["topic"] == node_enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value
+        payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(call_args.args[1])
+        assert payload.actions_type == node_enums.AutomationWorkflowActionTypes.USER_ACTIONS.value
+        assert payload.actions_details == actions
+
+    @pytest.mark.asyncio
+    async def test_send_forced_trigger_to_active_automation_sends_forced_trigger_payload(self):
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.send_async = mock.AsyncMock()
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(scheduler_module.SCHEDULER, "INSTANCE", mock_dbos_instance),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[self._TEST_CHILD_WORKFLOW_ID],
+            ),
+        ):
+            await octobot_node.scheduler.tasks.send_forced_trigger_to_active_automation(
+                self._TEST_PARENT_AUTOMATION_ID,
+                self._TEST_WALLET_ADDRESS,
+            )
+
+        call_args = mock_dbos_instance.send_async.await_args
+        payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(call_args.args[1])
+        assert payload.actions_type == node_enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value
+        assert payload.actions_details == []
+
+    @pytest.mark.asyncio
+    async def test_send_to_active_automation_raises_when_no_workflow_found(self):
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch(
+                "octobot_node.scheduler.tasks.asyncio.sleep",
+                new_callable=mock.AsyncMock,
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[],
+            ),
+        ):
+            with pytest.raises(node_errors.ActiveAutomationWorkflowNotFoundError):
+                await octobot_node.scheduler.tasks.send_forced_trigger_to_active_automation(
+                    self._TEST_PARENT_AUTOMATION_ID,
+                    self._TEST_WALLET_ADDRESS,
+                )
+
+    @pytest.mark.asyncio
+    async def test_send_to_active_automation_raises_when_scheduler_not_initialized(self):
+        with mock.patch("octobot_node.scheduler.is_initialized", return_value=False):
+            with pytest.raises(RuntimeError, match="Scheduler is not initialized"):
+                await octobot_node.scheduler.tasks.send_actions_to_active_automation(
+                    self._TEST_PARENT_AUTOMATION_ID,
+                    self._TEST_WALLET_ADDRESS,
+                    [{"id": "action_1", "dsl_script": "noop()"}],
+                )

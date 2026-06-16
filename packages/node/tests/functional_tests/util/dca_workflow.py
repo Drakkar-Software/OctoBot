@@ -274,6 +274,7 @@ def build_create_dca_user_action(
     name: str,
     strategy_id: str | None = None,
     emit_signals: bool | None = None,
+    automation_id: str | None = None,
 ) -> protocol_models_module.UserAction:
     reference_strategy_identifier = strategy_id or SIMULATOR_DCA_DEFAULT_STRATEGY_ID
     strategy_reference = protocol_models_module.StrategyReference(
@@ -281,11 +282,16 @@ def build_create_dca_user_action(
         version=workflow_common_module.SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
         emit_signals=emit_signals if emit_signals is not None else False,
     )
+    automation_configuration_fields = {
+        "name": name,
+        "created_at": datetime.datetime(2026, 5, 10, 8, 0, 0, tzinfo=datetime.UTC),
+        "strategy": strategy_reference,
+        "accounts": [protocol_models_module.AccountReference(id=account_id)],
+    }
+    if automation_id is not None:
+        automation_configuration_fields["id"] = automation_id
     automation_configuration = protocol_models_module.AutomationConfiguration(
-        name=name,
-        created_at=datetime.datetime(2026, 5, 10, 8, 0, 0, tzinfo=datetime.UTC),
-        strategy=strategy_reference,
-        accounts=[protocol_models_module.AccountReference(id=account_id)],
+        **automation_configuration_fields,
     )
     payload = protocol_models_module.CreateAutomationConfiguration(
         action_type=protocol_models_module.UserActionType.AUTOMATION_CREATE,

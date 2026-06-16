@@ -159,7 +159,9 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 expected_workflow_id=None,
             )
 
-            metadata_automation_id = create_user_action.id
+            metadata_automation_id = user_action_assertions_module.resolve_create_automation_metadata_id(
+                create_user_action,
+            )
             parent_automation_id = await user_action_assertions_module.get_created_automation_id_from_user_action(
                 user_action_id=create_user_action.id,
                 wallet_address=wallet_address,

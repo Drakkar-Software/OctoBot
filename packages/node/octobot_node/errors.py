@@ -78,6 +78,10 @@ class InvalidAutomationConfigurationError(UserActionError):
     """Raised when the automation configuration is invalid or cannot be translated to actions."""
 
 
+class InvalidAutomationIdError(UserActionError):
+    """Raised when the automation id is invalid."""
+
+
 class InvalidTradingTentaclesConfigurationError(InvalidAutomationConfigurationError):
     """Raised when the trading tentacles configuration is invalid or cannot be translated to actions."""
 

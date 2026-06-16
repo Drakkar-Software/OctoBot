@@ -90,6 +90,13 @@ class TestAutomationUserActionExecutorGetErrorMessage:
         resolved = executor._get_error_message(node_errors.AmbiguousExchangeConfigError("ambiguous"))
         assert resolved == protocol_models.AutomationActionResultErrorMessage.AMBIGUOUS_EXCHANGE_CONFIG
 
+    def test_invalid_automation_id_maps_to_invalid_automation_id(self):
+        executor = create_automation_executor_module.CreateAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(
+            node_errors.InvalidAutomationIdError("invalid automation id"),
+        )
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.INVALID_AUTOMATION_ID
+
     def test_unknown_exception_falls_back_to_internal_error(self):
         executor = stop_automation_executor.StopAutomationActionExecutor(_WALLET)
         resolved = executor._get_error_message(RuntimeError("boom"))

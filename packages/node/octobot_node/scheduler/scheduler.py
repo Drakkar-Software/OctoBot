@@ -210,13 +210,13 @@ class Scheduler:
             )
         return workflows
 
-    async def _get_parent_and_children_automation_workflow_ids(
+    async def _get_parent_and_children_automation_workflows(
         self,
         wallet_address: typing.Optional[str],
         workflow_ids: list[str],
         statuses: list[dbos.WorkflowStatusString],
-        load_output: bool = False
-    ) -> list[str]:
+        load_output: bool = False,
+    ) -> list[dbos.WorkflowStatus]:
         all_workflows = await self._list_workflows(
             wallet_address, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output
         )
@@ -225,10 +225,22 @@ class Scheduler:
             for workflow_id in workflow_ids
         )
         return [
-            workflow.workflow_id
+            workflow
             for workflow in all_workflows
             if workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] in parent_workflow_ids
         ]
+
+    async def _get_parent_and_children_automation_workflow_ids(
+        self,
+        wallet_address: typing.Optional[str],
+        workflow_ids: list[str],
+        statuses: list[dbos.WorkflowStatusString],
+        load_output: bool = False
+    ) -> list[str]:
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
+            wallet_address, workflow_ids, statuses, load_output
+        )
+        return [workflow.workflow_id for workflow in matching_workflows]
 
     async def resolve_active_automation_workflow_ids_for_parent_id(
         self,
@@ -236,13 +248,13 @@ class Scheduler:
         parent_id: str,
     ) -> list[str]:
         """
-        Return DBOS workflow ids for pending/enqueued automations whose parent id prefix matches ``parent_id``.
+        Return the latest pending/enqueued child DBOS workflow id for ``parent_id``.
 
-        Delegates to :meth:`_get_parent_and_children_automation_workflow_ids` with a single seed. For stop-automation user
-        actions, ``parent_id`` is :attr:`octobot_protocol.models.StopAutomationConfiguration.id` (a workflow / parent
-        id seed compatible with :const:`octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH`).
+        For stop-automation user actions, ``parent_id`` is
+        :attr:`octobot_protocol.models.StopAutomationConfiguration.id` (a workflow / parent id seed compatible with
+        :const:`octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH`).
         """
-        return await self._get_parent_and_children_automation_workflow_ids(
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
             wallet_address,
             [parent_id],
             [
@@ -251,6 +263,10 @@ class Scheduler:
             ],
             load_output=False,
         )
+        if not matching_workflows:
+            return []
+        latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
+        return [latest_workflow.workflow_id]
 
     async def _get_latest_workflow_for_each_automation(
         self,

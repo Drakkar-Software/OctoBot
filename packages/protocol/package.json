@@ -12,7 +12,7 @@
     "gen": "npm run generate:python",
     "generate:typescript": "node scripts/clean-protocol-codegen-output.mjs typescript && openapi-generator-cli generate -i openapi.json -g typescript -o octobot_protocol_ts --global-property models --additional-properties modelPropertyNaming=original,stringEnums=true,supportsES6=true,useOneOfDiscriminatorLookup=true && node scripts/postprocess-protocol-typescript.mjs",
     "generate:rust": "node scripts/clean-protocol-codegen-output.mjs rust && openapi-generator-cli generate -i openapi.json -g rust -o octobot_protocol_rs --global-property models --additional-properties packageName=octobot_protocol_rs,useOneOfDiscriminatorLookup=true",
-    "generate:all": "npm run generate:python && npm run generate:typescript && npm run generate:rust"
+    "generate:all": "npm run generate:python && npm run generate:typescript"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "2.32.0"

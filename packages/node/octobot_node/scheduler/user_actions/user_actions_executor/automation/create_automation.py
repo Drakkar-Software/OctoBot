@@ -16,10 +16,12 @@
 
 import json
 import typing
+import uuid
 
 import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models
 
+import octobot_node.constants as constants
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
@@ -31,9 +33,37 @@ import octobot_node.models as models
 import octobot_node.scheduler.tasks
 
 
+def _validate_automation_configuration_id(automation_id: str) -> None:
+    try:
+        parsed_uuid = uuid.UUID(automation_id)
+    except ValueError as err:
+        raise node_errors.InvalidAutomationIdError(
+            f"AutomationConfiguration.id must be a valid UUID, got {automation_id!r}"
+        ) from err
+    canonical_id = str(parsed_uuid)
+    if canonical_id != automation_id:
+        raise node_errors.InvalidAutomationIdError(
+            f"AutomationConfiguration.id must be canonical lowercase UUID form, got {automation_id!r}"
+        )
+    if len(automation_id) != constants.PARENT_WORKFLOW_ID_LENGTH:
+        raise node_errors.InvalidAutomationIdError(
+            f"AutomationConfiguration.id must be {constants.PARENT_WORKFLOW_ID_LENGTH} characters, "
+            f"got {len(automation_id)} for {automation_id!r}"
+        )
+
+
+def _resolve_create_automation_id(
+    user_action: protocol_models.UserAction,
+    automation_configuration: protocol_models.AutomationConfiguration,
+) -> str:
+    if automation_configuration.id:
+        return automation_configuration.id
+    return user_action.id
+
+
 def _execute_actions_task_content_json(
     *,
-    user_action: protocol_models.UserAction,
+    automation_id: str,
     actions: list[flow_entities.AbstractActionDetails],
 ) -> str:
     """
@@ -42,7 +72,7 @@ def _execute_actions_task_content_json(
     """
     automation_state = flow_entities.AutomationState(
         automation=flow_entities.AutomationDetails(
-            metadata=flow_entities.AutomationMetadata(automation_id=user_action.id),
+            metadata=flow_entities.AutomationMetadata(automation_id=automation_id),
             actions_dag=flow_entities.ActionsDAG(actions=actions),
         ),
     )
@@ -96,12 +126,18 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
 
     async def _create_automation_task(self, user_action, actions: list[flow_entities.AbstractActionDetails]) -> models.Task:
         automation_configuration = self._get_automation_configuration(user_action)
-        return models.Task(
-            name=automation_configuration.name,
-            content=_execute_actions_task_content_json(user_action=user_action, actions=actions),
-            type=models.TaskType.EXECUTE_ACTIONS.value,
-            wallet_address=self._wallet_address,
-        )
+        if automation_configuration.id:
+            _validate_automation_configuration_id(automation_configuration.id)
+        automation_id = _resolve_create_automation_id(user_action, automation_configuration)
+        task_fields = {
+            "name": automation_configuration.name,
+            "content": _execute_actions_task_content_json(automation_id=automation_id, actions=actions),
+            "type": models.TaskType.EXECUTE_ACTIONS.value,
+            "wallet_address": self._wallet_address,
+        }
+        if automation_configuration.id:
+            task_fields["id"] = automation_configuration.id
+        return models.Task(**task_fields)
 
     def _get_automation_configuration(self, user_action: protocol_models.UserAction) -> protocol_models.AutomationConfiguration:
         create_payload = _get_create_automation_payload(user_action)
@@ -109,6 +145,9 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
 
     def _create_automation_actions(self, user_action: protocol_models.UserAction) -> list[flow_entities.AbstractActionDetails]:
         automation_configuration = self._get_automation_configuration(user_action)
+        if automation_configuration.id:
+            _validate_automation_configuration_id(automation_configuration.id)
+        automation_id = _resolve_create_automation_id(user_action, automation_configuration)
 
         stored_strategy = _load_strategy_for_automation(
             self._wallet_address,
@@ -129,7 +168,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
             ) from err
 
         init_action = action_details_factory.init_action_factory(
-            automation_id=user_action.id,
+            automation_id=automation_id,
             protocol_account=protocol_account,
             strategy_reference=automation_configuration.strategy,
             stored_strategy=stored_strategy,

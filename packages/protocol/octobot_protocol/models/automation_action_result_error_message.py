@@ -28,6 +28,7 @@ class AutomationActionResultErrorMessage(str, Enum):
     """
     AUTOMATION_NOT_FOUND = 'automation_not_found'
     INVALID_CONFIGURATION = 'invalid_configuration'
+    INVALID_AUTOMATION_ID = 'invalid_automation_id'
     STRATEGY_NOT_FOUND = 'strategy_not_found'
     STRATEGY_VERSION_NOT_FOUND = 'strategy_version_not_found'
     UNKNOWN_TRADING_TYPE = 'unknown_trading_type'

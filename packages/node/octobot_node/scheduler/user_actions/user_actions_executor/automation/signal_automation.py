@@ -103,46 +103,6 @@ def _parse_trading_signal_payload(raw_payload: typing.Any) -> octobot_flow.entit
     )
 
 
-async def _resolve_target_automation_workflow_id(
-    parent_automation_id: str,
-    wallet_address: str,
-) -> str:
-    scheduler = scheduler_module.SCHEDULER
-    matching_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
-        wallet_address,
-        parent_automation_id,
-    )
-    if not matching_workflow_ids:
-        raise node_errors.ActiveAutomationWorkflowNotFoundError(
-            f"No active automation workflow for parent id {parent_automation_id!r} "
-            f"(wallet_address={wallet_address!r})."
-        )
-    if len(matching_workflow_ids) > 1:
-        raise node_errors.AmbiguousActiveAutomationWorkflowError(
-            f"Expected exactly one active automation workflow for parent id {parent_automation_id!r}, "
-            f"got {len(matching_workflow_ids)}: {matching_workflow_ids!r} "
-            f"(wallet_address={wallet_address!r})."
-        )
-    return matching_workflow_ids[0]
-
-
-async def _send_actions_to_automation_with_workflow_lookup(
-    actions: list[dict],
-    automation_id: str,
-    wallet_address: str,
-) -> None:
-    target_workflow_id = await _resolve_target_automation_workflow_id(automation_id, wallet_address)
-    await scheduler_tasks.send_actions_to_automation_workflow(actions, target_workflow_id)
-
-
-async def _send_forced_trigger_to_automation_with_workflow_lookup(
-    automation_id: str,
-    wallet_address: str,
-) -> None:
-    target_workflow_id = await _resolve_target_automation_workflow_id(automation_id, wallet_address)
-    await scheduler_tasks.send_forced_trigger_to_automation_workflow(target_workflow_id)
-
-
 class SignalAutomationActionExecutor(automation_user_action_executor.AutomationUserActionExecutor):
     async def _do_execute(
         self,
@@ -157,10 +117,10 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
         match signal_config.signal_type:
             case protocol_models.AutomationSignalType.ACTIONS:
                 actions = _parse_actions_payload(raw_payload)
-                await _send_actions_to_automation_with_workflow_lookup(
-                    actions,
+                await scheduler_tasks.send_actions_to_active_automation(
                     signal_config.automation_id,
                     self._wallet_address,
+                    actions,
                 )
             case protocol_models.AutomationSignalType.TRADING_SIGNAL:
                 trading_signal = _parse_trading_signal_payload(raw_payload)
@@ -169,7 +129,7 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
                     trading_signal,
                 )
             case protocol_models.AutomationSignalType.FORCED_TRIGGER:
-                await _send_forced_trigger_to_automation_with_workflow_lookup(
+                await scheduler_tasks.send_forced_trigger_to_active_automation(
                     signal_config.automation_id,
                     self._wallet_address,
                 )

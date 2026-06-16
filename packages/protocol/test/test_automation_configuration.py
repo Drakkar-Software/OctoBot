@@ -35,6 +35,7 @@ class TestAutomationConfiguration(unittest.TestCase):
         model = AutomationConfiguration()
         if include_optional:
             return AutomationConfiguration(
+                id = '',
                 name = '',
                 description = '',
                 created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),

@@ -17,6 +17,7 @@ import { StrategyReference } from '../models/StrategyReference';
 * AutomationConfiguration
 */
 export class AutomationConfiguration {
+    'id'?: string;
     'name': string;
     'description'?: string;
     'created_at': string;
@@ -29,6 +30,12 @@ export class AutomationConfiguration {
     static readonly mapping: {[index: string]: string} | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
+        {
+            "name": "id",
+            "baseName": "id",
+            "type": "string",
+            "format": ""
+        },
         {
             "name": "name",
             "baseName": "name",

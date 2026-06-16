@@ -30,13 +30,14 @@ class AutomationConfiguration(BaseModel):
     """
     AutomationConfiguration
     """ # noqa: E501
+    id: Optional[StrictStr] = None
     name: StrictStr
     description: Optional[StrictStr] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     strategy: StrategyReference
     accounts: List[AccountReference]
-    __properties: ClassVar[List[str]] = ["name", "description", "created_at", "updated_at", "strategy", "accounts"]
+    __properties: ClassVar[List[str]] = ["id", "name", "description", "created_at", "updated_at", "strategy", "accounts"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -99,6 +100,7 @@ class AutomationConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "id": obj.get("id"),
             "name": obj.get("name"),
             "description": obj.get("description"),
             "created_at": obj.get("created_at"),

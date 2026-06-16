@@ -11,7 +11,6 @@ import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
-import octobot_node.scheduler as scheduler_module
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation as signal_automation_executor
 
 from .. import provider_assertions
@@ -19,7 +18,6 @@ from .. import provider_assertions
 
 _TEST_WALLET_ADDRESS = "0xaaabbbcccddd"
 _TEST_AUTOMATION_ID = "00000000-0000-4000-8000-000000000099"
-_TEST_CHILD_WORKFLOW_ID = f"{_TEST_AUTOMATION_ID}-child-step"
 
 
 def _wrap(configuration_payload) -> protocol_models.UserActionConfiguration:
@@ -118,7 +116,7 @@ class Test_parse_trading_signal_payload:
 
 class TestSignalAutomationActionExecutor_execute:
     @pytest.mark.asyncio
-    async def test_execute_forced_trigger_calls_send_forced_trigger_to_automation_workflow(self):
+    async def test_execute_forced_trigger_calls_send_forced_trigger_to_active_automation(self):
         user_action = _user_action_signal(
             user_action_id="ua-signal-forced",
             signal_type=protocol_models.AutomationSignalType.FORCED_TRIGGER,
@@ -129,20 +127,14 @@ class TestSignalAutomationActionExecutor_execute:
                 "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_module.is_initialized",
                 return_value=True,
             ),
-            mock.patch.object(
-                scheduler_module.SCHEDULER,
-                "resolve_active_automation_workflow_ids_for_parent_id",
-                new_callable=mock.AsyncMock,
-                return_value=[_TEST_CHILD_WORKFLOW_ID],
-            ),
             mock.patch(
-                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_forced_trigger_to_automation_workflow",
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_forced_trigger_to_active_automation",
                 new_callable=mock.AsyncMock,
             ) as send_forced_trigger_mock,
         ):
             await executor.execute(user_action)
 
-        send_forced_trigger_mock.assert_awaited_once_with(_TEST_CHILD_WORKFLOW_ID)
+        send_forced_trigger_mock.assert_awaited_once_with(_TEST_AUTOMATION_ID, _TEST_WALLET_ADDRESS)
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,
             expected_status=protocol_models.UserActionStatus.COMPLETED,
@@ -151,7 +143,7 @@ class TestSignalAutomationActionExecutor_execute:
         )
 
     @pytest.mark.asyncio
-    async def test_execute_actions_calls_send_actions_to_automation_workflow(self):
+    async def test_execute_actions_calls_send_actions_to_active_automation(self):
         actions = [{"id": "action_1", "dsl_script": "noop()"}]
         user_action = _user_action_signal(
             user_action_id="ua-signal-actions",
@@ -164,20 +156,14 @@ class TestSignalAutomationActionExecutor_execute:
                 "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_module.is_initialized",
                 return_value=True,
             ),
-            mock.patch.object(
-                scheduler_module.SCHEDULER,
-                "resolve_active_automation_workflow_ids_for_parent_id",
-                new_callable=mock.AsyncMock,
-                return_value=[_TEST_CHILD_WORKFLOW_ID],
-            ),
             mock.patch(
-                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_actions_to_automation_workflow",
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_actions_to_active_automation",
                 new_callable=mock.AsyncMock,
             ) as send_actions_mock,
         ):
             await executor.execute(user_action)
 
-        send_actions_mock.assert_awaited_once_with(actions, _TEST_CHILD_WORKFLOW_ID)
+        send_actions_mock.assert_awaited_once_with(_TEST_AUTOMATION_ID, _TEST_WALLET_ADDRESS, actions)
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,
             expected_status=protocol_models.UserActionStatus.COMPLETED,
@@ -230,21 +216,16 @@ class TestSignalAutomationActionExecutor_execute:
                 "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_module.is_initialized",
                 return_value=True,
             ),
-            mock.patch.object(
-                scheduler_module.SCHEDULER,
-                "resolve_active_automation_workflow_ids_for_parent_id",
-                new_callable=mock.AsyncMock,
-                return_value=[],
-            ),
             mock.patch(
-                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_forced_trigger_to_automation_workflow",
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_forced_trigger_to_active_automation",
                 new_callable=mock.AsyncMock,
+                side_effect=node_errors.ActiveAutomationWorkflowNotFoundError("missing"),
             ) as send_forced_trigger_mock,
         ):
             with pytest.raises(node_errors.ActiveAutomationWorkflowNotFoundError):
                 await executor.execute(user_action)
 
-        send_forced_trigger_mock.assert_not_called()
+        send_forced_trigger_mock.assert_awaited_once()
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,
             expected_status=protocol_models.UserActionStatus.FAILED,

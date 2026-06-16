@@ -8,6 +8,8 @@ AutomationActionResultErrorMessage
 
 * `INVALID_CONFIGURATION` (value: `'invalid_configuration'`)
 
+* `INVALID_AUTOMATION_ID` (value: `'invalid_automation_id'`)
+
 * `STRATEGY_NOT_FOUND` (value: `'strategy_not_found'`)
 
 * `STRATEGY_VERSION_NOT_FOUND` (value: `'strategy_version_not_found'`)

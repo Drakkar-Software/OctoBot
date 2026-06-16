@@ -426,6 +426,23 @@ class TestFillProtocolAutomationStateAutomationStatus:
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.WorkflowStatus.RUNNING
 
+    def test_running_when_previous_execution_but_current_not_started(self):
+        previous_trigger = flow_entities.TriggerDetails(triggered_at=1_600_000_000.0)
+        execution = flow_entities.ExecutionDetails(
+            previous_execution=previous_trigger,
+            current_execution=flow_entities.TriggerDetails(triggered_at=0),
+        )
+        pending_action = flow_entities.DSLScriptActionDetails(id="a1", dsl_script="True")
+        flow_state = flow_entities.AutomationState(
+            automation=flow_entities.AutomationDetails(
+                metadata=flow_entities.AutomationMetadata(automation_id="automation_1"),
+                actions_dag=flow_entities.ActionsDAG(actions=[pending_action]),
+                execution=execution,
+            ),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.status == protocol_models.WorkflowStatus.RUNNING
+
     def test_pending_when_not_started(self):
         flow_state = flow_entities.AutomationState(
             automation=_minimal_automation_details(
