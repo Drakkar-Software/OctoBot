@@ -23,15 +23,17 @@ from .conftest import (
     TENANT_ADDRESS,
     ADMIN_TASK_ID,
     TENANT_TASK_ID,
+    ADMIN_USER_ID,
+    TENANT_USER_ID,
 )
 
 
 def _admin_task() -> octobot_node.models.Task:
-    return octobot_node.models.Task(id=ADMIN_TASK_ID, wallet_address=ADMIN_ADDRESS)
+    return octobot_node.models.Task(id=ADMIN_TASK_ID, user_id=ADMIN_USER_ID)
 
 
 def _tenant_task() -> octobot_node.models.Task:
-    return octobot_node.models.Task(id=TENANT_TASK_ID, wallet_address=TENANT_ADDRESS)
+    return octobot_node.models.Task(id=TENANT_TASK_ID, user_id=TENANT_USER_ID)
 
 
 def test_admin_sees_all_tasks(admin_client, mock_auth):
@@ -41,8 +43,8 @@ def test_admin_sees_all_tasks(admin_client, mock_auth):
         resp = admin_client.get("/api/v1/tasks/")
     assert resp.status_code == 200
     assert len(resp.json()) == 2
-    # Admin passes no wallet filter
-    mock_get.assert_called_once_with(wallet_address=None)
+    # Admin passes no user_id filter
+    mock_get.assert_called_once_with(user_id=None)
 
 
 def test_tenant_sees_only_own_tasks(tenant_client, mock_auth):
@@ -52,9 +54,9 @@ def test_tenant_sees_only_own_tasks(tenant_client, mock_auth):
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["wallet_address"] == TENANT_ADDRESS
-    # Tenant's wallet address is passed as filter
-    mock_get.assert_called_once_with(wallet_address=TENANT_ADDRESS)
+    assert data[0]["user_id"] == TENANT_USER_ID
+    # Tenant's user_id is passed as filter
+    mock_get.assert_called_once_with(user_id=TENANT_USER_ID)
 
 
 def test_task_creation_stamps_tenant_wallet(tenant_client, mock_auth):
@@ -65,7 +67,7 @@ def test_task_creation_stamps_tenant_wallet(tenant_client, mock_auth):
     assert resp.status_code == 200
     assert resp.json() == [1, 0]
     stamped_task = mock_trigger.call_args[0][0]
-    assert stamped_task.wallet_address == TENANT_ADDRESS
+    assert stamped_task.user_id == TENANT_USER_ID
 
 
 def test_task_creation_stamps_admin_wallet(admin_client, mock_auth):
@@ -75,7 +77,7 @@ def test_task_creation_stamps_admin_wallet(admin_client, mock_auth):
             resp = admin_client.post("/api/v1/tasks/", json=[{"id": ADMIN_TASK_ID}])
     assert resp.status_code == 200
     stamped_task = mock_trigger.call_args[0][0]
-    assert stamped_task.wallet_address == ADMIN_ADDRESS
+    assert stamped_task.user_id == ADMIN_USER_ID
 
 
 def test_task_creation_counts_failures(tenant_client, mock_auth):
@@ -92,7 +94,7 @@ def test_admin_metrics_uses_no_filter(admin_client, mock_auth):
     with patch("octobot_node.scheduler.api.get_task_metrics", new=mock_metrics):
         resp = admin_client.get("/api/v1/tasks/metrics")
     assert resp.status_code == 200
-    mock_metrics.assert_called_once_with(wallet_address=None)
+    mock_metrics.assert_called_once_with(user_id=None)
 
 
 def test_tenant_metrics_uses_wallet_filter(tenant_client, mock_auth):
@@ -100,7 +102,7 @@ def test_tenant_metrics_uses_wallet_filter(tenant_client, mock_auth):
     with patch("octobot_node.scheduler.api.get_task_metrics", new=mock_metrics):
         resp = tenant_client.get("/api/v1/tasks/metrics")
     assert resp.status_code == 200
-    mock_metrics.assert_called_once_with(wallet_address=TENANT_ADDRESS)
+    mock_metrics.assert_called_once_with(user_id=TENANT_USER_ID)
 
 
 def test_admin_can_delete_any_task(admin_client, mock_auth):

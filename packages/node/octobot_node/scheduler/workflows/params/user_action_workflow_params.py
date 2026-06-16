@@ -23,13 +23,13 @@ import octobot_node.scheduler.user_actions.user_actions_executor as user_actions
 
 @dataclasses.dataclass
 class UserActionWorkflowInputs(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
-    wallet_address: str
+    user_id: str
     user_action: protocol_models.UserAction
 
 
 @dataclasses.dataclass
 class UserActionWorkflowOutput(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
-    wallet_address: str
+    user_id: str
     updated_user_action: protocol_models.UserAction
 
 

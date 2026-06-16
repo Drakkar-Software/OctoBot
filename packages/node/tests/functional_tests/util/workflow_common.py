@@ -14,6 +14,7 @@ import dbos
 import pytest
 
 import octobot_sync.chain.evm as sync_evm_module
+import octobot_sync.server as sync_server_module
 import octobot_trading.constants as trading_constants_module
 import octobot_trading.enums as trading_enums_module
 
@@ -34,6 +35,9 @@ SIMULATOR_GRID_TEST_PRIVATE_KEY = (
 SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS = sync_evm_module.address_from_evm_key(
     SIMULATOR_GRID_TEST_PRIVATE_KEY
 ).lower()
+SIMULATOR_GRID_TEST_COMMUNITY_USER_ID = sync_server_module.derive_user_id(
+    SIMULATOR_GRID_TEST_PRIVATE_KEY
+)
 
 DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS = 0.5
 DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS = DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS
@@ -202,11 +206,11 @@ def find_protocol_automation_state(
 
 
 async def load_protocol_automation_state_for_workflow(
-    wallet_address: typing.Optional[str],
+    user_id: typing.Optional[str],
     workflow_row: dbos.WorkflowStatus,
 ) -> protocol_models_module.AutomationState:
     parent_id = workflow_row.workflow_id[: node_constants_module.PARENT_WORKFLOW_ID_LENGTH]
-    automation_states = await scheduler_api_module.get_automation_states(wallet_address)
+    automation_states = await scheduler_api_module.get_automation_states(user_id)
     automation_state = find_protocol_automation_state(automation_states, parent_id)
     if automation_state is None:
         seen_ids = [automation.id for automation in automation_states]
@@ -251,7 +255,7 @@ async def enqueue_forced_trigger_and_await(
     scheduler: typing.Any,
     *,
     automation_id: str,
-    wallet_address: str,
+    user_id: str,
     user_action_id: str,
     timeout_seconds: float = 10.0,
 ) -> protocol_models_module.UserAction:
@@ -264,7 +268,7 @@ async def enqueue_forced_trigger_and_await(
             enqueue_user_action_workflow_and_await_terminal_result(
                 scheduler,
                 signal_user_action,
-                wallet_address,
+                user_id,
             ),
             timeout=timeout_seconds,
         )
@@ -278,14 +282,14 @@ async def enqueue_forced_trigger_and_await(
 async def enqueue_user_action_workflow_and_await_terminal_result(
     scheduler: typing.Any,
     user_action_bundle: typing.Any,
-    wallet_address_segment: str,
+    user_id: str,
 ):
     """``execute_user_action`` queues user actions; wait until the USER_ACTION_QUEUE workflow completes."""
     import octobot_node.scheduler.tasks as scheduler_tasks_module
 
     workflow_identifier_encoded = await scheduler_tasks_module.trigger_user_action_workflow(
         user_action_bundle,
-        wallet_address_segment,
+        user_id,
     )
     terminal_handle_encoded = await scheduler.INSTANCE.retrieve_workflow_async(workflow_identifier_encoded)
     await terminal_handle_encoded.get_result()

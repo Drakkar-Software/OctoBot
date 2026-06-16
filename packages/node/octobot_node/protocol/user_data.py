@@ -19,9 +19,9 @@ import octobot_sync.constants as sync_constants
 import octobot_node.scheduler.api as scheduler_api
 
 
-async def get_user_data_state(wallet_address: str) -> protocol_models.UserDataState:
-    automations = await scheduler_api.get_automation_states(wallet_address)
-    user_actions = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+async def get_user_data_state(user_id: str) -> protocol_models.UserDataState:
+    automations = await scheduler_api.get_automation_states(user_id)
+    user_actions = await scheduler_api.list_user_actions(user_id, active_only=True)
     return protocol_models.UserDataState(
         version=sync_constants.USER_DATA_STATE_VERSION,
         automations=automations,

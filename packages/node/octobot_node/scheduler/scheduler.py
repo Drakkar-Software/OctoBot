@@ -154,17 +154,17 @@ class Scheduler:
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
         self.USER_ACTION_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value)
 
-    async def get_periodic_tasks(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
+    async def get_periodic_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""
         return [] # TODO
 
-    async def get_pending_tasks(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
+    async def get_pending_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
         executions: list[octobot_node.models.Execution] = []
         try:
             pending_workflow_statuses = await self._list_workflows(
-                wallet_address,
+                user_id,
                 [
                     dbos.WorkflowStatusString.ENQUEUED, dbos.WorkflowStatusString.PENDING
                 ],
@@ -192,7 +192,7 @@ class Scheduler:
 
     async def _list_workflows(
         self,
-        wallet_address: typing.Optional[str], 
+        user_id: typing.Optional[str], 
         statuses: typing.Optional[list[dbos.WorkflowStatusString]],
         queue_names: typing.Optional[list[str]],
         load_output: bool
@@ -202,23 +202,23 @@ class Scheduler:
             queue_name=queue_names,
             load_output=load_output
         )
-        if wallet_address:
+        if user_id:
             workflows = workflows_util.filter_by_wallet(
                 workflows,
-                wallet_address,
+                user_id,
                 self._wallet_filter_queue(queue_names),
             )
         return workflows
 
     async def _get_parent_and_children_automation_workflows(
         self,
-        wallet_address: typing.Optional[str],
+        user_id: typing.Optional[str],
         workflow_ids: list[str],
         statuses: list[dbos.WorkflowStatusString],
         load_output: bool = False,
     ) -> list[dbos.WorkflowStatus]:
         all_workflows = await self._list_workflows(
-            wallet_address, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output
+            user_id, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output
         )
         parent_workflow_ids = set(
             workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
@@ -244,7 +244,7 @@ class Scheduler:
 
     async def resolve_active_automation_workflow_ids_for_parent_id(
         self,
-        wallet_address: typing.Optional[str],
+        user_id: typing.Optional[str],
         parent_id: str,
     ) -> list[str]:
         """
@@ -255,7 +255,7 @@ class Scheduler:
         :const:`octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH`).
         """
         matching_workflows = await self._get_parent_and_children_automation_workflows(
-            wallet_address,
+            user_id,
             [parent_id],
             [
                 dbos.WorkflowStatusString.ENQUEUED,
@@ -270,12 +270,12 @@ class Scheduler:
 
     async def _get_latest_workflow_for_each_automation(
         self,
-        wallet_address: typing.Optional[str],
+        user_id: typing.Optional[str],
         statuses: typing.Optional[list[dbos.WorkflowStatusString]],
         load_output: bool = False,
     ) -> list[dbos.WorkflowStatus]:
         workflows = await self._list_workflows(
-            wallet_address, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output=load_output
+            user_id, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output=load_output
         )
         by_parent = workflows_util.get_workflows_by_parent_id(workflows)
         return [
@@ -319,16 +319,16 @@ class Scheduler:
             conn.execute(sqlalchemy.text("VACUUM"))
         self.logger.info(f"Database vacuum completed")
 
-    async def get_scheduled_tasks(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
+    async def get_scheduled_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""
         return []
 
-    async def get_results(self, wallet_address: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
+    async def get_results(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
         executions: list[octobot_node.models.Execution] = []
         try:
-            completed_workflow_statuses = await self._list_workflows(wallet_address, [
+            completed_workflow_statuses = await self._list_workflows(user_id, [
                     dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR
                 ], [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output=True)
             for completed_workflow_status in completed_workflow_statuses:
@@ -373,7 +373,7 @@ class Scheduler:
                         completed_at=completed_workflow_status.updated_at,
                         error=error,
                         error_message=error_message,
-                        wallet_address=task.wallet_address if task else None,
+                        user_id=task.user_id if task else None,
                     ))
                 except Exception as e:
                     self.logger.exception(e, True, f"Failed to process result workflow {completed_workflow_status.workflow_id}: {e}")
@@ -433,7 +433,7 @@ class Scheduler:
     async def get_workflows_export_results(
         self,
         task_ids: list[str],
-        wallet_address: typing.Optional[str],
+        user_id: typing.Optional[str],
         user_rsa_public_key: typing.Optional[str] = None,
     ) -> dict[str, dict[str, str]]:
         if not self.INSTANCE:
@@ -455,7 +455,7 @@ class Scheduler:
                     (t for t in (workflows_util.get_automation_input_task(w) for w in group) if t is not None),
                     None,
                 )
-                if wallet_address is not None and (task is None or task.wallet_address != wallet_address):
+                if user_id is not None and (task is None or task.user_id != user_id):
                     out[task_id] = {"error": "forbidden"}
                     continue
                 result_workflows = [
@@ -498,7 +498,7 @@ class Scheduler:
                 task_actions = task.content #todo confi
 
         task_name = task.name if task else workflow_status.name
-        task_wallet_address = task.wallet_address if task else None
+        task_wallet_address = task.user_id if task else None
         return octobot_node.models.Execution(
             id=task_id,
             name=task_name,
@@ -507,7 +507,7 @@ class Scheduler:
             is_encrypted=bool(task.content_metadata) if task else False,
             type=task_type,
             status=status,
-            wallet_address=task_wallet_address,
+            user_id=task_wallet_address,
         )
 
     def get_task_name(self, task_data: dict | octobot_node.models.Task | None, default_value: typing.Optional[str] = None) -> typing.Optional[str]:
@@ -518,9 +518,9 @@ class Scheduler:
         else:
             return default_value
 
-    async def get_automation_states(self, wallet_address: typing.Optional[str]) -> list[protocol_models.AutomationState]:
+    async def get_automation_states(self, user_id: typing.Optional[str]) -> list[protocol_models.AutomationState]:
         workflows = await self._get_latest_workflow_for_each_automation(
-            wallet_address, None, load_output=True
+            user_id, None, load_output=True
         )
         sources: list[automations_protocol.AutomationStateSource] = []
         for workflow in workflows:
@@ -635,7 +635,7 @@ class Scheduler:
         return self._user_action_from_workflow_inputs(workflow_status, terminal=True)
 
     async def list_user_actions(
-        self, wallet_address: typing.Optional[str],
+        self, user_id: typing.Optional[str],
         active_only: bool = True,
     ) -> list[protocol_models.UserAction]:
         # Step: aggregate user actions from USER_ACTION_QUEUE workflows (pending inputs + terminal outputs).
@@ -645,7 +645,7 @@ class Scheduler:
         user_action_queue_name = octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value
         loaded: list[tuple[tuple[int, str, str], protocol_models.UserAction]] = []
         input_workflows = await self._list_workflows(
-            wallet_address,
+            user_id,
             list(workflows_util.get_user_action_input_workflow_statuses()),
             [user_action_queue_name],
             load_output=False,
@@ -655,7 +655,7 @@ class Scheduler:
             sort_key = self._user_action_list_sort_key(user_action_row, workflow_status)
             loaded.append((sort_key, user_action_row))
         terminal_workflows = await self._list_workflows(
-            wallet_address,
+            user_id,
             list(workflows_util.get_user_action_terminal_workflow_statuses()),
             [user_action_queue_name],
             load_output=True,

@@ -59,6 +59,6 @@ class AbstractLocalCollectionProvider(typing.Generic[S], abc.ABC):
     def _setup_caches(self) -> None:
         """Initialize provider-specific TTL caches."""
 
-    def _get_wallet_private_key(self, address: str) -> str:
-        wallet = community_authentication.CommunityAuthentication.instance().get_wallet(address)
+    def _get_wallet_private_key(self, user_id: str) -> str:
+        wallet = community_authentication.CommunityAuthentication.instance().get_wallet_by_user_id(user_id)
         return wallet.private_key

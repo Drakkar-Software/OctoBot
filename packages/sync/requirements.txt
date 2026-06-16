@@ -1,8 +1,8 @@
-starfish-sdk==3.0.0a25
-starfish-identities==3.0.0a25
+starfish-sdk==3.0.0a29
+starfish-identities==3.0.0a29
 # Transitive starfish deps must be pinned explicitly: they are pre-releases, so
 # pip/pants would otherwise resolve the bare names to the latest *stable* (2.x).
-starfish-protocol==3.0.0a25
-starfish-keyring==3.0.0a25
+starfish-protocol==3.0.0a29
+starfish-keyring==3.0.0a29
 python-multipart
 web3

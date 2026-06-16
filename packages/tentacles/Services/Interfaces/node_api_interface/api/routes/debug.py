@@ -26,6 +26,8 @@ import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.scheduler
 import octobot_protocol.models as protocol_models
+import octobot_sync.server as _sync_server
+import octobot.community.authentication as _community_auth
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]
@@ -68,6 +70,7 @@ def _resolve_wallet_address(
     current_user: octobot_node.models.User,
     wallet_address: typing.Optional[str],
 ) -> str:
+    """Return the resolved EVM wallet address (normalized to lowercase)."""
     if wallet_address is None:
         return current_user.email
     normalized_wallet_address = wallet_address.lower()
@@ -79,6 +82,20 @@ def _resolve_wallet_address(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Wallet address does not belong to the authenticated user",
     )
+
+
+def _resolve_user_id(
+    current_user: octobot_node.models.User,
+    wallet_address: typing.Optional[str],
+) -> str:
+    """Resolve EVM wallet address to the Starfish user_id used by the sync-core.
+
+    The HTTP debug API accepts the EVM address for user-facing consistency, but all
+    internal protocol and scheduler calls use the Starfish user_id.
+    """
+    evm_address = _resolve_wallet_address(current_user, wallet_address)
+    wallet = _community_auth.CommunityAuthentication.instance().get_wallet(evm_address)
+    return _sync_server.derive_user_id(wallet.private_key)
 
 
 def _ensure_debug_routes_enabled() -> None:
@@ -109,8 +126,8 @@ async def get_debug(
     """
     _ensure_debug_routes_enabled()
     _ensure_scheduler_initialized()
-    resolved_wallet_address = _resolve_wallet_address(current_user, wallet_address)
-    debug_state = await debug_protocol.get_debug_state(resolved_wallet_address)
+    resolved_user_id = _resolve_user_id(current_user, wallet_address)
+    debug_state = await debug_protocol.get_debug_state(resolved_user_id)
     return JSONResponse(content=json.loads(debug_state.to_json()))
 
 
@@ -128,9 +145,9 @@ async def execute_user_action(
     _ensure_debug_routes_enabled()
     _ensure_scheduler_initialized()
     user_action = _parse_user_action_payload(payload)
-    resolved_wallet_address = _resolve_wallet_address(current_user, wallet_address)
+    resolved_user_id = _resolve_user_id(current_user, wallet_address)
     try:
-        await user_actions_protocol.execute_user_action(user_action, resolved_wallet_address)
+        await user_actions_protocol.execute_user_action(user_action, resolved_user_id)
     except RuntimeError as error:
         if str(error) == "Scheduler is not initialized":
             raise HTTPException(

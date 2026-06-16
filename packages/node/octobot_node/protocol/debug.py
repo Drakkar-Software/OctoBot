@@ -112,17 +112,17 @@ def _account_ids_bound_to_running_automations(
     return bound_account_ids
 
 
-async def get_debug_state(wallet_address: str) -> protocol_models.DebugState:
+async def get_debug_state(user_id: str) -> protocol_models.DebugState:
     automations = [
         _automation_state_for_debug(automation)
-        for automation in await scheduler_api.get_automation_states(wallet_address)
+        for automation in await scheduler_api.get_automation_states(user_id)
     ]
-    user_actions = await scheduler_api.list_user_actions(wallet_address, active_only=False)
-    account_state = accounts_protocol.get_accounts_state(wallet_address)
-    strategies_state = strategies_protocol.get_strategies_state(wallet_address)
+    user_actions = await scheduler_api.list_user_actions(user_id, active_only=False)
+    account_state = accounts_protocol.get_accounts_state(user_id)
+    strategies_state = strategies_protocol.get_strategies_state(user_id)
     bound_account_ids = _account_ids_bound_to_running_automations(automations)
     account_tradings = accounts_trading_protocol.get_account_trading_summaries(
-        wallet_address,
+        user_id,
         bound_account_ids,
     )
     return protocol_models.DebugState(

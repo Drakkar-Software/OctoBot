@@ -55,7 +55,7 @@ class EditExchangeConfigActionExecutor(
                 "EditExchangeConfigConfiguration.id must match configuration.id."
             )
         collection_providers.AccountProvider.instance().update_exchange_config(
-            self._wallet_address,
+            self._user_id,
             edit_payload.configuration,
         )
         self._mark_user_action_completed(user_action)

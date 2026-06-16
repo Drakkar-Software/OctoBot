@@ -42,7 +42,7 @@ class UserActionWorkflow:
                 parsed_output.updated_user_action.result.actual_instance.error_details = str(err)[:constants.FAILURE_ERROR_DETAILS_MAX_LENGTH]
         parsed_inputs = params.UserActionWorkflowInputs.from_dict(inputs)
         return params.UserActionWorkflowOutput(
-            wallet_address=parsed_inputs.wallet_address,
+            user_id=parsed_inputs.user_id,
             updated_user_action=parsed_output.updated_user_action,
         ).to_dict(include_default_values=False)
 
@@ -76,7 +76,7 @@ class UserActionWorkflow:
             )
         ):
             executor_class = user_actions_executor.user_action_executor_factory(parsed_user_action)
-            executor = executor_class(parsed_inputs.wallet_address)
+            executor = executor_class(parsed_inputs.user_id)
             try:
                 await executor.execute(parsed_user_action)
             except errors.UserActionError:

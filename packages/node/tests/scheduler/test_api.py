@@ -29,13 +29,13 @@ from octobot_node.scheduler.api import (
 from tests.scheduler import temp_dbos_scheduler
 
 
-def _make_wf_status(workflow_id: str, status: str, wallet_address: str = "0xaaa") -> mock.Mock:
-    """Create a mock WorkflowStatus with wallet_address baked into the input field."""
+def _make_wf_status(workflow_id: str, status: str, user_id: str = "0xaaa") -> mock.Mock:
+    """Create a mock WorkflowStatus with user_id baked into the input field."""
     import octobot_node.enums as octobot_node_enums
     import octobot_node.scheduler.workflows.params as params
     import octobot_node.models as models
     task = models.Task(
-        name="t", content=None, type="execute_actions", wallet_address=wallet_address
+        name="t", content=None, type="execute_actions", user_id=user_id
     )
     inputs = params.AutomationWorkflowInputs(task=task)
     wf = mock.Mock()
@@ -191,12 +191,12 @@ class TestGetTaskMetrics:
 
         pending_wf = [
             _make_wf_status(f"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb{i}", dbos.WorkflowStatusString.PENDING.value,
-                            wallet_address=my_wallet if i < 2 else other_wallet)
+                            user_id=my_wallet if i < 2 else other_wallet)
             for i in range(4)
         ]
         result_wf = [
             _make_wf_status(f"cccccccc-cccc-cccc-cccc-ccccccccccc{i}", dbos.WorkflowStatusString.SUCCESS.value,
-                            wallet_address=my_wallet if i < 3 else other_wallet)
+                            user_id=my_wallet if i < 3 else other_wallet)
             for i in range(5)
         ]
 
@@ -213,7 +213,7 @@ class TestGetTaskMetrics:
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler), \
              mock.patch("octobot_node.scheduler.encryption.encrypt_task_result") as mock_crypto:
-            result = await get_task_metrics(wallet_address=my_wallet)
+            result = await get_task_metrics(user_id=my_wallet)
 
         assert result["pending"] == 2    # only 0xmine
         assert result["results"] == 3    # only 0xmine
@@ -221,14 +221,14 @@ class TestGetTaskMetrics:
 
     @pytest.mark.asyncio
     async def test_get_task_metrics_counts_legacy_and_unparseable_for_every_wallet(self) -> None:
-        """Regression: tasks with no wallet_address (legacy) or unparseable input must count
+        """Regression: tasks with no user_id (legacy) or unparseable input must count
         toward every wallet's metrics — never silently dropped (that hid all errored tasks).
         """
         import dbos
         import octobot_node.enums as octobot_node_enums
 
         legacy_wf = _make_wf_status("dddddddd-dddd-dddd-dddd-ddddddddddd1",
-                                     dbos.WorkflowStatusString.SUCCESS.value, wallet_address=None)
+                                     dbos.WorkflowStatusString.SUCCESS.value, user_id=None)
         unparseable_wf = mock.Mock()
         unparseable_wf.workflow_id = "dddddddd-dddd-dddd-dddd-ddddddddddd2"
         unparseable_wf.status = dbos.WorkflowStatusString.SUCCESS.value
@@ -237,7 +237,7 @@ class TestGetTaskMetrics:
         unparseable_wf.created_at = None
         unparseable_wf.updated_at = None
         other_wf = _make_wf_status("dddddddd-dddd-dddd-dddd-ddddddddddd3",
-                                    dbos.WorkflowStatusString.SUCCESS.value, wallet_address="0xother")
+                                    dbos.WorkflowStatusString.SUCCESS.value, user_id="0xother")
 
         mock_instance = mock.AsyncMock()
 
@@ -251,7 +251,7 @@ class TestGetTaskMetrics:
         mock_scheduler.INSTANCE = mock_instance
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = await get_task_metrics(wallet_address="0xmine")
+            result = await get_task_metrics(user_id="0xmine")
 
         # legacy + unparseable kept (2), explicit other_wallet dropped (1)
         assert result["results"] == 2
@@ -447,7 +447,7 @@ class TestGetAllTasks:
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_wallet_filter_passed_to_scheduler(self, temp_dbos_scheduler) -> None:
-        """Test that wallet_address is passed through to all scheduler methods (no tail filter)."""
+        """Test that user_id is passed through to all scheduler methods (no tail filter)."""
         wallet = "0xabc"
         with mock.patch.object(
             temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=[])
@@ -458,12 +458,12 @@ class TestGetAllTasks:
         ) as mock_scheduled, mock.patch.object(
             temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=[])
         ) as mock_results:
-            await get_all_tasks(wallet_address=wallet)
+            await get_all_tasks(user_id=wallet)
 
-        mock_periodic.assert_called_once_with(wallet_address=wallet)
-        mock_pending.assert_called_once_with(wallet_address=wallet)
-        mock_scheduled.assert_called_once_with(wallet_address=wallet)
-        mock_results.assert_called_once_with(wallet_address=wallet)
+        mock_periodic.assert_called_once_with(user_id=wallet)
+        mock_pending.assert_called_once_with(user_id=wallet)
+        mock_scheduled.assert_called_once_with(user_id=wallet)
+        mock_results.assert_called_once_with(user_id=wallet)
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_list_does_not_decrypt(self) -> None:
@@ -500,8 +500,8 @@ class TestGetTasksExportResults:
         task_id_2 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
         wallet = "0xowner"
 
-        wf1 = _make_wf_status(task_id_1, dbos.WorkflowStatusString.SUCCESS.value, wallet_address=wallet)
-        wf2 = _make_wf_status(task_id_2, dbos.WorkflowStatusString.SUCCESS.value, wallet_address=wallet)
+        wf1 = _make_wf_status(task_id_1, dbos.WorkflowStatusString.SUCCESS.value, user_id=wallet)
+        wf2 = _make_wf_status(task_id_2, dbos.WorkflowStatusString.SUCCESS.value, user_id=wallet)
 
         mock_instance = mock.AsyncMock()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[wf1, wf2])
@@ -521,7 +521,7 @@ class TestGetTasksExportResults:
         )
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = await get_tasks_export_results([task_id_1, task_id_2], wallet_address=wallet)
+            result = await get_tasks_export_results([task_id_1, task_id_2], user_id=wallet)
 
         mock_scheduler.get_workflows_export_results.assert_called_once_with([task_id_1, task_id_2], wallet, user_rsa_public_key=None)
         assert task_id_1 in result
@@ -535,7 +535,7 @@ class TestGetTasksExportResults:
         mock_scheduler.get_workflows_export_results = mock.AsyncMock()
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = await get_tasks_export_results([], wallet_address="0xwallet")
+            result = await get_tasks_export_results([], user_id="0xwallet")
 
         assert result == {}
         mock_scheduler.get_workflows_export_results.assert_not_called()
@@ -560,7 +560,7 @@ class TestGetTasksExportResults:
         )
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = await get_tasks_export_results([my_task, other_task], wallet_address=my_wallet)
+            result = await get_tasks_export_results([my_task, other_task], user_id=my_wallet)
 
         assert result[my_task]["result"] == "enc"
         assert result[other_task]["error"] == "forbidden"
@@ -583,7 +583,7 @@ class TestGetTasksExportResults:
         )
 
         with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
-            result = await get_tasks_export_results([good_task, bad_task], wallet_address=None)
+            result = await get_tasks_export_results([good_task, bad_task], user_id=None)
 
         assert result[good_task]["result"] == "enc"
         assert "error" in result[bad_task]

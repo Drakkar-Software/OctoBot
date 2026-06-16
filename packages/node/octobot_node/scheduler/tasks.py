@@ -29,7 +29,7 @@ import octobot_protocol.models as protocol_models
 
 async def trigger_user_action_workflow(
     user_action: protocol_models.UserAction,
-    wallet_address: str,
+    user_id: str,
 ) -> str:
     import octobot_node.scheduler  # avoid circular import
     if not octobot_node.scheduler.is_initialized():
@@ -38,7 +38,7 @@ async def trigger_user_action_workflow(
     handle = await octobot_node.scheduler.SCHEDULER.USER_ACTION_QUEUE.enqueue_async(
         user_action_workflow.UserActionWorkflow.execute_user_action,
         inputs=params.UserActionWorkflowInputs(
-            wallet_address=wallet_address, user_action=user_action,
+            user_id=user_id, user_action=user_action,
         ).to_dict(include_default_values=False)
     )
     return handle.workflow_id

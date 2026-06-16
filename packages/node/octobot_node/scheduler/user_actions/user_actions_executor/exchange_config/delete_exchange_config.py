@@ -47,7 +47,7 @@ class DeleteExchangeConfigActionExecutor(
     ) -> None:
         delete_payload = _get_delete_exchange_config_payload(user_action)
         collection_providers.AccountProvider.instance().delete_exchange_config(
-            self._wallet_address,
+            self._user_id,
             delete_payload.id,
         )
         self._mark_user_action_completed(user_action)

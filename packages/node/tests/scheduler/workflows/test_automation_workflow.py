@@ -395,9 +395,9 @@ class TestExecuteAutomation:
             ),
             (
                 octobot_flow.errors.InvalidAutomationActionError("invalid action config"),
-                octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
-                "invalid action config",
-                1,
+                octobot_flow.enums.AutomationWorkflowErrorStatus.INVALID_ACTION_CONFIGURATION.value,
+                dbos_retries_exhausted_message,
+                max_attempts,
             ),
         ]
         for (
@@ -656,7 +656,7 @@ class TestExecuteIteration:
     ):
         import octobot_trading.enums as trading_enums
 
-        task.wallet_address = "0xwallet-trading-sync"
+        task.user_id = "0xwallet-trading-sync"
         task.content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
             "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
             "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
@@ -710,7 +710,7 @@ class TestExecuteIteration:
             )
 
         update_account_trading_mock.assert_called_once_with(
-            task.wallet_address,
+            task.user_id,
             "acc-sync-1",
             [open_order],
             [],
@@ -725,7 +725,7 @@ class TestExecuteIteration:
         import octobot.community.wallet_backend.errors as wallet_backend_errors_module
         import octobot_trading.enums as trading_enums
 
-        task.wallet_address = "0xwallet-trading-sync"
+        task.user_id = "0xwallet-trading-sync"
         task.content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
             "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
             "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
@@ -1155,9 +1155,15 @@ class TestGetLogger:
 class TestExecuteAutomationIntegration:
     def setup_method(self):
         octobot_trading.constants.ALLOW_FUNDS_TRANSFER = True
+        self._no_encrypt_rsa = mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None)
+        self._no_encrypt_ecdsa = mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None)
+        self._no_encrypt_rsa.start()
+        self._no_encrypt_ecdsa.start()
 
     def teardown_method(self):
         octobot_trading.constants.ALLOW_FUNDS_TRANSFER = False
+        self._no_encrypt_rsa.stop()
+        self._no_encrypt_ecdsa.stop()
 
     @pytest.mark.asyncio
     @required_imports

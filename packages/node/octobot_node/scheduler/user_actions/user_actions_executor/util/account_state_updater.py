@@ -79,7 +79,7 @@ def _validate_account_api_key_rights(api_key_rights: list[trading_enums.APIKeyRi
 
 async def update_account_state(
     account: protocol_models.Account,
-    wallet_address: str,
+    user_id: str,
 ) -> protocol_models.Account:
     account_specifics = account.specifics
     if account_specifics is None or account_specifics.actual_instance is None:
@@ -98,7 +98,7 @@ async def update_account_state(
     checked_state, assets = await _check_exchange_account_state(
         account_specifics_instance,
         account,
-        wallet_address,
+        user_id,
     )
     account_updates: dict = {"state": checked_state}
     if assets is not None:
@@ -154,7 +154,7 @@ def _trading_type_for_account_state_check(
 async def _check_exchange_account_state(
     exchange_account: protocol_models.ExchangeAccount,
     account: protocol_models.Account,
-    wallet_address: str,
+    user_id: str,
 ) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAssetsForTradingType] | None]:
     if account.is_simulated:
         return (
@@ -165,11 +165,11 @@ async def _check_exchange_account_state(
             None, # not fetching assets for simulated accounts
         )
     authentication = account_authentication_resolver.get_exchange_authentication(
-        wallet_address,
+        user_id,
         account,
     )
     exchange_config = exchange_account_resolver.get_exchange_config(
-        wallet_address,
+        user_id,
         exchange_account,
     )
     trading_type = _trading_type_for_account_state_check(account)

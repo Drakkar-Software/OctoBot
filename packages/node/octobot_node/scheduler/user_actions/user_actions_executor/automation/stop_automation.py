@@ -56,9 +56,10 @@ class StopAutomationActionExecutor(automation_user_action_executor.AutomationUse
             raise RuntimeError("Scheduler is not initialized")
 
         stop_payload = _get_stop_automation_payload(user_action)
+        actions = _stop_priority_action_dict(user_action=user_action)
         await scheduler_tasks.send_actions_to_active_automation(
             stop_payload.id,
-            self._wallet_address,
-            _stop_priority_action_dict(user_action=user_action),
+            self._user_id,
+            actions,
         )
         self._mark_user_action_completed(user_action)

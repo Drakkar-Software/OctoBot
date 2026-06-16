@@ -36,7 +36,7 @@ def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
     wallet = mock.Mock()
     wallet.private_key = private_key
     auth = mock.Mock()
-    auth.get_wallet.return_value = wallet
+    auth.get_wallet_by_user_id.return_value = wallet
     return mock.patch.object(
         community_authentication.CommunityAuthentication,
         "instance",

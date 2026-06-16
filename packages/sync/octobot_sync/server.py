@@ -34,7 +34,6 @@ import octobot.community.wallet_backend.errors as wallet_backend_errors
 
 import octobot_sync.app as sync_app
 import octobot_sync.auth as auth
-import octobot_sync.chain as sync_chain
 import octobot_sync.crypto as sync_crypto
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
@@ -137,9 +136,8 @@ async def _user_actions_after_write(event: WriteEvent) -> None:
     action = protocol_models.UserAction.from_json(plaintext)
     if action is None:
         return
-    evm_address = sync_chain.address_from_evm_key(wallet_private_key).lower()
     try:
-        await user_actions_protocol.execute_user_action(action, evm_address)
+        await user_actions_protocol.execute_user_action(action, identity)
     except Exception as exc:
         _get_logger().exception(
             exc, True, f"Unexpected error executing user action: {action.id}: {exc}"

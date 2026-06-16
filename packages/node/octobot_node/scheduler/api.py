@@ -62,16 +62,16 @@ def get_node_status() -> dict[str, str | int | None | uuid.UUID]:
     }
 
 
-async def get_automation_states(wallet_address: typing.Optional[str]) -> list[protocol_models.AutomationState]:
-    return await octobot_node.scheduler.SCHEDULER.get_automation_states(wallet_address)
+async def get_automation_states(user_id: typing.Optional[str]) -> list[protocol_models.AutomationState]:
+    return await octobot_node.scheduler.SCHEDULER.get_automation_states(user_id)
 
 
-async def list_user_actions(wallet_address: typing.Optional[str], active_only: bool) -> list[protocol_models.UserAction]:
-    return await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address, active_only)
+async def list_user_actions(user_id: typing.Optional[str], active_only: bool) -> list[protocol_models.UserAction]:
+    return await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id, active_only)
 
 
 async def get_task_metrics(
-    wallet_address: typing.Optional[str] = None,
+    user_id: typing.Optional[str] = None,
 ) -> dict[str, int]:
     scheduler = octobot_node.scheduler.SCHEDULER
     if not scheduler.INSTANCE:
@@ -87,7 +87,7 @@ async def get_task_metrics(
                 dbos.WorkflowStatusString.ERROR.value,
             ], load_output=False),
         )
-        if wallet_address is not None:
+        if user_id is not None:
             automation_queue = octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
             pending_only_automation = [
                 row for row in (pending_statuses or []) if row.queue_name == automation_queue
@@ -97,12 +97,12 @@ async def get_task_metrics(
             ]
             pending_statuses = workflows_util.filter_by_wallet(
                 pending_only_automation,
-                wallet_address,
+                user_id,
                 octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
             )
             result_statuses = workflows_util.filter_by_wallet(
                 result_only_automation,
-                wallet_address,
+                user_id,
                 octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
             )
         return {
@@ -142,7 +142,7 @@ def _build_tasks_from_executions(
         active_name = active.name if active else None
         active_content = active.actions if active else None
         error = active.error if active else None
-        active_wallet = active.wallet_address if active else None
+        active_wallet = active.user_id if active else None
         is_encrypted = any(e.is_encrypted for e in group)
         for execution in group:
             execution.name = None
@@ -155,21 +155,21 @@ def _build_tasks_from_executions(
             is_encrypted=is_encrypted,
             executions=group,
             error=error,
-            wallet_address=active_wallet,
+            user_id=active_wallet,
         ))
     return tasks
 
 
 async def get_all_tasks(
-    wallet_address: typing.Optional[str] = None,
+    user_id: typing.Optional[str] = None,
 ) -> list[octobot_node.models.Task]:
     executions: list[octobot_node.models.Execution] = []
     try:
         periodic, pending, scheduled, results = await asyncio.gather(
-            octobot_node.scheduler.SCHEDULER.get_periodic_tasks(wallet_address=wallet_address),
-            octobot_node.scheduler.SCHEDULER.get_pending_tasks(wallet_address=wallet_address),
-            octobot_node.scheduler.SCHEDULER.get_scheduled_tasks(wallet_address=wallet_address),
-            octobot_node.scheduler.SCHEDULER.get_results(wallet_address=wallet_address),
+            octobot_node.scheduler.SCHEDULER.get_periodic_tasks(user_id=user_id),
+            octobot_node.scheduler.SCHEDULER.get_pending_tasks(user_id=user_id),
+            octobot_node.scheduler.SCHEDULER.get_scheduled_tasks(user_id=user_id),
+            octobot_node.scheduler.SCHEDULER.get_results(user_id=user_id),
         )
         executions.extend(periodic)
         executions.extend(pending)
@@ -186,13 +186,13 @@ async def get_all_tasks(
 
 async def get_tasks_export_results(
     task_ids: list[str],
-    wallet_address: typing.Optional[str],
+    user_id: typing.Optional[str],
     user_rsa_public_key: typing.Optional[str] = None,
 ) -> dict[str, dict[str, str]]:
     if not task_ids:
         return {}
     return await octobot_node.scheduler.SCHEDULER.get_workflows_export_results(
-        task_ids, wallet_address, user_rsa_public_key=user_rsa_public_key
+        task_ids, user_id, user_rsa_public_key=user_rsa_public_key
     )
 
 

@@ -23,7 +23,7 @@ import octobot_sync.constants as sync_constants
 
 from datetime import datetime, timezone
 
-from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, TENANT_ADDRESS
+from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, TENANT_ADDRESS, TENANT_USER_ID
 
 
 def _sample_debug_state() -> protocol_models.DebugState:
@@ -102,7 +102,7 @@ class TestGetDebug:
                 response = tenant_client.get("/api/v1/debug/")
         assert response.status_code == 200
         assert response.json()["version"] == sync_constants.DEBUG_STATE_VERSION
-        mock_get_debug_state.assert_awaited_once_with(TENANT_ADDRESS)
+        mock_get_debug_state.assert_awaited_once_with(TENANT_USER_ID)
 
     def test_serializes_user_actions_without_oneof_validator_fields(
         self,
@@ -141,7 +141,7 @@ class TestGetDebug:
                     params={"wallet_address": TENANT_ADDRESS},
                 )
         assert response.status_code == 200
-        mock_get_debug_state.assert_awaited_once_with(TENANT_ADDRESS)
+        mock_get_debug_state.assert_awaited_once_with(TENANT_USER_ID)
 
     def test_as_tenant_with_other_wallet_address_query_forbidden(self, tenant_client, mock_auth):
         with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
@@ -164,7 +164,7 @@ class TestGetDebug:
                     params={"wallet_address": TENANT_ADDRESS},
                 )
         assert response.status_code == 200
-        mock_get_debug_state.assert_awaited_once_with(TENANT_ADDRESS)
+        mock_get_debug_state.assert_awaited_once_with(TENANT_USER_ID)
 
     def test_without_auth_returns_401(self, client, mock_auth):
         response = client.get("/api/v1/debug/")
@@ -230,7 +230,7 @@ class TestExecuteUserAction:
         assert configuration.action_type == protocol_models.UserActionType.AUTOMATION_SIGNAL
         assert configuration.automation_id == "00000000-0000-4000-8000-000000000099"
         assert configuration.signal_type == protocol_models.AutomationSignalType.FORCED_TRIGGER
-        assert mock_execute_user_action.await_args[0][1] == TENANT_ADDRESS
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
 
     def test_parses_flat_stop_configuration(self, tenant_client, mock_auth):
         mock_execute_user_action = mock.AsyncMock(return_value=None)
@@ -262,7 +262,7 @@ class TestExecuteUserAction:
                     params={"wallet_address": TENANT_ADDRESS},
                 )
         assert response.status_code == 204
-        assert mock_execute_user_action.await_args[0][1] == TENANT_ADDRESS
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
 
     def test_tenant_with_other_wallet_forbidden(self, tenant_client, mock_auth):
         with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
@@ -286,7 +286,7 @@ class TestExecuteUserAction:
                     params={"wallet_address": TENANT_ADDRESS},
                 )
         assert response.status_code == 204
-        assert mock_execute_user_action.await_args[0][1] == TENANT_ADDRESS
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
 
     def test_without_auth_returns_401(self, client, mock_auth):
         response = client.post("/api/v1/debug/", json=_minimal_user_action_payload())

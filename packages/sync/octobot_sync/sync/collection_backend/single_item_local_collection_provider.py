@@ -33,7 +33,7 @@ class SingleItemLocalCollectionProvider(abstract_provider.AbstractLocalCollectio
     Provider for collections with one encrypted state file per identifier.
 
     Exposes whole-state load/save only (no list CRUD). Identifiers are typically
-    ``<wallet_address>/<account_id>`` under the collection root.
+    ``<user_id>/<account_id>`` under the collection root.
     """
 
     @staticmethod
@@ -52,37 +52,37 @@ class SingleItemLocalCollectionProvider(abstract_provider.AbstractLocalCollectio
             ttl=self._CACHE_TTL_SECONDS,
         )
 
-    def _build_identifier(self, address: str, account_id: str) -> str:
+    def _build_identifier(self, user_id: str, account_id: str) -> str:
         return (
-            f"{self._storage._sanitize_address(address)}/{self._storage._sanitize_address(account_id)}"
+            f"{self._storage._sanitize_storage_key(user_id)}/{self._storage._sanitize_storage_key(account_id)}"
         )
 
-    def _get_cached_state(self, address: str, account_id: str) -> S | None:
-        return self._state_cache.get((address, account_id))
+    def _get_cached_state(self, user_id: str, account_id: str) -> S | None:
+        return self._state_cache.get((user_id, account_id))
 
-    def _set_cached_state(self, address: str, account_id: str, state: S) -> None:
-        self._state_cache[(address, account_id)] = state
+    def _set_cached_state(self, user_id: str, account_id: str, state: S) -> None:
+        self._state_cache[(user_id, account_id)] = state
 
-    def load_state(self, address: str, account_id: str) -> S:
-        cached_state = self._get_cached_state(address, account_id)
+    def load_state(self, user_id: str, account_id: str) -> S:
+        cached_state = self._get_cached_state(user_id, account_id)
         if cached_state is not None:
             return cached_state
-        identifier = self._build_identifier(address, account_id)
-        wallet_private_key = self._get_wallet_private_key(address)
+        identifier = self._build_identifier(user_id, account_id)
+        wallet_private_key = self._get_wallet_private_key(user_id)
         persisted_state = self._storage.load_state(
             identifier,
             wallet_private_key,
             self.STATE_CLASS,
         )
-        self._set_cached_state(address, account_id, persisted_state)
+        self._set_cached_state(user_id, account_id, persisted_state)
         return persisted_state
 
-    def save_state(self, address: str, account_id: str, state: S) -> None:
-        identifier = self._build_identifier(address, account_id)
-        wallet_private_key = self._get_wallet_private_key(address)
+    def save_state(self, user_id: str, account_id: str, state: S) -> None:
+        identifier = self._build_identifier(user_id, account_id)
+        wallet_private_key = self._get_wallet_private_key(user_id)
         self._storage.save_state(identifier, wallet_private_key, state)
-        self._set_cached_state(address, account_id, state)
+        self._set_cached_state(user_id, account_id, state)
 
-    def load_state_encrypted(self, address: str, account_id: str) -> dict[str, str]:
-        identifier = self._build_identifier(address, account_id)
+    def load_state_encrypted(self, user_id: str, account_id: str) -> dict[str, str]:
+        identifier = self._build_identifier(user_id, account_id)
         return self._storage.load_items_encrypted(identifier)

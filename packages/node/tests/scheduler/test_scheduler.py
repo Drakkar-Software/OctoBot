@@ -266,7 +266,7 @@ class TestSchedulerGetResults:
 
     @pytest.mark.asyncio
     async def test_get_results_wallet_filter_keeps_legacy_task_without_wallet_address(self):
-        """Regression: tasks created before the multi-wallet refactor have task.wallet_address=None.
+        """Regression: tasks created before the multi-wallet refactor have task.user_id=None.
         They must remain visible to any caller — never dropped by the wallet filter.
         """
         legacy_task = octobot_node.models.Task(
@@ -274,14 +274,14 @@ class TestSchedulerGetResults:
             name="legacy-task",
             content=None,
             type="execute_actions",
-            wallet_address=None,  # pre-multi-tenant: no wallet attached
+            user_id=None,  # pre-multi-tenant: no wallet attached
         )
         ws = _build_mock_workflow_status(legacy_task, None, None, workflow_id=legacy_task.id)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        executions = await sched.get_results(wallet_address="0xcaller")
+        executions = await sched.get_results(user_id="0xcaller")
 
         assert len(executions) == 1
         assert executions[0].id == legacy_task.id
@@ -304,7 +304,7 @@ class TestSchedulerGetResults:
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        executions = await sched.get_results(wallet_address="0xcaller")
+        executions = await sched.get_results(user_id="0xcaller")
 
         assert len(executions) == 1
         assert executions[0].status == octobot_node.models.TaskStatus.FAILED
@@ -317,28 +317,28 @@ class TestSchedulerGetResults:
             name="other-task",
             content=None,
             type="execute_actions",
-            wallet_address="0xother",
+            user_id="0xother",
         )
         ws = _build_mock_workflow_status(other_task, None, None, workflow_id=other_task.id)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        executions = await sched.get_results(wallet_address="0xcaller")
+        executions = await sched.get_results(user_id="0xcaller")
 
         assert executions == []
 
 
 class TestGetWorkflowsExportResults:
 
-    def _make_task(self, wallet_address: str = "wallet-a") -> octobot_node.models.Task:
+    def _make_task(self, user_id: str = "wallet-a") -> octobot_node.models.Task:
         return octobot_node.models.Task(
             id=PARENT_ID,
             name="test-task",
             content="encrypted_content",
             content_metadata="meta",
             type="execute_actions",
-            wallet_address=wallet_address,
+            user_id=user_id,
         )
 
     @pytest.mark.asyncio
@@ -440,8 +440,8 @@ class TestGetWorkflowsExportResults:
 
     @pytest.mark.asyncio
     async def test_rejects_other_wallet(self):
-        """wallet_address filter: task belonging to a different wallet returns forbidden."""
-        task = self._make_task(wallet_address="wallet-b")
+        """user_id filter: task belonging to a different wallet returns forbidden."""
+        task = self._make_task(user_id="wallet-b")
         child_ws = _build_mock_workflow_status(task, "state", None, workflow_id=CHILD_ID)
         child_ws.updated_at = 10
         parent_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
@@ -698,7 +698,7 @@ class TestSchedulerListUserActions:
             created_at=datetime.datetime(2024, 6, 1, tzinfo=datetime.UTC),
         )
         inputs_pending = params.UserActionWorkflowInputs(
-            wallet_address=wallet_segment,
+            user_id=wallet_segment,
             user_action=ua_pending,
         ).to_dict(include_default_values=False)
         workflow_pending = mock.Mock(spec=dbos.WorkflowStatus)
@@ -713,7 +713,7 @@ class TestSchedulerListUserActions:
             created_at=datetime.datetime(2024, 5, 1, tzinfo=datetime.UTC),
         )
         output_payload = params.UserActionWorkflowOutput(
-            wallet_address=wallet_segment,
+            user_id=wallet_segment,
             updated_user_action=ua_done,
         ).to_dict(include_default_values=False)
         workflow_done = mock.Mock(spec=dbos.WorkflowStatus)
@@ -735,10 +735,10 @@ class TestSchedulerListUserActions:
         wallet_b = "0xw_b"
         ua_a = protocol_models.UserAction(id="ua-a", configuration=None)
         ua_b = protocol_models.UserAction(id="ua-b", configuration=None)
-        inp_a = params.UserActionWorkflowInputs(wallet_address=wallet_a, user_action=ua_a).to_dict(
+        inp_a = params.UserActionWorkflowInputs(user_id=wallet_a, user_action=ua_a).to_dict(
             include_default_values=False,
         )
-        inp_b = params.UserActionWorkflowInputs(wallet_address=wallet_b, user_action=ua_b).to_dict(
+        inp_b = params.UserActionWorkflowInputs(user_id=wallet_b, user_action=ua_b).to_dict(
             include_default_values=False,
         )
         workflow_a = mock.Mock(spec=dbos.WorkflowStatus)
@@ -761,7 +761,7 @@ class TestSchedulerListUserActions:
         wallet_segment = "0xw_fail"
         ua_in = protocol_models.UserAction(id="ua-fail", configuration=None)
         inp = params.UserActionWorkflowInputs(
-            wallet_address=wallet_segment,
+            user_id=wallet_segment,
             user_action=ua_in,
         ).to_dict(include_default_values=False)
         workflow_error = mock.Mock(spec=dbos.WorkflowStatus)
@@ -798,7 +798,7 @@ class TestSchedulerListUserActions:
             configuration=protocol_models.UserActionConfiguration.from_json(configuration_inner.to_json()),
         )
         inp = params.UserActionWorkflowInputs(
-            wallet_address=wallet_segment,
+            user_id=wallet_segment,
             user_action=ua_in,
         ).to_dict(include_default_values=False)
         workflow_error = mock.Mock(spec=dbos.WorkflowStatus)
@@ -832,7 +832,7 @@ class TestSchedulerListUserActions:
             configuration=protocol_models.UserActionConfiguration.from_json(configuration_inner.to_json()),
         )
         inp = params.UserActionWorkflowInputs(
-            wallet_address=wallet_segment,
+            user_id=wallet_segment,
             user_action=ua_in,
         ).to_dict(include_default_values=False)
         workflow_error = mock.Mock(spec=dbos.WorkflowStatus)

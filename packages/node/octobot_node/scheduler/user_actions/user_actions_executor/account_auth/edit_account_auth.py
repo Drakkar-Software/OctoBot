@@ -55,7 +55,7 @@ class EditAccountAuthActionExecutor(
                 "EditAccountAuthConfiguration.id must match configuration.id."
             )
         collection_providers.AccountAuthenticationProvider.instance().update_item(
-            self._wallet_address,
+            self._user_id,
             account_auth_user_action_executor.with_updated_at(edit_payload.configuration),
         )
         self._mark_user_action_completed(user_action)

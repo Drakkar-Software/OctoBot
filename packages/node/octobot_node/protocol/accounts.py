@@ -20,16 +20,16 @@ import octobot_sync.sync.collection_providers.user_account_provider as account_p
 import octobot_sync.sync.collection_backend.errors as collection_errors
 
 
-def get_accounts_state_encrypted(address: str) -> dict[str, str] | None:
+def get_accounts_state_encrypted(user_id: str) -> dict[str, str] | None:
     try:
-        return account_provider.AccountProvider.instance().list_items_encrypted(address)
+        return account_provider.AccountProvider.instance().list_items_encrypted(user_id)
     except collection_errors.CollectionNoDataError:
         return None
 
-def get_accounts_state(address: str) -> protocol_models.AccountsState:
+def get_accounts_state(user_id: str) -> protocol_models.AccountsState:
     provider = account_provider.AccountProvider.instance()
     return protocol_models.AccountsState(
         version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-        accounts=provider.list_items(address),
-        exchange_configs=provider.list_exchange_configs(address),
+        accounts=provider.list_items(user_id),
+        exchange_configs=provider.list_exchange_configs(user_id),
     )

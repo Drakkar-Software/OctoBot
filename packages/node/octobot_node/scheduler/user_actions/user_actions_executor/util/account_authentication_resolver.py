@@ -22,7 +22,7 @@ import octobot_node.errors as node_errors
 
 
 def get_exchange_authentication(
-    wallet_address: str,
+    user_id: str,
     account: protocol_models.Account,
 ) -> protocol_models.AccountAuthentication | None:
     if account.is_simulated:
@@ -43,12 +43,12 @@ def get_exchange_authentication(
         )
     try:
         authentication = collection_providers.AccountAuthenticationProvider.instance().get_item(
-            wallet_address,
+            user_id,
             authentication_id,
         )
     except collection_errors.ItemNotFoundError as err:
         raise node_errors.AccountAuthenticationNotFoundError(
-            f"Authentication {authentication_id!r} for account {account.id!r} not found for address {wallet_address!r}: {err}"
+            f"Authentication {authentication_id!r} for account {account.id!r} not found for address {user_id!r}: {err}"
         ) from err
     if not authentication.api_key or not authentication.api_secret:
         raise node_errors.AccountAuthenticationNotFoundError(

@@ -66,12 +66,12 @@ def get_user_action_terminal_workflow_statuses() -> tuple[dbos_lib.WorkflowStatu
 class ResolvedUserActionWorkflowInputs:
     inputs: typing.Optional[params.UserActionWorkflowInputs] = None
     parse_error: typing.Optional[str] = None
-    partial_wallet_address: typing.Optional[str] = None
+    partial_user_id: typing.Optional[str] = None
     partial_user_action_id: typing.Optional[str] = None
 
 
 def _is_user_action_workflow_input_dict(candidate: dict) -> bool:
-    return "wallet_address" in candidate or "user_action" in candidate
+    return "user_id" in candidate or "user_action" in candidate
 
 
 def _yield_user_action_input_dicts_from_container(
@@ -111,8 +111,8 @@ def _iter_workflow_input_dicts(workflow_status: dbos_lib.WorkflowStatus) -> typi
 
 
 def _partial_user_action_workflow_fragments(input_dict: dict) -> tuple[typing.Optional[str], typing.Optional[str]]:
-    wallet_address = input_dict.get("wallet_address")
-    partial_wallet = wallet_address if isinstance(wallet_address, str) else None
+    user_id = input_dict.get("user_id")
+    partial_wallet = user_id if isinstance(user_id, str) else None
     user_action_raw = input_dict.get("user_action")
     partial_action_id = None
     if isinstance(user_action_raw, dict):
@@ -135,11 +135,11 @@ def _parse_user_action_workflow_inputs_from_dict(input_dict: dict) -> params.Use
             raise first_error from nested_error
         if reparsed_user_action is None:
             raise first_error from first_error
-        wallet_address = input_dict.get("wallet_address")
-        if not isinstance(wallet_address, str):
+        user_id = input_dict.get("user_id")
+        if not isinstance(user_id, str):
             raise first_error from first_error
         return params.UserActionWorkflowInputs(
-            wallet_address=wallet_address,
+            user_id=user_id,
             user_action=reparsed_user_action,
         )
 
@@ -148,12 +148,12 @@ def resolve_user_action_workflow_inputs(
     workflow_status: dbos_lib.WorkflowStatus,
 ) -> ResolvedUserActionWorkflowInputs:
     last_parse_error: typing.Optional[str] = None
-    partial_wallet_address: typing.Optional[str] = None
+    partial_user_id: typing.Optional[str] = None
     partial_user_action_id: typing.Optional[str] = None
     for input_dict in _iter_workflow_input_dicts(workflow_status):
         partial_wallet, partial_action_id = _partial_user_action_workflow_fragments(input_dict)
         if partial_wallet is not None:
-            partial_wallet_address = partial_wallet
+            partial_user_id = partial_wallet
         if partial_action_id is not None:
             partial_user_action_id = partial_action_id
         try:
@@ -167,18 +167,18 @@ def resolve_user_action_workflow_inputs(
         return ResolvedUserActionWorkflowInputs(inputs=parsed_inputs)
     return ResolvedUserActionWorkflowInputs(
         parse_error=last_parse_error or "no user-action workflow inputs found",
-        partial_wallet_address=partial_wallet_address,
+        partial_user_id=partial_user_id,
         partial_user_action_id=partial_user_action_id,
     )
 
 
 def filter_by_wallet(
     statuses: typing.Optional[list[dbos_lib.WorkflowStatus]],
-    wallet_address: typing.Optional[str],
+    user_id: typing.Optional[str],
     queue: octobot_node_enums.SchedulerQueues,
 ) -> list[dbos_lib.WorkflowStatus]:
-    """Return statuses for ``wallet_address`` using automation task wallet or user-action input wallet."""
-    if not statuses or wallet_address is None:
+    """Return statuses for ``user_id`` using automation task wallet or user-action input wallet."""
+    if not statuses or user_id is None:
         return statuses or []
     if queue == octobot_node_enums.SchedulerQueues.USER_ACTION_QUEUE:
         kept = []
@@ -187,7 +187,7 @@ def filter_by_wallet(
             if ua_inputs is None:
                 kept.append(status_row)
                 continue
-            if ua_inputs.wallet_address and ua_inputs.wallet_address != wallet_address:
+            if ua_inputs.user_id and ua_inputs.user_id != user_id:
                 continue
             kept.append(status_row)
         return kept
@@ -195,7 +195,7 @@ def filter_by_wallet(
         kept = []
         for status_row in statuses:
             task = get_automation_input_task(status_row)
-            if task is None or not task.wallet_address or task.wallet_address == wallet_address:
+            if task is None or not task.user_id or task.user_id == user_id:
                 kept.append(status_row)
         return kept
     raise ValueError(f"Unsupported scheduler queue for wallet filter: {queue!r}")

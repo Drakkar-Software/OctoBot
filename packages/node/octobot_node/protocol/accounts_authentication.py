@@ -18,8 +18,8 @@ import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers.user_account_authentication_provider as auth_provider
 
 
-def get_accounts_authentication_state_encrypted(address: str) -> dict[str, str] | None:
+def get_accounts_authentication_state_encrypted(user_id: str) -> dict[str, str] | None:
     try:
-        return auth_provider.AccountAuthenticationProvider.instance().list_items_encrypted(address)
+        return auth_provider.AccountAuthenticationProvider.instance().list_items_encrypted(user_id)
     except collection_errors.CollectionNoDataError:
         return None

@@ -6,10 +6,11 @@ import tempfile
 import mock
 import pytest
 
-import octobot_sync.chain.evm as sync_evm_module
+import octobot_sync.server as sync_server_module
 import octobot_sync.sync
 import octobot.community.authentication as community_authentication_module
-import octobot.community.local_authenticator as local_authenticator_module
+
+from .util import authenticator_mocks as authenticator_mocks_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
 import octobot_node.constants as octobot_node_constants
 import octobot_node.errors as node_errors_module
@@ -49,12 +50,12 @@ def temp_dbos_scheduler_account_auth_crud(
 
 
 async def _run_user_action_to_completion(
-    wallet_address: str,
+    user_id: str,
     user_action: protocol_models.UserAction,
     *,
     expect_exceptions: tuple[type[BaseException], ...] = (),
 ) -> str:
-    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, wallet_address)
+    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, user_id)
     workflow_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(workflow_id)
     try:
         await asyncio.wait_for(workflow_handle.get_result(), timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS)
@@ -160,19 +161,12 @@ class TestExecuteUserActionAccountAuthCrud:
             )
 
         try:
-            # Step: Import dev wallet; ``wallet_address`` ties AccountAuthenticationProvider paths and ``list_user_actions`` filtering together.
-            authentication_configuration = local_authenticator_module.get_stateless_configuration()
-            authentication_instance = community_authentication_module.CommunityAuthentication(
-                config=authentication_configuration,
-                use_as_singleton=False,
-            )
-            authentication_instance.import_wallet(
+            # Step: Import dev wallet; ``user_id`` ties AccountAuthenticationProvider paths and ``list_user_actions`` filtering together.
+            authentication_instance = authenticator_mocks_module.build_community_authentication(
                 _TEST_PRIVATE_KEY,
                 _TEST_WALLET_PASSPHRASE,
-                None,
-                True,
             )
-            wallet_address = sync_evm_module.address_from_evm_key(_TEST_PRIVATE_KEY).lower()
+            user_id = sync_server_module.derive_user_id(_TEST_PRIVATE_KEY)
 
             # Step: Filesystem-backed provider for this test root (also patched as ``AccountAuthenticationProvider.instance()``).
             auth_provider = octobot_sync.sync.collection_providers.AccountAuthenticationProvider(
@@ -207,7 +201,7 @@ class TestExecuteUserActionAccountAuthCrud:
                     "create_item",
                     create_item_mock,
                 ):
-                    assert auth_provider.list_items(wallet_address) == []
+                    assert auth_provider.list_items(user_id) == []
 
                     # Step 1 — Create (doomed): ``InvalidUserActionPayloadError`` from patched create; workflow fails; nothing persisted.
                     doomed_create = build_create_account_auth_user_action(
@@ -215,12 +209,12 @@ class TestExecuteUserActionAccountAuthCrud:
                         authentication=build_account_authentication(auth_id=_DOOMED_AUTH_ID),
                     )
                     await _run_user_action_to_completion(
-                        wallet_address,
+                        user_id,
                         doomed_create,
                     )
 
                     # Step 1 (continued) — Listing: only the doomed row, FAILED with executor-built ``AccountAuthActionResult``.
-                    listed_after_doomed = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_doomed = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_doomed,
                         [(doomed_create.id, protocol_models.UserActionStatus.FAILED)],
@@ -239,10 +233,10 @@ class TestExecuteUserActionAccountAuthCrud:
                         user_action_id="ua-account-auth-create",
                         authentication=build_account_authentication(auth_id=_FUNCTIONAL_AUTH_ID),
                     )
-                    await _run_user_action_to_completion(wallet_address, happy_create)
+                    await _run_user_action_to_completion(user_id, happy_create)
 
                     # Step 2 (continued) — Listing: doomed FAILED + happy COMPLETED; verify persisted account auth.
-                    listed_after_create = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_create = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_create,
                         [
@@ -257,12 +251,12 @@ class TestExecuteUserActionAccountAuthCrud:
                     assert created_inner.error_message is None
 
                     persisted_created_auth = auth_provider.get_item(
-                        wallet_address,
+                        user_id,
                         _FUNCTIONAL_AUTH_ID,
                     )
                     assert persisted_created_auth.api_key == "functional-test-api-key"
                     assert persisted_created_auth.updated_at is not None
-                    assert len(auth_provider.list_items(wallet_address)) == 1
+                    assert len(auth_provider.list_items(user_id)) == 1
 
                     # Step 3 — Edit: update credentials while keeping the same auth id.
                     edited_authentication = build_account_authentication(
@@ -274,10 +268,10 @@ class TestExecuteUserActionAccountAuthCrud:
                         auth_id=_FUNCTIONAL_AUTH_ID,
                         authentication=edited_authentication,
                     )
-                    await _run_user_action_to_completion(wallet_address, edit_auth_action)
+                    await _run_user_action_to_completion(user_id, edit_auth_action)
 
                     # Step 3 (continued) — Listing adds COMPLETED edit row; account auth updated in provider.
-                    listed_after_edit = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_edit = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_edit,
                         [
@@ -287,7 +281,7 @@ class TestExecuteUserActionAccountAuthCrud:
                         ],
                     )
                     persisted_edited_auth = auth_provider.get_item(
-                        wallet_address,
+                        user_id,
                         _FUNCTIONAL_AUTH_ID,
                     )
                     assert persisted_edited_auth.api_secret == "functional-test-api-secret-updated"
@@ -299,10 +293,10 @@ class TestExecuteUserActionAccountAuthCrud:
                         user_action_id="ua-account-auth-delete",
                         auth_id=_FUNCTIONAL_AUTH_ID,
                     )
-                    await _run_user_action_to_completion(wallet_address, delete_auth_action)
+                    await _run_user_action_to_completion(user_id, delete_auth_action)
 
                     # Step 4 (continued) — Full listing is four terminal rows; account auth collection empty.
-                    listed_after_delete = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_delete = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_delete,
                         [
@@ -320,8 +314,8 @@ class TestExecuteUserActionAccountAuthCrud:
 
                     # Step: Collection layer confirms account auth delete (no item, empty list).
                     with pytest.raises(octobot_sync.sync.ItemNotFoundError):
-                        auth_provider.get_item(wallet_address, _FUNCTIONAL_AUTH_ID)
-                    assert auth_provider.list_items(wallet_address) == []
+                        auth_provider.get_item(user_id, _FUNCTIONAL_AUTH_ID)
+                    assert auth_provider.list_items(user_id) == []
         finally:
             # Step: Tear down wallet task and restore prior user-root path.
             if authentication_instance is not None:

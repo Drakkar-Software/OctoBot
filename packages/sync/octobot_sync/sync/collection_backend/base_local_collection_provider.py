@@ -39,10 +39,10 @@ class BaseLocalCollectionProvider(
     """
     Generic provider exposing CRUD operations on typed pydantic model items ``T``.
 
-    Items are grouped per wallet address and persisted via a BaseLocalCollectionStorage
+    Items are grouped per wallet user_id and persisted via a BaseLocalCollectionStorage
     inside a typed pydantic state model ``S`` (with version + items list keyed by
     ``ITEMS_KEY``).  Subclasses must set the class variables and implement
-    ``_get_item_id``.  The full state envelope is cached per address so updates to
+    ``_get_item_id``.  The full state envelope is cached per user_id so updates to
     one collection field preserve other fields on save.
     """
     ITEMS_KEY: str = None  # type: ignore
@@ -80,11 +80,11 @@ class BaseLocalCollectionProvider(
             )
         return self._get_item_id(item)
 
-    def _get_cached_state(self, address: str) -> S | None:
-        return self._cache.get(address)
+    def _get_cached_state(self, user_id: str) -> S | None:
+        return self._cache.get(user_id)
 
-    def _set_cached_state(self, address: str, state: S) -> None:
-        self._cache[address] = state
+    def _set_cached_state(self, user_id: str, state: S) -> None:
+        self._cache[user_id] = state
 
     def _empty_state(self) -> S:
         return typing.cast(
@@ -101,16 +101,16 @@ class BaseLocalCollectionProvider(
     def _replace_state_items(self, state: S, items_key: str, items: list) -> S:
         return typing.cast(S, state.model_copy(update={items_key: items}))
 
-    def _load_state(self, address: str) -> S:
-        cached_state = self._get_cached_state(address)
+    def _load_state(self, user_id: str) -> S:
+        cached_state = self._get_cached_state(user_id)
         if cached_state is not None:
             return cached_state
-        wallet_private_key = self._get_wallet_private_key(address)
+        wallet_private_key = self._get_wallet_private_key(user_id)
         try:
             persisted_state = typing.cast(
                 S,
                 self._storage.load_state(
-                    address,
+                    user_id,
                     wallet_private_key,
                     self.STATE_CLASS,
                     model_sanitizers=self.MODEL_SANITIZERS,
@@ -119,53 +119,53 @@ class BaseLocalCollectionProvider(
             )
         except collection_errors.CollectionNoDataError:
             persisted_state = self._empty_state()
-        self._set_cached_state(address, persisted_state)
+        self._set_cached_state(user_id, persisted_state)
         return persisted_state
 
-    def _save_state(self, address: str, state: S) -> None:
-        wallet_private_key = self._get_wallet_private_key(address)
-        self._storage.save_state(address, wallet_private_key, state)
-        self._set_cached_state(address, state)
+    def _save_state(self, user_id: str, state: S) -> None:
+        wallet_private_key = self._get_wallet_private_key(user_id)
+        self._storage.save_state(user_id, wallet_private_key, state)
+        self._set_cached_state(user_id, state)
 
-    def _list_items_for_key(self, address: str, items_key: str) -> list:
-        state = self._load_state(address)
+    def _list_items_for_key(self, user_id: str, items_key: str) -> list:
+        state = self._load_state(user_id)
         return list(self._items_from_state(state, items_key))
 
-    def _get_item_for_key(self, address: str, items_key: str, item_id: str) -> typing.Any:
-        for item in self._list_items_for_key(address, items_key):
+    def _get_item_for_key(self, user_id: str, items_key: str, item_id: str) -> typing.Any:
+        for item in self._list_items_for_key(user_id, items_key):
             if self._get_item_id_for_key(items_key, item) == item_id:
                 return item
         raise collection_errors.ItemNotFoundError(
-            f"Item {item_id} not found for address {address} in {items_key!r}"
+            f"Item {item_id} not found for user_id {user_id} in {items_key!r}"
         )
 
-    def _create_item_for_key(self, address: str, items_key: str, item: typing.Any) -> typing.Any:
-        state = self._load_state(address)
+    def _create_item_for_key(self, user_id: str, items_key: str, item: typing.Any) -> typing.Any:
+        state = self._load_state(user_id)
         items = list(self._items_from_state(state, items_key))
         item_id = self._get_item_id_for_key(items_key, item)
         if any(self._get_item_id_for_key(items_key, existing) == item_id for existing in items):
             raise collection_errors.DuplicateItemError(
-                f"Item {item_id} already exists for address {address} in {items_key!r}"
+                f"Item {item_id} already exists for user_id {user_id} in {items_key!r}"
             )
         items.append(item)
-        self._save_state(address, self._replace_state_items(state, items_key, items))
+        self._save_state(user_id, self._replace_state_items(state, items_key, items))
         return item
 
-    def _update_item_for_key(self, address: str, items_key: str, item: typing.Any) -> typing.Any:
-        state = self._load_state(address)
+    def _update_item_for_key(self, user_id: str, items_key: str, item: typing.Any) -> typing.Any:
+        state = self._load_state(user_id)
         items = list(self._items_from_state(state, items_key))
         item_id = self._get_item_id_for_key(items_key, item)
         for index, existing in enumerate(items):
             if self._get_item_id_for_key(items_key, existing) == item_id:
                 items[index] = item
-                self._save_state(address, self._replace_state_items(state, items_key, items))
+                self._save_state(user_id, self._replace_state_items(state, items_key, items))
                 return item
         raise collection_errors.ItemNotFoundError(
-            f"Item {item_id} not found for address {address} in {items_key!r}"
+            f"Item {item_id} not found for user_id {user_id} in {items_key!r}"
         )
 
-    def _delete_item_for_key(self, address: str, items_key: str, item_id: str) -> None:
-        state = self._load_state(address)
+    def _delete_item_for_key(self, user_id: str, items_key: str, item_id: str) -> None:
+        state = self._load_state(user_id)
         items = list(self._items_from_state(state, items_key))
         remaining = [
             item for item in items
@@ -173,30 +173,30 @@ class BaseLocalCollectionProvider(
         ]
         if len(remaining) == len(items):
             raise collection_errors.ItemNotFoundError(
-                f"Item {item_id} not found for address {address} in {items_key!r}"
+                f"Item {item_id} not found for user_id {user_id} in {items_key!r}"
             )
-        self._save_state(address, self._replace_state_items(state, items_key, remaining))
+        self._save_state(user_id, self._replace_state_items(state, items_key, remaining))
 
     # -- public CRUD --
 
-    def list_items_encrypted(self, address: str) -> dict[str, str]:
+    def list_items_encrypted(self, user_id: str) -> dict[str, str]:
         """Return the raw encrypted blob from disk, bypassing cache and decryption.
 
-        Raises ``CollectionNoDataError`` when no file exists for ``address``.
+        Raises ``CollectionNoDataError`` when no file exists for ``user_id``.
         """
-        return self._storage.load_items_encrypted(address)
+        return self._storage.load_items_encrypted(user_id)
 
-    def list_items(self, address: str) -> list[T]:
-        return self._list_items_for_key(address, self.ITEMS_KEY)
+    def list_items(self, user_id: str) -> list[T]:
+        return self._list_items_for_key(user_id, self.ITEMS_KEY)
 
-    def get_item(self, address: str, item_id: str) -> T:
-        return self._get_item_for_key(address, self.ITEMS_KEY, item_id)
+    def get_item(self, user_id: str, item_id: str) -> T:
+        return self._get_item_for_key(user_id, self.ITEMS_KEY, item_id)
 
-    def create_item(self, address: str, item: T) -> T:
-        return self._create_item_for_key(address, self.ITEMS_KEY, item)
+    def create_item(self, user_id: str, item: T) -> T:
+        return self._create_item_for_key(user_id, self.ITEMS_KEY, item)
 
-    def update_item(self, address: str, item: T) -> T:
-        return self._update_item_for_key(address, self.ITEMS_KEY, item)
+    def update_item(self, user_id: str, item: T) -> T:
+        return self._update_item_for_key(user_id, self.ITEMS_KEY, item)
 
-    def delete_item(self, address: str, item_id: str) -> None:
-        self._delete_item_for_key(address, self.ITEMS_KEY, item_id)
+    def delete_item(self, user_id: str, item_id: str) -> None:
+        self._delete_item_for_key(user_id, self.ITEMS_KEY, item_id)

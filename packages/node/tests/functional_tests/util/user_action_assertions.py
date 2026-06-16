@@ -67,10 +67,10 @@ def workflow_row_id_matches_user_action_selector_created_automation_id(
 async def assert_user_action_selector_completed_automation_create(
     *,
     user_action_id: str,
-    wallet_address: str,
+    user_id: str,
     expected_workflow_id: str | None,
 ) -> None:
-    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
     by_id = merge_user_actions_latest_per_id(listed)
     assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
     stored = by_id[user_action_id]
@@ -95,9 +95,9 @@ async def assert_user_action_selector_completed_automation_create(
 async def get_created_automation_id_from_user_action(
     *,
     user_action_id: str,
-    wallet_address: str,
+    user_id: str,
 ) -> str:
-    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
     by_id = merge_user_actions_latest_per_id(listed)
     stored = by_id[user_action_id]
     assert stored.result is not None
@@ -110,9 +110,9 @@ async def get_created_automation_id_from_user_action(
 async def assert_user_action_selector_completed_automation_stop(
     *,
     user_action_id: str,
-    wallet_address: str,
+    user_id: str,
 ) -> None:
-    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
     by_id = merge_user_actions_latest_per_id(listed)
     assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
     stored = by_id[user_action_id]
@@ -128,9 +128,9 @@ async def assert_user_action_selector_completed_automation_stop(
 async def assert_user_action_selector_completed_automation_signal(
     *,
     user_action_id: str,
-    wallet_address: str,
+    user_id: str,
 ) -> None:
-    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
     by_id = merge_user_actions_latest_per_id(listed)
     assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
     stored = by_id[user_action_id]

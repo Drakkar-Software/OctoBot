@@ -47,7 +47,7 @@ class CreateStrategyActionExecutor(
     ) -> None:
         create_payload = _get_create_strategy_payload(user_action)
         collection_providers.StrategyProvider.instance().create_item(
-            self._wallet_address,
+            self._user_id,
             create_payload.configuration,
         )
         self._mark_user_action_completed(user_action)

@@ -6,10 +6,11 @@ import tempfile
 import mock
 import pytest
 
-import octobot_sync.chain.evm as sync_evm_module
+import octobot_sync.server as sync_server_module
 import octobot_sync.sync
 import octobot.community.authentication as community_authentication_module
-import octobot.community.local_authenticator as local_authenticator_module
+
+from .util import authenticator_mocks as authenticator_mocks_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
 import octobot_commons.constants as commons_constants
 import octobot_node.constants as octobot_node_constants
@@ -79,12 +80,12 @@ async def _stub_get_balance_no_network(self, **kwargs):
 
 
 async def _run_user_action_to_completion(
-    wallet_address: str,
+    user_id: str,
     user_action: protocol_models.UserAction,
     *,
     expect_exceptions: tuple[type[BaseException], ...] = (),
 ) -> str:
-    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, wallet_address)
+    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, user_id)
     workflow_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(workflow_id)
     try:
         await asyncio.wait_for(workflow_handle.get_result(), timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS)
@@ -244,19 +245,12 @@ class TestExecuteUserActionExchangeConfigCrud:
             )
 
         try:
-            # Step: Import dev wallet; ``wallet_address`` ties AccountProvider paths and ``list_user_actions`` filtering together.
-            authentication_configuration = local_authenticator_module.get_stateless_configuration()
-            authentication_instance = community_authentication_module.CommunityAuthentication(
-                config=authentication_configuration,
-                use_as_singleton=False,
-            )
-            authentication_instance.import_wallet(
+            # Step: Import dev wallet; ``user_id`` ties AccountProvider paths and ``list_user_actions`` filtering together.
+            authentication_instance = authenticator_mocks_module.build_community_authentication(
                 _TEST_PRIVATE_KEY,
                 _TEST_WALLET_PASSPHRASE,
-                None,
-                True,
             )
-            wallet_address = sync_evm_module.address_from_evm_key(_TEST_PRIVATE_KEY).lower()
+            user_id = sync_server_module.derive_user_id(_TEST_PRIVATE_KEY)
 
             # Step: Filesystem-backed provider for this test root (also patched as ``AccountProvider.instance()``).
             account_provider = octobot_sync.sync.AccountProvider(base_folder=str(test_user_root))
@@ -300,7 +294,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                     create_exchange_config_mock,
                 ):
                     # Step: Patches above strip network/CCXT; ``create_exchange_config`` mock only affects doomed create.
-                    assert account_provider.list_exchange_configs(wallet_address) == []
+                    assert account_provider.list_exchange_configs(user_id) == []
 
                     # Step 1 — Create (doomed): ``InvalidUserActionPayloadError`` from patched create; workflow fails; nothing persisted.
                     doomed_create = build_create_exchange_config_user_action(
@@ -308,12 +302,12 @@ class TestExecuteUserActionExchangeConfigCrud:
                         exchange_config=build_exchange_config(config_id=_DOOMED_EXCHANGE_CONFIG_ID),
                     )
                     await _run_user_action_to_completion(
-                        wallet_address,
+                        user_id,
                         doomed_create,
                     )
 
                     # Step 1 (continued) — Listing: only the doomed row, FAILED with executor-built ``ExchangeConfigActionResult``.
-                    listed_after_doomed = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_doomed = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_doomed,
                         [(doomed_create.id, protocol_models.UserActionStatus.FAILED)],
@@ -332,10 +326,10 @@ class TestExecuteUserActionExchangeConfigCrud:
                         user_action_id="ua-exchange-config-create",
                         exchange_config=build_exchange_config(config_id=_FUNCTIONAL_EXCHANGE_CONFIG_ID),
                     )
-                    await _run_user_action_to_completion(wallet_address, happy_create)
+                    await _run_user_action_to_completion(user_id, happy_create)
 
                     # Step 2 (continued) — Listing: doomed FAILED + happy COMPLETED; verify persisted config.
-                    listed_after_create = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_create = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_create,
                         [
@@ -350,11 +344,11 @@ class TestExecuteUserActionExchangeConfigCrud:
                     assert created_inner.error_message is None
 
                     persisted_created_config = account_provider.get_exchange_config(
-                        wallet_address,
+                        user_id,
                         _FUNCTIONAL_EXCHANGE_CONFIG_ID,
                     )
                     assert persisted_created_config.name == "binance-main"
-                    assert len(account_provider.list_exchange_configs(wallet_address)) == 1
+                    assert len(account_provider.list_exchange_configs(user_id)) == 1
 
                     # Step 3 — Account create: exchange account references the config id; CCXT stubs satisfy ``update_account_state``.
                     created_account = build_account(
@@ -366,10 +360,10 @@ class TestExecuteUserActionExchangeConfigCrud:
                         user_action_id="ua-account-create",
                         account=created_account,
                     )
-                    await _run_user_action_to_completion(wallet_address, account_create)
+                    await _run_user_action_to_completion(user_id, account_create)
 
                     # Step 3 (continued) — Listing adds COMPLETED account row; account persisted with matching ``exchange_config_ids``.
-                    listed_after_account_create = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_account_create = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_account_create,
                         [
@@ -378,7 +372,7 @@ class TestExecuteUserActionExchangeConfigCrud:
                             (account_create.id, protocol_models.UserActionStatus.COMPLETED),
                         ],
                     )
-                    persisted_account = account_provider.get_item(wallet_address, _FUNCTIONAL_ACCOUNT_ID)
+                    persisted_account = account_provider.get_item(user_id, _FUNCTIONAL_ACCOUNT_ID)
                     assert persisted_account.specifics is not None
                     account_specifics = persisted_account.specifics.actual_instance
                     assert isinstance(account_specifics, protocol_models.ExchangeAccount)
@@ -394,10 +388,10 @@ class TestExecuteUserActionExchangeConfigCrud:
                         config_id=_FUNCTIONAL_EXCHANGE_CONFIG_ID,
                         exchange_config=edited_config,
                     )
-                    await _run_user_action_to_completion(wallet_address, edit_config_action)
+                    await _run_user_action_to_completion(user_id, edit_config_action)
 
                     # Step 4 (continued) — Listing adds COMPLETED edit row; config updated, account link unchanged.
-                    listed_after_edit = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_edit = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_edit,
                         [
@@ -408,11 +402,11 @@ class TestExecuteUserActionExchangeConfigCrud:
                         ],
                     )
                     persisted_edited_config = account_provider.get_exchange_config(
-                        wallet_address,
+                        user_id,
                         _FUNCTIONAL_EXCHANGE_CONFIG_ID,
                     )
                     assert persisted_edited_config.name == "binance-main-renamed"
-                    persisted_account_after_edit = account_provider.get_item(wallet_address, _FUNCTIONAL_ACCOUNT_ID)
+                    persisted_account_after_edit = account_provider.get_item(user_id, _FUNCTIONAL_ACCOUNT_ID)
                     account_specifics_after_edit = persisted_account_after_edit.specifics.actual_instance
                     assert account_specifics_after_edit.exchange_config_ids == [_FUNCTIONAL_EXCHANGE_CONFIG_ID]
 
@@ -421,10 +415,10 @@ class TestExecuteUserActionExchangeConfigCrud:
                         user_action_id="ua-account-delete",
                         account_id=_FUNCTIONAL_ACCOUNT_ID,
                     )
-                    await _run_user_action_to_completion(wallet_address, delete_account_action)
+                    await _run_user_action_to_completion(user_id, delete_account_action)
 
                     # Step 5 (continued) — Listing adds COMPLETED account-delete row; accounts collection empty.
-                    listed_after_account_delete = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_account_delete = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_account_delete,
                         [
@@ -435,17 +429,17 @@ class TestExecuteUserActionExchangeConfigCrud:
                             (delete_account_action.id, protocol_models.UserActionStatus.COMPLETED),
                         ],
                     )
-                    assert account_provider.list_items(wallet_address) == []
+                    assert account_provider.list_items(user_id) == []
 
                     # Step 6 — Config delete: remove exchange config from provider; listing gains COMPLETED delete row.
                     delete_config_action = build_delete_exchange_config_user_action(
                         user_action_id="ua-exchange-config-delete",
                         config_id=_FUNCTIONAL_EXCHANGE_CONFIG_ID,
                     )
-                    await _run_user_action_to_completion(wallet_address, delete_config_action)
+                    await _run_user_action_to_completion(user_id, delete_config_action)
 
                     # Step 6 (continued) — Full listing is six terminal rows; exchange config collection empty.
-                    listed_after_delete = await scheduler_api.list_user_actions(wallet_address, active_only=True)
+                    listed_after_delete = await scheduler_api.list_user_actions(user_id, active_only=True)
                     _assert_listed_user_actions_match_expected_id_status_pairs(
                         listed_after_delete,
                         [
@@ -465,8 +459,8 @@ class TestExecuteUserActionExchangeConfigCrud:
 
                     # Step: Collection layer confirms config delete (no item, empty list).
                     with pytest.raises(octobot_sync.sync.ItemNotFoundError):
-                        account_provider.get_exchange_config(wallet_address, _FUNCTIONAL_EXCHANGE_CONFIG_ID)
-                    assert account_provider.list_exchange_configs(wallet_address) == []
+                        account_provider.get_exchange_config(user_id, _FUNCTIONAL_EXCHANGE_CONFIG_ID)
+                    assert account_provider.list_exchange_configs(user_id) == []
         finally:
             # Step: Tear down wallet task and restore prior user-root path.
             if authentication_instance is not None:

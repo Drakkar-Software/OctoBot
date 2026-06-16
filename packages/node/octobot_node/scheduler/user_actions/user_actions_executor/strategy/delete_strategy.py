@@ -47,7 +47,7 @@ class DeleteStrategyActionExecutor(
     ) -> None:
         delete_payload = _get_delete_strategy_payload(user_action)
         collection_providers.StrategyProvider.instance().delete_item(
-            self._wallet_address,
+            self._user_id,
             delete_payload.id,
         )
         self._mark_user_action_completed(user_action)

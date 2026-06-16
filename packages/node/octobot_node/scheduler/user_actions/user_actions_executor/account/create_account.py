@@ -46,10 +46,10 @@ class CreateAccountActionExecutor(account_user_action_executor.AccountUserAction
         create_payload = _get_create_account_payload(user_action)
         checked_account = await account_state_updater.update_account_state(
             create_payload.configuration,
-            self._wallet_address,
+            self._user_id,
         )
         collection_providers.AccountProvider.instance().create_item(
-            self._wallet_address,
+            self._user_id,
             checked_account,
         )
         self._mark_user_action_completed(user_action)

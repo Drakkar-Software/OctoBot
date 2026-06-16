@@ -80,17 +80,17 @@ def _execute_actions_task_content_json(
 
 
 def _load_strategy_for_automation(
-    wallet_address: str,
+    user_id: str,
     strategy_reference: protocol_models.StrategyReference,
 ) -> protocol_models.Strategy:
     try:
         stored_strategy = collection_providers.StrategyProvider.instance().get_item(
-            wallet_address,
+            user_id,
             strategy_reference.id,
         )
     except collection_errors.ItemNotFoundError as err:
         raise node_errors.AutomationStrategyNotFoundError(
-            f"Strategy {strategy_reference.id!r} not found for address {wallet_address!r}"
+            f"Strategy {strategy_reference.id!r} not found for address {user_id!r}"
         ) from err
     if stored_strategy.version != strategy_reference.version:
         raise node_errors.AutomationStrategyVersionMismatchError(
@@ -133,7 +133,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
             "name": automation_configuration.name,
             "content": _execute_actions_task_content_json(automation_id=automation_id, actions=actions),
             "type": models.TaskType.EXECUTE_ACTIONS.value,
-            "wallet_address": self._wallet_address,
+            "user_id": self._user_id,
         }
         if automation_configuration.id:
             task_fields["id"] = automation_configuration.id
@@ -150,7 +150,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         automation_id = _resolve_create_automation_id(user_action, automation_configuration)
 
         stored_strategy = _load_strategy_for_automation(
-            self._wallet_address,
+            self._user_id,
             automation_configuration.strategy,
         )
         inner_configuration = _get_strategy_configuration_instance(stored_strategy)
@@ -159,12 +159,12 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
 
         try:
             protocol_account = collection_providers.AccountProvider.instance().get_item(
-                self._wallet_address,
+                self._user_id,
                 account_id,
             )
         except collection_errors.ItemNotFoundError as err:
             raise node_errors.AccountNotFoundError(
-                f"Failed to load account {account_id!r} for address {self._wallet_address!r}: {err}"
+                f"Failed to load account {account_id!r} for address {self._user_id!r}: {err}"
             ) from err
 
         init_action = action_details_factory.init_action_factory(
@@ -172,7 +172,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
             protocol_account=protocol_account,
             strategy_reference=automation_configuration.strategy,
             stored_strategy=stored_strategy,
-            wallet_address=self._wallet_address,
+            user_id=self._user_id,
             reference_market=stored_strategy.reference_market,
         )
 
@@ -212,7 +212,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         init_action,
                         market_making_configuration,
                         protocol_account,
-                        self._wallet_address,
+                        self._user_id,
                         stored_strategy.reference_market,
                         stored_strategy,
                     ),

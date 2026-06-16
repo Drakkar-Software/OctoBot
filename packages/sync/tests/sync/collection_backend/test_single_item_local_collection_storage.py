@@ -80,7 +80,7 @@ class TestSingleItemLocalCollectionStorageFilePath:
         path = storage._file_path(identifier)
 
         sanitized_parts = [
-            storage._sanitize_address(part)
+            storage._sanitize_storage_key(part)
             for part in identifier.split("/")
             if part
         ]

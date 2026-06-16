@@ -19,8 +19,8 @@ import octobot_node.scheduler.tasks as scheduler_tasks
 
 async def execute_user_action(
     user_action: protocol_models.UserAction,
-    wallet_address: str,
+    user_id: str,
 ) -> None:
     await scheduler_tasks.trigger_user_action_workflow(
-        user_action, wallet_address
+        user_action, user_id
     )

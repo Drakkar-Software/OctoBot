@@ -37,8 +37,10 @@ from .util import price_mocks as price_mocks_module
 from .util import user_action_assertions as user_action_assertions_module
 from .util import workflow_common as workflow_common_module
 
+import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_trading.constants as trading_constants_module
+import octobot_node.config
 import octobot_node.constants as node_constants_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_commons.constants as octobot_commons_constants_module
@@ -289,10 +291,10 @@ def _sorted_limit_prices_from_trading_signal_account(
     wrapper = {"orders": {"open_orders": list(trading_signal.account.orders or [])}}
     return _sorted_limit_prices_from_elements(wrapper, trade_order_side=trade_order_side)
 
-async def _fetch_strategy_signals_from_sync(wallet_address: str) -> list[typing.Any]:
+async def _fetch_strategy_signals_from_sync(evm_address: str) -> list[typing.Any]:
     async with local_authenticator_module.local_user_authenticator() as auth:
         repository = octobot_flow_repositories_community_module.TradingSignalsRepository.from_community_repository(
-            octobot_flow_repositories_community_module.CommunityRepository(auth, wallet_address)
+            octobot_flow_repositories_community_module.CommunityRepository(auth, evm_address)
         )
         return await repository.fetch_trading_signals(
             [_SHARED_STRATEGY_ID],
@@ -325,7 +327,7 @@ def _ladder_limit_prices_match_reference(
     return False, "; ".join(mismatch_parts)
 
 async def _poll_fetched_trading_signal_until_ladder_matches(
-    wallet_address: str,
+    evm_address: str,
     reference_exchange_account_elements: typing.Any,
     deadline_seconds: float,
     failure_label: str,
@@ -335,7 +337,7 @@ async def _poll_fetched_trading_signal_until_ladder_matches(
     poll_deadline = time.monotonic() + deadline_seconds
     last_mismatch = ""
     while time.monotonic() < poll_deadline:
-        fetched_batch = await _fetch_strategy_signals_from_sync(wallet_address)
+        fetched_batch = await _fetch_strategy_signals_from_sync(evm_address)
         if fetched_batch:
             candidate_signal = _first_fetched_trading_signal(fetched_batch)
             matches, detail = _ladder_limit_prices_match_reference(
@@ -417,7 +419,10 @@ class TestEmitAndCopyGridAutomationSignals:
             lambda: simulated_close["value"]
         )
 
-        wallet_address = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
+        # EVM address — passed to CommunityRepository for signal emit/fetch.
+        evm_address = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
+        # Starfish user_id — used for all scheduler/protocol API calls.
+        user_id = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID
         master_account_id = "functional_master_emit_account"
         copy_account_id = "functional_copy_emit_account"
         master_user_action = grid_sim_util.build_create_grid_user_action(
@@ -489,6 +494,14 @@ class TestEmitAndCopyGridAutomationSignals:
                                 None,
                                 True,
                             )
+                        # Persistent auth singleton so _user_id_to_evm() resolves correctly when
+                        # automation_workflow.py translates the Starfish user_id → EVM address for
+                        # auth_details["wallet_address"] (needed by CommunityRepository inside the job).
+                        auth_config = local_authenticator_module.get_stateless_configuration()
+                        auth_instance_for_singleton = community_authentication_module.CommunityAuthentication(
+                            config=auth_config,
+                            use_as_singleton=False,
+                        )
                         master_account = workflow_common_module.protocol_account_for_functional(
                             account_id=master_account_id,
                             usdc_total=_MASTER_INIT_USDC,
@@ -514,6 +527,11 @@ class TestEmitAndCopyGridAutomationSignals:
                             )
 
                         with (
+                            mock.patch.object(
+                                community_authentication_module.CommunityAuthentication,
+                                "instance",
+                                return_value=auth_instance_for_singleton,
+                            ),
                             mock.patch.object(
                                 octobot_flow_repositories_exchange_module.TickersRepository,
                                 "fetch_tickers",
@@ -549,6 +567,8 @@ class TestEmitAndCopyGridAutomationSignals:
                                     ),
                                 ),
                             ),
+                            mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None),
+                            mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None),
                         ):
                             caplog.set_level(logging.INFO)
 
@@ -558,7 +578,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                                         temp_dbos_scheduler,
                                         master_user_action,
-                                        wallet_address,
+                                        user_id,
                                     ),
                                     timeout=_T_ENQUEUE_SECONDS,
                                 )
@@ -566,7 +586,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                 raise AssertionError("execute_user_action timed out enqueueing master workflow") from exc
 
                             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                                wallet_address=wallet_address,
+                                user_id=user_id,
                                 user_action_id=master_user_action.id,
                                 expected_workflow_id=None,
                             )
@@ -610,12 +630,12 @@ class TestEmitAndCopyGridAutomationSignals:
                                 key=lambda workflow_status: workflow_status.updated_at or 0,
                             )
                             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                                wallet_address=wallet_address,
+                                user_id=user_id,
                                 user_action_id=master_user_action.id,
                                 expected_workflow_id=master_workflow_row_for_user_action_selector.workflow_id,
                             )
 
-                            bootstrap_fetched = await _fetch_strategy_signals_from_sync(wallet_address)
+                            bootstrap_fetched = await _fetch_strategy_signals_from_sync(evm_address)
                             bootstrap_signal = _first_fetched_trading_signal(bootstrap_fetched)
                             assert bootstrap_signal.strategy_id == _SHARED_STRATEGY_ID
                             bootstrap_account = bootstrap_signal.account
@@ -634,14 +654,14 @@ class TestEmitAndCopyGridAutomationSignals:
                                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                                         temp_dbos_scheduler,
                                         copy_user_action,
-                                        wallet_address,
+                                        user_id,
                                     ),
                                     timeout=_T_ENQUEUE_SECONDS,
                                 )
                             except TimeoutError as exc:
                                 raise AssertionError("execute_user_action timed out enqueueing copy workflow") from exc
 
-                            listed_after_copy = await octobot_node.scheduler.SCHEDULER.list_user_actions(wallet_address)
+                            listed_after_copy = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
                             by_id_after_copy = user_action_assertions_module.merge_user_actions_latest_per_id(listed_after_copy)
                             assert master_user_action.id in by_id_after_copy
                             assert copy_user_action.id in by_id_after_copy
@@ -703,7 +723,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                 key=lambda workflow_status: workflow_status.updated_at or 0,
                             )
                             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                                wallet_address=wallet_address,
+                                user_id=user_id,
                                 user_action_id=copy_user_action.id,
                                 expected_workflow_id=copy_workflow_row_for_user_action_selector.workflow_id,
                             )
@@ -765,7 +785,7 @@ class TestEmitAndCopyGridAutomationSignals:
 
                             master_post_elements = master_reader.state.automation.exchange_account_elements
                             await _poll_fetched_trading_signal_until_ladder_matches(
-                                wallet_address,
+                                evm_address,
                                 master_post_elements,
                                 deadline_seconds=_T_POST_SHOCK_SECONDS,
                                 failure_label="sync snapshot ladder vs master post-shock",
@@ -798,7 +818,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                         workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                                             temp_dbos_scheduler,
                                             stop_user_action,
-                                            wallet_address,
+                                            user_id,
                                         ),
                                         timeout=_T_STOP_SEND_SECONDS,
                                     )
@@ -808,11 +828,11 @@ class TestEmitAndCopyGridAutomationSignals:
                                     ) from exc
 
                             await user_action_assertions_module.assert_user_action_selector_completed_automation_stop(
-                                wallet_address=wallet_address,
+                                user_id=user_id,
                                 user_action_id=f"ua-stop-{master_automation_id}",
                             )
                             await user_action_assertions_module.assert_user_action_selector_completed_automation_stop(
-                                wallet_address=wallet_address,
+                                user_id=user_id,
                                 user_action_id=f"ua-stop-{_COPY_AUTOMATION_ID}",
                             )
 

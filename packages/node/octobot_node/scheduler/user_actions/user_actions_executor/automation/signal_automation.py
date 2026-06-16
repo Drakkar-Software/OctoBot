@@ -103,6 +103,47 @@ def _parse_trading_signal_payload(raw_payload: typing.Any) -> octobot_flow.entit
     )
 
 
+async def _resolve_target_automation_workflow_id(
+    parent_automation_id: str,
+    user_id: str,
+) -> str:
+    scheduler = scheduler_module.SCHEDULER
+    matching_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
+        user_id,
+        parent_automation_id,
+    )
+    if not matching_workflow_ids:
+        raise node_errors.ActiveAutomationWorkflowNotFoundError(
+            f"No active automation workflow for parent id {parent_automation_id!r} "
+            f"(user_id={user_id!r})."
+        )
+    if len(matching_workflow_ids) > 1:
+        raise node_errors.AmbiguousActiveAutomationWorkflowError(
+            f"Expected exactly one active automation workflow for parent id {parent_automation_id!r}, "
+            f"got {len(matching_workflow_ids)}: {matching_workflow_ids!r} "
+            f"(user_id={user_id!r})."
+        )
+    return matching_workflow_ids[0]
+
+
+async def _send_actions_to_automation_with_workflow_lookup(
+    actions: list[dict],
+    automation_id: str,
+    user_id: str,
+) -> None:
+    target_workflow_id = await _resolve_target_automation_workflow_id(automation_id, user_id)
+    await scheduler_tasks.send_actions_to_automation_workflow(actions, target_workflow_id)
+
+
+async def _send_forced_trigger_to_automation_with_workflow_lookup(
+    automation_id: str,
+    user_id: str,
+) -> None:
+    target_workflow_id = await _resolve_target_automation_workflow_id(automation_id, user_id)
+    await scheduler_tasks.send_forced_trigger_to_automation_workflow(target_workflow_id)
+
+
+
 class SignalAutomationActionExecutor(automation_user_action_executor.AutomationUserActionExecutor):
     async def _do_execute(
         self,
@@ -119,7 +160,7 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
                 actions = _parse_actions_payload(raw_payload)
                 await scheduler_tasks.send_actions_to_active_automation(
                     signal_config.automation_id,
-                    self._wallet_address,
+                    self._user_id,
                     actions,
                 )
             case protocol_models.AutomationSignalType.TRADING_SIGNAL:
@@ -131,7 +172,7 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
             case protocol_models.AutomationSignalType.FORCED_TRIGGER:
                 await scheduler_tasks.send_forced_trigger_to_active_automation(
                     signal_config.automation_id,
-                    self._wallet_address,
+                    self._user_id,
                 )
             case _:
                 raise node_errors.InvalidUserActionPayloadError(

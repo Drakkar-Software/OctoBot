@@ -13,11 +13,13 @@ import pytest
 import octobot_protocol.models as octobot_protocol_models
 
 from .util import dca_workflow as dca_sim_util
+from .util import authenticator_mocks as authenticator_mocks_module
 from .util import price_mocks as price_mocks_module
 from .util import protocol_assertions as protocol_assertions_module
 from .util import user_action_assertions as user_action_assertions_module
 from .util import workflow_common as workflow_common_module
 
+import octobot.community.authentication as community_authentication_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_trading.enums as trading_enums_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
@@ -59,7 +61,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
         patched_fetch_ohlcv = price_mocks_module.fetch_ohlcv_side_effect_for_close_prices(
             lambda symbol: close_by_symbol[symbol]
         )
-        wallet_address = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
+        user_id = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID
         protocol_account = workflow_common_module.protocol_account_for_functional(
             account_id=_DCA_ACCOUNT_ID,
             usdc_total=1000.0,
@@ -70,7 +72,17 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
             name=_DCA_AUTOMATION_DISPLAY_NAME,
         )
 
+        authentication_instance = authenticator_mocks_module.build_community_authentication(
+            workflow_common_module.SIMULATOR_GRID_TEST_PRIVATE_KEY,
+            workflow_common_module.SIMULATOR_GRID_TEST_WALLET_PASSPHRASE,
+        )
+
         with (
+            mock.patch.object(
+                community_authentication_module.CommunityAuthentication,
+                "instance",
+                return_value=authentication_instance,
+            ),
             mock.patch.object(
                 octobot_flow_repositories_exchange_module.TickersRepository,
                 "fetch_tickers",
@@ -107,7 +119,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         create_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_ENQUEUE_SECONDS,
                 )
@@ -115,7 +127,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                 raise AssertionError("execute_user_action timed out enqueueing automation workflow") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=create_user_action.id,
                 expected_workflow_id=None,
             )
@@ -180,7 +192,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
             # Step 2 (continued) — Ladder prices match config; protocol AutomationState mirrors exchange elements.
             assert workflow_row_matching is not None
             protocol_state_after_entry = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                wallet_address,
+                user_id,
                 workflow_row_matching,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements_multi_symbol(
@@ -197,7 +209,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
 
             parent_automation_id = await user_action_assertions_module.get_created_automation_id_from_user_action(
                 user_action_id=create_user_action.id,
-                wallet_address=wallet_address,
+                user_id=user_id,
             )
 
             # Step 3 — Fill lowest buy on one symbol, then forced-trigger so the mode re-evaluates at the new close.
@@ -211,14 +223,14 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                         workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                             temp_dbos_scheduler,
                             signal_user_action,
-                            wallet_address,
+                            user_id,
                         ),
                         timeout=_T_SIGNAL_SECONDS,
                     )
                 except TimeoutError as exc:
                     raise AssertionError("execute_user_action forced-trigger signal timed out") from exc
                 await user_action_assertions_module.assert_user_action_selector_completed_automation_signal(
-                    wallet_address=wallet_address,
+                    user_id=user_id,
                     user_action_id=signal_user_action.id,
                 )
 
@@ -339,7 +351,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
 
             # Step 4 (continued) — Mid-run protocol state still matches exchange after fills.
             protocol_state_after_fill = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                wallet_address,
+                user_id,
                 workflow_row_after_fill,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements_multi_symbol(
@@ -360,7 +372,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         stop_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_STOP_SEND_SECONDS,
                 )
@@ -368,7 +380,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                 raise AssertionError("execute_user_action stop timed out") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_stop(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=stop_user_action.id,
             )
 
@@ -410,7 +422,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
             assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
             protocol_state_final = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                wallet_address,
+                user_id,
                 final_workflow_row,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements_multi_symbol(

@@ -26,13 +26,13 @@ class SingleItemLocalCollectionStorage(base_local_collection_storage.BaseLocalCo
     Encrypted collection storage keyed by a composite identifier.
 
     State is persisted at ``<user_root>/<collection>/<identifier>.json`` where
-    *identifier* is typically ``<wallet_address>/<account_id>`` with each segment
+    *identifier* is typically ``<user_id>/<account_id>`` with each segment
     sanitized separately (nested directories under the collection root).
     """
 
     def _file_path(self, identifier: str) -> pathlib.Path:
         path_parts = [
-            self._sanitize_address(part)
+            self._sanitize_storage_key(part)
             for part in identifier.split("/")
             if part
         ]

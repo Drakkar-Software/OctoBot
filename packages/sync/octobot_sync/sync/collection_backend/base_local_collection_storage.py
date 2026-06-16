@@ -34,10 +34,10 @@ import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_s
 
 class BaseLocalCollectionStorage:
     """
-    Thread-safe, per-wallet-address encrypted collection storage.
+    Thread-safe, per-wallet-user_id encrypted collection storage.
 
-    Items for a given wallet address are stored encrypted under the user root
-    (see ``UserRootFolderProvider``) at ``<user_root>/<collection>/<address>.json``.
+    Items for a given wallet user_id are stored encrypted under the user root
+    (see ``UserRootFolderProvider``) at ``<user_root>/<collection>/<user_id>.json``.
     """
 
     def __init__(self, collection: str, base_folder: typing.Optional[str] = None) -> None:
@@ -46,20 +46,20 @@ class BaseLocalCollectionStorage:
         self._root = pathlib.Path(root) / collection
         self._lock = threading.Lock()
 
-    def _sanitize_address(self, address: str) -> str:
+    def _sanitize_storage_key(self, user_id: str) -> str:
         # Basic filesystem-safe mapping while still recognizable.
-        sanitized = address.strip()
+        sanitized = user_id.strip()
         sanitized = sanitized.replace(os.sep, "_")
         sanitized = sanitized.replace("..", "_")
         return sanitized or "unknown"
 
     def _file_path(self, storage_key: str) -> pathlib.Path:
-        filename = f"{self._sanitize_address(storage_key)}.json"
+        filename = f"{self._sanitize_storage_key(storage_key)}.json"
         return self._root / filename
 
     def _missing_data_error(self, storage_key: str) -> collection_errors.CollectionNoDataError:
         return collection_errors.CollectionNoDataError(
-            f"{self.collection} file does not exist for address {storage_key}"
+            f"{self.collection} file does not exist for user_id {storage_key}"
         )
 
     def _payload_to_json_bytes(self, payload: state_model.StateModel) -> bytes:

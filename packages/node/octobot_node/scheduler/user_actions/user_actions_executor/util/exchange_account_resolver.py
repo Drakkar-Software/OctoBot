@@ -43,18 +43,18 @@ def get_primary_exchange_config_id(
 
 
 def get_exchange_config(
-    wallet_address: str,
+    user_id: str,
     exchange_account: protocol_models.ExchangeAccount,
 ) -> protocol_models.ExchangeConfig:
     exchange_config_id = get_primary_exchange_config_id(exchange_account)
     try:
         return collection_providers.AccountProvider.instance().get_exchange_config(
-            wallet_address,
+            user_id,
             exchange_config_id,
         )
     except collection_errors.ItemNotFoundError as err:
         raise node_errors.InvalidUserActionPayloadError(
-            f"Exchange config {exchange_config_id!r} not found for address {wallet_address!r}: {err}"
+            f"Exchange config {exchange_config_id!r} not found for address {user_id!r}: {err}"
         ) from err
 
 

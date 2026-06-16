@@ -78,7 +78,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
     @staticmethod
     def _inputs_dict(*, wallet_address_value: str, user_action_document: protocol_models.UserAction) -> dict:
         return workflow_params_module.UserActionWorkflowInputs(
-            wallet_address=wallet_address_value,
+            user_id=wallet_address_value,
             user_action=user_action_document,
         ).to_dict(include_default_values=False)
 
@@ -176,17 +176,17 @@ class Test_UserActionWorkflow_execute_user_action_step:
 
         transient_failure_attempt_tracker = {"count": 0}
 
-        async def raise_retriable_failed_request_twice_then_return(
+        async def raise_retriable_failed_request_once_then_return(
             _logged_user_action_run: protocol_models.UserAction,
         ) -> None:
             transient_failure_attempt_tracker["count"] += 1
-            if transient_failure_attempt_tracker["count"] < 3:
+            if transient_failure_attempt_tracker["count"] < 2:
                 raise octobot_trading_errors.RetriableFailedRequest(
                     "simulated exchange retriable failure",
                 )
 
         executor_execute_invocation_observer = mock.AsyncMock(
-            side_effect=raise_retriable_failed_request_twice_then_return,
+            side_effect=raise_retriable_failed_request_once_then_return,
         )
 
         class RetryThenSucceedExecutorShell:
@@ -212,8 +212,8 @@ class Test_UserActionWorkflow_execute_user_action_step:
 
         assert workflow_lifetime_status_snapshot.status == dbos.WorkflowStatusString.SUCCESS.value
         assert isinstance(workflow_completion_output_blob, dict)
-        assert executor_execute_invocation_observer.await_count == 3
-        assert transient_failure_attempt_tracker["count"] == 3
+        assert executor_execute_invocation_observer.await_count == 2
+        assert transient_failure_attempt_tracker["count"] == 2
 
     @pytest.mark.asyncio
     async def test_execute_user_action_step_skips_retries_when_executor_raises_authentication_error(
@@ -296,12 +296,12 @@ class Test_UserActionWorkflow_execute_user_action_step:
     ):
         import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
 
-        wallet_address = "0xwallet_user_action_error_terminal"
+        user_id = "0xwallet_user_action_error_terminal"
         user_action_wire_configuration = self._signal_automation_user_action(
             automation_identifier="missing-automation-workflow",
         )
         workflow_encoded_inputs_bundle = self._inputs_dict(
-            wallet_address_value=wallet_address,
+            wallet_address_value=user_id,
             user_action_document=user_action_wire_configuration,
         )
         reparsed_user_action = protocol_models.UserAction(
@@ -335,7 +335,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
                 self.post_actions = user_action_post_actions_module.UserActionPostActions()
 
             async def execute(self, user_action_bundle: protocol_models.UserAction):
-                assert self.wallet_segment_from_workflow_inputs == wallet_address
+                assert self.wallet_segment_from_workflow_inputs == user_id
                 return await executor_execute_observer(user_action_bundle)
 
         with mock.patch.object(

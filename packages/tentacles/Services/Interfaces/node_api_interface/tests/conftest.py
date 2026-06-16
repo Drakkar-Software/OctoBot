@@ -26,6 +26,7 @@ from fastapi.testclient import TestClient
 from starlette.middleware.cors import CORSMiddleware
 
 import octobot.community.wallet_backend as wallet_backend
+import octobot_node.config as _node_config
 import tentacles.Services.Interfaces.node_api_interface as node_api_interface_module
 
 # Allow direct imports from the package (api.* fallback path in route files)
@@ -46,6 +47,12 @@ TENANT_PASSPHRASE = "tenant-pass-456"
 
 ADMIN_TASK_ID = "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1"
 TENANT_TASK_ID = "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2"
+
+ADMIN_USER_ID = "admin-user-id-aabbcc112233"
+TENANT_USER_ID = "tenant-user-id-ddeeff445566"
+
+_ADMIN_PRIVATE_KEY = "admin-test-private-key"
+_TENANT_PRIVATE_KEY = "tenant-test-private-key"
 
 
 def make_admin_user() -> octobot_node.models.User:
@@ -91,7 +98,9 @@ def unit_app():
     """Minimal app for unit tests that use dependency_overrides."""
     application = FastAPI()
     application.include_router(build_api_router(), prefix="/api/v1")
-    return application
+    _disabled_settings = mock.Mock(is_node_side_encryption_enabled=False)
+    with mock.patch.object(_node_config, "settings", _disabled_settings):
+        yield application
 
 
 @pytest.fixture
@@ -138,11 +147,27 @@ def mock_auth():
     )
     auth.is_admin_wallet.side_effect = lambda addr: addr == ADMIN_ADDRESS
     auth.get_wallet_name.side_effect = lambda addr: "Admin" if addr == ADMIN_ADDRESS else "Alice"
+
+    _admin_wallet = mock.Mock(private_key=_ADMIN_PRIVATE_KEY)
+    _tenant_wallet = mock.Mock(private_key=_TENANT_PRIVATE_KEY)
+
+    def _get_wallet_for_bot(addr):
+        if addr.lower() == ADMIN_ADDRESS.lower():
+            return _admin_wallet
+        if addr.lower() == TENANT_ADDRESS.lower():
+            return _tenant_wallet
+        raise ValueError(f"Unknown wallet address: {addr}")
+
+    auth.get_wallet.side_effect = _get_wallet_for_bot
+
+    _pk_to_user_id = {_ADMIN_PRIVATE_KEY: ADMIN_USER_ID, _TENANT_PRIVATE_KEY: TENANT_USER_ID}
+
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
     ):
-        yield auth
+        with mock.patch("octobot_sync.server.derive_user_id", side_effect=_pk_to_user_id.get):
+            yield auth
 
 
 def assert_response_headers(

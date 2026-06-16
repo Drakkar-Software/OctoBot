@@ -138,7 +138,7 @@ def init_action_factory(
     protocol_account: protocol_models.Account,
     strategy_reference: protocol_models.StrategyReference,
     stored_strategy: protocol_models.Strategy,
-    wallet_address: str,
+    user_id: str,
     reference_market: str,
 ) -> flow_entities.AbstractActionDetails:
     """
@@ -161,7 +161,7 @@ def init_action_factory(
     portfolio_content = _portfolio_content_from_detailed_assets(portfolio_assets)
     base_exchange_config = exchange_protocol_account_to_apply_configuration_dict(
         protocol_account,
-        wallet_address=wallet_address,
+        user_id=user_id,
         reference_market=reference_market,
     )
 
@@ -400,7 +400,7 @@ def market_making_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     market_making_configuration: protocol_models.MarketMakingConfiguration,
     protocol_account: protocol_models.Account,
-    wallet_address: str,
+    user_id: str,
     reference_market: str,
     stored_strategy: protocol_models.Strategy,
 ) -> flow_entities.AbstractActionDetails:
@@ -408,13 +408,13 @@ def market_making_action_factory(
         protocol_account=protocol_account,
         market_making_configuration=market_making_configuration,
         reference_market=reference_market,
-        wallet_address=wallet_address,
+        user_id=user_id,
         stored_strategy=stored_strategy,
     )
     profile_data_dict = profile_data.to_dict(include_default_values=False)
     exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
         protocol_account,
-        wallet_address,
+        user_id,
     )
     exchange_auth_segment = dsl_interpreter.format_parameter_value(exchange_auth_data)
     run_dsl = (
@@ -433,7 +433,7 @@ def market_making_action_factory(
 def exchange_protocol_account_to_apply_configuration_dict(
     protocol_account: protocol_models.Account,
     *,
-    wallet_address: str,
+    user_id: str,
     reference_market: str | None = None,
 ) -> dict:
     """
@@ -453,7 +453,7 @@ def exchange_protocol_account_to_apply_configuration_dict(
     exchange_payload = specifics_instance
     account_identifier = protocol_account.id
     exchange_config = exchange_account_resolver.get_exchange_config(
-        wallet_address,
+        user_id,
         exchange_payload,
     )
 
@@ -465,7 +465,7 @@ def exchange_protocol_account_to_apply_configuration_dict(
         auth_details = exchange_data_module.ExchangeAuthDetails()
     else:
         authentication = account_authentication_resolver.get_exchange_authentication(
-            wallet_address,
+            user_id,
             protocol_account,
         )
         api_password = ""
@@ -497,7 +497,7 @@ def market_making_profile_data_factory(
     protocol_account: protocol_models.Account,
     market_making_configuration: protocol_models.MarketMakingConfiguration,
     reference_market: str,
-    wallet_address: str,
+    user_id: str,
     stored_strategy: protocol_models.Strategy,
 ) -> commons_profile_data.ProfileData:
     if protocol_account.specifics is None or protocol_account.specifics.actual_instance is None:
@@ -536,7 +536,7 @@ def market_making_profile_data_factory(
     )
     exchange_entry = commons_profile_data.ExchangeData(
         internal_name=exchange_account_resolver.get_exchange_config(
-            wallet_address,
+            user_id,
             specifics_instance,
         ).exchange,
         exchange_type=commons_constants.DEFAULT_EXCHANGE_TYPE,
@@ -615,7 +615,7 @@ def _portfolio_content_from_detailed_assets(
 
 def _exchange_auth_data_list_from_protocol_account(
     protocol_account: protocol_models.Account,
-    wallet_address: str,
+    user_id: str,
 ) -> list[dict] | None:
     """
     Build ``exchange_auth_data`` for ``run_octobot_process`` from AccountProvider data
@@ -634,11 +634,11 @@ def _exchange_auth_data_list_from_protocol_account(
             f"exchange_auth_data requires an exchange account; got {type(specifics_instance).__name__}."
         )
     authentication = account_authentication_resolver.get_exchange_authentication(
-        wallet_address,
+        user_id,
         protocol_account,
     )
     exchange_config = exchange_account_resolver.get_exchange_config(
-        wallet_address,
+        user_id,
         specifics_instance,
     )
     return [

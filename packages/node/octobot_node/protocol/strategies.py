@@ -20,15 +20,15 @@ import octobot_sync.sync.collection_providers.user_strategy_provider as strategy
 import octobot_sync.sync.collection_backend.errors as collection_errors
 
 
-def get_strategies_state_encrypted(address: str) -> dict[str, str] | None:
+def get_strategies_state_encrypted(user_id: str) -> dict[str, str] | None:
     try:
-        return strategy_provider.StrategyProvider.instance().list_items_encrypted(address)
+        return strategy_provider.StrategyProvider.instance().list_items_encrypted(user_id)
     except collection_errors.CollectionNoDataError:
         return None
 
-def get_strategies_state(address: str) -> protocol_models.StrategiesState:
+def get_strategies_state(user_id: str) -> protocol_models.StrategiesState:
     provider = strategy_provider.StrategyProvider.instance()
     return protocol_models.StrategiesState(
         version=sync_constants.USER_STRATEGIES_STATE_VERSION,
-        strategies=provider.list_items(address),
+        strategies=provider.list_items(user_id),
     )

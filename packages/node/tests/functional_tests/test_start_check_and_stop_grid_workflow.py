@@ -23,13 +23,17 @@ import pytest
 
 import octobot_protocol.models as octobot_protocol_models
 
+from .util import authenticator_mocks as authenticator_mocks_module
 from .util import grid_workflow as grid_sim_util
 from .util import price_mocks as price_mocks_module
 from .util import protocol_assertions as protocol_assertions_module
 from .util import user_action_assertions as user_action_assertions_module
 from .util import workflow_common as workflow_common_module
 
+import octobot.community.authentication as community_authentication_module
 import octobot_flow.entities as octobot_flow_entities
+import octobot_node.config
+import octobot_node.scheduler
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
 
@@ -65,7 +69,7 @@ class TestTriggerTaskGridDbosIntegration:
         patched_fetch_ohlcv = price_mocks_module.fetch_ohlcv_side_effect_for_close_price(
             lambda: grid_sim_util.FIXED_BTC_USDC_CLOSE
         )
-        wallet_address = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
+        user_id = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID
         protocol_account = workflow_common_module.protocol_account_for_functional(
             account_id=_GRID_ACCOUNT_ID,
             usdc_total=1000.0,
@@ -77,8 +81,20 @@ class TestTriggerTaskGridDbosIntegration:
             automation_id=_GRID_AUTOMATION_CONFIGURATION_ID,
         )
 
+        # Step 0 (continued) — Import test wallet so _user_id_to_evm() can resolve the EVM address
+        # from the Starfish user_id inside automation_workflow.py (needed for auth_details assertion).
+        authentication_instance = authenticator_mocks_module.build_community_authentication(
+            workflow_common_module.SIMULATOR_GRID_TEST_PRIVATE_KEY,
+            workflow_common_module.SIMULATOR_GRID_TEST_WALLET_PASSPHRASE,
+        )
+
         # Step 0 (continued) — Mock only market data and sync providers; DBOS scheduler and flow run for real.
         with (
+            mock.patch.object(
+                community_authentication_module.CommunityAuthentication,
+                "instance",
+                return_value=authentication_instance,
+            ),
             mock.patch.object(
                 octobot_flow_repositories_exchange_module.TickersRepository,
                 "fetch_tickers",
@@ -108,6 +124,8 @@ class TestTriggerTaskGridDbosIntegration:
                     ),
                 ),
             ),
+            mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None),
+            mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None),
         ):
             # Step 1 — Enqueue AUTOMATION_CREATE user action; expect a COMPLETED create result and a running workflow.
             try:
@@ -115,7 +133,7 @@ class TestTriggerTaskGridDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         create_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_ENQUEUE_SECONDS,
                 )
@@ -123,7 +141,7 @@ class TestTriggerTaskGridDbosIntegration:
                 raise AssertionError("execute_user_action timed out enqueueing automation workflow") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=create_user_action.id,
                 expected_workflow_id=None,
             )
@@ -186,12 +204,12 @@ class TestTriggerTaskGridDbosIntegration:
 
             assert workflow_row_matching is not None
             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=create_user_action.id,
                 expected_workflow_id=workflow_row_matching.workflow_id,
             )
             protocol_state_after_step1 = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID,
                 workflow_row_matching,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements(
@@ -208,7 +226,7 @@ class TestTriggerTaskGridDbosIntegration:
             # Step 3 — Enqueue AUTOMATION_SIGNAL (forced_trigger); exercises SignalAutomationActionExecutor end-to-end.
             parent_automation_id = await user_action_assertions_module.get_created_automation_id_from_user_action(
                 user_action_id=create_user_action.id,
-                wallet_address=wallet_address,
+                user_id=user_id,
             )
             assert parent_automation_id == metadata_automation_id
             signal_user_action = workflow_common_module.build_forced_trigger_signal_user_action(
@@ -220,7 +238,7 @@ class TestTriggerTaskGridDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         signal_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_SIGNAL_SECONDS,
                 )
@@ -228,7 +246,7 @@ class TestTriggerTaskGridDbosIntegration:
                 raise AssertionError("execute_user_action forced-trigger signal timed out") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_signal(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=signal_user_action.id,
             )
 
@@ -263,7 +281,7 @@ class TestTriggerTaskGridDbosIntegration:
                 await asyncio.sleep(_POST_STOP_PROTOCOL_POLL_SECONDS)
             assert workflow_row_after_signal is not None
             protocol_state_after_signal = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID,
                 workflow_row_after_signal,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements(
@@ -286,7 +304,7 @@ class TestTriggerTaskGridDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         stop_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_STOP_SEND_SECONDS,
                 )
@@ -294,7 +312,7 @@ class TestTriggerTaskGridDbosIntegration:
                 raise AssertionError("execute_user_action stop timed out") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_stop(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=stop_user_action.id,
             )
 
@@ -332,7 +350,7 @@ class TestTriggerTaskGridDbosIntegration:
                 await asyncio.sleep(_POST_STOP_PROTOCOL_POLL_SECONDS)
             assert workflow_row_after_stop_send is not None
             protocol_state_after_stop_send = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID,
                 workflow_row_after_stop_send,
             )
             observed_protocol_status = protocol_state_after_stop_send.status
@@ -369,7 +387,8 @@ class TestTriggerTaskGridDbosIntegration:
             assert parsed_final.error is None
             final_job = workflow_common_module.job_description_dict_from_output(parsed_final)
             # OctoBotActionsJobDescription serialises only non-default fields (empty params omitted).
-            # SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS was merged into auth_details from Task.wallet_address.
+            # The EVM address (SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS) is translated from the
+            # Starfish user_id by _user_id_to_evm() and merged into auth_details as wallet_address.
             assert set(final_job.keys()) == {"auth_details", "state"}
             final_auth_details = octobot_flow_entities.UserAuthentication.from_dict(
                 final_job["auth_details"]
@@ -397,7 +416,7 @@ class TestTriggerTaskGridDbosIntegration:
             assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
             protocol_state_final = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS,
+                workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID,
                 final_workflow_row,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements(

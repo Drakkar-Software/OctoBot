@@ -44,7 +44,7 @@ class DeleteAccountActionExecutor(account_user_action_executor.AccountUserAction
     ) -> None:
         delete_payload = _get_delete_account_payload(user_action)
         collection_providers.AccountProvider.instance().delete_item(
-            self._wallet_address,
+            self._user_id,
             delete_payload.id,
         )
         self._mark_user_action_completed(user_action)

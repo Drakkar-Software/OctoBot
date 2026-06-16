@@ -183,7 +183,7 @@ class TestTriggerUserActionWorkflow:
             )
             assert list(enqueue_keyword_arguments) == ["inputs"]
             expected_inputs_encoded = workflow_params_module.UserActionWorkflowInputs(
-                wallet_address=test_wallet_address,
+                user_id=test_wallet_address,
                 user_action=user_action_payload,
             ).to_dict(include_default_values=False)
             assert enqueue_keyword_arguments["inputs"] == expected_inputs_encoded

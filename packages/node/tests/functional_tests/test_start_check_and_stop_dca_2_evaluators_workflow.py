@@ -97,7 +97,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             lambda symbol: close_by_symbol[symbol]
         )
 
-        wallet_address = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS
+        user_id = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID
         protocol_account = workflow_common_module.protocol_account_for_functional(
             account_id=_DCA_ACCOUNT_ID,
             usdc_total=1000.0,
@@ -146,7 +146,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         create_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_ENQUEUE_SECONDS,
                 )
@@ -154,7 +154,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 raise AssertionError("execute_user_action timed out enqueueing automation workflow") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_create(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=create_user_action.id,
                 expected_workflow_id=None,
             )
@@ -164,7 +164,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             )
             parent_automation_id = await user_action_assertions_module.get_created_automation_id_from_user_action(
                 user_action_id=create_user_action.id,
-                wallet_address=wallet_address,
+                user_id=user_id,
             )
 
             # Helper to enqueue a forced trigger and wait for the signal user action to complete.
@@ -172,12 +172,12 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 signal_user_action = await workflow_common_module.enqueue_forced_trigger_and_await(
                     temp_dbos_scheduler,
                     automation_id=parent_automation_id,
-                    wallet_address=wallet_address,
+                    user_id=user_id,
                     user_action_id=user_action_id,
                     timeout_seconds=_T_SIGNAL_SECONDS,
                 )
                 await user_action_assertions_module.assert_user_action_selector_completed_automation_signal(
-                    wallet_address=wallet_address,
+                    user_id=user_id,
                     user_action_id=signal_user_action.id,
                 )
 
@@ -554,7 +554,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
                         temp_dbos_scheduler,
                         stop_user_action,
-                        wallet_address,
+                        user_id,
                     ),
                     timeout=_T_STOP_SEND_SECONDS,
                 )
@@ -562,7 +562,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 raise AssertionError("execute_user_action stop timed out") from exc
 
             await user_action_assertions_module.assert_user_action_selector_completed_automation_stop(
-                wallet_address=wallet_address,
+                user_id=user_id,
                 user_action_id=stop_user_action.id,
             )
 
@@ -592,7 +592,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             assert success_rows
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
             protocol_state_final = await workflow_common_module.load_protocol_automation_state_for_workflow(
-                wallet_address,
+                user_id,
                 final_workflow_row,
             )
             protocol_assertions_module.assert_protocol_automation_matches_exchange_account_elements_multi_symbol(

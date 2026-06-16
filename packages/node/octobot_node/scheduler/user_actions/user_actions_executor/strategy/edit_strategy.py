@@ -55,7 +55,7 @@ class EditStrategyActionExecutor(
                 "EditStrategyConfiguration.id must match configuration.id."
             )
         collection_providers.StrategyProvider.instance().update_item(
-            self._wallet_address,
+            self._user_id,
             edit_payload.configuration,
         )
         self._mark_user_action_completed(user_action)

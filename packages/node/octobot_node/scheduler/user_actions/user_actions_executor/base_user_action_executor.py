@@ -30,8 +30,8 @@ class UserActionExecutor(abc.ABC):
     :meth:`_build_failure_user_action_result`.
     """
 
-    def __init__(self, wallet_address: str):
-        self._wallet_address = wallet_address
+    def __init__(self, user_id: str):
+        self._user_id = user_id
         self.post_actions: user_action_post_actions.UserActionPostActions = user_action_post_actions.UserActionPostActions()
 
     def _get_error_message(self, exc: BaseException) -> str:

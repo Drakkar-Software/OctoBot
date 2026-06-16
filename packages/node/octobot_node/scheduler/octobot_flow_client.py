@@ -122,6 +122,9 @@ class OctoBotActionsJob:
         except octobot_flow.errors.ActionDependencyError as err:
             raise errors.WorkflowDAGDependenciesError(err) from err
         if wallet_address is not None:
+            # auth_details["wallet_address"] carries the EVM address used by automation
+            # jobs to build the community sync client (CommunityRepository). It must be
+            # the EVM address, not the Starfish user_id.
             self.description.auth_details["wallet_address"] = wallet_address
         self.priority_user_actions: list[octobot_flow.entities.AbstractActionDetails] = [
             octobot_flow.entities.parse_action_details(

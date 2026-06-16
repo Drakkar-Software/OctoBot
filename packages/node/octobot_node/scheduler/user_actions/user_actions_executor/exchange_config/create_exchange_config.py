@@ -47,7 +47,7 @@ class CreateExchangeConfigActionExecutor(
     ) -> None:
         create_payload = _get_create_exchange_config_payload(user_action)
         collection_providers.AccountProvider.instance().create_exchange_config(
-            self._wallet_address,
+            self._user_id,
             create_payload.configuration,
         )
         self._mark_user_action_completed(user_action)

@@ -168,7 +168,7 @@ def _assert_task_content_matches_actions(
     expected_automation_id: str,
     expected_action_count: int,
 ) -> None:
-    assert task.wallet_address == _TEST_WALLET_ADDRESS
+    assert task.user_id == _TEST_WALLET_ADDRESS
     assert task.type == node_models.TaskType.EXECUTE_ACTIONS.value
     envelope = json.loads(task.content or "{}")
     assert "state" in envelope
@@ -470,7 +470,7 @@ class TestCreateAutomationExecutor:
                 protocol_account=account,
                 market_making_configuration=market_making_configuration,
                 reference_market=stored.reference_market,
-                wallet_address=_TEST_WALLET_ADDRESS,
+                user_id=_TEST_WALLET_ADDRESS,
                 stored_strategy=stored,
             )
         expected_profile_dict = expected_profile.to_dict(include_default_values=False)

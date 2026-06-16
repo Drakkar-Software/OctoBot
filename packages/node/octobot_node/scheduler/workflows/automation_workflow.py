@@ -20,6 +20,7 @@ import dbos
 
 import octobot_commons.logging
 
+import octobot.community.authentication as community_authentication
 import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_trading.errors
 
@@ -38,6 +39,27 @@ import octobot_node.errors as errors
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
+
+
+def _user_id_to_evm(user_id: typing.Optional[str]) -> typing.Optional[str]:
+    """Return the EVM wallet address for a Starfish *user_id*, or None if unresolvable.
+
+    The community repository (used inside OctoBotActionsJob) requires the EVM wallet
+    address for the community sync client.  We store Starfish user_id in Task.user_id
+    (the sync-core identity), so we must translate back to the EVM address at the
+    automation-job boundary.
+    """
+    if user_id is None:
+        return None
+    try:
+        return community_authentication.CommunityAuthentication.instance().get_wallet_by_user_id(
+            user_id
+        ).address
+    except Exception as err:
+        octobot_commons.logging.get_logger("AutomationWorkflow").warning(
+            f"Could not resolve EVM address for user_id={user_id!r}: {err}"
+        )
+        return None
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -109,21 +131,12 @@ class AutomationWorkflow:
         return json.dumps(output.to_dict(include_default_values=False)) if output else None
 
     @staticmethod
-    def _should_retry(error: BaseException) -> bool:
-        return not isinstance(error, (
-            # workflow stopping errors
-            errors.WorkflowError,
-            octobot_flow.errors.ConfigurationError,
-        ))
-
-    @staticmethod
     @SCHEDULER.INSTANCE.step(
         name="execute_iteration",
         retries_allowed=True,
         interval_seconds=constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
         max_attempts=constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES,
         backoff_rate=constants.AUTOMATION_WORKFLOW_BACKOFF_RATE,
-        should_retry=_should_retry,
     )
     async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """
@@ -158,7 +171,10 @@ class AutomationWorkflow:
                         user_actions,
                         trading_signals,
                         result,
-                        wallet_address=parsed_inputs.task.wallet_address,
+                        # CommunityRepository (used inside the job) needs the EVM wallet
+                        # address, not the Starfish user_id — derive it from the task
+                        # identity so the community sync client resolves correctly.
+                        wallet_address=_user_id_to_evm(parsed_inputs.task.user_id),
                     ).run()
                 except octobot_flow.errors.CommunityTradingSignalError as err:
                     execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
@@ -200,7 +216,7 @@ class AutomationWorkflow:
                     f"Iteration completed, executed step: '{executed_step}', {next_actions_str}"
                 )
                 AutomationWorkflow._persist_account_trading_from_iteration_result(
-                    parsed_inputs.task.wallet_address,
+                    parsed_inputs.task.user_id,
                     result,
                 )
             else:
@@ -249,11 +265,11 @@ class AutomationWorkflow:
 
     @staticmethod
     def _persist_account_trading_from_iteration_result(
-        wallet_address: typing.Optional[str],
+        user_id: typing.Optional[str],
         job_result: octobot_flow_client.OctoBotActionsJobResult,
     ) -> None:
         # Temporary: persist trading snapshot locally until the global view system owns this sync.
-        if wallet_address is None or job_result.next_actions_description is None:
+        if user_id is None or job_result.next_actions_description is None:
             return
         automation_state = octobot_flow.entities.AutomationState.from_dict(
             job_result.next_actions_description.state
@@ -267,7 +283,7 @@ class AutomationWorkflow:
             return
         try:
             accounts_trading_protocol.update_account_trading(
-                wallet_address,
+                user_id,
                 exchange_account_id,
                 list(exchange_account_elements.orders.open_orders),
                 list(exchange_account_elements.trades),
@@ -280,7 +296,7 @@ class AutomationWorkflow:
             # Trading collections are wallet-scoped; skip until the wallet is registered locally.
             octobot_commons.logging.get_logger(AutomationWorkflow.__name__).warning(
                 "Skipping account trading persistence for wallet %s: wallet not registered",
-                wallet_address,
+                user_id,
             )
 
     @staticmethod

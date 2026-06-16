@@ -27,19 +27,19 @@ import octobot_trading.personal_data.trades.trades_util as trades_util
 
 
 def get_account_trading_state_encrypted(
-    address: str,
+    user_id: str,
     account_id: str,
 ) -> dict[str, str] | None:
     try:
         return trading_provider.AccountTradingProvider.instance().load_state_encrypted(
-            address,
+            user_id,
             account_id,
         )
     except collection_errors.CollectionNoDataError:
         return None
 
-def get_account_trading_state(address: str, account_id: str) -> protocol_models.AccountTradingState:
-    return trading_provider.AccountTradingProvider.instance().load_state(address, account_id)
+def get_account_trading_state(user_id: str, account_id: str) -> protocol_models.AccountTradingState:
+    return trading_provider.AccountTradingProvider.instance().load_state(user_id, account_id)
 
 
 def _account_trading_state_to_summary(
@@ -53,13 +53,13 @@ def _account_trading_state_to_summary(
 
 
 def get_account_trading_summaries(
-    address: str,
+    user_id: str,
     account_ids: list[str],
 ) -> list[protocol_models.AccountTradingWithAccountId]:
     summaries: list[protocol_models.AccountTradingWithAccountId] = []
     for account_id in account_ids:
         try:
-            trading_state = get_account_trading_state(address, account_id)
+            trading_state = get_account_trading_state(user_id, account_id)
         except collection_errors.CollectionNoDataError:
             continue
         summaries.append(_account_trading_state_to_summary(account_id, trading_state))
@@ -67,7 +67,7 @@ def get_account_trading_summaries(
 
 
 def update_account_trading(
-    address: str,
+    user_id: str,
     account_id: str,
     orders: list[dict],
     trades: list[dict],
@@ -75,7 +75,7 @@ def update_account_trading(
 ) -> None:
     # Step: load persisted state or start from an empty account trading snapshot.
     try:
-        trading_state = get_account_trading_state(address, account_id)
+        trading_state = get_account_trading_state(user_id, account_id)
     except collection_errors.CollectionNoDataError:
         trading_state = protocol_models.AccountTradingState(
             version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
@@ -100,4 +100,4 @@ def update_account_trading(
     ] or None
     account_trading.updated_at = datetime.datetime.now(datetime.UTC)
     # Step: persist the updated trading state for this account.
-    trading_provider.AccountTradingProvider.instance().save_state(address, account_id, trading_state)
+    trading_provider.AccountTradingProvider.instance().save_state(user_id, account_id, trading_state)

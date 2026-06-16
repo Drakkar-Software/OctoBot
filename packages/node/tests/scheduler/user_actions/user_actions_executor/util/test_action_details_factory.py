@@ -97,7 +97,7 @@ class TestExchangeProtocolAccountToApplyConfigurationDictEncryptsCredentials:
         ):
             result = action_details_factory_module.exchange_protocol_account_to_apply_configuration_dict(
                 account,
-                wallet_address=_WALLET_ADDRESS,
+                user_id=_WALLET_ADDRESS,
             )
         encrypt_mock.assert_any_call("plain-key")
         encrypt_mock.assert_any_call("plain-secret")
@@ -132,7 +132,7 @@ class TestExchangeProtocolAccountToApplyConfigurationDictEncryptsCredentials:
         ):
             result = action_details_factory_module.exchange_protocol_account_to_apply_configuration_dict(
                 account,
-                wallet_address=_WALLET_ADDRESS,
+                user_id=_WALLET_ADDRESS,
             )
         encrypt_mock.assert_any_call("plain-key")
         encrypt_mock.assert_any_call("plain-secret")

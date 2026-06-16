@@ -6,6 +6,7 @@ import mock
 import pytest
 
 import octobot_node.constants as octobot_node_constants
+import octobot_sync.server as sync_server_module
 import octobot_node.scheduler
 import octobot_node.scheduler.api as scheduler_api
 import octobot_node.scheduler.tasks as scheduler_tasks
@@ -13,7 +14,8 @@ import octobot_protocol.models as protocol_models
 
 import tests.scheduler as scheduler_tests
 
-_TEST_WALLET_ADDRESS = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+_TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+_TEST_USER_ID = sync_server_module.derive_user_id(_TEST_PRIVATE_KEY)
 _MISSING_AUTOMATION_ID = "functional-missing-automation-workflow"
 _WORKFLOW_RESULT_TIMEOUT_SECONDS = 120.0
 
@@ -63,10 +65,10 @@ def _build_forced_trigger_signal_user_action(
 
 
 async def _run_user_action_to_completion(
-    wallet_address: str,
+    user_id: str,
     user_action: protocol_models.UserAction,
 ) -> str:
-    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, wallet_address)
+    workflow_id = await scheduler_tasks.trigger_user_action_workflow(user_action, user_id)
     workflow_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(workflow_id)
     await asyncio.wait_for(workflow_handle.get_result(), timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS)
     return workflow_id
@@ -83,10 +85,10 @@ class TestExecuteUserActionSignalAutomationFailureReporting:
             automation_id=_MISSING_AUTOMATION_ID,
         )
 
-        await _run_user_action_to_completion(_TEST_WALLET_ADDRESS, signal_user_action)
+        await _run_user_action_to_completion(_TEST_USER_ID, signal_user_action)
 
         listed_user_actions = await scheduler_api.list_user_actions(
-            _TEST_WALLET_ADDRESS,
+            _TEST_USER_ID,
             active_only=True,
         )
         assert len(listed_user_actions) == 1
