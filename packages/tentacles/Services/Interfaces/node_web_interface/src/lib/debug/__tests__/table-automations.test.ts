@@ -39,7 +39,10 @@ describe("automationFilterValues", () => {
 describe("filterAutomations", () => {
   it("filters rows by active column filters", () => {
     const rows = [
-      makeAutomation({ id: "a1", metadata: { name: "Alpha", description: "" } }),
+      makeAutomation({
+        id: "a1",
+        metadata: { name: "Alpha", description: "" },
+      }),
       makeAutomation({ id: "a2", metadata: { name: "Beta", description: "" } }),
     ]
     expect(filterAutomations(rows, { name: "beta" })).toHaveLength(1)
@@ -50,7 +53,10 @@ describe("sortAutomations", () => {
   it("sorts by name ascending", () => {
     const rows = [
       makeAutomation({ id: "a2", metadata: { name: "Beta", description: "" } }),
-      makeAutomation({ id: "a1", metadata: { name: "Alpha", description: "" } }),
+      makeAutomation({
+        id: "a1",
+        metadata: { name: "Alpha", description: "" },
+      }),
     ]
     const sorted = sortAutomations(rows, { key: "name", dir: "asc" })
     expect(sorted.map((row) => row.id)).toEqual(["a1", "a2"])

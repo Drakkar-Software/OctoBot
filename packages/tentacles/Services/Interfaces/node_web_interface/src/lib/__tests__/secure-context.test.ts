@@ -10,9 +10,7 @@ describe("getLoopbackUrl", () => {
   })
 
   it("maps [::] to [::1]", () => {
-    expect(getLoopbackUrl("http://[::]:8000/app")).toBe(
-      "http://[::1]:8000/app",
-    )
+    expect(getLoopbackUrl("http://[::]:8000/app")).toBe("http://[::1]:8000/app")
   })
 
   it("returns null for 127.0.0.1 (already secure loopback)", () => {

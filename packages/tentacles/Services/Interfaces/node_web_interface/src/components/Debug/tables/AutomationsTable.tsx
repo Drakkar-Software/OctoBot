@@ -2,9 +2,9 @@ import { Eye, X, Zap } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { AccountTradingWithAccountId, AutomationState } from "@/client"
+import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFiltersButton"
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
-import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
 import { TruncatedTextWithTooltip } from "@/components/Common/Tables/TruncatedTextWithTooltip"
@@ -38,12 +38,12 @@ import {
   AUTOMATION_NAME_DISPLAY_LENGTH,
   LATEST_ACTION_DISPLAY_LENGTH,
 } from "@/lib/debug/constants"
-import { getAutomationDslHint } from "@/lib/debug/dsl"
 import {
   debugTableCellClass,
   getAutomationOrdersTooltipContent,
   getAutomationTradesTooltipContent,
 } from "@/lib/debug/display-utils"
+import { getAutomationDslHint } from "@/lib/debug/dsl"
 import {
   automationFilterHeadClass,
   filterAutomations,
@@ -51,8 +51,8 @@ import {
 } from "@/lib/debug/table-automations"
 import type { AutomationSortKey } from "@/lib/debug/types"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { cn } from "@/lib/utils"
 
 type AutomationsTableProps = {
@@ -193,7 +193,9 @@ export function AutomationsTable({
                 <ColumnFilterInput
                   value={filters[key] ?? ""}
                   onChange={(value) =>
-                    setFilters((current) => setColumnFilter(current, key, value))
+                    setFilters((current) =>
+                      setColumnFilter(current, key, value),
+                    )
                   }
                 />
               </TableHead>
@@ -216,7 +218,9 @@ export function AutomationsTable({
               const canSignal = readOnly
                 ? Boolean(onSignal)
                 : isRunningAutomation(row)
-              const canStop = readOnly ? Boolean(onStop) : isRunningAutomation(row)
+              const canStop = readOnly
+                ? Boolean(onStop)
+                : isRunningAutomation(row)
               const signalButton = (
                 <button
                   type="button"
@@ -225,7 +229,9 @@ export function AutomationsTable({
                       ? "text-muted-foreground hover:text-foreground"
                       : "text-muted-foreground/40 cursor-not-allowed"
                   }
-                  aria-label={readOnly ? "View signal user action" : "Send signal"}
+                  aria-label={
+                    readOnly ? "View signal user action" : "Send signal"
+                  }
                   disabled={!canSignal}
                   onClick={() => {
                     if (!canSignal) return
@@ -348,7 +354,9 @@ export function AutomationsTable({
                           type="button"
                           className="text-muted-foreground hover:text-foreground"
                           aria-label={
-                            readOnly ? "View stop user action" : "Stop automation"
+                            readOnly
+                              ? "View stop user action"
+                              : "Stop automation"
                           }
                           onClick={() => onStop?.(row)}
                         >

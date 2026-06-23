@@ -9,7 +9,9 @@ const InsecureContextNotice = () => {
       data-testid="insecure-context-notice"
     >
       <div className="flex flex-col items-center justify-center p-4 max-w-md text-center">
-        <span className="text-6xl md:text-8xl font-bold leading-none mb-4">🔒</span>
+        <span className="text-6xl md:text-8xl font-bold leading-none mb-4">
+          🔒
+        </span>
         <h1 className="text-2xl font-bold mb-2">Secure context required</h1>
         <p className="text-lg text-muted-foreground mb-4">
           This browser origin does not support the cryptography the node needs.

@@ -11,7 +11,9 @@ export function compareStrings(
   right: string,
   direction: SortDirection,
 ): number {
-  const comparison = left.localeCompare(right, undefined, { sensitivity: "base" })
+  const comparison = left.localeCompare(right, undefined, {
+    sensitivity: "base",
+  })
   return direction === "asc" ? comparison : -comparison
 }
 

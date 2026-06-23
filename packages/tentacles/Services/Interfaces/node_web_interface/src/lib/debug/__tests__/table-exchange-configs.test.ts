@@ -39,9 +39,9 @@ describe("filterExchangeConfigs", () => {
       { id: "cfg-1", name: "A", exchange: "binance", sandboxed: false },
       { id: "cfg-2", name: "B", exchange: "kraken", sandboxed: false },
     ]
-    expect(filterExchangeConfigs(rows, { exchange: "kraken" }, accounts)).toHaveLength(
-      1,
-    )
+    expect(
+      filterExchangeConfigs(rows, { exchange: "kraken" }, accounts),
+    ).toHaveLength(1)
   })
 })
 

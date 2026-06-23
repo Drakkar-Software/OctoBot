@@ -1,8 +1,12 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+  type AssetsListEntry,
   formatAssetsPortfolioTooltip,
   formatAssetsSymbolsSummary,
-  type AssetsListEntry,
 } from "@/lib/debug/display-utils"
 
 type AssetsPortfolioCellProps = {

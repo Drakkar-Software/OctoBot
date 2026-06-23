@@ -42,7 +42,9 @@ describe("getUserActionResultField", () => {
 describe("getUserActionResultErrorMessage", () => {
   it("delegates to getUserActionResultField", () => {
     expect(
-      getUserActionResultErrorMessage({ error_message: "failed" } as UserAction["result"]),
+      getUserActionResultErrorMessage({
+        error_message: "failed",
+      } as UserAction["result"]),
     ).toBe("failed")
   })
 })
@@ -50,7 +52,9 @@ describe("getUserActionResultErrorMessage", () => {
 describe("getUserActionResultErrorDetails", () => {
   it("delegates to getUserActionResultField", () => {
     expect(
-      getUserActionResultErrorDetails({ error_details: "stack trace" } as UserAction["result"]),
+      getUserActionResultErrorDetails({
+        error_details: "stack trace",
+      } as UserAction["result"]),
     ).toBe("stack trace")
   })
 })
@@ -62,7 +66,9 @@ describe("getUserActionUpdatedAt", () => {
         id: "ua-1",
         updated_at: "2024-01-01T00:00:00.000Z",
         created_at: "2023-12-01T00:00:00.000Z",
-        result: { updated_at: "2024-06-01T00:00:00.000Z" } as UserAction["result"],
+        result: {
+          updated_at: "2024-06-01T00:00:00.000Z",
+        } as UserAction["result"],
       }),
     ).toBe("2024-06-01T00:00:00.000Z")
   })

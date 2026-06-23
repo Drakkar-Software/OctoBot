@@ -38,7 +38,9 @@ describe("buildUserActionTemplate", () => {
 
   it("builds an automation create template with a random configuration id", () => {
     const action = buildUserActionTemplate("automation_create")
-    expect(action.configuration).toMatchObject({ action_type: "automation_create" })
+    expect(action.configuration).toMatchObject({
+      action_type: "automation_create",
+    })
 
     const automationConfiguration = (
       action.configuration as { configuration: Record<string, unknown> }
@@ -65,7 +67,9 @@ describe("buildUserActionTemplate", () => {
 
   it("builds an account create template with default USDC assets", () => {
     const action = buildUserActionTemplate("account_create")
-    expect(action.configuration).toMatchObject({ action_type: "account_create" })
+    expect(action.configuration).toMatchObject({
+      action_type: "account_create",
+    })
 
     const accountConfiguration = (
       action.configuration as { configuration: Record<string, unknown> }
@@ -93,12 +97,17 @@ describe("buildUserActionTemplate", () => {
 
   it("builds a grid strategy create template", () => {
     const action = buildUserActionTemplate("strategy_create_grid")
-    expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
 
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    const tradingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
     expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
     expect(tradingConfiguration.name).toBe("GridTradingMode")
 
@@ -110,12 +119,17 @@ describe("buildUserActionTemplate", () => {
 
   it("builds an index strategy create template", () => {
     const action = buildUserActionTemplate("strategy_create_index")
-    expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
 
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    const tradingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
     expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
     expect(tradingConfiguration.name).toBe("IndexTradingMode")
 
@@ -127,14 +141,19 @@ describe("buildUserActionTemplate", () => {
   it("builds a DCA strategy create template with two evaluators", () => {
     const action = buildUserActionTemplate("strategy_create_dca")
     expect(action.id).toBe("ua-manual-strategy_create_dca")
-    expect(action.configuration).toMatchObject({ action_type: "strategy_create" })
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
 
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
     expect(strategy.reference_market).toBe("USDC")
 
-    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    const tradingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
     expect(tradingConfiguration.configuration_type).toBe("trading_tentacles")
     expect(tradingConfiguration.name).toBe("DCATradingMode")
     expect(tradingConfiguration).not.toHaveProperty("symbols")
@@ -173,7 +192,10 @@ describe("buildUserActionTemplate", () => {
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    const tradingConfiguration = strategy.configuration as Record<string, unknown>
+    const tradingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
     expect(tradingConfiguration.name).toBe("DCATradingMode")
     expect(tradingConfiguration).not.toHaveProperty("symbols")
     expect(tradingConfiguration).not.toHaveProperty("evaluators")
@@ -195,7 +217,10 @@ describe("buildUserActionTemplate", () => {
     ).configuration
     expect(strategy.reference_market).toBe("USDT")
 
-    const marketMakingConfiguration = strategy.configuration as Record<string, unknown>
+    const marketMakingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
     expect(marketMakingConfiguration.configuration_type).toBe("market_making")
 
     const pairSettings = marketMakingConfiguration.pair_settings as Array<
@@ -258,7 +283,10 @@ describe("buildStrategyEditUserActionJson", () => {
       version: "1.0.0",
       name: "Alpha",
       reference_market: "USDT",
-      configuration: { configuration_type: "generic_process", profile_data: {} },
+      configuration: {
+        configuration_type: "generic_process",
+        profile_data: {},
+      },
     } as Strategy
     const json = JSON.parse(buildStrategyEditUserActionJson(strategy))
     expect(json.configuration.id).toBe("strat-1")
@@ -292,9 +320,13 @@ describe("buildAutomationCreateUserActionJsonForAccount", () => {
       is_simulated: true,
       created_at: "2024-01-01T00:00:00.000Z",
     }
-    const json = JSON.parse(buildAutomationCreateUserActionJsonForAccount(account))
+    const json = JSON.parse(
+      buildAutomationCreateUserActionJsonForAccount(account),
+    )
     expect(json.configuration.configuration.accounts).toEqual([{ id: "acc-1" }])
-    expect(json.configuration.configuration.id).toMatch(CANONICAL_UUID_V4_PATTERN)
+    expect(json.configuration.configuration.id).toMatch(
+      CANONICAL_UUID_V4_PATTERN,
+    )
   })
 })
 
@@ -319,6 +351,8 @@ describe("buildAutomationCreateUserActionJsonForStrategy", () => {
       version: "2.0.0",
       emit_signals: false,
     })
-    expect(json.configuration.configuration.id).toMatch(CANONICAL_UUID_V4_PATTERN)
+    expect(json.configuration.configuration.id).toMatch(
+      CANONICAL_UUID_V4_PATTERN,
+    )
   })
 })

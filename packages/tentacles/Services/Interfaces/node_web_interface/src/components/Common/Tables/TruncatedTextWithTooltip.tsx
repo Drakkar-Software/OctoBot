@@ -1,6 +1,6 @@
+import { ScrollableTooltipContent } from "@/components/Common/Tables/ScrollableTooltipContent"
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip"
 import { ERROR_DETAILS_DISPLAY_LENGTH } from "@/lib/debug/constants"
-import { ScrollableTooltipContent } from "@/components/Common/Tables/ScrollableTooltipContent"
 
 type TruncatedTextWithTooltipProps = {
   text: string

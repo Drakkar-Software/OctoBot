@@ -4,40 +4,40 @@ import type {
   Account,
   AccountTradingWithAccountId,
   AutomationState,
-  ExchangeConfig,
   DetailedAsset,
   DetailedAssetsForTradingType,
+  ExchangeConfig,
   Order,
-  Trade,
   Strategy,
+  Trade,
 } from "@/client"
 import {
-  flattenDetailedAssets,
   countAccountAssets,
+  debugTableCellClass,
+  flattenDetailedAssets,
   formatAssetsPerTradingType,
   formatAssetsPortfolioTooltip,
   formatAssetsSymbolsSummary,
-  formatDebugStatusTooltip,
   formatDebugStatusFilterText,
+  formatDebugStatusTooltip,
   formatOrdersTradingTooltip,
   formatTradesTradingTooltip,
   getAccountExchangeConfigIds,
   getAccountExchangeNames,
-  getAccountTradingForAccountId,
-  getAccountsReferencingExchangeConfig,
   getAccountOrdersCount,
   getAccountOrdersTooltipContent,
+  getAccountsReferencingExchangeConfig,
   getAccountTradesCount,
   getAccountTradesTooltipContent,
+  getAccountTradingForAccountId,
   getAutomationOrdersTooltipContent,
   getAutomationTradesTooltipContent,
+  getDebugStatusDisplay,
+  getDebugTableColumnAlignClass,
   getDetailedOrdersForAutomation,
   getDetailedTradesForAutomation,
-  getDebugStatusDisplay,
   getStrategyConfigurationType,
   getTradingSummariesForAutomation,
-  debugTableCellClass,
-  getDebugTableColumnAlignClass,
   matchesDebugStatusColumnFilter,
 } from "@/lib/debug/display-utils"
 import { matchesColumnFilter } from "@/lib/table"
@@ -49,7 +49,8 @@ function makeAssets(
   }>,
 ): DetailedAssetsForTradingType[] {
   return groups.map((group) => ({
-    trading_type: group.trading_type as DetailedAssetsForTradingType["trading_type"],
+    trading_type:
+      group.trading_type as DetailedAssetsForTradingType["trading_type"],
     assets: group.assets.map((asset) => ({
       symbol: asset.symbol,
       available: asset.available,
@@ -154,9 +155,7 @@ describe("formatAssetsPortfolioTooltip", () => {
       { symbol: "BTC", available: 1.5, total: 2 },
       { symbol: "ETH", available: 0, total: 1 },
     ]
-    expect(formatAssetsPortfolioTooltip(assets)).toBe(
-      "BTC: 1.5/2\nETH: 0/1",
-    )
+    expect(formatAssetsPortfolioTooltip(assets)).toBe("BTC: 1.5/2\nETH: 0/1")
   })
 
   it("formats available/total per symbol", () => {
@@ -169,9 +168,7 @@ describe("formatAssetsPortfolioTooltip", () => {
         ],
       },
     ])
-    expect(formatAssetsPortfolioTooltip(assets)).toBe(
-      "BTC: 1.5/2\nETH: 0/1",
-    )
+    expect(formatAssetsPortfolioTooltip(assets)).toBe("BTC: 1.5/2\nETH: 0/1")
   })
 
   it("prefixes trading type when multiple groups", () => {
@@ -224,9 +221,9 @@ describe("getDebugStatusDisplay", () => {
 
 describe("formatDebugStatusTooltip", () => {
   it("includes status label and extra lines", () => {
-    expect(
-      formatDebugStatusTooltip("running", ["error: timeout"]),
-    ).toBe("Running\nerror: timeout")
+    expect(formatDebugStatusTooltip("running", ["error: timeout"])).toBe(
+      "Running\nerror: timeout",
+    )
   })
 })
 
@@ -243,9 +240,7 @@ describe("getDebugTableColumnAlignClass", () => {
       "text-center font-mono text-xs",
     )
     // Regression: old heuristic diverged for these values in the same column
-    expect(debugTableCellClass("center")).toBe(
-      debugTableCellClass("center"),
-    )
+    expect(debugTableCellClass("center")).toBe(debugTableCellClass("center"))
   })
 })
 
@@ -319,11 +314,17 @@ describe("getTradingSummariesForAutomation", () => {
   const summaries: AccountTradingWithAccountId[] = [
     {
       account_id: "acc-a",
-      account_trading: { updated_at: "2026-01-01T00:00:00Z", orders: [sampleOrder] },
+      account_trading: {
+        updated_at: "2026-01-01T00:00:00Z",
+        orders: [sampleOrder],
+      },
     },
     {
       account_id: "acc-b",
-      account_trading: { updated_at: "2026-01-02T12:00:00Z", trades: [sampleTrade] },
+      account_trading: {
+        updated_at: "2026-01-02T12:00:00Z",
+        trades: [sampleTrade],
+      },
     },
     { account_id: "acc-other" },
   ]
@@ -348,8 +349,12 @@ describe("getTradingSummariesForAutomation", () => {
       orders: [{ id: sampleOrder.id, symbol: sampleOrder.symbol }],
       trades: [{ id: sampleTrade.trade_id, symbol: sampleTrade.symbol }],
     })
-    expect(getDetailedOrdersForAutomation(automation, summaries)).toHaveLength(1)
-    expect(getDetailedTradesForAutomation(automation, summaries)).toHaveLength(1)
+    expect(getDetailedOrdersForAutomation(automation, summaries)).toHaveLength(
+      1,
+    )
+    expect(getDetailedTradesForAutomation(automation, summaries)).toHaveLength(
+      1,
+    )
   })
 })
 
@@ -400,33 +405,45 @@ describe("formatOrdersTradingTooltip", () => {
       { ...sampleOrder, id: "o3", created_at: "2026-01-02T00:00:00Z" },
     ]
     const text = formatOrdersTradingTooltip(orders)!
-    const newestDate = formatTradingTooltipDateTimeForTest("2026-01-03T00:00:00Z")
-    const middleDate = formatTradingTooltipDateTimeForTest("2026-01-02T00:00:00Z")
-    const oldestDate = formatTradingTooltipDateTimeForTest("2026-01-01T00:00:00Z")
+    const newestDate = formatTradingTooltipDateTimeForTest(
+      "2026-01-03T00:00:00Z",
+    )
+    const middleDate = formatTradingTooltipDateTimeForTest(
+      "2026-01-02T00:00:00Z",
+    )
+    const oldestDate = formatTradingTooltipDateTimeForTest(
+      "2026-01-01T00:00:00Z",
+    )
     expect(text.indexOf(newestDate)).toBeLessThan(text.indexOf(middleDate))
     expect(text.indexOf(middleDate)).toBeLessThan(text.indexOf(oldestDate))
   })
 
   it("prefixes account_id when multiple summaries contribute", () => {
-    const text = formatOrdersTradingTooltip([sampleOrder], [
-      {
-        account_id: "acc-a",
-        account_trading: { updated_at: "2026-01-01T00:00:00Z", orders: [sampleOrder] },
-      },
-      {
-        account_id: "acc-b",
-        account_trading: {
-          updated_at: "2026-01-01T00:00:00Z",
-          orders: [
-            {
-              ...sampleOrder,
-              id: "order-2",
-              symbol: "ETH/USDT",
-            },
-          ],
+    const text = formatOrdersTradingTooltip(
+      [sampleOrder],
+      [
+        {
+          account_id: "acc-a",
+          account_trading: {
+            updated_at: "2026-01-01T00:00:00Z",
+            orders: [sampleOrder],
+          },
         },
-      },
-    ])
+        {
+          account_id: "acc-b",
+          account_trading: {
+            updated_at: "2026-01-01T00:00:00Z",
+            orders: [
+              {
+                ...sampleOrder,
+                id: "order-2",
+                symbol: "ETH/USDT",
+              },
+            ],
+          },
+        },
+      ],
+    )
     expect(text).toContain("acc-a:")
     expect(text).toContain("acc-b:")
     expect(text).toContain("ETH/USDT")
@@ -441,9 +458,15 @@ describe("formatTradesTradingTooltip", () => {
       { ...sampleTrade, id: "t3", executed_at: "2026-01-02T00:00:00Z" },
     ]
     const text = formatTradesTradingTooltip(trades)!
-    const newestDate = formatTradingTooltipDateTimeForTest("2026-01-03T00:00:00Z")
-    const middleDate = formatTradingTooltipDateTimeForTest("2026-01-02T00:00:00Z")
-    const oldestDate = formatTradingTooltipDateTimeForTest("2026-01-01T00:00:00Z")
+    const newestDate = formatTradingTooltipDateTimeForTest(
+      "2026-01-03T00:00:00Z",
+    )
+    const middleDate = formatTradingTooltipDateTimeForTest(
+      "2026-01-02T00:00:00Z",
+    )
+    const oldestDate = formatTradingTooltipDateTimeForTest(
+      "2026-01-01T00:00:00Z",
+    )
     expect(text.indexOf(newestDate)).toBeLessThan(text.indexOf(middleDate))
     expect(text.indexOf(middleDate)).toBeLessThan(text.indexOf(oldestDate))
   })
@@ -505,7 +528,9 @@ describe("getAutomationOrdersTooltipContent", () => {
     )
     expect(text).toContain("BTC/USDT")
     expect(text).not.toContain("SOL/USDT")
-    expect(text?.split("\n").filter((line) => line.includes("@")).length).toBe(1)
+    expect(text?.split("\n").filter((line) => line.includes("@")).length).toBe(
+      1,
+    )
   })
 
   it("falls back to automation order summaries when account_tradings have no orders", () => {
@@ -521,9 +546,7 @@ describe("getAutomationOrdersTooltipContent", () => {
 
 describe("getAutomationTradesTooltipContent", () => {
   it("returns null when automation and summaries have no trades", () => {
-    expect(
-      getAutomationTradesTooltipContent(makeAutomation(), []),
-    ).toBeNull()
+    expect(getAutomationTradesTooltipContent(makeAutomation(), [])).toBeNull()
   })
 
   it("falls back to automation trade summaries when account_tradings have no trades", () => {
@@ -585,7 +608,9 @@ describe("getAutomationTradesTooltipContent", () => {
     )
     expect(text).toContain("ETH/USDT")
     expect(text).not.toContain("BTC/USDT")
-    expect(text?.split("\n").filter((line) => line.includes("executed:")).length).toBe(1)
+    expect(
+      text?.split("\n").filter((line) => line.includes("executed:")).length,
+    ).toBe(1)
   })
 })
 
@@ -601,7 +626,9 @@ describe("getAccountOrdersTooltipContent", () => {
   ]
 
   it("returns null when account has no trading entry", () => {
-    expect(getAccountOrdersTooltipContent("missing", accountTradings)).toBeNull()
+    expect(
+      getAccountOrdersTooltipContent("missing", accountTradings),
+    ).toBeNull()
   })
 
   it("formats orders for the matching account", () => {
@@ -668,9 +695,7 @@ describe("getAccountExchangeNames", () => {
     },
   ]
 
-  function makeExchangeAccount(
-    specifics: Account["specifics"],
-  ): Account {
+  function makeExchangeAccount(specifics: Account["specifics"]): Account {
     return {
       id: "acc-1",
       name: "Test",
@@ -745,7 +770,10 @@ describe("formatAssetsPerTradingType", () => {
   it("formats counts per trading type", () => {
     expect(
       formatAssetsPerTradingType([
-        { trading_type: "spot", assets: [{ symbol: "BTC", available: 1, total: 1 }] },
+        {
+          trading_type: "spot",
+          assets: [{ symbol: "BTC", available: 1, total: 1 }],
+        },
       ]),
     ).toBe("spot: 1")
   })

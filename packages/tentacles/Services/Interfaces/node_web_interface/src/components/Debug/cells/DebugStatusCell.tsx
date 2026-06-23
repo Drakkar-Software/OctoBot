@@ -1,4 +1,8 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   formatDebugStatusTooltip,
   getDebugStatusDisplay,
@@ -24,6 +28,7 @@ export function DebugStatusCell({
     <Tooltip>
       <TooltipTrigger asChild>
         <span
+          role="img"
           className={cn(
             "cursor-default text-base leading-none",
             isLive && "animate-pulse",

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react"
 
 import { type ApiError, DebugService, type UserAction } from "@/client"
 import { Button } from "@/components/ui/button"
-import { LineNumberTextarea } from "@/components/ui/line-number-textarea"
 import {
   Dialog,
   DialogContent,
@@ -13,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { LineNumberTextarea } from "@/components/ui/line-number-textarea"
 import {
   Select,
   SelectContent,
@@ -31,6 +31,7 @@ import {
   type UserActionTemplateKey,
   userActionTemplateKeyFromActionType,
 } from "@/lib/debug/user-action-templates"
+
 function getApiErrorMessage(error: ApiError): string {
   const errorDetail = (error.body as { detail?: unknown } | undefined)?.detail
   if (typeof errorDetail === "string" && errorDetail.length > 0) {
@@ -90,11 +91,15 @@ export function ExecuteActionDialog({
     if (open) {
       setSubmitError(null)
       if (draft) {
-        setSelectedTemplateKey(userActionTemplateKeyFromActionType(draft.actionType))
+        setSelectedTemplateKey(
+          userActionTemplateKeyFromActionType(draft.actionType),
+        )
         setJsonText(draft.jsonText)
       } else {
         setSelectedTemplateKey(DEFAULT_USER_ACTION_TEMPLATE_KEY)
-        setJsonText(buildUserActionTemplateJson(DEFAULT_USER_ACTION_TEMPLATE_KEY))
+        setJsonText(
+          buildUserActionTemplateJson(DEFAULT_USER_ACTION_TEMPLATE_KEY),
+        )
       }
     }
   }, [open, draft])
@@ -149,9 +154,9 @@ export function ExecuteActionDialog({
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           {!copyOnly && (
             <div className="flex shrink-0 flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 Action type
-              </label>
+              </p>
               <Select
                 value={selectedTemplateKey}
                 onValueChange={(value) =>
@@ -181,7 +186,9 @@ export function ExecuteActionDialog({
             }}
           />
         </div>
-        {displayedError && <ExecuteActionDialogError message={displayedError} />}
+        {displayedError && (
+          <ExecuteActionDialogError message={displayedError} />
+        )}
         <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

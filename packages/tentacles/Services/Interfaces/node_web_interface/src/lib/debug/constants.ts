@@ -10,7 +10,11 @@ export const SIGNAL_TYPE_OPTIONS: {
   { value: "trading_signal", label: "Trading signal" },
 ]
 
-export const COMPOUND_DSL_KEYWORDS = new Set(["if_error", "loop_until", "value_if"])
+export const COMPOUND_DSL_KEYWORDS = new Set([
+  "if_error",
+  "loop_until",
+  "value_if",
+])
 
 export const ID_DISPLAY_LENGTH = 8
 export const ERROR_DETAILS_DISPLAY_LENGTH = 35
@@ -30,4 +34,7 @@ export const AUTOMATION_COMPACT_COLUMNS = new Set<AutomationSortKey>([
   "trades",
 ])
 
-export const ACCOUNT_COMPACT_COLUMNS = new Set<AccountSortKey>(["orders", "trades"])
+export const ACCOUNT_COMPACT_COLUMNS = new Set<AccountSortKey>([
+  "orders",
+  "trades",
+])

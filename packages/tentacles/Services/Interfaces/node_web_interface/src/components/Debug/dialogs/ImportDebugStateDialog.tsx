@@ -1,16 +1,15 @@
 import { Upload } from "lucide-react"
 import {
+  type ChangeEvent,
+  type ClipboardEvent,
   useEffect,
   useRef,
   useState,
-  type ChangeEvent,
-  type ClipboardEvent,
 } from "react"
 import { toast } from "sonner"
 
 import type { DebugState } from "@/client"
 import { Button } from "@/components/ui/button"
-import { LineNumberTextarea } from "@/components/ui/line-number-textarea"
 import {
   Dialog,
   DialogContent,
@@ -19,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { LineNumberTextarea } from "@/components/ui/line-number-textarea"
 import { parseDebugStateJson } from "@/lib/debug/import"
 
 type ImportDebugStateDialogProps = {

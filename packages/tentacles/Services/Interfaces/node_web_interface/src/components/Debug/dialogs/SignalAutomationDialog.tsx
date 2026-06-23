@@ -9,7 +9,6 @@ import {
   type UserAction,
 } from "@/client"
 import { Button } from "@/components/ui/button"
-import { LineNumberTextarea } from "@/components/ui/line-number-textarea"
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { LineNumberTextarea } from "@/components/ui/line-number-textarea"
 import {
   Select,
   SelectContent,
@@ -62,7 +62,7 @@ export function SignalAutomationDialog({
       setPayloadText("")
       setParseError(null)
     }
-  }, [open, automation?.id])
+  }, [open])
 
   const mutation = useMutation({
     mutationFn: (body: UserAction) =>
@@ -131,9 +131,9 @@ export function SignalAutomationDialog({
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               Signal type
-            </label>
+            </p>
             <Select
               value={signalType}
               onValueChange={(value) =>
@@ -159,9 +159,9 @@ export function SignalAutomationDialog({
           </div>
           {signalTypeRequiresPayload(signalType) && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground">
                 Signal payload (JSON)
-              </label>
+              </p>
               <LineNumberTextarea
                 className="min-h-[180px]"
                 textareaClassName="min-h-[180px]"

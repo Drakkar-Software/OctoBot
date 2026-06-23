@@ -14,73 +14,63 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import io
 import os
 import re
-import tempfile
-import typing
+import zipfile
 
-import pydantic
+import fastapi
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 
-import octobot_commons.logging as logging
-import octobot_node.constants as node_constants
-import octobot.community.errors_upload.error_sharing as error_sharing
+import octobot_node.constants
 
 try:
-    from api.deps import CurrentUser
-except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
+except ImportError:
+    from api.deps import CurrentUser  # type: ignore[no-redef]
 
 router = APIRouter(tags=["logs"])
 
-logger = logging.get_logger(__name__)
-
-# Only alphanumeric characters, hyphens, and underscores are valid in automation IDs.
-# This prevents path traversal attacks when ids are interpolated into file paths.
-_SAFE_AUTOMATION_ID_RE = re.compile(r'^[a-zA-Z0-9_-]+$')
+# Only allow ids that map safely to a "<id>.log" file name (path-traversal guard).
+_SAFE_TASK_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
-class ShareLogsRequest(pydantic.BaseModel):
-    automation_ids: typing.Optional[list[str]] = None
+class ExportLogsRequest(BaseModel):
+    task_ids: list[str]
 
 
-@router.post("/share")
-async def share_logs(
-    current_user: CurrentUser,
-    body: typing.Optional[ShareLogsRequest] = None,
-) -> typing.Any:
-    export_path = None
-    try:
-        with tempfile.NamedTemporaryFile(suffix="", delete=False) as tmp:
-            export_path = tmp.name
-        log_paths = None
-        if body and body.automation_ids:
-            for automation_id in body.automation_ids:
-                if not _SAFE_AUTOMATION_ID_RE.match(automation_id):
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Invalid automation_id",
-                    )
-            log_paths = [
-                os.path.join(node_constants.AUTOMATION_LOGS_FOLDER, f"{automation_id}.log")
-                for automation_id in body.automation_ids
-            ]
-        result = await error_sharing.share_logs(export_path, log_paths)
-        if result is None:
-            return {"success": False, "error": "Not connected to octobot.cloud"}
-        return {
-            "success": True,
-            "errorId": result.get("errorId"),
-            "errorSecret": result.get("errorSecret"),
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(e, True, "Error sharing logs")
-        return {"success": False, "error": "Failed to share logs"}
-    finally:
-        if export_path is not None:
-            try:
-                os.unlink(export_path)
-            except OSError:
-                pass
+def build_logs_zip(task_ids: list[str]) -> bytes | None:
+    """Zip the per-OctoBot log files (``AUTOMATION_LOGS_FOLDER/<id>.log``) for the given task ids.
+
+    Missing files are skipped. Returns the zip bytes, or None when none of the ids had a log file.
+    """
+    buffer = io.BytesIO()
+    written = 0
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for task_id in task_ids:
+            log_path = os.path.join(
+                octobot_node.constants.AUTOMATION_LOGS_FOLDER, f"{task_id}.log"
+            )
+            if os.path.isfile(log_path):
+                archive.write(log_path, arcname=f"{task_id}.log")
+                written += 1
+    if written == 0:
+        return None
+    return buffer.getvalue()
+
+
+@router.post("/export")
+def export_logs(body: ExportLogsRequest, current_user: CurrentUser) -> fastapi.Response:
+    for task_id in body.task_ids:
+        if not _SAFE_TASK_ID_RE.match(task_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid task id"
+            )
+    archive = build_logs_zip(body.task_ids)
+    if archive is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No logs found for the selected OctoBots",
+        )
+    return fastapi.Response(content=archive, media_type="application/zip")

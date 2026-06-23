@@ -37,7 +37,9 @@ describe("signalTypeRequiresPayload", () => {
 
 describe("isRunningAutomation", () => {
   it("returns true only for running status", () => {
-    expect(isRunningAutomation(makeAutomation({ status: "running" }))).toBe(true)
+    expect(isRunningAutomation(makeAutomation({ status: "running" }))).toBe(
+      true,
+    )
     expect(isRunningAutomation(makeAutomation({ status: "completed" }))).toBe(
       false,
     )
@@ -168,7 +170,10 @@ describe("getAutomationErrorTooltipLines", () => {
   it("includes error and error_message lines", () => {
     expect(
       getAutomationErrorTooltipLines(
-        makeAutomation({ error: "timeout", error_message: "deadline exceeded" }),
+        makeAutomation({
+          error: "timeout",
+          error_message: "deadline exceeded",
+        }),
       ),
     ).toEqual(["error: timeout", "error_message: deadline exceeded"])
   })
@@ -177,7 +182,9 @@ describe("getAutomationErrorTooltipLines", () => {
 describe("validateAutomationCanReceiveSignal", () => {
   it("rejects non-running automations", () => {
     expect(
-      validateAutomationCanReceiveSignal(makeAutomation({ status: "completed" })),
+      validateAutomationCanReceiveSignal(
+        makeAutomation({ status: "completed" }),
+      ),
     ).toBe("Only running automations can receive signals.")
   })
 

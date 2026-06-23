@@ -1,5 +1,5 @@
-import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip"
 import { ScrollableTooltipContent } from "@/components/Common/Tables/ScrollableTooltipContent"
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip"
 
 type AutomationTradingCountCellProps = {
   count: number

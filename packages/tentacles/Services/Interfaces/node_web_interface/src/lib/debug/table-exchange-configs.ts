@@ -1,15 +1,13 @@
 import type { Account, ExchangeConfig } from "@/client"
-import {
-  getAccountsReferencingExchangeConfig,
-} from "@/lib/debug/display-utils"
+import { getAccountsReferencingExchangeConfig } from "@/lib/debug/display-utils"
 import type { ExchangeConfigSortKey } from "@/lib/debug/types"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import {
   compareNumbers,
   compareStrings,
   hasActiveFilters,
   matchesColumnFilter,
 } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 export function exchangeConfigFilterValues(
   row: ExchangeConfig,

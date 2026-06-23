@@ -1,4 +1,8 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { formatIdDisplay } from "@/lib/format-id"
 
@@ -23,7 +27,10 @@ export function CopyableIdCell({ id }: CopyableIdCellProps) {
           {formatIdDisplay(id)}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="font-mono text-xs max-w-md break-all p-3">
+      <TooltipContent
+        side="top"
+        className="font-mono text-xs max-w-md break-all p-3"
+      >
         {id}
       </TooltipContent>
     </Tooltip>

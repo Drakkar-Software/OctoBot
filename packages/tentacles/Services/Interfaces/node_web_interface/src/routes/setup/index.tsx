@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type ApiError, type SetupResult, SetupService } from "@/client"
-import { clearAuth } from "@/hooks/useAuth"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -19,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
+import { clearAuth } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { savePassword } from "@/lib/device-key"
 import { handleError } from "@/utils"

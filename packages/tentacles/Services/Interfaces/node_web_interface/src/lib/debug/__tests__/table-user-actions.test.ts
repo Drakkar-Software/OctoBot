@@ -28,7 +28,11 @@ describe("filterUserActions", () => {
       },
       {
         id: "ua-2",
-        configuration: { action_type: "account_edit", id: "acc", configuration: {} },
+        configuration: {
+          action_type: "account_edit",
+          id: "acc",
+          configuration: {},
+        },
       },
     ] as unknown as UserAction[]
     expect(filterUserActions(rows, { actionType: "account" })).toHaveLength(1)

@@ -9,15 +9,14 @@ import {
   AUTOMATION_COMPACT_COLUMN_CLASS,
   AUTOMATION_COMPACT_COLUMNS,
 } from "@/lib/debug/constants"
-import { getAutomationDslHint } from "@/lib/debug/dsl"
 import {
   countAccountAssets,
   formatAssetsSymbolsSummary,
   matchesDebugStatusColumnFilter,
 } from "@/lib/debug/display-utils"
+import { getAutomationDslHint } from "@/lib/debug/dsl"
 import type { AutomationSortKey } from "@/lib/debug/types"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import {
   compareNumbers,
   compareStrings,
@@ -26,6 +25,7 @@ import {
   matchesTableColumnFilter,
   parseSortTime,
 } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 export function automationFilterHeadClass(key: AutomationSortKey): string {
   return AUTOMATION_COMPACT_COLUMNS.has(key)
@@ -89,7 +89,11 @@ export function sortAutomations(
       case "progress": {
         const leftStats = getActionExecutionStats(left)
         const rightStats = getActionExecutionStats(right)
-        const comparison = compareNumbers(leftStats.executed, rightStats.executed, dir)
+        const comparison = compareNumbers(
+          leftStats.executed,
+          rightStats.executed,
+          dir,
+        )
         if (comparison !== 0) return comparison
         return compareNumbers(leftStats.total, rightStats.total, dir)
       }

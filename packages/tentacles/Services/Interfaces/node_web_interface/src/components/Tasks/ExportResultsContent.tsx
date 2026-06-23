@@ -92,7 +92,8 @@ function resolveValue(row: ExportRow, jsonPath: string): unknown {
 function buildExportRows(tasks: Task[]): ExportRow[] {
   return tasks.map((task) => {
     const activeExec = getActiveExecution(task.executions)
-    const { status: errorStatus, message: errorMessage } = resolveTaskError(task)
+    const { status: errorStatus, message: errorMessage } =
+      resolveTaskError(task)
     return {
       taskId: task.id ?? "",
       resultData: {},
@@ -469,6 +470,7 @@ export default function ExportResultsContent({
           />
           {globalFilter && (
             <button
+              type="button"
               onClick={() => setGlobalFilter("")}
               className="absolute right-2 text-muted-foreground hover:text-foreground"
             >

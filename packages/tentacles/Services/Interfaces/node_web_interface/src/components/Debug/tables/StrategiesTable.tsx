@@ -2,9 +2,9 @@ import { Eye, Pencil, Play } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { Strategy } from "@/client"
+import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFiltersButton"
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
-import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
 import { JsonDetailDialog } from "@/components/Debug/dialogs/JsonDetailDialog"
@@ -20,14 +20,11 @@ import {
   debugTableCellClass,
   getStrategyConfigurationType,
 } from "@/lib/debug/display-utils"
-import {
-  filterStrategies,
-  sortStrategies,
-} from "@/lib/debug/table-strategies"
+import { filterStrategies, sortStrategies } from "@/lib/debug/table-strategies"
 import type { StrategySortKey } from "@/lib/debug/types"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 type StrategiesTableProps = {
   rows: Strategy[]
@@ -131,7 +128,9 @@ export function StrategiesTable({
                 <ColumnFilterInput
                   value={filters[key] ?? ""}
                   onChange={(value) =>
-                    setFilters((current) => setColumnFilter(current, key, value))
+                    setFilters((current) =>
+                      setColumnFilter(current, key, value),
+                    )
                   }
                 />
               </TableHead>

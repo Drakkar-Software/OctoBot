@@ -2,9 +2,9 @@ import { Eye } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { UserAction } from "@/client"
+import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFiltersButton"
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
-import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
 import { TruncatedTextWithTooltip } from "@/components/Common/Tables/TruncatedTextWithTooltip"
 import { DebugStatusCell } from "@/components/Debug/cells/DebugStatusCell"
@@ -31,8 +31,8 @@ import {
   getUserActionUpdatedAt,
 } from "@/lib/debug/user-action"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 type UserActionsTableProps = {
   rows: UserAction[]
@@ -127,7 +127,9 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
                   value={filters[key] ?? ""}
                   placeholder={placeholder}
                   onChange={(value) =>
-                    setFilters((current) => setColumnFilter(current, key, value))
+                    setFilters((current) =>
+                      setColumnFilter(current, key, value),
+                    )
                   }
                 />
               </TableHead>

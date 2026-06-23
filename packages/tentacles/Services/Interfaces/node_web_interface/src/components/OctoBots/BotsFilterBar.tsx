@@ -22,6 +22,7 @@ export function BotsFilterBar({
         const active = filterValue === f.value
         return (
           <button
+            type="button"
             key={f.value}
             onClick={() => onFilterChange(f.value)}
             className={cn(
@@ -54,6 +55,7 @@ export function BotsFilterBar({
         />
         {searchValue && (
           <button
+            type="button"
             onClick={() => onSearchChange("")}
             className="absolute right-1.5 text-muted-foreground hover:text-foreground"
           >

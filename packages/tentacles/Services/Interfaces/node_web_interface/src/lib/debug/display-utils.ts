@@ -151,9 +151,10 @@ export function getDetailedOrdersForAutomation(
   automation: AutomationState,
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): Order[] {
-  const detailed = getTradingSummariesForAutomation(automation, summaries).flatMap(
-    (summary) => summary.account_trading?.orders ?? [],
-  )
+  const detailed = getTradingSummariesForAutomation(
+    automation,
+    summaries,
+  ).flatMap((summary) => summary.account_trading?.orders ?? [])
   return filterOrdersToAutomationSummaries(detailed, automation.orders ?? [])
 }
 
@@ -161,9 +162,10 @@ export function getDetailedTradesForAutomation(
   automation: AutomationState,
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): Trade[] {
-  const detailed = getTradingSummariesForAutomation(automation, summaries).flatMap(
-    (summary) => summary.account_trading?.trades ?? [],
-  )
+  const detailed = getTradingSummariesForAutomation(
+    automation,
+    summaries,
+  ).flatMap((summary) => summary.account_trading?.trades ?? [])
   return filterTradesToAutomationSummaries(detailed, automation.trades ?? [])
 }
 
@@ -179,8 +181,8 @@ export function getAccountOrdersCount(
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): number {
   return (
-    getAccountTradingForAccountId(accountId, summaries)?.account_trading
-      ?.orders?.length ?? 0
+    getAccountTradingForAccountId(accountId, summaries)?.account_trading?.orders
+      ?.length ?? 0
   )
 }
 
@@ -189,8 +191,8 @@ export function getAccountTradesCount(
   summaries: Array<AccountTradingWithAccountId> | null | undefined,
 ): number {
   return (
-    getAccountTradingForAccountId(accountId, summaries)?.account_trading
-      ?.trades?.length ?? 0
+    getAccountTradingForAccountId(accountId, summaries)?.account_trading?.trades
+      ?.length ?? 0
   )
 }
 
@@ -225,7 +227,9 @@ const TRADING_TOOLTIP_DATE_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
 
 function formatTradingTooltipDateTime(value: string): string {
   const d = new Date(value)
-  return Number.isNaN(d.getTime()) ? value : TRADING_TOOLTIP_DATE_TIME_FORMATTER.format(d)
+  return Number.isNaN(d.getTime())
+    ? value
+    : TRADING_TOOLTIP_DATE_TIME_FORMATTER.format(d)
 }
 
 function parseTradingTooltipDateMs(value: string): number {
@@ -328,8 +332,7 @@ export function formatOrdersTradingTooltip(
   if (matchedSummaries?.length) {
     const fromSummaries = formatTradingBlocksFromSummaries(
       matchedSummaries,
-      (summary) =>
-        sortOrdersForTooltip(summary.account_trading?.orders ?? []),
+      (summary) => sortOrdersForTooltip(summary.account_trading?.orders ?? []),
       formatOrderLine,
     )
     if (fromSummaries) return fromSummaries
@@ -347,8 +350,7 @@ export function formatTradesTradingTooltip(
   if (matchedSummaries?.length) {
     const fromSummaries = formatTradingBlocksFromSummaries(
       matchedSummaries,
-      (summary) =>
-        sortTradesForTooltip(summary.account_trading?.trades ?? []),
+      (summary) => sortTradesForTooltip(summary.account_trading?.trades ?? []),
       formatTradeLine,
     )
     if (fromSummaries) return fromSummaries
@@ -485,7 +487,9 @@ export function getAccountExchangeNames(
       (configId) =>
         exchangeConfigs.find((config) => config.id === configId)?.exchange,
     )
-    .filter((exchange): exchange is string => exchange != null && exchange !== "")
+    .filter(
+      (exchange): exchange is string => exchange != null && exchange !== "",
+    )
   if (!exchanges.length) return "—"
   return [...new Set(exchanges)].join(", ")
 }
@@ -495,7 +499,9 @@ export function getAccountsReferencingExchangeConfig(
   accounts: Account[],
 ): string {
   const names = accounts
-    .filter((account) => getAccountExchangeConfigIds(account).includes(configId))
+    .filter((account) =>
+      getAccountExchangeConfigIds(account).includes(configId),
+    )
     .map((account) => account.name)
   if (!names.length) return "—"
   return names.join(", ")

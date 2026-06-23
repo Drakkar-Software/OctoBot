@@ -41,7 +41,8 @@ const TASK_ERROR_COLUMNS: ExportColumnDef[] = [
 export const GENERAL_EXPORT_TEMPLATE: ExportTemplate = {
   id: "general",
   label: "General",
-  description: "Basic task info: name, status, execution date, errors, and error messages",
+  description:
+    "Basic task info: name, status, execution date, errors, and error messages",
   columns: [
     {
       key: "name",

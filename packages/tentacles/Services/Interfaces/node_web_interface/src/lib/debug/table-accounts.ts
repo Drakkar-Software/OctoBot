@@ -17,7 +17,6 @@ import {
 } from "@/lib/debug/display-utils"
 import type { AccountSortKey } from "@/lib/debug/types"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import {
   compareNumbers,
   compareStrings,
@@ -26,6 +25,7 @@ import {
   matchesTableColumnFilter,
   parseSortTime,
 } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 export function accountFilterHeadClass(key: AccountSortKey): string {
   return ACCOUNT_COMPACT_COLUMNS.has(key)

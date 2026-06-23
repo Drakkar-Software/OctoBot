@@ -19,11 +19,7 @@ export function SortableTableHead<K extends string>({
   className,
 }: SortableTableHeadProps<K>) {
   const active = sort.key === sortKey
-  const Icon = active
-    ? sort.dir === "asc"
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown
+  const Icon = active ? (sort.dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown
   return (
     <TableHead className={className}>
       <button

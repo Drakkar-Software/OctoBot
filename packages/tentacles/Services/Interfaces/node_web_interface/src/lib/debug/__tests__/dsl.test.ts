@@ -39,7 +39,10 @@ describe("isCompoundDslKeyword", () => {
 describe("buildCompoundDslSummary", () => {
   it("builds nested summaries for compound keywords", () => {
     expect(
-      buildCompoundDslSummary("if_error(loop_until(noop(), 3), fallback())", "if_error"),
+      buildCompoundDslSummary(
+        "if_error(loop_until(noop(), 3), fallback())",
+        "if_error",
+      ),
     ).toBe("if_error.loop_until.noop")
   })
 })

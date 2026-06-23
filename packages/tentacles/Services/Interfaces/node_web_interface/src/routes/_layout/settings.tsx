@@ -5,7 +5,6 @@ import {
   Check,
   Copy,
   Download,
-  FileText,
   KeyRound,
   LogOut,
   Network,
@@ -22,6 +21,7 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { QRCode } from "react-qr-code"
 import { type WalletInfo, WalletsService } from "@/client"
+import { SupportCard } from "@/components/Support/SupportCard"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -89,50 +89,6 @@ function StatusIndicator({ enabled }: { enabled: boolean | null }) {
   )
 }
 
-function LoggingCard() {
-  const [enabled, setEnabled] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const data = await fetchNodeConfig()
-        setEnabled(data.use_dedicated_log_file_per_automation ?? true)
-      } catch {
-        setEnabled(true)
-      }
-    })()
-  }, [])
-
-  return (
-    <Card className="relative">
-      <div className="absolute right-4 top-4">
-        <StatusIndicator enabled={enabled} />
-      </div>
-      <CardHeader className="pr-12">
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="size-4" />
-          Logging
-        </CardTitle>
-        <CardDescription>
-          Per-bot log files and diagnostic settings.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <span className="text-xs text-muted-foreground">
-          {enabled === null
-            ? "Loading…"
-            : enabled
-              ? "A dedicated log file is written for each bot run."
-              : "Bot logs are written to the main log file."}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          Configure via <code>USE_DEDICATED_LOG_FILE_PER_AUTOMATION</code>.
-        </span>
-      </CardContent>
-    </Card>
-  )
-}
-
 async function buildAuthHeader() {
   const username = localStorage.getItem("auth_username") || "node"
   const password = (await loadPassword()) ?? ""
@@ -192,6 +148,7 @@ function ExportWalletDialog() {
         <TooltipTrigger asChild>
           <DialogTrigger asChild>
             <button
+              type="button"
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Export wallet"
             >
@@ -225,6 +182,7 @@ function ExportWalletDialog() {
               <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
                 <code className="text-xs break-all">{privateKey}</code>
                 <button
+                  type="button"
                   className="ml-3 shrink-0 text-muted-foreground hover:text-foreground"
                   onClick={copy}
                   title="Copy"
@@ -286,6 +244,7 @@ function PairDeviceDialog() {
         <TooltipTrigger asChild>
           <DialogTrigger asChild>
             <button
+              type="button"
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Pair device"
             >
@@ -507,6 +466,7 @@ function ClientEncryptionKeysCard() {
                 <span>{error}</span>
               </div>
               <button
+                type="button"
                 className="inline-flex w-fit items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                 onClick={handleClear}
               >
@@ -520,9 +480,9 @@ function ClientEncryptionKeysCard() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {CLIENT_KEY_NAMES.map((k) => (
                   <div key={k} className="flex flex-col gap-1">
-                    <label className="text-xs font-mono text-muted-foreground">
+                    <span className="text-xs font-mono text-muted-foreground">
                       {CLIENT_KEY_LABELS[k]}
-                    </label>
+                    </span>
                     <div className="min-h-[80px] w-full rounded-md border bg-muted px-3 py-2 text-xs font-mono text-muted-foreground flex items-center select-none tracking-widest">
                       {"•".repeat(24)}
                     </div>
@@ -536,6 +496,7 @@ function ClientEncryptionKeysCard() {
                   </span>
                 ) : (
                   <button
+                    type="button"
                     className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                     onClick={() => setEditing(true)}
                   >
@@ -543,6 +504,7 @@ function ClientEncryptionKeysCard() {
                   </button>
                 )}
                 <button
+                  type="button"
                   className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
                   onClick={handleClear}
                 >
@@ -555,10 +517,14 @@ function ClientEncryptionKeysCard() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {CLIENT_KEY_NAMES.map((k) => (
                   <div key={k} className="flex flex-col gap-1">
-                    <label className="text-xs font-mono text-muted-foreground">
+                    <label
+                      htmlFor={`client-key-${k}`}
+                      className="text-xs font-mono text-muted-foreground"
+                    >
                       {CLIENT_KEY_LABELS[k]}
                     </label>
                     <textarea
+                      id={`client-key-${k}`}
                       className="min-h-[80px] w-full resize-y rounded-md border bg-muted px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
                       placeholder="-----BEGIN ... KEY-----"
                       value={keys[k]}
@@ -571,6 +537,7 @@ function ClientEncryptionKeysCard() {
               </div>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                   onClick={handleSave}
                 >
@@ -579,6 +546,7 @@ function ClientEncryptionKeysCard() {
                 </button>
                 {editing && (
                   <button
+                    type="button"
                     className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
                     onClick={() => setEditing(false)}
                   >
@@ -647,7 +615,10 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <button className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent">
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+        >
           <Plus className="size-4" />
           Add wallet
         </button>
@@ -683,10 +654,14 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
             </button>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="wallet-name"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Display name (optional)
             </label>
             <input
+              id="wallet-name"
               className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost"
               placeholder="e.g. Alice"
               value={name}
@@ -694,10 +669,14 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="wallet-passphrase"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Passphrase
             </label>
             <input
+              id="wallet-passphrase"
               type="password"
               className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost"
               placeholder="Choose a passphrase"
@@ -707,10 +686,14 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
           {importMode && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label
+                htmlFor="wallet-private-key"
+                className="text-xs font-medium text-muted-foreground"
+              >
                 Private key
               </label>
               <input
+                id="wallet-private-key"
                 type="password"
                 className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost font-mono"
                 placeholder="0x..."
@@ -790,6 +773,7 @@ function RemoveWalletDialog({
     >
       <DialogTrigger asChild>
         <button
+          type="button"
           className="text-muted-foreground hover:text-destructive transition-colors"
           title="Remove wallet"
           aria-label="Remove wallet"
@@ -910,6 +894,7 @@ function WalletRow({
                 placeholder="Display name"
               />
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={mutation.isPending}
                 className="text-xs text-primary hover:underline disabled:opacity-50"
@@ -917,6 +902,7 @@ function WalletRow({
                 {mutation.isPending ? "Saving…" : "Save"}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setEditing(false)
                   setNameValue(wallet.name ?? "")
@@ -934,6 +920,7 @@ function WalletRow({
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => setEditing(true)}
             className="flex items-center gap-1.5 w-fit text-left group"
             title="Click to edit name"
@@ -1038,7 +1025,7 @@ function Settings() {
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2">
         <NodeTypeCard />
-        <LoggingCard />
+        <SupportCard />
         <ClientEncryptionKeysCard />
         <WalletManagementCard />
       </div>

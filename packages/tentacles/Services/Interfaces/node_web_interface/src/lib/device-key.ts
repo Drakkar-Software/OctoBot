@@ -3,6 +3,7 @@ const STORE_NAME = "secure_storage"
 const DEVICE_KEY_RECORD = "device_key"
 const AUTH_PASSWORD_RECORD = "auth_password"
 const CLIENT_KEYS_PREFIX = "client_keys:"
+const OCTOCHAT_KEYS_RECORD = "octochat_device_keys"
 
 interface EncryptedRecord {
   iv: Uint8Array
@@ -150,6 +151,17 @@ export async function loadPassword(): Promise<string | null> {
 
 export async function clearPassword(): Promise<void> {
   await idbClearRecord(AUTH_PASSWORD_RECORD)
+}
+
+// OctoChat support-desk identity, cached encrypted-at-rest. The stored value is the
+// wallet-bound identity ({ address, userId, keys }) derived deterministically from the OctoBot
+// wallet (see lib/octochat-identity.ts), keyed by address so switching wallets re-derives.
+export async function saveOctoChatKeys(value: string): Promise<void> {
+  await idbSaveRecord(OCTOCHAT_KEYS_RECORD, value)
+}
+
+export async function loadOctoChatKeys(): Promise<string | null> {
+  return idbLoadRecord(OCTOCHAT_KEYS_RECORD)
 }
 
 // Derive a deterministic AES-GCM key from a wallet passphrase and address via PBKDF2.

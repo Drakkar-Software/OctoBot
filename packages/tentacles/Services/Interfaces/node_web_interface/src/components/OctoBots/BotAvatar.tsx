@@ -18,7 +18,7 @@ export const BotAvatar = memo(function BotAvatar({
           <svg
             className="absolute inset-0 size-full"
             viewBox="0 0 48 48"
-            aria-hidden
+            aria-hidden={true}
           >
             <circle
               cx="24"
@@ -33,7 +33,7 @@ export const BotAvatar = memo(function BotAvatar({
             className="absolute inset-0 size-full animate-spin"
             style={{ animationDuration: "3s", animationDelay: animOffset }}
             viewBox="0 0 48 48"
-            aria-hidden
+            aria-hidden={true}
           >
             <circle
               cx="24"

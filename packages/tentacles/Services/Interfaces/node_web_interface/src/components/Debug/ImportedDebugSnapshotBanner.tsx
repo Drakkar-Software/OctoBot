@@ -27,9 +27,9 @@ export function ImportedDebugSnapshotBanner({
         </p>
         <p className="text-muted-foreground">
           You are viewing a static JSON snapshot from another user&apos;s node.
-          This is not live data and nothing you do here is sent to the scheduler.
-          Row actions open the user-action editor so you can copy JSON to send
-          back to the user.
+          This is not live data and nothing you do here is sent to the
+          scheduler. Row actions open the user-action editor so you can copy
+          JSON to send back to the user.
         </p>
         <ul className="space-y-1 font-mono text-xs text-muted-foreground">
           <li>Last updated in snapshot: {latestUpdatedLabel}</li>

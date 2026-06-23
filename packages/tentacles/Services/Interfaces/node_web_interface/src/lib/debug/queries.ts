@@ -6,8 +6,6 @@ export function getDebugQueryOptions(walletAddress?: string | null) {
   return {
     queryKey: ["debug", resolved ?? "current"] as const,
     queryFn: () =>
-      DebugService.getDebug(
-        resolved ? { walletAddress: resolved } : {},
-      ),
+      DebugService.getDebug(resolved ? { walletAddress: resolved } : {}),
   }
 }

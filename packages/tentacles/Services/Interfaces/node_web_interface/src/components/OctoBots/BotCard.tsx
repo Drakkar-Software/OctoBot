@@ -1,10 +1,7 @@
 import { Check, Clock, Layers, Lock, TriangleAlert } from "lucide-react"
 import { memo } from "react"
 
-import type {
-  Task_Output as Task,
-  TaskStatus,
-} from "@/client"
+import type { Task_Output as Task, TaskStatus } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
@@ -18,13 +15,13 @@ import {
   getStatusGroup,
   hasStartedExecution,
 } from "@/utils/executions"
+import { resolveTaskError, type TaskErrorInfo } from "@/utils/task-errors"
 import {
   formatDate,
   formatElapsed,
   formatIsoTooltip,
   parseActionCount,
 } from "@/utils/task-format"
-import { resolveTaskError, type TaskErrorInfo } from "@/utils/task-errors"
 import {
   getDisplayDate,
   getStatusVariant,

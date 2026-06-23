@@ -8,7 +8,6 @@ import {
   getUserActionUpdatedAt,
 } from "@/lib/debug/user-action"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import {
   compareNumbers,
   compareStrings,
@@ -17,6 +16,7 @@ import {
   matchesTableColumnFilter,
   parseSortTime,
 } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 export function userActionFilterValues(
   row: UserAction,

@@ -2,9 +2,9 @@ import { Eye, Pencil } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { Account, ExchangeConfig } from "@/client"
+import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFiltersButton"
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
-import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
 import { JsonDetailDialog } from "@/components/Debug/dialogs/JsonDetailDialog"
@@ -25,8 +25,8 @@ import {
   sortExchangeConfigs,
 } from "@/lib/debug/table-exchange-configs"
 import type { ExchangeConfigSortKey } from "@/lib/debug/types"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 type ExchangeConfigsTableProps = {
   rows: ExchangeConfig[]
@@ -44,7 +44,9 @@ export function ExchangeConfigsTable({
     key: "exchange",
     dir: "asc",
   })
-  const [filters, setFilters] = useState<ColumnFilters<ExchangeConfigSortKey>>({})
+  const [filters, setFilters] = useState<ColumnFilters<ExchangeConfigSortKey>>(
+    {},
+  )
 
   const displayRows = useMemo(
     () =>
@@ -128,7 +130,9 @@ export function ExchangeConfigsTable({
                 <ColumnFilterInput
                   value={filters[key] ?? ""}
                   onChange={(value) =>
-                    setFilters((current) => setColumnFilter(current, key, value))
+                    setFilters((current) =>
+                      setColumnFilter(current, key, value),
+                    )
                   }
                 />
               </TableHead>
@@ -167,7 +171,10 @@ export function ExchangeConfigsTable({
                   {row.sandboxed ? "yes" : "no"}
                 </TableCell>
                 <TableCell
-                  className={debugTableCellClass("left", "font-mono text-xs break-all")}
+                  className={debugTableCellClass(
+                    "left",
+                    "font-mono text-xs break-all",
+                  )}
                 >
                   {row.url ?? "—"}
                 </TableCell>

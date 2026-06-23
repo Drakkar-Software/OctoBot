@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from "vitest"
 import type { DebugState, Strategy } from "@/client"
 import {
   buildDebugExportFilename,
+  debugStateToFile,
   downloadDebugStateJson,
   formatImportedSnapshotContents,
   getDebugStateLatestUpdatedAt,
   parseDebugStateJson,
   sanitizeDebugExportFilename,
+  serializeDebugStateJson,
   summarizeImportedDebugState,
 } from "@/lib/debug/import"
 
@@ -32,7 +34,9 @@ describe("parseDebugStateJson", () => {
   })
 
   it("rejects empty input", () => {
-    expect(parseDebugStateJson("   ")).toEqual({ error: "JSON cannot be empty" })
+    expect(parseDebugStateJson("   ")).toEqual({
+      error: "JSON cannot be empty",
+    })
   })
 
   it("rejects invalid JSON", () => {
@@ -122,9 +126,7 @@ describe("getDebugStateLatestUpdatedAt", () => {
       },
     }
 
-    expect(getDebugStateLatestUpdatedAt(state)).toBe(
-      "2024-06-15T12:00:00.000Z",
-    )
+    expect(getDebugStateLatestUpdatedAt(state)).toBe("2024-06-15T12:00:00.000Z")
   })
 
   it("reads user action result.updated_at", () => {
@@ -145,9 +147,7 @@ describe("getDebugStateLatestUpdatedAt", () => {
         ],
       },
     }
-    expect(getDebugStateLatestUpdatedAt(state)).toBe(
-      "2024-12-31T23:59:59.000Z",
-    )
+    expect(getDebugStateLatestUpdatedAt(state)).toBe("2024-12-31T23:59:59.000Z")
   })
 })
 
@@ -222,6 +222,26 @@ describe("formatImportedSnapshotContents", () => {
       }),
     ).toBe(
       "1 automations, 2 user actions, 3 accounts, 4 exchange configs, 5 strategies",
+    )
+  })
+})
+
+describe("serializeDebugStateJson / debugStateToFile", () => {
+  const state: DebugState = {
+    version: "1.2.3",
+    debug: { automations: [], user_actions: [] },
+  }
+
+  it("serializes with the same pretty-printed JSON the download uses", () => {
+    expect(serializeDebugStateJson(state)).toBe(JSON.stringify(state, null, 2))
+  })
+
+  it("packages the snapshot as an attachable JSON file (bytes match the serialization)", () => {
+    const file = debugStateToFile(state, "0x1234567890abcdef")
+    expect(file.mime).toBe("application/json")
+    expect(file.name).toMatch(/^debug-state-\d{8}T\d{4}-90abcdef\.json$/)
+    expect(new TextDecoder().decode(file.bytes)).toBe(
+      serializeDebugStateJson(state),
     )
   })
 })

@@ -3,11 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Bug } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-import {
-  type ApiError,
-  type DebugState,
-  WalletsService,
-} from "@/client"
+import { type ApiError, type DebugState, WalletsService } from "@/client"
 import { DebugSchedulerWarning } from "@/components/Debug/DebugSchedulerWarning"
 import { DebugToolbar } from "@/components/Debug/DebugToolbar"
 import { ExecuteActionDialog } from "@/components/Debug/dialogs/ExecuteActionDialog"
@@ -182,8 +178,8 @@ function DebugPage() {
           />
         </div>
         <p className="text-muted-foreground text-sm">
-          Snapshot of current and historical activity. Contains no API secret
-          or private keys.
+          Snapshot of current and historical activity. Contains no API secret or
+          private keys.
           {activeDebugState?.version && (
             <span className="ml-2 font-mono text-xs">
               state v{activeDebugState.version}
@@ -267,9 +263,8 @@ function DebugPage() {
               onStartAutomation={(account) =>
                 openExecuteDialog({
                   actionType: "automation_create",
-                  jsonText: buildAutomationCreateUserActionJsonForAccount(
-                    account,
-                  ),
+                  jsonText:
+                    buildAutomationCreateUserActionJsonForAccount(account),
                 })
               }
             />
@@ -298,9 +293,8 @@ function DebugPage() {
               onStartAutomation={(strategy) =>
                 openExecuteDialog({
                   actionType: "automation_create",
-                  jsonText: buildAutomationCreateUserActionJsonForStrategy(
-                    strategy,
-                  ),
+                  jsonText:
+                    buildAutomationCreateUserActionJsonForStrategy(strategy),
                 })
               }
             />

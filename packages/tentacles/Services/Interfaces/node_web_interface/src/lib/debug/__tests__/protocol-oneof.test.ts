@@ -9,7 +9,8 @@ describe("resolveOneOfInstance", () => {
       id: "auto-1",
     }
     expect(
-      resolveOneOfInstance<{ action_type?: string }>(configuration)?.action_type,
+      resolveOneOfInstance<{ action_type?: string }>(configuration)
+        ?.action_type,
     ).toBe("automation_stop")
   })
 

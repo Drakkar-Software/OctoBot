@@ -15,7 +15,6 @@
 #  License along with this library.
 import shutil
 import octobot.constants as constants
-import octobot.community as community
 
 
 LOG_EXPORT_FORMAT = "zip"
@@ -24,7 +23,3 @@ LOG_EXPORT_FORMAT = "zip"
 def export_logs(export_path):
     shutil.make_archive(export_path, "zip", constants.LOGS_FOLDER)
     return f"{export_path}.{LOG_EXPORT_FORMAT}"
-
-
-async def async_share_logs(export_path):
-    return await community.share_logs(export_path)

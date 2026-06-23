@@ -1,9 +1,4 @@
-import type {
-  AutomationState,
-  Debug,
-  DebugState,
-  UserAction,
-} from "@/client"
+import type { AutomationState, Debug, DebugState, UserAction } from "@/client"
 import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 
 export type ParseDebugStateJsonResult =
@@ -138,9 +133,7 @@ export function parseDebugStateJson(text: string): ParseDebugStateJsonResult {
   }
 }
 
-export function getDebugStateLatestUpdatedAt(
-  state: DebugState,
-): string | null {
+export function getDebugStateLatestUpdatedAt(state: DebugState): string | null {
   const debug = state.debug
   if (!debug) return null
 
@@ -207,7 +200,9 @@ export function formatImportedSnapshotContents(
 
 export function sanitizeDebugExportFilename(filename: string): string {
   const withoutExtension = filename.replace(/\.json$/i, "")
-  const sanitized = withoutExtension.replace(/[^a-z0-9\-_]/gi, "_").substring(0, 200)
+  const sanitized = withoutExtension
+    .replace(/[^a-z0-9\-_]/gi, "_")
+    .substring(0, 200)
   return sanitized.length > 0 ? `${sanitized}.json` : "debug-state.json"
 }
 
@@ -223,11 +218,29 @@ export function buildDebugExportFilename(walletAddress: string): string {
   return sanitizeDebugExportFilename(`debug-state-${stamp}-${walletSuffix}`)
 }
 
+/** Canonical JSON serialization of a debug snapshot — shared by the file download and the
+ *  "share debug state" ticket attachment so both produce byte-identical output. */
+export function serializeDebugStateJson(state: DebugState): string {
+  return JSON.stringify(state, null, 2)
+}
+
+/** Build the debug snapshot as an attachable file (same bytes/name as the /app/debug export). */
+export function debugStateToFile(
+  state: DebugState,
+  walletAddress: string,
+): { bytes: Uint8Array; name: string; mime: string } {
+  return {
+    bytes: new TextEncoder().encode(serializeDebugStateJson(state)),
+    name: buildDebugExportFilename(walletAddress),
+    mime: "application/json",
+  }
+}
+
 export function downloadDebugStateJson(
   state: DebugState,
   filename: string,
 ): void {
-  const json = JSON.stringify(state, null, 2)
+  const json = serializeDebugStateJson(state)
   const blob = new Blob([json], { type: "application/json;charset=utf-8;" })
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")

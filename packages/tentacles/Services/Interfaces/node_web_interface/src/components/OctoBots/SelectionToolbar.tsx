@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
-import { Ban, Trash2 } from "lucide-react"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { Ban, ScrollText, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
@@ -17,8 +17,24 @@ import {
 } from "@/components/ui/dialog"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
-import { loadPassword } from "@/lib/device-key"
+import { shareWorkflowLogs } from "@/lib/support-share"
 import { getTaskFilterGroup } from "@/utils/task-status"
+
+/** Copy for the "Share logs" guidance modal, keyed by the resolved ticket state. */
+const LOGS_MODAL_COPY = {
+  none: {
+    title: "No support ticket",
+    body: "Please create a support ticket before sharing logs.",
+  },
+  pending: {
+    title: "Ticket not yet accepted",
+    body: "The DRAKKAR-SOFTWARE team has not yet accepted your ticket. Please wait until they accept it before sharing any logs, and retry later.",
+  },
+  disabled: {
+    title: "Support unavailable",
+    body: "Support chat isn't available on this OctoBot.",
+  },
+} as const
 
 export function SelectionToolbar({
   selectedIds,
@@ -36,30 +52,37 @@ export function SelectionToolbar({
   onDeleted: () => void
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [shareLogsOpen, setShareLogsOpen] = useState(false)
-  const [shareLogsLoading, setShareLogsLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
-  const [shareCreds, setShareCreds] = useState<{
-    errorId: string
-    errorSecret: string
-  } | null>(null)
+  const [logsModal, setLogsModal] = useState<
+    null | "none" | "pending" | "disabled"
+  >(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const activeTasks = useMemo(
-    () => allTasks.filter((t) => t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) === "active"),
+    () =>
+      allTasks.filter(
+        (t) =>
+          t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) === "active",
+      ),
     [allTasks, selectedIds],
   )
 
   const inactiveTasks = useMemo(
-    () => allTasks.filter((t) => t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) !== "active"),
+    () =>
+      allTasks.filter(
+        (t) =>
+          t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) !== "active",
+      ),
     [allTasks, selectedIds],
   )
 
   const deleteMutation = useMutation({
     mutationFn: () =>
-      TasksService.deleteTasks({ taskIds: inactiveTasks.map((t) => t.id as string) }),
+      TasksService.deleteTasks({
+        taskIds: inactiveTasks.map((t) => t.id as string),
+      }),
     onSuccess: () => {
       showSuccessToast(
         `Deleted ${inactiveTasks.length} OctoBot${inactiveTasks.length !== 1 ? "s" : ""}`,
@@ -75,7 +98,9 @@ export function SelectionToolbar({
 
   const cancelMutation = useMutation({
     mutationFn: () =>
-      TasksService.cancelTasks({ requestBody: { task_ids: activeTasks.map((t) => t.id as string) } }),
+      TasksService.cancelTasks({
+        requestBody: { task_ids: activeTasks.map((t) => t.id as string) },
+      }),
     onSuccess: () => {
       showSuccessToast(
         `Cancelled ${activeTasks.length} OctoBot${activeTasks.length !== 1 ? "s" : ""}`,
@@ -85,6 +110,21 @@ export function SelectionToolbar({
     onError: () => {
       showErrorToast("Some cancellations failed")
     },
+  })
+
+  const shareLogsMutation = useMutation({
+    mutationFn: () => shareWorkflowLogs(Array.from(selectedIds)),
+    onSuccess: (res) => {
+      if (res.status === "shared") {
+        showSuccessToast("Workflow logs shared to your support ticket")
+      } else {
+        setLogsModal(res.status)
+      }
+    },
+    onError: (err) =>
+      showErrorToast(
+        err instanceof Error ? err.message : "Couldn't share logs",
+      ),
   })
 
   const exportableTasks = inactiveTasks
@@ -100,33 +140,6 @@ export function SelectionToolbar({
       .filter(Boolean)
       .join(",")
     navigate({ to: "/octobots/export", search: { tasks: taskIds } })
-  }
-
-  const handleShareLogs = async () => {
-    setShareLogsLoading(true)
-    try {
-      const username = localStorage.getItem("auth_username") || "node"
-      const password = (await loadPassword()) ?? ""
-      const res = await fetch("/api/v1/logs/share", {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${username}:${password}`)}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ automation_ids: Array.from(selectedIds) }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setShareCreds({ errorId: data.errorId, errorSecret: data.errorSecret })
-        setShareLogsOpen(true)
-      } else {
-        showErrorToast(data.error ?? "Failed to share logs")
-      }
-    } catch {
-      showErrorToast("Failed to share logs")
-    } finally {
-      setShareLogsLoading(false)
-    }
   }
 
   const allFilteredSelected = filteredTasks.every(
@@ -159,9 +172,10 @@ export function SelectionToolbar({
           <LoadingButton
             variant="outline"
             size="sm"
-            loading={shareLogsLoading}
-            onClick={handleShareLogs}
+            loading={shareLogsMutation.isPending}
+            onClick={() => shareLogsMutation.mutate()}
           >
+            <ScrollText className="size-3.5" />
             Share logs
           </LoadingButton>
           {activeTasks.length > 0 && (
@@ -217,35 +231,33 @@ export function SelectionToolbar({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={shareLogsOpen} onOpenChange={setShareLogsOpen}>
+      <Dialog
+        open={logsModal !== null}
+        onOpenChange={(open) => !open && setLogsModal(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Logs shared</DialogTitle>
+            <DialogTitle>
+              {logsModal !== null && LOGS_MODAL_COPY[logsModal].title}
+            </DialogTitle>
             <DialogDescription>
-              Share these credentials with the OctoBot team to help diagnose
-              issues.
+              {logsModal !== null && LOGS_MODAL_COPY[logsModal].body}
             </DialogDescription>
           </DialogHeader>
-          {shareCreds && (
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <span className="font-medium text-muted-foreground">
-                Error ID
-              </span>
-              <span className="select-all break-all font-mono text-xs">
-                {shareCreds.errorId}
-              </span>
-              <span className="font-medium text-muted-foreground">
-                Error Secret
-              </span>
-              <span className="select-all break-all font-mono text-xs">
-                {shareCreds.errorSecret}
-              </span>
-            </div>
-          )}
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <DialogClose asChild>
               <Button variant="outline">Close</Button>
             </DialogClose>
+            {logsModal === "none" && (
+              <Button asChild>
+                <Link to="/settings">Go to Settings</Link>
+              </Button>
+            )}
+            {logsModal === "pending" && (
+              <Button variant="outline" asChild>
+                <Link to="/support">View status</Link>
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

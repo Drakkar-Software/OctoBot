@@ -2,7 +2,9 @@ type ClearTableFiltersButtonProps = {
   onClear: () => void
 }
 
-export function ClearTableFiltersButton({ onClear }: ClearTableFiltersButtonProps) {
+export function ClearTableFiltersButton({
+  onClear,
+}: ClearTableFiltersButtonProps) {
   return (
     <div className="flex justify-end mb-2">
       <button

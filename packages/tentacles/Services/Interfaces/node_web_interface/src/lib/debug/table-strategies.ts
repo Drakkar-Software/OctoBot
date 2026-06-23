@@ -2,7 +2,6 @@ import type { Strategy } from "@/client"
 import { getStrategyConfigurationType } from "@/lib/debug/display-utils"
 import type { StrategySortKey } from "@/lib/debug/types"
 import { formatDateTime } from "@/lib/format-datetime"
-import type { ColumnFilters, SortState } from "@/lib/table-types"
 import {
   compareNumbers,
   compareStrings,
@@ -10,6 +9,7 @@ import {
   matchesColumnFilter,
   parseSortTime,
 } from "@/lib/table"
+import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 export function strategyFilterValues(
   row: Strategy,

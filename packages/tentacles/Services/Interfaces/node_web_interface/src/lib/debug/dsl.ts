@@ -1,11 +1,11 @@
 import type { Action, AutomationState } from "@/client"
-import { COMPOUND_DSL_KEYWORDS } from "@/lib/debug/constants"
 import {
   getLatestExecutedAction,
   getNextPendingAction,
   getRunningAction,
   isRunningAutomation,
 } from "@/lib/debug/automation"
+import { COMPOUND_DSL_KEYWORDS } from "@/lib/debug/constants"
 
 export function extractFirstDslArgument(dsl: string): string | null {
   const openIndex = dsl.indexOf("(")

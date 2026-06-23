@@ -447,7 +447,9 @@ function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
   )
 }
 
-function sampleDcaAlwaysLongStrategyConfiguration(id = "<strategy-id>"): Strategy {
+function sampleDcaAlwaysLongStrategyConfiguration(
+  id = "<strategy-id>",
+): Strategy {
   return sampleTradingTentaclesStrategyShell(
     id,
     "My DCA strategy (always trigger long)",
@@ -505,7 +507,9 @@ function sampleMarketMakingSymbolConfiguration(
   } satisfies MarketMakingSymbolConfiguration
 }
 
-function sampleMarketMakingStrategyConfiguration(id = "<strategy-id>"): Strategy {
+function sampleMarketMakingStrategyConfiguration(
+  id = "<strategy-id>",
+): Strategy {
   const exchange = "binance"
   const tradingPair = "BTC/USDT"
   return sampleStrategyShell(
@@ -513,7 +517,9 @@ function sampleMarketMakingStrategyConfiguration(id = "<strategy-id>"): Strategy
     "My market making strategy",
     {
       configuration_type: "market_making",
-      pair_settings: [sampleMarketMakingSymbolConfiguration(tradingPair, exchange)],
+      pair_settings: [
+        sampleMarketMakingSymbolConfiguration(tradingPair, exchange),
+      ],
     } satisfies MarketMakingConfiguration,
     "USDT",
   )
@@ -523,63 +529,45 @@ export function buildUserActionTemplate(
   templateKey: UserActionTemplateKey,
 ): UserAction {
   if (templateKey === "strategy_create_grid") {
-    return userAction(
-      "ua-manual-strategy_create_grid",
-      {
-        action_type: "strategy_create",
-        configuration: sampleGridStrategyConfiguration(newResourceId()),
-      } satisfies CreateStrategyConfiguration,
-    )
+    return userAction("ua-manual-strategy_create_grid", {
+      action_type: "strategy_create",
+      configuration: sampleGridStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
   }
 
   if (templateKey === "strategy_create_index") {
-    return userAction(
-      "ua-manual-strategy_create_index",
-      {
-        action_type: "strategy_create",
-        configuration: sampleIndexStrategyConfiguration(newResourceId()),
-      } satisfies CreateStrategyConfiguration,
-    )
+    return userAction("ua-manual-strategy_create_index", {
+      action_type: "strategy_create",
+      configuration: sampleIndexStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
   }
 
   if (templateKey === "strategy_create_copy") {
-    return userAction(
-      "ua-manual-strategy_create_copy",
-      {
-        action_type: "strategy_create",
-        configuration: sampleCopyStrategyConfiguration(newResourceId()),
-      } satisfies CreateStrategyConfiguration,
-    )
+    return userAction("ua-manual-strategy_create_copy", {
+      action_type: "strategy_create",
+      configuration: sampleCopyStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
   }
 
   if (templateKey === "strategy_create_dca") {
-    return userAction(
-      "ua-manual-strategy_create_dca",
-      {
-        action_type: "strategy_create",
-        configuration: sampleDcaStrategyConfiguration(newResourceId()),
-      } satisfies CreateStrategyConfiguration,
-    )
+    return userAction("ua-manual-strategy_create_dca", {
+      action_type: "strategy_create",
+      configuration: sampleDcaStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
   }
 
   if (templateKey === "strategy_create_dca_always_long") {
-    return userAction(
-      "ua-manual-strategy_create_dca_always_long",
-      {
-        action_type: "strategy_create",
-        configuration: sampleDcaAlwaysLongStrategyConfiguration(newResourceId()),
-      } satisfies CreateStrategyConfiguration,
-    )
+    return userAction("ua-manual-strategy_create_dca_always_long", {
+      action_type: "strategy_create",
+      configuration: sampleDcaAlwaysLongStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
   }
 
   if (templateKey === "strategy_create_market_making") {
-    return userAction(
-      "ua-manual-strategy_create_market_making",
-      {
-        action_type: "strategy_create",
-        configuration: sampleMarketMakingStrategyConfiguration(newResourceId()),
-      } satisfies CreateStrategyConfiguration,
-    )
+    return userAction("ua-manual-strategy_create_market_making", {
+      action_type: "strategy_create",
+      configuration: sampleMarketMakingStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
   }
 
   const actionType: UserActionType = templateKey
@@ -667,7 +655,9 @@ export function buildUserActionTemplate(
     case "strategy_create":
       return userAction(id, {
         action_type: actionType,
-        configuration: sampleGenericProcessStrategyConfiguration(newResourceId()),
+        configuration: sampleGenericProcessStrategyConfiguration(
+          newResourceId(),
+        ),
       } satisfies CreateStrategyConfiguration)
     case "strategy_edit":
       return userAction(id, {
@@ -729,7 +719,9 @@ export function buildStrategyEditUserActionJson(strategy: Strategy): string {
   )
 }
 
-export function buildAutomationStopUserActionJson(automationId: string): string {
+export function buildAutomationStopUserActionJson(
+  automationId: string,
+): string {
   return userActionJson(
     userAction(`ua-stop-${automationId}`, {
       action_type: "automation_stop",

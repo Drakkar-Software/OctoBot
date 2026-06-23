@@ -93,8 +93,6 @@ from octobot.community.feeds import (
 from octobot.community.errors_upload import (
     init_sentry_tracker,
     flush_tracker,
-    upload_error,
-    share_logs,
 )
 from octobot.community.identifiers_provider import (
     IdentifiersProvider,
@@ -172,8 +170,6 @@ __all__ = [
     "CommunityBot",
     "MissingDeploymentError",
     "MissingProductsSubscriptionError",
-    "upload_error",
-    "share_logs",
     "get_stateless_configuration",
     "get_user_configuration",
     "local_user_authenticator",
