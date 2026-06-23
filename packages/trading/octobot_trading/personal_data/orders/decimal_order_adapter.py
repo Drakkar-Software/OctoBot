@@ -17,6 +17,7 @@ import math
 import decimal
 
 import octobot_commons.symbols as commons_symbols
+import octobot_commons.logging as logging
 
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
@@ -150,19 +151,19 @@ def decimal_adapt_order_quantity_because_fees(
             symbol, order_type, max_base_quantity_ignoring_fees, price,
             enums.ExchangeConstantsMarketPropertyColumns.TAKER.value
         )
-        total_quote_amount_locked_in_orders_ignoring_fees = sum(
-            order.origin_quantity * order.origin_price
-            for order in exchange_manager.exchange_personal_data.orders_manager.get_open_orders(active=True)
-            if (
-                order.side == side
-                and commons_symbols.parse_symbol(order.symbol).quote == quote
-                and order.is_counted_in_available_funds()
-            )
-        )
         # if fee paid in quote, ensure enough remaining quote asset in available portfolio
         if max_order_quote_fee := personal_data.get_fees_for_currency(max_possible_computed_fee, quote):
             # add a safety margin to the max fees to be sure exchanges won't round it differently
             adapted_max_order_quote_fee = max_order_quote_fee * constants.FEES_SAFETY_MARGIN
+            total_quote_amount_locked_in_orders_ignoring_fees = sum(
+                order.origin_quantity * order.origin_price
+                for order in exchange_manager.exchange_personal_data.orders_manager.get_open_orders(active=True)
+                if (
+                    order.side == side
+                    and commons_symbols.parse_symbol(order.symbol).quote == quote
+                    and order.is_counted_in_available_funds()
+                )
+            )
             max_usable_quote_funds = (
                 total_quote_amount - total_quote_amount_locked_in_orders_ignoring_fees - adapted_max_order_quote_fee
             )
@@ -172,6 +173,11 @@ def decimal_adapt_order_quantity_because_fees(
             local_order_required_quote_fees = personal_data.get_fees_for_currency(local_order_computed_fee, quote)
             total_required_quote_quantity = (quantity * price) + local_order_required_quote_fees
             if max_usable_quote_funds < total_required_quote_quantity:
+                logging.get_logger().info(
+                    f"Adapting order quantity ({quantity}) because of fees: Total quote amount locked in "
+                    f"orders ignoring fees: {total_quote_amount_locked_in_orders_ignoring_fees=}, {adapted_max_order_quote_fee=},"
+                    f"{max_usable_quote_funds=}, {local_order_required_quote_fees=}, {total_required_quote_quantity=}"
+                )
                 # can't create this order: not enough remaining funds in portfolio after considering all orders fees
                 # => use maximum usable quantity considering fees
                 max_usable_base_funds_considering_fees = (max_usable_quote_funds / price) if price else constants.ZERO

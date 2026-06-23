@@ -107,6 +107,11 @@ class OrdersInterface:
             order_target_price,
             side,
         )
+        if adapted_quantity != quantity:
+            self._get_logger().info(
+                f"Adapted quantity for fees: {adapted_quantity} != quantity {quantity} for order {order_type} "
+                f"at {symbol} with price {order_target_price}"
+            )
         if trading_personal_data.get_trade_order_type(order_type) is trading_enums.TradeOrderType.MARKET:
             return adapted_target_price, adapted_quantity
         if adapt_price_for_limit_orders:
@@ -137,11 +142,18 @@ class OrdersInterface:
         created_orders: list = []
         orders_should_have_been_created = False
         chunk_index = 0
-        for order_quantity, order_price in trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
+        adapted_order_details = trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(
             quantity,
             order_target_price,
             symbol_market,
-        ):
+        )
+        if not adapted_order_details:
+            symbol_market_limits = symbol_market[trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value]
+            self._get_logger().info(
+                f"No adapted order details for order {order_type} at {symbol} with price {order_target_price} "
+                f"and quantity {quantity} and symbol market limits {symbol_market_limits}"
+            )
+        for order_quantity, order_price in adapted_order_details:
             orders_should_have_been_created = True
             chunk_order_id = order_id if chunk_index == 0 else None
             chunk_tag = tag if chunk_index == 0 else None
