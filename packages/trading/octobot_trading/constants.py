@@ -167,7 +167,7 @@ DEFAULT_FUTURE_EXCHANGES = ["binanceusdm", "bybit"]
 TESTED_EXCHANGES = [
     "binance",
     "kucoin",
-    "okx",
+    "kraken",
 ] + sorted([
     "binanceus",
     "coinbase",
@@ -175,6 +175,7 @@ TESTED_EXCHANGES = [
     "htx",
     "hyperliquid",
     "bitget",
+    "okx",
     "gateio",
     "ascendex",
     "bybit",
@@ -193,7 +194,6 @@ SIMULATOR_TESTED_EXCHANGES = sorted([
     "bitstamp",
     "bitmex",
     "hitbtc",
-    "kraken",
     "poloniex",
     "bitso",
     "ndax",
