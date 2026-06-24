@@ -71,7 +71,7 @@ export function SupportCard() {
           Support
         </CardTitle>
         <CardDescription>
-          A private chat with the OctoBot team.
+          Leave a secure, end-to-end encrypted message for the OctoBot team.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-start gap-3">
@@ -81,15 +81,15 @@ export function SupportCard() {
 
         {status === "disabled" && (
           <span className="text-xs text-muted-foreground">
-            Support chat isn't available on this OctoBot.
+            Support isn't available on this OctoBot.
           </span>
         )}
 
         {status === "none" && (
           <>
             <span className="text-sm text-muted-foreground">
-              Stuck on something? Open a ticket to chat with the team and share
-              a debug snapshot in one click.
+              Stuck on something? Leave a message and the team will get back to
+              you. Share a debug snapshot in one click.
             </span>
             <Button size="sm" onClick={() => setOpen(true)}>
               New ticket
@@ -100,9 +100,8 @@ export function SupportCard() {
         {status === "pending" && (
           <>
             <span className="text-sm text-muted-foreground">
-              The DRAKKAR-SOFTWARE team hasn't accepted your ticket yet. The
-              chat opens automatically once they do — you can share logs after
-              that.
+              The DRAKKAR-SOFTWARE team hasn't accepted your ticket yet. Replies
+              will appear here once they do. You can share logs after that.
             </span>
             <Button variant="outline" size="sm" asChild>
               <Link to="/support">View status</Link>
@@ -147,7 +146,7 @@ export function SupportCard() {
           <DialogHeader>
             <DialogTitle>New support ticket</DialogTitle>
             <DialogDescription>
-              Tell us what's going on. We'll reply right here in this chat.
+              Tell us what's going on. The team will get back to you, this is not a live chat.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">

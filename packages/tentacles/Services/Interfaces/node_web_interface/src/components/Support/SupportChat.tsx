@@ -99,7 +99,7 @@ export function SupportChat({
             {title.trim() || "Support ticket"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            A private chat with the OctoBot team. Replies appear here.
+            End-to-end encrypted. The team responds asynchronously, replies appear here.
           </p>
         </div>
         <Button

@@ -77,7 +77,7 @@ function SupportPage() {
   if (!ticket || ticket.status === "disabled") {
     return (
       <EmptyState
-        title="Support chat unavailable"
+        title="Support unavailable"
         body="This OctoBot isn't configured to reach the support desk."
       />
     )
@@ -87,7 +87,7 @@ function SupportPage() {
     return (
       <EmptyState
         title="No ticket yet"
-        body="Open a ticket from Settings to start a private chat with the team."
+        body="Open a ticket from Settings to leave a secure message for the team."
         action={
           <Button asChild>
             <Link to="/settings">Go to Settings</Link>
@@ -101,7 +101,7 @@ function SupportPage() {
     return (
       <EmptyState
         title="Waiting for the team"
-        body="Your request has been delivered. This chat opens automatically as soon as someone picks it up."
+        body="Your request has been delivered. The team will get back to you, it may take some time."
         action={
           <Button
             variant="ghost"
