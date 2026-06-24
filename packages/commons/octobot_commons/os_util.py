@@ -194,6 +194,27 @@ def tcp_port_is_free(bind_host: str, port: int) -> bool:
     return True
 
 
+_HOST_WIDE_LISTENER_PROBE_HOSTS = ("0.0.0.0", "127.0.0.1")
+
+
+def tcp_port_has_listener_on_host(port: int) -> bool:
+    """
+    :return: True if any TCP listener on this machine uses ``port``
+    """
+    try:
+        for connection in psutil.net_connections(kind="tcp"):
+            if connection.status != psutil.CONN_LISTEN:
+                continue
+            local_address = connection.laddr
+            if local_address is not None and local_address.port == port:
+                return True
+    except (psutil.AccessDenied, psutil.Error):
+        for probe_host in _HOST_WIDE_LISTENER_PROBE_HOSTS:
+            if not tcp_port_is_free(probe_host, port):
+                return True
+    return False
+
+
 def find_first_free_listen_port_after_base(
     bind_host_for_probe: str,
     listen_port_base: int,
@@ -202,12 +223,14 @@ def find_first_free_listen_port_after_base(
 ) -> int:
     """
     First offset where ``listen_port_base + offset`` is TCP-free on ``bind_host_for_probe``
-    (optional: require ``paired_listen_port_base + offset`` free as well, same scan step).
+    and not in use by any listener on this host.
     Returns ``listen_port``.
     """
     for offset_from_base in range(max_offset):
         listen_port = listen_port_base + offset_from_base
         if blocklist and listen_port in blocklist:
+            continue
+        if tcp_port_has_listener_on_host(listen_port):
             continue
         if not tcp_port_is_free(bind_host_for_probe, listen_port):
             continue

@@ -155,10 +155,10 @@ def _expected_trading_tentacles_dsl_script(
     ).dsl_script
 
 
-def _expected_copy_dsl_script(*, strategy_id: str) -> str:
+def _expected_copy_dsl_script(*, strategy_id: str, reference_market: str = "") -> str:
     return (
         f"copy_exchange_account(strategy_id={json.dumps(strategy_id)}, "
-        "reference_market='', reference_account='', account_copy_settings='{}')"
+        f"reference_market={json.dumps(reference_market)}, reference_account='', account_copy_settings='{{}}')"
     )
 
 
@@ -306,9 +306,52 @@ class TestCreateAutomationExecutor:
             protocol_account=account,
             strategy_reference=strat_ref,
         )
-        assert actions[1].dsl_script == _expected_copy_dsl_script(strategy_id=copy_strategy_id)
+        assert actions[1].dsl_script == _expected_copy_dsl_script(
+            strategy_id=copy_strategy_id,
+            reference_market="USDT",
+        )
         assert len(actions[1].dependencies) == 1
         assert actions[1].dependencies[0].action_id == "action_init"
+
+    def test_copy_uses_strategy_reference_market(self):
+        copy_strategy_id = "copy-strategy"
+        copy_configuration = protocol_models.CopyConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.COPY,
+            strategy_id=copy_strategy_id,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="copy-automation-with-ref-market",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-copy-ref-market", payload=create_payload)
+
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = protocol_models.Strategy(
+            id=strat_ref.id,
+            version=strat_ref.version,
+            name="Seeded automation strategy",
+            reference_market="USDC",
+            configuration=protocol_models.StrategyConfiguration(copy_configuration),
+        )
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        assert len(actions) == 2
+        assert isinstance(actions[1], flow_entities.DSLScriptActionDetails)
+        assert actions[1].dsl_script == _expected_copy_dsl_script(
+            strategy_id=copy_strategy_id,
+            reference_market="USDC",
+        )
 
     def test_grid_returns_init_and_grid_action(self):
         grid_configuration = trading_tentacles_test_utils.grid_trading_configuration()
@@ -472,14 +515,19 @@ class TestCreateAutomationExecutor:
                 reference_market=stored.reference_market,
                 user_id=_TEST_WALLET_ADDRESS,
                 stored_strategy=stored,
+                automation_id="ua-mm",
+            )
+            expected_exchange_auth = action_details_factory._exchange_auth_data_list_from_protocol_account(
+                account,
+                _TEST_WALLET_ADDRESS,
             )
         expected_profile_dict = expected_profile.to_dict(include_default_values=False)
-        expected_exchange_auth_segment = dsl_interpreter.format_parameter_value(None)
+        expected_exchange_auth_segment = dsl_interpreter.format_parameter_value(expected_exchange_auth)
         expected_dsl = (
             "run_octobot_process("
-            f"{account.id!r}, {dsl_interpreter.format_parameter_value(expected_profile_dict)}, "
+            f"{'ua-mm'!r}, {dsl_interpreter.format_parameter_value(expected_profile_dict)}, "
             f"{expected_exchange_auth_segment}, "
-            "waiting_time=2.0, ping_timeout=30.0)"
+            f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
         )
         _assert_init_action_matches_minimal_account(
             init_action_details=actions[0],
@@ -492,13 +540,63 @@ class TestCreateAutomationExecutor:
         assert len(main_action.dependencies) == 1
         assert main_action.dependencies[0].action_id == "action_init"
         assert main_action.dsl_script == expected_dsl
-        assert expected_profile_dict["crypto_currencies"][0]["trading_pairs"] == ["BTC/USDT"]
+        assert expected_profile.crypto_currencies == []
+        assert expected_profile_dict.get("crypto_currencies", []) == []
         assert (
             expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["trading_pair"]
             == "BTC/USDT"
         )
         assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["min_spread"] == 0.5
         assert expected_profile_dict["tentacles"][0]["config"]["pair_settings"][0]["max_spread"] == 1.0
+
+    def test_market_making_run_octobot_process_uses_configuration_id_as_user_folder(self):
+        configuration_automation_id = _DEFAULT_AUTOMATION_CONFIGURATION_ID
+        mf = protocol_models.MarketMakingConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.MARKET_MAKING,
+            pair_settings=[
+                protocol_models.MarketMakingSymbolConfiguration(
+                    trading_pair="BTC/USDT",
+                    exchange="binanceus",
+                    reference_price=[
+                        protocol_models.MarketMakingReferencePair(
+                            exchange="binanceus",
+                            pair="BTC/USDT",
+                        )
+                    ],
+                    min_spread=0.5,
+                    max_spread=1.0,
+                    bids_count=1,
+                    asks_count=1,
+                    orders_distribution=protocol_models.MarketMakingOrdersDistribution.LINEAR,
+                    funds_distribution=protocol_models.MarketMakingFundsDistribution.FLAT,
+                )
+            ],
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="mm-config-id-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id=configuration_automation_id,
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-different-mm", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = _stored_strategy_matching_reference(strat_ref, mf)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        main_action = actions[1]
+        assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
+        assert main_action.dsl_script.startswith(f"run_octobot_process({configuration_automation_id!r},")
+        assert account.id not in main_action.dsl_script.split(",", 1)[0]
 
     def test_dca_returns_init_and_dca_dsl(self):
         dca_configuration = trading_tentacles_test_utils.functional_dca_trading_configuration()
@@ -721,11 +819,120 @@ class TestCreateAutomationExecutor:
             with pytest.raises(node_errors.InvalidTradingTentaclesConfigurationError):
                 executor._create_automation_actions(user_action)
 
-    def test_unsupported_types_raise_dedicated_errors(self):
-        generic_process = protocol_models.GenericProcessConfiguration(
+    def test_generic_process_returns_init_and_run_octobot_process(self):
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
             configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
-            profile_data={},
         )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="generic-process-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-generic-process", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = _stored_strategy_matching_reference(strat_ref, generic_process_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        assert len(actions) == 2
+        main_action = actions[1]
+        assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
+        with mock.patch.object(
+            action_details_factory.exchange_account_resolver,
+            "get_exchange_config",
+            return_value=account_executor_test_utils.exchange_config_payload(),
+        ):
+            expected_exchange_auth = action_details_factory._exchange_auth_data_list_from_protocol_account(
+                account,
+                _TEST_WALLET_ADDRESS,
+            )
+        expected_dsl = (
+            "run_octobot_process("
+            f"{'ua-generic-process'!r}, exchange_auth_data={dsl_interpreter.format_parameter_value(expected_exchange_auth)}, "
+            f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
+        )
+        _assert_init_action_matches_minimal_account(
+            init_action_details=actions[0],
+            expected_automation_id="ua-generic-process",
+            account_id="acc-1",
+            protocol_account=account,
+            strategy_reference=strat_ref,
+        )
+        assert main_action.id == f"{protocol_models.ActionConfigurationType.GENERIC_PROCESS.value}_1"
+        assert main_action.dsl_script == expected_dsl
+        assert "profile_data" not in main_action.dsl_script
+
+    def test_generic_process_run_octobot_process_uses_configuration_id_as_user_folder(self):
+        configuration_automation_id = _DEFAULT_AUTOMATION_CONFIGURATION_ID
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="generic-process-config-id-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+                automation_id=configuration_automation_id,
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-different-generic", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, generic_process_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        main_action = actions[1]
+        assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
+        assert main_action.dsl_script.startswith(f"run_octobot_process({configuration_automation_id!r},")
+        assert "acc-1" not in main_action.dsl_script.split(",", 1)[0]
+
+    def test_generic_process_simulated_account_emits_config_only_exchange_auth_data(self):
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="generic-process-simulated",
+                strategy_reference=strat_ref,
+                account_id="acc-sim",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-generic-process-sim", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-sim")
+        stored = _stored_strategy_matching_reference(strat_ref, generic_process_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        main_action = actions[1]
+        assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
+        assert "api_key" not in main_action.dsl_script
+        assert "api_secret" not in main_action.dsl_script
+        assert "binanceus" in main_action.dsl_script
+        assert "sandboxed" in main_action.dsl_script
+
+    def test_unknown_configuration_instance_type_raises(self):
         strat_ref = _default_strategy_reference()
         create_payload = protocol_models.CreateAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
@@ -738,10 +945,19 @@ class TestCreateAutomationExecutor:
         user_action = _user_action_with_context(action_id="ua-unsupported", payload=create_payload)
         executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
 
-        stored = _stored_strategy_matching_reference(strat_ref, generic_process)
+        stored = _stored_strategy_matching_reference(
+            strat_ref,
+            protocol_models.GenericProcessConfiguration(
+                configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+            ),
+        )
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
             _STRATEGY_PROVIDER_INSTANCE_PATCH,
-        ) as strategy_mock:
+        ) as strategy_mock, mock.patch.object(
+            create_automation_executor,
+            "_get_strategy_configuration_instance",
+            return_value=object(),
+        ):
             _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
             strategy_mock.return_value.get_item.return_value = stored
             with pytest.raises(node_errors.UnsupportedAutomationConfigurationTypeError):

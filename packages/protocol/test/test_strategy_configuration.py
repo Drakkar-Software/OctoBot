@@ -165,7 +165,6 @@ class TestStrategyConfiguration(unittest.TestCase):
                 name = '',
                 config = { },
                 strategy_id = '',
-                profile_data = octobot_protocol.models.profile_data.profile_data(),
                 actions = [
                     octobot_protocol.models.action.Action(
                         id = '', 

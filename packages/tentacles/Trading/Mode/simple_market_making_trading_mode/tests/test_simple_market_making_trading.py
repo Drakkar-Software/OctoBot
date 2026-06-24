@@ -245,6 +245,33 @@ class TestGetHedgingEngineConfig:
         assert cls.AVERAGE_PRICE_COUNTED_MINUTES not in inner
 
 
+class TestGetScheduledVolumeConfig:
+    def test_returns_empty_dict_when_key_missing(self):
+        cls = simple_market_making_trading.SimpleMarketMakingTradingMode
+        assert cls.get_scheduled_volume_config({}) == {}
+
+    def test_returns_empty_dict_when_value_is_none(self):
+        cls = simple_market_making_trading.SimpleMarketMakingTradingMode
+        symbol_cfg = {cls.SCHEDULED_VOLUME: None}
+        assert cls.get_scheduled_volume_config(symbol_cfg) == {}
+
+    def test_returns_empty_dict_when_value_is_empty_object(self):
+        cls = simple_market_making_trading.SimpleMarketMakingTradingMode
+        symbol_cfg = {cls.SCHEDULED_VOLUME: {}}
+        assert cls.get_scheduled_volume_config(symbol_cfg) == {}
+
+    def test_returns_config_when_scheduled_volume_is_set(self):
+        cls = simple_market_making_trading.SimpleMarketMakingTradingMode
+        scheduled_volume_cfg = {
+            cls.MIN_INTERVAL_SECONDS: 1,
+            cls.MAX_INTERVAL_SECONDS: 2,
+            cls.MIN_AMOUNT: 3,
+            cls.MAX_AMOUNT: 4,
+        }
+        symbol_cfg = {cls.SCHEDULED_VOLUME: scheduled_volume_cfg}
+        assert cls.get_scheduled_volume_config(symbol_cfg) == scheduled_volume_cfg
+
+
 @pytest.mark.parametrize(
     "hedging_exchange_case",
     (
@@ -591,6 +618,25 @@ async def test_start():
             # no scheduled or stop watcher config
             scheduled_volume_start_mock.assert_not_called()
              # exited func before these calls
+            advanced_reference_price_initialize_mock.assert_awaited_once()
+            _ensure_market_making_orders_and_reschedule_mock.assert_called_once()
+            schedule_bot_stop_mock.assert_not_called()
+            assert producer._scheduled_volume is None
+            mm_start_mock.reset_mock()
+            producer_start_mock.reset_mock()
+            scheduled_volume_start_mock.reset_mock()
+            advanced_reference_price_initialize_mock.reset_mock()
+            _ensure_market_making_orders_and_reschedule_mock.reset_mock()
+            schedule_bot_stop_mock.reset_mock()
+            assert producer.healthy is True
+            assert producer.should_stop is False
+
+            producer.healthy = True
+            pair_config[simple_market_making_trading.SimpleMarketMakingTradingMode.SCHEDULED_VOLUME] = None
+            await producer.start()
+            mm_start_mock.assert_not_called()
+            producer_start_mock.assert_called_once()
+            scheduled_volume_start_mock.assert_not_called()
             advanced_reference_price_initialize_mock.assert_awaited_once()
             _ensure_market_making_orders_and_reschedule_mock.assert_called_once()
             schedule_bot_stop_mock.assert_not_called()

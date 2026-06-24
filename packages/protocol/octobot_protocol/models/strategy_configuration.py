@@ -120,27 +120,27 @@ class StrategyConfiguration(BaseModel):
             raise ValueError("Failed to lookup data type from the field `configuration_type` in the input.")
 
         # check if data type is `CopyConfiguration`
-        if _data_type == "CopyConfiguration":
+        if _data_type == "copy":
             instance.actual_instance = CopyConfiguration.from_json(json_str)
             return instance
 
         # check if data type is `GenericProcessConfiguration`
-        if _data_type == "GenericProcessConfiguration":
+        if _data_type == "generic_process":
             instance.actual_instance = GenericProcessConfiguration.from_json(json_str)
             return instance
 
         # check if data type is `GenericWorkflowConfiguration`
-        if _data_type == "GenericWorkflowConfiguration":
+        if _data_type == "generic_workflow":
             instance.actual_instance = GenericWorkflowConfiguration.from_json(json_str)
             return instance
 
         # check if data type is `MarketMakingConfiguration`
-        if _data_type == "MarketMakingConfiguration":
+        if _data_type == "market_making":
             instance.actual_instance = MarketMakingConfiguration.from_json(json_str)
             return instance
 
         # check if data type is `TradingTentaclesConfiguration`
-        if _data_type == "TradingTentaclesConfiguration":
+        if _data_type == "trading_tentacles":
             instance.actual_instance = TradingTentaclesConfiguration.from_json(json_str)
             return instance
 

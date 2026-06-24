@@ -258,3 +258,35 @@ class TestTradingTentaclesWithEvaluatorsActionsFactory:
         assert trading_tentacles_test_utils.tentacle_action_id(
             dca_trading.DCATradingMode.get_name()
         ) in {action.id for action in camel_case_actions}
+
+
+class TestCopyActionFactory:
+    def test_passes_reference_market_argument_to_dsl(self):
+        copy_configuration = protocol_models.CopyConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.COPY,
+            strategy_id="copied-strategy",
+        )
+        copy_action = action_details_factory_module.copy_action_factory(
+            _init_action(),
+            copy_configuration,
+            reference_market="USDT",
+        )
+        assert copy_action.dsl_script == (
+            'copy_exchange_account(strategy_id="copied-strategy", '
+            'reference_market="USDT", reference_account=\'\', account_copy_settings=\'{}\')'
+        )
+
+    def test_passes_different_reference_market_to_dsl(self):
+        copy_configuration = protocol_models.CopyConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.COPY,
+            strategy_id="copied-strategy",
+        )
+        copy_action = action_details_factory_module.copy_action_factory(
+            _init_action(),
+            copy_configuration,
+            reference_market="USDC",
+        )
+        assert copy_action.dsl_script == (
+            'copy_exchange_account(strategy_id="copied-strategy", '
+            'reference_market="USDC", reference_account=\'\', account_copy_settings=\'{}\')'
+        )

@@ -7,7 +7,7 @@ GenericProcessConfiguration
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | generic_process | 
-**profile_data** | **object** |  | 
+**profile_data** | **object** |  | [optional] 
 
 ## Example
 

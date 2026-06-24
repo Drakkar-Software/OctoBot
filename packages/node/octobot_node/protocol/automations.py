@@ -236,6 +236,14 @@ def _flow_result_to_protocol_str(result: typing.Any) -> typing.Optional[str]:
     return json.dumps(result, default=str)
 
 
+def _flow_action_result_for_protocol(
+    flow_action: flow_entities.AbstractActionDetails,
+) -> typing.Any:
+    if flow_action.result is not None:
+        return flow_action.result
+    return flow_action.previous_execution_result
+
+
 def _metadata_updated_at_from_execution(
     execution: flow_entities.ExecutionDetails,
 ) -> typing.Optional[datetime.datetime]:
@@ -312,7 +320,7 @@ def _protocol_action_from_flow(
         status=action_status,
         dsl=dsl_value,
         configuration=configuration,
-        result=_flow_result_to_protocol_str(flow_action.result),
+        result=_flow_result_to_protocol_str(_flow_action_result_for_protocol(flow_action)),
         error=_flow_error_status_to_protocol_str(flow_action.error_status),
         completed_at=completed_at,
     )

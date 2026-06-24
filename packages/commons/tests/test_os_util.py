@@ -45,19 +45,40 @@ class TestTcpPortIsFree:
         assert os_util.tcp_port_is_free("127.0.0.1", bound_port) is True
 
 
+class TestTcpPortHasListenerOnHost:
+    def test_returns_true_when_listener_holds_port(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
+            bound_port = listener.getsockname()[1]
+            assert os_util.tcp_port_has_listener_on_host(bound_port) is True
+
+    def test_returns_false_after_listener_released(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.bind(("127.0.0.1", 0))
+            bound_port = listener.getsockname()[1]
+        assert os_util.tcp_port_has_listener_on_host(bound_port) is False
+
+
 class TestFindFirstFreeListenPortAfterBase:
     def test_returns_base_when_free(self):
-        with mock.patch.object(os_util, "tcp_port_is_free", return_value=True):
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
             listen_port = os_util.find_first_free_listen_port_after_base("127.0.0.1", 50000)
         assert listen_port == 50000
 
     def test_skips_until_first_free_port(self):
-        with mock.patch.object(os_util, "tcp_port_is_free", side_effect=[False, False, True]):
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", side_effect=[False, False, True]
+        ):
             listen_port = os_util.find_first_free_listen_port_after_base("127.0.0.1", 50100)
         assert listen_port == 50102
 
     def test_skips_blocklisted_ports(self):
-        with mock.patch.object(os_util, "tcp_port_is_free", return_value=True):
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
             listen_port = os_util.find_first_free_listen_port_after_base(
                 "127.0.0.1",
                 50200,
@@ -65,7 +86,19 @@ class TestFindFirstFreeListenPortAfterBase:
             )
         assert listen_port == 50201
 
+    def test_skips_port_with_host_wide_listener(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.bind(("127.0.0.1", 0))
+            base_port = listener.getsockname()[1]
+            listener.listen(1)
+            listen_port = os_util.find_first_free_listen_port_after_base(
+                "127.0.0.1", base_port, max_offset=5
+            )
+        assert listen_port == base_port + 1
+
     def test_raises_when_scan_exhausted(self):
-        with mock.patch.object(os_util, "tcp_port_is_free", return_value=False):
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=False
+        ):
             with pytest.raises(ValueError, match="No free listen port"):
                 os_util.find_first_free_listen_port_after_base("127.0.0.1", 50300, max_offset=2)

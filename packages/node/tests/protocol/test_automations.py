@@ -501,6 +501,50 @@ class TestFillProtocolAutomationStateDagActions:
         assert by_id["c1"].configuration is not None
 
 
+class TestProtocolActionFromFlowResult:
+    def _protocol_action_from_priority_lane_dsl_action(
+        self,
+        dsl_action: flow_entities.DSLScriptActionDetails,
+    ) -> protocol_models.Action:
+        flow_state = flow_entities.AutomationState(
+            automation=flow_entities.AutomationDetails(
+                metadata=flow_entities.AutomationMetadata(automation_id="automation_1"),
+                actions_dag=flow_entities.ActionsDAG(actions=[]),
+            ),
+            priority_actions=[dsl_action],
+        )
+        filled = automations_protocol._fill_protocol_automation_state(
+            _minimal_protocol_base(),
+            flow_state,
+        )
+        assert filled.priority_actions is not None
+        return filled.priority_actions[0]
+
+    def test_maps_current_result_when_set(self):
+        dsl_action = flow_entities.DSLScriptActionDetails(id="recall_action", dsl_script="True")
+        dsl_action.result = {"pid": 1}
+        protocol_action = self._protocol_action_from_priority_lane_dsl_action(dsl_action)
+        assert protocol_action.result == json.dumps({"pid": 1})
+
+    def test_falls_back_to_previous_execution_result_when_result_unset(self):
+        dsl_action = flow_entities.DSLScriptActionDetails(id="recall_action", dsl_script="True")
+        dsl_action.previous_execution_result = {"pid": 1}
+        protocol_action = self._protocol_action_from_priority_lane_dsl_action(dsl_action)
+        assert protocol_action.result == json.dumps({"pid": 1})
+
+    def test_result_none_when_both_unset(self):
+        dsl_action = flow_entities.DSLScriptActionDetails(id="recall_action", dsl_script="True")
+        protocol_action = self._protocol_action_from_priority_lane_dsl_action(dsl_action)
+        assert protocol_action.result is None
+
+    def test_prefers_current_result_over_previous_execution_result(self):
+        dsl_action = flow_entities.DSLScriptActionDetails(id="recall_action", dsl_script="True")
+        dsl_action.result = {"pid": 2}
+        dsl_action.previous_execution_result = {"pid": 1}
+        protocol_action = self._protocol_action_from_priority_lane_dsl_action(dsl_action)
+        assert protocol_action.result == json.dumps({"pid": 2})
+
+
 class TestFillProtocolAutomationStatePriorityActions:
     def test_priority_actions_separate_and_running_when_incomplete(self):
         dag_action = flow_entities.DSLScriptActionDetails(id="dag_action", dsl_script="True")

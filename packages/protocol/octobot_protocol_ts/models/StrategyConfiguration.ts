@@ -31,11 +31,11 @@ export class StrategyConfigurationClass {
     static readonly discriminator: string | undefined = "configuration_type";
 
     static readonly mapping: {[index: string]: string} | undefined = {
-        "CopyConfiguration": "CopyConfiguration",
-        "GenericProcessConfiguration": "GenericProcessConfiguration",
-        "GenericWorkflowConfiguration": "GenericWorkflowConfiguration",
-        "MarketMakingConfiguration": "MarketMakingConfiguration",
-        "TradingTentaclesConfiguration": "TradingTentaclesConfiguration",
+        "copy": "CopyConfiguration",
+        "generic_process": "GenericProcessConfiguration",
+        "generic_workflow": "GenericWorkflowConfiguration",
+        "market_making": "MarketMakingConfiguration",
+        "trading_tentacles": "TradingTentaclesConfiguration",
     };
 }
 

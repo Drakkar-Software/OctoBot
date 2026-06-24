@@ -34,11 +34,13 @@ import octobot_commons.os_util as os_util
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_data_import as profile_data_import
 import octobot_commons.profiles.exchange_auth_data as exchange_auth_data_module
+import octobot_commons.profiles.profile as profiles_profile_module
 import octobot_commons.profiles.tentacles_profile_data_translator as tentacles_profile_data_translator
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration
 
 import octobot.constants as octobot_constants
+import octobot.community.supabase_backend.enums as community_enums
 import octobot_flow.entities as octobot_flow_entities
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
 import octobot_node.constants as octobot_node_constants
@@ -48,6 +50,7 @@ import octobot_services.constants as services_constants
 DSL_PREPARED_MARKER = ".octobot_dsl_prepared"
 DEFAULT_PING_WAITING_TIME = 2.0
 DEFAULT_ENSURE_TIMEOUT = 120.0
+DEFAULT_DSL_PROFILE_ID = "non-trading"
 
 
 class EnsureOctobotProcessState(pydantic.BaseModel):
@@ -132,6 +135,16 @@ def _remove_path_for_fresh_start(path: str, *, logger: typing.Any) -> None:
     shutil.rmtree(path, ignore_errors=True)
 
 
+def _profile_translator_additional_data(
+    profile_data: profile_data_module.ProfileData,
+) -> dict:
+    return {
+        community_enums.BotConfigKeys.IS_SIMULATED.value: bool(
+            profile_data.trader_simulator.enabled
+        ),
+    }
+
+
 async def _convert_profile_data_to_profile_directory(
     profile_data: profile_data_module.ProfileData,
     temp_profile_path: str,
@@ -144,7 +157,12 @@ async def _convert_profile_data_to_profile_directory(
             # apply it to the profile data
             await tentacles_profile_data_translator.TentaclesProfileDataTranslator(
                 profile_data, []
-            ).translate(tentacles_snapshot, {}, None, None)
+            ).translate(
+                tentacles_snapshot,
+                _profile_translator_additional_data(profile_data),
+                None,
+                None,
+            )
         except KeyError:
             # no translator found, restore tentacles
             profile_data.tentacles = tentacles_snapshot
@@ -206,10 +224,84 @@ def _write_user_root_config_json(
     json_util.safe_dump(default_cfg, config_path)
 
 
+def _executor_non_trading_profile_source(working_directory: str) -> str:
+    return os.path.normpath(
+        os.path.join(
+            working_directory,
+            commons_constants.USER_FOLDER,
+            commons_constants.PROFILES_FOLDER,
+            DEFAULT_DSL_PROFILE_ID,
+        )
+    )
+
+
+def _executor_profiles_directory(working_directory: str) -> str:
+    return os.path.normpath(
+        os.path.join(
+            working_directory,
+            commons_constants.USER_FOLDER,
+            commons_constants.PROFILES_FOLDER,
+        )
+    )
+
+
+async def _copy_read_only_profiles_to_user_root(
+    working_directory: str,
+    user_root: str,
+    *,
+    active_profile_id: str,
+) -> None:
+    """
+    Copy read-only profiles from the master OctoBot into a generic process child layout.
+
+    Generic process bots start on the default non-trading profile but should still see
+    the same read-only strategy profiles as the master (community/imported templates).
+    Editable profiles are intentionally omitted so each child keeps its own user edits.
+    """
+    profiles_src = _executor_profiles_directory(working_directory)
+    if not os.path.isdir(profiles_src):
+        return
+    for profile in profiles_profile_module.Profile.get_all_profiles(profiles_src):
+        if not profile.read_only:
+            continue
+        # Active profile was already copied by _copy_non_trading_profile_to_user_root.
+        if profile.profile_id == active_profile_id:
+            continue
+        destination_profile_path = os.path.join(
+            user_root,
+            commons_constants.PROFILES_FOLDER,
+            profile.profile_id,
+        )
+        if os.path.exists(destination_profile_path):
+            shutil.rmtree(destination_profile_path)
+        shutil.copytree(profile.path, destination_profile_path)
+
+
+async def _copy_non_trading_profile_to_user_root(
+    working_directory: str,
+    user_root: str,
+) -> str:
+    source_profile_path = _executor_non_trading_profile_source(working_directory)
+    if not os.path.isdir(source_profile_path):
+        raise commons_errors.DSLInterpreterError(
+            f"Default profile not found at {source_profile_path!r}; expected "
+            f"{DEFAULT_DSL_PROFILE_ID!r} under the OctoBot user profiles folder."
+        )
+    destination_profile_path = os.path.join(
+        user_root,
+        commons_constants.PROFILES_FOLDER,
+        DEFAULT_DSL_PROFILE_ID,
+    )
+    if os.path.exists(destination_profile_path):
+        shutil.rmtree(destination_profile_path)
+    shutil.copytree(source_profile_path, destination_profile_path)
+    return DEFAULT_DSL_PROFILE_ID
+
+
 async def ensure_user_profile_and_layout(
     user_folder: str,
     working_directory: str,
-    profile_data_dict: dict,
+    profile_data_dict: dict | None,
     source_reference_tentacles_config: str | None,
     exchange_auth_data: typing.Optional[
         list[exchange_auth_data_module.ExchangeAuthData]
@@ -243,32 +335,51 @@ async def ensure_user_profile_and_layout(
         }
 
     os.makedirs(user_root, exist_ok=True)
-    # Import writes to a throwaway folder first: the real profile id is assigned during import (see rename below).
-    temp_profile_path = os.path.join(
-        user_root,
-        commons_constants.PROFILES_FOLDER,
-        f"_dsl_tmp_{uuid.uuid4().hex}",
-    )
-    os.makedirs(os.path.dirname(temp_profile_path), exist_ok=True)
 
-    profile_data = profile_data_module.ProfileData.from_dict(profile_data_dict)
-    await _convert_profile_data_to_profile_directory(
-        profile_data, temp_profile_path
-    )
+    if profile_data_dict is None:
+        # Generic process: default non-trading profile plus master's read-only profiles.
+        profile_id = await _copy_non_trading_profile_to_user_root(
+            working_directory,
+            user_root,
+        )
+        await _copy_read_only_profiles_to_user_root(
+            working_directory,
+            user_root,
+            active_profile_id=profile_id,
+        )
+        _write_user_root_config_json(
+            config_path,
+            profile_id,
+            None,
+            exchange_auth_data,
+        )
+    else:
+        # Import writes to a throwaway folder first: the real profile id is assigned during import (see rename below).
+        temp_profile_path = os.path.join(
+            user_root,
+            commons_constants.PROFILES_FOLDER,
+            f"_dsl_tmp_{uuid.uuid4().hex}",
+        )
+        os.makedirs(os.path.dirname(temp_profile_path), exist_ok=True)
 
-    profile_file = os.path.join(temp_profile_path, commons_constants.PROFILE_CONFIG_FILE)
-    profile_on_disk = json_util.read_file(profile_file)
-    profile_id = profile_on_disk[commons_constants.CONFIG_PROFILE][commons_constants.CONFIG_ID]
-    # OctoBot expects each profile under profiles/<profile_id>/; move the temp tree to that name.
-    final_profile_path = os.path.join(
-        user_root, commons_constants.PROFILES_FOLDER, profile_id
-    )
-    if os.path.normpath(temp_profile_path) != os.path.normpath(final_profile_path):
-        if os.path.exists(final_profile_path):
-            shutil.rmtree(final_profile_path)
-        os.replace(temp_profile_path, final_profile_path)
+        profile_data = profile_data_module.ProfileData.from_dict(profile_data_dict)
+        await _convert_profile_data_to_profile_directory(
+            profile_data, temp_profile_path
+        )
 
-    _write_user_root_config_json(config_path, profile_id, profile_data, exchange_auth_data)
+        profile_file = os.path.join(temp_profile_path, commons_constants.PROFILE_CONFIG_FILE)
+        profile_on_disk = json_util.read_file(profile_file)
+        profile_id = profile_on_disk[commons_constants.CONFIG_PROFILE][commons_constants.CONFIG_ID]
+        # OctoBot expects each profile under profiles/<profile_id>/; move the temp tree to that name.
+        final_profile_path = os.path.join(
+            user_root, commons_constants.PROFILES_FOLDER, profile_id
+        )
+        if os.path.normpath(temp_profile_path) != os.path.normpath(final_profile_path):
+            if os.path.exists(final_profile_path):
+                shutil.rmtree(final_profile_path)
+            os.replace(temp_profile_path, final_profile_path)
+
+        _write_user_root_config_json(config_path, profile_id, profile_data, exchange_auth_data)
 
     # Mirror default reference tentacles layout expected by the child.
     ref_src = source_reference_tentacles_config or os.path.join(
@@ -279,7 +390,7 @@ async def ensure_user_profile_and_layout(
     if os.path.isdir(ref_src):
         if os.path.exists(ref_dst):
             shutil.rmtree(ref_dst)
-        await asyncio.to_thread(shutil.copytree, ref_src, ref_dst)
+        shutil.copytree(ref_src, ref_dst)
     else:
         os.makedirs(ref_dst, exist_ok=True)
 
@@ -389,7 +500,7 @@ def create_octobot_process_operators(
             "If the state file never becomes live before ping_timeout from the first spawn, the keyword fails and the child is killed."
         )
         EXAMPLE = (
-            "run_octobot_process(user_folder='bots/b1', profile_data={...}, "
+            "run_octobot_process(user_folder='bots/b1', "
             "exchange_auth_data=[{'internal_name': 'binance', 'api_key': '...', 'api_secret': '...'}], "
             "last_execution_result=None)"
         )
@@ -420,9 +531,14 @@ def create_octobot_process_operators(
                 ),
                 dsl_interpreter.OperatorParameter(
                     name="profile_data",
-                    description="Object compatible with octobot_commons.profiles.profile_data.ProfileData.",
-                    required=True,
+                    description=(
+                        "Optional object compatible with octobot_commons.profiles.profile_data.ProfileData. "
+                        "When omitted, the child uses the packaged default config and copies the "
+                        f"{DEFAULT_DSL_PROFILE_ID!r} profile from the executor user profiles folder."
+                    ),
+                    required=False,
                     type=dict,
+                    default=None,
                 ),
                 dsl_interpreter.OperatorParameter(
                     name="exchange_auth_data",
@@ -640,7 +756,7 @@ def create_octobot_process_operators(
             init_info = await ensure_user_profile_and_layout(
                 user_folder,
                 working_directory,
-                params["profile_data"],
+                params.get("profile_data"),
                 None,
                 exchange_auth,
             )

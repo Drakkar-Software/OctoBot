@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **strategies** | [**List[StrategyEvaluatorConfiguration]**](StrategyEvaluatorConfiguration.md) |  | [optional] 
 **evaluators** | [**List[EvaluatorConfiguration]**](EvaluatorConfiguration.md) |  | [optional] 
 **strategy_id** | **str** |  | 
-**profile_data** | **object** |  | 
+**profile_data** | **object** |  | [optional] 
 **actions** | [**List[Action]**](Action.md) |  | 
 
 ## Example

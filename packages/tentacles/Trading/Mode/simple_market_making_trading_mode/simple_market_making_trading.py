@@ -411,14 +411,19 @@ class SimpleMarketMakingTradingMode(market_making_trading.MarketMakingTradingMod
         cls, symbol_trading_config: dict
     ):
         try:
-            return symbol_trading_config[cls.SCHEDULED_VOLUME]
+            raw_config = symbol_trading_config[cls.SCHEDULED_VOLUME]
+            if not raw_config:
+                return {}
         except KeyError:
             return {}
+        return raw_config
 
     @classmethod
     def get_hedging_engine_config(cls, symbol_trading_config: dict) -> dict[str, typing.Any]:
         try:
             raw_config = symbol_trading_config[cls.HEDGING_ENGINE]
+            if not raw_config:
+                return {}
         except KeyError:
             return {}
         hedging_config = dict(raw_config)
@@ -787,11 +792,7 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
             self.logger.info("Disabled hedging engine: no hedging engine config")
 
     async def _initialize_scheduled_volume(self):
-        try:
-            schedule_config = self.trading_mode.get_scheduled_volume_config(self.symbol_trading_config)
-        except KeyError:
-            self.logger.error("Skipped scheduled volume: no scheduled volume config")
-            return
+        schedule_config = self.trading_mode.get_scheduled_volume_config(self.symbol_trading_config)
         if max_amount := schedule_config.get(self.trading_mode.MAX_AMOUNT, 0):
             if self._hedging_engine is not None:
                 self.logger.error(

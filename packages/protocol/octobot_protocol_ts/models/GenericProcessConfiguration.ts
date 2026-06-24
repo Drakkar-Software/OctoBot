@@ -20,7 +20,7 @@ export class GenericProcessConfiguration {
     * generic_process
     */
     'configuration_type': 'generic_process';
-    'profile_data': any;
+    'profile_data'?: any;
 
     static readonly discriminator: string | undefined = undefined;
 

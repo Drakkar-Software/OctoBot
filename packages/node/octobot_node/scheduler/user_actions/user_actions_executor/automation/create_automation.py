@@ -193,12 +193,26 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         trading_configuration,
                     ),
                 ]
-            case protocol_models.GenericProcessConfiguration():
-                raise node_errors.UnsupportedAutomationConfigurationTypeError(
-                    f"Unsupported automation configuration type: {protocol_models.ActionConfigurationType.GENERIC_PROCESS.value!r}"
-                )
+            case protocol_models.GenericProcessConfiguration() as generic_process_configuration:
+                return [
+                    init_action,
+                    action_details_factory.generic_process_action_factory(
+                        init_action,
+                        generic_process_configuration,
+                        protocol_account,
+                        self._user_id,
+                        automation_id=automation_id,
+                    ),
+                ]
             case protocol_models.CopyConfiguration() as copy_configuration:
-                return [init_action, action_details_factory.copy_action_factory(init_action, copy_configuration)]
+                return [
+                    init_action,
+                    action_details_factory.copy_action_factory(
+                        init_action,
+                        copy_configuration,
+                        reference_market=stored_strategy.reference_market,
+                    ),
+                ]
             case protocol_models.GenericWorkflowConfiguration() as generic_workflow_configuration:
                 workflow_actions = action_details_factory.generic_workflow_actions_factory(
                     init_action,
@@ -215,6 +229,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         self._user_id,
                         stored_strategy.reference_market,
                         stored_strategy,
+                        automation_id=automation_id,
                     ),
                 ]
             case _:

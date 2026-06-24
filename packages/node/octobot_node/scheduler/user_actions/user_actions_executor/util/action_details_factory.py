@@ -14,12 +14,20 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 
 import octobot_node.errors as node_errors
+import octobot_node.constants as node_constants
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
 import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
 import octobot_node.scheduler.user_actions.user_actions_executor.util.trading_tentacles_config as trading_tentacles_config
 
 
 _ACTION_ID_INIT = "action_init"
+
+
+def _run_octobot_process_recall_kwarg_segments() -> list[str]:
+    return [
+        f"waiting_time={node_constants.RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS}",
+        f"ping_timeout={node_constants.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS}",
+    ]
 
 
 def _protocol_account_updated_at_unix_seconds(protocol_account: protocol_models.Account) -> float:
@@ -192,10 +200,12 @@ def init_action_factory(
 def copy_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     copy_configuration: protocol_models.CopyConfiguration,
+    *,
+    reference_market: str,
 ) -> flow_entities.AbstractActionDetails:
     dsl_script = (
         f"copy_exchange_account(strategy_id={json.dumps(copy_configuration.strategy_id)}, "
-        "reference_market='', reference_account='', account_copy_settings='{}')"
+        f"reference_market={json.dumps(reference_market)}, reference_account='', account_copy_settings='{{}}')"
     )
     return flow_entities.DSLScriptActionDetails(
         id=_action_id_from_configuration(copy_configuration),
@@ -403,6 +413,8 @@ def market_making_action_factory(
     user_id: str,
     reference_market: str,
     stored_strategy: protocol_models.Strategy,
+    *,
+    automation_id: str,
 ) -> flow_entities.AbstractActionDetails:
     profile_data = market_making_profile_data_factory(
         protocol_account=protocol_account,
@@ -410,6 +422,7 @@ def market_making_action_factory(
         reference_market=reference_market,
         user_id=user_id,
         stored_strategy=stored_strategy,
+        automation_id=automation_id,
     )
     profile_data_dict = profile_data.to_dict(include_default_values=False)
     exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
@@ -419,12 +432,42 @@ def market_making_action_factory(
     exchange_auth_segment = dsl_interpreter.format_parameter_value(exchange_auth_data)
     run_dsl = (
         "run_octobot_process("
-        f"{protocol_account.id!r}, {dsl_interpreter.format_parameter_value(profile_data_dict)}, "
+        f"{automation_id!r}, {dsl_interpreter.format_parameter_value(profile_data_dict)}, "
         f"{exchange_auth_segment}, "
-        "waiting_time=2.0, ping_timeout=30.0)"
+        f"{', '.join(_run_octobot_process_recall_kwarg_segments())})"
     )
     return flow_entities.DSLScriptActionDetails(
         id=_action_id_from_configuration(market_making_configuration),
+        dsl_script=run_dsl,
+        dependencies=[_action_dependency(init_action.id)],
+    )
+
+
+def generic_process_action_factory(
+    init_action: flow_entities.AbstractActionDetails,
+    generic_process_configuration: protocol_models.GenericProcessConfiguration,
+    protocol_account: protocol_models.Account,
+    user_id: str,
+    *,
+    automation_id: str,
+) -> flow_entities.AbstractActionDetails:
+    exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
+        protocol_account,
+        user_id,
+    )
+    dsl_arguments = [f"{automation_id!r}"]
+    if generic_process_configuration.profile_data is not None:
+        dsl_arguments.append(
+            dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)
+        )
+    if exchange_auth_data is not None:
+        dsl_arguments.append(
+            f"exchange_auth_data={dsl_interpreter.format_parameter_value(exchange_auth_data)}"
+        )
+    dsl_arguments.extend(_run_octobot_process_recall_kwarg_segments())
+    run_dsl = "run_octobot_process(" + ", ".join(dsl_arguments) + ")"
+    return flow_entities.DSLScriptActionDetails(
+        id=_action_id_from_configuration(generic_process_configuration),
         dsl_script=run_dsl,
         dependencies=[_action_dependency(init_action.id)],
     )
@@ -499,6 +542,7 @@ def market_making_profile_data_factory(
     reference_market: str,
     user_id: str,
     stored_strategy: protocol_models.Strategy,
+    automation_id: str,
 ) -> commons_profile_data.ProfileData:
     if protocol_account.specifics is None or protocol_account.specifics.actual_instance is None:
         raise node_errors.InvalidAutomationConfigurationError(
@@ -524,15 +568,10 @@ def market_making_profile_data_factory(
     )
     starting_portfolio = {asset.symbol: float(asset.total) for asset in portfolio_assets}
 
-    profile_identifier = f"market_making_{protocol_account.id}"
+    profile_identifier = f"market_making_{automation_id}"
     profile_details = commons_profile_data.ProfileDetailsData(
         name=profile_identifier,
         id=profile_identifier,
-    )
-    crypto_currency = commons_profile_data.CryptoCurrencyData(
-        trading_pairs=list(symbols),
-        name=symbols[0].split("/")[0],
-        enabled=True,
     )
     exchange_entry = commons_profile_data.ExchangeData(
         internal_name=exchange_account_resolver.get_exchange_config(
@@ -555,11 +594,11 @@ def market_making_profile_data_factory(
     )
     tentacle = commons_profile_data.TentaclesData(
         name="SimpleMarketMakingTradingMode",
-        config=market_making_configuration.to_dict(),
+        config=market_making_configuration.model_dump(mode='json'),
     )
     return commons_profile_data.ProfileData(
         profile_details=profile_details,
-        crypto_currencies=[crypto_currency],
+        crypto_currencies=[],
         exchanges=[exchange_entry],
         trader=trader,
         trader_simulator=trader_simulator,
@@ -622,7 +661,27 @@ def _exchange_auth_data_list_from_protocol_account(
     and AccountAuthenticationProvider credentials.
     """
     if protocol_account.is_simulated:
-        return None
+        account_specifics = protocol_account.specifics
+        if account_specifics is None or account_specifics.actual_instance is None:
+            raise node_errors.InvalidAutomationConfigurationError(
+                "Account.specifics.actual_instance is required to build exchange_auth_data for a simulated account."
+            )
+        specifics_instance = account_specifics.actual_instance
+        if not isinstance(specifics_instance, protocol_models.ExchangeAccount):
+            raise node_errors.InvalidAutomationConfigurationError(
+                f"exchange_auth_data requires an exchange account; got {type(specifics_instance).__name__}."
+            )
+        exchange_config = exchange_account_resolver.get_exchange_config(
+            user_id,
+            specifics_instance,
+        )
+        return [
+            {
+                "internal_name": exchange_config.exchange,
+                "sandboxed": exchange_config.sandboxed,
+                "exchange_type": commons_constants.DEFAULT_EXCHANGE_TYPE,
+            }
+        ]
     account_specifics = protocol_account.specifics
     if account_specifics is None or account_specifics.actual_instance is None:
         raise node_errors.InvalidAutomationConfigurationError(

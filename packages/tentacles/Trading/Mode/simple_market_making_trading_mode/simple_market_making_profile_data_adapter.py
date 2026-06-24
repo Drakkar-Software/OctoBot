@@ -173,10 +173,7 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
         profile_data.trader.enabled = not is_simulated
         profile_data.trader_simulator.enabled = is_simulated
 
-        # should not happen in real environment
         if is_simulated:
-            if not octobot_commons.constants.IS_DEV_MODE_ENABLED:
-                raise ValueError("Simulator configuration is not supported")
             max_funds_by_symbol = {}
             for pair_config in pair_configs:
                 parsed_pair = symbols_util.parse_symbol(

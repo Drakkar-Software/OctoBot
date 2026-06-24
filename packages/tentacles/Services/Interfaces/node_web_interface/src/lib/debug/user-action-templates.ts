@@ -50,6 +50,7 @@ export type UserActionTemplateKey =
   | "strategy_create_dca"
   | "strategy_create_dca_always_long"
   | "strategy_create_market_making"
+  | "strategy_create_generic_process"
 
 export const DEFAULT_USER_ACTION_TEMPLATE_KEY: UserActionTemplateKey =
   DEFAULT_USER_ACTION_TYPE
@@ -87,6 +88,10 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   {
     value: "strategy_create_market_making",
     label: "Strategy create (market making)",
+  },
+  {
+    value: "strategy_create_generic_process",
+    label: "Strategy create (generic process OctoBot)",
   },
   { value: "strategy_edit", label: "Strategy edit" },
   { value: "strategy_delete", label: "Strategy delete" },
@@ -316,6 +321,19 @@ function sampleGenericProcessStrategyConfiguration(
     configuration_type: "generic_process",
     profile_data: {},
   } satisfies GenericProcessConfiguration)
+}
+
+function sampleGenericProcessOctobotStrategyConfiguration(
+  id = "<strategy-id>",
+): Strategy {
+  return sampleStrategyShell(
+    id,
+    "Generic process OctoBot strategy",
+    {
+      configuration_type: "generic_process",
+    } satisfies GenericProcessConfiguration,
+    "USDC",
+  )
 }
 
 function sampleGridPairSettings(
@@ -567,6 +585,13 @@ export function buildUserActionTemplate(
     return userAction("ua-manual-strategy_create_market_making", {
       action_type: "strategy_create",
       configuration: sampleMarketMakingStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
+  }
+
+  if (templateKey === "strategy_create_generic_process") {
+    return userAction("ua-manual-strategy_create_generic_process", {
+      action_type: "strategy_create",
+      configuration: sampleGenericProcessOctobotStrategyConfiguration(newResourceId()),
     } satisfies CreateStrategyConfiguration)
   }
 

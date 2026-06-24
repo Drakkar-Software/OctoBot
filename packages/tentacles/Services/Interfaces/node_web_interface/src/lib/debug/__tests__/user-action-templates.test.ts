@@ -138,6 +138,22 @@ describe("buildUserActionTemplate", () => {
     expect(config.rebalance_trigger_min_percent).toBe(5.0)
   })
 
+  it("builds a copy strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_copy")
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(strategy.reference_market).toBe("USDT")
+
+    const copyConfiguration = strategy.configuration as Record<string, unknown>
+    expect(copyConfiguration.configuration_type).toBe("copy")
+    expect(copyConfiguration.strategy_id).toBe("<master-strategy-id>")
+  })
+
   it("builds a DCA strategy create template with two evaluators", () => {
     const action = buildUserActionTemplate("strategy_create_dca")
     expect(action.id).toBe("ua-manual-strategy_create_dca")
@@ -231,6 +247,27 @@ describe("buildUserActionTemplate", () => {
     expect(pairSettings[0].exchange).toBe("binance")
     expect(pairSettings[0].min_spread).toBe(5)
     expect(pairSettings[0].max_spread).toBe(20)
+  })
+
+  it("builds a generic process OctoBot strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_generic_process")
+    expect(action.id).toBe("ua-manual-strategy_create_generic_process")
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(strategy.reference_market).toBe("USDC")
+    expect(strategy.id).toMatch(CANONICAL_UUID_V4_PATTERN)
+
+    const genericProcessConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
+    expect(genericProcessConfiguration.configuration_type).toBe("generic_process")
+    expect(genericProcessConfiguration).not.toHaveProperty("profile_data")
   })
 })
 

@@ -1536,8 +1536,7 @@
         "description": "GenericProcessConfiguration",
         "type": "object",
         "required": [
-          "configuration_type",
-          "profile_data"
+          "configuration_type"
         ],
         "properties": {
           "configuration_type": {
@@ -2380,11 +2379,11 @@
             "discriminator": {
               "propertyName": "configuration_type",
               "mapping": {
-                "MarketMakingConfiguration": "#/components/schemas/MarketMakingConfiguration",
-                "TradingTentaclesConfiguration": "#/components/schemas/TradingTentaclesConfiguration",
-                "CopyConfiguration": "#/components/schemas/CopyConfiguration",
-                "GenericProcessConfiguration": "#/components/schemas/GenericProcessConfiguration",
-                "GenericWorkflowConfiguration": "#/components/schemas/GenericWorkflowConfiguration"
+                "market_making": "#/components/schemas/MarketMakingConfiguration",
+                "trading_tentacles": "#/components/schemas/TradingTentaclesConfiguration",
+                "copy": "#/components/schemas/CopyConfiguration",
+                "generic_process": "#/components/schemas/GenericProcessConfiguration",
+                "generic_workflow": "#/components/schemas/GenericWorkflowConfiguration"
               }
             }
           }

@@ -41,7 +41,6 @@ class TestGenericProcessConfiguration(unittest.TestCase):
         else:
             return GenericProcessConfiguration(
                 configuration_type = 'market_making',
-                profile_data = None,
         )
         """
 
