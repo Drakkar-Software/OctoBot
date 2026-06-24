@@ -21,7 +21,7 @@ from eth_account.messages import encode_defunct
 from fastapi import APIRouter
 
 import octobot.community.authentication as _community_auth
-import octobot_node.config
+import octobot.constants
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
@@ -40,12 +40,11 @@ OCTOCHAT_IDENTITY_CHALLENGE = "octochat:support-identity"
 def get_octochat_config(current_user: CurrentUser) -> typing.Any:
     # Non-secret OctoChat support-desk config for the web UI. supportDeskRequestLink is null
     # when unconfigured → the frontend hides ticket creation.
-    settings = octobot_node.config.settings
     return {
-        "syncBase": settings.OCTOCHAT_SYNC_BASE,
-        "syncNamespace": settings.OCTOCHAT_SYNC_NAMESPACE,
-        "supportDeskRequestLink": settings.OCTOCHAT_SUPPORT_DESK_REQUEST_LINK,
-        "webBase": settings.OCTOCHAT_WEB_BASE,
+        "syncBase": octobot.constants.SYNC_SERVER_URL,
+        "syncNamespace": octobot.constants.SYNC_NAMESPACE,
+        "supportDeskRequestLink": octobot.constants.OCTOCHAT_SUPPORT_DESK_REQUEST_LINK,
+        "webBase": octobot.constants.OCTOCHAT_WEB_BASE,
     }
 
 

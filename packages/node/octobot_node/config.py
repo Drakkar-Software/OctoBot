@@ -76,8 +76,6 @@ class Settings(BaseSettings):
 
     # OctoChat support-desk integration. All non-secret — surfaced to the web UI via
     # GET /config/octochat so the browser can open encrypted support tickets.
-    OCTOCHAT_SYNC_BASE: str | None = None  # Starfish sync server URL, e.g. https://sync.drakkar.software/sync
-    OCTOCHAT_SYNC_NAMESPACE: str = "octospaces"  # multi-tenant drakkar-sync namespace; "" only for a bare local starfish server
     OCTOCHAT_SUPPORT_DESK_REQUEST_LINK: str | None = None  # static desk request link: https://desk.../request?s=sp-...#...
     OCTOCHAT_WEB_BASE: str | None = None  # public desk origin for invite/ticket links
 
