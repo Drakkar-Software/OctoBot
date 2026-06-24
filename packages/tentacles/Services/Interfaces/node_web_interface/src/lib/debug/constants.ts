@@ -38,3 +38,8 @@ export const ACCOUNT_COMPACT_COLUMNS = new Set<AccountSortKey>([
   "orders",
   "trades",
 ])
+
+export const DEBUG_DELETABLE_TAB_VALUES = [
+  "automations",
+  "user-actions",
+] as const

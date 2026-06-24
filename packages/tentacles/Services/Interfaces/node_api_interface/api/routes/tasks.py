@@ -125,7 +125,7 @@ async def export_results(body: ExportResultsBody, current_user: CurrentUser) -> 
 @router.delete("/", response_model=list[str])
 async def delete_tasks(
     current_user: CurrentUser,
-    taskIds: list[uuid.UUID] = Query(...),
+    taskIds: list[str] = Query(...),
 ) -> list[str]:
     requested_ids = [str(t) for t in taskIds]
     if not current_user.is_superuser:

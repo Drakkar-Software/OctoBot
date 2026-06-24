@@ -7,6 +7,8 @@ import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFi
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
+import { TableSelectionCell } from "@/components/Common/Tables/TableSelectionCell"
+import { TableSelectionHeader } from "@/components/Common/Tables/TableSelectionHeader"
 import { TruncatedTextWithTooltip } from "@/components/Common/Tables/TruncatedTextWithTooltip"
 import { AssetsPortfolioCell } from "@/components/Debug/cells/AssetsPortfolioCell"
 import { AutomationTradingCountCell } from "@/components/Debug/cells/AutomationTradingCountCell"
@@ -63,6 +65,10 @@ type AutomationsTableProps = {
   onStop?: (automation: AutomationState) => void
   onSignal?: (automation: AutomationState) => void
   readOnly?: boolean
+  selectionMode?: boolean
+  selectedIds?: Set<string>
+  onToggleRow?: (id: string) => void
+  onToggleAllVisible?: (ids: string[], select: boolean) => void
 }
 
 export function AutomationsTable({
@@ -73,6 +79,10 @@ export function AutomationsTable({
   onStop,
   onSignal,
   readOnly = false,
+  selectionMode = false,
+  selectedIds,
+  onToggleRow,
+  onToggleAllVisible,
 }: AutomationsTableProps) {
   const [detail, setDetail] = useState<AutomationState | null>(null)
   const [signalTarget, setSignalTarget] = useState<AutomationState | null>(null)
@@ -100,8 +110,12 @@ export function AutomationsTable({
     "trades",
   ]
 
-  const automationColumnCount = automationColumns.length + 1
+  const automationColumnCount = automationColumns.length + 1 + (selectionMode ? 1 : 0)
   const actionsHeadClass = "w-32"
+  const visibleRowIds = useMemo(
+    () => displayRows.map((row) => row.id),
+    [displayRows],
+  )
 
   if (rows.length === 0) {
     return (
@@ -119,6 +133,13 @@ export function AutomationsTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {selectionMode && selectedIds && onToggleAllVisible && (
+              <TableSelectionHeader
+                visibleIds={visibleRowIds}
+                selectedIds={selectedIds}
+                onToggleAllVisible={onToggleAllVisible}
+              />
+            )}
             <SortableTableHead
               label="ID"
               sortKey="id"
@@ -188,6 +209,7 @@ export function AutomationsTable({
             <TableHead className={actionsHeadClass} />
           </TableRow>
           <TableRow className="hover:bg-transparent">
+            {selectionMode && <TableHead className="w-10" />}
             {automationColumns.map((key) => (
               <TableHead key={key} className={automationFilterHeadClass(key)}>
                 <ColumnFilterInput
@@ -247,6 +269,13 @@ export function AutomationsTable({
               )
               return (
                 <TableRow key={row.id}>
+                  {selectionMode && selectedIds && onToggleRow && (
+                    <TableSelectionCell
+                      rowId={row.id}
+                      selected={selectedIds.has(row.id)}
+                      onToggleRow={onToggleRow}
+                    />
+                  )}
                   <TableCell className={debugTableCellClass("center")}>
                     <CenteredCellContent>
                       <CopyableIdCell id={row.id} />

@@ -242,6 +242,27 @@ class Scheduler:
         )
         return [workflow.workflow_id for workflow in matching_workflows]
 
+    async def _get_user_action_workflow_ids(
+        self,
+        user_id: typing.Optional[str],
+        user_action_ids: list[str],
+        statuses: list[dbos.WorkflowStatusString],
+        load_output: bool = False
+    ) -> list[str]:
+        if not user_action_ids:
+            return []
+        user_action_id_set = set(user_action_ids)
+        matching_workflows = await self._list_workflows(
+            user_id, statuses,
+            [octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value], load_output
+        )
+        matched_workflow_ids: list[str] = []
+        for workflow in matching_workflows:
+            user_action_id = self._user_action_id_from_workflow(workflow, load_output=load_output)
+            if user_action_id is not None and user_action_id in user_action_id_set:
+                matched_workflow_ids.append(workflow.workflow_id)
+        return matched_workflow_ids
+
     async def resolve_active_automation_workflow_ids_for_parent_id(
         self,
         user_id: typing.Optional[str],
@@ -299,17 +320,30 @@ class Scheduler:
         except Exception as e:
             self.logger.exception(e, True, f"Failed to cancel workflows {workflow_ids}: {e}")
             return []
-
-    async def delete_workflows(self, to_delete_workflow_ids: list[str]):
-        self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
-        merged_to_delete_workflow_ids = await self._get_parent_and_children_automation_workflow_ids(
+    
+    async def _get_workflows_to_delete(self, workflow_ids: list[str]) -> list[str]:
+        automation_workflows = await self._get_parent_and_children_automation_workflow_ids(
             None,
-            to_delete_workflow_ids,
+            workflow_ids,
             [
                 dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR,
                 dbos.WorkflowStatusString.CANCELLED, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED
             ]
         )
+        user_action_workflows = await self._get_user_action_workflow_ids(
+            None,
+            workflow_ids,
+            [
+                dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR,
+                dbos.WorkflowStatusString.CANCELLED, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED
+            ],
+            load_output=True,
+        )
+        return automation_workflows + user_action_workflows
+
+    async def delete_workflows(self, to_delete_workflow_ids: list[str]):
+        self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
+        merged_to_delete_workflow_ids = await self._get_workflows_to_delete(to_delete_workflow_ids)
         self.logger.info(
             f"Including {len(merged_to_delete_workflow_ids) - len(to_delete_workflow_ids)} associated children workflows to delete"
         )
@@ -546,6 +580,21 @@ class Scheduler:
     ) -> tuple[int, str, str]:
         workflow_identifier = str(workflow_status.workflow_id or "")
         return (workflow_status.created_at or 0, user_action.id, workflow_identifier)
+
+    def _user_action_id_from_workflow(
+        self,
+        workflow_status: dbos.WorkflowStatus,
+        *,
+        load_output: bool,
+    ) -> typing.Optional[str]:
+        if load_output and workflow_status.output:
+            from_output = self._parse_user_action_from_workflow_output(workflow_status)
+            if from_output is not None:
+                return from_output.id
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+        if resolved.inputs is not None and resolved.inputs.user_action is not None:
+            return resolved.inputs.user_action.id
+        return resolved.partial_user_action_id
 
     def _parse_user_action_from_workflow_output(
         self,

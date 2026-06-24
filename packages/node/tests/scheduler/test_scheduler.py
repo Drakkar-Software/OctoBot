@@ -23,6 +23,7 @@ import dbos
 import octobot_commons.cryptography
 import octobot_protocol.models as protocol_models
 import octobot_node.config
+import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.encryption.task_inputs as task_inputs_encryption
@@ -85,6 +86,52 @@ def _make_scheduler_with_mock_instance() -> tuple[scheduler_module.Scheduler, mo
     sched = scheduler_module.Scheduler()
     sched.INSTANCE = mock.AsyncMock()
     return sched, sched.INSTANCE
+
+
+_DELETE_WORKFLOW_STATUSES = [
+    dbos.WorkflowStatusString.SUCCESS,
+    dbos.WorkflowStatusString.ERROR,
+    dbos.WorkflowStatusString.CANCELLED,
+    dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED,
+]
+
+
+def _build_user_action_workflow_with_inputs(
+    user_action_id: str,
+    workflow_id: str,
+    user_id: str = "0xw1",
+) -> mock.Mock:
+    user_action = protocol_models.UserAction(id=user_action_id, configuration=None)
+    workflow_inputs = params.UserActionWorkflowInputs(
+        user_id=user_id,
+        user_action=user_action,
+    ).to_dict(include_default_values=False)
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = workflow_id
+    workflow_status.input = {"args": [workflow_inputs], "kwargs": {}}
+    workflow_status.output = None
+    return workflow_status
+
+
+def _build_user_action_workflow_with_output(
+    user_action_id: str,
+    workflow_id: str,
+    user_id: str = "0xw1",
+) -> mock.Mock:
+    user_action = protocol_models.UserAction(
+        id=user_action_id,
+        status=protocol_models.UserActionStatus.COMPLETED,
+        configuration=None,
+    )
+    output_payload = params.UserActionWorkflowOutput(
+        user_id=user_id,
+        updated_user_action=user_action,
+    ).to_dict(include_default_values=False)
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = workflow_id
+    workflow_status.input = {"args": [], "kwargs": {}}
+    workflow_status.output = output_payload
+    return workflow_status
 
 
 class TestSchedulerGetResults:
@@ -940,3 +987,82 @@ class TestSchedulerListUserActions:
         assert isinstance(inner, protocol_models.AccountActionResult)
         assert inner.error_details is not None
         assert "persist failed" in inner.error_details
+
+
+class TestSchedulerGetUserActionWorkflowIds:
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_user_action_ids_empty(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        result = await sched._get_user_action_workflow_ids(None, [], _DELETE_WORKFLOW_STATUSES)
+        assert result == []
+        mock_instance.list_workflows_async.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_matches_by_parsed_input_user_action_id(self):
+        workflow_status = _build_user_action_workflow_with_inputs("ua-1", "wf-ua-1")
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[workflow_status])
+        result = await sched._get_user_action_workflow_ids(
+            None,
+            ["ua-1"],
+            _DELETE_WORKFLOW_STATUSES,
+        )
+        assert result == ["wf-ua-1"]
+
+    @pytest.mark.asyncio
+    async def test_skips_workflows_with_unrelated_user_action_id(self):
+        workflow_first = _build_user_action_workflow_with_inputs("ua-1", "wf-1")
+        workflow_second = _build_user_action_workflow_with_inputs("ua-2", "wf-2")
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            return_value=[workflow_first, workflow_second],
+        )
+        result = await sched._get_user_action_workflow_ids(
+            None,
+            ["ua-1"],
+            _DELETE_WORKFLOW_STATUSES,
+        )
+        assert result == ["wf-1"]
+
+    @pytest.mark.asyncio
+    async def test_matches_terminal_workflow_from_output_when_load_output_true(self):
+        workflow_status = _build_user_action_workflow_with_output("ua-done", "wf-done")
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[workflow_status])
+        result = await sched._get_user_action_workflow_ids(
+            None,
+            ["ua-done"],
+            _DELETE_WORKFLOW_STATUSES,
+            load_output=True,
+        )
+        assert result == ["wf-done"]
+
+    @pytest.mark.asyncio
+    async def test_get_workflows_to_delete_merges_automation_and_user_action_ids(self):
+        automation_task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="automation-task",
+            content="encrypted_content",
+            content_metadata="meta",
+            type="execute_actions",
+        )
+        automation_workflow = _build_mock_workflow_status(
+            automation_task,
+            "encrypted_state",
+            None,
+            workflow_id=PARENT_ID,
+        )
+        user_action_workflow = _build_user_action_workflow_with_output("ua-delete", "wf-ua-delete")
+
+        async def list_workflows_side_effect(**kwargs):
+            queue_name = kwargs.get("queue_name")
+            if queue_name == [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value]:
+                return [automation_workflow]
+            if queue_name == [octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value]:
+                return [user_action_workflow]
+            return []
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=list_workflows_side_effect)
+        result = await sched._get_workflows_to_delete([PARENT_ID, "ua-delete"])
+        assert result == [PARENT_ID, "wf-ua-delete"]

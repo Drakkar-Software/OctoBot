@@ -6,6 +6,8 @@ import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellCont
 import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFiltersButton"
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
+import { TableSelectionCell } from "@/components/Common/Tables/TableSelectionCell"
+import { TableSelectionHeader } from "@/components/Common/Tables/TableSelectionHeader"
 import { TruncatedTextWithTooltip } from "@/components/Common/Tables/TruncatedTextWithTooltip"
 import { DebugStatusCell } from "@/components/Debug/cells/DebugStatusCell"
 import { JsonDetailDialog } from "@/components/Debug/dialogs/JsonDetailDialog"
@@ -36,9 +38,19 @@ import type { ColumnFilters, SortState } from "@/lib/table-types"
 
 type UserActionsTableProps = {
   rows: UserAction[]
+  selectionMode?: boolean
+  selectedIds?: Set<string>
+  onToggleRow?: (id: string) => void
+  onToggleAllVisible?: (ids: string[], select: boolean) => void
 }
 
-export function UserActionsTable({ rows }: UserActionsTableProps) {
+export function UserActionsTable({
+  rows,
+  selectionMode = false,
+  selectedIds,
+  onToggleRow,
+  onToggleAllVisible,
+}: UserActionsTableProps) {
   const [detail, setDetail] = useState<UserAction | null>(null)
   const [sort, setSort] = useState<SortState<UserActionSortKey>>({
     key: "updated",
@@ -49,6 +61,11 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
   const displayRows = useMemo(
     () => sortUserActions(filterUserActions(rows, filters), sort),
     [rows, sort, filters],
+  )
+
+  const visibleRowIds = useMemo(
+    () => displayRows.map((row) => row.id),
+    [displayRows],
   )
 
   const userActionColumns: {
@@ -62,6 +79,9 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
     { key: "errorMessage" },
     { key: "errorDetails" },
   ]
+
+  const columnCount =
+    userActionColumns.length + 1 + (selectionMode ? 1 : 0)
 
   if (rows.length === 0) {
     return (
@@ -79,6 +99,13 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
+            {selectionMode && selectedIds && onToggleAllVisible && (
+              <TableSelectionHeader
+                visibleIds={visibleRowIds}
+                selectedIds={selectedIds}
+                onToggleAllVisible={onToggleAllVisible}
+              />
+            )}
             <SortableTableHead
               label="ID"
               sortKey="id"
@@ -121,6 +148,7 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
             <TableHead className="w-12" />
           </TableRow>
           <TableRow className="hover:bg-transparent">
+            {selectionMode && <TableHead className="w-10" />}
             {userActionColumns.map(({ key, placeholder }) => (
               <TableHead key={key} className="align-top pb-2 pt-0">
                 <ColumnFilterInput
@@ -141,7 +169,7 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
           {displayRows.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={columnCount}
                 className="text-center text-sm text-muted-foreground py-8"
               >
                 No rows match filters.
@@ -150,6 +178,13 @@ export function UserActionsTable({ rows }: UserActionsTableProps) {
           ) : (
             displayRows.map((row) => (
               <TableRow key={row.id}>
+                {selectionMode && selectedIds && onToggleRow && (
+                  <TableSelectionCell
+                    rowId={row.id}
+                    selected={selectedIds.has(row.id)}
+                    onToggleRow={onToggleRow}
+                  />
+                )}
                 <TableCell
                   className={debugTableCellClass("center", "font-mono text-xs")}
                 >
