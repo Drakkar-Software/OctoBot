@@ -10,11 +10,14 @@ import octobot_flow.entities.accounts.exchange_account_elements as exchange_acco
 @dataclasses.dataclass
 class Metadata(octobot_commons.dataclasses.MinimizableDataclass):
     """
-    Timestamps written with process bot state dumps; used for file-based liveness checks.
+    Timestamps and child PID written with process bot state dumps. Liveness checks use
+    updated_at / next_updated_at only; pid is the authoritative child PID for parent binding
+    after restarts.
     """
 
     updated_at: float = 0.0
     next_updated_at: float = 0.0
+    pid: int = 0
 
 
 @dataclasses.dataclass

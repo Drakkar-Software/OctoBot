@@ -25,7 +25,7 @@ import packaging.version as packaging_version
 
 try:
     import octobot_commons.os_util as os_util
-    import octobot_commons.logging as logging
+    import octobot_commons.logging
     import octobot_commons.configuration as configuration
     import octobot_commons.profiles as profiles
     import octobot_commons.authentication as authentication
@@ -67,7 +67,7 @@ def update_config_with_args(starting_args, config: configuration.Configuration, 
     try:
         import octobot_backtesting.constants as backtesting_constants
     except ImportError as e:
-        logging.get_logger().error(
+        octobot_commons.logging.get_logger().error(
             "Can't start backtesting without the octobot_backtesting package properly installed.")
         raise e
 
@@ -325,24 +325,38 @@ def _load_or_create_tentacles(community_auth, config, logger):
         config.load_profiles_if_possible_and_necessary()
 
 
+def _init_cli_overriden_folders(args):
+    overrides = {}
+    if args.user_folder:
+        overrides["user_folder"] = args.user_folder
+        _set_user_root_from_cli(args.user_folder)
+    if args.log_folder:
+        overrides["log_folder"] = args.log_folder
+        logs_folder = args.log_folder
+    else:
+        logs_folder = constants.LOGS_FOLDER
+    return overrides, logs_folder
+
+
 def start_octobot(args, default_config_file=None):
     logger = None
     try:
         if args.version:
             print(constants.LONG_VERSION)
             return
-
-        user_folder = getattr(args, "user_folder", None)
-        if user_folder:
-            _set_user_root_from_cli(user_folder)
-
-        # log folder: --log-folder overrides default (from LOGS_FOLDER env at import + default "logs")
-        logs_folder = getattr(args, "log_folder", None) or constants.LOGS_FOLDER
+        
+        overrides, logs_folder = _init_cli_overriden_folders(args)
         logger = octobot_logger.init_logger(logs_folder=logs_folder)
         startup_messages = []
 
         # Version
         logger.info("Version : {0}".format(constants.LONG_VERSION))
+
+        # Log folder overrides
+        if overrides:
+            logger.info(f"Overriding default folders: {overrides}")
+        else:
+            logger.info(f"Using default folders")
 
         # Current running environment
         _log_environment(logger)

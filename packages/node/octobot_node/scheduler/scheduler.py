@@ -48,7 +48,8 @@ DEFAULT_NAME = "octobot_node"
 _BASE_CONFIG = dbos.DBOSConfig(
     name=DEFAULT_NAME,
     max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
-    application_version=VERSION,
+    application_version=VERSION, # octobot version
+    # executor_id=..., # a constant executor_id is required for DBOS workflow recovery: leave its init to DBOS
 )
 
 

@@ -46,7 +46,10 @@ import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading_mod
 import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_trading as simple_market_making_trading
 
 # Nested class from factory (not exposed on ``octobot_process_ops``).
-EnsureOctobotProcessOperator = octobot_process_ops.create_octobot_process_operators(None)[0]
+TEST_EXECUTOR_ID = "test-executor"
+EnsureOctobotProcessOperator = octobot_process_ops.create_octobot_process_operators(
+    None, TEST_EXECUTOR_ID
+)[0]
 
 _TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SEC = 2
 pytestmark = pytest.mark.asyncio
@@ -56,16 +59,66 @@ async def _async_return_none_mock(*_unused):
     return None
 
 
-async def _async_live_process_bot_state_mock(*_unused):
+async def _async_live_process_bot_state_mock(*_unused, metadata_pid=20002):
     now = octobot_process_ops.time.time()
     interval = float(octobot_constants.PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS)
     return process_bot_state_import.ProcessBotState(
         metadata=process_bot_state_import.Metadata(
             updated_at=now - 0.1,
             next_updated_at=now + interval,
+            pid=metadata_pid,
         ),
         exchange_account_elements=octobot_flow_entities.ExchangeAccountElements(),
     )
+
+
+def _stale_process_bot_state_for_grace(*, age_seconds: float, metadata_pid: int = 10002):
+    now = octobot_process_ops.time.time()
+    interval = float(octobot_constants.PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS)
+    return process_bot_state_import.ProcessBotState(
+        metadata=process_bot_state_import.Metadata(
+            updated_at=now - age_seconds,
+            next_updated_at=now - age_seconds + interval,
+            pid=metadata_pid,
+        ),
+        exchange_account_elements=octobot_flow_entities.ExchangeAccountElements(),
+    )
+
+
+async def _async_live_process_bot_state_with_pid_10001(*_unused):
+    return await _async_live_process_bot_state_mock(metadata_pid=10001)
+
+
+def _healthy_recall_inner(
+    *,
+    pid: int = 10002,
+    init_state_ok: bool = True,
+    user_root: str | None = None,
+    tmp_path=None,
+    executor_id: str = TEST_EXECUTOR_ID,
+) -> dict:
+    if user_root is None and tmp_path is not None:
+        user_root = str(
+            tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "ub"
+        )
+    user_root = user_root or "/x/ub"
+    state_fn = os.path.join(user_root, octobot_constants.PROCESS_BOT_STATE_FILE_NAME)
+    return {
+        "waiting_time": octobot_process_ops.DEFAULT_PING_WAITING_TIME,
+        "last_execution_time": 0.0,
+        "http_base_url": "http://127.0.0.1:20050",
+        "web_port": 20050,
+        "node_port": 30050,
+        "user_root": user_root,
+        "user_folder": "ub",
+        "log_folder": "/x/logs/ub",
+        "profile_id": "p",
+        "pid": pid,
+        "state_file_path": state_fn,
+        "started_waiting_at": 0.0,
+        "init_state_ok": init_state_ok,
+        "executor_id": executor_id,
+    }
 def _stop_test_ensure_state_dict(http_base_url: str) -> dict:
     return octobot_process_ops.EnsureOctobotProcessState(
         http_base_url=http_base_url,
@@ -79,6 +132,7 @@ def _stop_test_ensure_state_dict(http_base_url: str) -> dict:
         state_file_path=os.path.normpath(
             os.path.join("/x", octobot_constants.PROCESS_BOT_STATE_FILE_NAME)
         ),
+        executor_id=TEST_EXECUTOR_ID,
     ).model_dump()
 
 
@@ -980,9 +1034,13 @@ class TestEnsureOctobotProcessPrecomputeWhenProcessStateLiveAfterFirstSpawn:
             process_util,
             "spawn_managed_subprocess",
         ) as spawn_mock, mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 10001,
+        ), mock.patch.object(
             octobot_process_ops,
             "_load_process_bot_state",
-            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_mock),
+            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_with_pid_10001),
         ):
             spawn_mock.return_value.pid = 10001
             await op.pre_compute()
@@ -1055,9 +1113,9 @@ class TestEnsureOctobotProcessPrecomputeRecallPathWhenProcessStateLive:
             "getcwd",
             return_value=str(tmp_path),
         ), mock.patch.object(
-            dsl_interpreter.ProcessBoundOperatorMixin,
-            "is_process_running",
-            return_value=True,
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 10002,
         ), mock.patch.object(
             octobot_process_ops,
             "_load_process_bot_state",
@@ -1098,6 +1156,7 @@ class TestEnsureOctobotProcessInitTimeoutRaisesAndKills:
             "state_file_path": state_fn,
             "started_waiting_at": 0.0,
             "init_state_ok": False,
+            "executor_id": TEST_EXECUTOR_ID,
         }
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
@@ -1122,6 +1181,7 @@ class TestEnsureOctobotProcessInitTimeoutRaisesAndKills:
         ), mock.patch.object(
             octobot_process_ops,
             "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=None),
         ) as load_mock, mock.patch.object(
             octobot_process_ops,
             "_listen_port_pair_with_shared_scan_offset",
@@ -1129,7 +1189,7 @@ class TestEnsureOctobotProcessInitTimeoutRaisesAndKills:
             with pytest.raises(commons_errors.DSLInterpreterError, match="Timed out waiting"):
                 await op.pre_compute()
         stop_mock.assert_called_once_with(logger=mock.ANY)
-        load_mock.assert_not_called()
+        load_mock.assert_called()
         ffp.assert_not_called()
 
 
@@ -1154,6 +1214,7 @@ class TestEnsureOctobotProcessLivenessNotBlockedByInitTimeout:
             "state_file_path": state_fn2,
             "started_waiting_at": 0.0,
             "init_state_ok": True,
+            "executor_id": TEST_EXECUTOR_ID,
         }
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
@@ -1167,9 +1228,9 @@ class TestEnsureOctobotProcessLivenessNotBlockedByInitTimeout:
             "getcwd",
             return_value=str(tmp_path),
         ), mock.patch.object(
-            dsl_interpreter.ProcessBoundOperatorMixin,
-            "is_process_running",
-            return_value=True,
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id in (88002, 20002),
         ), mock.patch.object(octobot_process_ops, "time", st_time), mock.patch.object(
             octobot_process_ops,
             "_load_process_bot_state",
@@ -1528,7 +1589,8 @@ class TestRunOctobotProcessDefaultConfigSubprocess:
             )
             operator_signals_holder = dsl_interpreter.OperatorSignals()
             stop_operator_cls = octobot_process_ops.create_octobot_process_operators(
-                operator_signals_holder
+                operator_signals_holder,
+                TEST_EXECUTOR_ID,
             )[0]
             operator_signals_holder.sync({
                 stop_operator_cls.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
@@ -1595,7 +1657,8 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
         inner = _stop_test_ensure_state_dict("http://127.0.0.1:7")
         operator_signals_holder = dsl_interpreter.OperatorSignals()
         operator_under_test = octobot_process_ops.create_octobot_process_operators(
-            operator_signals_holder
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
         )[0]
         operator_signals_holder.sync({
             operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
@@ -1605,23 +1668,22 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
-        with (
-            mock.patch.object(
-                dsl_interpreter.ProcessBoundOperatorMixin,
-                "is_process_running",
-                return_value=False,
-            ),
+        with mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
         ):
             await op.pre_compute()
         assert isinstance(op.value, dict)
         assert op.value["status"] == "already_stopped"
 
     async def test_execution_stop_short_circuits_without_sigterm_when_not_running(self):
-        """STOP branch returns already_stopped before ``request_graceful_stop`` when ``is_process_running`` is false."""
+        """STOP branch returns already_stopped before ``request_graceful_stop`` when stored pid is not running."""
         inner = _stop_test_ensure_state_dict("http://127.0.0.1:7")
         operator_signals_holder = dsl_interpreter.OperatorSignals()
         operator_under_test = octobot_process_ops.create_octobot_process_operators(
-            operator_signals_holder
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
         )[0]
         operator_signals_holder.sync({
             operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
@@ -1634,8 +1696,8 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
         graceful_stop_mock = mock.Mock()
         with (
             mock.patch.object(
-                dsl_interpreter.ProcessBoundOperatorMixin,
-                "is_process_running",
+                process_util,
+                "pid_is_running",
                 return_value=False,
             ),
             mock.patch.object(
@@ -1652,7 +1714,8 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
         inner = _stop_test_ensure_state_dict("http://127.0.0.1:7")
         operator_signals_holder = dsl_interpreter.OperatorSignals()
         operator_under_test = octobot_process_ops.create_octobot_process_operators(
-            operator_signals_holder
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
         )[0]
         operator_signals_holder.sync({
             operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
@@ -1744,10 +1807,12 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
                 octobot_constants.PROCESS_BOT_STATE_FILE_NAME,
             ),
             init_state_ok=True,
+            executor_id=TEST_EXECUTOR_ID,
         ).model_dump()
         operator_signals_holder = dsl_interpreter.OperatorSignals()
         operator_under_test = octobot_process_ops.create_octobot_process_operators(
-            operator_signals_holder
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
         )[0]
         operator_signals_holder.sync({
             operator_under_test.get_name(): dsl_interpreter.OperatorSignal.UPDATE_CONFIG.value,
@@ -1771,6 +1836,11 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
                     return_value={"status": "stopped", "signal": "sigterm"},
                 ) as stop_mock,
                 mock.patch.object(
+                    process_util,
+                    "pid_is_running",
+                    side_effect=lambda process_id: process_id == 4242,
+                ),
+                mock.patch.object(
                     octobot_process_ops,
                     "_load_process_bot_state",
                     new=mock.AsyncMock(side_effect=_async_return_none_mock),
@@ -1785,10 +1855,563 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
             stop_mock.assert_called_once()
             wait_mock.assert_awaited_once()
             spawn_mock.assert_called_once()
-            assert not (user_automation / "stale_marker.txt").exists()
-            assert isinstance(op.value, dict)
             assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
         finally:
             shutil.rmtree(tmp_path / commons_constants.USER_FOLDER, ignore_errors=True)
             if (tmp_path / "logs").exists():
                 shutil.rmtree(tmp_path / "logs", ignore_errors=True)
+
+
+class TestMetadataPidRoundTrip:
+    def test_metadata_pid_to_dict_from_dict(self):
+        metadata = process_bot_state_import.Metadata(
+            updated_at=1.0,
+            next_updated_at=2.0,
+            pid=424242,
+        )
+        restored = process_bot_state_import.Metadata.from_dict(
+            metadata.to_dict(include_default_values=False)
+        )
+        assert restored.pid == 424242
+
+
+class TestShouldUseRecallPathWhenStoredPidDeadButStateLive:
+    async def test_adopts_pid_from_live_state_without_spawn(self, tmp_path):
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 20002,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_mock),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert le.get("init_state_ok") is True
+        assert le.get("pid") == 20002
+
+
+class TestShouldUseRecallPathDuringInitWhenStoredPidDead:
+    async def test_recall_without_spawn_during_init(self, tmp_path):
+        inner = _healthy_recall_inner(pid=10002, init_state_ok=False, tmp_path=tmp_path)
+        inner["started_waiting_at"] = octobot_process_ops.time.time()
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
+
+
+class TestRecallPathWhenStateFileMissingButPidRunning:
+    async def test_recall_when_pid_running_without_state_file(self, tmp_path):
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 10002,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
+
+
+class TestRestartGracePeriodAvoidsRespawnWhileStateStale:
+    async def test_recall_during_restart_grace(self, tmp_path):
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        stale_state = _stale_process_bot_state_for_grace(
+            age_seconds=float(octobot_constants.PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS) * 2.5,
+            metadata_pid=10002,
+        )
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+            ping_timeout=120.0,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=stale_state),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
+
+
+class TestFirstSpawnAfterRestartGraceExpires:
+    async def test_respawns_when_grace_expired(self, tmp_path):
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        stale_state = _stale_process_bot_state_for_grace(age_seconds=200.0, metadata_pid=10002)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+            ping_timeout=120.0,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": inner["user_root"],
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=stale_state),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30003)
+            await op.pre_compute()
+        spawn_mock.assert_called_once()
+
+
+class TestFirstSpawnWhenStateFileMissingAndPidDeadAfterInit:
+    async def test_respawns_when_no_state_file_and_pid_dead(self, tmp_path):
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": inner["user_root"],
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30004)
+            await op.pre_compute()
+        spawn_mock.assert_called_once()
+
+
+class TestStopAdoptsPidFromProcessBotState:
+    async def test_stop_signals_adopted_pid(self):
+        inner = _healthy_recall_inner(pid=10002)
+        operator_signals_holder = dsl_interpreter.OperatorSignals()
+        operator_under_test = octobot_process_ops.create_octobot_process_operators(
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
+        )[0]
+        operator_signals_holder.sync({
+            operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
+        })
+        op = operator_under_test(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        graceful_stop_mock = mock.Mock(return_value={"status": "stopped", "signal": "sigterm"})
+        with (
+            mock.patch.object(
+                process_util,
+                "pid_is_running",
+                side_effect=lambda process_id: process_id == 20002,
+            ),
+            mock.patch.object(
+                octobot_process_ops,
+                "_load_process_bot_state",
+                new=mock.AsyncMock(side_effect=_async_live_process_bot_state_mock),
+            ),
+            mock.patch.object(
+                operator_under_test,
+                "request_graceful_stop",
+                new=graceful_stop_mock,
+            ),
+        ):
+            await op.pre_compute()
+        graceful_stop_mock.assert_called_once()
+        assert op.pid == 20002
+        assert op.value == {"status": "stopped", "signal": "sigterm"}
+
+
+class TestExecutorRestartedRequiresRespawn:
+    async def test_marker_mismatch_forces_first_spawn(self, tmp_path):
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        inner = _healthy_recall_inner(
+            pid=10002,
+            tmp_path=tmp_path,
+            executor_id="old-executor-id",
+        )
+        live_state = await _async_live_process_bot_state_mock(metadata_pid=20002)
+        op = octobot_process_ops.create_octobot_process_operators(
+            None, TEST_EXECUTOR_ID
+        )[0](
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": inner["user_root"],
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=live_state),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30005)
+            await op.pre_compute()
+        spawn_mock.assert_called_once()
+
+
+class TestExecutorRestartSkippedWhenChildPidRunning:
+    async def test_marker_mismatch_but_metadata_pid_running_recalls(self, tmp_path):
+        inner = _healthy_recall_inner(
+            pid=10002,
+            tmp_path=tmp_path,
+            executor_id="old-executor-id",
+        )
+        op = octobot_process_ops.create_octobot_process_operators(
+            None, TEST_EXECUTOR_ID
+        )[0](
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 20002,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_mock),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
+
+
+class TestGraceWhenTimestampFreshButMetadataPidDead:
+    async def test_recall_during_grace_without_spawn(self, tmp_path):
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        now = octobot_process_ops.time.time()
+        interval = float(octobot_constants.PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS)
+        fresh_dead_pid_state = process_bot_state_import.ProcessBotState(
+            metadata=process_bot_state_import.Metadata(
+                updated_at=now - 0.1,
+                next_updated_at=now + interval,
+                pid=20002,
+            ),
+            exchange_account_elements=octobot_flow_entities.ExchangeAccountElements(),
+        )
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+            ping_timeout=120.0,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=fresh_dead_pid_state),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
+
+
+class TestExecutorRestartDoesNotBypassGraceWhenMarkerMatches:
+    async def test_recall_during_grace_when_marker_matches(self, tmp_path):
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        stale_state = _stale_process_bot_state_for_grace(
+            age_seconds=float(octobot_constants.PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS) * 2.5,
+            metadata_pid=10002,
+        )
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+            ping_timeout=120.0,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=stale_state),
+        ):
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
+
+
+class TestRespawnsWhenGraceExpiredAndPidDead:
+    async def test_first_spawn_when_grace_expired(self, tmp_path):
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        stale_state = _stale_process_bot_state_for_grace(age_seconds=200.0, metadata_pid=10002)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+            ping_timeout=120.0,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": inner["user_root"],
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(return_value=stale_state),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30006)
+            await op.pre_compute()
+        spawn_mock.assert_called_once()
+
+
+class TestEnsureOctobotProcessStateEmitsExecutorId:
+    async def test_first_spawn_emits_executor_id(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        op = EnsureOctobotProcessOperator(
+            user_folder="emit_master_bot",
+            profile_data=_MINIMAL_PROFILE_DATA,
+        )
+        with mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": str(
+                        tmp_path
+                        / commons_constants.USER_FOLDER
+                        / commons_constants.AUTOMATIONS_FOLDER
+                        / "emit_master_bot"
+                    ),
+                    "profile_id": "x",
+                    "already_prepared": False,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=40001)
+            await op.pre_compute()
+        le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert le["executor_id"] == TEST_EXECUTOR_ID
+
+
+class TestRecallStateRequiresExecutorId:
+    async def test_missing_executor_id_falls_through_to_first_spawn(self, tmp_path):
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
+        del inner["executor_id"]
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": inner["user_root"],
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30007)
+            await op.pre_compute()
+        spawn_mock.assert_called_once()

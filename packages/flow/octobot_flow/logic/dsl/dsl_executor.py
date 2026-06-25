@@ -12,6 +12,7 @@ import octobot_trading.modes as trading_modes
 import octobot_evaluators.evaluators as evaluators
 
 import octobot_flow.entities
+import octobot_flow.environment
 import octobot_flow.errors
 import octobot_flow.enums
 import octobot_flow.logic.dsl.action_error_util
@@ -24,7 +25,6 @@ import tentacles.Meta.DSL_operators as dsl_operators
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 
 
-
 class DSLExecutor(AbstractActionExecutor):
     def __init__(
         self,
@@ -32,13 +32,16 @@ class DSLExecutor(AbstractActionExecutor):
         exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
         dsl_script: typing.Optional[str],
         dependencies: typing.Optional[octobot_commons.signals.SignalDependencies] = None,
+        executor_id: typing.Optional[str] = None,
     ):
         super().__init__()
         self._exchange_manager = exchange_manager
         self._dependencies = dependencies
         self._dependencies_config: dict = profile_data.to_profile("").config
         self._interpreter_signals: octobot_commons.dsl_interpreter.OperatorSignals = None # type: ignore (reset when interpreter is created)
-        self._interpreter: octobot_commons.dsl_interpreter.Interpreter = self._create_interpreter(None)
+        self._interpreter: octobot_commons.dsl_interpreter.Interpreter = self._create_interpreter(
+            None, executor_id
+        )
         if dsl_script:
             self._interpreter.prepare(dsl_script)
 
@@ -49,7 +52,15 @@ class DSLExecutor(AbstractActionExecutor):
 
     def get_flow_operator_classes(
         self,
+        executor_id: typing.Optional[str] = None,
     ) -> list[typing.Type[octobot_commons.dsl_interpreter.Operator]]:
+        resolved_executor_id = (
+            executor_id or octobot_flow.environment.get_executor_id()
+        )
+        if not resolved_executor_id:
+            raise octobot_flow.errors.MissingDSLExecutorDependencyError(
+                "executor_id is required for run_octobot_process"
+            )
         return (
             octobot_commons.dsl_interpreter.get_all_operators()
             + dsl_operators.create_ohlcv_operators(self._exchange_manager, None, None)
@@ -74,16 +85,19 @@ class DSLExecutor(AbstractActionExecutor):
                 copier_trading_mode=None,
             )
             + octobot_process_ops.create_octobot_process_operators(
-                self._interpreter_signals
+                self._interpreter_signals,
+                resolved_executor_id,
             )
         ) # type: ignore (list[type[Operator]])
 
     def _create_interpreter(
-        self, previous_execution_result: typing.Optional[dict]
+        self,
+        previous_execution_result: typing.Optional[dict],
+        executor_id: typing.Optional[str] = None,
     ) -> octobot_commons.dsl_interpreter.Interpreter:
         self._interpreter_signals = octobot_commons.dsl_interpreter.OperatorSignals()
         return octobot_commons.dsl_interpreter.Interpreter(
-            self.get_flow_operator_classes()
+            self.get_flow_operator_classes(executor_id)
         )
 
     def get_dependencies(self) -> list[
@@ -110,7 +124,8 @@ class DSLExecutor(AbstractActionExecutor):
         ] = None,
     ) -> octobot_commons.dsl_interpreter.DSLCallResult:
         self._interpreter = self._create_interpreter(
-            action.previous_execution_result
+            action.previous_execution_result,
+            None,
         )
         expression = action.get_resolved_dsl_script()
         try:

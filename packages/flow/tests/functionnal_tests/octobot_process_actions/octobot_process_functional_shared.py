@@ -1,10 +1,18 @@
 #  Drakkar-Software OctoBot
 #  Shared helpers/constants for octobot process functional tests (run_octobot_process, GridTradingMode).
 
+import asyncio
 import copy
 import decimal
+import json
+import os
+import pathlib
+import time
 import typing
 
+import octobot.constants as octobot_constants
+import octobot_commons.configuration as configuration_module
+import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
@@ -12,6 +20,7 @@ import pytest
 
 import octobot_flow.jobs
 import octobot_flow.entities
+import octobot_flow.environment
 import octobot_flow.enums
 import tests.functionnal_tests as functionnal_tests
 import tests.functionnal_tests.tentacle_test_configs as tentacle_test_configs
@@ -200,6 +209,100 @@ def _get_action_by_id(
     return None
 
 
+_FERNET_ENCRYPTED_PREFIX = "gAAAAA"
+
+
+# --- Child on-disk readiness (poll after init_state_ok; PID can be up before first dump / encrypt) ---
+
+
+def _process_bot_state_path(inner: dict) -> str:
+    return os.path.normpath(
+        os.path.join(
+            inner["user_root"],
+            octobot_constants.PROCESS_BOT_STATE_FILE_NAME,
+        )
+    )
+
+
+async def _wait_for_process_bot_state_file(
+    state_path: str,
+    *,
+    timeout_sec: float = GLOBAL_START_TIMEOUT_SEC,
+    poll_interval_sec: float = SLEEP_BETWEEN_JOB_POLLS_SEC,
+) -> None:
+    """Poll until the child has written at least one process_bot_state.json dump."""
+    deadline = time.monotonic() + timeout_sec
+    while time.monotonic() < deadline:
+        if os.path.isfile(state_path):
+            return
+        await asyncio.sleep(poll_interval_sec)
+    pytest.fail(
+        f"Timed out waiting for process_bot_state.json at {state_path!r} within {timeout_sec}s"
+    )
+
+
+async def _assert_encrypted_exchange_credentials_in_user_config(
+    user_root: typing.Union[pathlib.Path, str],
+    exchange_internal_name: str,
+    expected_api_key: str,
+    expected_api_secret: str,
+    *,
+    timeout_sec: float = GLOBAL_START_TIMEOUT_SEC,
+    poll_interval_sec: float = SLEEP_BETWEEN_JOB_POLLS_SEC,
+) -> None:
+    """
+    Poll child user-root config.json, then assert api key/secret are Fernet-encrypted and decrypt
+    to the expected plaintext.
+
+    run_octobot_process seeds plaintext credentials before spawn; the child re-saves config.json
+    on startup. init_state_ok can become true from PID liveness before encryption completes.
+    """
+    user_root_path = pathlib.Path(user_root)
+    config_path = user_root_path / commons_constants.CONFIG_FILE
+    deadline = time.monotonic() + timeout_sec
+    last_failure_reason = "config.json missing or exchange entry not ready"
+    while time.monotonic() < deadline:
+        if not config_path.is_file():
+            await asyncio.sleep(poll_interval_sec)
+            continue
+        root_cfg = json.loads(config_path.read_text(encoding="utf-8"))
+        exchanges_cfg = root_cfg.get(commons_constants.CONFIG_EXCHANGES) or {}
+        exchange_cfg = exchanges_cfg.get(exchange_internal_name)
+        if not isinstance(exchange_cfg, dict):
+            last_failure_reason = f"exchange {exchange_internal_name!r} missing from config"
+            await asyncio.sleep(poll_interval_sec)
+            continue
+        stored_api_key = exchange_cfg.get(commons_constants.CONFIG_EXCHANGE_KEY)
+        stored_api_secret = exchange_cfg.get(commons_constants.CONFIG_EXCHANGE_SECRET)
+        if not (
+            isinstance(stored_api_key, str)
+            and stored_api_key.startswith(_FERNET_ENCRYPTED_PREFIX)
+            and isinstance(stored_api_secret, str)
+            and stored_api_secret.startswith(_FERNET_ENCRYPTED_PREFIX)
+        ):
+            last_failure_reason = "api key/secret not yet Fernet-encrypted in config.json"
+            await asyncio.sleep(poll_interval_sec)
+            continue
+        try:
+            decrypted_api_key = configuration_module.decrypt(stored_api_key)
+            decrypted_api_secret = configuration_module.decrypt(stored_api_secret)
+        except Exception as decrypt_error:
+            last_failure_reason = f"decrypt failed: {decrypt_error}"
+            await asyncio.sleep(poll_interval_sec)
+            continue
+        assert decrypted_api_key == expected_api_key, (
+            f"decrypted api key mismatch for {exchange_internal_name!r}"
+        )
+        assert decrypted_api_secret == expected_api_secret, (
+            f"decrypted api secret mismatch for {exchange_internal_name!r}"
+        )
+        return
+    pytest.fail(
+        f"Timed out waiting for encrypted exchange credentials in {config_path!r} "
+        f"within {timeout_sec}s ({last_failure_reason})"
+    )
+
+
 def _make_tracked_spawn_managed_with_forward_terminal_output(
     real_spawn_managed: typing.Callable[..., typing.Any],
     popen_calls: dict[str, int],
@@ -211,6 +314,12 @@ def _make_tracked_spawn_managed_with_forward_terminal_output(
         return real_spawn_managed(*args, **merged_kwargs)
 
     return _tracked
+
+
+@pytest.fixture(autouse=True)
+def register_functional_executor_id():
+    octobot_flow.environment.register_executor_id("func-test-executor")
+    yield
 
 
 @pytest.fixture

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import os
+import uuid
 
 try:
     import octobot.constants as octobot_constants
@@ -67,3 +68,5 @@ AUTOMATION_WORKFLOW_ACTIVE_SEND_POLL_INTERVAL_SECONDS = float(
 )
 
 DEFAULT_PORTFOLIO_VALUATION_UNIT = "USDT"
+
+SCHEDULER_EXECUTOR_ID = str(uuid.uuid4()) # unique for each worker

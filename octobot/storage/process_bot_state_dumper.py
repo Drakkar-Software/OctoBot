@@ -73,7 +73,11 @@ async def _write_state_file_async(
 ) -> None:
     now = time.time()
     state = process_bot_state_import.ProcessBotState(
-        metadata=process_bot_state_import.Metadata(updated_at=now, next_updated_at=now + interval),
+        metadata=process_bot_state_import.Metadata(
+            updated_at=now,
+            next_updated_at=now + interval,
+            pid=os.getpid(),
+        ),
         exchange_account_elements=_synced_exchange_account_elements_for_first_trading_exchange(
             bot,
         ),

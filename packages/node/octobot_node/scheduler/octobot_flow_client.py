@@ -20,6 +20,7 @@ import json
 import octobot_commons.dataclasses
 import octobot_commons.logging
 
+import octobot_node.constants
 import octobot_node.errors as errors
 import octobot_node.scheduler.workflows_util as workflows_util
 
@@ -33,6 +34,9 @@ try:
 
     # ensure environment is initialized
     octobot_flow.environment.initialize_environment(True)
+    octobot_flow.environment.register_executor_id(
+        octobot_node.constants.SCHEDULER_EXECUTOR_ID
+    )
 
 except ImportError:
     pass # OctoBot Flow is not available

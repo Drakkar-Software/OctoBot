@@ -14,73 +14,22 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import typing
-
-import octobot_commons.constants as commons_constants
-import octobot_flow.enums as flow_enums
 import octobot_protocol.models as protocol_models
 import octobot_sync.constants as sync_constants
 import octobot_node.scheduler.api as scheduler_api
 import octobot_node.protocol.accounts as accounts_protocol
 import octobot_node.protocol.strategies as strategies_protocol
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
+import octobot_node.protocol.util.privacy_filter as privacy_filter
 
 
-_AUTH_DETAIL_FIELD_NAMES = (
-    "api_key",
-    "api_secret",
-    "api_password",
-    "access_token",
-    "encrypted",
-)
-
-
-def _auth_details_dict_has_credentials(auth_details: dict) -> bool:
-    return bool(
-        auth_details.get("api_key")
-        or auth_details.get("api_secret")
-        or auth_details.get("api_password")
-        or auth_details.get("access_token")
-        or auth_details.get("encrypted")
-    )
-
-
-def _redact_auth_details_dict(auth_details: dict) -> dict:
-    redacted_auth_details = dict(auth_details)
-    for field_name in _AUTH_DETAIL_FIELD_NAMES:
-        if redacted_auth_details.get(field_name):
-            redacted_auth_details[field_name] = commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-    return redacted_auth_details
-
-
-def _redact_action_for_debug(action: protocol_models.Action) -> protocol_models.Action:
-    if action.action_type != flow_enums.ActionType.APPLY_CONFIGURATION.value:
-        return action
-    configuration = action.configuration
-    if configuration is None:
-        return action
-    exchange_account_details = configuration.get("exchange_account_details")
-    if not isinstance(exchange_account_details, dict):
-        return action
-    auth_details = exchange_account_details.get("auth_details")
-    if not isinstance(auth_details, dict) or not _auth_details_dict_has_credentials(auth_details):
-        return action
-    redacted_configuration = {
-        **configuration,
-        "exchange_account_details": {
-            **exchange_account_details,
-            "auth_details": _redact_auth_details_dict(auth_details),
-        },
-    }
-    return action.model_copy(update={"configuration": redacted_configuration})
-
-
-def _redact_actions_for_debug(
-    actions: typing.Optional[list[protocol_models.Action]],
-) -> typing.Optional[list[protocol_models.Action]]:
-    if actions is None:
-        return None
-    return [_redact_action_for_debug(action) for action in actions]
+def _redact_user_actions_for_debug(
+    user_actions: list[protocol_models.UserAction],
+) -> list[protocol_models.UserAction]:
+    return [
+        privacy_filter.privatize_user_action(user_action)
+        for user_action in user_actions
+    ]
 
 
 def _automation_state_for_debug(
@@ -88,8 +37,10 @@ def _automation_state_for_debug(
 ) -> protocol_models.AutomationState:
     return automation.model_copy(
         update={
-            "actions": _redact_actions_for_debug(automation.actions),
-            "priority_actions": _redact_actions_for_debug(automation.priority_actions),
+            "actions": privacy_filter.privatize_dag_actions(automation.actions),
+            "priority_actions": privacy_filter.privatize_dag_actions(
+                automation.priority_actions,
+            ),
         }
     )
 
@@ -117,7 +68,9 @@ async def get_debug_state(user_id: str) -> protocol_models.DebugState:
         _automation_state_for_debug(automation)
         for automation in await scheduler_api.get_automation_states(user_id)
     ]
-    user_actions = await scheduler_api.list_user_actions(user_id, active_only=False)
+    user_actions = _redact_user_actions_for_debug(
+        await scheduler_api.list_user_actions(user_id, active_only=False),
+    )
     account_state = accounts_protocol.get_accounts_state(user_id)
     strategies_state = strategies_protocol.get_strategies_state(user_id)
     bound_account_ids = _account_ids_bound_to_running_automations(automations)

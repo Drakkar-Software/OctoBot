@@ -10,7 +10,6 @@ import datetime
 import mock
 import pytest
 
-import octobot_commons.constants as commons_constants
 import octobot_protocol.models as protocol_models
 
 import octobot_sync.constants as sync_constants
@@ -93,6 +92,16 @@ class TestGetDebugState:
         )
         with (
             mock.patch.object(
+                debug_module.privacy_filter,
+                "privatize_dag_actions",
+                wraps=debug_module.privacy_filter.privatize_dag_actions,
+            ) as privatize_dag_actions_mock,
+            mock.patch.object(
+                debug_module.privacy_filter,
+                "privatize_user_action",
+                wraps=debug_module.privacy_filter.privatize_user_action,
+            ) as privatize_user_action_mock,
+            mock.patch.object(
                 debug_module.scheduler_api,
                 "get_automation_states",
                 mock.AsyncMock(return_value=sample_automations),
@@ -125,6 +134,10 @@ class TestGetDebugState:
             _TEST_WALLET_ADDRESS,
             ["acc-bound"],
         )
+        assert privatize_dag_actions_mock.call_count == 2
+        privatize_dag_actions_mock.assert_any_call(sample_automations[0].actions)
+        privatize_dag_actions_mock.assert_any_call(sample_automations[0].priority_actions)
+        privatize_user_action_mock.assert_called_once_with(sample_user_actions[0])
         assert debug_state.version == sync_constants.DEBUG_STATE_VERSION
         assert debug_state.debug is not None
         assert debug_state.debug.automations == sample_automations
@@ -133,192 +146,6 @@ class TestGetDebugState:
         assert debug_state.debug.exchange_configs == sample_exchange_configs
         assert debug_state.debug.local_strategies == sample_strategies
         assert debug_state.debug.account_tradings == sample_trading_summaries
-
-    @pytest.mark.asyncio
-    async def test_redacts_auth_details_in_automations(self):
-        automation_with_auth = protocol_models.AutomationState(
-            id="auto-auth",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            metadata=protocol_models.AutomationMetadata(
-                name="auto",
-                description="",
-            ),
-            actions=[
-                protocol_models.Action(
-                    id="action-1",
-                    action_type="apply_configuration",
-                    status=protocol_models.WorkflowStatus.COMPLETED,
-                    configuration={
-                        "exchange_account_details": {
-                            "auth_details": {
-                                "api_key": "secret-key",
-                                "api_secret": "secret-secret",
-                                "api_password": "secret-pass",
-                            },
-                        },
-                    },
-                ),
-            ],
-        )
-        accounts_state = protocol_models.AccountsState(
-            version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-            accounts=[],
-            exchange_configs=[],
-        )
-        strategies_state = protocol_models.StrategiesState(
-            version=sync_constants.USER_STRATEGIES_STATE_VERSION,
-            strategies=[],
-        )
-        with (
-            mock.patch.object(
-                debug_module.scheduler_api,
-                "get_automation_states",
-                mock.AsyncMock(return_value=[automation_with_auth]),
-            ),
-            mock.patch.object(
-                debug_module.scheduler_api,
-                "list_user_actions",
-                mock.AsyncMock(return_value=[]),
-            ),
-            mock.patch.object(
-                debug_module.accounts_protocol,
-                "get_accounts_state",
-                return_value=accounts_state,
-            ),
-            mock.patch.object(
-                debug_module.strategies_protocol,
-                "get_strategies_state",
-                return_value=strategies_state,
-            ),
-            mock.patch.object(
-                debug_module.accounts_trading_protocol,
-                "get_account_trading_summaries",
-                return_value=[],
-            ),
-        ):
-            debug_state = await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
-        assert debug_state.debug is not None
-        assert debug_state.debug.automations is not None
-        auth_details = debug_state.debug.automations[0].actions[0].configuration[
-            "exchange_account_details"
-        ]["auth_details"]
-        assert auth_details["api_key"] == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert auth_details["api_secret"] == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert auth_details["api_password"] == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-
-    @pytest.mark.asyncio
-    async def test_leaves_non_config_actions_unchanged(self):
-        dsl_action = protocol_models.Action(
-            id="dsl-1",
-            action_type="dsl_script",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            dsl='run_octobot_process("acc", {}, [{"api_key": "leak"}])',
-        )
-        automation = protocol_models.AutomationState(
-            id="auto-dsl",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            metadata=protocol_models.AutomationMetadata(name="auto", description=""),
-            actions=[dsl_action],
-        )
-        accounts_state = protocol_models.AccountsState(
-            version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-            accounts=[],
-            exchange_configs=[],
-        )
-        strategies_state = protocol_models.StrategiesState(
-            version=sync_constants.USER_STRATEGIES_STATE_VERSION,
-            strategies=[],
-        )
-        with (
-            mock.patch.object(
-                debug_module.scheduler_api,
-                "get_automation_states",
-                mock.AsyncMock(return_value=[automation]),
-            ),
-            mock.patch.object(
-                debug_module.scheduler_api,
-                "list_user_actions",
-                mock.AsyncMock(return_value=[]),
-            ),
-            mock.patch.object(
-                debug_module.accounts_protocol,
-                "get_accounts_state",
-                return_value=accounts_state,
-            ),
-            mock.patch.object(
-                debug_module.strategies_protocol,
-                "get_strategies_state",
-                return_value=strategies_state,
-            ),
-            mock.patch.object(
-                debug_module.accounts_trading_protocol,
-                "get_account_trading_summaries",
-                return_value=[],
-            ),
-        ):
-            debug_state = await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
-        returned_action = debug_state.debug.automations[0].actions[0]
-        assert returned_action is dsl_action
-        assert returned_action.dsl == dsl_action.dsl
-
-    @pytest.mark.asyncio
-    async def test_leaves_apply_configuration_without_auth_unchanged(self):
-        config_action = protocol_models.Action(
-            id="action-1",
-            action_type="apply_configuration",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            configuration={
-                "exchange_account_details": {
-                    "auth_details": {},
-                },
-            },
-        )
-        automation = protocol_models.AutomationState(
-            id="auto-sim",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            metadata=protocol_models.AutomationMetadata(name="auto", description=""),
-            actions=[config_action],
-        )
-        accounts_state = protocol_models.AccountsState(
-            version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-            accounts=[],
-            exchange_configs=[],
-        )
-        strategies_state = protocol_models.StrategiesState(
-            version=sync_constants.USER_STRATEGIES_STATE_VERSION,
-            strategies=[],
-        )
-        with (
-            mock.patch.object(
-                debug_module.scheduler_api,
-                "get_automation_states",
-                mock.AsyncMock(return_value=[automation]),
-            ),
-            mock.patch.object(
-                debug_module.scheduler_api,
-                "list_user_actions",
-                mock.AsyncMock(return_value=[]),
-            ),
-            mock.patch.object(
-                debug_module.accounts_protocol,
-                "get_accounts_state",
-                return_value=accounts_state,
-            ),
-            mock.patch.object(
-                debug_module.strategies_protocol,
-                "get_strategies_state",
-                return_value=strategies_state,
-            ),
-            mock.patch.object(
-                debug_module.accounts_trading_protocol,
-                "get_account_trading_summaries",
-                return_value=[],
-            ),
-        ):
-            debug_state = await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
-        returned_action = debug_state.debug.automations[0].actions[0]
-        assert returned_action is config_action
-        assert returned_action.configuration == config_action.configuration
 
     @pytest.mark.asyncio
     async def test_empty_collections_when_dependencies_return_empty(self):
@@ -332,6 +159,16 @@ class TestGetDebugState:
             strategies=[],
         )
         with (
+            mock.patch.object(
+                debug_module.privacy_filter,
+                "privatize_dag_actions",
+                wraps=debug_module.privacy_filter.privatize_dag_actions,
+            ) as privatize_dag_actions_mock,
+            mock.patch.object(
+                debug_module.privacy_filter,
+                "privatize_user_action",
+                wraps=debug_module.privacy_filter.privatize_user_action,
+            ) as privatize_user_action_mock,
             mock.patch.object(
                 debug_module.scheduler_api,
                 "get_automation_states",
@@ -360,6 +197,8 @@ class TestGetDebugState:
         ):
             debug_state = await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
         get_account_trading_summaries_mock.assert_called_once_with(_TEST_WALLET_ADDRESS, [])
+        privatize_dag_actions_mock.assert_not_called()
+        privatize_user_action_mock.assert_not_called()
         assert debug_state.debug is not None
         assert debug_state.debug.automations == []
         assert debug_state.debug.user_actions == []
@@ -386,6 +225,16 @@ class TestGetDebugState:
             strategies=[],
         )
         with (
+            mock.patch.object(
+                debug_module.privacy_filter,
+                "privatize_dag_actions",
+                wraps=debug_module.privacy_filter.privatize_dag_actions,
+            ) as privatize_dag_actions_mock,
+            mock.patch.object(
+                debug_module.privacy_filter,
+                "privatize_user_action",
+                wraps=debug_module.privacy_filter.privatize_user_action,
+            ) as privatize_user_action_mock,
             mock.patch.object(
                 debug_module.scheduler_api,
                 "get_automation_states",
@@ -414,3 +263,7 @@ class TestGetDebugState:
         ):
             await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
         get_account_trading_summaries_mock.assert_called_once_with(_TEST_WALLET_ADDRESS, [])
+        assert privatize_dag_actions_mock.call_count == 2
+        privatize_dag_actions_mock.assert_any_call(completed_automation.actions)
+        privatize_dag_actions_mock.assert_any_call(completed_automation.priority_actions)
+        privatize_user_action_mock.assert_not_called()

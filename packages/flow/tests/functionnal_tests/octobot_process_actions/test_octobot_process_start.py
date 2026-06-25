@@ -12,7 +12,6 @@ import uuid
 
 import mock
 import octobot.constants as octobot_app_constants
-import octobot_commons.configuration as configuration_module
 import octobot_commons.constants as common_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.process_util as process_util
@@ -154,13 +153,9 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             assert popen_calls["count"] >= 1
 
             # --- process_bot_state path: must exist before poll (child wrote at least one dump) ---
-            state_path = os.path.normpath(
-                os.path.join(
-                    inner["user_root"],
-                    octobot_app_constants.PROCESS_BOT_STATE_FILE_NAME,
-                )
-            )
-            assert os.path.isfile(state_path)
+            # First process_bot_state dump can lag init_state_ok (see shared wait helper).
+            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
+            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
 
             # 1) Poll AutomationJob + dump() until merge yields ≥4 open orders (EAE from automation snapshot,
             #    not from parsing full process_bot_state on disk).
@@ -438,15 +433,14 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
 
             user_root = pathlib.Path(inner["user_root"])
             assert inner.get("profile_id") == "non-trading"
-            root_cfg = json.loads((user_root / common_constants.CONFIG_FILE).read_text(encoding="utf-8"))
-            exchange_cfg = root_cfg[common_constants.CONFIG_EXCHANGES][
-                octobot_process_functional_shared.EXCHANGE_BINANCEUS
-            ]
             exchange_auth_entry = exchange_auth[0]
-            stored_api_key = exchange_cfg[common_constants.CONFIG_EXCHANGE_KEY]
-            stored_api_secret = exchange_cfg[common_constants.CONFIG_EXCHANGE_SECRET]
-            assert configuration_module.decrypt(stored_api_key) == exchange_auth_entry["api_key"]
-            assert configuration_module.decrypt(stored_api_secret) == exchange_auth_entry["api_secret"]
+            # Child encrypts config.json after spawn; wait + assert in one helper (see shared module).
+            await octobot_process_functional_shared._assert_encrypted_exchange_credentials_in_user_config(
+                user_root,
+                octobot_process_functional_shared.EXCHANGE_BINANCEUS,
+                exchange_auth_entry["api_key"],
+                exchange_auth_entry["api_secret"],
+            )
             profile_json_path = (
                 user_root
                 / common_constants.PROFILES_FOLDER
@@ -455,13 +449,9 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
             )
             assert profile_json_path.is_file()
 
-            state_path = os.path.normpath(
-                os.path.join(
-                    inner["user_root"],
-                    octobot_app_constants.PROCESS_BOT_STATE_FILE_NAME,
-                )
-            )
-            assert os.path.isfile(state_path)
+            # First process_bot_state dump can lag init_state_ok (see shared wait helper).
+            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
+            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
             with open(state_path, encoding="utf-8") as process_state_file:
                 file_metadata_payload = json.load(process_state_file)
             process_metadata = process_bot_state_import.Metadata.from_dict(

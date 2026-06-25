@@ -185,6 +185,10 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             initial_spawn_count = popen_calls["count"]
             assert initial_spawn_count >= 1
 
+            # First process_bot_state dump can lag init_state_ok (see shared wait helper).
+            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
+            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
+
             # 3) Wait until at least four open ladder orders exist, then assert a 2×2 grid pattern.
             orders_deadline = time.monotonic() + octobot_process_functional_shared.GRID_ORDERS_TIMEOUT_SEC
             exchange_account_snapshot: typing.Optional[
