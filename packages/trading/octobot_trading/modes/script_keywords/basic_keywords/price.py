@@ -63,5 +63,5 @@ async def get_price_with_offset(context, offset_input, use_delta_type_as_flat_va
             f"1.2, -0.222, -0.222d, @65100, 5%, e5%, e500"
         )
 
-    symbol_market = context.exchange_manager.exchange.get_market_status(context.symbol, with_fixer=False)
+    symbol_market = await context.exchange_manager.exchange.get_market_status_including_lazy_load(context.symbol, with_fixer=False)
     return personal_data.decimal_adapt_price(symbol_market, computed_price)

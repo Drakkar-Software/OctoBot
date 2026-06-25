@@ -272,7 +272,7 @@ async def get_pre_order_data(exchange_manager, symbol: str, timeout: int = None,
                              portfolio_type=commons_constants.PORTFOLIO_AVAILABLE,
                              target_price=None):
     price = target_price or await get_up_to_date_price(exchange_manager, symbol, timeout=timeout)
-    symbol_market = exchange_manager.exchange.get_market_status(symbol, with_fixer=False)
+    symbol_market = await exchange_manager.exchange.get_market_status_including_lazy_load(symbol, with_fixer=False)
     currency_available, market_available, market_quantity = get_portfolio_amounts(
         exchange_manager, symbol, price, portfolio_type=portfolio_type
     )

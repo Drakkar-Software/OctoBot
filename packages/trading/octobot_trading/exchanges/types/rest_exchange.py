@@ -582,6 +582,21 @@ class RestExchange(abstract_exchange.AbstractExchange):
         )
         return loaded_markets
 
+    def _is_lazy_market_loaded(self, symbol: str) -> bool:
+        client_markets = self.connector.client.markets or {}
+        return symbol in client_markets
+
+    async def ensure_lazy_market_loaded(self, symbol: str) -> None:
+        if not self.lazy_load_markets():
+            return
+        if self._is_lazy_market_loaded(symbol):
+            return
+        await self.load_markets_for_symbols([symbol])
+
+    async def get_market_status_including_lazy_load(self, symbol, price_example=None, with_fixer=True):
+        await self.ensure_lazy_market_loaded(symbol)
+        return self.get_market_status(symbol, price_example=price_example, with_fixer=with_fixer)
+
     def get_market_status(self, symbol, price_example=None, with_fixer=True):
         """
         Override using get_fixed_market_status in exchange tentacle if the default market status is not as expected

@@ -107,11 +107,25 @@ async def _fill_market_making_data_by_symbol(
                 elif dependency.symbol not in dependency_symbol_alias_by_symbol:
                     dependency_symbol_alias_by_symbol[dependency.symbol] = None
             available_symbols = set(exchange_manager.exchange.get_all_available_symbols(active_only=True))
-            symbols_to_skip_ticker_fetch = {
-                source.pair
-                for source in price_sources
-                if source.formula and source.pair not in available_symbols
-            }
+            lazy_load_markets = exchange_manager.exchange.get_option_value(
+                octobot_trading.enums.ExchangeClientOptions.LAZY_LOAD_MARKETS
+            )
+            if lazy_load_markets:
+                symbols_to_skip_ticker_fetch = {
+                    source.pair
+                    for source in price_sources
+                    if source.formula and source.pair not in available_symbols
+                }
+            else:
+                symbols_to_skip_ticker_fetch = {
+                    symbol for symbol in (set(symbols) | set(dependency_symbol_alias_by_symbol.keys()))
+                    if symbol not in available_symbols
+                }
+            if symbols_to_skip_ticker_fetch:
+                _get_logger().info(
+                    f"Ignored unavailable pairs on [{exchange_internal_name}]: "
+                    f"{sorted(symbols_to_skip_ticker_fetch)}"
+                )
             symbols_to_fetch = (set(symbols) | set(dependency_symbol_alias_by_symbol.keys())) - symbols_to_skip_ticker_fetch
             tickers = {
                 symbol: ticker
@@ -121,7 +135,11 @@ async def _fill_market_making_data_by_symbol(
             tickers, ticker_updater = await _fetch_tickers(
                 exchange_manager, tickers, list(symbols_to_fetch)
             )
-            if missing_tickers_to_fetch := [symbol for symbol in symbols_to_fetch if symbol not in tickers]:
+            if missing_tickers_to_fetch := [
+                symbol for symbol in symbols_to_fetch
+                if symbol not in tickers
+                and (lazy_load_markets or symbol in available_symbols)
+            ]:
                 try:
                     tickers.update(await ticker_updater.fetch_all_tickers(missing_tickers_to_fetch))
                 except octobot_trading.errors.NotSupported as err:
@@ -694,6 +712,7 @@ async def _get_price_and_predicted_order_book(
     books_by_symbol = {}
     for pair, reference_price in reference_price_by_pair.items():
         if not reference_price or reference_price.is_nan():
+            error_by_pair[pair] = _get_unsupported_pair_message(pair, mm_exchange)
             continue
         mm_data = mm_data_by_exchange[mm_exchange].get(pair)
         _adapt_volume_if_necessary(mm_data, reference_price)
@@ -740,6 +759,10 @@ def _get_missing_symbol_message(symbol: str, exchange: str) -> str:
         f"{symbol} not found in {exchange} all market data (price ticker empty or not found). "
         f"{symbol} market is likely missing or disabled on {exchange}"
     )
+
+
+def _get_unsupported_pair_message(pair: str, exchange: str) -> str:
+    return f"{pair} is not supported on {exchange}"
 
 
 def _format_format_market_making_volume(volume: typing.Union[dict, None], error: typing.Union[str, None]):

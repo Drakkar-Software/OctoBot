@@ -34,12 +34,12 @@ class LimitOrder(order_class.Order):
         try:
             current_price = await self.exchange_manager.exchange_symbols_data.get_exchange_symbol_data(self.symbol) \
                 .prices_manager.get_mark_price(timeout=constants.CHAINED_ORDER_PRICE_FETCHING_TIMEOUT)
-            self._update_limit_price_if_necessary(current_price)
+            await self._update_limit_price_if_necessary(current_price)
         except asyncio.TimeoutError:
             # price can't be checked
             return
 
-    def _update_limit_price_if_necessary(self, current_price):
+    async def _update_limit_price_if_necessary(self, current_price):
         updated_price = self.origin_price
         if self.side is enums.TradeOrderSide.BUY:
             highest_accepted_buy_price = (
@@ -58,7 +58,7 @@ class LimitOrder(order_class.Order):
                 # => Increase it to the current price
                 updated_price = lowest_accepted_sell_price
         if self.origin_price != updated_price:
-            symbol_market = self.exchange_manager.exchange.get_market_status(self.symbol, with_fixer=False)
+            symbol_market = await self.exchange_manager.exchange.get_market_status_including_lazy_load(self.symbol, with_fixer=False)
             self.origin_price = decimal_order_adapter.decimal_adapt_price(symbol_market, updated_price)
 
     async def update_order_status(self, force_refresh=False):

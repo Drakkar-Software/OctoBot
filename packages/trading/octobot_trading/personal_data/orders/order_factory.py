@@ -473,7 +473,7 @@ class OrderFactory:
         current_price = await personal_data.get_up_to_date_price(
             self.exchange_manager, symbol=symbol, timeout=constants.ORDER_DATA_FETCHING_TIMEOUT
         )
-        symbol_market = self.exchange_manager.exchange.get_market_status(symbol, with_fixer=False)
+        symbol_market = await self.exchange_manager.exchange.get_market_status_including_lazy_load(symbol, with_fixer=False)
         ctx = script_keywords.get_base_context_from_exchange_manager(self.exchange_manager, symbol)
             # market orders have no price
         computed_price = current_price if price is None else await self._get_computed_price(ctx, price)

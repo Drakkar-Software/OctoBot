@@ -195,7 +195,7 @@ async def convert_with_market_or_limit_order(
 
     # get order quantity
     quantity = _get_available_or_target_quantity(exchange_mgr, symbol, order_type, price, asset_amount)
-    symbol_market = exchange_mgr.exchange.get_market_status(symbol, with_fixer=False)
+    symbol_market = await exchange_mgr.exchange.get_market_status_including_lazy_load(symbol, with_fixer=False)
     created_orders = []
     for order_quantity, order_price in \
             trading_personal_data.decimal_check_and_adapt_order_details_if_necessary(

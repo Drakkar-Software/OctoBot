@@ -589,7 +589,7 @@ async def test_get_price_and_predicted_order_book_with_invalid_formula(profile_d
 
 
 async def test_get_price_and_predicted_order_book_with_error(profile_data_with_full_mm_config, mm_data_by_exchange):
-    """Test _get_price_and_predicted_order_book with error handling."""
+    """Empty reference price sources yield an unsupported-pair error."""
     profile_data_with_full_mm_config.tentacles[0].config[
         simple_market_making_trading.SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS
     ][0][simple_market_making_trading.SimpleMarketMakingTradingMode.REFERENCE_PRICE] = []
@@ -602,7 +602,9 @@ async def test_get_price_and_predicted_order_book_with_error(profile_data_with_f
 
     assert result == {
         "BTC/USDT": {
-            market_making_constants.ERROR_KEY: "BTC/USDT reference price on binance can't be computed from the following price sources: {}"
+            market_making_constants.ERROR_KEY: market_making_core._get_unsupported_pair_message(
+                "BTC/USDT", "binance"
+            ),
         }
     }
 
@@ -1059,10 +1061,29 @@ async def _mock_exchange_manager_context(exchange_manager):
     yield exchange_manager
 
 
+def _configure_lazy_load_markets(exchange_manager, lazy_load_markets: bool):
+    exchange_manager.exchange.get_option_value = mock.Mock(
+        side_effect=lambda option, **kwargs: (
+            lazy_load_markets
+            if option == trading_enums.ExchangeClientOptions.LAZY_LOAD_MARKETS
+            else False
+        )
+    )
+
+
+def _get_symbols_passed_to_fetch_tickers(fetch_tickers_mock) -> set:
+    return {
+        symbol
+        for call_args in fetch_tickers_mock.call_args_list
+        for symbol in call_args.args[2]
+    }
+
+
 async def _call_fill_market_making_data_by_symbol(
     price_sources,
     available_symbols,
     formula_init_patches=None,
+    lazy_load_markets=True,
 ):
     profile_data = _profile_data_for_market_making_fill()
     mm_data_by_symbol_by_exchange = {}
@@ -1070,10 +1091,12 @@ async def _call_fill_market_making_data_by_symbol(
     exchange_manager.exchange.get_all_available_symbols = mock.Mock(
         return_value=available_symbols
     )
+    _configure_lazy_load_markets(exchange_manager, lazy_load_markets)
     ticker_updater = mock.Mock()
     ticker_updater.fetch_all_tickers = mock.AsyncMock(return_value={})
     ticker_cache = mock.Mock()
     ticker_cache.get_all_tickers = mock.Mock(return_value={})
+    fetch_tickers_mock = mock.AsyncMock(return_value=({}, ticker_updater))
 
     patches = [
         mock.patch.object(
@@ -1099,7 +1122,7 @@ async def _call_fill_market_making_data_by_symbol(
         mock.patch.object(
             market_making_core,
             "_fetch_tickers",
-            mock.AsyncMock(return_value=({}, ticker_updater)),
+            fetch_tickers_mock,
         ),
     ]
     if formula_init_patches:
@@ -1118,7 +1141,10 @@ async def _call_fill_market_making_data_by_symbol(
             auth=None,
         )
 
-    return mm_data_by_symbol_by_exchange, ticker_updater.fetch_all_tickers
+    return mm_data_by_symbol_by_exchange, {
+        "fetch_tickers": fetch_tickers_mock,
+        "fetch_all_tickers": ticker_updater.fetch_all_tickers,
+    }
 
 
 class TestFillMarketMakingDataBySymbol:
@@ -1141,12 +1167,13 @@ class TestFillMarketMakingDataBySymbol:
             mock.patch.object(exchange_operators, "create_ohlcv_operators", return_value=[]),
             mock.patch.object(exchange_operators, "create_price_operators", return_value=[]),
         ]
-        mm_data_by_symbol_by_exchange, fetch_all_tickers_mock = await _call_fill_market_making_data_by_symbol(
+        mm_data_by_symbol_by_exchange, fetch_mocks = await _call_fill_market_making_data_by_symbol(
             price_sources,
             available_symbols={"BTC/ETH", "ETH/USDT"},
             formula_init_patches=formula_init_patches,
         )
 
+        fetch_all_tickers_mock = fetch_mocks["fetch_all_tickers"]
         assert fetch_all_tickers_mock.call_count == 0 or all(
             "BTC/USDT" not in call_args.args[0]
             for call_args in fetch_all_tickers_mock.call_args_list
@@ -1189,12 +1216,13 @@ class TestFillMarketMakingDataBySymbol:
                 return_value=exchange_operators.create_price_operators(exchange_manager, "BTC/USDT"),
             ),
         ]
-        mm_data_by_symbol_by_exchange, fetch_all_tickers_mock = await _call_fill_market_making_data_by_symbol(
+        mm_data_by_symbol_by_exchange, fetch_mocks = await _call_fill_market_making_data_by_symbol(
             price_sources,
             available_symbols={"BTC/ETH", "ETH/USDT"},
             formula_init_patches=formula_init_patches,
         )
 
+        fetch_all_tickers_mock = fetch_mocks["fetch_all_tickers"]
         assert fetch_all_tickers_mock.call_count == 1
         fetched_symbols = fetch_all_tickers_mock.call_args.args[0]
         assert "BTC/USDT" not in fetched_symbols
@@ -1203,6 +1231,7 @@ class TestFillMarketMakingDataBySymbol:
         assert set(mm_data_by_symbol_by_exchange["binance"]) == {"BTC/USDT", "BTC/ETH", "ETH/USDT"}
 
     async def test_fetches_ticker_for_unsupported_symbol_without_formula(self):
+        """Lazy-load exchanges still fetch direct pairs not listed in available_symbols."""
         price_sources = [
             advanced_reference_price_import.AdvancedPriceSource(
                 exchange="binance",
@@ -1212,13 +1241,55 @@ class TestFillMarketMakingDataBySymbol:
                 formula="",
             )
         ]
-        mm_data_by_symbol_by_exchange, fetch_all_tickers_mock = await _call_fill_market_making_data_by_symbol(
+        mm_data_by_symbol_by_exchange, fetch_mocks = await _call_fill_market_making_data_by_symbol(
             price_sources,
             available_symbols={"BTC/ETH", "ETH/USDT"},
+            lazy_load_markets=True,
         )
 
-        assert fetch_all_tickers_mock.call_count == 1
-        assert fetch_all_tickers_mock.call_args.args[0] == ["BTC/USDT"]
+        fetch_tickers_mock = fetch_mocks["fetch_tickers"]
+        assert fetch_tickers_mock.call_count == 1
+        assert fetch_tickers_mock.call_args.args[2] == ["BTC/USDT"]
+
+    async def test_skips_unavailable_direct_pair_on_cex(self):
+        price_sources = [
+            advanced_reference_price_import.AdvancedPriceSource(
+                exchange="binance",
+                pair="BTC/USDT",
+                time_frame=advanced_reference_price_import.DEFAULT_TIME_FRAME,
+                weight=decimal.Decimal("1.0"),
+                formula="",
+            )
+        ]
+        mm_data_by_symbol_by_exchange, fetch_mocks = await _call_fill_market_making_data_by_symbol(
+            price_sources,
+            available_symbols={"BTC/ETH", "ETH/USDT"},
+            lazy_load_markets=False,
+        )
+
+        assert "BTC/USDT" not in _get_symbols_passed_to_fetch_tickers(fetch_mocks["fetch_tickers"])
+        btc_usdt_data = mm_data_by_symbol_by_exchange["binance"]["BTC/USDT"]
+        assert btc_usdt_data.price.is_nan()
+
+    async def test_still_fetches_unavailable_direct_pair_on_lazy_load_exchange(self):
+        price_sources = [
+            advanced_reference_price_import.AdvancedPriceSource(
+                exchange="binance",
+                pair="BTC/USDT",
+                time_frame=advanced_reference_price_import.DEFAULT_TIME_FRAME,
+                weight=decimal.Decimal("1.0"),
+                formula="",
+            )
+        ]
+        _, fetch_mocks = await _call_fill_market_making_data_by_symbol(
+            price_sources,
+            available_symbols={"BTC/ETH", "ETH/USDT"},
+            lazy_load_markets=True,
+        )
+
+        fetch_tickers_mock = fetch_mocks["fetch_tickers"]
+        assert fetch_tickers_mock.call_count == 1
+        assert fetch_tickers_mock.call_args.args[2] == ["BTC/USDT"]
 
 
 def _mock_create_price_operators(prices_by_symbol: dict[str, float]):

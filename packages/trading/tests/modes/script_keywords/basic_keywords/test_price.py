@@ -36,7 +36,7 @@ async def test_get_price_with_offset(null_context):
     null_context.symbol = "blop/plop"
     null_context.exchange_manager = mock.Mock(
         exchange=mock.Mock(
-            get_market_status=mock.Mock(return_value={
+            get_market_status_including_lazy_load=mock.AsyncMock(return_value={
                 Ecmsc.PRECISION.value: {
                     Ecmsc.PRECISION_PRICE.value: 2
                 }
@@ -61,7 +61,7 @@ async def test_get_price_with_offset(null_context):
                 null_context.exchange_manager, null_context.symbol, timeout=constants.ORDER_DATA_FETCHING_TIMEOUT
             )
             parse_quantity_mock.assert_called_once_with(10)
-            null_context.exchange_manager.exchange.get_market_status.assert_called_once_with(
+            null_context.exchange_manager.exchange.get_market_status_including_lazy_load.assert_awaited_once_with(
                 "blop/plop", with_fixer=False
             )
             current_price_mock.reset_mock()

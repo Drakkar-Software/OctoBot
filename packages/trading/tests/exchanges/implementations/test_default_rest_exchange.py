@@ -164,3 +164,72 @@ class TestDefaultRestExchangeEnsureApiKeyPermissions:
             ),
         ):
             assert await default_rest_exchange.ensure_api_key_permissions() is None
+
+
+class TestDefaultRestExchangeLazyMarketLoading:
+
+    async def test_ensure_lazy_market_loaded_calls_load_markets_for_symbols(self, default_rest_exchange):
+        symbol = "BTC/ETH"
+        default_rest_exchange.connector.client.markets = {}
+        with (
+            mock.patch.object(default_rest_exchange, "lazy_load_markets", mock.Mock(return_value=True)),
+            mock.patch.object(
+                default_rest_exchange,
+                "load_markets_for_symbols",
+                mock.AsyncMock(return_value=[{"symbol": symbol}]),
+            ) as load_markets_for_symbols_mock,
+        ):
+            await default_rest_exchange.ensure_lazy_market_loaded(symbol)
+
+        load_markets_for_symbols_mock.assert_awaited_once_with([symbol])
+
+    async def test_ensure_lazy_market_loaded_skips_when_symbol_already_loaded(self, default_rest_exchange):
+        symbol = "BTC/ETH"
+        default_rest_exchange.connector.client.markets = {symbol: {"symbol": symbol}}
+        with (
+            mock.patch.object(default_rest_exchange, "lazy_load_markets", mock.Mock(return_value=True)),
+            mock.patch.object(
+                default_rest_exchange,
+                "load_markets_for_symbols",
+                mock.AsyncMock(),
+            ) as load_markets_for_symbols_mock,
+        ):
+            await default_rest_exchange.ensure_lazy_market_loaded(symbol)
+
+        load_markets_for_symbols_mock.assert_not_awaited()
+
+    async def test_ensure_lazy_market_loaded_noop_when_lazy_load_disabled(self, default_rest_exchange):
+        symbol = "BTC/ETH"
+        default_rest_exchange.connector.client.markets = {}
+        with (
+            mock.patch.object(default_rest_exchange, "lazy_load_markets", mock.Mock(return_value=False)),
+            mock.patch.object(
+                default_rest_exchange,
+                "load_markets_for_symbols",
+                mock.AsyncMock(),
+            ) as load_markets_for_symbols_mock,
+        ):
+            await default_rest_exchange.ensure_lazy_market_loaded(symbol)
+
+        load_markets_for_symbols_mock.assert_not_awaited()
+
+    async def test_get_market_status_including_lazy_load_ensures_before_get_market_status(self, default_rest_exchange):
+        symbol = "BTC/ETH"
+        market_status = {"symbol": symbol, "limits": {}}
+        with (
+            mock.patch.object(
+                default_rest_exchange,
+                "ensure_lazy_market_loaded",
+                mock.AsyncMock(),
+            ) as ensure_lazy_market_loaded_mock,
+            mock.patch.object(
+                default_rest_exchange,
+                "get_market_status",
+                mock.Mock(return_value=market_status),
+            ) as get_market_status_mock,
+        ):
+            result = await default_rest_exchange.get_market_status_including_lazy_load(symbol, with_fixer=False)
+
+        ensure_lazy_market_loaded_mock.assert_awaited_once_with(symbol)
+        get_market_status_mock.assert_called_once_with(symbol, price_example=None, with_fixer=False)
+        assert result is market_status

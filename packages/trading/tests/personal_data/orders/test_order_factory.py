@@ -774,7 +774,7 @@ class TestOrderFactoryClass:
                 get_exchange_symbol_data=mock.Mock(return_value=symbol_data),
             )
             exchange = mock.Mock(
-                get_market_status=mock.Mock(return_value=symbol_market),
+                get_market_status_including_lazy_load=mock.AsyncMock(return_value=symbol_market),
                 get_exchange_current_time=mock.Mock(return_value=1234567890),
             )
             exchange_manager = mock.Mock(

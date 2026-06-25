@@ -170,10 +170,34 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                     f"No spot markets found for {self.exchange_manager.exchange_name}: {len(symbols)} fetched markets: {logged_symbols}"
                 )
     
+    def _persist_markets_cache(
+        self,
+        client=None,
+        authenticated_cache: typing.Optional[bool] = None,
+    ):
+        if client is None:
+            client = self.client
+        if authenticated_cache is None:
+            authenticated_cache = self.exchange_manager.exchange.requires_authentication_for_this_configuration_only()
+        ccxt_client_util.set_ccxt_client_cache(client, authenticated_cache)
+
+    def _persist_markets_cache_if_new_symbols(
+        self,
+        previous_market_symbols: set[str],
+        client=None,
+    ):
+        if client is None:
+            client = self.client
+        current_market_symbols = set((client.markets or {}).keys())
+        if current_market_symbols - previous_market_symbols:
+            self._persist_markets_cache(client)
+
     async def load_markets_for_symbols(self, symbols: list[str]) -> list[dict]:
         if not self.client.has.get('obLoadMarketsForSymbols'):
             raise octobot_trading.errors.NotSupported("This exchange doesn't support lazyLoadMarkets")
-        return await self.client.ob_load_markets_for_symbols(symbols)
+        loaded_markets = await self.client.ob_load_markets_for_symbols(symbols)
+        self._persist_markets_cache()
+        return loaded_markets
 
     async def _filtered_if_necessary_load_markets(
         self,
@@ -256,7 +280,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             )
             try:
                 await self._load_markets(self.client, reload, market_filter=market_filter)
-                ccxt_client_util.set_ccxt_client_cache(self.client, authenticated_cache)
+                self._persist_markets_cache()
             except ccxt.async_support.OBIPWhitelistError as err:
                 raise octobot_trading.errors.InvalidAPIKeyIPWhitelistError(
                     f"Invalid IP whitelist error: {html_util.get_html_summary_if_relevant(err)}"
@@ -299,7 +323,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                     try:
                         unauth_client = self._client_factory(True)[0]
                         await self._load_markets(unauth_client, reload, market_filter=market_filter)
-                        ccxt_client_util.set_ccxt_client_cache(unauth_client, False)
+                        self._persist_markets_cache(unauth_client, False)
                         # apply markets to target client
                         ccxt_client_util.load_markets_from_cache(self.client, False, market_filter=market_filter)
                         self.logger.debug(
@@ -648,15 +672,20 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     async def get_price_ticker(self, symbol: str, **kwargs: dict) -> typing.Optional[dict]:
         try:
             with self.error_describer(False):
-                return self.adapter.adapt_ticker(
+                previous_market_symbols = set((self.client.markets or {}).keys())
+                ticker = self.adapter.adapt_ticker(
                     await self.client.fetch_ticker(symbol, params=kwargs)
                 )
+                self._persist_markets_cache_if_new_symbols(previous_market_symbols)
+                return ticker
+        except ccxt.async_support.BadSymbol as err:
+            raise octobot_trading.errors.UnSupportedSymbolError(str(err)) from err
         except ccxt.async_support.NotSupported:
             raise octobot_trading.errors.NotSupported
         except ccxt.async_support.BaseError as e:
             raise octobot_trading.errors.FailedRequest(
                 f"Failed to get_price_ticker {html_util.get_html_summary_if_relevant(e)}"
-            )
+            ) from e
 
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_all_currencies_price_ticker(
@@ -664,9 +693,12 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     ) -> typing.Optional[dict[str, dict]]:
         try:
             with self.error_describer(False):
+                previous_market_symbols = set((self.client.markets or {}).keys())
+                fetched_tickers = await self.client.fetch_tickers(symbols, params=kwargs)
+                self._persist_markets_cache_if_new_symbols(previous_market_symbols)
                 tickers = {
                     symbol: self.adapter.adapt_ticker(ticker)
-                    for symbol, ticker in (await self.client.fetch_tickers(symbols, params=kwargs)).items()
+                    for symbol, ticker in fetched_tickers.items()
                 }
                 # self.all_currencies_price_ticker should always contain as many tickers as possible: don't override it
                 # with less symbols when fetching only a few tickers

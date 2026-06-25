@@ -532,14 +532,22 @@ class RealExchangeTester:
         # return 2 different market status with different traded pairs to reduce possible
         # side effects using only one pair.
         async with self.get_exchange_manager() as exchange_manager:
-            self._ensure_market_status_cachability(exchange_manager)
+            await self._ensure_market_status_cachability(exchange_manager)
             return exchange_manager.exchange.get_market_status(self.SYMBOL), \
                 exchange_manager.exchange.get_market_status(self.SYMBOL_2), \
                 exchange_manager.exchange.get_market_status(self.SYMBOL_3)
     
-    async def assert_get_market_status_not_loaded(self):
-        for market_status in await self.get_market_statuses():
-            assert market_status == {}, f"market status must be empty, got {market_status!r}"
+    async def assert_get_market_status_not_loaded(self, can_have_cache: bool = False):
+        statuses = await self.get_market_statuses()
+        missing_markets = [
+            market_status
+            for market_status in statuses
+            if market_status == {}
+        ]
+        if can_have_cache:
+            assert 0 <= len(missing_markets) <= 2, f"market status must be empty or have one or 2 market status, got {len(missing_markets)} market status: {list(missing_markets)}"
+        else:
+            assert len(missing_markets) == len(statuses), f"market status must be empty, got {len(missing_markets)} market status: {list(missing_markets)}"
 
     async def assert_lazy_loaded_markets(
         self, symbols: list[str], 
@@ -552,9 +560,10 @@ class RealExchangeTester:
         enable_price_and_cost_comparison=True,
         has_price_limits=True,
         extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
+        can_have_cache: bool = False,
     ):
         # 1. markets are not loaded
-        await self.assert_get_market_status_not_loaded()
+        await self.assert_get_market_status_not_loaded(can_have_cache)
         # 2. fetching markets for symbols initializes market statuses
         async with self.get_exchange_manager() as exchange_manager:
             fetched_markets = await exchange_manager.exchange.load_markets_for_symbols(symbols)
@@ -689,7 +698,7 @@ class RealExchangeTester:
                 f"LIMITS subtree missing AMOUNT/PRICE/COST buckets ({symbol=} keys={list(limits)})"
             )
 
-    def _ensure_market_status_cachability(self, exchange_manager):
+    async def _ensure_market_status_cachability(self, exchange_manager):
         exchange_class = ccxt_client_util.ccxt_exchange_class_factory(self.EXCHANGE_NAME)
         client_using_cached_markets = exchange_class(
             ccxt_client_util.get_custom_domain_config(exchange_class) # use custom domain config if set
@@ -698,6 +707,8 @@ class RealExchangeTester:
             with pytest.raises(KeyError):
                 ccxt_client_util.load_markets_from_cache(client_using_cached_markets, False)
             return
+        if exchange_manager.exchange.get_option_value(trading_enums.ExchangeClientOptions.LAZY_LOAD_MARKETS):
+            await self._ensure_populated_lazy_loaded_market_status(exchange_manager, client_using_cached_markets)
         ccxt_client_util.load_markets_from_cache(client_using_cached_markets, False)
         cached = client_using_cached_markets.markets
         actual = exchange_manager.exchange.connector.client.markets
@@ -705,6 +716,13 @@ class RealExchangeTester:
             "live connector markets dict must equal CCXT markets loaded from the same cache file "
             f"(sizes {len(actual)} vs {len(cached)})"
         )
+
+    async def _ensure_populated_lazy_loaded_market_status(self, exchange_manager, client_using_cached_markets):
+        await exchange_manager.exchange.ensure_lazy_market_loaded(self.SYMBOL)
+        assert self.SYMBOL in exchange_manager.exchange.connector.client.markets
+        await exchange_manager.exchange.ensure_lazy_market_loaded(self.SYMBOL_2)
+        assert self.SYMBOL in exchange_manager.exchange.connector.client.markets
+        assert self.SYMBOL_2 in exchange_manager.exchange.connector.client.markets
 
     async def get_symbol_prices(self, limit=None, **kwargs):
         async with self.get_exchange_manager() as exchange_manager:
