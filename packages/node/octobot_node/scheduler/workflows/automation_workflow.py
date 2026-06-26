@@ -131,12 +131,21 @@ class AutomationWorkflow:
         return json.dumps(output.to_dict(include_default_values=False)) if output else None
 
     @staticmethod
+    def _should_retry(error: BaseException) -> bool:
+        return not isinstance(error, (
+            # workflow stopping errors
+            errors.WorkflowError,
+            octobot_flow.errors.ConfigurationError,
+        ))
+
+    @staticmethod
     @SCHEDULER.INSTANCE.step(
         name="execute_iteration",
         retries_allowed=True,
         interval_seconds=constants.AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS,
         max_attempts=constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES,
         backoff_rate=constants.AUTOMATION_WORKFLOW_BACKOFF_RATE,
+        should_retry=_should_retry,
     )
     async def execute_iteration(inputs: dict, actions_update: typing.Optional[dict]) -> dict:
         """

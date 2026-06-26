@@ -394,10 +394,16 @@ class TestExecuteAutomation:
                 max_attempts,
             ),
             (
-                octobot_flow.errors.InvalidAutomationActionError("invalid action config"),
-                octobot_flow.enums.AutomationWorkflowErrorStatus.INVALID_ACTION_CONFIGURATION.value,
-                dbos_retries_exhausted_message,
-                max_attempts,
+                octobot_flow.errors.InvalidAutomationActionError("invalid action config"), # non retryable ConfigurationError
+                octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                "invalid action config",
+                1, # only 1 attempt: this raises a non retryable error
+            ),
+            (
+                errors.WorkflowInputError("invalid action config"), # non retryable WorkflowError
+                octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                "invalid action config",
+                1, # only 1 attempt: this raises a non retryable error
             ),
         ]
         for (

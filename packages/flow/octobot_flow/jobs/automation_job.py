@@ -5,6 +5,7 @@ import typing
 import octobot_commons.json_util as json_util
 import octobot_commons.logging as common_logging
 import octobot.community
+import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_commons.profiles.profile_data as profile_data_import
 
 import octobot_copy.constants as copy_constants
@@ -413,12 +414,17 @@ class AutomationJob:
         trading_signals_repository = octobot_flow.repositories.community.TradingSignalsRepository.from_community_repository(
             maybe_community_repository
         )
-        await trading_signals_repository.insert_trading_signal(
-            octobot_flow.entities.TradingSignal(
-                strategy_id=automation.metadata.strategy_id, account=account
+        try:
+            await trading_signals_repository.insert_trading_signal(
+                octobot_flow.entities.TradingSignal(
+                    strategy_id=automation.metadata.strategy_id, account=account
+                )
             )
-        )
-        
+        except wallet_backend_errors.WalletNotFoundError as err:
+            self._logger.error(
+                f"Skipping trading signal emission: {err}"
+            )
+            
     def _get_actions_to_execute(self) -> tuple[list[octobot_flow.entities.AbstractActionDetails], bool]:
         if pending_priority_actions := self._get_pending_priority_actions():
             return pending_priority_actions, True
