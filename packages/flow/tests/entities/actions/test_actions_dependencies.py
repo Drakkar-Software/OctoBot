@@ -13,9 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import mock
 import pytest
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.logging
 
 import octobot_flow.entities.actions.action_details as action_details
 import octobot_flow.entities.actions.actions_dependencies as actions_dependencies
@@ -187,6 +189,70 @@ class TestActionsDependenciesResolverReadDependencyResult:
         resolver = actions_dependencies.ActionsDependenciesResolver(_actions_by_id(dependency_action))
         with pytest.raises(flow_errors.ActionDependencyError):
             resolver.read_dependency_result(dependency)
+
+    def test_raises_extended_error_when_result_path_key_missing(self):
+        dependency_action = action_details.DSLScriptActionDetails(
+            id="action_source",
+            dsl_script="exchange_action()",
+            dependencies=[],
+        )
+        dependency_action.complete(result={"nested": {"order_id": "abc-123"}})
+        dependency = action_details.ActionDependency(
+            action_id="action_source",
+            parameter="exchange_order_id",
+            result_path=["nested", "missing_key"],
+        )
+        resolver = actions_dependencies.ActionsDependenciesResolver(_actions_by_id(dependency_action))
+
+        with mock.patch.object(
+            octobot_commons.logging,
+            "get_private_minimized_message_if_necessary",
+        ) as minimize_message_mock:
+            with pytest.raises(flow_errors.ActionDependencyError) as error_info:
+                resolver.read_dependency_result(dependency)
+
+        minimize_message_mock.assert_not_called()
+        error_message = str(error_info.value)
+        assert "Impossible to resolve dependency" in error_message
+        assert "action_id': 'action_source'" in error_message
+        assert "result_path': ['nested', 'missing_key']" in error_message
+        assert "from action action_source" in error_message
+        assert "with action result shape: ['nested']" in error_message
+        assert "missing key: missing_key" in error_message
+        assert isinstance(error_info.value.__cause__, flow_errors.ActionDependencyError)
+
+    def test_raises_extended_error_when_result_path_list_index_out_of_range(self):
+        dependency_action = action_details.DSLScriptActionDetails(
+            id="action_source",
+            dsl_script="exchange_action()",
+            dependencies=[],
+        )
+        dependency_action.complete(result=[{"id": "a"}])
+        list_result = dependency_action.result
+        dependency = action_details.ActionDependency(
+            action_id="action_source",
+            parameter="exchange_order_id",
+            result_path=["5"],
+        )
+        resolver = actions_dependencies.ActionsDependenciesResolver(_actions_by_id(dependency_action))
+
+        with mock.patch.object(
+            octobot_commons.logging,
+            "get_private_minimized_message_if_necessary",
+            return_value="minimized-list-shape",
+        ) as minimize_message_mock:
+            with pytest.raises(flow_errors.ActionDependencyError) as error_info:
+                resolver.read_dependency_result(dependency)
+
+        minimize_message_mock.assert_called_once_with(list_result)
+        error_message = str(error_info.value)
+        assert "Impossible to resolve dependency" in error_message
+        assert "action_id': 'action_source'" in error_message
+        assert "result_path': ['5']" in error_message
+        assert "from action action_source" in error_message
+        assert "with action result shape: minimized-list-shape" in error_message
+        assert "list index 5 out of range" in error_message
+        assert isinstance(error_info.value.__cause__, flow_errors.ActionDependencyError)
 
 
 class TestActionsDependenciesResolverFilledAllDependencies:

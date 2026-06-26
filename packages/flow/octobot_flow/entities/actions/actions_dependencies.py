@@ -1,6 +1,8 @@
 import typing
+import dataclasses
 
 import octobot_commons.dsl_interpreter
+import octobot_commons.logging
 
 import octobot_flow.entities.actions.action_details as action_details
 import octobot_flow.enums
@@ -93,7 +95,21 @@ class ActionsDependenciesResolver:
             )
         value = dependency_action.result
         if dependency.result_path:
-            value = _navigate_dict_path(value, dependency.result_path)
+            try:
+                value = _navigate_dict_path(value, dependency.result_path)
+            except octobot_flow.errors.ActionDependencyError as err:
+                dependency_dict = dataclasses.asdict(dependency)
+                result_keys = (
+                    list(value) if isinstance(value, dict)
+                    else octobot_commons.logging.get_private_minimized_message_if_necessary(value)
+                )
+                error_message = (
+                    f"Impossible to resolve dependency {dependency_dict} "
+                    f"result path {dependency.result_path} from action {dependency_action.id} "
+                    f"with action result shape: {result_keys}"
+                ) + f": {err}"
+                # add as much info as possible to the error message
+                raise octobot_flow.errors.ActionDependencyError(error_message) from err
         return value
 
     def _dependency_values_for_dynamic_dependencies(

@@ -199,6 +199,12 @@ class AutomationWorkflow:
                     has_next_actions_override = True
                     next_iteration_description_override = parsed_inputs.task.content
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
+                except Exception as err:
+                    # log propagated errors to also associate them to the automation's error tracking
+                    AutomationWorkflow.get_logger(parsed_inputs).exception(
+                        err, True, f"Error while running automation job: {err}"
+                    )
+                    raise
                 if result.processed_actions:
                     if latest_step := AutomationWorkflow._get_actions_summary(result.processed_actions, minimal=True):
                         executed_step = latest_step

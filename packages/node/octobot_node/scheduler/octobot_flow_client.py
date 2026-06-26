@@ -16,9 +16,9 @@
 import typing
 import dataclasses
 import json
-import logging
 
 import octobot_commons.dataclasses
+import octobot_commons.logging
 
 import octobot_node.errors as errors
 import octobot_node.scheduler.workflows_util as workflows_util
@@ -149,7 +149,7 @@ class OctoBotActionsJob:
                 self.priority_user_actions
                 or automation_job.automation_state.automation.actions_dag.get_executable_actions()
             )
-            logging.getLogger(self.__class__.__name__).info(f"Running automation actions: {selected_actions}")
+            octobot_commons.logging.get_logger(self.__class__.__name__).info(f"Running automation actions: {selected_actions}")
             executed_actions = await automation_job.run()
             self.after_execution_state = automation_job.automation_state
             post_execution_state_dump = automation_job.dump()

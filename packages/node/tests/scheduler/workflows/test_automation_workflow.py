@@ -128,6 +128,27 @@ def _apply_octobot_actions_job_result_template(
     target.should_stop = template.should_stop
 
 
+def _assert_iteration_job_errors_logged(
+    mock_logger: mock.Mock,
+    raised_exception: BaseException,
+    *,
+    iteration_failure_count: int,
+    expect_workflow_interrupted_log: bool = False,
+) -> None:
+    expected_call_count = iteration_failure_count + (1 if expect_workflow_interrupted_log else 0)
+    assert mock_logger.exception.call_count == expected_call_count
+    for call_index in range(iteration_failure_count):
+        logged_exception, publish_error, error_message = mock_logger.exception.call_args_list[call_index][0]
+        assert isinstance(logged_exception, type(raised_exception))
+        assert str(logged_exception) == str(raised_exception)
+        assert publish_error is True
+        assert error_message == f"Error while running automation job: {logged_exception}"
+    if expect_workflow_interrupted_log:
+        assert "Interrupted workflow: unexpected critical error: " in str(
+            mock_logger.exception.call_args_list[-1][0][2]
+        )
+
+
 def _octobot_actions_job_mock_class(
     *,
     run_on_result: typing.Callable[[octobot_flow_client.OctoBotActionsJobResult], typing.Any] | None = None,
@@ -452,7 +473,20 @@ class TestExecuteAutomation:
                 assert parsed_output.error == expected_error_status
                 assert parsed_output.error_message == expected_error_message
                 assert run_mock.await_count == expected_run_await_count
-                mock_logger.exception.assert_called_once()
+                if expected_run_await_count > 1:
+                    _assert_iteration_job_errors_logged(
+                        mock_logger,
+                        raised_exception,
+                        iteration_failure_count=expected_run_await_count,
+                        expect_workflow_interrupted_log=True,
+                    )
+                else:
+                    _assert_iteration_job_errors_logged(
+                        mock_logger,
+                        raised_exception,
+                        iteration_failure_count=1,
+                        expect_workflow_interrupted_log=True,
+                    )
                 mock_process.assert_not_called()
 
 
@@ -566,6 +600,40 @@ class TestExecuteIteration:
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
         assert parsed_progress_status.error == octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
         assert parsed_progress_status.error_message == error_message
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_iteration_logs_and_reraises_when_octobot_actions_job_fails(
+        self, import_automation_workflow, task
+    ):
+        task.content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
+            "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
+            "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        run_error = RuntimeError("automation failed")
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_side_effect=run_error,
+        )
+        mock_logger = mock.Mock()
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            automation_workflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            with pytest.raises(RuntimeError, match="automation failed"):
+                await automation_workflow.execute_iteration(inputs, None)
+
+        mock_logger.exception.assert_called_once_with(
+            run_error,
+            True,
+            f"Error while running automation job: {run_error}",
+        )
 
     @pytest.mark.asyncio
     @required_imports
@@ -1680,7 +1748,11 @@ class TestExecuteAutomationIntegration:
             assert parsed_output == _parse_automation_workflow_output(wf_status.output)
 
         assert run_mock.await_count == max_attempts
-        mock_logger.exception.assert_not_called()
+        _assert_iteration_job_errors_logged(
+            mock_logger,
+            RuntimeError("simulated transient failure"),
+            iteration_failure_count=max_attempts - 1,
+        )
 
     @pytest.mark.asyncio
     @required_imports
@@ -1745,8 +1817,12 @@ class TestExecuteAutomationIntegration:
             assert wf_status.output == workflow_result
 
         assert run_mock.await_count == max_attempts
-        mock_logger.exception.assert_called_once()
-        assert "Interrupted workflow: unexpected critical error: " in str(mock_logger.exception.call_args[0][2])
+        _assert_iteration_job_errors_logged(
+            mock_logger,
+            RuntimeError("persistent failure"),
+            iteration_failure_count=max_attempts,
+            expect_workflow_interrupted_log=True,
+        )
 
     @pytest.mark.asyncio
     @required_imports
