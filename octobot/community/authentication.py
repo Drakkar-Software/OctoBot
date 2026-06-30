@@ -653,6 +653,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def import_wallet(self, private_key: str, passphrase: str, name: typing.Optional[str], is_admin: bool = False):
         return self._wallet_backend.import_wallet(private_key, passphrase, name, is_admin)
 
+    def import_wallet_from_seed(self, seed: str, passphrase: str, name: typing.Optional[str], is_admin: bool = False):
+        return self._wallet_backend.import_wallet_from_seed(seed, passphrase, name, is_admin)
+
     def authenticate_wallet(self, address: str, passphrase: str) -> dict:
         """Verify passphrase and return wallet metadata in a single storage read.
 
@@ -666,6 +669,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def decrypt_wallet_by_address(self, address: str, passphrase: str):
         return self._wallet_backend.decrypt_wallet_by_address(address, passphrase)
+
+    def decrypt_wallet_entry_by_address(self, address: str, passphrase: str):
+        return self._wallet_backend.decrypt_wallet_entry_by_address(address, passphrase)
 
     def remove_wallet(self, address: str) -> None:
         return self._wallet_backend.remove_wallet(address)

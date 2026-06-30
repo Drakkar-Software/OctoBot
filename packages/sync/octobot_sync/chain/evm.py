@@ -30,5 +30,17 @@ def create_evm_wallet() -> Wallet:
     return Wallet(private_key=account.key.hex(), address=account.address)
 
 
+def create_evm_wallet_with_mnemonic() -> tuple[Wallet, str]:
+    web3.Account.enable_unaudited_hdwallet_features()  # pylint: disable=no-value-for-parameter
+    account, mnemonic = web3.Account.create_with_mnemonic()  # pylint: disable=no-value-for-parameter
+    return Wallet(private_key=account.key.hex(), address=account.address), mnemonic
+
+
+def wallet_from_mnemonic(mnemonic: str) -> Wallet:
+    web3.Account.enable_unaudited_hdwallet_features()  # pylint: disable=no-value-for-parameter
+    account = web3.Account.from_mnemonic(mnemonic)  # pylint: disable=no-value-for-parameter
+    return Wallet(private_key=account.key.hex(), address=account.address)
+
+
 def address_from_evm_key(private_key: str) -> str:
     return web3.Account.from_key(private_key).address  # pylint: disable=no-value-for-parameter

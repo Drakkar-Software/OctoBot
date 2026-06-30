@@ -17,11 +17,15 @@
 from octobot_sync.chain.evm import (
     Wallet,
     create_evm_wallet,
+    create_evm_wallet_with_mnemonic,
+    wallet_from_mnemonic,
     address_from_evm_key,
 )
 
 __all__ = [
     "Wallet",
     "create_evm_wallet",
+    "create_evm_wallet_with_mnemonic",
+    "wallet_from_mnemonic",
     "address_from_evm_key",
 ]

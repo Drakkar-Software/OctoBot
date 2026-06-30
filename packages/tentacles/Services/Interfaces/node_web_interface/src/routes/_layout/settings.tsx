@@ -5,6 +5,8 @@ import {
   Check,
   Copy,
   Download,
+  Eye,
+  EyeOff,
   KeyRound,
   LogOut,
   Network,
@@ -102,22 +104,34 @@ async function fetchNodeConfig() {
   return res.json()
 }
 
-function ExportWalletDialog() {
+function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddress: string; isOwnWallet: boolean }) {
   const [privateKey, setPrivateKey] = useState<string | null>(null)
+  const [seed, setSeed] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copiedKey, setCopiedKey] = useState(false)
+  const [copiedSeed, setCopiedSeed] = useState(false)
+  const [showKey, setShowKey] = useState(false)
+  const [showSeed, setShowSeed] = useState(false)
+  const [passphraseInput, setPassphraseInput] = useState("")
 
-  const fetchPrivateKey = async () => {
+  const fetchWalletExport = async (passphrase?: string) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/v1/setup/wallet/export", {
+      const params = new URLSearchParams()
+      if (!isOwnWallet) {
+        params.set("address", walletAddress)
+        params.set("passphrase", passphrase ?? "")
+      }
+      const url = `/api/v1/setup/wallet/export${params.size ? `?${params}` : ""}`
+      const res = await fetch(url, {
         headers: { Authorization: await buildAuthHeader() },
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
       setPrivateKey(data.private_key)
+      setSeed(data.seed ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to export wallet")
     } finally {
@@ -125,20 +139,31 @@ function ExportWalletDialog() {
     }
   }
 
-  const copy = () => {
+  const copyKey = () => {
     if (!privateKey) return
     navigator.clipboard.writeText(privateKey)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopiedKey(true)
+    setTimeout(() => setCopiedKey(false), 2000)
+  }
+
+  const copySeed = () => {
+    if (!seed) return
+    navigator.clipboard.writeText(seed)
+    setCopiedSeed(true)
+    setTimeout(() => setCopiedSeed(false), 2000)
   }
 
   const onOpenChange = (open: boolean) => {
-    if (open) {
-      void fetchPrivateKey()
+    if (open && isOwnWallet) {
+      void fetchWalletExport()
     }
     if (!open) {
       setPrivateKey(null)
+      setSeed(null)
       setError(null)
+      setShowKey(false)
+      setShowSeed(false)
+      setPassphraseInput("")
     }
   }
 
@@ -170,29 +195,94 @@ function ExportWalletDialog() {
           <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <span>
-              Never share your private key. Store it in a secure location.
+              Never share your private key or seed phrase. Store them in a secure location.
             </span>
           </div>
-          {loading && (
+          {!isOwnWallet && !privateKey && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Wallet passphrase
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+                  placeholder="Enter wallet passphrase"
+                  value={passphraseInput}
+                  onChange={(e) => setPassphraseInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && passphraseInput) void fetchWalletExport(passphraseInput)
+                  }}
+                />
+                <button
+                  type="button"
+                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  disabled={!passphraseInput || loading}
+                  onClick={() => void fetchWalletExport(passphraseInput)}
+                >
+                  {loading ? "…" : "Decrypt"}
+                </button>
+              </div>
+            </div>
+          )}
+          {loading && !privateKey && isOwnWallet && (
             <p className="text-sm text-muted-foreground">Decrypting wallet…</p>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {privateKey && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Private key</span>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                  onClick={() => setShowKey((v) => !v)}
+                >
+                  {showKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {showKey ? "Hide" : "Show"}
+                </button>
+              </div>
               <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
-                <code className="text-xs break-all">{privateKey}</code>
+                <code className="text-xs break-all">
+                  {showKey ? privateKey : "•".repeat(Math.min(privateKey.length, 32))}
+                </code>
                 <button
                   type="button"
                   className="ml-3 shrink-0 text-muted-foreground hover:text-foreground"
-                  onClick={copy}
-                  title="Copy"
+                  onClick={copyKey}
+                  title="Copy private key"
                 >
-                  <Copy className="size-4" />
+                  {copiedKey ? <Check className="size-4" /> : <Copy className="size-4" />}
                 </button>
               </div>
-              {copied && (
-                <p className="text-xs text-muted-foreground">Copied!</p>
-              )}
+            </div>
+          )}
+          {seed && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Seed phrase</span>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                  onClick={() => setShowSeed((v) => !v)}
+                >
+                  {showSeed ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                  {showSeed ? "Hide" : "Show"}
+                </button>
+              </div>
+              <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
+                <code className="text-xs break-all">
+                  {showSeed ? seed : "•".repeat(Math.min(seed.length, 32))}
+                </code>
+                <button
+                  type="button"
+                  className="ml-3 shrink-0 text-muted-foreground hover:text-foreground"
+                  onClick={copySeed}
+                  title="Copy seed phrase"
+                >
+                  {copiedSeed ? <Check className="size-4" /> : <Copy className="size-4" />}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -572,8 +662,23 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
   const [name, setName] = useState("")
   const [passphrase, setPassphrase] = useState("")
   const [privateKey, setPrivateKey] = useState("")
+  const [seed, setSeed] = useState("")
   const [importMode, setImportMode] = useState(false)
+  const [importBySeed, setImportBySeed] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const isPrivateKeyValid = /^(0x)?[0-9a-fA-F]{64}$/.test(privateKey.trim())
+  const isSeedValid = seed.trim().split(/\s+/).length >= 12
+
+  const reset = () => {
+    setName("")
+    setPassphrase("")
+    setPrivateKey("")
+    setSeed("")
+    setImportMode(false)
+    setImportBySeed(false)
+    setError(null)
+  }
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -581,17 +686,13 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
         requestBody: {
           passphrase,
           name: name.trim() || null,
-          private_key:
-            importMode && privateKey.trim() ? privateKey.trim() : null,
+          private_key: importMode && !importBySeed && privateKey.trim() ? privateKey.trim() : null,
+          seed: importMode && importBySeed && seed.trim() ? seed.trim() : null,
         },
       }),
     onSuccess: () => {
       setOpen(false)
-      setName("")
-      setPassphrase("")
-      setPrivateKey("")
-      setImportMode(false)
-      setError(null)
+      reset()
       onSuccess()
     },
     onError: (e: unknown) => {
@@ -600,13 +701,15 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
     },
   })
 
+  const isDisabled =
+    passphrase.length < 8 ||
+    (importMode && !importBySeed && !isPrivateKeyValid) ||
+    (importMode && importBySeed && !isSeedValid) ||
+    mutation.isPending
+
   const handleOpenChange = (v: boolean) => {
     if (!v) {
-      setName("")
-      setPassphrase("")
-      setPrivateKey("")
-      setImportMode(false)
-      setError(null)
+      reset()
       mutation.reset()
     }
     setOpen(v)
@@ -627,7 +730,7 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
         <DialogHeader>
           <DialogTitle>Add wallet</DialogTitle>
           <DialogDescription>
-            Create a new wallet or import one with a private key.
+            Create a new wallet or import one with a private key or seed phrase.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
@@ -685,22 +788,45 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
             />
           </div>
           {importMode && (
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="wallet-private-key"
-                className="text-xs font-medium text-muted-foreground"
-              >
-                Private key
-              </label>
-              <input
-                id="wallet-private-key"
-                type="password"
-                className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost font-mono"
-                placeholder="0x..."
-                value={privateKey}
-                onChange={(e) => setPrivateKey(e.target.value)}
-              />
-            </div>
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {importBySeed ? "Seed phrase" : "Private key"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportBySeed((v) => !v)
+                    setError(null)
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span className={`inline-flex w-7 h-4 rounded-full transition-colors ${importBySeed ? "bg-primary" : "bg-muted-foreground/40"} relative`}>
+                    <span className={`absolute top-0.5 size-3 rounded-full bg-white transition-transform ${importBySeed ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </span>
+                  {importBySeed ? "Use private key" : "Use seed phrase"}
+                </button>
+              </div>
+              {importBySeed ? (
+                <textarea
+                  id="wallet-seed"
+                  className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost font-mono resize-none"
+                  placeholder="word1 word2 word3 … (12 or 24 words)"
+                  rows={3}
+                  value={seed}
+                  onChange={(e) => setSeed(e.target.value)}
+                />
+              ) : (
+                <input
+                  id="wallet-private-key"
+                  type="password"
+                  className="rounded-md border border-rule bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost font-mono"
+                  placeholder="0x..."
+                  value={privateKey}
+                  onChange={(e) => setPrivateKey(e.target.value)}
+                />
+              )}
+            </>
           )}
           {error && (
             <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -710,18 +836,13 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
           )}
           <button
             type="button"
-            disabled={
-              passphrase.length < 8 ||
-              (importMode &&
-                !/^(0x)?[0-9a-fA-F]{64}$/.test(privateKey.trim())) ||
-              mutation.isPending
-            }
+            disabled={isDisabled}
             onClick={() => {
               if (passphrase.length < 8) {
                 setError("Passphrase must be at least 8 characters")
                 return
               }
-              if (importMode) {
+              if (importMode && !importBySeed) {
                 const pkClean = privateKey.trim().replace(/^0x/, "")
                 if (!/^[0-9a-fA-F]{64}$/.test(pkClean)) {
                   setError(
@@ -729,6 +850,10 @@ function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
                   )
                   return
                 }
+              }
+              if (importMode && importBySeed && !isSeedValid) {
+                setError("Seed phrase must be at least 12 words")
+                return
               }
               mutation.mutate()
             }}
@@ -837,11 +962,13 @@ function WalletRow({
   wallet,
   onRefresh,
   showRemove = true,
+  showExport = false,
   currentUserAddress = "",
 }: {
   wallet: WalletInfo
   onRefresh: () => void
   showRemove?: boolean
+  showExport?: boolean
   currentUserAddress?: string
 }) {
   const [editing, setEditing] = useState(false)
@@ -937,11 +1064,14 @@ function WalletRow({
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {showExport && (
+          <ExportWalletDialog
+            walletAddress={wallet.address}
+            isOwnWallet={wallet.address.toLowerCase() === currentUserAddress.toLowerCase()}
+          />
+        )}
         {wallet.address.toLowerCase() === currentUserAddress.toLowerCase() && (
-          <>
-            <ExportWalletDialog />
-            <PairDeviceDialog />
-          </>
+          <PairDeviceDialog />
         )}
         {wallet.is_admin && (
           <Tooltip>
@@ -974,9 +1104,10 @@ function WalletManagementCard() {
   }
 
   const currentAddress = localStorage.getItem("auth_username") ?? ""
+  const currentAddressLower = currentAddress.toLowerCase()
   const displayedWallets = user?.is_superuser
     ? wallets
-    : wallets.filter((w) => w.address === currentAddress)
+    : wallets.filter((w) => w.address.toLowerCase() === currentAddressLower)
 
   return (
     <Card className="relative md:col-span-2">
@@ -1008,6 +1139,7 @@ function WalletManagementCard() {
                   wallet={wallet}
                   onRefresh={refresh}
                   showRemove={user?.is_superuser === true}
+                  showExport={user?.is_superuser === true || wallet.address.toLowerCase() === currentAddressLower}
                   currentUserAddress={currentAddress}
                 />
               ))}

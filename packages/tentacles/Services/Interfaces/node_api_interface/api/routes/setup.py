@@ -50,6 +50,7 @@ class SetupResult(pydantic.BaseModel):
 class WalletExport(pydantic.BaseModel):
     address: str
     private_key: str
+    seed: typing.Optional[str] = None
 
 
 @router.get("/setup/status", response_model=SetupStatus)
@@ -105,6 +106,8 @@ def init_setup(body: SetupInit) -> SetupResult:
 def export_wallet(
     current_user: CurrentUser,
     credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
+    address: typing.Optional[str] = None,
+    passphrase: typing.Optional[str] = None,
 ) -> WalletExport:
     auth = community_auth.CommunityAuthentication.instance()
     if auth is None or credentials is None:
@@ -112,8 +115,21 @@ def export_wallet(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Node not configured",
         )
+    target_address = (address or current_user.email).lower()
+    is_own_wallet = target_address == current_user.email.lower()
+    if not is_own_wallet and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the admin can export other wallets",
+        )
+    target_passphrase = credentials.password if is_own_wallet else passphrase
+    if not target_passphrase:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Passphrase required",
+        )
     try:
-        wallet = auth.decrypt_wallet_by_address(current_user.email, credentials.password)
+        entry = auth.decrypt_wallet_entry_by_address(target_address, target_passphrase)
     except wallet_backend.WalletNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -124,4 +140,4 @@ def export_wallet(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid passphrase",
         )
-    return WalletExport(address=wallet.address, private_key=wallet.private_key)
+    return WalletExport(address=entry.address, private_key=entry.private_key, seed=entry.seed or None)

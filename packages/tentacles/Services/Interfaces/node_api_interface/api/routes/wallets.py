@@ -41,6 +41,7 @@ class CreateWalletBody(pydantic.BaseModel):
     passphrase: str
     name: typing.Optional[str] = None
     private_key: typing.Optional[str] = None
+    seed: typing.Optional[str] = None
 
 
 class UpdateWalletBody(pydantic.BaseModel):
@@ -92,6 +93,13 @@ def create_wallet(body: CreateWalletBody, current_user: CurrentUser) -> WalletIn
         if body.private_key:
             wallet = auth.import_wallet(
                 private_key=body.private_key,
+                passphrase=body.passphrase,
+                name=body.name,
+                is_admin=False,
+            )
+        elif body.seed:
+            wallet = auth.import_wallet_from_seed(
+                seed=body.seed,
                 passphrase=body.passphrase,
                 name=body.name,
                 is_admin=False,

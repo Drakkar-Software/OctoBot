@@ -57,6 +57,7 @@ class WalletEntry(commons_dataclasses.FlexibleDataclass):
     is_admin: bool = False
     private_key: str = ""
     passphrase_hash: str = ""
+    seed: typing.Optional[str] = None
 
 
 def _hash_passphrase(passphrase: str) -> str:
@@ -123,8 +124,8 @@ class WalletBackend:
         passphrase: str,
         is_admin: bool = False,
     ) -> sync_chain.Wallet:
-        wallet = sync_chain.create_evm_wallet()
-        return self._add_wallet_entry(wallet.private_key, wallet.address, name, passphrase, is_admin)
+        wallet, mnemonic = sync_chain.create_evm_wallet_with_mnemonic()
+        return self._add_wallet_entry(wallet.private_key, wallet.address, name, passphrase, is_admin, seed=mnemonic)
 
     def import_wallet(
         self,
@@ -139,6 +140,19 @@ class WalletBackend:
             raise InvalidPrivateKeyError(f"Invalid EVM private key: {err}") from err
         return self._add_wallet_entry(private_key, address, name, passphrase, is_admin)
 
+    def import_wallet_from_seed(
+        self,
+        seed: str,
+        passphrase: str,
+        name: typing.Optional[str],
+        is_admin: bool = False,
+    ) -> sync_chain.Wallet:
+        try:
+            wallet = sync_chain.wallet_from_mnemonic(seed.strip())
+        except Exception as err:
+            raise InvalidPrivateKeyError(f"Invalid seed phrase: {err}") from err
+        return self._add_wallet_entry(wallet.private_key, wallet.address, name, passphrase, is_admin, seed=seed.strip())
+
     def _add_wallet_entry(
         self,
         private_key: str,
@@ -146,6 +160,7 @@ class WalletBackend:
         name: typing.Optional[str],
         passphrase: str,
         is_admin: bool,
+        seed: typing.Optional[str] = None,
     ) -> sync_chain.Wallet:
         if len(passphrase) < 8:
             raise PassphraseTooShortError("Passphrase must be at least 8 characters")
@@ -162,6 +177,7 @@ class WalletBackend:
                 is_admin=is_admin,
                 private_key=private_key.removeprefix("0x"),
                 passphrase_hash=_hash_passphrase(passphrase),
+                seed=seed,
             )
             node_wallets.append(entry)
             self._save_node_wallets_list(node_wallets)
@@ -194,6 +210,14 @@ class WalletBackend:
         if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
             raise InvalidPassphraseError("Invalid passphrase")
         return self._wallet_from_entry(entry)
+
+    def decrypt_wallet_entry_by_address(self, address: str, passphrase: str) -> WalletEntry:
+        entry = self._find_wallet_entry(address)
+        if entry is None:
+            raise WalletNotFoundError(f"Wallet {address} not found")
+        if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
+            raise InvalidPassphraseError("Invalid passphrase")
+        return entry
 
     def get_wallet_for_bot(self, address: str) -> sync_chain.Wallet:
         """Return wallet without passphrase verification — for bot auto-unlock at startup."""

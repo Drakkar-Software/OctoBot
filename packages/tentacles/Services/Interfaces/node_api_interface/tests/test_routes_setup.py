@@ -116,9 +116,10 @@ def test_setup_init_invalid_passphrase_returns_422(client):
 
 
 def test_wallet_export_success(admin_client, mock_auth):
-    mock_auth.decrypt_wallet_by_address.return_value = mock.MagicMock(
+    mock_auth.decrypt_wallet_entry_by_address.return_value = mock.MagicMock(
         address=ADMIN_ADDRESS,
         private_key="0xdeadbeef",
+        seed=None,
     )
     resp = admin_client.get(
         "/api/v1/setup/wallet/export",
