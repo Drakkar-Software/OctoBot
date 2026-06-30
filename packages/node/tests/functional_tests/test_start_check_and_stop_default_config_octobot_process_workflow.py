@@ -23,6 +23,7 @@ import octobot.community.authentication as community_authentication_module
 import octobot_node.config
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows_util as workflows_util_module
+import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 
 from tests.scheduler import temp_dbos_scheduler
 
@@ -54,6 +55,13 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
         monkeypatch.setenv(octobot_constants_module.ENV_PROCESS_BOT_STATE_DUMP_INTERVAL_SECONDS, "5")
 
         user_id = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID
+        monkeypatch.setattr(
+            octobot_process_ops,
+            "_assert_sync_strategy_exists",
+            lambda sync_user_id, sync_profile_id: mock.Mock(
+                configuration=mock.Mock(actual_instance=mock.Mock(profile_data=None))
+            ),
+        )
         protocol_account = workflow_common_module.protocol_account_for_functional(
             account_id=_GENERIC_PROCESS_ACCOUNT_ID,
             usdc_total=1000.0,

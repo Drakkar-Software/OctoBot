@@ -72,16 +72,23 @@ def test_validate(config):
 
 
 def test_read(default_config):
-    with mock.patch.object(default_config, "load_profiles", mock.Mock()) as load_profiles_mock, \
-            mock.patch.object(default_config, "_get_selected_profile", mock.Mock()) as _select_mock, \
-            mock.patch.object(default_config, "select_profile",
-                              mock.Mock()) as select_profile_mock:
+    with mock.patch.object(
+        default_config,
+        "load_profiles_if_possible_and_necessary",
+        mock.Mock(),
+    ) as load_profiles_mock:
         default_config.read()
         assert isinstance(default_config._read_config, dict)
         assert isinstance(default_config.config, dict)
         load_profiles_mock.assert_called_once()
-        _select_mock.assert_called_once()
-        select_profile_mock.assert_called_once()
+    with mock.patch.object(
+        default_config,
+        "load_profiles_if_possible_and_necessary",
+        mock.Mock(),
+    ) as load_profiles_mock:
+        default_config.read(activate_profile=False)
+        load_profiles_mock.assert_not_called()
+        assert default_config.profile is None
 
 
 def test_select_profile(config):
@@ -150,9 +157,10 @@ def test_save(config):
         config.profile = _load_test_profile(config)
         with mock.patch.object(config, "_get_config_without_profile_elements",
                                mock.Mock(return_value=config._read_config)) as _filter_mock, \
-                mock.patch.object(config.profile, "save_config", mock.Mock()) as _save_profile_mock:
+                mock.patch.object(config.profile, "save_config", mock.Mock()) as save_profile_config_mock:
             config.save()
             assert os.path.isfile(save_file)
+            save_profile_config_mock.assert_called_once_with(config.config)
         with open(save_file) as config_file:
             saved_config = json.load(config_file)
         assert saved_config == config._read_config
@@ -183,6 +191,48 @@ def test_get_tentacles_config_path(config):
     config.profile = profiles.Profile(get_profile_path(), config.profile_schema_path)
     assert config.get_tentacles_config_path() == os.path.join(test_config.TEST_CONFIG_FOLDER,
                                                               constants.CONFIG_TENTACLES_FILE)
+
+
+class TestGetActiveTentaclesSetupConfigProfileDataBacked:
+    def test_returns_in_memory_setup_without_filesystem_path(self, config):
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
+
+        profile_data = profile_data_module.ProfileData()
+        profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
+        profile.init_tentacles_setup_config()
+        config.profile = profile
+        setup_config = config.get_active_tentacles_setup_config()
+        assert setup_config is profile.tentacles_setup_config
+        assert setup_config.profile is profile
+
+    def test_init_setup_when_missing(self, config):
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
+
+        profile_data = profile_data_module.ProfileData()
+        profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
+        config.profile = profile
+        assert profile.tentacles_setup_config is None
+        setup_config = config.get_active_tentacles_setup_config()
+        assert setup_config is not None
+        assert setup_config.profile is profile
+
+
+class TestGetActiveTentaclesSetupConfigFilesystemBacked:
+    def test_delegates_to_tentacles_manager_api(self, config):
+        config.profile = profiles.Profile(get_profile_path(), config.profile_schema_path)
+        expected_setup = mock.Mock()
+        with mock.patch(
+            "octobot_tentacles_manager.api.get_tentacles_setup_config",
+            mock.Mock(return_value=expected_setup),
+        ) as get_setup_mock:
+            setup_config = config.get_active_tentacles_setup_config()
+        get_setup_mock.assert_called_once_with(
+            config.get_tentacles_config_path(),
+            profile=config.profile,
+        )
+        assert setup_config is expected_setup
 
 
 def test_get_metrics_enabled(config):
@@ -307,7 +357,9 @@ def test_get_selected_profile(config):
     assert config._get_selected_profile() == "55"
     # missing profile
     config._read_config[constants.CONFIG_PROFILE] = "66"
-    assert config._get_selected_profile() == "default"
+    with mock.patch.object(config.logger, "warning", mock.Mock()) as warning_mock:
+        assert config._get_selected_profile() == "default"
+        warning_mock.assert_called_once()
     # no default
     config.profile_by_id.pop("default")
     config._read_config[constants.CONFIG_PROFILE] = "66"
@@ -316,6 +368,54 @@ def test_get_selected_profile(config):
     config._read_config.pop(constants.CONFIG_PROFILE)
     with pytest.raises(errors.NoProfileError):
         assert config._get_selected_profile() == "default"
+
+
+class TestConfigurationSave:
+    def test_calls_profile_save_config_with_live_config(self, config):
+        config.profile = _load_test_profile(config)
+        config.config = {"updated": True}
+        with mock.patch(
+            "octobot_commons.configuration.configuration.config_file_manager.dump",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_get_config_without_profile_elements",
+            mock.Mock(return_value={}),
+        ), mock.patch.object(
+            config.profile,
+            "save_config",
+            mock.Mock(),
+        ) as save_profile_config_mock:
+            config.save()
+        save_profile_config_mock.assert_called_once_with(config.config)
+
+
+class TestConfigurationDeferredProfileActivation:
+    def test_activate_saved_profile_loads_and_selects(self, config):
+        sync_profile_id = "sync-only-profile-id"
+        config._read_config = {constants.CONFIG_PROFILE: sync_profile_id}
+        config.config = copy.deepcopy(config._read_config)
+        sync_profile = profiles.Profile("sync-path")
+        sync_profile.profile_id = sync_profile_id
+        sync_profile.name = "AAAA"
+        with mock.patch.object(config, "load_profiles", mock.Mock()) as load_profiles_mock, \
+                mock.patch.object(config, "_get_selected_profile", mock.Mock(return_value=sync_profile_id)) as get_selected_mock, \
+                mock.patch.object(config, "select_profile", mock.Mock()) as select_profile_mock:
+            config.activate_saved_profile()
+            load_profiles_mock.assert_called_once()
+            get_selected_mock.assert_called_once()
+            select_profile_mock.assert_called_once_with(sync_profile_id)
+
+    def test_read_without_activate_profile_leaves_profile_unset(self, default_config):
+        with mock.patch.object(
+            default_config,
+            "load_profiles_if_possible_and_necessary",
+            mock.Mock(),
+        ) as load_mock:
+            default_config.read(activate_profile=False)
+            load_mock.assert_not_called()
+            assert default_config.profile is None
+            assert default_config.config is not None
 
 
 def test_load_profiles(config):
@@ -342,3 +442,89 @@ def test_get_config_without_profile_elements(config):
         "plip": True,
         next(iter(profiles.Profile.PARTIALLY_MANAGED_ELEMENTS)): "tt"
     }
+
+
+class TestConfigurationReadonlyProfileOverlay:
+    def _write_readonly_master_profile(
+        self,
+        profile_folder_path: str,
+        profile_id: str,
+    ) -> None:
+        import octobot_commons.json_util as json_util_module
+
+        os.makedirs(profile_folder_path, exist_ok=True)
+        profile_file = {
+            constants.CONFIG_PROFILE: {
+                constants.CONFIG_ID: profile_id,
+                constants.CONFIG_NAME: "Non-Trading",
+                constants.CONFIG_READ_ONLY: True,
+            },
+            constants.PROFILE_CONFIG: {
+                constants.CONFIG_CRYPTO_CURRENCIES: {},
+                constants.CONFIG_EXCHANGES: {},
+                constants.CONFIG_TRADER: {constants.CONFIG_ENABLED_OPTION: False},
+                constants.CONFIG_SIMULATOR: {
+                    constants.CONFIG_ENABLED_OPTION: True,
+                    constants.CONFIG_STARTING_PORTFOLIO: {},
+                    constants.CONFIG_SIMULATOR_FEES: {},
+                },
+                constants.CONFIG_TRADING: {
+                    constants.CONFIG_TRADER_REFERENCE_MARKET: constants.DEFAULT_REFERENCE_MARKET,
+                    constants.CONFIG_TRADER_RISK: 1,
+                },
+                constants.CONFIG_DISTRIBUTION: constants.DEFAULT_DISTRIBUTION,
+            },
+        }
+        json_util_module.safe_dump(
+            profile_file,
+            os.path.join(profile_folder_path, constants.PROFILE_CONFIG_FILE),
+        )
+
+    def _child_config_with_readonly_overlay(
+        self,
+        tmp_path,
+    ) -> tuple[configuration.Configuration, str]:
+        child_user_root = tmp_path / "child" / "user"
+        child_profiles_path = child_user_root / constants.PROFILES_FOLDER
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        self._write_readonly_master_profile(
+            str(master_profiles_path / "non-trading"),
+            constants.DEFAULT_PROFILE,
+        )
+        child_user_root.mkdir(parents=True)
+        config_path = child_user_root / constants.CONFIG_FILE
+        config_data = {
+            constants.CONFIG_PROFILE: "non-trading",
+            constants.CONFIG_READONLY_PROFILES_PATH: str(master_profiles_path),
+            constants.CONFIG_ACCEPTED_TERMS: True,
+        }
+        with open(config_path, "w", encoding="utf-8") as config_file:
+            json.dump(config_data, config_file)
+        bot_config = configuration.Configuration(
+            str(config_path),
+            str(child_profiles_path),
+        )
+        return bot_config, str(master_profiles_path)
+
+    def test_are_profiles_empty_or_missing_false_with_readonly_overlay(self, tmp_path):
+        bot_config, _master_profiles_path = self._child_config_with_readonly_overlay(tmp_path)
+        bot_config.read(should_raise=False, fill_missing_fields=True)
+        assert bot_config.are_profiles_empty_or_missing() is False
+
+    def test_read_loads_profile_from_readonly_overlay(self, tmp_path):
+        bot_config, _master_profiles_path = self._child_config_with_readonly_overlay(tmp_path)
+        bot_config.read(should_raise=False, fill_missing_fields=True)
+        assert bot_config.profile is not None
+        assert bot_config.profile.profile_id == constants.DEFAULT_PROFILE
+        assert bot_config.config[constants.CONFIG_PROFILE] == constants.DEFAULT_PROFILE
+
+    def test_save_skips_master_overlay_profile_persist(self, tmp_path):
+        bot_config, _master_profiles_path = self._child_config_with_readonly_overlay(tmp_path)
+        bot_config.read(should_raise=False, fill_missing_fields=True)
+        with mock.patch.object(
+            bot_config.profile_storage,
+            "save_active_profile",
+            mock.Mock(),
+        ) as save_active_profile_mock:
+            bot_config.save()
+        save_active_profile_mock.assert_not_called()

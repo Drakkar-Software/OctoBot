@@ -134,23 +134,30 @@ def _create_configuration():
     return config
 
 
-def _create_startup_config(logger, default_config_file):
+def _create_startup_config(logger, default_config_file, *, is_process_child: bool = False):
     logger.info("Loading config files...")
     config = _create_configuration()
     is_first_startup = config.is_config_file_empty_or_missing()
     if is_first_startup:
-        logger.info("No configuration found creating default configuration...")
-        configuration_manager.init_config(from_config_file=default_config_file)
-        config.read(should_raise=False)
+        user_config_path = configuration.get_user_config()
+        if is_process_child:
+            raise errors.ConfigError(
+                f"Process OctoBot child expected prepared {common_constants.CONFIG_FILE} at "
+                f"{user_config_path!r} (under {common_constants.USER_AUTOMATIONS_FOLDER}/<automation_id>/). "
+                f"The executor must materialize the automation layout before spawn; if this file is missing, "
+                f"check ensure_user_profile_and_layout timing or parallel functional test races."
+            )
+        logger.info(
+            f"No configuration found in {user_config_path}. "
+            f"Creating default configuration..."
+        )
+        configuration_manager.init_config(
+            config_file=user_config_path,
+            from_config_file=default_config_file,
+        )
+        config.read(should_raise=False, activate_profile=False)
     else:
-        _read_config(config, logger)
-        try:
-            commands.ensure_profile(config)
-            _validate_config(config, logger)
-        except (errors.NoProfileError, errors.ConfigError):
-            # real issue if tentacles exist otherwise continue
-            if os.path.isdir(tentacles_manager_constants.TENTACLES_PATH):
-                raise
+        _read_config(config, logger, activate_profile=False)
     distribution = configuration_manager.get_distribution(config.config)
     if distribution is not enums.OctoBotDistribution.DEFAULT:
         logger.info(f"Using {distribution.value} OctoBot distribution.")
@@ -277,15 +284,29 @@ def _apply_forced_configs(community_auth, logger, config, is_first_startup):
     _apply_env_variables_to_config(logger, config)
 
 
-def _read_config(config, logger):
+def _read_config(config, logger, *, activate_profile=True):
     try:
-        config.read(should_raise=True, fill_missing_fields=True)
+        config.read(
+            should_raise=True,
+            fill_missing_fields=True,
+            activate_profile=activate_profile,
+        )
     except errors.NoProfileError:
         _repair_with_default_profile(config, logger)
         config = _create_configuration()
-        config.read(should_raise=False, fill_missing_fields=True)
+        config.read(
+            should_raise=False,
+            fill_missing_fields=True,
+            activate_profile=activate_profile,
+        )
     except Exception as e:
         raise errors.ConfigError(e)
+
+
+def _activate_saved_profile_after_sync(config, logger):
+    config.activate_saved_profile()
+    commands.ensure_profile(config)
+    _validate_config(config, logger)
 
 
 def _validate_config(config, logger):
@@ -314,9 +335,7 @@ def _load_or_create_tentacles(community_auth, config, logger):
     ):
         # when tentacles folder already exists
         config.load_profiles_if_possible_and_necessary()
-        tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
-            config.get_tentacles_config_path()
-        )
+        tentacles_setup_config = config.get_active_tentacles_setup_config()
         commands.run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config)
     else:
         # when no tentacles folder has been found
@@ -338,34 +357,53 @@ def _init_cli_overriden_folders(args):
     return overrides, logs_folder
 
 
-def _derive_admin_sync_user_id(community_auth) -> str | None:
-    if community_auth is None:
-        return None
-    try:
-        community_auth.auto_init_sync_client()
-    except Exception:
-        pass
-    if community_auth._sync_user_id:
-        return community_auth._sync_user_id
-    try:
-        import octobot_sync.auth as sync_auth
+def _assert_process_child_folder_overrides(args) -> None:
+    """When ``--dump-state`` is set (DSL process children), require an automation-scoped ``--user-folder``."""
+    if not args.dump_state or not str(args.dump_state).strip():
+        return
+    user_folder = args.user_folder
+    if not user_folder or not str(user_folder).strip():
+        raise errors.ConfigError(
+            "Process OctoBot children require --user-folder under "
+            f"{common_constants.USER_AUTOMATIONS_FOLDER}/<automation_id>/ when --dump-state is set."
+        )
+    path_segments = tuple(
+        segment
+        for segment in str(user_folder).replace("\\", "/").split("/")
+        if segment
+    )
+    expected_prefix = (
+        common_constants.USER_FOLDER,
+        common_constants.AUTOMATIONS_FOLDER,
+    )
+    if len(path_segments) < len(expected_prefix) + 1:
+        raise errors.ConfigError(
+            "Process OctoBot children require --user-folder under "
+            f"{common_constants.USER_AUTOMATIONS_FOLDER}/<automation_id>/, got "
+            f"{user_folder!r}."
+        )
+    if path_segments[: len(expected_prefix)] != expected_prefix:
+        raise errors.ConfigError(
+            "Process OctoBot children require --user-folder to start with "
+            f"{common_constants.USER_AUTOMATIONS_FOLDER}/, got {user_folder!r}."
+        )
+    if ".." in path_segments:
+        raise errors.ConfigError(
+            f"Invalid --user-folder for process child: parent segments are not allowed ({user_folder!r})."
+        )
 
-        wallets = community_auth.list_wallets()
-        if not wallets:
-            return None
-        admin_wallet = next((wallet for wallet in wallets if wallet.is_admin), wallets[0])
-        wallet = community_auth.get_wallet(admin_wallet.address)
-        return sync_auth.derive_user_id(wallet.private_key)
-    except Exception:
-        return None
-
-
-def _configure_profile_sync_user(config, community_auth):
-    sync_user_id = config.config.get(common_constants.CONFIG_SYNC_USER_ID)
-    if not sync_user_id:
-        sync_user_id = _derive_admin_sync_user_id(community_auth)
-    if sync_user_id:
+def _configure_profile_sync_user(config, community_auth, *, is_process_child: bool = False):
+    if is_process_child:
+        sync_user_id = constants.PROCESS_BOT_SYNC_USER_ID
+        if not sync_user_id:
+            raise errors.ConfigError(
+                "Process OctoBot children require "
+                f"{constants.ENV_PROCESS_BOT_SYNC_USER_ID} to be set by the executor."
+            )
         config.profile_storage.configure_sync_user(sync_user_id)
+        return
+    if community_auth is not None and community_auth.auto_init_sync_client():
+        config.profile_storage.configure_sync_user(community_auth.sync_user_id)
 
 
 def start_octobot(args, default_config_file=None):
@@ -376,6 +414,7 @@ def start_octobot(args, default_config_file=None):
             return
         
         overrides, logs_folder = _init_cli_overriden_folders(args)
+        _assert_process_child_folder_overrides(args)
         logger = octobot_logger.init_logger(logs_folder=logs_folder)
         startup_messages = []
 
@@ -394,8 +433,11 @@ def start_octobot(args, default_config_file=None):
         octobot_community.init_sentry_tracker()
 
         # load configuration
+        is_process_child = bool(args.dump_state and str(args.dump_state).strip())
         config, is_first_startup = _create_startup_config(
-            logger, default_config_file or constants.DEFAULT_CONFIG_FILE
+            logger,
+            default_config_file or constants.DEFAULT_CONFIG_FILE,
+            is_process_child=is_process_child,
         )
 
         # check config loading
@@ -417,7 +459,13 @@ def start_octobot(args, default_config_file=None):
             _get_authenticated_community_if_possible(config, logger)
         )
 
-        _configure_profile_sync_user(config, community_auth)
+        _configure_profile_sync_user(
+            config,
+            community_auth,
+            is_process_child=is_process_child,
+        )
+
+        _activate_saved_profile_after_sync(config, logger)
 
         # tries to load, install or repair tentacles
         _load_or_create_tentacles(community_auth, config, logger)

@@ -31,14 +31,22 @@ def build_setup_config_from_profile_data(
     output_path: typing.Optional[str] = None,
     import_registered_tentacles: bool = False,
 ):
-    tentacle_classes = [
-        tentacles_manager_api.get_tentacle_class_from_string(
-            tentacle_data.name
-        ).__name__
-        for tentacle_data in profile_data.tentacles
-        if tentacle_data.name
-        not in tentacles_manager_constants.IGNORED_TENTACLES_NAMES_IN_TENTACLES_SETUP_CONFIG
-    ]
+    tentacle_classes = []
+    for tentacle_data in profile_data.tentacles:
+        tentacle_name = tentacle_data.name
+        if (
+            not tentacle_name
+            or tentacle_name
+            in tentacles_manager_constants.IGNORED_TENTACLES_NAMES_IN_TENTACLES_SETUP_CONFIG
+        ):
+            continue
+        try:
+            tentacle_class = tentacles_manager_api.get_tentacle_class_from_string(
+                tentacle_name
+            )
+        except RuntimeError:
+            continue
+        tentacle_classes.append(tentacle_class.__name__)
     config_path = None
     if output_path is not None:
         config_path = os.path.join(output_path, commons_constants.CONFIG_TENTACLES_FILE)

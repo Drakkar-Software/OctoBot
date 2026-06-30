@@ -36,10 +36,13 @@ import octobot_node.constants as octobot_node_constants
 import octobot_services.constants as services_constants
 
 import octobot_commons.profiles.profile_data as profile_data_module
+import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.profiles.exchange_auth_data as exchange_auth_data_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
 import octobot_tentacles_manager.constants as tentacles_manager_constants
+import octobot_protocol.models as protocol_models
+import octobot_sync.sync.collection_backend.errors as collection_errors
 
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading_module
@@ -47,6 +50,7 @@ import tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_ma
 
 # Nested class from factory (not exposed on ``octobot_process_ops``).
 TEST_EXECUTOR_ID = "test-executor"
+_PROCESS_TEST_USER_ID = "wallet-user"
 EnsureOctobotProcessOperator = octobot_process_ops.create_octobot_process_operators(
     None, TEST_EXECUTOR_ID
 )[0]
@@ -215,6 +219,31 @@ def _require_octobot_project_root_for_subprocess_tests() -> str:
     return project_root
 
 
+def _seed_executor_user_config(working_directory: pathlib.Path) -> None:
+    user_directory = working_directory / commons_constants.USER_FOLDER
+    user_directory.mkdir(parents=True, exist_ok=True)
+    config_path = user_directory / commons_constants.CONFIG_FILE
+    config_path.write_text("{}", encoding="utf-8")
+
+
+def _generic_process_sync_strategy(
+    strategy_id: str,
+    *,
+    profile_data: dict | None = None,
+) -> protocol_models.Strategy:
+    generic_process_configuration = protocol_models.GenericProcessConfiguration(
+        configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+        profile_data=profile_data,
+    )
+    return protocol_models.Strategy(
+        id=strategy_id,
+        version="1.0.0",
+        name="test-sync-strategy",
+        reference_market="USDT",
+        configuration=protocol_models.StrategyConfiguration(generic_process_configuration),
+    )
+
+
 def _seed_executor_non_trading_profile(working_directory: pathlib.Path) -> None:
     source_profile_path = _octobot_project_root_from_test_file().joinpath(
         commons_constants.USER_FOLDER,
@@ -242,7 +271,9 @@ def _seed_executor_non_trading_profile(working_directory: pathlib.Path) -> None:
         commons_constants.CONFIG_PROFILE: {
             commons_constants.CONFIG_ID: octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
             commons_constants.CONFIG_NAME: octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
-        }
+            commons_constants.CONFIG_READ_ONLY: True,
+        },
+        commons_constants.PROFILE_CONFIG: {},
     }
     (minimal_profile_path / commons_constants.PROFILE_CONFIG_FILE).write_text(
         json.dumps(profile_payload),
@@ -294,7 +325,8 @@ async def _poll_dsl_until_init_state_ok(
     timeout_sec: float = 60.0,
 ) -> dict:
     base_arguments = (
-        f"{user_folder!r}, exchange_auth_data={repr(exchange_auth_list)}, "
+        f"{user_folder!r}, user_id={_PROCESS_TEST_USER_ID!r}, "
+        f"exchange_auth_data={repr(exchange_auth_list)}, "
         f"waiting_time={_TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SEC}, ping_timeout=30.0"
     )
     deadline = time.monotonic() + timeout_sec
@@ -329,9 +361,20 @@ def _fresh_default_like_cfg_template():
     }
 
 
+def _automation_child_config_path(tmp_path, automation_id: str = "test-automation") -> str:
+    automation_root = (
+        tmp_path
+        / commons_constants.USER_FOLDER
+        / commons_constants.AUTOMATIONS_FOLDER
+        / automation_id
+    )
+    automation_root.mkdir(parents=True, exist_ok=True)
+    return str(automation_root / commons_constants.CONFIG_FILE)
+
+
 class TestWriteUserRootConfigJson:
     def test_sets_profile_and_disables_browser_auto_open(self, tmp_path):
-        config_path = str(tmp_path / commons_constants.CONFIG_FILE)
+        config_path = _automation_child_config_path(tmp_path)
         profile_id = "dsl_profile_abc"
         with mock.patch.object(
             octobot_process_ops.json_util,
@@ -349,7 +392,7 @@ class TestWriteUserRootConfigJson:
         assert written[commons_constants.CONFIG_EXCHANGES] == {}
 
     def test_seeds_exchanges_from_profile_data(self, tmp_path):
-        config_path = str(tmp_path / commons_constants.CONFIG_FILE)
+        config_path = _automation_child_config_path(tmp_path)
         profile_dict = {
             **_MINIMAL_PROFILE_DATA,
             "exchanges": [
@@ -379,7 +422,7 @@ class TestWriteUserRootConfigJson:
         self, tmp_path
     ):
         """Mirrors packaged ``default_config.json`` rows that omit api-key/api-secret until setdefault."""
-        config_path = str(tmp_path / commons_constants.CONFIG_FILE)
+        config_path = _automation_child_config_path(tmp_path)
         template = _fresh_default_like_cfg_template()
         template[commons_constants.CONFIG_EXCHANGES] = {
             "prefilled_exchange": {
@@ -399,7 +442,7 @@ class TestWriteUserRootConfigJson:
         assert exch[commons_constants.CONFIG_EXCHANGE_SECRET] == octobot_process_ops._DEFAULT_ENCRYPTED_VALUE
 
     def test_applies_exchange_auth_credentials(self, tmp_path):
-        config_path = str(tmp_path / commons_constants.CONFIG_FILE)
+        config_path = _automation_child_config_path(tmp_path)
         auth_list = [
             exchange_auth_data_module.ExchangeAuthData(
                 internal_name="binance_test",
@@ -425,7 +468,7 @@ class TestWriteUserRootConfigJson:
         assert exch[commons_constants.CONFIG_EXCHANGE_SANDBOXED] is True
 
     def test_profile_seed_then_auth_overlay(self, tmp_path):
-        config_path = str(tmp_path / commons_constants.CONFIG_FILE)
+        config_path = _automation_child_config_path(tmp_path)
         exchange_internal_name = "overlay_exchange"
         profile_dict = {
             **_MINIMAL_PROFILE_DATA,
@@ -454,6 +497,106 @@ class TestWriteUserRootConfigJson:
         assert exch[commons_constants.CONFIG_EXCHANGE_TYPE] == "spot"
         assert exch[commons_constants.CONFIG_EXCHANGE_KEY] == "overlay-key"
         assert exch[commons_constants.CONFIG_EXCHANGE_SECRET] == "overlay-secret"
+
+    def test_does_not_persist_sync_user_id_in_config(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                "sync-profile-id",
+                None,
+                None,
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        assert written[commons_constants.CONFIG_PROFILE] == "sync-profile-id"
+        assert "sync_user_id" not in written
+
+    def test_writes_master_overlay_config_when_provided(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        master_profiles_path = str(tmp_path / "master" / commons_constants.PROFILES_FOLDER)
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
+                None,
+                None,
+                readonly_profiles_path=master_profiles_path,
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        assert written[commons_constants.CONFIG_READONLY_PROFILES_PATH] == master_profiles_path
+
+
+class TestAutomationChildPathGuards:
+    def test_write_user_root_config_json_rejects_master_config_path(self, tmp_path):
+        master_config_path = str(
+            tmp_path / commons_constants.USER_FOLDER / commons_constants.CONFIG_FILE
+        )
+        with pytest.raises(commons_errors.DSLInterpreterError, match="user/automations"):
+            octobot_process_ops._write_user_root_config_json(
+                master_config_path,
+                octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
+                None,
+                None,
+            )
+
+    def test_write_user_root_config_json_rejects_automations_root_without_leaf(self, tmp_path):
+        automations_config_path = str(
+            tmp_path
+            / commons_constants.USER_FOLDER
+            / commons_constants.AUTOMATIONS_FOLDER
+            / commons_constants.CONFIG_FILE
+        )
+        with pytest.raises(commons_errors.DSLInterpreterError, match="automation_id"):
+            octobot_process_ops._write_user_root_config_json(
+                automations_config_path,
+                octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
+                None,
+                None,
+            )
+
+    def test_assert_spawn_cmd_isolation_rejects_master_user_folder(self):
+        rel_user = commons_constants.USER_FOLDER
+        rel_log = os.path.join(octobot_node_constants.AUTOMATION_LOGS_FOLDER, "bot-1")
+        cmd = [
+            sys.executable,
+            "start.py",
+            "--user-folder",
+            rel_user,
+            "--log-folder",
+            rel_log,
+        ]
+        with pytest.raises(commons_errors.DSLInterpreterError, match="user/automations"):
+            octobot_process_ops._assert_spawn_cmd_isolation(cmd, rel_user, rel_log)
+
+    def test_assert_spawn_cmd_isolation_rejects_missing_log_folder_flag(self):
+        rel_user = os.path.join(commons_constants.USER_AUTOMATIONS_FOLDER, "bot-1")
+        rel_log = os.path.join(octobot_node_constants.AUTOMATION_LOGS_FOLDER, "bot-1")
+        cmd = [sys.executable, "start.py", "--user-folder", rel_user]
+        with pytest.raises(commons_errors.DSLInterpreterError, match="--log-folder"):
+            octobot_process_ops._assert_spawn_cmd_isolation(cmd, rel_user, rel_log)
+
+    def test_assert_spawn_cmd_isolation_accepts_valid_cmd(self):
+        rel_user = os.path.join(commons_constants.USER_AUTOMATIONS_FOLDER, "bot-1")
+        rel_log = os.path.join(octobot_node_constants.AUTOMATION_LOGS_FOLDER, "bot-1")
+        cmd = [
+            sys.executable,
+            "start.py",
+            "--user-folder",
+            rel_user,
+            "--log-folder",
+            rel_log,
+            "--dump-state",
+            "/tmp/state.json",
+        ]
+        octobot_process_ops._assert_spawn_cmd_isolation(cmd, rel_user, rel_log)
 
 
 class TestEnsureUserProfileAndLayout:
@@ -488,70 +631,168 @@ class TestEnsureOctobotProcessOperatorProfileDataOptional:
         assert profile_parameter.default is None
 
 
-class TestCopyReadOnlyProfilesToUserRoot:
-    async def test_copies_read_only_profiles_and_skips_editable(self, tmp_path):
-        _seed_executor_non_trading_profile(tmp_path)
-        readonly_profile_id = "readonly_strategy"
-        editable_profile_id = "editable_strategy"
-        _seed_executor_profile(tmp_path, readonly_profile_id, read_only=True)
-        _seed_executor_profile(tmp_path, editable_profile_id, read_only=False)
-        user_root = tmp_path / "child_user_root"
-        user_root.mkdir()
-        await octobot_process_ops._copy_read_only_profiles_to_user_root(
-            str(tmp_path),
-            str(user_root),
-            active_profile_id=octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
+class TestEnsureOctobotProcessOperatorSyncProfileIdOptional:
+    def test_declares_optional_sync_profile_id_parameter(self):
+        params = EnsureOctobotProcessOperator.get_parameters()
+        sync_profile_parameter = next(
+            (parameter for parameter in params if parameter.name == "sync_profile_id"),
+            None,
         )
-        profiles_root = user_root / commons_constants.PROFILES_FOLDER
-        readonly_profile_json = (
-            profiles_root / readonly_profile_id / commons_constants.PROFILE_CONFIG_FILE
-        )
-        editable_profile_json = (
-            profiles_root / editable_profile_id / commons_constants.PROFILE_CONFIG_FILE
-        )
-        non_trading_profile_json = (
-            profiles_root
-            / octobot_process_ops.DEFAULT_DSL_PROFILE_ID
-            / commons_constants.PROFILE_CONFIG_FILE
-        )
-        assert readonly_profile_json.is_file()
-        assert not editable_profile_json.exists()
-        assert not non_trading_profile_json.exists()
+        assert sync_profile_parameter is not None
+        assert sync_profile_parameter.required is False
+        assert sync_profile_parameter.default is None
 
-    async def test_skips_active_profile_id(self, tmp_path):
-        _seed_executor_profile(
-            tmp_path,
-            octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
-            read_only=True,
+    def test_declares_optional_user_id_parameter(self):
+        params = EnsureOctobotProcessOperator.get_parameters()
+        user_id_parameter = next(
+            (parameter for parameter in params if parameter.name == "user_id"),
+            None,
         )
-        user_root = tmp_path / "child_user_root"
-        user_root.mkdir()
-        destination_profile_path = (
+        assert user_id_parameter is not None
+        assert user_id_parameter.required is False
+        assert user_id_parameter.default is None
+
+
+class TestAssertSyncStrategyExists:
+    def test_accepts_existing_strategy(self):
+        stored_strategy = _generic_process_sync_strategy("strategy-1")
+        strategy_provider_mock = mock.Mock()
+        strategy_provider_mock.get_item.return_value = stored_strategy
+        with mock.patch.object(
+            octobot_process_ops.collection_providers,
+            "StrategyProvider",
+        ) as strategy_provider_class:
+            strategy_provider_class.instance.return_value = strategy_provider_mock
+            result = octobot_process_ops._assert_sync_strategy_exists(
+                "wallet-user",
+                "strategy-1",
+            )
+        assert result is stored_strategy
+        strategy_provider_mock.get_item.assert_called_once_with("wallet-user", "strategy-1")
+
+    def test_raises_when_strategy_not_found(self):
+        strategy_provider_mock = mock.Mock()
+        strategy_provider_mock.get_item.side_effect = collection_errors.ItemNotFoundError(
+            "missing"
+        )
+        with mock.patch.object(
+            octobot_process_ops.collection_providers,
+            "StrategyProvider",
+        ) as strategy_provider_class:
+            strategy_provider_class.instance.return_value = strategy_provider_mock
+            with pytest.raises(commons_errors.DSLInterpreterError, match="not found"):
+                octobot_process_ops._assert_sync_strategy_exists(
+                    "wallet-user",
+                    "strategy-1",
+                )
+
+
+class TestEnsureUserProfileAndLayoutSyncProfileId:
+    async def test_raises_when_user_id_missing_with_sync_profile_id(self, tmp_path):
+        with pytest.raises(commons_errors.DSLInterpreterError, match="requires user_id"):
+            await octobot_process_ops.ensure_user_profile_and_layout(
+                "sync_user_folder",
+                str(tmp_path),
+                None,
+                None,
+                None,
+                sync_profile_id="sync-strategy-1",
+            )
+
+    async def test_bare_generic_process_strategy_uses_non_trading_profile(self, tmp_path):
+        sync_profile_id = "sync-strategy-1"
+        executor_sync_user_id = "wallet-user"
+        bare_strategy = _generic_process_sync_strategy(sync_profile_id)
+        with mock.patch.object(
+            octobot_process_ops,
+            "_assert_sync_strategy_exists",
+            return_value=bare_strategy,
+        ), mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            result = await octobot_process_ops.ensure_user_profile_and_layout(
+                "sync_user_folder",
+                str(tmp_path),
+                None,
+                None,
+                None,
+                sync_profile_id=sync_profile_id,
+                user_id=executor_sync_user_id,
+            )
+        user_root = pathlib.Path(result["user_root"])
+        assert result["profile_id"] == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
+        assert not (user_root / commons_constants.PROFILES_FOLDER / sync_profile_id).exists()
+        root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        assert root_cfg[commons_constants.CONFIG_PROFILE] == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
+        assert "sync_user_id" not in root_cfg
+
+    async def test_strategy_with_profile_data_uses_sync_profile_id(self, tmp_path):
+        sync_profile_id = "sync-strategy-1"
+        executor_sync_user_id = "wallet-user"
+        strategy_with_profile_data = _generic_process_sync_strategy(
+            sync_profile_id,
+            profile_data={"profile_details": {"id": sync_profile_id}},
+        )
+        with mock.patch.object(
+            octobot_process_ops,
+            "_assert_sync_strategy_exists",
+            return_value=strategy_with_profile_data,
+        ), mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            result = await octobot_process_ops.ensure_user_profile_and_layout(
+                "sync_user_folder",
+                str(tmp_path),
+                None,
+                None,
+                None,
+                sync_profile_id=sync_profile_id,
+                user_id=executor_sync_user_id,
+            )
+        user_root = pathlib.Path(result["user_root"])
+        assert result["profile_id"] == sync_profile_id
+        assert not (user_root / commons_constants.PROFILES_FOLDER / sync_profile_id).exists()
+        root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        assert root_cfg[commons_constants.CONFIG_PROFILE] == sync_profile_id
+        assert "sync_user_id" not in root_cfg
+        assert root_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH] == (
+            octobot_process_ops._executor_profiles_directory(str(tmp_path))
+        )
+
+
+class TestEnsureUserProfileAndLayoutProfileDataPriority:
+    async def test_profile_data_wins_over_sync_profile_id(self, tmp_path):
+        sync_profile_id = "ignored-sync-profile"
+        result = await octobot_process_ops.ensure_user_profile_and_layout(
+            "priority_user_folder",
+            str(tmp_path),
+            _MINIMAL_PROFILE_DATA,
+            None,
+            None,
+            sync_profile_id=sync_profile_id,
+        )
+        user_root = pathlib.Path(result["user_root"])
+        profile_id = result["profile_id"]
+        assert profile_id
+        assert profile_id != sync_profile_id
+        assert (
             user_root
             / commons_constants.PROFILES_FOLDER
-            / octobot_process_ops.DEFAULT_DSL_PROFILE_ID
-        )
-        destination_profile_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(
-            tmp_path.joinpath(
-                commons_constants.USER_FOLDER,
-                commons_constants.PROFILES_FOLDER,
-                octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
-            ),
-            destination_profile_path,
-        )
-        profile_json_path = destination_profile_path / commons_constants.PROFILE_CONFIG_FILE
-        original_mtime = profile_json_path.stat().st_mtime
-        await octobot_process_ops._copy_read_only_profiles_to_user_root(
-            str(tmp_path),
-            str(user_root),
-            active_profile_id=octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
-        )
-        assert profile_json_path.stat().st_mtime == original_mtime
+            / profile_id
+            / commons_constants.PROFILE_CONFIG_FILE
+        ).is_file()
+        assert not (user_root / commons_constants.PROFILES_FOLDER / sync_profile_id).exists()
+        root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        assert root_cfg[commons_constants.CONFIG_PROFILE] == profile_id
+        assert "sync_user_id" not in root_cfg
 
 
 class TestEnsureUserProfileAndLayoutDefaultProfile:
-    async def test_copies_non_trading_profile_and_writes_default_config(self, tmp_path):
+    async def test_pins_non_trading_profile_via_overlay_and_writes_default_config(self, tmp_path):
         _seed_executor_non_trading_profile(tmp_path)
         user_leaf = "default_profile_layout_user"
         result = await octobot_process_ops.ensure_user_profile_and_layout(
@@ -570,10 +811,13 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
             / octobot_process_ops.DEFAULT_DSL_PROFILE_ID
             / commons_constants.PROFILE_CONFIG_FILE
         )
-        assert profile_json_path.is_file()
+        assert not profile_json_path.exists()
         root_config_path = user_root / commons_constants.CONFIG_FILE
         root_cfg = json.loads(root_config_path.read_text(encoding="utf-8"))
         assert root_cfg[commons_constants.CONFIG_PROFILE] == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
+        assert root_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH] == (
+            octobot_process_ops._executor_profiles_directory(str(tmp_path))
+        )
         assert (
             root_cfg[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEB][
                 services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER
@@ -582,7 +826,28 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         )
         assert root_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] is True
 
-    async def test_copies_read_only_profiles_on_default_layout(self, tmp_path):
+    async def test_resolves_non_trading_profile_from_master_overlay(self, tmp_path):
+        _seed_executor_non_trading_profile(tmp_path)
+        result = await octobot_process_ops.ensure_user_profile_and_layout(
+            "default_overlay_resolution_user",
+            str(tmp_path),
+            None,
+            None,
+            None,
+        )
+        user_root = pathlib.Path(result["user_root"])
+        child_profiles_path = user_root / commons_constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True, exist_ok=True)
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        profile_storage.configure_readonly_profiles_path(
+            root_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH],
+        )
+        resolved_profile = profile_storage.get_profile(octobot_process_ops.DEFAULT_DSL_PROFILE_ID)
+        assert resolved_profile is not None
+        assert resolved_profile.profile_id == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
+
+    async def test_default_layout_does_not_copy_read_only_profiles(self, tmp_path):
         _seed_executor_non_trading_profile(tmp_path)
         readonly_profile_id = "readonly_strategy"
         _seed_executor_profile(tmp_path, readonly_profile_id, read_only=True)
@@ -596,14 +861,29 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         )
         user_root = pathlib.Path(result["user_root"])
         profiles_root = user_root / commons_constants.PROFILES_FOLDER
-        assert (
+        assert not (
             profiles_root
             / octobot_process_ops.DEFAULT_DSL_PROFILE_ID
             / commons_constants.PROFILE_CONFIG_FILE
-        ).is_file()
-        assert (
+        ).exists()
+        assert not (
             profiles_root / readonly_profile_id / commons_constants.PROFILE_CONFIG_FILE
-        ).is_file()
+        ).exists()
+        root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        assert commons_constants.CONFIG_READONLY_PROFILES_PATH in root_cfg
+
+    async def test_default_layout_omits_sync_user_id_without_user_id_arg(self, tmp_path):
+        _seed_executor_non_trading_profile(tmp_path)
+        result = await octobot_process_ops.ensure_user_profile_and_layout(
+            "default_layout_without_sync_user",
+            str(tmp_path),
+            None,
+            None,
+            None,
+        )
+        user_root = pathlib.Path(result["user_root"])
+        root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        assert "sync_user_id" not in root_cfg
 
     async def test_applies_exchange_auth_without_profile_data(self, tmp_path):
         _seed_executor_non_trading_profile(tmp_path)
@@ -885,6 +1165,129 @@ class TestListenPortPair:
         assert web_port != occupied_port
 
 
+class TestChildListenPortReservation:
+    @pytest.fixture(autouse=True)
+    def _clear_reserved_ports(self):
+        octobot_process_ops._child_listen_ports_reserved.clear()
+        yield
+        octobot_process_ops._child_listen_ports_reserved.clear()
+
+    def test_parallel_allocations_get_distinct_web_ports(self):
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
+            first_web_port, first_node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 20000, 30000, "automation-a", max_offset=100
+            )
+            second_web_port, second_node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 20000, 30000, "automation-b", max_offset=100
+            )
+        try:
+            assert first_web_port != second_web_port
+            assert first_node_port != second_node_port
+        finally:
+            octobot_process_ops._release_child_listen_ports(first_web_port, first_node_port, "automation-a")
+            octobot_process_ops._release_child_listen_ports(second_web_port, second_node_port, "automation-b")
+
+    def test_release_allows_reuse_when_no_listener(self):
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
+            web_port, node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 20000, 30000, "automation-a", max_offset=100
+            )
+            octobot_process_ops._release_child_listen_ports(web_port, node_port, "automation-a")
+            reused_web_port, reused_node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 20000, 30000, "automation-a", max_offset=100
+            )
+        try:
+            assert reused_web_port == web_port
+            assert reused_node_port == node_port
+        finally:
+            octobot_process_ops._release_child_listen_ports(reused_web_port, reused_node_port, "automation-a")
+
+    def test_second_allocation_skips_reserved_port(self):
+        octobot_process_ops._reserve_child_listen_ports(5002, 5999, "automation-a")
+        try:
+            with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+                os_util, "tcp_port_is_free", return_value=True
+            ):
+                web_port, _node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                    "127.0.0.1", 5002, 6000, "automation-b", max_offset=10
+                )
+            assert web_port != 5002
+        finally:
+            octobot_process_ops._release_child_listen_ports(5002, 5999, "automation-a")
+
+    def test_stale_prior_recall_release_does_not_free_other_automation_ports(self):
+        user_folder_a = "03e38366-99ea-4c47-84d5-4329c7aa00df"
+        user_folder_b = "7ae4e140-1dc0-4d7c-a4cf-38c121a80f72"
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
+            web_port_a, node_port_a = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 5002, 6000, user_folder_a, max_offset=10
+            )
+        assert web_port_a == 5002
+        stale_recall_b = octobot_process_ops.EnsureOctobotProcessState(
+            http_base_url="http://127.0.0.1:5002",
+            web_port=5002,
+            node_port=node_port_a,
+            user_root="/x/b",
+            user_folder=user_folder_b,
+            log_folder="/x/logs/b",
+            profile_id=None,
+            pid=0,
+            executor_id=TEST_EXECUTOR_ID,
+        )
+        octobot_process_ops._release_recall_state_listen_ports(stale_recall_b)
+        assert octobot_process_ops._child_listen_ports_reserved.get(5002) == user_folder_a
+        try:
+            with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+                os_util, "tcp_port_is_free", return_value=True
+            ):
+                web_port_b, node_port_b = octobot_process_ops._allocate_child_listen_port_pair(
+                    "127.0.0.1", 5002, 6000, user_folder_b, max_offset=10
+                )
+            assert web_port_b != 5002
+        finally:
+            octobot_process_ops._release_child_listen_ports(web_port_a, node_port_a, user_folder_a)
+            octobot_process_ops._release_child_listen_ports(web_port_b, node_port_b, user_folder_b)
+
+    def test_same_automation_recall_release_frees_ports_for_reuse(self):
+        user_folder = "automation-a"
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
+            web_port, node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 5002, 6000, user_folder, max_offset=10
+            )
+        recall_state = octobot_process_ops.EnsureOctobotProcessState(
+            http_base_url=f"http://127.0.0.1:{web_port}",
+            web_port=web_port,
+            node_port=node_port,
+            user_root="/x/a",
+            user_folder=user_folder,
+            log_folder="/x/logs/a",
+            profile_id=None,
+            pid=0,
+            executor_id=TEST_EXECUTOR_ID,
+        )
+        octobot_process_ops._release_recall_state_listen_ports(recall_state)
+        assert web_port not in octobot_process_ops._child_listen_ports_reserved
+        with mock.patch.object(os_util, "tcp_port_has_listener_on_host", return_value=False), mock.patch.object(
+            os_util, "tcp_port_is_free", return_value=True
+        ):
+            reused_web_port, reused_node_port = octobot_process_ops._allocate_child_listen_port_pair(
+                "127.0.0.1", 5002, 6000, user_folder, max_offset=10
+            )
+        try:
+            assert reused_web_port == web_port
+            assert reused_node_port == node_port
+        finally:
+            octobot_process_ops._release_child_listen_ports(reused_web_port, reused_node_port, user_folder)
+
+
 class TestEnsureOctobotProcessOperatorExchangeAuthData:
     def test_declares_optional_exchange_auth_parameter(self):
         params = EnsureOctobotProcessOperator.get_parameters()
@@ -919,6 +1322,7 @@ class TestEnsureOctobotProcessOperatorExchangeAuthData:
         start_script.write_text("#", encoding="utf-8")
         operator_instance = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             exchange_auth_data=exchange_auth_dicts,
             last_execution_result=None,
@@ -955,12 +1359,61 @@ class TestEnsureOctobotProcessOperatorExchangeAuthData:
         assert parsed_exchange_auth[0].exchange_type == commons_constants.CONFIG_EXCHANGE_SPOT
 
 
+class TestEnsureChildEnviron:
+    def test_sets_process_bot_sync_user_id_env(self, tmp_path):
+        working_directory = str(tmp_path)
+        child_env = octobot_process_ops._ensure_child_environ(
+            20050,
+            30050,
+            "127.0.0.1",
+            "wallet-user",
+            working_directory,
+        )
+        assert child_env[octobot_constants.ENV_PROCESS_BOT_SYNC_USER_ID] == "wallet-user"
+        assert child_env[commons_constants.ENV_OCTOBOT_SYNC_DATA_ROOT] == os.path.normpath(
+            os.path.join(working_directory, commons_constants.USER_FOLDER)
+        )
+
+
 class TestEnsureOctobotProcessOperatorPrecompute:
+    async def test_raises_when_user_id_missing_at_spawn(self, tmp_path):
+        start_script = tmp_path / "start.py"
+        start_script.write_text("#", encoding="utf-8")
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=None,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": str(
+                        tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "ub"
+                    ),
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ):
+            with pytest.raises(commons_errors.DSLInterpreterError, match="requires user_id"):
+                await op.pre_compute()
+
     async def test_returns_recallable_when_process_bot_state_not_live(self, tmp_path):
         start_script = tmp_path / "start.py"
         start_script.write_text("#", encoding="utf-8")
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=None,
         )
@@ -1007,6 +1460,7 @@ class TestEnsureOctobotProcessPrecomputeWhenProcessStateLiveAfterFirstSpawn:
         start_script.write_text("#", encoding="utf-8")
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=None,
         )
@@ -1065,6 +1519,7 @@ class TestEnsureOctobotProcessPrecomputeRecallPathWhenProcessStateLive:
         start_script.write_text("#", encoding="utf-8")
         op1 = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=None,
         )
@@ -1105,6 +1560,7 @@ class TestEnsureOctobotProcessPrecomputeRecallPathWhenProcessStateLive:
         anchor = first_le["started_waiting_at"]
         op2 = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=first_value,
         )
@@ -1160,6 +1616,7 @@ class TestEnsureOctobotProcessInitTimeoutRaisesAndKills:
         }
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1218,6 +1675,7 @@ class TestEnsureOctobotProcessLivenessNotBlockedByInitTimeout:
         }
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1252,6 +1710,7 @@ class TestEnsureOctobotProcessWaitingTimeConstantInPayload:
         start_script.write_text("#", encoding="utf-8")
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=None,
             waiting_time=7.0,
@@ -1305,7 +1764,10 @@ class TestEnsureOctobotProcessDslIntegration:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "start.py").write_text("#", encoding="utf-8")
         user_folder = "integration_dsl_bot"
-        expression = f"run_octobot_process({user_folder!r}, {repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)})"
+        expression = (
+            f"run_octobot_process({user_folder!r}, {repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
+            f"user_id={_PROCESS_TEST_USER_ID!r})"
+        )
         # Contextual operator is excluded from get_all_operators(); append it explicitly.
         interpreter = dsl_interpreter.Interpreter(
             dsl_interpreter.get_all_operators()
@@ -1380,6 +1842,7 @@ class TestEnsureOctobotProcessDslIntegration:
             assert child_env[services_constants.ENV_WEB_ADDRESS] == "127.0.0.1"
             assert child_env[services_constants.ENV_NODE_API_PORT] == str(last_execution["node_port"])
             assert child_env[services_constants.ENV_NODE_API_ADDRESS] == "127.0.0.1"
+            assert child_env[octobot_constants.ENV_PROCESS_BOT_SYNC_USER_ID] == _PROCESS_TEST_USER_ID
             assert spawn_kwargs.get("hide_console_window") is True
         finally:
             # Redundant with pytest’s tmp_path teardown; makes intent obvious if the test is copied elsewhere.
@@ -1414,7 +1877,7 @@ class TestEnsureOctobotProcessDslIntegration:
         ]
         expression = (
             f"run_octobot_process({user_folder!r}, {repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
-            f"{repr(exchange_auth_list)})"
+            f"exchange_auth_data={repr(exchange_auth_list)}, user_id={_PROCESS_TEST_USER_ID!r})"
         )
         interpreter = dsl_interpreter.Interpreter(
             dsl_interpreter.get_all_operators()
@@ -1472,7 +1935,8 @@ class TestEnsureOctobotProcessDslIntegration:
             }
         ]
         expression = (
-            f"run_octobot_process({user_folder!r}, exchange_auth_data={repr(exchange_auth_list)}, "
+            f"run_octobot_process({user_folder!r}, user_id={_PROCESS_TEST_USER_ID!r}, "
+            f"exchange_auth_data={repr(exchange_auth_list)}, "
             f"waiting_time={_TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SEC}, ping_timeout=30.0)"
         )
         interpreter = dsl_interpreter.Interpreter(
@@ -1502,13 +1966,16 @@ class TestEnsureOctobotProcessDslIntegration:
             assert root_config_path.is_file()
             written_root_cfg = json.loads(root_config_path.read_text(encoding="utf-8"))
             assert written_root_cfg[commons_constants.CONFIG_PROFILE] == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
+            assert written_root_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH] == (
+                octobot_process_ops._executor_profiles_directory(str(tmp_path))
+            )
             profile_json_path = (
                 user_data_root
                 / commons_constants.PROFILES_FOLDER
                 / octobot_process_ops.DEFAULT_DSL_PROFILE_ID
                 / commons_constants.PROFILE_CONFIG_FILE
             )
-            assert profile_json_path.is_file()
+            assert not profile_json_path.exists()
             exchange_cfg = written_root_cfg[commons_constants.CONFIG_EXCHANGES][exchange_internal_name]
             assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_KEY] == "no-profile-key"
             assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SECRET] == "no-profile-secret"
@@ -1575,15 +2042,19 @@ class TestRunOctobotProcessDefaultConfigSubprocess:
             else:
                 assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SANDBOXED] is exchange_auth_list[0]["sandboxed"]
                 assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_TYPE] == exchange_auth_list[0]["exchange_type"]
+            assert root_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH] == (
+                octobot_process_ops._executor_profiles_directory(project_root)
+            )
             profile_json_path = (
                 user_root
                 / commons_constants.PROFILES_FOLDER
                 / octobot_process_ops.DEFAULT_DSL_PROFILE_ID
                 / commons_constants.PROFILE_CONFIG_FILE
             )
-            assert profile_json_path.is_file()
+            assert not profile_json_path.exists()
             stop_expression = (
-                f"run_octobot_process({user_folder!r}, exchange_auth_data={repr(exchange_auth_list)}, "
+                f"run_octobot_process({user_folder!r}, user_id={_PROCESS_TEST_USER_ID!r}, "
+                f"exchange_auth_data={repr(exchange_auth_list)}, "
                 f"waiting_time={_TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SEC}, ping_timeout=30.0, "
                 f"last_execution_result={repr(_re_calling_ensure_value(inner))})"
             )
@@ -1665,6 +2136,7 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
         })
         op = operator_under_test(
             user_folder="u1",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1690,6 +2162,7 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
         })
         op = operator_under_test(
             user_folder="u1",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1722,6 +2195,7 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
         })
         op = operator_under_test(
             user_folder="u1",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1799,6 +2273,7 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
             node_port=5002,
             user_root=str(user_automation),
             user_folder="nested/upd_bot",
+            user_id=_PROCESS_TEST_USER_ID,
             log_folder=str(log_dir),
             profile_id="p1",
             pid=4242,
@@ -1819,6 +2294,7 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
         })
         op = operator_under_test(
             user_folder="nested/upd_bot",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1880,6 +2356,7 @@ class TestShouldUseRecallPathWhenStoredPidDeadButStateLive:
         inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1912,6 +2389,7 @@ class TestShouldUseRecallPathDuringInitWhenStoredPidDead:
         inner["started_waiting_at"] = octobot_process_ops.time.time()
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1941,6 +2419,7 @@ class TestRecallPathWhenStateFileMissingButPidRunning:
         inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -1974,6 +2453,7 @@ class TestRestartGracePeriodAvoidsRespawnWhileStateStale:
         )
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
             ping_timeout=120.0,
@@ -2006,6 +2486,7 @@ class TestFirstSpawnAfterRestartGraceExpires:
         stale_state = _stale_process_bot_state_for_grace(age_seconds=200.0, metadata_pid=10002)
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
             ping_timeout=120.0,
@@ -2051,6 +2532,7 @@ class TestFirstSpawnWhenStateFileMissingAndPidDeadAfterInit:
         inner = _healthy_recall_inner(pid=10002, tmp_path=tmp_path)
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -2102,6 +2584,7 @@ class TestStopAdoptsPidFromProcessBotState:
         })
         op = operator_under_test(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -2142,6 +2625,7 @@ class TestExecutorRestartedRequiresRespawn:
             None, TEST_EXECUTOR_ID
         )[0](
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -2191,6 +2675,7 @@ class TestExecutorRestartSkippedWhenChildPidRunning:
             None, TEST_EXECUTOR_ID
         )[0](
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )
@@ -2230,6 +2715,7 @@ class TestGraceWhenTimestampFreshButMetadataPidDead:
         )
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
             ping_timeout=120.0,
@@ -2264,6 +2750,7 @@ class TestExecutorRestartDoesNotBypassGraceWhenMarkerMatches:
         )
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
             ping_timeout=120.0,
@@ -2296,6 +2783,7 @@ class TestRespawnsWhenGraceExpiredAndPidDead:
         stale_state = _stale_process_bot_state_for_grace(age_seconds=200.0, metadata_pid=10002)
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
             ping_timeout=120.0,
@@ -2341,6 +2829,7 @@ class TestEnsureOctobotProcessStateEmitsExecutorId:
         (tmp_path / "start.py").write_text("#", encoding="utf-8")
         op = EnsureOctobotProcessOperator(
             user_folder="emit_master_bot",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
         )
         with mock.patch.object(
@@ -2383,6 +2872,7 @@ class TestRecallStateRequiresExecutorId:
         del inner["executor_id"]
         op = EnsureOctobotProcessOperator(
             user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
             profile_data=_MINIMAL_PROFILE_DATA,
             last_execution_result=_re_calling_ensure_value(inner),
         )

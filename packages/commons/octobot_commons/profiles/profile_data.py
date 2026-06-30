@@ -222,13 +222,33 @@ class ProfileData(
             )
 
     @classmethod
+    def exchanges_from_profile_config(cls, profile_config: dict) -> list[ExchangeData]:
+        """
+        Build enabled exchanges from a profile config dict.
+        """
+        exchanges_config = profile_config.get(constants.CONFIG_EXCHANGES, {})
+        enabled_exchanges = []
+        for exchange_name, exchange_details in exchanges_config.items():
+            if not exchange_details.get(constants.CONFIG_ENABLED_OPTION, False):
+                continue
+            enabled_exchanges.append(
+                ExchangeData(
+                    internal_name=exchange_name,
+                    exchange_type=exchange_details.get(
+                        constants.CONFIG_EXCHANGE_TYPE, constants.DEFAULT_EXCHANGE_TYPE
+                    ),
+                )
+            )
+        return enabled_exchanges
+
+    @classmethod
     def from_profile(cls, profile: "profile_import.Profile"):
         """
         Creates a cls instance from the given profile
         """
         profile_dict = profile.as_dict()
         content = profile_dict[constants.PROFILE_CONFIG]
-        return cls.from_dict(
+        profile_data = cls.from_dict(
             {
                 "profile_details": {
                     "id": profile_dict[constants.CONFIG_PROFILE][constants.CONFIG_ID],
@@ -276,6 +296,8 @@ class ProfileData(
                 "tentacles": [],
             }
         )
+        profile_data.exchanges = cls.exchanges_from_profile_config(content)
+        return profile_data
 
     @classmethod
     def from_filesystem_profile(cls, profile: "profile_import.Profile") -> "ProfileData":

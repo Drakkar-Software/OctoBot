@@ -857,7 +857,8 @@ class TestCreateAutomationExecutor:
             )
         expected_dsl = (
             "run_octobot_process("
-            f"{'ua-generic-process'!r}, exchange_auth_data={dsl_interpreter.format_parameter_value(expected_exchange_auth)}, "
+            f"{'ua-generic-process'!r}, user_id={_TEST_WALLET_ADDRESS!r}, sync_profile_id={strat_ref.id!r}, "
+            f"exchange_auth_data={dsl_interpreter.format_parameter_value(expected_exchange_auth)}, "
             f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
         )
         _assert_init_action_matches_minimal_account(

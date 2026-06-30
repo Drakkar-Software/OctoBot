@@ -41,13 +41,16 @@ def seeded_generic_process_strategy_for_functional_wallet(
     stored_strategy_id: str = GENERIC_PROCESS_DEFAULT_STRATEGY_ID,
     profile_data: dict[str, typing.Any] | None = None,
 ) -> protocol_models_module.Strategy:
+    resolved_profile_data = profile_data
+    if resolved_profile_data is None:
+        resolved_profile_data = {"profile_details": {"id": stored_strategy_id}}
     return protocol_models_module.Strategy(
         id=stored_strategy_id,
         version=workflow_common_module.SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
         name="Generic process automation strategy",
         reference_market="USDC",
         configuration=protocol_models_module.StrategyConfiguration(
-            build_generic_process_configuration(profile_data=profile_data),
+            build_generic_process_configuration(profile_data=resolved_profile_data),
         ),
     )
 

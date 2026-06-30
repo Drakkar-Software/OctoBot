@@ -181,12 +181,45 @@ def test_from_profile(profile):
     assert profile_data.distribution == "default"
     assert profile_data.profile_details.name == "default"
     assert profile_data.crypto_currencies[0].trading_pairs == ['BTC/USDT']
-    assert profile_data.exchanges == []
+    assert len(profile_data.exchanges) == 1
+    assert profile_data.exchanges[0].internal_name == "binance"
+    assert profile_data.exchanges[0].exchange_type == constants.DEFAULT_EXCHANGE_TYPE
     assert profile_data.trader.enabled is False
     assert profile_data.trader_simulator.enabled is True
     assert profile_data.trader_simulator.starting_portfolio == {'BTC': 10, 'USDT': 1000}
     assert profile_data.trading.risk == 0.5
     assert profile_data.tentacles == []
+
+
+class TestProfileDataExchangesFromProfileConfig:
+    def test_maps_only_enabled_exchanges(self):
+        profile_config = {
+            constants.CONFIG_EXCHANGES: {
+                "binance": {
+                    constants.CONFIG_ENABLED_OPTION: True,
+                    constants.CONFIG_EXCHANGE_TYPE: "spot",
+                },
+                "kucoin": {
+                    constants.CONFIG_ENABLED_OPTION: False,
+                    constants.CONFIG_EXCHANGE_TYPE: "spot",
+                },
+            }
+        }
+        exchanges = profiles.ProfileData.exchanges_from_profile_config(profile_config)
+        assert len(exchanges) == 1
+        assert exchanges[0].internal_name == "binance"
+        assert exchanges[0].exchange_type == "spot"
+
+    def test_uses_default_exchange_type_when_missing(self):
+        profile_config = {
+            constants.CONFIG_EXCHANGES: {
+                "binance": {
+                    constants.CONFIG_ENABLED_OPTION: True,
+                },
+            }
+        }
+        exchanges = profiles.ProfileData.exchanges_from_profile_config(profile_config)
+        assert exchanges[0].exchange_type == constants.DEFAULT_EXCHANGE_TYPE
 
 
 def test_from_profile_data(profile):

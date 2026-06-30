@@ -82,6 +82,77 @@ class TestBuildSetupConfigFromProfileData:
         assert result is setup_config
         create_setup_mock.assert_called_once_with("MyEvaluator", config_path=None)
 
+    def test_skips_missing_tentacle_names(self):
+        import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(name="MyEvaluator", config={}),
+            profile_data_module.TentaclesData(name="upbit", config={}),
+        ]
+        my_evaluator_class = mock.Mock()
+        my_evaluator_class.__name__ = "MyEvaluator"
+        setup_config = mock.Mock()
+        setup_config.registered_tentacles = {"pkg": "url"}
+
+        def get_tentacle_class_side_effect(tentacle_name):
+            if tentacle_name == "MyEvaluator":
+                return my_evaluator_class
+            raise RuntimeError(f"Can't find tentacle: {tentacle_name}")
+
+        with mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "get_tentacle_class_from_string",
+            mock.Mock(side_effect=get_tentacle_class_side_effect),
+        ), mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "create_tentacles_setup_config_with_tentacles",
+            mock.Mock(return_value=setup_config),
+        ) as create_setup_mock, mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "fill_with_installed_tentacles",
+        ):
+            result = profile_tentacles_util.build_setup_config_from_profile_data(
+                profile_data, import_registered_tentacles=False
+            )
+
+        assert result is setup_config
+        create_setup_mock.assert_called_once_with("MyEvaluator", config_path=None)
+
+    def test_all_missing_still_returns_setup_config(self):
+        import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(name="upbit", config={}),
+        ]
+        setup_config = mock.Mock()
+        setup_config.registered_tentacles = {"pkg": "url"}
+
+        with mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "get_tentacle_class_from_string",
+            mock.Mock(side_effect=RuntimeError("Can't find tentacle: upbit")),
+        ), mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "create_tentacles_setup_config_with_tentacles",
+            mock.Mock(return_value=setup_config),
+        ) as create_setup_mock, mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "fill_with_installed_tentacles",
+        ) as fill_mock:
+            result = profile_tentacles_util.build_setup_config_from_profile_data(
+                profile_data, import_registered_tentacles=False
+            )
+
+        assert result is setup_config
+        create_setup_mock.assert_called_once_with(config_path=None)
+        fill_mock.assert_called_once_with(
+            setup_config,
+            import_registered_tentacles=False,
+            use_reference_registered_tentacles=False,
+        )
+
 
 class TestWriteSpecificConfigsToProfileFolder:
     def test_skips_unchanged_configs_when_updating(self, tmp_path):

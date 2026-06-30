@@ -139,3 +139,61 @@ class TestTentacleConfigurationProfileDispatch:
         persisted = setup._to_dict()
         assert "profile" not in persisted
         assert setup.profile is not None
+
+
+class TestSyncBackedProfileConfigFilesystemFallback:
+    def test_sync_backed_empty_config_falls_back_to_filesystem(self):
+        import mock
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_tentacles_manager.configuration.tentacle_configuration as tentacle_configuration
+        import octobot_tentacles_manager.configuration.tentacles_setup_configuration as tentacles_setup_configuration
+
+        tentacle_klass = mock.Mock()
+        tentacle_klass.get_name.return_value = "TestKlass"
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(name="TestKlass", config={}),
+        ]
+        profile = mock.Mock()
+        profile.is_profile_data_tentacle_backed.return_value = True
+        profile.get_profile_data.return_value = profile_data
+        setup = tentacles_setup_configuration.TentaclesSetupConfiguration()
+        setup.profile = profile
+        factory_config = {"required_evaluators": ["*"]}
+        with mock.patch.object(
+            tentacle_configuration,
+            "_get_config_from_file_system",
+            mock.Mock(return_value=factory_config),
+        ) as get_from_filesystem_mock:
+            result = tentacle_configuration.get_config(setup, tentacle_klass)
+        assert result == factory_config
+        get_from_filesystem_mock.assert_called_once_with(setup, tentacle_klass)
+
+    def test_sync_backed_missing_tentacle_falls_back_to_filesystem(self):
+        import mock
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_tentacles_manager.configuration.tentacle_configuration as tentacle_configuration
+        import octobot_tentacles_manager.configuration.tentacles_setup_configuration as tentacles_setup_configuration
+
+        tentacle_klass = mock.Mock()
+        tentacle_klass.get_name.return_value = "OtherKlass"
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(
+                name="TestKlass", config={"from_profile_data": True}
+            ),
+        ]
+        profile = mock.Mock()
+        profile.is_profile_data_tentacle_backed.return_value = True
+        profile.get_profile_data.return_value = profile_data
+        setup = tentacles_setup_configuration.TentaclesSetupConfiguration()
+        setup.profile = profile
+        factory_config = {"required_evaluators": ["TA"]}
+        with mock.patch.object(
+            tentacle_configuration,
+            "_get_config_from_file_system",
+            mock.Mock(return_value=factory_config),
+        ) as get_from_filesystem_mock:
+            result = tentacle_configuration.get_config(setup, tentacle_klass)
+        assert result == factory_config
+        get_from_filesystem_mock.assert_called_once_with(setup, tentacle_klass)

@@ -441,13 +441,27 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
                 exchange_auth_entry["api_key"],
                 exchange_auth_entry["api_secret"],
             )
-            profile_json_path = (
+            root_cfg = json.loads(
+                (user_root / common_constants.CONFIG_FILE).read_text(encoding="utf-8")
+            )
+            expected_readonly_profiles_path = os.path.normpath(
+                os.path.join(
+                    os.getcwd(),
+                    common_constants.USER_FOLDER,
+                    common_constants.PROFILES_FOLDER,
+                )
+            )
+            assert (
+                root_cfg[common_constants.CONFIG_READONLY_PROFILES_PATH]
+                == expected_readonly_profiles_path
+            )
+            local_non_trading_profile_json = (
                 user_root
                 / common_constants.PROFILES_FOLDER
                 / "non-trading"
                 / common_constants.PROFILE_CONFIG_FILE
             )
-            assert profile_json_path.is_file()
+            assert not local_non_trading_profile_json.exists()
 
             # First process_bot_state dump can lag init_state_ok (see shared wait helper).
             state_path = octobot_process_functional_shared._process_bot_state_path(inner)

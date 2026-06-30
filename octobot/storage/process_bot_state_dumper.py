@@ -82,7 +82,7 @@ async def _write_state_file_async(
             bot,
         ),
     )
-    content = state.to_dict(include_default_values=False)
+    content = json_util.sanitize(state.to_dict(include_default_values=False))
     str_content = json_util.dump_formatted_json(content)
     full_path = os.path.abspath(state_file_path)
     directory = os.path.dirname(full_path)

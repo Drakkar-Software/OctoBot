@@ -68,13 +68,20 @@ class Configuration:
         json_util.validate(self._read_config, self.config_schema_path)
         self.profile.validate()
 
-    def read(self, should_raise=True, fill_missing_fields=False) -> None:
+    def read(
+        self,
+        should_raise=True,
+        fill_missing_fields=False,
+        *,
+        activate_profile=True,
+    ) -> None:
         """
         Reads the configuration from self.config_path and load the current profile
         Overall config is stored into self.config and consists of a merger from the user
         config and activated profile
         :param should_raise: will raise upon exception when True
         :param fill_missing_fields: will try to fill in missing fields when true
+        :param activate_profile: when False, only load config.json without selecting a profile
         :return: None
         """
         self._read_config = config_file_manager.load(
@@ -83,6 +90,13 @@ class Configuration:
             fill_missing_fields=fill_missing_fields,
         )
         self.config = copy.deepcopy(self._read_config)
+        if activate_profile:
+            self.load_profiles_if_possible_and_necessary()
+
+    def activate_saved_profile(self) -> None:
+        """
+        Load all profiles and select CONFIG_PROFILE from the last read config.json.
+        """
         self.load_profiles_if_possible_and_necessary()
 
     def load_profiles_if_possible_and_necessary(self) -> None:
@@ -152,8 +166,10 @@ class Configuration:
             config_to_save,
             schema_file=schema_file,
         )
-        if self.profile is not None:
-            self.profile_storage.save_active_profile(self.profile, self.config)
+        if self.profile is not None and not self.profile_storage.is_master_overlay_profile(
+            self.profile
+        ):
+            self.profile.save_config(self.config)
         if sync_all_profiles:
             self._sync_other_profiles()
 
@@ -204,9 +220,7 @@ class Configuration:
         Checks if self.profiles_path exists and contains folders
         :return: True if profiles folder is not empty
         """
-        self.profile_storage.configure_paths(
-            self.profiles_path, self.profile_schema_path
-        )
+        self._prepare_profile_storage()
         return not (
             self.profile_storage.has_any_profiles()
             or (
@@ -227,6 +241,23 @@ class Configuration:
         :return: The tentacles configurations associated to the activated profile
         """
         return self.profile.get_tentacles_config_path()
+
+    def get_active_tentacles_setup_config(self):
+        """
+        :return: The tentacles setup config for the activated profile.
+        Profile-data-backed profiles use in-memory setup; filesystem profiles use their config path.
+        """
+        if self.profile.is_profile_data_tentacle_backed():
+            if self.profile.tentacles_setup_config is None:
+                self.profile.init_tentacles_setup_config()
+            tentacles_setup_config = self.profile.tentacles_setup_config
+            return self.profile.bind_tentacles_setup_config(tentacles_setup_config)
+        import octobot_tentacles_manager.api as tentacles_manager_api
+
+        return tentacles_manager_api.get_tentacles_setup_config(
+            self.get_tentacles_config_path(),
+            profile=self.profile,
+        )
 
     def get_metrics_enabled(self) -> bool:
         """
@@ -319,17 +350,34 @@ class Configuration:
             selected_profile_id != commons_constants.DEFAULT_PROFILE
             and commons_constants.DEFAULT_PROFILE in self.profile_by_id
         ):
+            self.logger.warning(
+                "Profile %r from config.json is not available yet; falling back to %r. "
+                "This can happen when sync profiles are not loaded.",
+                selected_profile_id,
+                commons_constants.DEFAULT_PROFILE,
+            )
             return commons_constants.DEFAULT_PROFILE
         raise errors.NoProfileError
+
+    def _prepare_profile_storage(self) -> None:
+        self.profile_storage.configure_paths(
+            self.profiles_path, self.profile_schema_path
+        )
+        if self.config:
+            readonly_profiles_path = self.config.get(
+                commons_constants.CONFIG_READONLY_PROFILES_PATH
+            )
+            if readonly_profiles_path:
+                self.profile_storage.configure_readonly_profiles_path(
+                    readonly_profiles_path
+                )
 
     def load_profiles(self) -> None:
         """
         Loads the available profiles
         :return: None
         """
-        self.profile_storage.configure_paths(
-            self.profiles_path, self.profile_schema_path
-        )
+        self._prepare_profile_storage()
         loaded_profiles = self.profile_storage.load_all_profiles()
         for profile_id, profile in loaded_profiles.items():
             if profile_id not in self.profile_by_id:

@@ -2,6 +2,7 @@
 #  Copyright (c) Drakkar-Software, All rights reserved.
 
 import os
+import copy
 
 import mock
 import pytest
@@ -90,6 +91,17 @@ class TestProfileStorageConfigureSyncUser:
         authenticator.get_wallet_by_user_id.assert_called_once_with("wallet-user")
 
 
+class TestProfileStorageBindProcessChildSyncUserId:
+    def test_bind_process_child_sync_user_id_sets_backend_without_wallet(self, profile_storage):
+        profile_storage.bind_process_child_sync_user_id("process-child-user")
+        assert profile_storage.is_sync_available()
+        assert profile_storage._sync_user_id == "process-child-user"
+
+    def test_bind_process_child_sync_user_id_rejects_empty(self, profile_storage):
+        with pytest.raises(errors_module.ProfileDataError, match="non-empty"):
+            profile_storage.bind_process_child_sync_user_id("")
+
+
 class TestSyncProfileBackendImportProfileData:
     def test_import_profile_data_assigns_strategy_id(self, tmp_path):
         sync_backend = profile_backends_module.SyncProfileBackend(
@@ -130,6 +142,26 @@ class TestSyncProfileBackendImportProfileData:
         assert profile.is_sync_backed()
         assert profile.profile_id == profile_data.profile_details.id
         assert created_profile is not None
+
+
+class TestSyncProfileBackendListProfiles:
+    def test_list_profiles_logs_exception_on_failure(self):
+        sync_backend = profile_backends_module.SyncProfileBackend(
+            "/profiles",
+            sync_user_id="wallet-user",
+        )
+        with mock.patch.object(
+            sync_backend,
+            "_list_profile_strategies",
+            mock.Mock(side_effect=RuntimeError("sync storage unavailable")),
+        ), mock.patch(
+            "octobot_commons.profiles.backends.sync_profile_backend._get_logger",
+        ) as get_logger_mock:
+            logger_mock = mock.Mock()
+            get_logger_mock.return_value = logger_mock
+            profiles_by_id = sync_backend.list_profiles()
+        assert profiles_by_id == {}
+        logger_mock.exception.assert_called_once()
 
 
 class TestSyncProfileBackendDuplicateProfile:
@@ -223,3 +255,191 @@ class TestProfileStorageDuplicateProfile:
         )
         sync_duplicate.bind_profile_storage.assert_called_once_with(profile_storage)
         assert result is sync_duplicate
+
+
+class TestProfileStorageMasterOverlay:
+    def _write_profile_file(self, profile_path: str, profile_id: str, *, read_only: bool) -> None:
+        import octobot_commons.json_util as json_util
+
+        os.makedirs(profile_path, exist_ok=True)
+        profile_file = {
+            constants.CONFIG_PROFILE: {
+                constants.CONFIG_ID: profile_id,
+                constants.CONFIG_NAME: profile_id,
+                constants.CONFIG_READ_ONLY: read_only,
+            },
+            constants.PROFILE_CONFIG: {
+                constants.CONFIG_CRYPTO_CURRENCIES: {},
+                constants.CONFIG_EXCHANGES: {},
+                constants.CONFIG_TRADER: {constants.CONFIG_ENABLED_OPTION: False},
+                constants.CONFIG_SIMULATOR: {
+                    constants.CONFIG_ENABLED_OPTION: True,
+                    constants.CONFIG_STARTING_PORTFOLIO: {},
+                    constants.CONFIG_SIMULATOR_FEES: {},
+                },
+                constants.CONFIG_TRADING: {
+                    constants.CONFIG_TRADER_REFERENCE_MARKET: constants.DEFAULT_REFERENCE_MARKET,
+                    constants.CONFIG_TRADER_RISK: 1,
+                },
+                constants.CONFIG_DISTRIBUTION: constants.DEFAULT_DISTRIBUTION,
+            },
+        }
+        json_util.safe_dump(profile_file, os.path.join(profile_path, constants.PROFILE_CONFIG_FILE))
+
+    def test_overlay_exposes_read_only_profiles(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        readonly_profile_id = "readonly-strategy"
+        self._write_profile_file(
+            os.path.join(master_profiles_path, readonly_profile_id),
+            readonly_profile_id,
+            read_only=True,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        profiles = profile_storage.load_all_profiles()
+        assert readonly_profile_id in profiles
+        assert profiles[readonly_profile_id].read_only is True
+
+    def test_overlay_ignores_editable_non_shared_profiles(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        editable_profile_id = "editable-strategy"
+        self._write_profile_file(
+            os.path.join(master_profiles_path, editable_profile_id),
+            editable_profile_id,
+            read_only=False,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        profiles = profile_storage.load_all_profiles()
+        assert editable_profile_id not in profiles
+
+    def test_local_filesystem_profile_wins_on_id_conflict(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        profile_id = "shared-id"
+        child_profiles_path.mkdir(parents=True, exist_ok=True)
+        self._write_profile_file(
+            os.path.join(master_profiles_path, profile_id),
+            profile_id,
+            read_only=True,
+        )
+        self._write_profile_file(
+            os.path.join(child_profiles_path, profile_id),
+            profile_id,
+            read_only=False,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        profiles = profile_storage.load_all_profiles()
+        assert profiles[profile_id].name == profile_id
+        assert profiles[profile_id].path == os.path.join(child_profiles_path, profile_id)
+
+    def test_save_active_profile_blocks_master_overlay_profile(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        readonly_profile_id = "non-trading"
+        self._write_profile_file(
+            os.path.join(master_profiles_path, readonly_profile_id),
+            readonly_profile_id,
+            read_only=True,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        overlay_profile = profile_storage.get_profile(readonly_profile_id)
+        with pytest.raises(
+            errors_module.ProfileDataError,
+            match="shared from the master",
+        ):
+            profile_storage.save_active_profile(overlay_profile, {})
+
+    def test_delete_profile_blocks_master_overlay_profile(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        readonly_profile_id = "readonly-strategy"
+        self._write_profile_file(
+            os.path.join(master_profiles_path, readonly_profile_id),
+            readonly_profile_id,
+            read_only=True,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        overlay_profile = profile_storage.get_profile(readonly_profile_id)
+        with pytest.raises(
+            errors_module.ProfileRemovalError,
+            match="shared from the master",
+        ):
+            profile_storage.delete_profile(readonly_profile_id, profile=overlay_profile)
+
+
+class TestSyncProfileBackendSaveProfile:
+    def test_save_profile_persists_exchanges_and_portfolio(self, tmp_path):
+        sync_backend = profile_backends_module.SyncProfileBackend(
+            sync_user_id="wallet-user"
+        )
+        initial_profile_data = profile_data_module.ProfileData.from_dict(
+            {
+                "profile_details": {"id": "aaaa", "name": "AAAA"},
+                "trading": {"reference_market": constants.DEFAULT_REFERENCE_MARKET},
+                "trader_simulator": {
+                    "enabled": True,
+                    "starting_portfolio": {"USDT": 100},
+                },
+            }
+        )
+        profile = sync_profile_module.SyncProfile(
+            initial_profile_data,
+            str(tmp_path / "runtime"),
+        )
+        profile.profile_id = "aaaa"
+        profile.name = "AAAA"
+        profile_storage = profile_storage_module.ProfileStorage(
+            str(tmp_path / constants.PROFILES_FOLDER),
+            None,
+            sync_backend=sync_backend,
+        )
+        profile.bind_profile_storage(profile_storage)
+        global_config = {
+            constants.CONFIG_CRYPTO_CURRENCIES: copy.deepcopy(
+                profile.config[constants.CONFIG_CRYPTO_CURRENCIES]
+            ),
+            constants.CONFIG_DISTRIBUTION: profile.config[constants.CONFIG_DISTRIBUTION],
+            constants.CONFIG_TRADING: copy.deepcopy(profile.config[constants.CONFIG_TRADING]),
+            constants.CONFIG_TRADER: copy.deepcopy(profile.config[constants.CONFIG_TRADER]),
+            constants.CONFIG_SIMULATOR: {
+                constants.CONFIG_ENABLED_OPTION: True,
+                constants.CONFIG_STARTING_PORTFOLIO: {"BTC": 5, "USDT": 5000},
+                constants.CONFIG_SIMULATOR_FEES: {
+                    constants.CONFIG_SIMULATOR_FEES_MAKER: 0.1,
+                    constants.CONFIG_SIMULATOR_FEES_TAKER: 0.1,
+                },
+            },
+            constants.CONFIG_EXCHANGES: {
+                "binance": {
+                    constants.CONFIG_ENABLED_OPTION: True,
+                    constants.CONFIG_EXCHANGE_TYPE: "spot",
+                },
+            },
+        }
+        strategy_provider = mock.Mock()
+        strategy_provider.update_item = mock.Mock()
+        with mock.patch.object(
+            sync_backend,
+            "_get_strategy_provider",
+            mock.Mock(return_value=strategy_provider),
+        ):
+            profile.save_config(global_config)
+        saved_profile_data = profile.get_profile_data()
+        assert saved_profile_data.trader_simulator.starting_portfolio == {
+            "BTC": 5,
+            "USDT": 5000,
+        }
+        assert len(saved_profile_data.exchanges) == 1
+        assert saved_profile_data.exchanges[0].internal_name == "binance"
+        assert saved_profile_data.exchanges[0].exchange_type == "spot"
+        strategy_provider.update_item.assert_called_once()

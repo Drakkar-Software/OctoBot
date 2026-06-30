@@ -99,6 +99,7 @@ def get_class_from_string(
     module,
     parent_inspection=default_parent_inspection,
     error_when_not_found: bool = False,
+    case_insensitive: bool = False,
 ):
     """
     Search a class from a class string in a specified module for a specified parent
@@ -107,16 +108,22 @@ def get_class_from_string(
     :param module: the class expected module
     :param parent_inspection: the parent inspection
     :param error_when_not_found: if errors should be raised
+    :param case_insensitive: if True, match class names without case sensitivity
     :return: the class if found else None
     """
+    def _name_matches(member_name: str) -> bool:
+        if case_insensitive:
+            return member_name.lower() == class_string.lower()
+        return member_name == class_string
+
     if tentacle_class_by_name := {
-        m[0]: m[1]
-        for m in inspect.getmembers(module)
-        if (m[0] == class_string)
-        and hasattr(m[1], "__bases__")
-        and parent_inspection(m[1], parent)
+        member_name: member_class
+        for member_name, member_class in inspect.getmembers(module)
+        if _name_matches(member_name)
+        and hasattr(member_class, "__bases__")
+        and parent_inspection(member_class, parent)
     }:
-        return tentacle_class_by_name[class_string]
+        return next(iter(tentacle_class_by_name.values()))
     if error_when_not_found:
         raise ModuleNotFoundError(f"Cant find {class_string} module")
     return None  # no class found

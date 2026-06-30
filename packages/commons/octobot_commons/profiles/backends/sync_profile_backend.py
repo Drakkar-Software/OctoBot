@@ -23,10 +23,21 @@ import uuid
 import octobot_commons.constants as constants
 import octobot_commons.errors as errors
 import octobot_commons.enums as enums
+import octobot_commons.logging as logging
 import octobot_commons.profiles.backends.abstract_profile_backend as abstract_profile_backend_module
 import octobot_commons.profiles.profile_types.profile as profile_module
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_types.sync_profile as sync_profile_module
+
+
+_LOGGER = None
+
+
+def _get_logger():
+    global _LOGGER
+    if _LOGGER is None:
+        _LOGGER = logging.get_logger("SyncProfileBackend")
+    return _LOGGER
 
 
 class SyncProfileBackend(abstract_profile_backend_module.AbstractProfileBackend):
@@ -47,7 +58,12 @@ class SyncProfileBackend(abstract_profile_backend_module.AbstractProfileBackend)
                 profile = self._strategy_to_profile(strategy, resolved_schema_path)
                 if profile is not None:
                     profiles[profile.profile_id] = profile
-        except Exception:
+        except Exception as err:
+            _get_logger().exception(
+                "Failed to list sync profiles for user %r: %s",
+                self._sync_user_id,
+                err,
+            )
             return {}
         return profiles
 

@@ -94,46 +94,56 @@ def check_tentacle_version(version, name, origin_package, verbose=True) -> bool:
     return True
 
 
+def _get_tentacle_class_from_module(tentacle_name, parent, module, parent_inspection):
+    return tentacles_management.get_class_from_string(
+        tentacle_name,
+        parent,
+        module,
+        parent_inspection,
+        case_insensitive=True,
+    )
+
+
 def _load_tentacle_class(tentacle_name):
     # Lazy import of tentacles to let tentacles manager handle imports
     try:
         import octobot_evaluators.evaluators as evaluators
         import tentacles.Evaluator as tentacles_Evaluator
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, evaluators.StrategyEvaluator,
             tentacles_Evaluator.Strategies, tentacles_management.evaluator_parent_inspection):
             return tentacle_class
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, evaluators.TAEvaluator,
             tentacles_Evaluator.TA, tentacles_management.evaluator_parent_inspection):
             return tentacle_class
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, evaluators.SocialEvaluator,
             tentacles_Evaluator.Social, tentacles_management.evaluator_parent_inspection):
             return tentacle_class
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, evaluators.RealTimeEvaluator,
             tentacles_Evaluator.RealTime, tentacles_management.evaluator_parent_inspection):
             return tentacle_class
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, evaluators.ScriptedEvaluator,
             tentacles_Evaluator.Scripted, tentacles_management.evaluator_parent_inspection):
             return tentacle_class
         import octobot_trading.modes as trading_modes
         import tentacles.Trading as tentacles_trading
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, trading_modes.AbstractTradingMode,
             tentacles_trading.Mode, tentacles_management.trading_mode_parent_inspection):
             return tentacle_class
         import octobot_trading.exchanges as trading_exchanges
-        if tentacle_class := tentacles_management.get_class_from_string(
+        if tentacle_class := _get_tentacle_class_from_module(
             tentacle_name, trading_exchanges.AbstractExchange,
             tentacles_trading.Exchange, tentacles_management.default_parents_inspection):
             return tentacle_class
         try:
             import octobot.automation as automation
             import tentacles.Automation
-            if tentacle_class := tentacles_management.get_class_from_string(
+            if tentacle_class := _get_tentacle_class_from_module(
                 tentacle_name, automation.Automation,
                 tentacles.Automation, tentacles_management.default_parents_inspection):
                 return tentacle_class
@@ -142,16 +152,16 @@ def _load_tentacle_class(tentacle_name):
         try:
             import octobot_services.services as services
             import tentacles.Services as tentacles_services
-            if tentacle_class := tentacles_management.get_class_from_string(
+            if tentacle_class := _get_tentacle_class_from_module(
                 tentacle_name, services.AbstractAIService,
                 tentacles_services.Services_bases, tentacles_management.default_parents_inspection):
                 return tentacle_class
-            if tentacle_class := tentacles_management.get_class_from_string(
+            if tentacle_class := _get_tentacle_class_from_module(
                 tentacle_name, services.AbstractWebSearchService,
                 tentacles_services.Services_bases, tentacles_management.default_parents_inspection):
                 return tentacle_class
             import tentacles.Services.Interfaces.web_interface.plugins as web_plugins
-            if tentacle_class := tentacles_management.get_class_from_string(
+            if tentacle_class := _get_tentacle_class_from_module(
                 tentacle_name, web_plugins.AbstractWebInterfacePlugin,
                 tentacles_services.Interfaces, tentacles_management.default_parents_inspection):
                 return tentacle_class

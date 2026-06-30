@@ -75,9 +75,9 @@ def _get_config_for_profile(tentacles_setup_config, klass) -> dict:
         return _get_config_from_file_system(tentacles_setup_config, klass)
     tentacle_name = klass.get_name()
     for tentacle_data in profile.get_profile_data().tentacles:
-        if tentacle_data.name == tentacle_name:
-            return tentacle_data.config or {}
-    return {}
+        if tentacle_data.name == tentacle_name and tentacle_data.config:
+            return tentacle_data.config
+    return _get_config_from_file_system(tentacles_setup_config, klass)
 
 
 def _update_config_for_profile(

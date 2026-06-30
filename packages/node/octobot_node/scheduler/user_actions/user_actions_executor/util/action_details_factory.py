@@ -456,9 +456,9 @@ def generic_process_action_factory(
         protocol_account,
         user_id,
     )
-    dsl_arguments = [f"{automation_id!r}"]
+    dsl_arguments = [f"{automation_id!r}", f"user_id={user_id!r}"]
     if strategy_id is not None:
-        dsl_arguments.append(f"strategy_id={strategy_id!r}")
+        dsl_arguments.append(f"sync_profile_id={strategy_id!r}")
     elif generic_process_configuration.profile_data is not None:
         dsl_arguments.append(
             dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)

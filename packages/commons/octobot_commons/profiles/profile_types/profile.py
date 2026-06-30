@@ -244,10 +244,17 @@ class Profile:
         """
         return os.path.join(self.path, constants.CONFIG_TENTACLES_FILE)
 
-    def activate(self) -> None:
+    def init_tentacles_setup_config(self) -> None:
         setup = self._build_tentacles_setup_config()
-        setup.profile = self
-        self.tentacles_setup_config = setup
+        self.bind_tentacles_setup_config(setup)
+
+    def bind_tentacles_setup_config(self, tentacles_setup_config):
+        """
+        Link profile and setup config both ways (setup.profile + profile.tentacles_setup_config).
+        """
+        tentacles_setup_config.profile = self
+        self.tentacles_setup_config = tentacles_setup_config
+        return tentacles_setup_config
 
     def get_tentacles_data(self) -> typing.Optional[list]:
         tentacles_setup_config = self.tentacles_setup_config

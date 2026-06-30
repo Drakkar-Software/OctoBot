@@ -1,6 +1,7 @@
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 
+import mock
 import pytest
 
 import octobot_commons.enums as enums
@@ -20,12 +21,23 @@ class TestEphemeralProfileFromProfileData:
         assert profile.is_sync_backed() is False
 
 
-class TestEphemeralProfileActivate:
-    def test_activate_does_not_require_filesystem_path(self):
+class TestEphemeralProfileInitTentaclesSetupConfig:
+    def test_init_tentacles_setup_config_does_not_require_filesystem_path(self):
         profile_data = profile_data_module.ProfileData()
         profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
-        profile.activate()
+        profile.init_tentacles_setup_config()
         assert profile.tentacles_setup_config is not None
+
+
+class TestEphemeralProfileBindTentaclesSetupConfig:
+    def test_sets_both_profile_and_setup_references(self):
+        profile_data = profile_data_module.ProfileData()
+        profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
+        setup = mock.Mock()
+        returned_setup = profile.bind_tentacles_setup_config(setup)
+        assert returned_setup is setup
+        assert setup.profile is profile
+        assert profile.tentacles_setup_config is setup
 
 
 class TestEphemeralProfileGetTentaclesConfigPath:
