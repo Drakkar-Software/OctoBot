@@ -44,6 +44,8 @@ except ImportError:
     build_api_router = _api_main.build_api_router
 
 LOCALHOST_ORIGIN_REGEX = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+OCTOBOT_CLOUD_ORIGIN_REGEX = r"^https://([a-z0-9-]+\.)*octobot\.cloud$"
+ALLOWED_ORIGIN_REGEX = f"({LOCALHOST_ORIGIN_REGEX}|{OCTOBOT_CLOUD_ORIGIN_REGEX})"
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -96,10 +98,12 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()
         cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()] if cors_origins_str else []
+        extra_regex = self.node_api_service.get_backend_cors_origin_regex()
+        origin_regex = f"({ALLOWED_ORIGIN_REGEX}|{extra_regex})" if extra_regex else ALLOWED_ORIGIN_REGEX
         self.app.add_middleware(
             CORSMiddleware,
             allow_origins=cors_origins,
-            allow_origin_regex=LOCALHOST_ORIGIN_REGEX,
+            allow_origin_regex=origin_regex,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],

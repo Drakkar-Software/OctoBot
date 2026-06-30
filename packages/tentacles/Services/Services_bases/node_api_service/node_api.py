@@ -176,3 +176,6 @@ class NodeApiService(services.AbstractService):
 
     def get_backend_cors_origins(self):
         return os.getenv(services_constants.ENV_BACKEND_CORS_ALLOWED_ORIGINS, self.backend_cors_origins)
+
+    def get_backend_cors_origin_regex(self):
+        return os.getenv(services_constants.ENV_BACKEND_CORS_ORIGIN_REGEX, "")
