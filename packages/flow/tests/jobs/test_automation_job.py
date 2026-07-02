@@ -7,6 +7,7 @@ import octobot_copy.constants as copy_constants
 import octobot_protocol.models as protocol_models
 
 import octobot_flow.entities
+import octobot_flow.entities.actions.action_details as action_details
 import octobot_flow.errors
 import octobot_flow.jobs.automation_job as automation_job_module
 import octobot_flow.logic.actions
@@ -17,6 +18,9 @@ from tests.functionnal_tests import auth_details, global_state
 
 
 STRATEGY_ID = "test-strategy-id"
+_PROCESS_BOUND_DSL_SCRIPT = (
+    "run_octobot_process('bots/b1', user_id='user_1', waiting_time=1.0, ping_timeout=30.0)"
+)
 
 
 def _minimal_automation_job() -> automation_job_module.AutomationJob:
@@ -28,6 +32,41 @@ def _minimal_automation_job() -> automation_job_module.AutomationJob:
     }
     auth_details = octobot_flow.entities.UserAuthentication(wallet_address="0xtest")
     return automation_job_module.AutomationJob(automation_state, [], [], auth_details)
+
+
+def _dsl_action(dsl_script: str, *, action_id: str = "action_dsl") -> action_details.DSLScriptActionDetails:
+    return action_details.DSLScriptActionDetails(
+        id=action_id,
+        dsl_script=dsl_script,
+        dependencies=[],
+        resolved_dsl_script=dsl_script,
+    )
+
+
+def _automation_job_with_exchange_dag(
+    *dag_actions: action_details.AbstractActionDetails,
+) -> automation_job_module.AutomationJob:
+    automation_state = octobot_flow.entities.AutomationState.from_dict(
+        {
+            "exchange_account_details": {
+                "exchange_details": {"internal_name": "binanceus"},
+                "auth_details": {},
+                "portfolio": {},
+            },
+            "automation": {
+                "metadata": {"automation_id": "automation_1"},
+                "actions_dag": {"actions": []},
+            },
+        }
+    )
+    automation_state.automation.actions_dag.actions = list(dag_actions)
+    user_auth_details = octobot_flow.entities.UserAuthentication(wallet_address="0xtest")
+    return automation_job_module.AutomationJob(
+        automation_state.to_dict(include_default_values=False),
+        [],
+        [],
+        user_auth_details,
+    )
 
 
 def _minimal_copied_account() -> protocol_models.CopiedAccount:
@@ -91,3 +130,33 @@ class TestEmitTradingSignals:
         assert emitted_signal.strategy_id == STRATEGY_ID
         assert emitted_signal.account is copied_account
         error_log_mock.assert_called_once_with(f"Skipping trading signal emission: {wallet_error}")
+
+
+class TestFetchDependencies:
+    @pytest.mark.asyncio
+    async def test_sets_skip_exchange_when_executable_dag_is_process_bound_only(self):
+        process_bound_action = _dsl_action(_PROCESS_BOUND_DSL_SCRIPT, action_id="action_run")
+        automation_job = _automation_job_with_exchange_dag(process_bound_action)
+
+        fetched_dependencies = await automation_job._fetch_dependencies(
+            None,
+            [process_bound_action],
+        )
+
+        assert fetched_dependencies.skip_exchange is True
+        assert fetched_dependencies.fetched_exchange_data is None
+        assert fetched_dependencies.fetched_copy_trading_data is None
+
+    @pytest.mark.asyncio
+    async def test_does_not_set_skip_exchange_when_no_executable_dag_actions(self):
+        completed_process_action = _dsl_action(_PROCESS_BOUND_DSL_SCRIPT, action_id="action_run")
+        completed_process_action.executed_at = time.time()
+        stop_automation_action = _dsl_action("stop_automation()", action_id="action_stop")
+        automation_job = _automation_job_with_exchange_dag(completed_process_action)
+
+        fetched_dependencies = await automation_job._fetch_dependencies(
+            None,
+            [stop_automation_action],
+        )
+
+        assert fetched_dependencies.skip_exchange is False

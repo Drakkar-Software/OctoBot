@@ -45,6 +45,7 @@ async def test_run_octobot_process_lifecycle_grid_trading(
     run_dsl = (
         "run_octobot_process("
         f"{user_folder!r}, {repr(octobot_process_functional_shared.GRID_BINANCEUS_PROFILE_DATA)}, "
+        f"user_id={octobot_process_functional_shared.FUNCTIONAL_TEST_USER_ID!r}, "
         f"waiting_time={octobot_process_functional_shared.WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC}, ping_timeout=30.0)"
     )
     run_action = {
@@ -114,8 +115,9 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
             inner: typing.Optional[dict] = None
             # Run DSL job once, then optionally poll until recall payload shows init_state_ok.
-            async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as first_poll:
-                await first_poll.run()
+            first_poll = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                state, [], [], {}
+            )
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                 first_poll.dump()
             )
@@ -128,8 +130,9 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             if not (inner and inner.get("init_state_ok") is True):
                 while time.monotonic() < deadline:
                     await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-                    async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as poll_job:
-                        await poll_job.run()
+                    poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                        state, [], [], {}
+                    )
                     octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                         poll_job.dump()
                     )
@@ -165,9 +168,10 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             ] = None
             last_open_order_count = 0
             while time.monotonic() < orders_deadline:
-                async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as grid_poll_job:
-                    await grid_poll_job.run()
-                    job_dump_payload = grid_poll_job.dump()
+                grid_poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                    state, [], [], {}
+                )
+                job_dump_payload = grid_poll_job.dump()
                 octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                     job_dump_payload
                 )
@@ -245,8 +249,9 @@ async def test_run_octobot_process_lifecycle_grid_trading(
 
             # 3) Second automation run: re-call path only (no second Popen; same child pid).
             before = popen_calls["count"]
-            async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as idem_job:
-                await idem_job.run()
+            idem_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                state, [], [], {}
+            )
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                 idem_job.dump()
             )
@@ -329,6 +334,7 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
     ]
     run_dsl = (
         f"run_octobot_process({user_folder!r}, "
+        f"user_id={octobot_process_functional_shared.FUNCTIONAL_TEST_USER_ID!r}, "
         f"exchange_auth_data={dsl_interpreter.format_parameter_value(exchange_auth)}, "
         f"waiting_time={octobot_process_functional_shared.WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC}, ping_timeout=30.0)"
     )
@@ -391,8 +397,9 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
 
             deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
             inner: typing.Optional[dict] = None
-            async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as first_poll:
-                await first_poll.run()
+            first_poll = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                state, [], [], {}
+            )
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                 first_poll.dump()
             )
@@ -405,8 +412,9 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
             if not (inner and inner.get("init_state_ok") is True):
                 while time.monotonic() < deadline:
                     await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-                    async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as poll_job:
-                        await poll_job.run()
+                    poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                        state, [], [], {}
+                    )
                     octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
                         poll_job.dump()
                     )

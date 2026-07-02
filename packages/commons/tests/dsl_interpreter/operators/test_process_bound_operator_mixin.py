@@ -76,6 +76,17 @@ class TestRequestGracefulStop:
         assert result == expected
         stop_mock.assert_called_once_with(99, logger=mock.sentinel.log)
 
+    def test_wraps_process_error_as_dsl_interpreter_error(self):
+        bound = process_bound_operator_mixin.ProcessBoundOperatorMixin()
+        bound.pid = 99
+        with mock.patch.object(
+            process_util,
+            "request_graceful_stop_via_sigterm",
+            side_effect=commons_errors.ProcessError("failed to signal"),
+        ):
+            with pytest.raises(commons_errors.DSLInterpreterError, match="failed to signal"):
+                bound.request_graceful_stop()
+
 
 @pytest.mark.asyncio
 class TestWaitUntilPidStopped:
@@ -99,6 +110,16 @@ class TestWaitUntilPidStopped:
                     timeout_seconds=0.05,
                     poll_interval=0.01,
                 )
+
+    async def test_wraps_process_error_as_dsl_interpreter_error(self):
+        bound = process_bound_operator_mixin.ProcessBoundOperatorMixin()
+        with mock.patch.object(
+            process_util,
+            "wait_until_pid_stopped_async",
+            side_effect=commons_errors.ProcessError("wait failed"),
+        ):
+            with pytest.raises(commons_errors.DSLInterpreterError, match="wait failed"):
+                await bound.wait_until_pid_stopped(99, timeout_seconds=1.0)
 
 
 class TestSpawnSubprocess:

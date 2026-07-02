@@ -22,6 +22,7 @@ import sys
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.managed_child_process_registry as managed_child_process_registry
 
 import octobot.constants as constants
 import octobot.storage.process_bot_state_dumper as process_bot_state_dumper
@@ -93,7 +94,7 @@ class TaskManager:
             while self.loop_forever_thread.is_alive():
                 self.loop_forever_thread.join(timeout=1)
 
-    def stop_tasks(self, stop_octobot=True):
+    def stop_tasks(self, stop_octobot=True, stop_managed_child_processes=False):
         self.logger.info("Stopping tasks...")
 
         async def stop_timeout(timeout):
@@ -102,6 +103,8 @@ class TaskManager:
         stop_coroutines = []
         if stop_octobot:
             allowed_seconds_to_stop = 10
+            if stop_managed_child_processes:
+                stop_coroutines.append(self._graceful_stop_managed_child_processes())
             stop_coroutines.append(self.octobot.stop())
             stop_coroutines.append(stop_timeout(allowed_seconds_to_stop))
 
@@ -137,6 +140,11 @@ class TaskManager:
 
         self.logger.debug(f"Remaining threads: {self._get_remaining_threads()}")
         self.logger.info("Tasks stopped.")
+
+    async def _graceful_stop_managed_child_processes(self):
+        await managed_child_process_registry.ManagedChildProcessRegistry.instance().graceful_stop_all(
+            timeout_seconds=constants.MANAGED_CHILD_GRACEFUL_STOP_TIMEOUT_SECONDS,
+        )
 
     def _get_remaining_threads(self):
         return [

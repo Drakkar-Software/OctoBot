@@ -232,6 +232,7 @@ class AutomationJob:
             return octobot_flow.entities.FetchedDependencies(
                 fetched_exchange_data=None,
                 fetched_copy_trading_data=None,
+                skip_exchange=True,
             )
         if fetched_copy_trading_data := await self._init_all_required_copy_trading_data(
             maybe_community_repository, to_execute_actions, minimal_profile_data,

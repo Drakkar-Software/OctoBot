@@ -400,7 +400,7 @@ def _configure_profile_sync_user(config, community_auth, *, is_process_child: bo
                 "Process OctoBot children require "
                 f"{constants.ENV_PROCESS_BOT_SYNC_USER_ID} to be set by the executor."
             )
-        config.profile_storage.configure_sync_user(sync_user_id)
+        config.profile_storage.bind_process_child_sync_user_id(sync_user_id)
         return
     if community_auth is not None and community_auth.auto_init_sync_client():
         config.profile_storage.configure_sync_user(community_auth.sync_user_id)
