@@ -992,6 +992,29 @@ class OrdersSynchronizer:
             )
         return out, replaced_cancelled, 0, None
 
+    def _get_locked_base_from_open_mirrored_sells(
+        self,
+        symbol: str,
+        exclude_order: typing.Optional[trading_personal_data.Order] = None,
+    ) -> decimal.Decimal:
+        parsed = symbol_util.parse_symbol(symbol)
+        base_currency = parsed.base
+        exclude_order_id = str(exclude_order.order_id) if exclude_order is not None else None
+        locked_base = trading_constants.ZERO
+        for order in self._exchange_interface.orders.get_open_orders():
+            if order.symbol != symbol:
+                continue
+            if order.tag != copy_constants.MIRRORED_ORDER_TAG:
+                continue
+            if order.side is not trading_enums.TradeOrderSide.SELL:
+                continue
+            if exclude_order_id is not None and str(order.order_id) == exclude_order_id:
+                continue
+            if order.currency != base_currency:
+                continue
+            locked_base += self._exchange_interface.orders.get_order_locked_amount(order)
+        return locked_base
+
     async def _compute_mirrored_quantity_type_and_price(
         self,
         symbol: str,
@@ -1003,8 +1026,8 @@ class OrdersSynchronizer:
     ) -> mirrored_quantity_compute_result.MirroredQuantityComputeResult:
         # Buys cap using free quote for new orders (sibling buys reserve quote). When re-checking an open
         # mirrored buy, add this order's locked quote back so ideal size matches portfolio semantics.
-        # New sells use total base (sibling sell locks still count). Open mirrored sells use available
-        # base plus this order's locked base for the same reason as buys.
+        # Sells cap using total base minus locked base from open mirrored sells (sibling locks count).
+        # When re-checking an open mirrored sell, exclude this order's lock from that sum.
         (
             total_symbol_holding,
             _total_market_holding,
@@ -1066,16 +1089,13 @@ class OrdersSynchronizer:
                 if effective_target_price
                 else scaled_quantity,
             )
-        elif (
-            open_mirrored_order is not None
-            and open_mirrored_order.side is trading_enums.TradeOrderSide.SELL
-        ):
-            base_budget = available_symbol_holding + self._exchange_interface.orders.get_order_locked_amount(
-                open_mirrored_order
+        elif side is trading_enums.TradeOrderSide.SELL:
+            locked_by_siblings = self._get_locked_base_from_open_mirrored_sells(
+                symbol,
+                exclude_order=open_mirrored_order,
             )
+            base_budget = total_symbol_holding - locked_by_siblings
             target_quantity = min(scaled_quantity, base_budget)
-        else:
-            target_quantity = min(scaled_quantity, total_symbol_holding)
         zero_short_reason: typing.Optional[str] = None
         if target_quantity <= trading_constants.ZERO:
             zero_short_reason = (
