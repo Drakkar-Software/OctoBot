@@ -637,17 +637,40 @@ class TestExecuteIteration:
 
     @pytest.mark.asyncio
     @required_imports
-    async def test_execute_iteration_authentication_error_sets_postponed_iteration(
-        self, import_automation_workflow, task
+    @pytest.mark.parametrize(
+        "run_side_effect,expected_error_status,expected_retry_delay_seconds",
+        [
+            pytest.param(
+                octobot_trading_errors.AuthenticationError("Invalid API credentials"),
+                octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value,
+                octobot_node.constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS,
+                id="authentication_error",
+            ),
+            pytest.param(
+                octobot_trading_errors.PortfolioNegativeValueError(
+                    "Trying to update BTC with -0.00074 but quantity was 0.00068"
+                ),
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="portfolio_negative_value_error",
+            ),
+        ],
+    )
+    async def test_execute_iteration_postponed_error_sets_postponed_iteration(
+        self,
+        import_automation_workflow,
+        task,
+        run_side_effect,
+        expected_error_status,
+        expected_retry_delay_seconds,
     ):
         task_content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
             "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
             "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
-        authentication_error_message = "Invalid API credentials"
         mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
-            run_side_effect=octobot_trading_errors.AuthenticationError(authentication_error_message),
+            run_side_effect=run_side_effect,
         )
         fixed_now = 1000.0
 
@@ -668,11 +691,11 @@ class TestExecuteIteration:
 
         update_account_trading_mock.assert_not_called()
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
-        assert parsed_progress_status.error == octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value
-        assert parsed_progress_status.error_message == authentication_error_message
+        assert parsed_progress_status.error == expected_error_status
+        assert parsed_progress_status.error_message == str(run_side_effect)
         assert parsed_progress_status.postponed_iteration is True
         assert parsed_progress_status.next_step_at == (
-            fixed_now + octobot_node.constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
+            fixed_now + expected_retry_delay_seconds
         )
         assert result["has_next_actions"] is True
         assert result["next_iteration_description"] == task_content
@@ -855,15 +878,38 @@ class TestExecuteIteration:
 class TestExecuteAutomationPostponedIteration:
     @pytest.mark.asyncio
     @required_imports
+    @pytest.mark.parametrize(
+        "error_status,error_message,retry_delay_seconds",
+        [
+            pytest.param(
+                octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value,
+                "Invalid API credentials",
+                octobot_node.constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS,
+                id="authentication_error",
+            ),
+            pytest.param(
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+                "Trying to update BTC with -0.00074 but quantity was 0.00068",
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="portfolio_negative_value_error",
+            ),
+        ],
+    )
     async def test_execute_automation_reschedules_on_postponed_iteration(
-        self, temp_dbos_scheduler, import_automation_workflow, parsed_inputs
+        self,
+        temp_dbos_scheduler,
+        import_automation_workflow,
+        parsed_inputs,
+        error_status,
+        error_message,
+        retry_delay_seconds,
     ):
         postponed_iteration_result = params.AutomationWorkflowIterationResult(
             progress_status=params.ProgressStatus(
                 latest_step="no action executed",
-                next_step_at=time.time() + octobot_node.constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS,
-                error=octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value,
-                error_message="Invalid API credentials",
+                next_step_at=time.time() + retry_delay_seconds,
+                error=error_status,
+                error_message=error_message,
                 postponed_iteration=True,
                 should_stop=False,
             ),
@@ -978,7 +1024,7 @@ class TestProcessPendingPriorityActionsAndReschedule:
             should_continue, _ = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._process_pending_priority_actions_and_reschedule(
                 parsed_inputs, iteration_result
             )
-        assert should_continue is True
+        assert should_continue is False
 
     @pytest.mark.asyncio
     async def test_process_pending_raises_when_no_next_iteration_after_priority_actions(
@@ -1158,6 +1204,41 @@ class TestCreateNextIterationInputs:
         )
         result = params.AutomationWorkflowInputs.from_dict(result)
         assert result.execution_time == 0
+
+
+class TestGetPostponedIterationErrorStatusAndDelay:
+    @pytest.mark.parametrize(
+        "error,expected_status,expected_delay",
+        [
+            pytest.param(
+                octobot_trading_errors.AuthenticationError("Invalid API credentials"),
+                octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR,
+                octobot_node.constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS,
+                id="authentication_error",
+            ),
+            pytest.param(
+                octobot_trading_errors.PortfolioNegativeValueError(
+                    "Trying to update BTC with -0.00074 but quantity was 0.00068"
+                ),
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="portfolio_negative_value_error",
+            ),
+        ],
+    )
+    def test_returns_expected_status_and_delay(
+        self,
+        import_automation_workflow,
+        error,
+        expected_status,
+        expected_delay,
+    ):
+        resolved_status, resolved_delay = (
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+            ._get_postponed_iteration_error_status_and_delay(error)
+        )
+        assert resolved_status == expected_status
+        assert resolved_delay == expected_delay
 
 
 class TestShouldContinueWorkflow:

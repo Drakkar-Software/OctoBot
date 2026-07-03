@@ -36,6 +36,7 @@ import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config
 import octobot_node.scheduler.user_actions.user_actions_executor.account.refresh_accounts as user_actions_executor_refresh_accounts
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation as user_actions_executor_signal_automation
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_user_action_executor as user_actions_executor_strategy_base
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.restart_automation as user_actions_executor_restart_automation
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation as user_actions_executor_stop_automation
 
 from octobot_node.scheduler.user_actions.user_action_post_actions import UserActionPostActions
@@ -53,6 +54,7 @@ CreateAutomationActionExecutor = user_actions_executor_create_automation.CreateA
 EditAutomationActionExecutor = user_actions_executor_edit_automation.EditAutomationActionExecutor
 SignalAutomationActionExecutor = user_actions_executor_signal_automation.SignalAutomationActionExecutor
 StopAutomationActionExecutor = user_actions_executor_stop_automation.StopAutomationActionExecutor
+RestartAutomationActionExecutor = user_actions_executor_restart_automation.RestartAutomationActionExecutor
 CreateAccountActionExecutor = user_actions_executor_create_account.CreateAccountActionExecutor
 EditAccountActionExecutor = user_actions_executor_edit_account.EditAccountActionExecutor
 DeleteAccountActionExecutor = user_actions_executor_delete_account.DeleteAccountActionExecutor
@@ -76,6 +78,7 @@ __all__ = [
     "EditAutomationActionExecutor",
     "SignalAutomationActionExecutor",
     "StopAutomationActionExecutor",
+    "RestartAutomationActionExecutor",
     "CreateAccountActionExecutor",
     "EditAccountActionExecutor",
     "DeleteAccountActionExecutor",

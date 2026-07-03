@@ -21,6 +21,7 @@ import {
   buildAccountEditUserActionJson,
   buildAutomationCreateUserActionJsonForAccount,
   buildAutomationCreateUserActionJsonForStrategy,
+  buildAutomationRestartUserActionJson,
   buildAutomationSignalUserActionJson,
   buildAutomationStopUserActionJson,
   buildExchangeConfigEditUserActionJson,
@@ -164,6 +165,12 @@ function DebugTabsPanelComponent({
             onOpenExecuteAction({
               actionType: "automation_stop",
               jsonText: buildAutomationStopUserActionJson(automation.id),
+            })
+          }
+          onRestart={(automation) =>
+            onOpenExecuteAction({
+              actionType: "automation_restart",
+              jsonText: buildAutomationRestartUserActionJson(automation.id),
             })
           }
         />

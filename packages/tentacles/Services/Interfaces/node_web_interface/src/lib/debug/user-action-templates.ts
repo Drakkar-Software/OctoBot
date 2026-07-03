@@ -28,6 +28,7 @@ import type {
   MarketMakingConfiguration,
   MarketMakingSymbolConfiguration,
   RefreshAccountsConfiguration,
+  RestartAutomationConfiguration,
   SignalAutomationConfiguration,
   StopAutomationConfiguration,
   Strategy,
@@ -41,6 +42,13 @@ import type {
 } from "@/client"
 
 export const DEFAULT_USER_ACTION_TYPE: UserActionType = "automation_stop"
+
+export const TEMPLATE_STRATEGY_ID = "STRATEGY_ID"
+export const TEMPLATE_MASTER_STRATEGY_ID = "MASTER_STRATEGY_ID"
+export const TEMPLATE_ACCOUNT_ID = "ACCOUNT_ID"
+export const TEMPLATE_ACCOUNT_AUTH_ID = "ACCOUNT_AUTH_ID"
+export const TEMPLATE_EXCHANGE_CONFIG_ID = "EXCHANGE_CONFIG_ID"
+export const TEMPLATE_AUTOMATION_ID = "AUTOMATION_ID"
 
 export type UserActionTemplateKey =
   | UserActionType
@@ -62,6 +70,7 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   { value: "automation_create", label: "Automation create" },
   { value: "automation_edit", label: "Automation edit" },
   { value: "automation_stop", label: "Automation stop" },
+  { value: "automation_restart", label: "Automation restart" },
   { value: "automation_signal", label: "Automation signal" },
   { value: "account_create", label: "Account create" },
   { value: "account_edit", label: "Account edit" },
@@ -117,6 +126,7 @@ type DebugUserActionConfiguration =
   | CreateAutomationConfiguration
   | EditAutomationConfiguration
   | StopAutomationConfiguration
+  | RestartAutomationConfiguration
   | SignalAutomationConfiguration
   | CreateStrategyConfiguration
   | EditStrategyConfiguration
@@ -191,7 +201,7 @@ function newResourceId(): string {
 }
 
 function sampleStrategyReference(
-  id = "<strategy-id>",
+  id = TEMPLATE_STRATEGY_ID,
   emitSignals = false,
 ): StrategyReference {
   return {
@@ -207,7 +217,7 @@ function sampleAutomationConfiguration(): AutomationConfiguration {
     created_at: currentIsoTimestamp(),
     updated_at: null,
     strategy: sampleStrategyReference(),
-    accounts: [{ id: "<account-id>" } satisfies AccountReference],
+    accounts: [{ id: TEMPLATE_ACCOUNT_ID } satisfies AccountReference],
   } satisfies AutomationConfiguration
 }
 
@@ -222,12 +232,12 @@ function sampleExchangeAccountSpecifics(): ExchangeAccount {
   return {
     account_type: "exchange",
     remote_account_id: "",
-    exchange_config_ids: ["<exchange-config-id>"],
+    exchange_config_ids: [TEMPLATE_EXCHANGE_CONFIG_ID],
   } satisfies ExchangeAccount
 }
 
 function sampleAccountConfiguration(
-  id = "<account-id>",
+  id = TEMPLATE_ACCOUNT_ID,
   authId: string | null = null,
 ): Account {
   return {
@@ -256,7 +266,7 @@ function sampleDefaultAccountAssets(): Array<DetailedAssetsForTradingType> {
 }
 
 function sampleAccountCreateConfiguration(
-  id = "<account-id>",
+  id = TEMPLATE_ACCOUNT_ID,
   authId: string | null = null,
 ): Account {
   return {
@@ -266,7 +276,7 @@ function sampleAccountCreateConfiguration(
 }
 
 function sampleAccountAuthConfiguration(
-  id = "<account-auth-id>",
+  id = TEMPLATE_ACCOUNT_AUTH_ID,
 ): AccountAuthentication {
   return {
     id,
@@ -279,7 +289,7 @@ function sampleAccountAuthConfiguration(
   } satisfies AccountAuthentication
 }
 
-function sampleExchangeConfig(id = "<exchange-config-id>"): ExchangeConfig {
+function sampleExchangeConfig(id = TEMPLATE_EXCHANGE_CONFIG_ID): ExchangeConfig {
   return {
     id,
     name: "binance-main",
@@ -292,7 +302,7 @@ function sampleStrategyShell(
   id: string,
   name: string,
   configuration: StrategyConfigurationVariant,
-  referenceMarket = "USDT",
+  referenceMarket = "USDC",
 ): Strategy {
   return {
     id,
@@ -309,13 +319,13 @@ function sampleTradingTentaclesStrategyShell(
   id: string,
   name: string,
   tradingConfiguration: TradingTentaclesConfiguration,
-  referenceMarket = "USDT",
+  referenceMarket = "USDC",
 ): Strategy {
   return sampleStrategyShell(id, name, tradingConfiguration, referenceMarket)
 }
 
 function sampleGenericProcessStrategyConfiguration(
-  id = "<strategy-id>",
+  id = TEMPLATE_STRATEGY_ID,
 ): Strategy {
   return sampleStrategyShell(id, "My strategy", {
     configuration_type: "generic_process",
@@ -324,7 +334,7 @@ function sampleGenericProcessStrategyConfiguration(
 }
 
 function sampleGenericProcessOctobotStrategyConfiguration(
-  id = "<strategy-id>",
+  id = TEMPLATE_STRATEGY_ID,
 ): Strategy {
   return sampleStrategyShell(
     id,
@@ -369,14 +379,14 @@ function sampleGridPairSettings(
   }
 }
 
-function sampleGridStrategyConfiguration(id = "<strategy-id>"): Strategy {
+function sampleGridStrategyConfiguration(id = TEMPLATE_STRATEGY_ID): Strategy {
   return sampleTradingTentaclesStrategyShell(id, "My grid strategy", {
     configuration_type: "trading_tentacles",
     name: "GridTradingMode",
     config: {
       pair_settings: [
         sampleGridPairSettings(
-          "BTC/USDT",
+          "BTC/USDC",
           3000,
           1000,
           4,
@@ -390,7 +400,7 @@ function sampleGridStrategyConfiguration(id = "<strategy-id>"): Strategy {
   } satisfies TradingTentaclesConfiguration)
 }
 
-function sampleIndexStrategyConfiguration(id = "<strategy-id>"): Strategy {
+function sampleIndexStrategyConfiguration(id = TEMPLATE_STRATEGY_ID): Strategy {
   return sampleTradingTentaclesStrategyShell(id, "My index strategy", {
     configuration_type: "trading_tentacles",
     name: "IndexTradingMode",
@@ -401,16 +411,16 @@ function sampleIndexStrategyConfiguration(id = "<strategy-id>"): Strategy {
   } satisfies TradingTentaclesConfiguration)
 }
 
-function sampleCopyStrategyConfiguration(id = "<strategy-id>"): Strategy {
+function sampleCopyStrategyConfiguration(id = TEMPLATE_STRATEGY_ID): Strategy {
   return sampleStrategyShell(id, "My copy trading strategy", {
     configuration_type: "copy",
-    strategy_id: "<master-strategy-id>",
+    strategy_id: TEMPLATE_MASTER_STRATEGY_ID,
   } satisfies CopyConfiguration)
 }
 
 const DCA_TRADED_SYMBOLS = ["BTC/USDC", "ETH/USDC"] as const
 
-function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
+function sampleDcaStrategyConfiguration(id = TEMPLATE_STRATEGY_ID): Strategy {
   return sampleTradingTentaclesStrategyShell(
     id,
     "My DCA strategy (2 evaluators)",
@@ -466,7 +476,7 @@ function sampleDcaStrategyConfiguration(id = "<strategy-id>"): Strategy {
 }
 
 function sampleDcaAlwaysLongStrategyConfiguration(
-  id = "<strategy-id>",
+  id = TEMPLATE_STRATEGY_ID,
 ): Strategy {
   return sampleTradingTentaclesStrategyShell(
     id,
@@ -526,10 +536,10 @@ function sampleMarketMakingSymbolConfiguration(
 }
 
 function sampleMarketMakingStrategyConfiguration(
-  id = "<strategy-id>",
+  id = TEMPLATE_STRATEGY_ID,
 ): Strategy {
   const exchange = "binance"
-  const tradingPair = "BTC/USDT"
+  const tradingPair = "BTC/USDC"
   return sampleStrategyShell(
     id,
     "My market making strategy",
@@ -539,7 +549,7 @@ function sampleMarketMakingStrategyConfiguration(
         sampleMarketMakingSymbolConfiguration(tradingPair, exchange),
       ],
     } satisfies MarketMakingConfiguration,
-    "USDT",
+    "USDC",
   )
 }
 
@@ -607,18 +617,23 @@ export function buildUserActionTemplate(
     case "automation_edit":
       return userAction(id, {
         action_type: actionType,
-        id: "<automation-id>",
+        id: TEMPLATE_AUTOMATION_ID,
         configuration: sampleAutomationConfiguration(),
       } satisfies EditAutomationConfiguration)
     case "automation_stop":
       return userAction(id, {
         action_type: actionType,
-        id: "<automation-id>",
+        id: TEMPLATE_AUTOMATION_ID,
       } satisfies StopAutomationConfiguration)
+    case "automation_restart":
+      return userAction(id, {
+        action_type: actionType,
+        id: TEMPLATE_AUTOMATION_ID,
+      } satisfies RestartAutomationConfiguration)
     case "automation_signal":
       return userAction(id, {
         action_type: actionType,
-        automation_id: "<automation-id>",
+        automation_id: TEMPLATE_AUTOMATION_ID,
         signal_type: "forced_trigger",
       } satisfies SignalAutomationConfiguration)
     case "account_create":
@@ -629,16 +644,16 @@ export function buildUserActionTemplate(
     case "account_edit":
       return userAction(id, {
         action_type: actionType,
-        id: "<account-id>",
+        id: TEMPLATE_ACCOUNT_ID,
         configuration: sampleAccountConfiguration(
-          "<account-id>",
-          "<account-auth-id>",
+          TEMPLATE_ACCOUNT_ID,
+          TEMPLATE_ACCOUNT_AUTH_ID,
         ),
       } satisfies EditAccountConfiguration)
     case "account_delete":
       return userAction(id, {
         action_type: actionType,
-        id: "<account-id>",
+        id: TEMPLATE_ACCOUNT_ID,
       } satisfies DeleteAccountConfiguration)
     case "account_auth_create":
       return userAction(id, {
@@ -648,18 +663,18 @@ export function buildUserActionTemplate(
     case "account_auth_edit":
       return userAction(id, {
         action_type: actionType,
-        id: "<account-auth-id>",
+        id: TEMPLATE_ACCOUNT_AUTH_ID,
         configuration: sampleAccountAuthConfiguration(),
       } satisfies EditAccountAuthConfiguration)
     case "account_auth_delete":
       return userAction(id, {
         action_type: actionType,
-        id: "<account-auth-id>",
+        id: TEMPLATE_ACCOUNT_AUTH_ID,
       } satisfies DeleteAccountAuthConfiguration)
     case "accounts_refresh":
       return userAction(id, {
         action_type: actionType,
-        account_ids: ["<account-id>"],
+        account_ids: [TEMPLATE_ACCOUNT_ID],
       } satisfies RefreshAccountsConfiguration)
     case "exchange_config_create":
       return userAction(id, {
@@ -669,13 +684,13 @@ export function buildUserActionTemplate(
     case "exchange_config_edit":
       return userAction(id, {
         action_type: actionType,
-        id: "<exchange-config-id>",
+        id: TEMPLATE_EXCHANGE_CONFIG_ID,
         configuration: sampleExchangeConfig(),
       } satisfies EditExchangeConfigConfiguration)
     case "exchange_config_delete":
       return userAction(id, {
         action_type: actionType,
-        id: "<exchange-config-id>",
+        id: TEMPLATE_EXCHANGE_CONFIG_ID,
       } satisfies DeleteExchangeConfigConfiguration)
     case "strategy_create":
       return userAction(id, {
@@ -687,13 +702,13 @@ export function buildUserActionTemplate(
     case "strategy_edit":
       return userAction(id, {
         action_type: actionType,
-        id: "<strategy-id>",
+        id: TEMPLATE_STRATEGY_ID,
         configuration: sampleGenericProcessStrategyConfiguration(),
       } satisfies EditStrategyConfiguration)
     case "strategy_delete":
       return userAction(id, {
         action_type: actionType,
-        id: "<strategy-id>",
+        id: TEMPLATE_STRATEGY_ID,
       } satisfies DeleteStrategyConfiguration)
     default:
       return assertNever(actionType)
@@ -752,6 +767,17 @@ export function buildAutomationStopUserActionJson(
       action_type: "automation_stop",
       id: automationId,
     } satisfies StopAutomationConfiguration),
+  )
+}
+
+export function buildAutomationRestartUserActionJson(
+  automationId: string,
+): string {
+  return userActionJson(
+    userAction(`ua-restart-${automationId}`, {
+      action_type: "automation_restart",
+      id: automationId,
+    } satisfies RestartAutomationConfiguration),
   )
 }
 

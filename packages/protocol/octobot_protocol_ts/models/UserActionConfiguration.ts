@@ -25,6 +25,7 @@ import { EditAutomationConfiguration } from '../models/EditAutomationConfigurati
 import { EditExchangeConfigConfiguration } from '../models/EditExchangeConfigConfiguration';
 import { EditStrategyConfiguration } from '../models/EditStrategyConfiguration';
 import { RefreshAccountsConfiguration } from '../models/RefreshAccountsConfiguration';
+import { RestartAutomationConfiguration } from '../models/RestartAutomationConfiguration';
 import { SignalAutomationConfiguration } from '../models/SignalAutomationConfiguration';
 import { StopAutomationConfiguration } from '../models/StopAutomationConfiguration';
 
@@ -33,7 +34,7 @@ import { StopAutomationConfiguration } from '../models/StopAutomationConfigurati
  * Type
  * @export
  */
-export type UserActionConfiguration = CreateAccountAuthConfiguration | CreateAccountConfiguration | CreateAutomationConfiguration | CreateExchangeConfigConfiguration | CreateStrategyConfiguration | DeleteAccountAuthConfiguration | DeleteAccountConfiguration | DeleteExchangeConfigConfiguration | DeleteStrategyConfiguration | EditAccountAuthConfiguration | EditAccountConfiguration | EditAutomationConfiguration | EditExchangeConfigConfiguration | EditStrategyConfiguration | RefreshAccountsConfiguration | SignalAutomationConfiguration | StopAutomationConfiguration;
+export type UserActionConfiguration = CreateAccountAuthConfiguration | CreateAccountConfiguration | CreateAutomationConfiguration | CreateExchangeConfigConfiguration | CreateStrategyConfiguration | DeleteAccountAuthConfiguration | DeleteAccountConfiguration | DeleteExchangeConfigConfiguration | DeleteStrategyConfiguration | EditAccountAuthConfiguration | EditAccountConfiguration | EditAutomationConfiguration | EditExchangeConfigConfiguration | EditStrategyConfiguration | RefreshAccountsConfiguration | RestartAutomationConfiguration | SignalAutomationConfiguration | StopAutomationConfiguration;
 
 /**
 * @type UserActionConfigurationClass
@@ -52,6 +53,7 @@ export class UserActionConfigurationClass {
         "accounts_refresh": "RefreshAccountsConfiguration",
         "automation_create": "CreateAutomationConfiguration",
         "automation_edit": "EditAutomationConfiguration",
+        "automation_restart": "RestartAutomationConfiguration",
         "automation_signal": "SignalAutomationConfiguration",
         "automation_stop": "StopAutomationConfiguration",
         "exchange_config_create": "CreateExchangeConfigConfiguration",
@@ -62,6 +64,7 @@ export class UserActionConfigurationClass {
         "strategy_edit": "EditStrategyConfiguration",
     };
 }
+
 
 
 

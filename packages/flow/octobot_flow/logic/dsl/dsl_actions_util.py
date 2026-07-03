@@ -8,8 +8,37 @@ import octobot_commons.logging as common_logging
 import octobot_commons.profiles.profile_data as profile_data_import
 
 import octobot_flow.entities
+import octobot_flow.enums
 import octobot_flow.errors
+import octobot_flow.logic.configuration as configuration_module
 import octobot_flow.logic.dsl.dsl_executor as dsl_executor_module
+
+
+def dag_has_only_process_bound_dsl_actions(
+    dag_actions: list[octobot_flow.entities.AbstractActionDetails],
+    *,
+    exchange_account_details: octobot_flow.entities.ExchangeAccountDetails | None,
+    automation_id: str,
+) -> bool:
+    non_init_actions = [
+        action
+        for action in dag_actions
+        if not (
+            isinstance(action, octobot_flow.entities.ConfiguredActionDetails)
+            and action.action == octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value
+        )
+    ]
+    if not non_init_actions:
+        return False
+    minimal_profile_data = configuration_module.create_profile_data(
+        exchange_account_details,
+        automation_id,
+        set(),
+    )
+    return are_all_actions_process_bound_only(
+        minimal_profile_data,
+        non_init_actions,
+    )
 
 
 def are_all_actions_process_bound_only(

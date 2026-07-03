@@ -5,6 +5,7 @@ import octobot_commons.dsl_interpreter
 import octobot_commons.signals
 import octobot_commons.errors
 import octobot_commons.profiles
+import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
 import octobot_commons.logging
 import octobot_trading.exchanges
 import octobot_trading.dsl
@@ -37,7 +38,9 @@ class DSLExecutor(AbstractActionExecutor):
         super().__init__()
         self._exchange_manager = exchange_manager
         self._dependencies = dependencies
-        self._dependencies_config: dict = profile_data.to_profile("").config
+        self._dependencies_config: dict = ephemeral_profile_module.EphemeralProfile.from_profile_data(
+            profile_data
+        ).config
         self._interpreter_signals: octobot_commons.dsl_interpreter.OperatorSignals = None # type: ignore (reset when interpreter is created)
         self._interpreter: octobot_commons.dsl_interpreter.Interpreter = self._create_interpreter(
             None, executor_id

@@ -78,6 +78,34 @@ def _workflow_status_with_automation_task(
     return workflow_status
 
 
+class TestNormalizeParentAutomationId:
+    def test_parent_workflow_id_unchanged(self):
+        assert workflows_util.normalize_parent_automation_id(_PARENT_WORKFLOW_ID) == _PARENT_WORKFLOW_ID
+
+    def test_child_workflow_id_truncated_to_parent(self):
+        child_id = _child_workflow_id(5)
+        assert workflows_util.normalize_parent_automation_id(child_id) == _PARENT_WORKFLOW_ID
+
+
+class TestBuildNextChildAutomationWorkflowId:
+    def test_parent_workflow_id_maps_to_first_child(self):
+        assert (
+            workflows_util.build_next_child_automation_workflow_id(_PARENT_WORKFLOW_ID)
+            == _child_workflow_id(1)
+        )
+
+    def test_child_workflow_id_increments_suffix(self):
+        assert (
+            workflows_util.build_next_child_automation_workflow_id(_child_workflow_id(2))
+            == _child_workflow_id(3)
+        )
+
+    def test_invalid_suffix_raises_value_error(self):
+        invalid_child_id = f"{_PARENT_WORKFLOW_ID}-4-4"
+        with pytest.raises(ValueError, match="Invalid child workflow suffix format"):
+            workflows_util.build_next_child_automation_workflow_id(invalid_child_id)
+
+
 class TestParseAutomationChildWorkflowIndex:
     def test_parent_workflow_id_maps_to_zero(self):
         assert workflows_util.parse_automation_child_workflow_index(_PARENT_WORKFLOW_ID) == 0

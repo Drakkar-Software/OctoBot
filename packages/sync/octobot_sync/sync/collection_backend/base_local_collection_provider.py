@@ -18,11 +18,10 @@
 import abc
 import typing
 
-import cachetools
-
 import octobot_sync.sync.collection_backend.abstract_local_collection_provider as abstract_provider
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage
 import octobot_sync.sync.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_backend.file_checksum_tracked_cache as file_checksum_tracked_cache
 import octobot_sync.sync.collection_backend.state_model as state_model
 import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading
 
@@ -64,9 +63,12 @@ class BaseLocalCollectionProvider(
         )
 
     def _setup_caches(self) -> None:
-        self._cache: cachetools.TTLCache[str, S] = cachetools.TTLCache(
-            maxsize=self._CACHE_MAXSIZE,
-            ttl=self._CACHE_TTL_SECONDS,
+        self._cache: file_checksum_tracked_cache.FileChecksumTrackedCache[str, S] = (
+            file_checksum_tracked_cache.FileChecksumTrackedCache(
+                self._storage,
+                maxsize=self._CACHE_MAXSIZE,
+                ttl=self._CACHE_TTL_SECONDS,
+            )
         )
 
     @abc.abstractmethod
@@ -81,10 +83,10 @@ class BaseLocalCollectionProvider(
         return self._get_item_id(item)
 
     def _get_cached_state(self, user_id: str) -> S | None:
-        return self._cache.get(user_id)
+        return self._cache.get_if_fresh(user_id, user_id)
 
     def _set_cached_state(self, user_id: str, state: S) -> None:
-        self._cache[user_id] = state
+        self._cache.set(user_id, user_id, state)
 
     def _empty_state(self) -> S:
         return typing.cast(

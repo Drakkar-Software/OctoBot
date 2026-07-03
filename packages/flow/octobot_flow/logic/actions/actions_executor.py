@@ -349,7 +349,7 @@ class ActionsExecutor:
     ):
         if synchronized_exchange_account_elements:
             self._get_logger().info(
-                f"Exchange account elements are being updated from {len(synchronized_exchange_account_elements)}"
+                f"Exchange account elements are being updated from {len(synchronized_exchange_account_elements)} "
                 f"synchronized exchange account elements on {[s.name for s in synchronized_exchange_account_elements]}"
                 f"returned by actions; this iteration does not apply sync_from_exchange_manager from the "
                 f"local exchange_manager.",

@@ -17,10 +17,9 @@
 
 import typing
 
-import cachetools
-
 import octobot_sync.sync.collection_backend.abstract_local_collection_provider as abstract_provider
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage
+import octobot_sync.sync.collection_backend.file_checksum_tracked_cache as file_checksum_tracked_cache
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage
 import octobot_sync.sync.collection_backend.state_model as state_model
 
@@ -47,9 +46,12 @@ class SingleItemLocalCollectionProvider(abstract_provider.AbstractLocalCollectio
         )
 
     def _setup_caches(self) -> None:
-        self._state_cache: cachetools.TTLCache[tuple[str, str], S] = cachetools.TTLCache(
-            maxsize=self._CACHE_MAXSIZE,
-            ttl=self._CACHE_TTL_SECONDS,
+        self._state_cache: file_checksum_tracked_cache.FileChecksumTrackedCache[tuple[str, str], S] = (
+            file_checksum_tracked_cache.FileChecksumTrackedCache(
+                self._storage,
+                maxsize=self._CACHE_MAXSIZE,
+                ttl=self._CACHE_TTL_SECONDS,
+            )
         )
 
     def _build_identifier(self, user_id: str, account_id: str) -> str:
@@ -58,10 +60,12 @@ class SingleItemLocalCollectionProvider(abstract_provider.AbstractLocalCollectio
         )
 
     def _get_cached_state(self, user_id: str, account_id: str) -> S | None:
-        return self._state_cache.get((user_id, account_id))
+        identifier = self._build_identifier(user_id, account_id)
+        return self._state_cache.get_if_fresh((user_id, account_id), identifier)
 
     def _set_cached_state(self, user_id: str, account_id: str, state: S) -> None:
-        self._state_cache[(user_id, account_id)] = state
+        identifier = self._build_identifier(user_id, account_id)
+        self._state_cache.set((user_id, account_id), identifier, state)
 
     def load_state(self, user_id: str, account_id: str) -> S:
         cached_state = self._get_cached_state(user_id, account_id)

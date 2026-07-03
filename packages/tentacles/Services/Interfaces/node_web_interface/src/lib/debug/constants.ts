@@ -1,5 +1,5 @@
 import type { AutomationSignalType } from "@/client"
-import type { AccountSortKey, AutomationSortKey } from "@/lib/debug/types"
+import type { AccountSortKey, AutomationSortKey, StrategySortKey } from "@/lib/debug/types"
 import type { SortState } from "@/lib/table-types"
 
 export const SIGNAL_TYPE_OPTIONS: {
@@ -22,8 +22,11 @@ export const ERROR_DETAILS_DISPLAY_LENGTH = 35
 export const LATEST_ACTION_DISPLAY_LENGTH = 22
 export const AUTOMATION_NAME_DISPLAY_LENGTH = 20
 export const USER_ACTION_ID_DISPLAY_LENGTH = 32
+export const STRATEGY_NAME_DISPLAY_LENGTH = 30
+export const STRATEGY_DESCRIPTION_DISPLAY_LENGTH = 40
 
 export const AUTOMATION_ASSETS_MAX_VISIBLE = 2
+export const TRADING_TOOLTIP_MAX_ITEMS = 100
 
 export const AUTOMATION_COMPACT_COLUMN_CLASS = "w-0 px-2"
 
@@ -46,6 +49,11 @@ export const DEBUG_DELETABLE_TAB_VALUES = [
 ] as const
 
 export const AUTOMATION_TABLE_DEFAULT_SORT: SortState<AutomationSortKey> = {
+  key: "updated",
+  dir: "desc",
+}
+
+export const STRATEGY_TABLE_DEFAULT_SORT: SortState<StrategySortKey> = {
   key: "updated",
   dir: "desc",
 }

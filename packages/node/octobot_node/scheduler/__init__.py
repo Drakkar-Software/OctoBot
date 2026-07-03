@@ -23,6 +23,8 @@ scheduler_logger = logging.getLogger(__name__)
 
 SCHEDULER: scheduler_lib.Scheduler = scheduler_lib.Scheduler()
 
+_shutdown_done = False
+
 
 def is_enabled() -> bool:
     return SCHEDULER.is_enabled()
@@ -33,6 +35,8 @@ def is_initialized() -> bool:
 
 
 def initialize_scheduler():
+    global _shutdown_done
+    _shutdown_done = False
     scheduler_logger.info("Initializing scheduler")
     SCHEDULER.create()
     octobot_node.scheduler.workflows.register_workflows()
@@ -40,9 +44,13 @@ def initialize_scheduler():
 
 
 async def shutdown_scheduler_and_trading_signal_channel() -> None:
+    global _shutdown_done
+    if _shutdown_done or not is_initialized():
+        return
     try:
         import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
         await trading_signals_channel.shutdown_internal_trading_signal_channel()
     except ImportError:
         pass
     SCHEDULER.stop()
+    _shutdown_done = True

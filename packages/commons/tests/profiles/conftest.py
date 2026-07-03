@@ -1,42 +1,49 @@
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
-#
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  This library is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public
-#  License along with this library.
-import pathlib
-import shutil
+
+import os
 
 import pytest
+import pathlib
 
-import tests.profiles as profiles_tests
+import octobot_commons.constants as constants
+import octobot_commons.profiles as profiles
+import octobot_commons.profiles.backends as profile_backends_module
+import octobot_commons.profiles.profile_storage as profile_storage_module
+import octobot_commons.tests.test_config as test_config
 
 PROFILES_FS_XDIST_GROUP = "profiles_fs"
 
-_EPHEMERAL_PROFILE_DIRECTORIES = (
-    "second_profile",
-    "other_profile",
-)
+
+def get_profile_path():
+    return test_config.TEST_CONFIG_FOLDER
 
 
-@pytest.fixture(autouse=True)
-def _clean_ephemeral_test_profile_directories():
-    profiles_path = pathlib.Path(profiles_tests.get_profiles_path())
-    for directory_name in _EPHEMERAL_PROFILE_DIRECTORIES:
-        directory_path = profiles_path.joinpath(directory_name)
-        if directory_path.is_dir():
-            shutil.rmtree(directory_path)
-    yield
-    for directory_name in _EPHEMERAL_PROFILE_DIRECTORIES:
-        directory_path = profiles_path.joinpath(directory_name)
-        if directory_path.is_dir():
-            shutil.rmtree(directory_path)
+def get_profiles_path():
+    return pathlib.Path(get_profile_path()).parent
+
+
+@pytest.fixture
+def profile_storage(tmp_path):
+    profiles_path = tmp_path / constants.PROFILES_FOLDER
+    profiles_path.mkdir()
+    storage = profile_storage_module.ProfileStorage(str(profiles_path), None)
+    yield storage
+
+
+@pytest.fixture
+def profile_storage_for_tests():
+    return profile_storage_module.ProfileStorage(str(get_profiles_path()), None)
+
+
+@pytest.fixture
+def profile(profile_storage_for_tests):
+    filesystem_backend = profile_backends_module.FilesystemProfileBackend()
+    loaded_profile = filesystem_backend.read_profile_from_path(get_profile_path())
+    loaded_profile.bind_profile_storage(profile_storage_for_tests)
+    return loaded_profile
+
+
+@pytest.fixture
+def invalid_profile():
+    return profiles.Profile(os.path.join(get_profile_path(), "invalid_profile"))

@@ -516,3 +516,31 @@ def test_is_node_wallet_configured(auth):
     auth._wallet_backend.list_wallets.return_value = [mock.Mock()]
     assert auth.is_node_wallet_configured() is True
 
+
+class TestGetWalletSyncStorageMasterConfigRead:
+    def test_reads_master_config_without_activating_profile(self):
+        auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        master_config = mock.Mock()
+        sync_storage = mock.Mock()
+        with mock.patch(
+            "octobot.community.authentication.user_root_folder_provider.get_sync_data_root",
+            mock.Mock(return_value="/master/user"),
+        ), mock.patch(
+            "octobot.community.authentication.user_root_folder_provider.get_user_root_folder",
+            mock.Mock(return_value="/child/automation"),
+        ), mock.patch(
+            "octobot.community.authentication.os.path.isfile",
+            mock.Mock(return_value=True),
+        ), mock.patch(
+            "octobot.community.authentication.commons_configuration.Configuration",
+            mock.Mock(return_value=master_config),
+        ) as configuration_cls_mock, mock.patch(
+            "octobot.community.authentication.supabase_backend.SyncConfigurationStorage",
+            mock.Mock(return_value=sync_storage),
+        ) as sync_storage_cls_mock:
+            result = auth._get_wallet_sync_storage()
+        configuration_cls_mock.assert_called_once()
+        master_config.read.assert_called_once_with(should_raise=False, activate_profile=False)
+        sync_storage_cls_mock.assert_called_once_with(master_config)
+        assert result is sync_storage
+

@@ -138,6 +138,21 @@ class ExchangeAccountElements(account_elements_import.AccountElements):
             updated_open_orders.append(
                 octobot_trading.storage.orders_storage._format_order(order, exchange_manager)
             )
+        for order in octobot_trading.api.get_pending_creation_orders(exchange_manager):
+            if not order.exchange_order_id:
+                continue
+            if order.is_self_managed():
+                octobot_commons.logging.get_logger(self.__class__.__name__).error(
+                    f"Self managed order created. This type of [{exchange_manager.exchange_name}] "
+                    f"order is not supported, order is ignored. Order: {order}"
+                )
+                continue
+            if order.exchange_order_id in updated_open_orders_exchange_ids:
+                continue
+            updated_open_orders_exchange_ids.add(order.exchange_order_id)
+            updated_open_orders.append(
+                octobot_trading.storage.orders_storage._format_order(order, exchange_manager)
+            )
         updated_missing_orders = [
             order
             for exchange_id, order in octobot_trading.personal_data.get_enriched_orders_by_exchange_id(previous_orders.open_orders).items()

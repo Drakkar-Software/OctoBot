@@ -20,6 +20,7 @@ from datetime import datetime
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
+import octobot_commons.errors as errors
 import octobot_commons.authentication as authentication
 import octobot_services.constants as services_constants
 import tentacles.Services.Interfaces.web_interface.constants as constants
@@ -40,11 +41,15 @@ def register(blueprint):
         selected_profile = flask.request.args.get("select", None)
         next_url = flask.request.args.get("next", None)
         if selected_profile is not None and selected_profile != models.get_current_profile().profile_id:
-            models.select_profile(selected_profile)
-            current_profile = models.get_current_profile()
-            flask.flash(
-                f"Selected the {current_profile.name} profile", "success"
-            )
+            try:
+                models.select_profile(selected_profile)
+                current_profile = models.get_current_profile()
+                flask.flash(
+                    f"Selected the {current_profile.name} profile", "success"
+                )
+            except errors.NoProfileError:
+                flask.flash("The requested profile no longer exists.", "warning")
+                current_profile = models.get_current_profile()
         else:
             current_profile = models.get_current_profile()
         if next_url is not None:

@@ -188,14 +188,20 @@ class AutomationWorkflow:
                 except octobot_flow.errors.CommunityTradingSignalError as err:
                     execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
                     execution_error_message = str(err)
-                except octobot_trading.errors.AuthenticationError as err:
+                except (
+                    octobot_trading.errors.AuthenticationError,
+                    octobot_trading.errors.PortfolioNegativeValueError,
+                ) as err:
                     AutomationWorkflow.get_logger(parsed_inputs).error(
-                        f"Authentication error: {err} ({err.__class__.__name__})"
+                        f"{err.__class__.__name__} error (postponed iteration): {err}"
                     )
-                    execution_error = octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value
+                    execution_error_status, postpone_delay_seconds = (
+                        AutomationWorkflow._get_postponed_iteration_error_status_and_delay(err)
+                    )
+                    next_step_at = time.time() + postpone_delay_seconds
+                    execution_error = execution_error_status.value
                     execution_error_message = str(err)
                     postponed_iteration = True
-                    next_step_at = time.time() + constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
                     has_next_actions_override = True
                     next_iteration_description_override = parsed_inputs.task.content
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
@@ -235,9 +241,10 @@ class AutomationWorkflow:
                     result,
                 )
             else:
+                retry_delay_seconds = max(0.0, (next_step_at or time.time()) - time.time())
                 AutomationWorkflow.get_logger(parsed_inputs).info(
-                    f"Iteration postponed after authentication error, retry scheduled in "
-                    f"{constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS:.0f} seconds"
+                    f"Iteration postponed ({execution_error}: {execution_error_message}), "
+                    f"retry scheduled in {retry_delay_seconds:.0f} seconds"
                 )
             #### End of decryped task context - no clear data after this point in encrypted context ####
 
@@ -375,14 +382,14 @@ class AutomationWorkflow:
             AutomationWorkflow.get_logger(parsed_inputs).info(
                 f"Stopping workflow, should stop: {latest_iteration_result.progress_status.should_stop}"
             )
-        else:
-            # successful iteration and a new iteration is required, schedule next iteration, don't return anything
-            await AutomationWorkflow._schedule_next_iteration(
-                parsed_inputs,
-                latest_iteration_result.next_iteration_description,  # type: ignore
-                latest_iteration_result.progress_status,
-                latest_iteration_result.next_iteration_description_metadata,
-            )
+            return False, latest_iteration_result
+        # successful iteration and a new iteration is required, schedule next iteration, don't return anything
+        await AutomationWorkflow._schedule_next_iteration(
+            parsed_inputs,
+            latest_iteration_result.next_iteration_description,  # type: ignore
+            latest_iteration_result.progress_status,
+            latest_iteration_result.next_iteration_description_metadata,
+        )
         return True, latest_iteration_result
 
     @staticmethod
@@ -413,14 +420,13 @@ class AutomationWorkflow:
     def _get_next_child_workflow_id() -> str:
         workflow_id = dbos.DBOS.workflow_id
         if workflow_id is None:
-            raise errors.WorkflowInputError("Missing current workflow ID while scheduling next iteration.")
-        parent_workflow_id = workflow_id[:constants.PARENT_WORKFLOW_ID_LENGTH]
+            raise errors.WorkflowInputError(
+                "Missing current workflow ID while scheduling next iteration."
+            )
         try:
-            current_child_id = workflows_util.parse_automation_child_workflow_index(workflow_id)
+            return workflows_util.build_next_child_automation_workflow_id(workflow_id)
         except ValueError as error:
             raise errors.WorkflowInputError(str(error)) from error
-        next_child_id = current_child_id + 1
-        return f"{parent_workflow_id}_{next_child_id}"
 
     @staticmethod
     def _create_next_iteration_inputs(
@@ -477,3 +483,12 @@ class AutomationWorkflow:
         return octobot_commons.logging.get_logger(
             parsed_inputs.task.name or AutomationWorkflow.__name__
         )
+
+    @staticmethod
+    def _get_postponed_iteration_error_status_and_delay(error: Exception) -> tuple[
+        octobot_flow.enums.ActionErrorStatus, float
+    ]:
+        if isinstance(error, octobot_trading.errors.AuthenticationError):
+            return octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR, constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
+        # other errors, like PortfolioNegativeValueError
+        return octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS

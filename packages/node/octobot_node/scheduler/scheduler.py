@@ -122,7 +122,7 @@ class Scheduler:
         if workflow_id := getattr(dbos.DBOS, "workflow_id", None):
             # group children workflows and parent workflows together
             # (a child workflow has the parent's workflow ID as a prefix)
-            return workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+            return workflows_util.normalize_parent_automation_id(workflow_id)
         return None
 
     def is_enabled(self) -> bool:
@@ -145,11 +145,13 @@ class Scheduler:
             self.logger.warning("Scheduler not initialized")
 
     def stop(self) -> None:
-        if self.INSTANCE:
-            self.INSTANCE.destroy()
-            self.logger.info("Scheduler stopped")
-        else:
-            self.logger.warning("Scheduler not initialized")
+        if not self.INSTANCE:
+            return
+        self.INSTANCE.destroy()
+        self.logger.info("Scheduler stopped")
+        Scheduler.INSTANCE = None
+        Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
+        Scheduler.USER_ACTION_QUEUE = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
@@ -222,13 +224,13 @@ class Scheduler:
             user_id, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output
         )
         parent_workflow_ids = set(
-            workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+            workflows_util.normalize_parent_automation_id(workflow_id)
             for workflow_id in workflow_ids
         )
         return [
             workflow
             for workflow in all_workflows
-            if workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] in parent_workflow_ids
+            if workflows_util.normalize_parent_automation_id(workflow.workflow_id) in parent_workflow_ids
         ]
 
     async def _get_parent_and_children_automation_workflow_ids(
@@ -289,6 +291,37 @@ class Scheduler:
             return []
         latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
         return [latest_workflow.workflow_id]
+
+    async def resolve_latest_terminal_automation_workflow_for_parent_id(
+        self,
+        user_id: typing.Optional[str],
+        parent_id: str,
+    ) -> typing.Optional[dbos.WorkflowStatus]:
+        """
+        Return the latest terminal (SUCCESS/ERROR) child workflow for ``parent_id`` that has
+        parseable automation output state, or None when no prior execution exists.
+        """
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
+            user_id,
+            [parent_id],
+            [
+                dbos.WorkflowStatusString.SUCCESS,
+                dbos.WorkflowStatusString.ERROR,
+            ],
+            load_output=True,
+        )
+        if not matching_workflows:
+            return None
+        sorted_workflows = sorted(
+            matching_workflows,
+            key=workflows_util._automation_child_workflow_sort_key,
+            reverse=True,
+        )
+        for workflow_status in sorted_workflows:
+            workflow_output = workflows_util.parse_automation_workflow_output(workflow_status)
+            if workflow_output is not None and workflow_output.state:
+                return workflow_status
+        return None
 
     async def _get_latest_workflow_for_each_automation(
         self,
@@ -562,7 +595,7 @@ class Scheduler:
             workflow_output = workflows_util.parse_automation_workflow_output(workflow)
             task = workflows_util.get_resolved_automation_task(workflow)
             if task:
-                task.id = workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+                task.id = workflows_util.normalize_parent_automation_id(workflow.workflow_id)
                 sources.append(automations_protocol.AutomationStateSource(
                     task=task,
                     workflow_status=workflow.status,

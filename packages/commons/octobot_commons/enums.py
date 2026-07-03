@@ -523,6 +523,12 @@ class ProfileType(enum.Enum):
     BACKTESTING = "backtesting"
 
 
+class ProfileSource(enum.Enum):
+    FILESYSTEM = "filesystem"
+    SYNC = "sync"
+    EPHEMERAL = "ephemeral"
+
+
 class SignalHistoryTypes(enum.Enum):
     GPT = "gpt"
 

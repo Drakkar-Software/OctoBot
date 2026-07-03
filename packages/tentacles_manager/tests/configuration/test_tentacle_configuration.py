@@ -290,3 +290,4 @@ def _cleanup():
     ref_tent = user_root_folder_provider.get_user_reference_tentacle_config_path()
     if path.exists(ref_tent):
         rmtree(ref_tent)
+

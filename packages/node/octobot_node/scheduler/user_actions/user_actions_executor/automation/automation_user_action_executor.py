@@ -71,6 +71,7 @@ class AutomationUserActionExecutor(user_actions_executor_base.UserActionExecutor
                 node_errors.InvalidAutomationConfigurationError,
                 node_errors.UnsupportedAutomationConfigurationTypeError,
                 node_errors.UnsupportedUserActionConfigurationTypeError,
+                node_errors.UnrestartableAutomationError,
             ),
         ):
             return protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION

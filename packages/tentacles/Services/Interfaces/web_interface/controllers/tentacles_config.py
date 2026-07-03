@@ -65,6 +65,7 @@ def register(blueprint):
                 return util.get_rest_reply(response, 500)
         else:
             if flask.request.args:
+                models.refresh_sync_profiles_for_display()
                 tentacle_name = flask.request.args.get("name")
                 missing_tentacles = set()
                 media_url = flask.url_for("tentacle_media", _external=True)
@@ -113,6 +114,7 @@ def register(blueprint):
     @login.login_required_when_activated
     def config_tentacle_edit_details(tentacle):
         try:
+            models.refresh_sync_profiles_for_display()
             profile_id = flask.request.args.get("profile", None)
             return util.get_rest_reply(
                 models.get_tentacle_config_and_edit_display(tentacle, profile_id=profile_id)

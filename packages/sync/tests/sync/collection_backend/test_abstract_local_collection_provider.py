@@ -16,13 +16,13 @@
 
 import typing
 
-import cachetools
 import mock
 import pydantic
 
 import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.abstract_local_collection_provider as abstract_provider_module
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
+import octobot_sync.sync.collection_backend.file_checksum_tracked_cache as file_checksum_tracked_cache_module
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
@@ -49,7 +49,8 @@ class _TestAbstractProvider(abstract_provider_module.AbstractLocalCollectionProv
         )
 
     def _setup_caches(self) -> None:
-        self._state_cache: cachetools.TTLCache[tuple[str, str], _TestState] = cachetools.TTLCache(
+        self._state_cache = file_checksum_tracked_cache_module.FileChecksumTrackedCache(
+            self._storage,
             maxsize=self._CACHE_MAXSIZE,
             ttl=self._CACHE_TTL_SECONDS,
         )
@@ -83,7 +84,10 @@ class TestAbstractLocalCollectionProviderInit:
         provider = _make_provider(tmp_path)
 
         assert hasattr(provider, "_state_cache")
-        assert isinstance(provider._state_cache, cachetools.TTLCache)
+        assert isinstance(
+            provider._state_cache,
+            file_checksum_tracked_cache_module.FileChecksumTrackedCache,
+        )
 
 
 class TestAbstractLocalCollectionProviderGetWalletPrivateKey:

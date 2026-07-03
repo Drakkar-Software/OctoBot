@@ -13,15 +13,27 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from __future__ import annotations
+
 import contextlib
+import contextvars
 import os
 import os.path as path
 import shutil
+import typing
 
+import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_tentacles_manager.configuration as configuration
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.loaders as loaders
 
+if typing.TYPE_CHECKING:
+    import octobot_tentacles_manager.configuration.tentacles_setup_configuration as tentacles_setup_configuration
+
+
+_LOCAL_GET_CONFIG_OVERRIDE: contextvars.ContextVar = contextvars.ContextVar(
+    "local_get_config_override", default=None
+)
 
 
 def _get_config_from_file_system(tentacles_setup_config, klass):
@@ -31,30 +43,7 @@ def _get_config_from_file_system(tentacles_setup_config, klass):
     return configuration.read_config(config_path)
 
 
-_GET_CONFIG_PROXY = _get_config_from_file_system
-
-
-def set_get_config_proxy(new_proxy):
-    # todo handle concurrency
-    global _GET_CONFIG_PROXY
-    _GET_CONFIG_PROXY = new_proxy
-
-
-@contextlib.contextmanager
-def local_get_config_proxy(new_proxy):
-    previous_proxy = _GET_CONFIG_PROXY
-    try:
-        set_get_config_proxy(new_proxy)
-        yield
-    finally:
-        set_get_config_proxy(previous_proxy)
-
-
-def get_config(tentacles_setup_config, klass) -> dict:
-    return _GET_CONFIG_PROXY(tentacles_setup_config, klass)
-
-
-def update_config(tentacles_setup_config, klass, config_update, keep_existing=True) -> None:
+def _update_config_from_file_system(tentacles_setup_config, klass, config_update, keep_existing=True) -> None:
     config_file = _get_config_file_path(tentacles_setup_config, klass)
     current_config = configuration.read_config(config_file)
     # only update values in config update not to erase values in root config (might not be editable)
@@ -66,16 +55,127 @@ def update_config(tentacles_setup_config, klass, config_update, keep_existing=Tr
     config_file = _get_config_file_path(tentacles_setup_config, klass, updated_config=True)
     configuration.write_config(config_file, current_config)
 
+
 def _recursive_config_update(current_config: dict, config_update: dict)-> dict:
     for key, values in config_update.items():
         if isinstance(values, dict) and isinstance(current_config.get(key), dict):
             current_config[key] = _recursive_config_update(current_config[key], values)
             continue
-        current_config[key] = values     
+        current_config[key] = values
     return current_config
 
-def factory_reset_config(tentacles_setup_config, klass) -> None:
+
+def _factory_reset_config_from_file_system(tentacles_setup_config, klass) -> None:
     shutil.copy(_get_reference_config_file_path(klass), _get_config_file_path(tentacles_setup_config, klass))
+
+
+def _get_config_for_profile(tentacles_setup_config, klass) -> dict:
+    profile = tentacles_setup_config.profile
+    file_or_factory_config = _get_config_from_file_system(tentacles_setup_config, klass)
+    if profile is None or not profile.is_profile_data_tentacle_backed():
+        return file_or_factory_config
+    tentacle_name = klass.get_name()
+    for tentacle_data in profile.get_profile_data().tentacles:
+        if tentacle_data.name == tentacle_name:
+            if tentacle_data.config:
+                return _recursive_config_update(dict(file_or_factory_config), tentacle_data.config)
+            return file_or_factory_config
+    return file_or_factory_config
+
+
+def _update_config_for_profile(
+    tentacles_setup_config, klass, config_update, keep_existing=True
+) -> None:
+    profile = tentacles_setup_config.profile
+    if profile is None or not profile.is_profile_data_tentacle_backed():
+        _update_config_from_file_system(
+            tentacles_setup_config, klass, config_update, keep_existing=keep_existing
+        )
+        return
+    tentacle_name = klass.get_name()
+    profile_data = profile.get_profile_data()
+    updated_tentacle = None
+    for tentacle_data in profile_data.tentacles:
+        if tentacle_data.name == tentacle_name:
+            updated_tentacle = tentacle_data
+            break
+    if updated_tentacle is None:
+        updated_tentacle = profile_data_module.TentaclesData(
+            name=tentacle_name, config={}
+        )
+        profile_data.tentacles.append(updated_tentacle)
+    import octobot_tentacles_manager.api as tentacles_manager_api
+
+    updated_tentacle.activated = tentacles_manager_api.is_tentacle_activated_in_tentacles_setup_config(
+        tentacles_setup_config,
+        tentacle_name,
+        default_value=False,
+    )
+    if keep_existing:
+        merged_config = dict(updated_tentacle.config or {})
+        merged_config.update(config_update)
+        updated_tentacle.config = merged_config
+    else:
+        updated_tentacle.config = config_update
+
+
+def _factory_reset_config_for_profile(tentacles_setup_config, klass) -> None:
+    profile = tentacles_setup_config.profile
+    if profile is None or not profile.is_profile_data_tentacle_backed():
+        _factory_reset_config_from_file_system(tentacles_setup_config, klass)
+        return
+    tentacle_name = klass.get_name()
+    profile_data = profile.get_profile_data()
+    profile_data.tentacles = [
+        tentacle_data
+        for tentacle_data in profile_data.tentacles
+        if tentacle_data.name != tentacle_name
+    ]
+
+
+@contextlib.contextmanager
+def local_get_config_proxy(new_proxy):
+    override_token = _LOCAL_GET_CONFIG_OVERRIDE.set(new_proxy)
+    try:
+        yield
+    finally:
+        _LOCAL_GET_CONFIG_OVERRIDE.reset(override_token)
+
+
+def get_config(
+    tentacles_setup_config: tentacles_setup_configuration.TentaclesSetupConfiguration,
+    klass,
+) -> dict:
+    local_override = _LOCAL_GET_CONFIG_OVERRIDE.get()
+    if local_override is not None:
+        return local_override(tentacles_setup_config, klass)
+    if tentacles_setup_config.profile:
+        return _get_config_for_profile(tentacles_setup_config, klass)
+    return _get_config_from_file_system(tentacles_setup_config, klass)
+
+
+def update_config(
+    tentacles_setup_config: tentacles_setup_configuration.TentaclesSetupConfiguration,
+    klass,
+    config_update,
+    keep_existing=True,
+) -> None:
+    if tentacles_setup_config.profile:
+        return _update_config_for_profile(
+            tentacles_setup_config, klass, config_update, keep_existing=keep_existing
+        )
+    return _update_config_from_file_system(
+        tentacles_setup_config, klass, config_update, keep_existing=keep_existing
+    )
+
+
+def factory_reset_config(
+    tentacles_setup_config: tentacles_setup_configuration.TentaclesSetupConfiguration,
+    klass,
+) -> None:
+    if tentacles_setup_config.profile:
+        return _factory_reset_config_for_profile(tentacles_setup_config, klass)
+    return _factory_reset_config_from_file_system(tentacles_setup_config, klass)
 
 
 def get_config_schema_path(klass) -> str:

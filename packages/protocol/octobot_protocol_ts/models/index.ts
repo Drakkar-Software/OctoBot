@@ -82,6 +82,7 @@ export * from "./Position";
 export * from "./PositionStatus";
 export * from "./PositionSummary";
 export * from "./RefreshAccountsConfiguration";
+export * from "./RestartAutomationConfiguration";
 export * from "./Side";
 export * from "./SignalAutomationConfiguration";
 export * from "./SignalAutomationConfigurationSignalPayload";

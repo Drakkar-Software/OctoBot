@@ -45,6 +45,8 @@ _T_GRID_SECONDS = 20.0
 _T_SIGNAL_SECONDS = 5.0
 _T_STOP_SEND_SECONDS = 5.0
 _T_STOP_COMPLETE_SECONDS = 10.0
+_T_RESTART_ENQUEUE_SECONDS = 10.0
+_T_RESTART_RUNNING_SECONDS = 30.0
 # Fast poll after stop/signal send; protocol status may flip RUNNING→COMPLETED quickly on CI.
 _POST_STOP_PROTOCOL_POLL_SECONDS = 0.05
 
@@ -427,5 +429,66 @@ class TestTriggerTaskGridDbosIntegration:
             )
             protocol_assertions_module.assert_protocol_automation_metadata_name(
                 protocol_state_final,
+                _GRID_AUTOMATION_DISPLAY_NAME,
+            )
+
+            restart_user_action = workflow_common_module.build_restart_user_action(
+                automation_id=parent_automation_id,
+                user_action_id=f"ua-restart-{create_user_action.id}",
+            )
+            try:
+                await asyncio.wait_for(
+                    workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
+                        temp_dbos_scheduler,
+                        restart_user_action,
+                        user_id,
+                    ),
+                    timeout=_T_RESTART_ENQUEUE_SECONDS,
+                )
+            except TimeoutError as exc:
+                raise AssertionError("execute_user_action timed out enqueueing automation restart") from exc
+
+            await user_action_assertions_module.assert_user_action_selector_completed_automation_restart(
+                user_id=user_id,
+                user_action_id=restart_user_action.id,
+            )
+
+            restart_running_deadline = time.monotonic() + _T_RESTART_RUNNING_SECONDS
+            workflow_row_after_restart = None
+            protocol_state_after_restart = None
+            while time.monotonic() < restart_running_deadline:
+                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
+                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                        continue
+                    if workflow_row.status not in (
+                        dbos.WorkflowStatusString.PENDING.value,
+                        dbos.WorkflowStatusString.ENQUEUED.value,
+                    ):
+                        continue
+                    workflow_row_after_restart = workflow_row
+                    protocol_state_after_restart = (
+                        await workflow_common_module.load_protocol_automation_state_for_workflow(
+                            user_id,
+                            workflow_row_after_restart,
+                        )
+                    )
+                    if protocol_state_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING:
+                        break
+                if (
+                    workflow_row_after_restart is not None
+                    and protocol_state_after_restart is not None
+                    and protocol_state_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING
+                ):
+                    break
+                await asyncio.sleep(workflow_common_module.DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS)
+            else:
+                pytest.fail(
+                    f"Timed out waiting for restarted grid automation {metadata_automation_id!r} to reach RUNNING"
+                )
+
+            assert workflow_row_after_restart is not None
+            assert protocol_state_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING
+            protocol_assertions_module.assert_protocol_automation_metadata_name(
+                protocol_state_after_restart,
                 _GRID_AUTOMATION_DISPLAY_NAME,
             )
