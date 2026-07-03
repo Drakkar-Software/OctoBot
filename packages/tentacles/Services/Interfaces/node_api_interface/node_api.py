@@ -29,6 +29,7 @@ import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
 import octobot_services.interfaces.util.web as web_util
 import octobot_node.config as node_config
+import octobot_node.constants as node_constants
 import octobot_node.scheduler as scheduler # noqa: F401
 import octobot_sync.server as sync_server
 
@@ -129,8 +130,22 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         return True
 
     async def stop(self):
-        if self.server is not None:
-            self.server.should_exit = True
+        if self.server is None:
+            return
+        self.server.should_exit = True
+        serve_finished = self._serve_finished
+        if serve_finished is None:
+            return
+        try:
+            await asyncio.wait_for(
+                asyncio.to_thread(serve_finished.wait),
+                timeout=node_constants.NODE_API_STOP_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            self.logger.warning(
+                "Timed out waiting for Node API server to stop after %ss",
+                node_constants.NODE_API_STOP_TIMEOUT_SECONDS,
+            )
 
     def _should_open_node_ui_in_browser(self) -> bool:
         try:

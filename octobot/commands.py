@@ -333,7 +333,7 @@ async def start_bot(bot, logger, catch=False):
 
 
 def stop_bot(bot, force=False):
-    bot.task_manager.stop_tasks(stop_managed_child_processes=True)
+    bot.task_manager.stop_tasks(stop_managed_child_processes=True, force=force)
     if force:
         os._exit(0)
 

@@ -145,11 +145,13 @@ class Scheduler:
             self.logger.warning("Scheduler not initialized")
 
     def stop(self) -> None:
-        if self.INSTANCE:
-            self.INSTANCE.destroy()
-            self.logger.info("Scheduler stopped")
-        else:
-            self.logger.warning("Scheduler not initialized")
+        if not self.INSTANCE:
+            return
+        self.INSTANCE.destroy()
+        self.logger.info("Scheduler stopped")
+        Scheduler.INSTANCE = None
+        Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
+        Scheduler.USER_ACTION_QUEUE = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)

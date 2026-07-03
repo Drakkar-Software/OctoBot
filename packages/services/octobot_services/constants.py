@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
 
 # Config
 CONFIG_CATEGORY_SERVICES = "services"
@@ -253,3 +254,5 @@ PAID_FEES_STR = "Paid fees"
 # external resources
 EXTERNAL_RESOURCE_CURRENT_USER_FORM = "current-user-feedback-form"
 EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS = "public-announcements"
+
+SERVICE_STOP_TIMEOUT_SECONDS = float(os.getenv("OCTOBOT_SERVICE_STOP_TIMEOUT_SECONDS", "5.0"))
