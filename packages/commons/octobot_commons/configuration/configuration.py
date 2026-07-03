@@ -17,7 +17,7 @@
 import os
 import functools
 import copy
-import shutil
+import typing
 
 import octobot_commons.logging as logging
 import octobot_commons.errors as errors
@@ -153,7 +153,8 @@ class Configuration:
     def save(
         self,
         schema_file=None,
-        sync_all_profiles=False,
+        sync_all_profiles: bool = False,
+        save_profile: typing.Optional[bool] = None,
     ) -> None:
         """
         Save the current self.config and self.profile.
@@ -166,12 +167,51 @@ class Configuration:
             config_to_save,
             schema_file=schema_file,
         )
-        if self.profile is not None and not self.profile_storage.is_master_overlay_profile(
-            self.profile
+        if save_profile is None:
+            save_profile = self._profile_managed_elements_changed()
+        if (
+            save_profile
+            and self.profile is not None
+            and not self.profile_storage.is_master_overlay_profile(self.profile)
         ):
             self.profile.save_config(self.config)
         if sync_all_profiles:
             self._sync_other_profiles()
+
+    def _profile_managed_elements_changed(self) -> bool:
+        if self.profile is None:
+            return False
+        for element in self.profile.FULLY_MANAGED_ELEMENTS:
+            if element in self.config:
+                if self.config[element] != self.profile.config.get(element):
+                    return True
+        for element in self.profile.PARTIALLY_MANAGED_ELEMENTS:
+            if self._partially_managed_element_would_change(element):
+                return True
+        return False
+
+    def _partially_managed_element_would_change(self, element: str) -> bool:
+        if element not in self.config:
+            return False
+        allowed_keys = profiles.Profile.PARTIALLY_MANAGED_ELEMENTS_ALLOWED_KEYS.get(
+            element
+        )
+        if allowed_keys is None:
+            return self.config[element] != self.profile.config.get(element)
+        global_element = self.config[element]
+        profile_element = self.profile.config.get(element, {})
+        for exchange_name, global_exchange_config in global_element.items():
+            if not isinstance(global_exchange_config, dict):
+                continue
+            profile_exchange_config = profile_element.get(exchange_name, {})
+            if not isinstance(profile_exchange_config, dict):
+                return True
+            for allowed_key in allowed_keys:
+                if global_exchange_config.get(allowed_key) != profile_exchange_config.get(
+                    allowed_key
+                ):
+                    return True
+        return False
 
     def _sync_other_profiles(self):
         """
@@ -382,6 +422,30 @@ class Configuration:
         for profile_id, profile in loaded_profiles.items():
             if profile_id not in self.profile_by_id:
                 self.profile_by_id[profile_id] = profile
+
+    def refresh_sync_profiles(self) -> None:
+        """
+        Reload sync-backed profiles from storage into profile_by_id.
+        Used when the sync collection may have changed externally.
+        """
+        if not self.profile_storage.is_sync_available():
+            return
+        self._prepare_profile_storage()
+        loaded_sync_profiles = self.profile_storage.list_sync_profiles()
+        loaded_sync_profile_ids = set(loaded_sync_profiles)
+        for profile_id, profile in loaded_sync_profiles.items():
+            self.profile_by_id[profile_id] = profile
+        removed_sync_profile_ids = [
+            profile_id
+            for profile_id, profile in list(self.profile_by_id.items())
+            if profile.is_sync_backed() and profile_id not in loaded_sync_profile_ids
+        ]
+        for profile_id in removed_sync_profile_ids:
+            self.profile_by_id.pop(profile_id, None)
+        if self.profile is not None and self.profile.is_sync_backed():
+            refreshed_profile = self.profile_by_id.get(self.profile.profile_id)
+            if refreshed_profile is not None:
+                self.profile = refreshed_profile
 
     def _get_config_without_profile_elements(self) -> dict:
         filtered_config = copy.deepcopy(self.config)

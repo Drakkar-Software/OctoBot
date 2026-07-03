@@ -143,6 +143,145 @@ def test_generate_config_from_user_config_and_profile(config):
     assert config.config is not config._read_config
 
 
+def _align_config_with_profile(config):
+    config.config = copy.deepcopy(config._read_config) if config._read_config else {}
+    config._generate_config_from_user_config_and_profile()
+
+
+class TestConfigurationProfileManagedElementsChanged:
+    def test_returns_false_when_profile_unset(self, config):
+        config.profile = None
+        config.config = {"community": {"token": "value"}}
+        assert config._profile_managed_elements_changed() is False
+
+    def test_returns_false_when_only_community_changed(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.config["community"] = {"token": "updated"}
+        assert config._profile_managed_elements_changed() is False
+
+    def test_returns_true_when_fully_managed_element_changed(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.config[constants.CONFIG_CRYPTO_CURRENCIES] = {"Updated": {"pairs": ["ETH/USDT"]}}
+        assert config._profile_managed_elements_changed() is True
+
+    def test_returns_true_when_partial_exchange_allowed_key_changed(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        exchange_name = next(iter(config.config[constants.CONFIG_EXCHANGES]))
+        config.config[constants.CONFIG_EXCHANGES][exchange_name][
+            constants.CONFIG_ENABLED_OPTION
+        ] = not config.profile.config[constants.CONFIG_EXCHANGES][exchange_name][
+            constants.CONFIG_ENABLED_OPTION
+        ]
+        assert config._profile_managed_elements_changed() is True
+
+    def test_returns_false_when_partial_exchange_non_allowed_key_differs(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        exchange_name = next(iter(config.config[constants.CONFIG_EXCHANGES]))
+        config.config[constants.CONFIG_EXCHANGES][exchange_name][
+            constants.CONFIG_EXCHANGE_KEY
+        ] = "updated-api-key"
+        assert config._profile_managed_elements_changed() is False
+
+
+class TestConfigurationSaveSkipUnchangedProfile:
+    def test_skips_profile_save_when_only_non_profile_config_changed(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.config["community"] = {"token": "updated"}
+        with mock.patch(
+            "octobot_commons.configuration.configuration.config_file_manager.dump",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_get_config_without_profile_elements",
+            mock.Mock(return_value={}),
+        ), mock.patch.object(
+            config.profile,
+            "save_config",
+            mock.Mock(),
+        ) as save_profile_config_mock:
+            config.save()
+        save_profile_config_mock.assert_not_called()
+
+    def test_saves_profile_when_managed_elements_changed(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.config[constants.CONFIG_CRYPTO_CURRENCIES] = {"Updated": {"pairs": ["ETH/USDT"]}}
+        with mock.patch(
+            "octobot_commons.configuration.configuration.config_file_manager.dump",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_get_config_without_profile_elements",
+            mock.Mock(return_value={}),
+        ), mock.patch.object(
+            config.profile,
+            "save_config",
+            mock.Mock(),
+        ) as save_profile_config_mock:
+            config.save()
+        save_profile_config_mock.assert_called_once_with(config.config)
+
+    def test_save_profile_true_forces_persist(self, config):
+        config.profile = _load_test_profile(config)
+        config.config = {"community": {"token": "updated"}}
+        with mock.patch(
+            "octobot_commons.configuration.configuration.config_file_manager.dump",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_get_config_without_profile_elements",
+            mock.Mock(return_value={}),
+        ), mock.patch.object(
+            config.profile,
+            "save_config",
+            mock.Mock(),
+        ) as save_profile_config_mock:
+            config.save(save_profile=True)
+        save_profile_config_mock.assert_called_once_with(config.config)
+
+    def test_sync_all_profiles_still_runs_when_active_profile_unchanged(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.config["community"] = {"token": "updated"}
+        with mock.patch(
+            "octobot_commons.configuration.configuration.config_file_manager.dump",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_get_config_without_profile_elements",
+            mock.Mock(return_value={}),
+        ), mock.patch.object(
+            config.profile,
+            "save_config",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_sync_other_profiles",
+            mock.Mock(),
+        ) as sync_other_profiles_mock:
+            config.save(sync_all_profiles=True)
+        sync_other_profiles_mock.assert_called_once_with()
+
+
 def test_save(config):
     save_file = "saved_config.json"
     config.config_path = save_file
@@ -158,7 +297,7 @@ def test_save(config):
         with mock.patch.object(config, "_get_config_without_profile_elements",
                                mock.Mock(return_value=config._read_config)) as _filter_mock, \
                 mock.patch.object(config.profile, "save_config", mock.Mock()) as save_profile_config_mock:
-            config.save()
+            config.save(save_profile=True)
             assert os.path.isfile(save_file)
             save_profile_config_mock.assert_called_once_with(config.config)
         with open(save_file) as config_file:
@@ -373,7 +512,10 @@ def test_get_selected_profile(config):
 class TestConfigurationSave:
     def test_calls_profile_save_config_with_live_config(self, config):
         config.profile = _load_test_profile(config)
-        config.config = {"updated": True}
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.config[constants.CONFIG_CRYPTO_CURRENCIES] = {"Updated": {"pairs": ["ETH/USDT"]}}
         with mock.patch(
             "octobot_commons.configuration.configuration.config_file_manager.dump",
             mock.Mock(),
@@ -427,6 +569,115 @@ def test_load_profiles(config):
     # reload profile, keep loaded ones
     config.load_profiles()
     assert config.profile_by_id["default"] is loaded_profile
+
+
+class TestConfigurationRefreshSyncProfiles:
+    def test_no_op_when_sync_unavailable(self, config):
+        config.profile_by_id = {"sync-profile-id": mock.Mock()}
+        with mock.patch.object(
+            config.profile_storage,
+            "is_sync_available",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            config.profile_storage,
+            "list_sync_profiles",
+            mock.Mock(),
+        ) as list_sync_profiles_mock:
+            config.refresh_sync_profiles()
+        list_sync_profiles_mock.assert_not_called()
+        assert "sync-profile-id" in config.profile_by_id
+
+    def test_adds_new_sync_profile(self, config):
+        new_sync_profile = mock.Mock()
+        new_sync_profile.is_sync_backed.return_value = True
+        config.profile_by_id = {}
+        config.profile = None
+        with mock.patch.object(
+            config.profile_storage,
+            "is_sync_available",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            config.profile_storage,
+            "list_sync_profiles",
+            mock.Mock(return_value={"new-sync-profile-id": new_sync_profile}),
+        ):
+            config.refresh_sync_profiles()
+        assert config.profile_by_id["new-sync-profile-id"] is new_sync_profile
+
+    def test_replaces_updated_sync_profile(self, config):
+        stale_sync_profile = mock.Mock()
+        stale_sync_profile.is_sync_backed.return_value = True
+        refreshed_sync_profile = mock.Mock()
+        refreshed_sync_profile.is_sync_backed.return_value = True
+        config.profile_by_id = {"sync-profile-id": stale_sync_profile}
+        config.profile = None
+        with mock.patch.object(
+            config.profile_storage,
+            "is_sync_available",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            config.profile_storage,
+            "list_sync_profiles",
+            mock.Mock(return_value={"sync-profile-id": refreshed_sync_profile}),
+        ):
+            config.refresh_sync_profiles()
+        assert config.profile_by_id["sync-profile-id"] is refreshed_sync_profile
+
+    def test_removes_deleted_sync_profile(self, config):
+        removed_sync_profile = mock.Mock()
+        removed_sync_profile.is_sync_backed.return_value = True
+        config.profile_by_id = {"removed-sync-profile-id": removed_sync_profile}
+        config.profile = None
+        with mock.patch.object(
+            config.profile_storage,
+            "is_sync_available",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            config.profile_storage,
+            "list_sync_profiles",
+            mock.Mock(return_value={}),
+        ):
+            config.refresh_sync_profiles()
+        assert "removed-sync-profile-id" not in config.profile_by_id
+
+    def test_leaves_filesystem_profiles_untouched(self, config):
+        filesystem_profile = mock.Mock()
+        filesystem_profile.is_sync_backed.return_value = False
+        config.profile_by_id = {"filesystem-profile-id": filesystem_profile}
+        config.profile = None
+        with mock.patch.object(
+            config.profile_storage,
+            "is_sync_available",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            config.profile_storage,
+            "list_sync_profiles",
+            mock.Mock(return_value={}),
+        ):
+            config.refresh_sync_profiles()
+        assert config.profile_by_id["filesystem-profile-id"] is filesystem_profile
+
+    def test_updates_active_profile_when_sync_backed(self, config):
+        stale_active_profile = mock.Mock()
+        stale_active_profile.is_sync_backed.return_value = True
+        stale_active_profile.profile_id = "active-sync-profile-id"
+        refreshed_active_profile = mock.Mock()
+        refreshed_active_profile.is_sync_backed.return_value = True
+        config.profile_by_id = {"active-sync-profile-id": stale_active_profile}
+        config.profile = stale_active_profile
+        with mock.patch.object(
+            config.profile_storage,
+            "is_sync_available",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            config.profile_storage,
+            "list_sync_profiles",
+            mock.Mock(
+                return_value={"active-sync-profile-id": refreshed_active_profile}
+            ),
+        ):
+            config.refresh_sync_profiles()
+        assert config.profile is refreshed_active_profile
 
 
 def test_get_config_without_profile_elements(config):

@@ -20,6 +20,7 @@ import typing
 import octobot_commons.authentication as authentication_module
 import octobot_commons.enums as enums
 import octobot_commons.errors as errors
+import octobot_commons.logging as logging
 import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_types.profile as profile_module
 import octobot_commons.profiles.profile_data as profile_data_module
@@ -121,6 +122,12 @@ class ProfileStorage:
             profile.bind_profile_storage(self)
         return loaded_profiles
 
+    def list_sync_profiles(self) -> dict[str, profile_module.Profile]:
+        profiles = self._sync_backend.list_profiles(self._profile_schema_path)
+        for profile in profiles.values():
+            profile.bind_profile_storage(self)
+        return profiles
+
     def find_profile(
         self,
         profile_id: str,
@@ -183,6 +190,10 @@ class ProfileStorage:
                 f"{profile.name} profile is shared from the master and can't be saved"
             )
         backend = self._get_backend_for_profile(profile)
+        logging.get_logger(self.__class__.__name__).info(
+            f"Saving {profile.name} {profile.__class__.__name__} with "
+            f"{backend.__class__.__name__}"
+        )
         backend.save_profile(profile, global_config)
         if profile.get_storage_source() == enums.ProfileSource.FILESYSTEM:
             tentacles_setup_config = profile.tentacles_setup_config

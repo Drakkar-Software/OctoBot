@@ -272,6 +272,76 @@ class TestCollectTentaclesDataFromSetup:
         assert len(tentacles_data) == 1
         assert tentacles_data[0].name == "MyEvaluator"
         assert tentacles_data[0].config == {"from_file": True}
+        assert tentacles_data[0].activated is True
+
+
+class TestBuildSetupConfigFromProfileDataInactiveTentacles:
+    def test_skips_inactive_tentacles_when_building_setup(self):
+        import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(name="IndexTradingMode", config={}, activated=True),
+            profile_data_module.TentaclesData(
+                name="GridTradingMode",
+                config={"flat_spread": 2},
+                activated=False,
+            ),
+        ]
+        index_class = mock.Mock()
+        index_class.__name__ = "IndexTradingMode"
+        setup_config = mock.Mock()
+        setup_config.registered_tentacles = {"pkg": "url"}
+
+        with mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "get_tentacle_class_from_string",
+            mock.Mock(return_value=index_class),
+        ), mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "create_tentacles_setup_config_with_tentacles",
+            mock.Mock(return_value=setup_config),
+        ) as create_setup_mock, mock.patch.object(
+            profile_tentacles_util.tentacles_manager_api,
+            "fill_with_installed_tentacles",
+        ):
+            profile_tentacles_util.build_setup_config_from_profile_data(
+                profile_data, import_registered_tentacles=False
+            )
+
+        create_setup_mock.assert_called_once_with("IndexTradingMode", config_path=None)
+
+
+class TestMergeInactiveTentaclesDataFromProfile:
+    def test_preserves_inactive_tentacle_configs(self):
+        import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(
+                name="GridTradingMode",
+                config={"flat_spread": 2},
+                activated=False,
+            ),
+        ]
+        collected = [
+            profile_data_module.TentaclesData(
+                name="IndexTradingMode",
+                config={"refresh_interval": 0},
+                activated=True,
+            ),
+        ]
+
+        merged = profile_tentacles_util.merge_inactive_tentacles_data_from_profile(
+            collected, profile_data
+        )
+
+        assert len(merged) == 2
+        assert merged[0].name == "IndexTradingMode"
+        assert merged[0].activated is True
+        assert merged[1].name == "GridTradingMode"
+        assert merged[1].activated is False
+        assert merged[1].config == {"flat_spread": 2}
 
 
 class TestCollectTentaclesDataFromFilesystemProfile:

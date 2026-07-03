@@ -382,14 +382,14 @@ class AutomationWorkflow:
             AutomationWorkflow.get_logger(parsed_inputs).info(
                 f"Stopping workflow, should stop: {latest_iteration_result.progress_status.should_stop}"
             )
-        else:
-            # successful iteration and a new iteration is required, schedule next iteration, don't return anything
-            await AutomationWorkflow._schedule_next_iteration(
-                parsed_inputs,
-                latest_iteration_result.next_iteration_description,  # type: ignore
-                latest_iteration_result.progress_status,
-                latest_iteration_result.next_iteration_description_metadata,
-            )
+            return False, latest_iteration_result
+        # successful iteration and a new iteration is required, schedule next iteration, don't return anything
+        await AutomationWorkflow._schedule_next_iteration(
+            parsed_inputs,
+            latest_iteration_result.next_iteration_description,  # type: ignore
+            latest_iteration_result.progress_status,
+            latest_iteration_result.next_iteration_description_metadata,
+        )
         return True, latest_iteration_result
 
     @staticmethod

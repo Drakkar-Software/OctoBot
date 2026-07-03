@@ -123,10 +123,6 @@ class FilesystemProfileBackend(abstract_profile_backend_module.AbstractProfileBa
         profile: profile_module.Profile,
         global_config: dict,
     ) -> None:
-        if profile.is_sync_backed():
-            raise errors.ProfileDataError(
-                "FilesystemProfileBackend cannot save sync-backed profiles"
-            )
         self.write_profile_config(profile)
 
     def duplicate_profile(

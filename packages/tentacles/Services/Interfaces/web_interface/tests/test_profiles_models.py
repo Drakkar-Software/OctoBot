@@ -94,10 +94,88 @@ class TestUpdateEditedTentaclesConfig:
         ) as get_setup_config_mock:
             profiles_model._update_edited_tentacles_config(config)
 
-        resolve_mock.assert_called_once_with(profile)
+        resolve_mock.assert_called_once_with(profile, force_reload=False)
         set_edited_mock.assert_called_once_with(resolved_setup)
         config.get_tentacles_config_path.assert_not_called()
         get_setup_config_mock.assert_not_called()
+
+
+class TestRefreshSyncProfilesForDisplay:
+    def test_refreshes_sync_profiles_rebinds_setup_and_clears_cache(self):
+        sync_profile = mock.Mock()
+        sync_profile.profile_id = "sync-profile-id"
+        sync_profile.is_sync_backed.return_value = True
+        config = mock.Mock()
+        config.profile = sync_profile
+        resolved_setup = mock.Mock()
+
+        with mock.patch.object(
+            profiles_model.interfaces_util,
+            "get_edited_config",
+            mock.Mock(return_value=config),
+        ), mock.patch.object(
+            profiles_model,
+            "_update_edited_tentacles_config",
+            mock.Mock(),
+        ) as update_edited_mock, mock.patch(
+            "tentacles.Services.Interfaces.web_interface.models.configuration.clear_tentacle_config_cache",
+            mock.Mock(),
+        ) as clear_cache_mock, mock.patch.object(
+            profiles_model,
+            "_resolve_profile_tentacles_setup_config",
+            mock.Mock(return_value=resolved_setup),
+        ):
+            result = profiles_model.refresh_sync_profiles_for_display()
+
+        config.refresh_sync_profiles.assert_called_once_with()
+        update_edited_mock.assert_called_once_with(config, force_reload=True)
+        clear_cache_mock.assert_called_once_with()
+        assert result is config
+        assert "sync-profile-id" not in profiles_model._PROFILE_TENTACLES_CONFIG_CACHE
+
+    def test_skips_profile_cache_pop_for_filesystem_profile(self):
+        filesystem_profile = mock.Mock()
+        filesystem_profile.profile_id = "filesystem-profile-id"
+        filesystem_profile.is_sync_backed.return_value = False
+        config = mock.Mock()
+        config.profile = filesystem_profile
+        profiles_model._PROFILE_TENTACLES_CONFIG_CACHE["filesystem-profile-id"] = mock.Mock()
+
+        with mock.patch.object(
+            profiles_model,
+            "_update_edited_tentacles_config",
+            mock.Mock(),
+        ) as update_edited_mock, mock.patch(
+            "tentacles.Services.Interfaces.web_interface.models.configuration.clear_tentacle_config_cache",
+            mock.Mock(),
+        ):
+            profiles_model.refresh_sync_profiles_for_display(config)
+
+        update_edited_mock.assert_called_once_with(config, force_reload=False)
+        assert "filesystem-profile-id" in profiles_model._PROFILE_TENTACLES_CONFIG_CACHE
+
+
+class TestGetProfiles:
+    def test_calls_refresh_sync_profiles_before_filtering(self):
+        live_profile = mock.Mock()
+        live_profile.profile_type = profiles_model.commons_enums.ProfileType.LIVE
+        simulator_profile = mock.Mock()
+        simulator_profile.profile_type = profiles_model.commons_enums.ProfileType.BACKTESTING
+        config = mock.Mock()
+        config.profile_by_id = {
+            "live-profile-id": live_profile,
+            "simulator-profile-id": simulator_profile,
+        }
+
+        with mock.patch.object(
+            profiles_model,
+            "refresh_sync_profiles_for_display",
+            mock.Mock(return_value=config),
+        ) as refresh_mock:
+            result = profiles_model.get_profiles(profiles_model.commons_enums.ProfileType.LIVE)
+
+        refresh_mock.assert_called_once_with()
+        assert result == {"live-profile-id": live_profile}
 
 
 class TestEnsureProfileInConfig:
@@ -167,7 +245,7 @@ class TestSelectProfile:
             profiles_model.select_profile("sync-profile-id")
 
         config.select_profile.assert_called_once_with("sync-profile-id")
-        resolve_mock.assert_called_once_with(sync_profile)
+        resolve_mock.assert_called_once_with(sync_profile, force_reload=False)
         set_edited_mock.assert_called_once_with(resolved_setup)
         config.save.assert_called_once_with()
         config.get_tentacles_config_path.assert_not_called()

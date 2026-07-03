@@ -28,6 +28,8 @@ import octobot.constants as constants
 import octobot.community as community
 import octobot.community.errors as community_errors
 
+import tentacles.Services.Interfaces.web_interface.models.configuration as configuration_model
+
 
 ACTIVATION = "activation"
 VERSION = "version"
@@ -36,14 +38,9 @@ REQUIRE_EXACT_VERSION = "require_exact_version"
 READ_ERROR = "read_error"
 
 _PROFILE_TENTACLES_CONFIG_CACHE = {}
-_LOGGER = None
-
 
 def _get_logger():
-    global _LOGGER
-    if _LOGGER is None:
-        _LOGGER = logging.get_logger("WebProfileModel")
-    return _LOGGER
+    return logging.get_logger("WebProfileModel")
 
 
 def _fallback_tentacles_details(profile, *, read_error: bool = True) -> dict:
@@ -112,9 +109,25 @@ def _select_and_save(config, profile_id):
     config.save()
 
 
-def _update_edited_tentacles_config(config):
-    updated_tentacles_config = _resolve_profile_tentacles_setup_config(config.profile)
+def _update_edited_tentacles_config(config, *, force_reload: bool = False):
+    updated_tentacles_config = _resolve_profile_tentacles_setup_config(
+        config.profile,
+        force_reload=force_reload,
+    )
     interfaces_util.set_edited_tentacles_config(updated_tentacles_config)
+
+
+def refresh_sync_profiles_for_display(config=None):
+    if config is None:
+        config = interfaces_util.get_edited_config(dict_only=False)
+    config.refresh_sync_profiles()
+    force_reload = config.profile is not None and config.profile.is_sync_backed()
+    if force_reload:
+        _PROFILE_TENTACLES_CONFIG_CACHE.pop(config.profile.profile_id, None)
+    _update_edited_tentacles_config(config, force_reload=force_reload)
+
+    configuration_model.clear_tentacle_config_cache()
+    return config
 
 
 def get_profile(profile_id):
@@ -131,9 +144,10 @@ def get_tentacles_setup_config_from_profile(profile):
 
 
 def get_profiles(profile_type: commons_enums.ProfileType = None):
+    config = refresh_sync_profiles_for_display()
     return {
         identifier: profile
-        for identifier, profile in interfaces_util.get_edited_config(dict_only=False).profile_by_id.items()
+        for identifier, profile in config.profile_by_id.items()
         if profile_type is None or profile.profile_type is profile_type
     }
 

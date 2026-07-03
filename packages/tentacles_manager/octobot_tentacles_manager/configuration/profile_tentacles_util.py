@@ -34,6 +34,8 @@ def build_setup_config_from_profile_data(
     tentacle_classes = []
     for tentacle_data in profile_data.tentacles:
         tentacle_name = tentacle_data.name
+        if not tentacle_data.activated:
+            continue
         if (
             not tentacle_name
             or tentacle_name
@@ -146,9 +148,29 @@ def collect_tentacles_data_from_setup(
                 profile_data_module.TentaclesData(
                     name=tentacle_name,
                     config=tentacle_config or {},
+                    activated=True,
                 )
             )
     return tentacles_data
+
+
+def merge_inactive_tentacles_data_from_profile(
+    tentacles_data: list[profile_data_module.TentaclesData],
+    profile_data: profile_data_module.ProfileData,
+) -> list[profile_data_module.TentaclesData]:
+    collected_names = {tentacle_data.name for tentacle_data in tentacles_data}
+    merged_tentacles_data = list(tentacles_data)
+    for tentacle_data in profile_data.tentacles:
+        if tentacle_data.name in collected_names:
+            continue
+        merged_tentacles_data.append(
+            profile_data_module.TentaclesData(
+                name=tentacle_data.name,
+                config=tentacle_data.config or {},
+                activated=False,
+            )
+        )
+    return merged_tentacles_data
 
 
 def collect_tentacles_data_from_filesystem_profile(

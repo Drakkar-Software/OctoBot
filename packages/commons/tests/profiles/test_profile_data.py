@@ -104,6 +104,7 @@ def profile_data_dict():
             {
                 'name': 'plopEvaluator',
                 'config': {},
+                'activated': True,
             },
             {
                 'name': 'plopEvaluator',
@@ -114,6 +115,7 @@ def profile_data_dict():
                         'n': None,
                     }
                 },
+                'activated': True,
             },
         ], 'options': {
             'values': {
@@ -228,8 +230,11 @@ def test_from_profile_data(profile):
     # force missing values
     for crypto_data in profile.config[constants.CONFIG_CRYPTO_CURRENCIES].values():
         crypto_data[constants.CONFIG_ENABLED_OPTION] = crypto_data.get(constants.CONFIG_ENABLED_OPTION, True)
+    for exchange_data in profile.config[constants.CONFIG_EXCHANGES].values():
+        exchange_data[constants.CONFIG_EXCHANGE_TYPE] = exchange_data.get(
+            constants.CONFIG_EXCHANGE_TYPE, constants.DEFAULT_EXCHANGE_TYPE
+        )
     # remove not stored values
-    profile.config[constants.CONFIG_EXCHANGES] = {}
     profile.avatar = profile.description = ""
     profile.complexity = enums.ProfileComplexity.MEDIUM
     profile.risk = enums.ProfileRisk.MODERATE

@@ -71,13 +71,16 @@ def _factory_reset_config_from_file_system(tentacles_setup_config, klass) -> Non
 
 def _get_config_for_profile(tentacles_setup_config, klass) -> dict:
     profile = tentacles_setup_config.profile
+    file_or_factory_config = _get_config_from_file_system(tentacles_setup_config, klass)
     if profile is None or not profile.is_profile_data_tentacle_backed():
-        return _get_config_from_file_system(tentacles_setup_config, klass)
+        return file_or_factory_config
     tentacle_name = klass.get_name()
     for tentacle_data in profile.get_profile_data().tentacles:
-        if tentacle_data.name == tentacle_name and tentacle_data.config:
-            return tentacle_data.config
-    return _get_config_from_file_system(tentacles_setup_config, klass)
+        if tentacle_data.name == tentacle_name:
+            if tentacle_data.config:
+                return _recursive_config_update(dict(file_or_factory_config), tentacle_data.config)
+            return file_or_factory_config
+    return file_or_factory_config
 
 
 def _update_config_for_profile(
@@ -101,6 +104,13 @@ def _update_config_for_profile(
             name=tentacle_name, config={}
         )
         profile_data.tentacles.append(updated_tentacle)
+    import octobot_tentacles_manager.api as tentacles_manager_api
+
+    updated_tentacle.activated = tentacles_manager_api.is_tentacle_activated_in_tentacles_setup_config(
+        tentacles_setup_config,
+        tentacle_name,
+        default_value=False,
+    )
     if keep_existing:
         merged_config = dict(updated_tentacle.config or {})
         merged_config.update(config_update)

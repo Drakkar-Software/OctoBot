@@ -109,6 +109,10 @@ EXTRA_CONFIGURABLE_TENTACLES_TYPES = [
 ]
 _TENTACLE_CONFIG_CACHE = {}
 
+
+def clear_tentacle_config_cache():
+    _TENTACLE_CONFIG_CACHE.clear()
+
 DEFAULT_EXCHANGE = "binance"
 MERGED_CCXT_EXCHANGES = {
     result.__name__: [merged_exchange.__name__ for merged_exchange in merged]
@@ -497,7 +501,7 @@ def _persist_profile_tentacles_changes(tentacles_setup_config):
                 edited_profile.get_profile_data().tentacles
             )
         profile.bind_tentacles_setup_config(tentacles_setup_config)
-        config.save()
+        config.save(save_profile=True)
         return
     tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
 

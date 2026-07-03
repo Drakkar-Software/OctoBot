@@ -102,6 +102,33 @@ class TestProfileStorageBindProcessChildSyncUserId:
             profile_storage.bind_process_child_sync_user_id("")
 
 
+class TestProfileStorageListSyncProfiles:
+    def test_returns_empty_when_sync_unavailable(self, profile_storage):
+        assert profile_storage.list_sync_profiles() == {}
+
+    def test_returns_sync_profiles_with_storage_bound(self, profile_storage):
+        sync_profile_data = profile_data_module.ProfileData.from_dict(
+            {
+                "profile_details": {"id": "sync-profile-id", "name": "sync-profile"},
+                "trading": {"reference_market": constants.DEFAULT_REFERENCE_MARKET},
+            }
+        )
+        sync_profile = sync_profile_module.SyncProfile(
+            sync_profile_data,
+            os.path.join(profile_storage.profiles_path, "runtime", "sync-profile-id"),
+        )
+        sync_backend = mock.Mock()
+        sync_backend.list_profiles.return_value = {"sync-profile-id": sync_profile}
+        profile_storage._sync_backend = sync_backend
+        profile_storage.bind_process_child_sync_user_id("process-child-user")
+
+        profiles_by_id = profile_storage.list_sync_profiles()
+
+        sync_backend.list_profiles.assert_called_once_with(None)
+        assert profiles_by_id == {"sync-profile-id": sync_profile}
+        assert sync_profile.get_profile_storage() is profile_storage
+
+
 class TestSyncProfileBackendImportProfileData:
     def test_import_profile_data_assigns_strategy_id(self, tmp_path):
         sync_backend = profile_backends_module.SyncProfileBackend(

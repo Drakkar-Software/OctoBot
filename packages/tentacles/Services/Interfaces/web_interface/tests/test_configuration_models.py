@@ -44,7 +44,7 @@ class TestPersistProfileTentaclesChanges:
 
         assert active_profile_data.tentacles == edited_tentacles
         active_profile.bind_tentacles_setup_config.assert_called_once_with(tentacles_setup_config)
-        config.save.assert_called_once_with()
+        config.save.assert_called_once_with(save_profile=True)
         save_setup_mock.assert_not_called()
 
     def test_filesystem_profile_calls_save_tentacles_setup(self):

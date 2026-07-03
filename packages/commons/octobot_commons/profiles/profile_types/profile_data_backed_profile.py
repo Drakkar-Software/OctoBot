@@ -73,7 +73,11 @@ class ProfileDataBackedProfile(profile_module.Profile):
             tentacle_data.name: tentacle_data.config or {}
             for tentacle_data in self.get_profile_data().tentacles
         }
-        return profile_tentacles_util.collect_tentacles_data_from_setup(
+        collected_tentacles_data = profile_tentacles_util.collect_tentacles_data_from_setup(
             tentacles_setup_config,
             specific_configs_by_tentacle_name=specific_configs_by_tentacle_name,
+        )
+        return profile_tentacles_util.merge_inactive_tentacles_data_from_profile(
+            collected_tentacles_data,
+            self.get_profile_data(),
         )

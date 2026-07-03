@@ -155,6 +155,7 @@ class TentaclesData(
 ):
     name: typing.Optional[str] = None
     config: dict = dataclasses.field(default_factory=dict)
+    activated: bool = True
 
 
 @dataclasses.dataclass

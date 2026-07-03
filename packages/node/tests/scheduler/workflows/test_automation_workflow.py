@@ -1024,7 +1024,7 @@ class TestProcessPendingPriorityActionsAndReschedule:
             should_continue, _ = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._process_pending_priority_actions_and_reschedule(
                 parsed_inputs, iteration_result
             )
-        assert should_continue is True
+        assert should_continue is False
 
     @pytest.mark.asyncio
     async def test_process_pending_raises_when_no_next_iteration_after_priority_actions(

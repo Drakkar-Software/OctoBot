@@ -38,8 +38,14 @@ class TestTentacleConfigurationProfileDispatch:
         profile.get_profile_data.return_value = profile_data
         setup = tentacles_setup_configuration.TentaclesSetupConfiguration()
         setup.profile = profile
-        result = tentacle_configuration.get_config(setup, tentacle_klass)
-        assert result == {"from_profile_data": True}
+        factory_config = {"required_strategies": []}
+        with mock.patch.object(
+            tentacle_configuration,
+            "_get_config_from_file_system",
+            mock.Mock(return_value=factory_config),
+        ):
+            result = tentacle_configuration.get_config(setup, tentacle_klass)
+        assert result == {"required_strategies": [], "from_profile_data": True}
 
     def test_filesystem_profile_falls_back_to_file_system(self):
         import mock
@@ -84,6 +90,31 @@ class TestTentacleConfigurationProfileDispatch:
         update_filesystem_mock.assert_not_called()
         assert profile_data.tentacles[0].name == "TestKlass"
         assert profile_data.tentacles[0].config == {"updated": True}
+
+    def test_sync_backed_update_config_sets_activated_from_setup(self):
+        import mock
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_tentacles_manager.configuration.tentacle_configuration as tentacle_configuration
+        import octobot_tentacles_manager.configuration.tentacles_setup_configuration as tentacles_setup_configuration
+
+        tentacle_klass = mock.Mock()
+        tentacle_klass.get_name.return_value = "GridTradingMode"
+        profile_data = profile_data_module.ProfileData()
+        profile = mock.Mock()
+        profile.is_profile_data_tentacle_backed.return_value = True
+        profile.get_profile_data.return_value = profile_data
+        setup = tentacles_setup_configuration.TentaclesSetupConfiguration()
+        setup.profile = profile
+        with mock.patch(
+            "octobot_tentacles_manager.api.is_tentacle_activated_in_tentacles_setup_config",
+            mock.Mock(return_value=False),
+        ):
+            tentacle_configuration.update_config(
+                setup, tentacle_klass, {"flat_spread": 2}
+            )
+        assert profile_data.tentacles[0].name == "GridTradingMode"
+        assert profile_data.tentacles[0].config == {"flat_spread": 2}
+        assert profile_data.tentacles[0].activated is False
 
     def test_ephemeral_profile_reads_config_from_profile_data(self):
         import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
@@ -168,6 +199,37 @@ class TestSyncBackedProfileConfigFilesystemFallback:
             result = tentacle_configuration.get_config(setup, tentacle_klass)
         assert result == factory_config
         get_from_filesystem_mock.assert_called_once_with(setup, tentacle_klass)
+
+    def test_sync_backed_partial_inactive_config_merges_factory_defaults(self):
+        import mock
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_tentacles_manager.configuration.tentacle_configuration as tentacle_configuration
+        import octobot_tentacles_manager.configuration.tentacles_setup_configuration as tentacles_setup_configuration
+
+        tentacle_klass = mock.Mock()
+        tentacle_klass.get_name.return_value = "GridTradingMode"
+        profile_data = profile_data_module.ProfileData()
+        profile_data.tentacles = [
+            profile_data_module.TentaclesData(
+                name="GridTradingMode",
+                config={"flat_spread": 2},
+                activated=False,
+            ),
+        ]
+        profile = mock.Mock()
+        profile.is_profile_data_tentacle_backed.return_value = True
+        profile.get_profile_data.return_value = profile_data
+        setup = tentacles_setup_configuration.TentaclesSetupConfiguration()
+        setup.profile = profile
+        factory_config = {"required_strategies": [], "flat_spread": 1}
+        with mock.patch.object(
+            tentacle_configuration,
+            "_get_config_from_file_system",
+            mock.Mock(return_value=factory_config),
+        ):
+            result = tentacle_configuration.get_config(setup, tentacle_klass)
+        assert result["required_strategies"] == []
+        assert result["flat_spread"] == 2
 
     def test_sync_backed_missing_tentacle_falls_back_to_filesystem(self):
         import mock
