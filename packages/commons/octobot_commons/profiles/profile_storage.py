@@ -1,0 +1,248 @@
+#  Drakkar-Software OctoBot-Commons
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
+import typing
+
+import octobot_commons.authentication as authentication_module
+import octobot_commons.enums as enums
+import octobot_commons.errors as errors
+import octobot_commons.profiles.backends as profile_backends_module
+import octobot_commons.profiles.profile_types.profile as profile_module
+import octobot_commons.profiles.profile_data as profile_data_module
+import octobot_commons.profiles.profile_migration as profile_migration
+import octobot_commons.profiles.profile_sharing as profile_sharing
+
+
+class ProfileStorage:
+    def __init__(
+        self,
+        profiles_path: str,
+        profile_schema_path: str = None,
+        filesystem_backend: profile_backends_module.FilesystemProfileBackend = None,
+        sync_backend: profile_backends_module.SyncProfileBackend = None,
+    ) -> None:
+        self._profiles_path = profiles_path
+        self._profile_schema_path = profile_schema_path
+        self._sync_user_id: typing.Optional[str] = None
+        self._filesystem_backend = (
+            filesystem_backend
+            or profile_backends_module.FilesystemProfileBackend(
+                profiles_path, profile_schema_path
+            )
+        )
+        self._sync_backend = sync_backend or profile_backends_module.SyncProfileBackend(
+            profiles_path, profile_schema_path, sync_user_id=None
+        )
+
+    @property
+    def profiles_path(self) -> str:
+        return self._profiles_path
+
+    @property
+    def profile_schema_path(self) -> str:
+        return self._profile_schema_path
+
+    def configure_sync_user(self, user_id: str) -> None:
+        try:
+            authentication_module.Authenticator.instance().get_wallet_by_user_id(user_id)
+        except Exception as error:
+            raise errors.ProfileDataError(
+                f"Unknown sync user id: {user_id}"
+            ) from error
+        self._sync_user_id = user_id
+        self._sync_backend._sync_user_id = user_id
+
+    def configure_paths(
+        self,
+        profiles_path: str,
+        profile_schema_path: str = None,
+    ) -> None:
+        self._profiles_path = profiles_path
+        if profile_schema_path is not None:
+            self._profile_schema_path = profile_schema_path
+        self._filesystem_backend._profiles_path = profiles_path
+        self._sync_backend._profiles_path = profiles_path
+        if profile_schema_path is not None:
+            self._filesystem_backend._profile_schema_path = profile_schema_path
+            self._sync_backend._profile_schema_path = profile_schema_path
+
+    def is_sync_available(self) -> bool:
+        return bool(self._sync_user_id and str(self._sync_user_id).strip())
+
+    def load_all_profiles(self) -> dict[str, profile_module.Profile]:
+        if self._profiles_path is None:
+            raise errors.ProfileDataError("profiles_path is required to load profiles")
+        loaded_profiles = self._list_profiles()
+        for profile in loaded_profiles.values():
+            profile.bind_profile_storage(self)
+        return loaded_profiles
+
+    def find_profile(
+        self,
+        profile_id: str,
+    ) -> typing.Optional[profile_module.Profile]:
+        return self._resolve_profile(profile_id)
+
+    def get_profile(
+        self,
+        profile_id: str,
+    ) -> typing.Optional[profile_module.Profile]:
+        profile = self.find_profile(profile_id)
+        if profile is not None:
+            profile.bind_profile_storage(self)
+        return profile
+
+    def load_profile_by_id(self, profile_id: str) -> profile_module.Profile:
+        profile = self.get_profile(profile_id)
+        if profile is None:
+            raise errors.NoProfileError(f"No profile with id: {profile_id}")
+        return profile
+
+    def filesystem_profile_ids(self) -> set[str]:
+        return self._filesystem_backend.filesystem_profile_ids()
+
+    def list_profile_ids(self, ignore: str = None) -> list[str]:
+        filesystem_ids = self._filesystem_backend.list_profile_ids(ignore=ignore)
+        sync_ids = self._sync_backend.list_profile_ids(ignore=ignore)
+        return list(dict.fromkeys(filesystem_ids + sync_ids))
+
+    def duplicate_profile(
+        self,
+        profile: profile_module.Profile,
+        name: str = None,
+        description: str = None,
+    ) -> profile_module.Profile:
+        if not self.is_sync_available():
+            raise errors.ProfileDataError(
+                "Profile duplicate requires a configured wallet user id"
+            )
+        clone = self._sync_backend.duplicate_profile(
+            profile,
+            name=name,
+            description=description,
+        )
+        clone.bind_profile_storage(self)
+        return clone
+
+    def activate_profile(self, profile: profile_module.Profile) -> None:
+        profile.bind_profile_storage(self)
+        profile.activate()
+
+    def save_active_profile(
+        self,
+        profile: profile_module.Profile,
+        global_config: dict,
+    ) -> None:
+        backend = self._get_backend_for_profile(profile)
+        backend.save_profile(profile, global_config)
+        if profile.get_storage_source() == enums.ProfileSource.FILESYSTEM:
+            tentacles_setup_config = profile.tentacles_setup_config
+            if tentacles_setup_config is not None:
+                tentacles_setup_config.save_config(is_config_update=True)
+
+    def delete_profile(
+        self,
+        profile_id: str,
+        profile: profile_module.Profile = None,
+    ) -> None:
+        if profile is None:
+            profile = self.find_profile(profile_id)
+        if profile is None:
+            raise errors.ProfileRemovalError(f"Profile {profile_id} not found")
+        backend = self._get_backend_for_profile(profile)
+        if profile.read_only and not profile.imported:
+            raise errors.ProfileRemovalError(f"{profile.name} profile can't be removed")
+        backend.delete_profile(profile_id, profile=profile)
+
+    def has_any_profiles(self) -> bool:
+        if self._profiles_path is None:
+            return False
+        return self._has_any_profiles()
+
+    async def import_profile_data(
+        self,
+        profile_data: profile_data_module.ProfileData,
+        profile_schema: str,
+        bot_install_path: str,
+        name: str = None,
+        description: str = None,
+        risk=None,
+        auto_update: bool = False,
+        slug: str = None,
+        logo_url: str = None,
+        force_simulator: bool = False,
+        aiohttp_session=None,
+        origin_url: str = None,
+    ) -> profile_module.Profile:
+        if self.is_sync_available():
+            profile = self._sync_backend.import_profile_data(
+                profile_data,
+                schema_path=profile_schema,
+                name=name,
+                description=description,
+                risk=risk,
+                auto_update=auto_update,
+                slug=slug,
+                force_simulator=force_simulator,
+            )
+            profile.bind_profile_storage(self)
+            return profile
+        return await profile_sharing.import_profile_data_as_profile(
+            profile_data,
+            profile_schema,
+            aiohttp_session,
+            name=name,
+            description=description,
+            risk=risk,
+            bot_install_path=bot_install_path,
+            origin_url=origin_url,
+            logo_url=logo_url,
+            auto_update=auto_update,
+            force_simulator=force_simulator,
+            profile_storage=self,
+        )
+
+    def migrate_filesystem_profiles_to_sync(self) -> list[str]:
+        return profile_migration.migrate_user_profiles_to_sync(self)
+
+    def _list_profiles(self) -> dict[str, profile_module.Profile]:
+        profiles = self._sync_backend.list_profiles()
+        profiles.update(self._filesystem_backend.list_profiles())
+        return profiles
+
+    def _resolve_profile(
+        self,
+        profile_id: str,
+    ) -> typing.Optional[profile_module.Profile]:
+        filesystem_profile = self._filesystem_backend.get_profile(profile_id)
+        if filesystem_profile is not None:
+            return filesystem_profile
+        return self._sync_backend.get_profile(profile_id)
+
+    def _ensure_profile_persistable(self, profile: profile_module.Profile) -> None:
+        if profile.get_storage_source() == enums.ProfileSource.EPHEMERAL:
+            raise errors.ProfileDataError("Ephemeral profiles cannot be persisted")
+
+    def _get_backend_for_profile(
+        self, profile: profile_module.Profile
+    ) -> profile_backends_module.AbstractProfileBackend:
+        self._ensure_profile_persistable(profile)
+        if profile.is_sync_backed():
+            return self._sync_backend
+        return self._filesystem_backend
+
+    def _has_any_profiles(self) -> bool:
+        return bool(self._list_profiles())

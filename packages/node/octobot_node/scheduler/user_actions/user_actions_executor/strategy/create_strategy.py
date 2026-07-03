@@ -19,6 +19,7 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_user_action_executor as strategy_user_action_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_profile_validation as strategy_profile_validation
 
 
 def _get_create_strategy_payload(
@@ -46,6 +47,9 @@ class CreateStrategyActionExecutor(
         user_action: protocol_models.UserAction,
     ) -> None:
         create_payload = _get_create_strategy_payload(user_action)
+        strategy_profile_validation.validate_profile_strategy_configuration(
+            create_payload.configuration
+        )
         collection_providers.StrategyProvider.instance().create_item(
             self._user_id,
             create_payload.configuration,

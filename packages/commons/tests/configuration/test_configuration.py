@@ -23,6 +23,7 @@ import octobot_commons.errors as errors
 import octobot_commons.json_util
 import octobot_commons.configuration as configuration
 import octobot_commons.profiles as profiles
+import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.constants as constants
 import octobot_commons.tests.test_config as test_config
 from ..profiles import get_profiles_path
@@ -36,6 +37,15 @@ def get_fake_config_path():
 
 def get_profile_path():
     return test_config.TEST_CONFIG_FOLDER
+
+
+def _load_test_profile(config, profile_path=None):
+    resolved_profile_path = profile_path or get_profile_path()
+    loaded_profile = profile_backends_module.FilesystemProfileBackend().read_profile_from_path(
+        resolved_profile_path
+    )
+    loaded_profile.bind_profile_storage(config.profile_storage)
+    return loaded_profile
 
 
 @pytest.fixture
@@ -89,8 +99,7 @@ def test_select_profile(config):
 
 
 def test_remove_profile(config):
-    config.profile = profiles.Profile(get_profile_path(), config.profile_schema_path)
-    config.profile.read_config()
+    config.profile = _load_test_profile(config)
     config.profile.read_only = True
     config.profile_by_id[config.profile.profile_id] = config.profile
     # id not in loaded profiles
@@ -113,8 +122,7 @@ def test_remove_profile(config):
 def test_generate_config_from_user_config_and_profile(config):
     with open(DEFAULT_CONFIG) as config_file:
         config._read_config = json.load(config_file)
-    config.profile = profiles.Profile(get_profile_path(), config.profile_schema_path)
-    config.profile.read_config()
+    config.profile = _load_test_profile(config)
     for key in config.profile.FULLY_MANAGED_ELEMENTS:
         assert key not in config._read_config
     for key in config.profile.PARTIALLY_MANAGED_ELEMENTS:
@@ -139,8 +147,7 @@ def test_save(config):
         with open(DEFAULT_CONFIG) as config_file:
             config._read_config = json.load(config_file)
         # add profile data
-        config.profile = profiles.Profile(get_profile_path(), config.profile_schema_path)
-        config.profile.read_config()
+        config.profile = _load_test_profile(config)
         with mock.patch.object(config, "_get_config_without_profile_elements",
                                mock.Mock(return_value=config._read_config)) as _filter_mock, \
                 mock.patch.object(config.profile, "save_config", mock.Mock()) as _save_profile_mock:

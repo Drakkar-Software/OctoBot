@@ -13,56 +13,32 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import os
 import copy
-import json
-import shutil
 import pytest
 import mock
 import octobot_commons.json_util
 import octobot_commons.profiles as profiles
 import octobot_commons.constants as constants
 import octobot_commons.enums as enums
+import octobot_commons.errors as errors
 import octobot_commons.tests.test_config as test_config
 
-import tests.profiles.conftest as profiles_conftest
-from tests.profiles import profile, get_profile_path, get_profiles_path
-
-
-def test_read_config(profile):
-    save_ref = profile
-    assert profile.read_config() is save_ref
-    assert profile.profile_id == "default"
-    assert profile.name == "default"
-    assert profile.description == "OctoBot default profile."
-    assert profile.avatar == "default_profile.png"
-    assert profile.avatar_path == os.path.join(test_config.TEST_CONFIG_FOLDER, "default_profile.png")
-    assert profile.origin_url == "https://default.url"
-    # default value: distribution is not in profile config
-    assert profile.config[constants.CONFIG_DISTRIBUTION] == constants.DEFAULT_DISTRIBUTION
-    assert len(profile.config) == 6
-    assert isinstance(profile.config, dict)
-
-    profile.path = ""
-    with pytest.raises(FileNotFoundError):
-        profile.read_config()
+from tests.profiles import get_profile_path
 
 
 def test_save_config(profile):
-    with mock.patch.object(profile, "validate_and_save_config", mock.Mock()) as validate_and_save_config_mock, \
+    with mock.patch.object(profile, "_save_through_profile_storage", mock.Mock()) as save_mock, \
             mock.patch.object(profile, "_filter_fill_elements", mock.Mock()) as _filter_fill_elements_mock:
         profile.config = {}
-        # nothing to operate on
         global_config = {}
         profile.save_config(global_config)
         assert profile.config == {}
-        validate_and_save_config_mock.assert_called_once()
+        save_mock.assert_called_once_with(global_config)
         _filter_fill_elements_mock.assert_not_called()
 
-        validate_and_save_config_mock.reset_mock()
+        save_mock.reset_mock()
         _filter_fill_elements_mock.reset_mock()
         profile.config = {}
-        # things in config
         global_config = {
             profile.FULLY_MANAGED_ELEMENTS[0]: "plop",
             profile.FULLY_MANAGED_ELEMENTS[1]: "plip",
@@ -73,13 +49,12 @@ def test_save_config(profile):
             profile.FULLY_MANAGED_ELEMENTS[0]: "plop",
             profile.FULLY_MANAGED_ELEMENTS[1]: "plip"
         }
-        validate_and_save_config_mock.assert_called_once()
+        save_mock.assert_called_once_with(global_config)
         _filter_fill_elements_mock.assert_not_called()
 
-        validate_and_save_config_mock.reset_mock()
+        save_mock.reset_mock()
         _filter_fill_elements_mock.reset_mock()
         profile.config = {}
-        # things in config
         global_config = {
             profile.FULLY_MANAGED_ELEMENTS[0]: "plop",
             profile.FULLY_MANAGED_ELEMENTS[1]: "plip",
@@ -91,7 +66,7 @@ def test_save_config(profile):
             profile.FULLY_MANAGED_ELEMENTS[0]: "plop",
             profile.FULLY_MANAGED_ELEMENTS[1]: "plip",
         }
-        validate_and_save_config_mock.assert_called_once()
+        save_mock.assert_called_once_with(global_config)
         _filter_fill_elements_mock.assert_called_once_with(global_config,
                                                            profile.config,
                                                            next(iter(profile.PARTIALLY_MANAGED_ELEMENTS)),
@@ -107,61 +82,45 @@ def test_validate(profile):
 
 
 def test_validate_and_save_config(profile):
-    save_file = "profile_config.json"
     with mock.patch.object(profile, "validate", mock.Mock()) as validate_mock, \
-            mock.patch.object(profile, "config_file", mock.Mock(return_value=save_file)), \
-            mock.patch.object(profile, "save", mock.Mock()) as save_mock:
+            mock.patch.object(profile, "_save_through_profile_storage", mock.Mock()) as save_mock:
         profile.validate_and_save_config()
         validate_mock.assert_called_once()
         save_mock.assert_called_once()
 
 
 def test_save(profile):
-    save_file = "profile_config.json"
-    if os.path.isfile(save_file):
-        os.remove(save_file)
-    try:
-        profile.read_config()
-        with mock.patch.object(profile, "config_file", mock.Mock(return_value=save_file)):
-            profile.save()
-            with open(save_file) as config_file:
-                saved_profile = json.load(config_file)
-            assert saved_profile == profile.as_dict()
-    finally:
-        if os.path.isfile(save_file):
-            os.remove(save_file)
+    with mock.patch.object(profile, "validate_and_save_config", mock.Mock()) as validate_and_save_mock:
+        profile.save()
+        validate_and_save_mock.assert_called_once()
+
+
+def test_save_requires_profile_storage():
+    unbound_profile = profiles.Profile(get_profile_path())
+    with pytest.raises(errors.ProfileDataError):
+        unbound_profile.save()
 
 
 def test_duplicate(profile):
-    with mock.patch.object(shutil, "copytree", mock.Mock()) as copytree_mock, \
-            mock.patch.object(profiles.Profile, "save", mock.Mock()) as save_mock:
+    clone = mock.Mock()
+    with mock.patch.object(
+        profile.get_profile_storage(),
+        "duplicate_profile",
+        mock.Mock(return_value=clone),
+    ) as duplicate_mock:
         profile.read_only = True
         profile.imported = True
         profile.origin_url = "hello"
-        clone = profile.duplicate()
-        assert clone.name == profile.name
-        assert clone.description == profile.description
-        assert clone.profile_id != profile.description
-        assert clone.path != profile.path
-        assert clone.profile_id in clone.path
-        assert clone.profile_id is not None
-        # duplicates are not read_only
-        assert clone.read_only is False
-        # duplicates are never imported nor have an origin url
-        assert clone.imported is False
-        assert clone.origin_url is None
-        copytree_mock.assert_called_with(profile.path, clone.path)
-        save_mock.assert_called_once()
+        assert profile.duplicate() is clone
+        duplicate_mock.assert_called_once_with(profile, name=None, description=None)
 
-        clone = profile.duplicate(name="123", description="456")
-        assert clone.name == "123"
-        assert clone.name != profile.name
-        assert clone.description == "456"
-        assert clone.description != profile.description
+        profile.duplicate(name="123", description="456")
+        duplicate_mock.assert_called_with(profile, name="123", description="456")
 
 
 def test_as_dict(profile):
-    assert profile.as_dict() == {
+    empty_profile = profiles.Profile(get_profile_path())
+    assert empty_profile.as_dict() == {
         constants.CONFIG_PROFILE: {
             constants.CONFIG_ID: None,
             constants.CONFIG_NAME: None,
@@ -180,8 +139,6 @@ def test_as_dict(profile):
         },
         constants.PROFILE_CONFIG: {},
     }
-    profile.read_config()
-    # do not test read config
     profile.config = {"a": 1}
     profile.imported = True
     profile.complexity = enums.ProfileComplexity.DIFFICULT
@@ -213,10 +170,6 @@ def test_as_dict(profile):
     }
 
 
-def test_config_file(profile):
-    assert profile.config_file() == os.path.join(get_profile_path(), constants.PROFILE_CONFIG_FILE)
-
-
 def test_merge_partially_managed_element_into_config(profile):
     with mock.patch.object(profiles.Profile, "_merge_partially_managed_element", mock.Mock()) as _merge_mock:
         config = {}
@@ -228,7 +181,6 @@ def test_merge_partially_managed_element_into_config(profile):
 
 
 def test_merge_partially_managed_element(profile):
-    profile.read_config()
     element = next(iter(profile.PARTIALLY_MANAGED_ELEMENTS))
     template = profile.PARTIALLY_MANAGED_ELEMENTS[element]
     config = {
@@ -239,7 +191,6 @@ def test_merge_partially_managed_element(profile):
             }
         }
     }
-    # add constants.CONFIG_ENABLED_OPTION
     profile._merge_partially_managed_element(config, profile.config, element, template)
     assert config == {
         constants.CONFIG_EXCHANGES: {
@@ -254,7 +205,6 @@ def test_merge_partially_managed_element(profile):
         constants.CONFIG_EXCHANGES: {}
     }
     profile.config[constants.CONFIG_EXCHANGES]["binance"][constants.CONFIG_ENABLED_OPTION] = False
-    # add whole exchange
     profile._merge_partially_managed_element(config, profile.config, element, template)
     assert config == {
         constants.CONFIG_EXCHANGES: {
@@ -268,7 +218,6 @@ def test_merge_partially_managed_element(profile):
         }
     }
     config = {}
-    # add whole exchange and exchanges key with 2 exchanges in profile
     profile.config[constants.CONFIG_EXCHANGES]["kucoin"] = {
         constants.CONFIG_ENABLED_OPTION: True,
         constants.CONFIG_EXCHANGE_TYPE: constants.CONFIG_EXCHANGE_FUTURE
@@ -301,7 +250,6 @@ def test_merge_partially_managed_element(profile):
             }
         }
     }
-    # add constants.CONFIG_ENABLED_OPTION with 2 exchanges in profile, update constants.CONFIG_ENABLED_OPTION
     profile._merge_partially_managed_element(config, profile.config, element, template)
     assert config == {
         constants.CONFIG_EXCHANGES: {
@@ -322,7 +270,6 @@ def test_merge_partially_managed_element(profile):
 
 
 def test_remove_deleted_elements(profile):
-    profile.read_config()
     element = next(iter(profile.PARTIALLY_MANAGED_ELEMENTS))
     config = {
         constants.CONFIG_EXCHANGES: {
@@ -335,13 +282,11 @@ def test_remove_deleted_elements(profile):
     }
     before_sync_elements_count = len(profile.config[element])
     profile.remove_deleted_elements(config)
-    # did not remove any element
     assert before_sync_elements_count == len(profile.config[element])
     profile.config[element]["plop"] = config[constants.CONFIG_EXCHANGES]["binance"]
     assert len(profile.config[element]) == before_sync_elements_count + 1
     profile.remove_deleted_elements(config)
     assert before_sync_elements_count == len(profile.config[element])
-    # removed "plop" element
     assert list(profile.config[element]) == ["binance"]
 
 
@@ -356,7 +301,6 @@ def test_get_element_from_template(profile):
 
 
 def test_filter_fill_elements(profile):
-    profile.read_config()
     config = {
         constants.CONFIG_EXCHANGES: {
             "binance": {
@@ -375,26 +319,3 @@ def test_filter_fill_elements(profile):
             constants.CONFIG_ENABLED_OPTION: True
         }
     }
-
-
-def test_get_all_profiles():
-    with mock.patch.object(profiles.Profile, "_load_profile", mock.Mock()) as _load_profile_mock:
-        nb_files = len(os.listdir(get_profiles_path()))
-        assert nb_files > 1
-        profiles.Profile.get_all_profiles(get_profiles_path())
-        assert _load_profile_mock.call_count == nb_files
-
-
-def test_load_profile():
-    schema_path = "schema_path"
-    with mock.patch.object(profiles.Profile, "read_config", mock.Mock()) as read_config_mock:
-        profile = profiles.Profile._load_profile(test_config.TEST_CONFIG_FOLDER, schema_path)
-        assert profile.path == test_config.TEST_CONFIG_FOLDER
-        assert profile.schema_path == schema_path
-        read_config_mock.assert_called_once()
-
-
-@pytest.mark.xdist_group(name=profiles_conftest.PROFILES_FS_XDIST_GROUP)
-def test_get_existing_profiles_ids(profile):
-    assert profiles.Profile.get_all_profiles_ids(get_profiles_path()) == ["default"]
-    assert profiles.Profile.get_all_profiles_ids(get_profiles_path(), ignore=profile.path) == []

@@ -6,9 +6,14 @@ sidebar_position: 1
 
 # Profiles
 
-OctoBot's trading configuration is using profiles (located into
-user/profiles). This allows for quick switches between previously set
+OctoBot's trading configuration is using profiles. This allows for quick switches between previously set
 configurations. Each profile defines a [Trading Mode](/guides/octobot-trading-modes/trading-modes) configuration as well as other settings.
+
+Bundled default profiles (for example `default` and `non-trading`) remain on the filesystem under
+`user/profiles/`. When a wallet is configured, user-created profiles are stored in the sync
+`StrategyProvider` collection as `GenericProcessConfiguration.profile_data` (same profile id as the
+strategy). OctoBot still exposes the same profile API to the web UI and configuration layer; only the
+profile module selects the storage backend.
 
 ![octobot trading mode details from profiles](/images/guides/configuration/octobot-trading-mode-details-from-profiles.png)
 

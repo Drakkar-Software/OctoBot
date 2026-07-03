@@ -22,7 +22,7 @@ import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_commons.constants as constants
 import octobot_commons.enums as enums
 
-from tests.profiles import get_profile_path, profile
+from tests.profiles import get_profile_path
 
 
 @pytest.fixture
@@ -176,7 +176,7 @@ def min_profile_data_dict():
 
 
 def test_from_profile(profile):
-    profile_data = profiles.ProfileData.from_profile(profile.read_config())
+    profile_data = profiles.ProfileData.from_profile(profile)
     # check one element per attribute to be sure it's all parsed
     assert profile_data.distribution == "default"
     assert profile_data.profile_details.name == "default"
@@ -189,9 +189,9 @@ def test_from_profile(profile):
     assert profile_data.tentacles == []
 
 
-def test_to_profile(profile):
-    profile_data = profiles.ProfileData.from_profile(profile.read_config())
-    created_profile = profile_data.to_profile("plop_path")
+def test_from_profile_data(profile):
+    profile_data = profiles.ProfileData.from_profile(profile)
+    created_profile = profiles.Profile.from_profile_data(profile_data, "plop_path")
     # force missing values
     for crypto_data in profile.config[constants.CONFIG_CRYPTO_CURRENCIES].values():
         crypto_data[constants.CONFIG_ENABLED_OPTION] = crypto_data.get(constants.CONFIG_ENABLED_OPTION, True)

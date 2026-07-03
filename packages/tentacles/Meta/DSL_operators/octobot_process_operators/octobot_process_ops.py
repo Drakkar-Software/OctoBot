@@ -35,7 +35,8 @@ import octobot_commons.process_util as process_util
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_data_import as profile_data_import
 import octobot_commons.profiles.exchange_auth_data as exchange_auth_data_module
-import octobot_commons.profiles.profile as profiles_profile_module
+import octobot_commons.profiles.profile_types.profile as profiles_profile_module
+import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.profiles.tentacles_profile_data_translator as tentacles_profile_data_translator
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration
@@ -411,7 +412,9 @@ async def _copy_read_only_profiles_to_user_root(
     profiles_src = _executor_profiles_directory(working_directory)
     if not os.path.isdir(profiles_src):
         return
-    for profile in profiles_profile_module.Profile.get_all_profiles(profiles_src):
+    profile_storage = profile_storage_module.ProfileStorage(profiles_src, None)
+    listed_profiles = profile_storage.load_all_profiles()
+    for profile in listed_profiles.values():
         if not profile.read_only:
             continue
         # Active profile was already copied by _copy_non_trading_profile_to_user_root.

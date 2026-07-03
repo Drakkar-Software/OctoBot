@@ -23,7 +23,6 @@ from octobot_tentacles_manager.configuration.tentacles_setup_configuration impor
 )
 from octobot_tentacles_manager.configuration.tentacle_configuration import (
     get_config,
-    set_get_config_proxy,
     local_get_config_proxy,
     update_config,
     factory_reset_config,
@@ -39,7 +38,6 @@ from octobot_tentacles_manager.configuration.config_file import (
 
 __all__ = [
     "TentaclesSetupConfiguration",
-    "set_get_config_proxy",
     "local_get_config_proxy",
     "get_config",
     "update_config",

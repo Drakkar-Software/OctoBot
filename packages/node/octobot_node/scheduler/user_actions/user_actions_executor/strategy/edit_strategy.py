@@ -19,6 +19,7 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_user_action_executor as strategy_user_action_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_profile_validation as strategy_profile_validation
 
 
 def _get_edit_strategy_payload(
@@ -54,6 +55,9 @@ class EditStrategyActionExecutor(
             raise node_errors.InvalidUserActionPayloadError(
                 "EditStrategyConfiguration.id must match configuration.id."
             )
+        strategy_profile_validation.validate_profile_strategy_configuration(
+            edit_payload.configuration
+        )
         collection_providers.StrategyProvider.instance().update_item(
             self._user_id,
             edit_payload.configuration,

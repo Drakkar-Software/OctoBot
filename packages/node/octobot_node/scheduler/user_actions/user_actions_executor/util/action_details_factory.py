@@ -450,13 +450,16 @@ def generic_process_action_factory(
     user_id: str,
     *,
     automation_id: str,
+    strategy_id: str | None = None,
 ) -> flow_entities.AbstractActionDetails:
     exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
         protocol_account,
         user_id,
     )
     dsl_arguments = [f"{automation_id!r}"]
-    if generic_process_configuration.profile_data is not None:
+    if strategy_id is not None:
+        dsl_arguments.append(f"strategy_id={strategy_id!r}")
+    elif generic_process_configuration.profile_data is not None:
         dsl_arguments.append(
             dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)
         )

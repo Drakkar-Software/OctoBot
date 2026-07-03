@@ -23,6 +23,7 @@ import octobot_commons.logging as logging
 import octobot_commons.errors as errors
 import octobot_commons.constants as commons_constants
 import octobot_commons.profiles as profiles
+import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.json_util as json_util
 import octobot_commons.configuration.config_file_manager as config_file_manager
 import octobot_commons.configuration.config_operations as config_operations
@@ -54,6 +55,10 @@ class Configuration:
         self._read_config: dict = None
         self.profile: profiles.Profile = None
         self.profile_by_id: dict = {}
+        self.profile_storage = profile_storage_module.ProfileStorage(
+            profiles_path,
+            profile_schema_path,
+        )
 
     def validate(self) -> None:
         """
@@ -97,6 +102,7 @@ class Configuration:
         """
         self.config[commons_constants.CONFIG_PROFILE] = profile_id
         self.profile = self.profile_by_id[profile_id]
+        self.profile_storage.activate_profile(self.profile)
         self.logger.info(f"Using {self.profile.name} profile.")
         self._generate_config_from_user_config_and_profile()
 
@@ -110,8 +116,13 @@ class Configuration:
         if profile.read_only and not profile.imported:
             raise errors.ProfileRemovalError(f"{profile.name} profile can't be removed")
         try:
-            shutil.rmtree(profile.path)
+            self.profile_storage.delete_profile(
+                profile_id,
+                profile=profile,
+            )
             self.profile_by_id.pop(profile_id, None)
+        except errors.ProfileRemovalError:
+            raise
         except Exception as err:
             raise errors.ProfileRemovalError() from err
 
@@ -142,7 +153,7 @@ class Configuration:
             schema_file=schema_file,
         )
         if self.profile is not None:
-            self.profile.save_config(self.config)
+            self.profile_storage.save_active_profile(self.profile, self.config)
         if sync_all_profiles:
             self._sync_other_profiles()
 
@@ -193,8 +204,14 @@ class Configuration:
         Checks if self.profiles_path exists and contains folders
         :return: True if profiles folder is not empty
         """
+        self.profile_storage.configure_paths(
+            self.profiles_path, self.profile_schema_path
+        )
         return not (
-            os.path.isdir(self.profiles_path) and os.listdir(self.profiles_path)
+            self.profile_storage.has_any_profiles()
+            or (
+                os.path.isdir(self.profiles_path) and os.listdir(self.profiles_path)
+            )
         )
 
     def get_non_imported_profiles(self) -> list:
@@ -310,11 +327,13 @@ class Configuration:
         Loads the available profiles
         :return: None
         """
-        for profile in profiles.Profile.get_all_profiles(
-            self.profiles_path, schema_path=self.profile_schema_path
-        ):
-            if profile.profile_id not in self.profile_by_id:
-                self.profile_by_id[profile.profile_id] = profile
+        self.profile_storage.configure_paths(
+            self.profiles_path, self.profile_schema_path
+        )
+        loaded_profiles = self.profile_storage.load_all_profiles()
+        for profile_id, profile in loaded_profiles.items():
+            if profile_id not in self.profile_by_id:
+                self.profile_by_id[profile_id] = profile
 
     def _get_config_without_profile_elements(self) -> dict:
         filtered_config = copy.deepcopy(self.config)

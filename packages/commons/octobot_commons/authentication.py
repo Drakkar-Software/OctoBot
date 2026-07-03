@@ -20,6 +20,7 @@ import asyncio
 
 import octobot_commons.logging as bot_logging
 import octobot_commons.singleton as singleton
+import octobot_sync.chain as sync_chain
 
 
 class Authenticator(singleton.Singleton):
@@ -175,6 +176,12 @@ class Authenticator(singleton.Singleton):
     def has_open_source_package(self) -> bool:
         """
         :return: True when open source package is available
+        """
+        raise NotImplementedError
+
+    def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
+        """
+        Returns the wallet by user id
         """
         raise NotImplementedError
 

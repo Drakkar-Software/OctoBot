@@ -41,7 +41,7 @@ class BaseLocalCollectionStorage:
     """
 
     def __init__(self, collection: str, base_folder: typing.Optional[str] = None) -> None:
-        root = base_folder or user_root_folder_provider.get_user_root_folder()
+        root = base_folder or user_root_folder_provider.get_sync_data_root()
         self.collection = collection
         self._root = pathlib.Path(root) / collection
         self._lock = threading.Lock()

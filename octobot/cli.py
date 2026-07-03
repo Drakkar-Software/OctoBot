@@ -183,7 +183,7 @@ async def _apply_db_bot_config(logger, config, community_auth) -> bool:
             constants.COMMUNITY_BOT_ID,
             constants.USER_AUTH_KEY,
         )
-        profile = await profiles.import_profile_data_as_profile(
+        profile = await config.profile_storage.import_profile_data(
             profile_data,
             constants.PROFILE_FILE_SCHEMA,
             None,
@@ -338,6 +338,36 @@ def _init_cli_overriden_folders(args):
     return overrides, logs_folder
 
 
+def _derive_admin_sync_user_id(community_auth) -> str | None:
+    if community_auth is None:
+        return None
+    try:
+        community_auth.auto_init_sync_client()
+    except Exception:
+        pass
+    if community_auth._sync_user_id:
+        return community_auth._sync_user_id
+    try:
+        import octobot_sync.auth as sync_auth
+
+        wallets = community_auth.list_wallets()
+        if not wallets:
+            return None
+        admin_wallet = next((wallet for wallet in wallets if wallet.is_admin), wallets[0])
+        wallet = community_auth.get_wallet(admin_wallet.address)
+        return sync_auth.derive_user_id(wallet.private_key)
+    except Exception:
+        return None
+
+
+def _configure_profile_sync_user(config, community_auth):
+    sync_user_id = config.config.get(common_constants.CONFIG_SYNC_USER_ID)
+    if not sync_user_id:
+        sync_user_id = _derive_admin_sync_user_id(community_auth)
+    if sync_user_id:
+        config.profile_storage.configure_sync_user(sync_user_id)
+
+
 def start_octobot(args, default_config_file=None):
     logger = None
     try:
@@ -386,6 +416,8 @@ def start_octobot(args, default_config_file=None):
         community_auth = None if args.backtesting else asyncio.run(
             _get_authenticated_community_if_possible(config, logger)
         )
+
+        _configure_profile_sync_user(config, community_auth)
 
         # tries to load, install or repair tentacles
         _load_or_create_tentacles(community_auth, config, logger)

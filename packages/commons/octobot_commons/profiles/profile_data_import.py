@@ -19,9 +19,9 @@ import os
 import uuid
 
 import octobot_commons.profiles.profile_data as profile_data_import
-import octobot_commons.profiles.profile as profile_import
+import octobot_commons.profiles.profile_types.profile as profile_import
+import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.logging as bot_logging
-import octobot_commons.json_util as json_util
 import octobot_commons.constants as constants
 import octobot_commons.aiohttp_util as aiohttp_util
 import octobot_commons.enums as enums
@@ -86,14 +86,21 @@ async def convert_profile_data_to_profile_directory(
     # when updating profile, keep existing registered tentacles
     import_registered_tentacles = profile_to_update is not None
     # tentacles_config.json
-    tentacles_setup_config = _get_tentacles_setup_config(
-        profile_data, output_path, import_registered_tentacles
-    )
-    if tentacles_setup_config.save_config(is_config_update=True):
-        changed = True
-    # specific_config
-    if _save_specific_config(profile_data, output_path, bool(profile_to_update)):
-        changed = True
+    try:
+        import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+
+        tentacles_setup_config = profile_tentacles_util.build_setup_config_from_profile_data(
+            profile_data, output_path, import_registered_tentacles
+        )
+        if tentacles_setup_config.save_config(is_config_update=True):
+            changed = True
+        # specific_config
+        if profile_tentacles_util.write_specific_configs_to_profile_folder(
+            profile_data, output_path, bool(profile_to_update)
+        ):
+            changed = True
+    except ImportError:
+        raise
     # avatar file
     if avatar_url:
         try:
@@ -106,7 +113,11 @@ async def convert_profile_data_to_profile_directory(
             )
     # finish with profile.json to include edits from previous methods
     if changed:
-        profile.save()
+        profile_storage = profile.get_profile_storage()
+        if profile_storage is not None:
+            profile.save()
+        else:
+            profile_backends_module.FilesystemProfileBackend().write_profile_config(profile)
     return changed
 
 
@@ -119,7 +130,7 @@ def _get_profile(
     slug: str,
     force_simulator: bool,
 ):
-    profile = profile_data.to_profile(output_path)
+    profile = profile_import.Profile.from_profile_data(profile_data, output_path)
     if force_simulator:
         profile.config[constants.CONFIG_TRADER][constants.CONFIG_ENABLED_OPTION] = False
         profile.config[constants.CONFIG_SIMULATOR][
@@ -146,7 +157,7 @@ def get_updated_profile(
     :param profile_data: the profile_data to get the update from
     :return: True if something changed in the updated profile
     """
-    updated_profile = profile_data.to_profile("")
+    updated_profile = profile_import.Profile.from_profile_data(profile_data, "")
     changed = False
     # update traded currencies (add new currencies)
     origin_currencies = copy.deepcopy(
@@ -176,78 +187,6 @@ def get_updated_profile(
     ):
         changed = True
     # leave other fields as is (tentacles config will be updated)
-    return changed
-
-
-def _get_tentacles_setup_config(
-    profile_data: profile_data_import.ProfileData,
-    output_path: str,
-    import_registered_tentacles: bool,
-):
-    try:
-        import octobot_tentacles_manager.api
-        import octobot_tentacles_manager.constants
-
-        classes = [
-            octobot_tentacles_manager.api.get_tentacle_class_from_string(
-                tentacle_data.name
-            ).__name__
-            for tentacle_data in profile_data.tentacles
-            if tentacle_data.name not in (
-                octobot_tentacles_manager.constants.IGNORED_TENTACLES_NAMES_IN_TENTACLES_SETUP_CONFIG
-            )
-        ]
-        config_path = os.path.join(output_path, constants.CONFIG_TENTACLES_FILE)
-        tentacles_setup_config = (
-            octobot_tentacles_manager.api.create_tentacles_setup_config_with_tentacles(
-                *classes, config_path=config_path
-            )
-        )
-        use_reference_registered_tentacles = (
-            not tentacles_setup_config.registered_tentacles
-        )
-        octobot_tentacles_manager.api.fill_with_installed_tentacles(
-            tentacles_setup_config,
-            import_registered_tentacles=import_registered_tentacles,
-            use_reference_registered_tentacles=use_reference_registered_tentacles,
-        )
-        return tentacles_setup_config
-    except ImportError:
-        raise
-
-
-def _save_specific_config(
-    profile_data: profile_data_import.ProfileData,
-    output_path: str,
-    is_config_update: bool,
-) -> bool:
-    changed = False
-    try:
-        import octobot_tentacles_manager.constants
-
-        specific_config_dir = os.path.join(
-            output_path,
-            octobot_tentacles_manager.constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
-        )
-        if not os.path.exists(specific_config_dir):
-            os.mkdir(specific_config_dir)
-        for tentacle_config in profile_data.tentacles:
-            file_path = os.path.join(
-                specific_config_dir,
-                f"{tentacle_config.name}{octobot_tentacles_manager.constants.CONFIG_EXT}",
-            )
-            if is_config_update and json_util.has_same_content(
-                file_path, tentacle_config.config
-            ):
-                # nothing to do
-                continue
-            changed = True
-            json_util.safe_dump(
-                tentacle_config.config,
-                file_path,
-            )
-    except ImportError:
-        raise
     return changed
 
 

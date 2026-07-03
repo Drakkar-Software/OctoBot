@@ -202,6 +202,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         protocol_account,
                         self._user_id,
                         automation_id=automation_id,
+                        strategy_id=stored_strategy.id,
                     ),
                 ]
             case protocol_models.CopyConfiguration() as copy_configuration:

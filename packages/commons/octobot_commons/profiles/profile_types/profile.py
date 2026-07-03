@@ -14,9 +14,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from __future__ import annotations
+
 import copy
 import os
-import shutil
+import typing
 import uuid
 import octobot_commons.constants as constants
 import octobot_commons.enums as enums
@@ -79,13 +81,39 @@ class Profile:
         self.extra_backtesting_time_frames = []
 
         self.config: dict = {}
+        self.tentacles_setup_config = None
+        self._profile_storage = None
 
-    def read_config(self):
-        """
-        Reads a profile from self.path
-        :return: self
-        """
-        return self.from_dict(json_util.read_file(self.config_file()))
+    def bind_profile_storage(self, profile_storage) -> None:
+        self._profile_storage = profile_storage
+
+    def get_profile_storage(self):
+        return self._profile_storage
+
+    def _require_profile_storage(self):
+        profile_storage = self._profile_storage
+        if profile_storage is None:
+            raise errors.ProfileDataError("ProfileStorage is not bound to this profile")
+        return profile_storage
+
+    def is_sync_backed(self) -> bool:
+        return False
+
+    def is_profile_data_tentacle_backed(self) -> bool:
+        return False
+
+    def get_storage_source(self):
+        return enums.ProfileSource.FILESYSTEM
+
+    @classmethod
+    def from_profile_data(
+        cls,
+        profile_data,
+        to_create_profile_path: str,
+    ) -> Profile:
+        profile = cls(to_create_profile_path)
+        profile.from_dict(profile_data._to_profile_dict())
+        return profile
 
     def from_dict(self, profile_dict: dict):
         """
@@ -118,10 +146,6 @@ class Profile:
             constants.CONFIG_EXTRA_BACKTESTING_TIME_FRAMES, []
         )
         self.config = self.apply_default_values(profile_dict[constants.PROFILE_CONFIG])
-        if self.avatar and self.path:
-            avatar_path = os.path.join(self.path, self.avatar)
-            if os.path.isfile(avatar_path):
-                self.avatar_path = avatar_path
         return self
 
     def save_config(self, global_config: dict):
@@ -134,7 +158,7 @@ class Profile:
             if element in global_config:
                 self.config[element] = global_config[element]
         self.sync_partially_managed_elements(global_config)
-        self.validate_and_save_config()
+        self._save_through_profile_storage(global_config)
 
     def remove_deleted_elements(self, global_config):
         """
@@ -177,42 +201,18 @@ class Profile:
 
     def validate_and_save_config(self) -> None:
         """
-        JSON validates this profile and then saves its configuration file
+        JSON validates this profile and then saves its configuration
         :return: None
         """
         self.validate()
-        self.save()
+        self._save_through_profile_storage(self._global_config_from_profile())
 
     def save(self) -> None:
         """
-        Saves the current profile configuration file
+        Saves the current profile configuration
         :return: None
         """
-        json_util.safe_dump(self.as_dict(), self.config_file())
-
-    def rename_folder(self, new_name, should_raise) -> str:
-        """
-        rename the profile folder
-        :param new_name: name of the new folder
-        :param should_raise: raises ProfileConflictError if the profile can't be renamed
-        :return: the new profile path
-        """
-        new_path = os.path.join(os.path.split(self.path)[0], new_name)
-        if os.path.exists(new_path):
-            if should_raise:
-                raise errors.ProfileConflictError(
-                    "Skipping folder renaming: a profile already exists at this path"
-                )
-            return self.path
-        try:
-            os.rename(self.path, new_path)
-            self.path = new_path
-        except Exception as err:
-            commons_logging.get_logger("ProfileRenamer").error(
-                f"Error when renaming profile: {err}"
-            )
-            raise errors.ProfileConflictError from err
-        return self.path
+        self.validate_and_save_config()
 
     def duplicate(self, name: str = None, description: str = None):
         """
@@ -221,31 +221,66 @@ class Profile:
         :param description: description of the profile to create, uses the original's one by default
         :return: the created profile
         """
-        clone = copy.deepcopy(self)
-        clone.name = name or clone.name
-        clone.description = description or clone.description
-        clone.profile_id = str(uuid.uuid4())
-        clone.read_only = False
-        clone.imported = False
-        clone.origin_url = None
-        clone.auto_update = False
-        try:
-            clone.path = os.path.join(
-                os.path.split(self.path)[0], f"{clone.name}_{clone.profile_id}"
-            )
-            shutil.copytree(self.path, clone.path)
-        except OSError:
-            # invalid profile name for a filename
-            clone.path = os.path.join(os.path.split(self.path)[0], clone.profile_id)
-            shutil.copytree(self.path, clone.path)
-        clone.save()
-        return clone
+        return self._require_profile_storage().duplicate_profile(self, name=name, description=description)
+
+    def delete(self) -> None:
+        self._require_profile_storage().delete_profile(self.profile_id, profile=self)
+
+    def _save_through_profile_storage(self, global_config: dict) -> None:
+        self._require_profile_storage().save_active_profile(self, global_config)
+
+    def _global_config_from_profile(self) -> dict:
+        global_config = {}
+        for element in self.FULLY_MANAGED_ELEMENTS:
+            global_config[element] = self.config.get(element, {})
+        for element in self.PARTIALLY_MANAGED_ELEMENTS:
+            if element in self.config:
+                global_config[element] = self.config[element]
+        return global_config
 
     def get_tentacles_config_path(self) -> str:
         """
         :return: The tentacles configurations path
         """
         return os.path.join(self.path, constants.CONFIG_TENTACLES_FILE)
+
+    def activate(self) -> None:
+        setup = self._build_tentacles_setup_config()
+        setup.profile = self
+        self.tentacles_setup_config = setup
+
+    def get_tentacles_data(self) -> typing.Optional[list]:
+        tentacles_setup_config = self.tentacles_setup_config
+        if tentacles_setup_config is None:
+            return None
+        try:
+            import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+        except ImportError:
+            return self._get_tentacles_data_without_tentacles_manager()
+        return profile_tentacles_util.collect_tentacles_data_from_setup(
+            tentacles_setup_config
+        )
+
+    def _get_tentacles_data_without_tentacles_manager(self) -> typing.Optional[list]:
+        return None
+
+    def _build_tentacles_setup_config(self):
+        import octobot_commons.profiles.profile_data as profile_data_module
+        import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
+
+        os.makedirs(self.path, exist_ok=True)
+        tentacles_config_path = self.get_tentacles_config_path()
+        if os.path.isfile(tentacles_config_path):
+            return profile_tentacles_util.load_setup_config_from_profile_path(
+                tentacles_config_path
+            )
+        try:
+            profile_data = profile_data_module.ProfileData.from_filesystem_profile(self)
+        except (KeyError, OSError, TypeError):
+            profile_data = profile_data_module.ProfileData()
+        return profile_tentacles_util.build_setup_config_from_profile_data(
+            profile_data, self.path, import_registered_tentacles=True
+        )
 
     def as_dict(self) -> dict:
         """
@@ -274,12 +309,6 @@ class Profile:
             },
             constants.PROFILE_CONFIG: self.config,
         }
-
-    def config_file(self):
-        """
-        :return: the path to this profile config file
-        """
-        return os.path.join(self.path, constants.PROFILE_CONFIG_FILE)
 
     def merge_partially_managed_element_into_config(self, config: dict, element: str):
         """
@@ -372,71 +401,6 @@ class Profile:
                     # save allowed keys
                     if key in allowed_keys:
                         profile_config[element][key] = value
-
-    @staticmethod
-    def load_profile(profiles_path, profile_id, schema_path: str = None):
-        """
-        :param profiles_path: the path to look for the profile
-        :param profile_id: the required profile id
-        :return: the loaded profile
-        """
-        for profile in Profile.get_all_profiles(profiles_path, schema_path=schema_path):
-            if profile.profile_id == profile_id:
-                return profile
-        raise errors.NoProfileError(f"No profile with id: {profile_id}")
-
-    @staticmethod
-    def get_all_profiles(profiles_path, ignore: str = None, schema_path: str = None):
-        """
-        Loads profiles found in the given directory
-        :param profiles_path: Path to a directory containing profiles
-        :param ignore: A profile path to ignore
-        :param schema_path: Path to the json schema to pass to the created profile instances
-        :return: the profile instances list
-        """
-        profiles = []
-        ignored_path = None if ignore is None else os.path.normpath(ignore)
-        for profile_entry in os.scandir(profiles_path):
-            if (
-                ignored_path is None
-                or os.path.normpath(profile_entry.path) != ignored_path
-            ):
-                profile = Profile._load_profile(profile_entry.path, schema_path)
-                if profile is not None:
-                    profiles.append(profile)
-        return profiles
-
-    @staticmethod
-    def _load_profile(profile_path: str, schema_path: str):
-        logger = commons_logging.get_logger("ProfileExplorer")
-        profile = Profile(profile_path, schema_path)
-        try:
-            if os.path.isfile(profile.config_file()):
-                profile.read_config()
-                return profile
-            logger.debug(
-                f"Ignored {profile_path} as it does not contain a profile configuration"
-            )
-        except Exception as err:
-            logger.exception(
-                err,
-                True,
-                f"Ignored profile due to an error upon reading '{profile_path}': {err}",
-            )
-        return None
-
-    @staticmethod
-    def get_all_profiles_ids(profiles_path, ignore: str = None):
-        """
-        Get ids of profiles found in the given directory
-        :param profiles_path: Path to a directory containing profiles
-        :param ignore: A profile path to ignore in ids listing
-        :return: the profile ids list
-        """
-        return [
-            profile.profile_id
-            for profile in Profile.get_all_profiles(profiles_path, ignore)
-        ]
 
     @staticmethod
     def apply_default_values(config: dict) -> dict:

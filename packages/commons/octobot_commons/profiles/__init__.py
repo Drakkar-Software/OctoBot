@@ -15,11 +15,8 @@
 #  License along with this library.
 
 
-from octobot_commons.profiles import profile
-
-from octobot_commons.profiles.profile import (
-    Profile,
-)
+from octobot_commons.profiles.profile_types import Profile
+from octobot_commons.profiles.profile_types import EphemeralProfile
 
 from octobot_commons.profiles import profile_sharing
 from octobot_commons.profiles.profile_sharing import (
@@ -41,9 +38,15 @@ from octobot_commons.profiles.profile_data import (
     OptionsData,
 )
 
-from octobot_commons.profiles import profile_sync
+from octobot_commons.profiles import profile_storage
 
-from octobot_commons.profiles.profile_sync import (
+from octobot_commons.profiles.profile_storage import (
+    ProfileStorage,
+)
+
+from octobot_commons.profiles import profile_synchronizer
+
+from octobot_commons.profiles.profile_synchronizer import (
     start_profile_synchronizer,
     stop_profile_synchronizer,
 )
@@ -69,6 +72,8 @@ from octobot_commons.profiles.tentacles_profile_data_adapter import (
 
 __all__ = [
     "Profile",
+    "EphemeralProfile",
+    "ProfileStorage",
     "export_profile",
     "install_profile",
     "import_profile",

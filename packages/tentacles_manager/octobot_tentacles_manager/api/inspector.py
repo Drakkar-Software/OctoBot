@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+from __future__ import annotations
+
 import functools
 import packaging.version as packaging_version
 import typing
