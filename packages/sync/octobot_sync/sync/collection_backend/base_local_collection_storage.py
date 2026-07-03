@@ -16,6 +16,7 @@
 
 
 import datetime
+import hashlib
 import json
 import os
 import pathlib
@@ -30,6 +31,9 @@ import octobot_sync.errors as sync_errors
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_backend.state_model as state_model
 import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading
+
+
+_MISSING_FILE_CHECKSUM = ""
 
 
 class BaseLocalCollectionStorage:
@@ -61,6 +65,15 @@ class BaseLocalCollectionStorage:
         return collection_errors.CollectionNoDataError(
             f"{self.collection} file does not exist for user_id {storage_key}"
         )
+
+    def get_file_checksum(self, storage_key: str) -> str:
+        """Return the SHA-256 hex digest of the raw on-disk collection file bytes."""
+        path = self._file_path(storage_key)
+        if not path.exists():
+            return _MISSING_FILE_CHECKSUM
+        with self._lock:
+            with open(path, "rb") as handle:
+                return hashlib.sha256(handle.read()).hexdigest()
 
     def _payload_to_json_bytes(self, payload: state_model.StateModel) -> bytes:
         """Serialize a state dict to JSON bytes (handles datetime values from protocol models)."""

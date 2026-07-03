@@ -132,6 +132,29 @@ class TestSingleItemLocalCollectionProviderSaveState:
         assert persisted_state == _SAMPLE_STATE
 
 
+class TestSingleItemLocalCollectionProviderCacheInvalidation:
+    def test_reloads_from_disk_when_file_changed_externally(self, tmp_path):
+        provider = _make_provider(tmp_path)
+        with _patch_wallet():
+            provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, _SAMPLE_STATE)
+            provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
+
+        external_state = _TestState(
+            version="1.0.0",
+            items=[_TestItem(id="external", label="From disk")],
+        )
+        identifier = provider._build_identifier(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
+        provider._storage.save_state(identifier, _TEST_PRIVATE_KEY, external_state)
+
+        with _patch_wallet():
+            loaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
+
+        assert loaded_state.items is not None
+        assert len(loaded_state.items) == 1
+        assert loaded_state.items[0].id == "external"
+        assert loaded_state.items[0].label == "From disk"
+
+
 class TestSingleItemLocalCollectionProviderLoadStateEncrypted:
     def test_reads_encrypted_blob_for_account_id(self, tmp_path):
         provider = _make_provider(tmp_path)
