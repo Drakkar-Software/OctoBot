@@ -188,14 +188,20 @@ class AutomationWorkflow:
                 except octobot_flow.errors.CommunityTradingSignalError as err:
                     execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
                     execution_error_message = str(err)
-                except octobot_trading.errors.AuthenticationError as err:
+                except (
+                    octobot_trading.errors.AuthenticationError,
+                    octobot_trading.errors.PortfolioNegativeValueError,
+                ) as err:
                     AutomationWorkflow.get_logger(parsed_inputs).error(
-                        f"Authentication error: {err} ({err.__class__.__name__})"
+                        f"{err.__class__.__name__} error (postponed iteration): {err}"
                     )
-                    execution_error = octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value
+                    execution_error_status, postpone_delay_seconds = (
+                        AutomationWorkflow._get_postponed_iteration_error_status_and_delay(err)
+                    )
+                    next_step_at = time.time() + postpone_delay_seconds
+                    execution_error = execution_error_status.value
                     execution_error_message = str(err)
                     postponed_iteration = True
-                    next_step_at = time.time() + constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
                     has_next_actions_override = True
                     next_iteration_description_override = parsed_inputs.task.content
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
@@ -235,9 +241,10 @@ class AutomationWorkflow:
                     result,
                 )
             else:
+                retry_delay_seconds = max(0.0, (next_step_at or time.time()) - time.time())
                 AutomationWorkflow.get_logger(parsed_inputs).info(
-                    f"Iteration postponed after authentication error, retry scheduled in "
-                    f"{constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS:.0f} seconds"
+                    f"Iteration postponed ({execution_error}: {execution_error_message}), "
+                    f"retry scheduled in {retry_delay_seconds:.0f} seconds"
                 )
             #### End of decryped task context - no clear data after this point in encrypted context ####
 
@@ -477,3 +484,12 @@ class AutomationWorkflow:
         return octobot_commons.logging.get_logger(
             parsed_inputs.task.name or AutomationWorkflow.__name__
         )
+
+    @staticmethod
+    def _get_postponed_iteration_error_status_and_delay(error: Exception) -> tuple[
+        octobot_flow.enums.ActionErrorStatus, float
+    ]:
+        if isinstance(error, octobot_trading.errors.AuthenticationError):
+            return octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR, constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
+        # other errors, like PortfolioNegativeValueError
+        return octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS

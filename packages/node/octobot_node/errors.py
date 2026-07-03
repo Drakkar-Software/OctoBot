@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import octobot_flow.enums
+import octobot_node.constants as constants
 
 class WorkflowError(Exception):
     """Base class for all workflow errors"""
