@@ -28,6 +28,7 @@ import type {
   MarketMakingConfiguration,
   MarketMakingSymbolConfiguration,
   RefreshAccountsConfiguration,
+  RestartAutomationConfiguration,
   SignalAutomationConfiguration,
   StopAutomationConfiguration,
   Strategy,
@@ -62,6 +63,7 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   { value: "automation_create", label: "Automation create" },
   { value: "automation_edit", label: "Automation edit" },
   { value: "automation_stop", label: "Automation stop" },
+  { value: "automation_restart", label: "Automation restart" },
   { value: "automation_signal", label: "Automation signal" },
   { value: "account_create", label: "Account create" },
   { value: "account_edit", label: "Account edit" },
@@ -117,6 +119,7 @@ type DebugUserActionConfiguration =
   | CreateAutomationConfiguration
   | EditAutomationConfiguration
   | StopAutomationConfiguration
+  | RestartAutomationConfiguration
   | SignalAutomationConfiguration
   | CreateStrategyConfiguration
   | EditStrategyConfiguration
@@ -615,6 +618,11 @@ export function buildUserActionTemplate(
         action_type: actionType,
         id: "<automation-id>",
       } satisfies StopAutomationConfiguration)
+    case "automation_restart":
+      return userAction(id, {
+        action_type: actionType,
+        id: "<automation-id>",
+      } satisfies RestartAutomationConfiguration)
     case "automation_signal":
       return userAction(id, {
         action_type: actionType,
@@ -752,6 +760,17 @@ export function buildAutomationStopUserActionJson(
       action_type: "automation_stop",
       id: automationId,
     } satisfies StopAutomationConfiguration),
+  )
+}
+
+export function buildAutomationRestartUserActionJson(
+  automationId: string,
+): string {
+  return userActionJson(
+    userAction(`ua-restart-${automationId}`, {
+      action_type: "automation_restart",
+      id: automationId,
+    } satisfies RestartAutomationConfiguration),
   )
 }
 

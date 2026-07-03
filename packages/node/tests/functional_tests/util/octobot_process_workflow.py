@@ -10,6 +10,7 @@ import time
 import typing
 import uuid
 
+import dbos
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models_module
@@ -201,6 +202,7 @@ async def wait_for_init_state_ok(
     *,
     timeout_sec: float = GLOBAL_INIT_TIMEOUT_SEC,
     poll_interval_sec: float = INIT_POLL_INTERVAL_SEC,
+    active_workflows_only: bool = False,
 ) -> dict:
     deadline = time.monotonic() + timeout_sec
     while time.monotonic() < deadline:
@@ -208,6 +210,11 @@ async def wait_for_init_state_ok(
         for workflow_row in workflow_rows:
             import octobot_node.scheduler.workflows_util as workflows_util_module
 
+            if active_workflows_only and workflow_row.status not in (
+                dbos.WorkflowStatusString.PENDING.value,
+                dbos.WorkflowStatusString.ENQUEUED.value,
+            ):
+                continue
             if workflows_util_module.get_automation_id(workflow_row) != automation_id:
                 continue
             state_reader = workflows_util_module.get_automation_state_reader(workflow_row)

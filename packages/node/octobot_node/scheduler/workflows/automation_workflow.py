@@ -420,14 +420,13 @@ class AutomationWorkflow:
     def _get_next_child_workflow_id() -> str:
         workflow_id = dbos.DBOS.workflow_id
         if workflow_id is None:
-            raise errors.WorkflowInputError("Missing current workflow ID while scheduling next iteration.")
-        parent_workflow_id = workflow_id[:constants.PARENT_WORKFLOW_ID_LENGTH]
+            raise errors.WorkflowInputError(
+                "Missing current workflow ID while scheduling next iteration."
+            )
         try:
-            current_child_id = workflows_util.parse_automation_child_workflow_index(workflow_id)
+            return workflows_util.build_next_child_automation_workflow_id(workflow_id)
         except ValueError as error:
             raise errors.WorkflowInputError(str(error)) from error
-        next_child_id = current_child_id + 1
-        return f"{parent_workflow_id}_{next_child_id}"
 
     @staticmethod
     def _create_next_iteration_inputs(

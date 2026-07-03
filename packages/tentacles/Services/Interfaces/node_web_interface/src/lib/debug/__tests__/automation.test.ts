@@ -11,6 +11,7 @@ import {
   getNextPendingAction,
   getRunningAction,
   isActionExecuted,
+  isRestartableAutomation,
   isRunningAutomation,
   signalTypeRequiresPayload,
   validateAutomationCanReceiveSignal,
@@ -41,6 +42,26 @@ describe("isRunningAutomation", () => {
       true,
     )
     expect(isRunningAutomation(makeAutomation({ status: "completed" }))).toBe(
+      false,
+    )
+  })
+})
+
+describe("isRestartableAutomation", () => {
+  it("returns true for completed and failed statuses", () => {
+    expect(isRestartableAutomation(makeAutomation({ status: "completed" }))).toBe(
+      true,
+    )
+    expect(isRestartableAutomation(makeAutomation({ status: "failed" }))).toBe(
+      true,
+    )
+  })
+
+  it("returns false for running and pending statuses", () => {
+    expect(isRestartableAutomation(makeAutomation({ status: "running" }))).toBe(
+      false,
+    )
+    expect(isRestartableAutomation(makeAutomation({ status: "pending" }))).toBe(
       false,
     )
   })

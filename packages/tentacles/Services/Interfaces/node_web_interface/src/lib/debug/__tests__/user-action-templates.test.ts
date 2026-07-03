@@ -5,6 +5,7 @@ import {
   buildAccountEditUserActionJson,
   buildAutomationCreateUserActionJsonForAccount,
   buildAutomationCreateUserActionJsonForStrategy,
+  buildAutomationRestartUserActionJson,
   buildAutomationSignalUserActionJson,
   buildAutomationStopUserActionJson,
   buildExchangeConfigEditUserActionJson,
@@ -32,6 +33,15 @@ describe("buildUserActionTemplate", () => {
     expect(action.id).toContain("automation_stop")
     expect(action.configuration).toMatchObject({
       action_type: "automation_stop",
+      id: "<automation-id>",
+    })
+  })
+
+  it("builds an automation restart template", () => {
+    const action = buildUserActionTemplate("automation_restart")
+    expect(action.id).toContain("automation_restart")
+    expect(action.configuration).toMatchObject({
+      action_type: "automation_restart",
       id: "<automation-id>",
     })
   })
@@ -335,6 +345,16 @@ describe("buildAutomationStopUserActionJson", () => {
     const json = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
     expect(json.configuration).toEqual({
       action_type: "automation_stop",
+      id: "auto-1",
+    })
+  })
+})
+
+describe("buildAutomationRestartUserActionJson", () => {
+  it("targets the automation id", () => {
+    const json = JSON.parse(buildAutomationRestartUserActionJson("auto-1"))
+    expect(json.configuration).toEqual({
+      action_type: "automation_restart",
       id: "auto-1",
     })
   })

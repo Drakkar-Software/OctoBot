@@ -1693,6 +1693,23 @@
           }
         }
       },
+      "RestartAutomationConfiguration": {
+        "description": "RestartAutomationConfiguration",
+        "type": "object",
+        "required": [
+          "id",
+          "action_type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "automation_restart"
+          }
+        }
+      },
       "AutomationSignalType": {
         "description": "AutomationSignalType",
         "type": "string",
@@ -2015,6 +2032,7 @@
           "automation_create",
           "automation_edit",
           "automation_stop",
+          "automation_restart",
           "automation_signal",
           "account_create",
           "account_edit",
@@ -2229,6 +2247,9 @@
                 "$ref": "#/components/schemas/StopAutomationConfiguration"
               },
               {
+                "$ref": "#/components/schemas/RestartAutomationConfiguration"
+              },
+              {
                 "$ref": "#/components/schemas/SignalAutomationConfiguration"
               },
               {
@@ -2277,6 +2298,7 @@
                 "automation_create": "#/components/schemas/CreateAutomationConfiguration",
                 "automation_edit": "#/components/schemas/EditAutomationConfiguration",
                 "automation_stop": "#/components/schemas/StopAutomationConfiguration",
+                "automation_restart": "#/components/schemas/RestartAutomationConfiguration",
                 "automation_signal": "#/components/schemas/SignalAutomationConfiguration",
                 "account_create": "#/components/schemas/CreateAccountConfiguration",
                 "account_edit": "#/components/schemas/EditAccountConfiguration",

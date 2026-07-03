@@ -9,6 +9,7 @@ import typing
 
 import mock
 import pytest
+import dbos
 
 import octobot.constants as octobot_constants_module
 import octobot_protocol.models as octobot_protocol_models
@@ -31,6 +32,8 @@ _T_ENQUEUE_SECONDS = 30.0
 _T_INIT_SECONDS = 60.0
 _T_STOP_SEND_SECONDS = 30.0
 _T_STOP_COMPLETE_SECONDS = 45.0
+_T_RESTART_ENQUEUE_SECONDS = 30.0
+_T_RESTART_INIT_SECONDS = 60.0
 
 _GENERIC_PROCESS_ACCOUNT_ID = "functional_generic_process_account"
 _GENERIC_PROCESS_AUTOMATION_NAME = "test_generic_process_default_config_automation"
@@ -211,6 +214,60 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
                 await asyncio.sleep(0.5)
             else:
                 pytest.fail(f"expected child pid {child_pid} to exit after AUTOMATION_STOP")
+
+            restart_user_action = workflow_common_module.build_restart_user_action(
+                automation_id=parent_automation_id,
+                user_action_id=f"ua-restart-{create_user_action.id}",
+            )
+            try:
+                await asyncio.wait_for(
+                    workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
+                        temp_dbos_scheduler,
+                        restart_user_action,
+                        user_id,
+                    ),
+                    timeout=_T_RESTART_ENQUEUE_SECONDS,
+                )
+            except TimeoutError as exc:
+                raise AssertionError("execute_user_action timed out enqueueing automation restart") from exc
+
+            await user_action_assertions_module.assert_user_action_selector_completed_automation_restart(
+                user_id=user_id,
+                user_action_id=restart_user_action.id,
+            )
+
+            restarted_inner_state = await octobot_process_workflow_module.wait_for_init_state_ok(
+                temp_dbos_scheduler,
+                metadata_automation_id,
+                timeout_sec=_T_RESTART_INIT_SECONDS,
+                active_workflows_only=True,
+            )
+            assert restarted_inner_state.get("pid")
+            restarted_child_pid = int(restarted_inner_state["pid"])
+            assert process_util_module.pid_is_running(restarted_child_pid)
+            child_pid = restarted_child_pid
+            child_user_root = restarted_inner_state.get("user_root") or child_user_root
+            child_log_folder = restarted_inner_state.get("log_folder") or child_log_folder
+
+            workflow_rows_after_restart = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+            workflow_row_after_restart: typing.Any = None
+            for workflow_row in workflow_rows_after_restart:
+                if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    continue
+                if workflow_row.status not in (
+                    dbos.WorkflowStatusString.PENDING.value,
+                    dbos.WorkflowStatusString.ENQUEUED.value,
+                ):
+                    continue
+                workflow_row_after_restart = workflow_row
+                break
+            assert workflow_row_after_restart is not None
+
+            protocol_automation_after_restart = await workflow_common_module.load_protocol_automation_state_for_workflow(
+                user_id,
+                workflow_row_after_restart,
+            )
+            assert protocol_automation_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING
 
         if child_user_root and os.path.isdir(child_user_root):
             shutil.rmtree(child_user_root, ignore_errors=True)

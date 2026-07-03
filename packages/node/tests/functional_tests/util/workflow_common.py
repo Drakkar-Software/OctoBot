@@ -123,6 +123,21 @@ def build_stop_user_action(
     )
 
 
+def build_restart_user_action(
+    *,
+    automation_id: str,
+    user_action_id: str,
+) -> protocol_models_module.UserAction:
+    payload = protocol_models_module.RestartAutomationConfiguration(
+        action_type=protocol_models_module.UserActionType.AUTOMATION_RESTART,
+        id=automation_id,
+    )
+    return protocol_models_module.UserAction(
+        id=user_action_id,
+        configuration=wrap_user_action_configuration(payload),
+    )
+
+
 def build_forced_trigger_signal_user_action(
     *,
     automation_id: str,

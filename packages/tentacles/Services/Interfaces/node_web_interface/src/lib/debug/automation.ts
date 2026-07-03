@@ -11,6 +11,12 @@ export function isRunningAutomation(automation: AutomationState): boolean {
   return automation.status === "running"
 }
 
+export function isRestartableAutomation(automation: AutomationState): boolean {
+  return (
+    automation.status === "completed" || automation.status === "failed"
+  )
+}
+
 export function getAutomationErrorTooltipLines(
   automation: AutomationState,
 ): string[] {

@@ -201,6 +201,16 @@ def filter_by_wallet(
     raise ValueError(f"Unsupported scheduler queue for wallet filter: {queue!r}")
 
 
+def normalize_parent_automation_id(workflow_id: str) -> str:
+    return workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+
+
+def build_next_child_automation_workflow_id(current_workflow_id: str) -> str:
+    parent_id = normalize_parent_automation_id(current_workflow_id)
+    child_index = parse_automation_child_workflow_index(current_workflow_id)
+    return f"{parent_id}_{child_index + 1}"
+
+
 def parse_automation_child_workflow_index(workflow_id: str) -> int:
     """
     Return the child iteration index encoded in a workflow ID.
@@ -282,7 +292,12 @@ def parse_automation_workflow_output(
     if not workflow_status.output:
         return None
     try:
-        return params.AutomationWorkflowOutput.from_dict(json.loads(workflow_status.output))
+        raw_output = workflow_status.output
+        if isinstance(raw_output, str):
+            raw_output = json.loads(raw_output)
+        if not isinstance(raw_output, dict):
+            raise TypeError(f"Unexpected workflow output type: {type(raw_output).__name__}")
+        return params.AutomationWorkflowOutput.from_dict(raw_output)
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         logger.warning(
             "Failed to parse automation workflow output for %s: %s",

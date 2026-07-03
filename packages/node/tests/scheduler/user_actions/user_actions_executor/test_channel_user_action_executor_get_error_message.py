@@ -23,6 +23,7 @@ import octobot_node.scheduler.user_actions.user_actions_executor.account.create_
 import octobot_node.scheduler.user_actions.user_actions_executor.exchange_config.create_exchange_config as create_exchange_config_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.create_strategy as create_strategy_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.account_auth.create_account_auth as create_account_auth_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.restart_automation as restart_automation_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation as stop_automation_executor
 
 _WALLET = "0xwallet"
@@ -37,6 +38,11 @@ class TestAutomationUserActionExecutorGetErrorMessage:
     def test_invalid_user_action_payload(self):
         executor = stop_automation_executor.StopAutomationActionExecutor(_WALLET)
         resolved = executor._get_error_message(node_errors.InvalidUserActionPayloadError("bad"))
+        assert resolved == protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION
+
+    def test_unrestartable_automation_error(self):
+        executor = restart_automation_executor.RestartAutomationActionExecutor(_WALLET)
+        resolved = executor._get_error_message(node_errors.UnrestartableAutomationError("cannot restart"))
         assert resolved == protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION
 
     def test_ambiguous_active_automation_workflow(self):
