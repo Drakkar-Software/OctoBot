@@ -19,6 +19,7 @@ import os
 import asyncio
 import sqlite3
 import contextlib
+import tempfile
 
 
 import octobot_commons.asyncio_tools as asyncio_tools
@@ -58,7 +59,8 @@ async def get_temp_empty_database():
 
 
 async def test_invalid_file():
-    file_name = "plop"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
+        file_name = temp_file.name
     db = databases.SQLiteDatabase(file_name)
     try:
         await db.initialize()

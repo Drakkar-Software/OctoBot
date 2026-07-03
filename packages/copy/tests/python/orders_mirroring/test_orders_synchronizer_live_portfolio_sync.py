@@ -45,7 +45,16 @@ copy_tests_python_helpers = _load_copy_tests_python_helpers()
 pytestmark = pytest.mark.asyncio
 
 _BTC_USDT = "BTC/USDT"
-_BTC_PRICE = decimal.Decimal("60000")
+_BTC_PRICE = decimal.Decimal("60300")
+_RECREATE_SELL_ORDER_ID = "4bd49d83-20d5-4258-8298-55da4bac60e7"
+_SIBLING_SELL_ORDER_ID = "978f4fc0-d60a-42e5-8657-8973e7a53999"
+_COUPLER_BTC_TOTAL = decimal.Decimal("0.00753")
+_COUPLER_BTC_AVAILABLE = decimal.Decimal("0.00068")
+_SIBLING_SELL_QUANTITY = _COUPLER_BTC_TOTAL - _COUPLER_BTC_AVAILABLE
+_REFERENCE_BTC_TOTAL = decimal.Decimal("0.00753")
+_REFERENCE_SELL_QUANTITY = decimal.Decimal("0.00074")
+_REFERENCE_SELL_PRICE = decimal.Decimal("61188")
+_SELL_SCENARIO_USDT_TOTAL = decimal.Decimal("500")
 _REPLACE_ORDER_ID = "dabfe054-a650-4a09-a296-8d22ceb6f664"
 _CREATE_ORDER_ID = "7cf7e7ad-b3e4-4f6a-a2f5-1ecff2cc176f"
 # Copier open buy before sync (oversized vs reference target); locks ~19.8 USDT at _BTC_PRICE.
@@ -183,3 +192,121 @@ class TestSynchronize:
         assert replace_order.origin_quantity == decimal.Decimal("0.0002")
         assert create_order is not None
         assert create_order.origin_quantity == decimal.Decimal("0.00015")
+
+
+def _replicable_btc_sell_limit_order(
+    *,
+    order_id: str,
+    quantity: decimal.Decimal,
+    price: decimal.Decimal,
+) -> protocol_models.Order:
+    return protocol_models.Order(
+        id=order_id,
+        symbol=_BTC_USDT,
+        price=float(price),
+        quantity=float(quantity),
+        filled=0.0,
+        exchange_id="reference-exchange-id",
+        side=protocol_models.Side.SELL,
+        type=protocol_models.OrderType.LIMIT,
+        trigger_above=True,
+        reduce_only=False,
+        is_active=True,
+        status=protocol_models.OrderStatus.OPEN,
+        created_at=timestamp_util.utc_datetime_from_timestamp(time.time()),
+    )
+
+
+def _reference_account_with_one_sell() -> protocol_models.CopiedAccount:
+    return protocol_models.CopiedAccount(
+        version=copy_constants.COPIED_ACCOUNT_VERSION,
+        updated_at=time.time(),
+        copied_assets=[
+            protocol_models.CopiedAsset(
+                name="BTC",
+                total=float(_REFERENCE_BTC_TOTAL),
+                available=float(_COUPLER_BTC_AVAILABLE),
+                ratio=0.5,
+            ),
+            protocol_models.CopiedAsset(
+                name="USDT",
+                total=float(_SELL_SCENARIO_USDT_TOTAL),
+                available=float(_SELL_SCENARIO_USDT_TOTAL),
+                ratio=0.5,
+            ),
+        ],
+        orders=[
+            _replicable_btc_sell_limit_order(
+                order_id=_RECREATE_SELL_ORDER_ID,
+                quantity=_REFERENCE_SELL_QUANTITY,
+                price=_REFERENCE_SELL_PRICE,
+            ),
+            _replicable_btc_sell_limit_order(
+                order_id=_SIBLING_SELL_ORDER_ID,
+                quantity=_SIBLING_SELL_QUANTITY,
+                price=decimal.Decimal("62188"),
+            ),
+        ],
+    )
+
+
+class TestSynchronizeGraceElapsedSellRecreate:
+    @pytest.mark.parametrize("backtesting_config", ["USDT"], indirect=True)
+    async def test_creates_sell_after_grace_elapsed_respects_available_base(self, live_trading_trader):
+        # Jul 2 log: sibling sells lock most BTC; grace-elapsed resync recreates a missing mirrored
+        # sell. Sizing must cap to available base (total minus sibling locks), not raw total.
+        _config, exchange_manager, _trader = live_trading_trader
+        copy_tests_python_helpers.ensure_traded_symbol_pairs(exchange_manager, (_BTC_USDT,))
+        portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+
+        trading_api.force_set_mark_price(exchange_manager, _BTC_USDT, _BTC_PRICE)
+        portfolio_manager.portfolio.update_portfolio_from_balance(
+            {
+                "BTC": {
+                    "available": _COUPLER_BTC_TOTAL,
+                    "total": _COUPLER_BTC_TOTAL,
+                },
+                "USDT": {
+                    "available": _SELL_SCENARIO_USDT_TOTAL,
+                    "total": _SELL_SCENARIO_USDT_TOTAL,
+                },
+            },
+            True,
+        )
+        portfolio_manager.handle_balance_updated()
+        portfolio_manager.portfolio_value_holder.value_converter.missing_currency_data_in_exchange.discard("USDT")
+        portfolio_manager.handle_mark_price_update(_BTC_USDT, _BTC_PRICE)
+
+        exchange_interface = copy_exchange.ExchangeInterface(exchange_manager)
+        await exchange_interface.orders.create_order(
+            trading_enums.TraderOrderType.SELL_LIMIT,
+            _BTC_USDT,
+            decimal.Decimal("62188"),
+            _SIBLING_SELL_QUANTITY,
+            decimal.Decimal("62188"),
+            tag=copy_constants.MIRRORED_ORDER_TAG,
+            order_id=_SIBLING_SELL_ORDER_ID,
+            wait_for_creation=True,
+        )
+
+        portfolio_manager.portfolio.get_currency_portfolio("BTC").available = _COUPLER_BTC_AVAILABLE
+
+        reference_account = _reference_account_with_one_sell()
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference_account,
+            exchange_interface,
+            copy_entities.AccountCopySettings(),
+        )
+        synchronizer.abort_mirrored_orphan_grace()
+
+        refresh_portfolio_mock = mock.AsyncMock(return_value=True)
+        with mock.patch.object(
+            exchange_interface.portfolio,
+            "refresh_portfolio",
+            refresh_portfolio_mock,
+        ):
+            await synchronizer.synchronize()
+
+        created_order = _open_order_by_id(exchange_manager, _RECREATE_SELL_ORDER_ID)
+        assert created_order is not None
+        assert created_order.origin_quantity == _COUPLER_BTC_AVAILABLE

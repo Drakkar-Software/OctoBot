@@ -78,6 +78,17 @@ def get_user_root_folder() -> str:
     return UserRootFolderProvider.instance().get_root()
 
 
+def get_sync_data_root() -> str:
+    """
+    Master sync data root (StrategyProvider storage, sync profile runtime, master wallets).
+    Child automation processes set ENV_OCTOBOT_SYNC_DATA_ROOT to the master user/ path.
+    """
+    sync_data_root = os.getenv(commons_constants.ENV_OCTOBOT_SYNC_DATA_ROOT)
+    if sync_data_root:
+        return sync_data_root
+    return get_user_root_folder()
+
+
 def get_user_profiles_folder() -> str:
     """Module-level helper: profiles folder under the user root."""
     return UserRootFolderProvider.instance().get_user_profiles_folder()

@@ -88,6 +88,8 @@ def dsl_action_execution(func):
                 octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
                 str(err),
             )
+        except octobot_trading.errors.PortfolioNegativeValueError:
+            raise
         except Exception as err:
             octobot_commons.logging.get_logger("action_execution").exception(
                 err,

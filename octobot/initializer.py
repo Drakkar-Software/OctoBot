@@ -13,7 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot.constants as constants
 import octobot_commons.databases as databases
 import octobot_commons.logging as logging
@@ -31,9 +30,8 @@ class Initializer:
 
     async def create(self, init_bot_storage):
         # initialize tentacle configuration
-        tentacles_config_path = self.octobot.get_startup_config(constants.CONFIG_KEY, dict_only=False).\
-            get_tentacles_config_path()
-        self.octobot.tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(tentacles_config_path)
+        startup_config = self.octobot.get_startup_config(constants.CONFIG_KEY, dict_only=False)
+        self.octobot.tentacles_setup_config = startup_config.get_active_tentacles_setup_config()
 
         if init_bot_storage:
             try:

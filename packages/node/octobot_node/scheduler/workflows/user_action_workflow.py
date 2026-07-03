@@ -17,6 +17,7 @@ import pydantic
 
 import octobot_protocol.models as protocol_models
 import octobot_trading.errors as trading_errors
+import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_node.errors as errors
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.constants as constants
@@ -54,6 +55,7 @@ class UserActionWorkflow:
             errors.UserActionError,
             pydantic.ValidationError,
             trading_errors.AuthenticationError,  # includes credential / IP-whitelist subclasses
+            collection_errors.DuplicateItemError,
         ))
 
     @staticmethod
@@ -79,7 +81,7 @@ class UserActionWorkflow:
             executor = executor_class(parsed_inputs.user_id)
             try:
                 await executor.execute(parsed_user_action)
-            except errors.UserActionError:
+            except (errors.UserActionError, collection_errors.DuplicateItemError):
                 if parsed_user_action.status != protocol_models.UserActionStatus.FAILED:
                     raise
             return params.UserActionExecutionResult(

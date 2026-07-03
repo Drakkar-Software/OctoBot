@@ -15,6 +15,7 @@
 #  License along with this library.
 
 import octobot_flow.enums
+import octobot_node.constants as constants
 
 class WorkflowError(Exception):
     """Base class for all workflow errors"""
@@ -104,3 +105,7 @@ class UnknownTradingTypeError(UserActionError):
 
 class AmbiguousTradingTypeError(UserActionError):
     """Raised when multiple trading types are found for an account."""
+
+
+class UnrestartableAutomationError(UserActionError):
+    """Raised when an automation cannot be restarted."""

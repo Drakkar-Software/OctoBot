@@ -1,4 +1,4 @@
-import { Eye, X, Zap } from "lucide-react"
+import { Eye, RotateCcw, X, Zap } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { AccountTradingWithAccountId, AutomationState } from "@/client"
@@ -32,6 +32,7 @@ import {
   formatActionProgress,
   getAutomationErrorTooltipLines,
   getAutomationUpdatedAt,
+  isRestartableAutomation,
   isRunningAutomation,
 } from "@/lib/debug/automation"
 import {
@@ -64,6 +65,7 @@ type AutomationsTableProps = {
   accountTradings: AccountTradingWithAccountId[]
   onSuccess?: () => void
   onStop?: (automation: AutomationState) => void
+  onRestart?: (automation: AutomationState) => void
   onSignal?: (automation: AutomationState) => void
   readOnly?: boolean
   selectionMode?: boolean
@@ -78,6 +80,7 @@ export function AutomationsTable({
   accountTradings,
   onSuccess,
   onStop,
+  onRestart,
   onSignal,
   readOnly = false,
   selectionMode = false,
@@ -240,9 +243,9 @@ export function AutomationsTable({
               const canSignal = readOnly
                 ? Boolean(onSignal)
                 : isRunningAutomation(row)
-              const canStop = readOnly
-                ? Boolean(onStop)
-                : isRunningAutomation(row)
+              const canStop = Boolean(onStop) && isRunningAutomation(row)
+              const canRestart =
+                Boolean(onRestart) && isRestartableAutomation(row)
               const signalButton = (
                 <button
                   type="button"
@@ -334,10 +337,9 @@ export function AutomationsTable({
                   >
                     <AutomationTradingCountCell
                       count={row.orders?.length ?? 0}
-                      tooltip={getAutomationOrdersTooltipContent(
-                        row,
-                        accountTradings,
-                      )}
+                      getTooltip={() =>
+                        getAutomationOrdersTooltipContent(row, accountTradings)
+                      }
                     />
                   </TableCell>
                   <TableCell
@@ -348,10 +350,9 @@ export function AutomationsTable({
                   >
                     <AutomationTradingCountCell
                       count={row.trades?.length ?? 0}
-                      tooltip={getAutomationTradesTooltipContent(
-                        row,
-                        accountTradings,
-                      )}
+                      getTooltip={() =>
+                        getAutomationTradesTooltipContent(row, accountTradings)
+                      }
                     />
                   </TableCell>
                   <TableCell>
@@ -391,27 +392,21 @@ export function AutomationsTable({
                         >
                           <X className="size-4" />
                         </button>
-                      ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex">
-                              <button
-                                type="button"
-                                className="text-muted-foreground/40 cursor-not-allowed"
-                                aria-label="Stop automation"
-                                disabled
-                              >
-                                <X className="size-4" />
-                              </button>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">
-                            {readOnly
-                              ? "Stop action unavailable"
-                              : "Only running automations can be stopped"}
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
+                      ) : null}
+                      {canRestart ? (
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label={
+                            readOnly
+                              ? "View restart user action"
+                              : "Restart automation"
+                          }
+                          onClick={() => onRestart?.(row)}
+                        >
+                          <RotateCcw className="size-4" />
+                        </button>
+                      ) : null}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -124,6 +124,43 @@ class TestCreateAccountActionExecutorExecute:
         )
 
     @pytest.mark.asyncio
+    async def test_duplicate_remote_identity_error_propagates(self):
+        account_model = account_executor_test_utils.minimal_exchange_account(account_id="dup-remote")
+        inner = protocol_models.CreateAccountConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
+            configuration=account_model,
+        )
+        user_action = protocol_models.UserAction(
+            id="ua-dup-remote",
+            configuration=account_executor_test_utils.wrap_configuration(inner),
+        )
+        provider_mock = mock.Mock()
+        provider_mock.create_item.side_effect = collection_errors.DuplicateItemError(
+            "Exchange account identity already exists as account 'acc-1'"
+        )
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module,
+                "update_account_state",
+                new=mock.AsyncMock(return_value=account_model),
+            ),
+        ):
+            executor = create_account_executor.CreateAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
+            with pytest.raises(collection_errors.DuplicateItemError):
+                await executor.execute(user_action)
+        provider_assertions.assert_user_action_terminal_state(
+            user_action=user_action,
+            expected_status=protocol_models.UserActionStatus.FAILED,
+            result_channel="account",
+            expect_error_details=True,
+            expected_error_message=protocol_models.AccountActionResultErrorMessage.DUPLICATE_ITEM,
+        )
+
+    @pytest.mark.asyncio
     async def test_raises_for_unsupported_blockchain_account(self):
         account_model = account_executor_test_utils.minimal_blockchain_account(account_id="blockchain-acc")
         inner = protocol_models.CreateAccountConfiguration(

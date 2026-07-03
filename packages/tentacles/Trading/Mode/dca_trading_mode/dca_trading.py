@@ -1058,12 +1058,14 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
             DCATradingMode.TRADING_PAIRS, commons_enums.UserInputTypes.MULTIPLE_OPTIONS,
             default_config[DCATradingMode.TRADING_PAIRS], inputs,
             options=[],
+            other_schema_values={"minItems": 0},
             title="Traded pairs: symbols to apply DCA on.",
         )
         self.UI.user_input(
             DCATradingMode.TIME_FRAMES, commons_enums.UserInputTypes.MULTIPLE_OPTIONS,
             default_config[DCATradingMode.TIME_FRAMES], inputs,
             options=[time_frame.value for time_frame in commons_enums.TimeFrames],
+            other_schema_values={"minItems": 0},
             title="Required time frames: time frames to apply DCA on.",
         )
 

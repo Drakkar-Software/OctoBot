@@ -5,10 +5,15 @@ import mock
 import pytest
 
 _TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS = 2
+_TESTS_RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS = 30.0
 
 os.environ.setdefault(
     "RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS",
     str(_TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS),
+)
+os.environ.setdefault(
+    "RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS",
+    str(_TESTS_RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS),
 )
 
 import octobot.community.local_authenticator as local_community_auth
@@ -38,4 +43,9 @@ def _fast_run_octobot_process_recall(monkeypatch):
         node_constants,
         "RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS",
         _TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS,
+    )
+    monkeypatch.setattr(
+        node_constants,
+        "RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS",
+        _TESTS_RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS,
     )

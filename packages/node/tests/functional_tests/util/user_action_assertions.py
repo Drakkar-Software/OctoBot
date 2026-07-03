@@ -125,6 +125,25 @@ async def assert_user_action_selector_completed_automation_stop(
     assert inner.error_message is None
 
 
+async def assert_user_action_selector_completed_automation_restart(
+    *,
+    user_action_id: str,
+    user_id: str,
+) -> None:
+    listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
+    by_id = merge_user_actions_latest_per_id(listed)
+    assert user_action_id in by_id, f"expected {user_action_id!r} in user action workflows, got {sorted(by_id)!r}"
+    stored = by_id[user_action_id]
+    assert stored.status == protocol_models_module.UserActionStatus.COMPLETED
+    assert stored.result is not None
+    inner = stored.result.actual_instance
+    assert isinstance(inner, protocol_models_module.AutomationActionResult)
+    assert inner.result_type == protocol_models_module.UserActionResultType.AUTOMATION
+    assert inner.error_details is None
+    assert inner.error_message is None
+    assert inner.created_automation_id
+
+
 async def assert_user_action_selector_completed_automation_signal(
     *,
     user_action_id: str,

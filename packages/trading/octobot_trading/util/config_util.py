@@ -224,7 +224,7 @@ def get_config(
         )
         # do not allow using backtesting context when using exchange data portfolio
         profile_data.backtesting_context = None # type: ignore
-    profile = profile_data.to_profile(None)
+    profile = commons_profiles.EphemeralProfile.from_profile_data(profile_data)
     profile_data.backtesting_context = initial_backtesting_context
     config.profile_by_id[profile.profile_id] = profile
     config.select_profile(profile.profile_id)

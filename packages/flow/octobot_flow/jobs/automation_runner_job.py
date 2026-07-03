@@ -180,7 +180,10 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
                     raise octobot_flow.errors.AutomationValidationError(
                         f"A bot_id is required to run a bot. Found: {self.profile_data_provider.get_profile_data().profile_details.bot_id}"
                     )
-                async with self.exchange_manager_context():
+                if self.fetched_dependencies.skip_exchange:
                     yield self
+                else:
+                    async with self.exchange_manager_context():
+                        yield self
         finally:
             self._to_execute_actions = None # type: ignore

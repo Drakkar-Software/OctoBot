@@ -98,6 +98,15 @@ class Test_user_action_executor_factory:
         resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
         assert resolved_executor_cls is user_actions_executor_package.StopAutomationActionExecutor
 
+    def test_returns_restart_automation_executor_class(self):
+        configuration_inner = protocol_models.RestartAutomationConfiguration(
+            id="auto-restart",
+            action_type=protocol_models.UserActionType.AUTOMATION_RESTART,
+        )
+        user_action_model = self._user_action(action_identifier="ua-restart", configuration_inner=configuration_inner)
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.RestartAutomationActionExecutor
+
     def test_returns_signal_automation_executor_class(self):
         configuration_inner = protocol_models.SignalAutomationConfiguration(
             action_type=protocol_models.UserActionType.AUTOMATION_SIGNAL,

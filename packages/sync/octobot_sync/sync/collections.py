@@ -150,12 +150,10 @@ def load_sync_config(
     path = collections_path or os.path.join(
         commons_constants.USER_FOLDER, constants.COLLECTIONS_FILE
     )
-    if not os.path.isfile(path):
-        logger.warning(
-            f"Collections file not found at {path}, using default config"
-        )
-        return DEFAULT_SYNC_CONFIG
-    return load_config_file(path)
+    if os.path.isfile(path):
+        logger.warning(f"Using custom collections file at {path}")
+        return load_config_file(path)
+    return DEFAULT_SYNC_CONFIG
 
 
 def is_replicable_collection(col: CollectionConfig) -> bool:

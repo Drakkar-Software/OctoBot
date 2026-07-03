@@ -1108,6 +1108,26 @@ class TestMirroredOrderSelfLockCreditCompute:
     """open_mirrored_order credits this line's locked funds so repeat sync does not false quantity mismatch."""
 
     @staticmethod
+    def _mirrored_sell_order(
+        *,
+        order_id: str,
+        symbol: str,
+        locked_quantity: decimal.Decimal,
+        price: decimal.Decimal,
+    ):
+        order = mock.Mock()
+        order.order_id = order_id
+        order.tag = copy_constants.MIRRORED_ORDER_TAG
+        order.side = trading_enums.TradeOrderSide.SELL
+        order.symbol = symbol
+        order.currency = symbol.split("/")[0]
+        order.origin_price = price
+        order.is_filled = mock.Mock(return_value=False)
+        order.get_locked_quantity = mock.Mock(return_value=locked_quantity)
+        order.get_computed_fee = mock.Mock(return_value=None)
+        return order
+
+    @staticmethod
     def _exchange_interface_for_compute(
         *,
         total_symbol: decimal.Decimal,
@@ -1115,6 +1135,7 @@ class TestMirroredOrderSelfLockCreditCompute:
         available_symbol: decimal.Decimal,
         available_market: decimal.Decimal,
         mark_price: decimal.Decimal,
+        open_mirrored_sell_orders: typing.Optional[list] = None,
     ):
         symbol_market = mock.Mock()
         market_quantity_total = total_market / mark_price if mark_price else trading_constants.ZERO
@@ -1144,6 +1165,9 @@ class TestMirroredOrderSelfLockCreditCompute:
             side_effect=lambda symbol, quantity, limit_price: ([(quantity, limit_price)], symbol_market)
         )
         exchange_if.orders.get_order_locked_amount = order_util.get_order_locked_amount
+        exchange_if.orders.get_open_orders = mock.Mock(
+            return_value=open_mirrored_sell_orders or []
+        )
         exchange_if.market.is_market_open_for_order_type = mock.Mock(return_value=True)
         return exchange_if
 
@@ -1185,24 +1209,31 @@ class TestMirroredOrderSelfLockCreditCompute:
 
     def test_sell_open_mirrored_order_adds_locked_base_to_cap(self):
         mark_price = decimal.Decimal("2000")
+        open_sell = self._mirrored_sell_order(
+            order_id="open-sell",
+            symbol="ETH/USDT",
+            locked_quantity=decimal.Decimal("1"),
+            price=mark_price,
+        )
+        sibling_sell = self._mirrored_sell_order(
+            order_id="sibling-sell",
+            symbol="ETH/USDT",
+            locked_quantity=decimal.Decimal("8.95"),
+            price=mark_price,
+        )
         exchange_if = self._exchange_interface_for_compute(
             total_symbol=decimal.Decimal("10"),
             total_market=decimal.Decimal("10000"),
             available_symbol=decimal.Decimal("0.05"),
             available_market=decimal.Decimal("500"),
             mark_price=mark_price,
+            open_mirrored_sell_orders=[open_sell, sibling_sell],
         )
         synchronizer = orders_synchronizer_module.OrdersSynchronizer(
             _copied_account(),
             exchange_if,
             copy_entities.AccountCopySettings(),
         )
-        open_sell = mock.Mock()
-        open_sell.side = trading_enums.TradeOrderSide.SELL
-        open_sell.symbol = "ETH/USDT"
-        open_sell.origin_price = mark_price
-        open_sell.get_locked_quantity = mock.Mock(return_value=decimal.Decimal("1"))
-        open_sell.get_computed_fee = mock.Mock(return_value=None)
 
         async def run_compute(open_order, scaled):
             return await synchronizer._compute_mirrored_quantity_type_and_price(
@@ -1217,8 +1248,45 @@ class TestMirroredOrderSelfLockCreditCompute:
         scaled = decimal.Decimal("2")
         ideal_without = asyncio.run(run_compute(None, scaled)).ideal_quantity
         ideal_with = asyncio.run(run_compute(open_sell, scaled)).ideal_quantity
-        assert ideal_without == decimal.Decimal("2")
+        assert ideal_without == decimal.Decimal("0.05")
         assert ideal_with == decimal.Decimal("1.05")
+
+    def test_new_sell_caps_to_total_minus_sibling_locked_base(self):
+        mark_price = decimal.Decimal("60300")
+        total_btc = decimal.Decimal("0.00753")
+        available_btc = decimal.Decimal("0.00068")
+        sibling_locked_btc = total_btc - available_btc
+        sibling_sell = self._mirrored_sell_order(
+            order_id="sibling-sell",
+            symbol="BTC/USDT",
+            locked_quantity=sibling_locked_btc,
+            price=decimal.Decimal("62188"),
+        )
+        exchange_if = self._exchange_interface_for_compute(
+            total_symbol=total_btc,
+            total_market=decimal.Decimal("500"),
+            available_symbol=available_btc,
+            available_market=decimal.Decimal("15"),
+            mark_price=mark_price,
+            open_mirrored_sell_orders=[sibling_sell],
+        )
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            _copied_account(),
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+
+        async def run_compute():
+            return await synchronizer._compute_mirrored_quantity_type_and_price(
+                "BTC/USDT",
+                trading_enums.TradeOrderSide.SELL,
+                decimal.Decimal("0.00074"),
+                decimal.Decimal("61188"),
+                trading_enums.TraderOrderType.SELL_LIMIT,
+                open_mirrored_order=None,
+            )
+
+        assert asyncio.run(run_compute()).ideal_quantity == available_btc
 
 
 class TestMirroredOrderSkipLogging:
@@ -1393,3 +1461,67 @@ class TestMirroredOrderSkipLogging:
         assert "Failed to replicate 2 order(s):" in completion_message
         assert "buy ETH/USDT @ 50745.57 [11111111-1111-1111-1111-111111111111] (insufficient_quote)" in completion_message
         assert "buy ETH/USDT @ 49245.57 [22222222-2222-2222-2222-222222222222] (insufficient_quote)" in completion_message
+
+
+class TestOrdersSynchronizerWaitForMirroredOrdersOpen:
+    def _synchronizer_with_auto_sync(self, auto_sync_enabled: bool):
+        reference = _copied_account(
+            copied_assets=_eth_usdt_pair_assets(),
+            orders=[_replicable_buy_limit_order()],
+        )
+        exchange_if = _exchange_interface_stub(
+            currency_totals={
+                "ETH": decimal.Decimal("1"),
+                "USDT": decimal.Decimal("10000"),
+            },
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.portfolio.mirror_sync_available_updates = _passthrough_mirror_sync_available_updates
+        exchange_if.orders.automatically_synchronize_orders = mock.Mock(return_value=auto_sync_enabled)
+        exchange_if.orders.wait_for_orders_to_open = mock.AsyncMock()
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        return synchronizer, exchange_if
+
+    def test_waits_for_created_orders_when_auto_sync_disabled(self):
+        synchronizer, exchange_if = self._synchronizer_with_auto_sync(False)
+        created_order = mock.Mock()
+        created_order.symbol = "ETH/USDT"
+        with mock.patch.object(
+            synchronizer,
+            "cancel_orders_pending_synchronization",
+            mock.AsyncMock(return_value=0),
+        ), mock.patch.object(
+            synchronizer,
+            "_upsert_mirrored_reference_order",
+            mock.AsyncMock(return_value=([created_order], 0, 0, None)),
+        ):
+            created = asyncio.run(synchronizer.synchronize())
+
+        assert created == [created_order]
+        exchange_if.orders.wait_for_orders_to_open.assert_awaited_once_with(
+            [created_order],
+            "ETH/USDT",
+        )
+
+    def test_skips_wait_when_auto_sync_enabled(self):
+        synchronizer, exchange_if = self._synchronizer_with_auto_sync(True)
+        created_order = mock.Mock()
+        created_order.symbol = "ETH/USDT"
+        with mock.patch.object(
+            synchronizer,
+            "cancel_orders_pending_synchronization",
+            mock.AsyncMock(return_value=0),
+        ), mock.patch.object(
+            synchronizer,
+            "_upsert_mirrored_reference_order",
+            mock.AsyncMock(return_value=([created_order], 0, 0, None)),
+        ):
+            created = asyncio.run(synchronizer.synchronize())
+
+        assert created == [created_order]
+        exchange_if.orders.wait_for_orders_to_open.assert_not_awaited()

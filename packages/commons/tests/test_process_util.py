@@ -23,12 +23,23 @@ import mock
 import pytest
 
 import octobot_commons.errors as commons_errors
+import octobot_commons.managed_child_process_registry as managed_child_process_registry
 import octobot_commons.process_util as process_util
+import octobot_commons.singleton.singleton_class as singleton_class
 
 
 class TestSpawnManagedSubprocess:
+    @pytest.fixture(autouse=True)
+    def reset_managed_child_process_registry(self):
+        yield
+        singleton_class.Singleton._instances.pop(
+            managed_child_process_registry.ManagedChildProcessRegistry,
+            None,
+        )
+
     def test_popen_called_with_argv_cwd_env(self):
         fake_handle = mock.Mock(spec=subprocess.Popen)
+        fake_handle.pid = 1001
         with mock.patch.object(
             process_util.subprocess,
             "Popen",
@@ -54,12 +65,14 @@ class TestSpawnManagedSubprocess:
             {"EXISTING_ENV_KEY": "1"},
             clear=False,
         ):
+            popen_mock.return_value.pid = 1002
             process_util.spawn_managed_subprocess([], working_directory="/w")
         _args, keywords = popen_mock.call_args
         assert keywords["env"]["EXISTING_ENV_KEY"] == "1"
 
     def test_creationflags_hide_console_on_windows(self):
         fake_handle = mock.Mock(spec=subprocess.Popen)
+        fake_handle.pid = 1003
         with mock.patch.object(process_util.sys, "platform", "win32"), mock.patch.object(
             process_util.subprocess,
             "Popen",
@@ -72,6 +85,19 @@ class TestSpawnManagedSubprocess:
             "CREATE_NO_WINDOW",
             0,
         )
+
+    def test_registers_child_pid_with_managed_child_process_registry(self):
+        fake_handle = mock.Mock(spec=subprocess.Popen)
+        fake_handle.pid = 4242
+        with mock.patch.object(
+            process_util.subprocess,
+            "Popen",
+            return_value=fake_handle,
+        ):
+            process_util.spawn_managed_subprocess(["x"], working_directory="/work")
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            assert fake_handle.pid in registry.snapshot_running_pids()
 
 
 class TestPidIsRunning:
@@ -126,14 +152,14 @@ class TestPidIsRunning:
 
 class TestRequestGracefulStopViaSigterm:
     def test_invalid_pid_raises(self):
-        with pytest.raises(commons_errors.DSLInterpreterError, match="Invalid pid"):
+        with pytest.raises(commons_errors.ProcessError, match="Invalid pid"):
             process_util.request_graceful_stop_via_sigterm(0)
 
     def test_raises_when_sigterm_unavailable(self):
         sentinel_signal_module = mock.Mock()
         sentinel_signal_module.SIGTERM = None
         with mock.patch.object(process_util, "signal", sentinel_signal_module):
-            with pytest.raises(commons_errors.DSLInterpreterError, match="SIGTERM is not available"):
+            with pytest.raises(commons_errors.ProcessError, match="SIGTERM is not available"):
                 process_util.request_graceful_stop_via_sigterm(10)
 
     def test_returns_already_stopped_when_pid_not_running(self):
@@ -155,10 +181,43 @@ class TestRequestGracefulStopViaSigterm:
             mock.patch.object(process_util.os, "kill", side_effect=OSError("perm denied")),
         ):
             with pytest.raises(
-                commons_errors.DSLInterpreterError,
+                commons_errors.ProcessError,
                 match=r"Failed to send stop signal to pid=88",
             ):
                 process_util.request_graceful_stop_via_sigterm(88)
+
+
+class TestRequestForceKill:
+    def test_invalid_pid_raises(self):
+        with pytest.raises(commons_errors.ProcessError, match="Invalid pid"):
+            process_util.request_force_kill(0)
+
+    def test_returns_already_stopped_when_pid_not_running(self):
+        with mock.patch.object(process_util, "pid_is_running", return_value=False):
+            result = process_util.request_force_kill(55)
+        assert result["status"] == "already_stopped"
+
+    def test_kills_running_process(self):
+        fake_process = mock.Mock()
+        with (
+            mock.patch.object(process_util, "pid_is_running", return_value=True),
+            mock.patch.object(process_util.psutil, "Process", return_value=fake_process),
+        ):
+            result = process_util.request_force_kill(66)
+        fake_process.kill.assert_called_once()
+        assert result["status"] == "force_killed"
+
+    def test_no_such_process_returns_already_stopped(self):
+        with (
+            mock.patch.object(process_util, "pid_is_running", return_value=True),
+            mock.patch.object(
+                process_util.psutil,
+                "Process",
+                side_effect=process_util.psutil.NoSuchProcess(77),
+            ),
+        ):
+            result = process_util.request_force_kill(77)
+        assert result["status"] == "already_stopped"
 
 
 class TestSpawnManagedSubprocessGracefulStopIntegration:

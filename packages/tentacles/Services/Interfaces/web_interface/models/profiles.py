@@ -15,6 +15,7 @@
 #  License along with this library.
 import os
 
+import octobot_commons.logging as logging
 import octobot_services.interfaces.util as interfaces_util
 import octobot_commons.profiles as profiles
 import octobot_commons.errors as errors
@@ -22,9 +23,12 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot_trading.util as trading_util
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_tentacles_manager.constants as tentacles_manager_constants
 import octobot.constants as constants
 import octobot.community as community
 import octobot.community.errors as community_errors
+
+import tentacles.Services.Interfaces.web_interface.models.configuration as configuration_model
 
 
 ACTIVATION = "activation"
@@ -35,6 +39,42 @@ READ_ERROR = "read_error"
 
 _PROFILE_TENTACLES_CONFIG_CACHE = {}
 
+def _get_logger():
+    return logging.get_logger("WebProfileModel")
+
+
+def _fallback_tentacles_details(profile, *, read_error: bool = True) -> dict:
+    return {
+        ACTIVATION: [],
+        VERSION: tentacles_manager_constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION_UNKNOWN,
+        IMPORTED: profile.imported,
+        REQUIRE_EXACT_VERSION: False,
+        READ_ERROR: read_error,
+    }
+
+
+def _resolve_profile_tentacles_setup_config(profile, *, force_reload: bool = False):
+    if profile.is_profile_data_tentacle_backed():
+        if force_reload or profile.tentacles_setup_config is None:
+            profile.init_tentacles_setup_config()
+        tentacles_setup_config = profile.tentacles_setup_config
+        return profile.bind_tentacles_setup_config(tentacles_setup_config)
+    return tentacles_manager_api.get_tentacles_setup_config(
+        profile.get_tentacles_config_path(),
+        profile=profile,
+    )
+
+
+def _ensure_profile_in_config(config, profile_id):
+    if profile_id in config.profile_by_id:
+        return config.profile_by_id[profile_id]
+    config.load_profiles()
+    if profile_id in config.profile_by_id:
+        return config.profile_by_id[profile_id]
+    profile = config.profile_storage.load_profile_by_id(profile_id)
+    config.profile_by_id[profile_id] = profile
+    return profile
+
 
 def get_current_profile():
     return interfaces_util.get_edited_config(dict_only=False).profile
@@ -43,10 +83,13 @@ def get_current_profile():
 def duplicate_profile(profile_id):
     to_duplicate = get_profile(profile_id)
     new_profile = to_duplicate.duplicate(name=f"{to_duplicate.name}_(copy)", description=to_duplicate.description)
-    tentacles_manager_api.refresh_profile_tentacles_setup_config(new_profile.path)
+    if not new_profile.is_profile_data_tentacle_backed():
+        tentacles_manager_api.refresh_profile_tentacles_setup_config(new_profile.path)
     interfaces_util.get_edited_config(dict_only=False).load_profiles()
-    return get_profile(new_profile.profile_id)
-
+    new_profile = get_profile(new_profile.profile_id)
+    if new_profile.is_profile_data_tentacle_backed():
+        new_profile.init_tentacles_setup_config()
+    return new_profile
 
 def convert_to_live_profile(profile_id):
     profile = get_profile(profile_id)
@@ -55,7 +98,9 @@ def convert_to_live_profile(profile_id):
 
 
 def select_profile(profile_id):
-    _select_and_save(interfaces_util.get_edited_config(dict_only=False), profile_id)
+    config = interfaces_util.get_edited_config(dict_only=False)
+    _ensure_profile_in_config(config, profile_id)
+    _select_and_save(config, profile_id)
 
 
 def _select_and_save(config, profile_id):
@@ -64,13 +109,30 @@ def _select_and_save(config, profile_id):
     config.save()
 
 
-def _update_edited_tentacles_config(config):
-    updated_tentacles_config = tentacles_manager_api.get_tentacles_setup_config(config.get_tentacles_config_path())
+def _update_edited_tentacles_config(config, *, force_reload: bool = False):
+    updated_tentacles_config = _resolve_profile_tentacles_setup_config(
+        config.profile,
+        force_reload=force_reload,
+    )
     interfaces_util.set_edited_tentacles_config(updated_tentacles_config)
 
 
+def refresh_sync_profiles_for_display(config=None):
+    if config is None:
+        config = interfaces_util.get_edited_config(dict_only=False)
+    config.refresh_sync_profiles()
+    force_reload = config.profile is not None and config.profile.is_sync_backed()
+    if force_reload:
+        _PROFILE_TENTACLES_CONFIG_CACHE.pop(config.profile.profile_id, None)
+    _update_edited_tentacles_config(config, force_reload=force_reload)
+
+    configuration_model.clear_tentacle_config_cache()
+    return config
+
+
 def get_profile(profile_id):
-    return interfaces_util.get_edited_config(dict_only=False).profile_by_id[profile_id]
+    config = interfaces_util.get_edited_config(dict_only=False)
+    return _ensure_profile_in_config(config, profile_id)
 
 
 def get_tentacles_setup_config_from_profile_id(profile_id):
@@ -78,32 +140,29 @@ def get_tentacles_setup_config_from_profile_id(profile_id):
 
 
 def get_tentacles_setup_config_from_profile(profile):
-    return tentacles_manager_api.get_tentacles_setup_config(
-        profile.get_tentacles_config_path()
-    )
+    return _resolve_profile_tentacles_setup_config(profile)
 
 
 def get_profiles(profile_type: commons_enums.ProfileType = None):
+    config = refresh_sync_profiles_for_display()
     return {
         identifier: profile
-        for identifier, profile in interfaces_util.get_edited_config(dict_only=False).profile_by_id.items()
+        for identifier, profile in config.profile_by_id.items()
         if profile_type is None or profile.profile_type is profile_type
     }
 
 
 def _get_profile_setup_config(profile, reloading_profile):
-    if profile.profile_id == reloading_profile:
-        _PROFILE_TENTACLES_CONFIG_CACHE.pop(reloading_profile, None)
-        return tentacles_manager_api.get_tentacles_setup_config(
-            profile.get_tentacles_config_path()
+    force_reload = profile.profile_id == reloading_profile
+    if force_reload:
+        _PROFILE_TENTACLES_CONFIG_CACHE.pop(profile.profile_id, None)
+    if profile.is_profile_data_tentacle_backed():
+        return _resolve_profile_tentacles_setup_config(profile, force_reload=force_reload)
+    if profile.profile_id not in _PROFILE_TENTACLES_CONFIG_CACHE or force_reload:
+        _PROFILE_TENTACLES_CONFIG_CACHE[profile.profile_id] = _resolve_profile_tentacles_setup_config(
+            profile,
+            force_reload=force_reload,
         )
-    try:
-        _PROFILE_TENTACLES_CONFIG_CACHE[profile.profile_id]
-    except KeyError:
-        _PROFILE_TENTACLES_CONFIG_CACHE[profile.profile_id] = \
-            tentacles_manager_api.get_tentacles_setup_config(
-                profile.get_tentacles_config_path()
-            )
     return _PROFILE_TENTACLES_CONFIG_CACHE[profile.profile_id]
 
 
@@ -122,11 +181,14 @@ def get_profiles_tentacles_details(profiles_list):
                 READ_ERROR:
                     not tentacles_manager_api.is_tentacles_setup_config_successfully_loaded(tentacles_setup_config),
             }
-        except Exception:
-            # do not raise here to prevent avoid config display
-            pass
+        except Exception as err:
+            _get_logger().warning(
+                "Failed to load tentacles details for profile %r: %s",
+                profile.profile_id,
+                err,
+            )
+            tentacles_by_profile_id[profile.profile_id] = _fallback_tentacles_details(profile)
     return tentacles_by_profile_id
-
 
 def update_profile(profile_id, json_profile_desc, json_profile_content=None):
     profile = get_profile(profile_id)
@@ -142,10 +204,7 @@ def update_profile(profile_id, json_profile_desc, json_profile_content=None):
     if json_profile_content is not None:
         profile.config = json_profile_content
     profile.validate_and_save_config()
-    if renamed:
-        profile.rename_folder(new_name, False)
     return True, "Profile updated"
-
 
 def remove_profile(profile_id):
     profile = None

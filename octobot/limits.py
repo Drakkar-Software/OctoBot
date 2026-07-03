@@ -21,7 +21,6 @@ import octobot_commons.constants as common_constants
 import octobot_commons.enums as common_enums
 import octobot_commons.logging as logging
 import octobot_commons.time_frame_manager as time_frame_manager
-import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_evaluators.api as evaluators_api
 import octobot_trading.api as trading_api
 
@@ -79,7 +78,7 @@ def _apply_symbols_limits(dict_config, logger, limit):
 
 
 def _apply_time_frames_limits(full_config, logger, limit):
-    tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(full_config.get_tentacles_config_path())
+    tentacles_setup_config = full_config.get_active_tentacles_setup_config()
     has_disabled_time_frames = False
     all_enabled_time_frames = []
     # patch time frames config

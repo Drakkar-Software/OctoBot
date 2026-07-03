@@ -193,3 +193,9 @@ class AmbiguousTradedSymbolsTradingTypeError(ValueError):
     """
     Raised when traded symbols map to more than one exchange trading type.
     """
+
+
+class ProcessError(Exception):
+    """
+    Raised when a process error occurs
+    """

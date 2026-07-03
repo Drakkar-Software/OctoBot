@@ -18,8 +18,9 @@ import os.path as path
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.errors as commons_errors
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
-import octobot_commons.profiles as commons_profiles
+import octobot_commons.profiles.backends as profile_backends_module
 
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.configuration as configuration
@@ -46,6 +47,7 @@ class TentaclesSetupConfiguration:
         if config_path is None:
             config_path = user_root_folder_provider.get_user_reference_tentacle_config_file_path()
         self.config_path = path.join(bot_installation_path, config_path)
+        self.profile = None
         self.tentacles_activation = {}
         self.registered_tentacles = {}
         self.installation_context = {}
@@ -94,8 +96,10 @@ class TentaclesSetupConfiguration:
     @staticmethod
     def is_imported_profile(profile_folder):
         try:
-            return commons_profiles.Profile(profile_folder).read_config().imported
-        except OSError:
+            filesystem_backend = profile_backends_module.FilesystemProfileBackend()
+            profile = filesystem_backend.read_profile_from_path(profile_folder)
+            return profile.imported
+        except (OSError, commons_errors.ProfileDataError):
             return False
 
     def refresh_profiles_tentacles_config(self,
@@ -208,9 +212,10 @@ class TentaclesSetupConfiguration:
         return False
 
     def _apply_default_profile_activation(self):
-        default_profile = commons_profiles.Profile.load_profile(
+        filesystem_backend = profile_backends_module.FilesystemProfileBackend()
+        default_profile = filesystem_backend.load_profile(
             user_root_folder_provider.get_user_profiles_folder(),
-            commons_constants.DEFAULT_PROFILE
+            commons_constants.DEFAULT_PROFILE,
         )
         profile_setup_config = configuration.TentaclesSetupConfiguration(
             config_path=default_profile.get_tentacles_config_path()

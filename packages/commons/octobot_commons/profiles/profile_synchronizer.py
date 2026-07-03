@@ -88,6 +88,7 @@ class ProfileSynchronizer(singleton.Singleton):
             self.sync_job.stop()
 
 
+
 async def start_profile_synchronizer(current_config, on_profile_change):
     """
     Start the clock synchronization loop if possible on this system
