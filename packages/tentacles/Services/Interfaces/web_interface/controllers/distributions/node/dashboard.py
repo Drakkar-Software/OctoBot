@@ -25,7 +25,13 @@ def register(blueprint):
     @login.login_required_when_activated
     def home():
         if models.accepted_terms():
-            return flask.render_template("distributions/node/dashboard.html")
+            node_local_ip, node_local_port = models.get_node_local_endpoint()
+            return flask.render_template(
+                "distributions/node/dashboard.html",
+                node_web_ui_url=models.get_node_web_ui_url(),
+                node_local_ip=node_local_ip,
+                node_local_port=node_local_port,
+            )
         return flask.redirect(flask.url_for("terms"))
 
     @blueprint.route("/welcome")

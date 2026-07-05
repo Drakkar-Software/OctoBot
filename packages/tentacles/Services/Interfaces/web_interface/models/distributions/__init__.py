@@ -15,11 +15,16 @@
 #  License along with this library.
 
 from tentacles.Services.Interfaces.web_interface.models.distributions import market_making
+from tentacles.Services.Interfaces.web_interface.models.distributions import node
 from tentacles.Services.Interfaces.web_interface.models.distributions import prediction_market
 
 from tentacles.Services.Interfaces.web_interface.models.distributions.market_making import (
     save_market_making_configuration,
     get_market_making_services,
+)
+from tentacles.Services.Interfaces.web_interface.models.distributions.node import (
+    get_node_local_endpoint,
+    get_node_web_ui_url,
 )
 from tentacles.Services.Interfaces.web_interface.models.distributions.prediction_market import (
     save_prediction_market_configuration,
@@ -29,6 +34,8 @@ from tentacles.Services.Interfaces.web_interface.models.distributions.prediction
 __all__ = [
     "save_market_making_configuration",
     "get_market_making_services",
+    "get_node_local_endpoint",
+    "get_node_web_ui_url",
     "save_prediction_market_configuration",
     "get_prediction_market_services",
 ]

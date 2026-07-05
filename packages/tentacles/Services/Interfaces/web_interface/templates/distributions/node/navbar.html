@@ -21,7 +21,12 @@
     </div>
     <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
         <ul class="navbar-nav ml-auto" id="main-nav-right-part">
-            <li class="nav-item mx-1 px-0 my-auto">
+            <li class="nav-item mx-1 px-0 my-auto {% if 'logs' == active_page %} active{% endif %}">
+                <a class="nav-link" href="{{ url_for('logs') }}" aria-label="Logs"><i class="fa fa-bell" data-toggle="tooltip" data-placement="top" title="Event logs">
+                    <span id="errors-count-badge" class="badge badge-warning"></span>
+                </i></a>
+            </li>
+            <li class="nav-item mx-1 px-0 my-auto {% if 'logs' == active_page %} active{% endif %}">
                 <a id="theme-switch" class="nav-link" href="#" aria-label="Switch theme" data-update-url="{{url_for('api.display_config')}}">
                     <i class="{{'fa fa-moon' if get_color_mode() == 'light' else 'fas fa-sun'}}" data-toggle="tooltip" data-placement="top"
                        title="Use {{'dark' if get_color_mode() == 'light' else 'light'}} theme">

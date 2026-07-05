@@ -8,8 +8,36 @@
             <h4>OctoBot Node</h4>
         </div>
         <div class="card-body text-center">
-            <p class="lead">Node is running.</p>
-            <i id="navbar-bot-status" class="fa fa-check fa-2x text-success"></i>
+            <p class="lead">OctoBot Node is running.</p>
+
+            <p>
+                In node mode, OctoBot should be configured and used from the
+                <a href="https://ui.octobot.cloud" target="_blank" rel="noopener">OctoBot Cloud UI</a>.
+            </p>
+            <a class="btn btn-primary btn-lg mb-4" href="https://ui.octobot.cloud" target="_blank" rel="noopener">
+                Open OctoBot Cloud UI
+            </a>
+
+            <hr class="my-4">
+
+            <h5>Node connection</h5>
+            <p class="mb-1">Use this local endpoint when registering your node:</p>
+            <p class="font-weight-bold mb-1">IP: <code>{{ node_local_ip }}</code></p>
+            <p class="font-weight-bold">Port: <code>{{ node_local_port }}</code></p>
+            <p class="text-muted small">
+                If your node is reachable from the internet, use your public IP and port instead when registering it in the OctoBot Cloud UI.
+            </p>
+
+            <hr class="my-4">
+
+            <h5>Local Node Admin</h5>
+            {% if node_web_ui_url %}
+            <a class="btn btn-outline-primary btn-lg" href="{{ node_web_ui_url }}" target="_blank" rel="noopener">
+                Open Node Admin
+            </a>
+            {% else %}
+            <p class="text-muted">Enable the Node API service to access the Node UI.</p>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

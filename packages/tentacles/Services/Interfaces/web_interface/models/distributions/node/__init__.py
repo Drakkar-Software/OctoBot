@@ -13,15 +13,15 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import tentacles.Services.Interfaces.web_interface.controllers.logs
-import tentacles.Services.Interfaces.web_interface.controllers.distributions.node.dashboard
 
+import tentacles.Services.Interfaces.web_interface.models.distributions.node.configuration
 
-def register(blueprint):
-    tentacles.Services.Interfaces.web_interface.controllers.logs.register(blueprint)
-    tentacles.Services.Interfaces.web_interface.controllers.distributions.node.dashboard.register(blueprint)
-
+from tentacles.Services.Interfaces.web_interface.models.distributions.node.configuration import (
+    get_node_local_endpoint,
+    get_node_web_ui_url,
+)
 
 __all__ = [
-    "register",
+    "get_node_local_endpoint",
+    "get_node_web_ui_url",
 ]
