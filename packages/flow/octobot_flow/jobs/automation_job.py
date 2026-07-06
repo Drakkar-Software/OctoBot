@@ -202,13 +202,29 @@ class AutomationJob:
                 self.fetched_actions.extend(all_actions)
 
     def _requires_initialization_run(self) -> bool:
-        return (
-            self.automation_state.automation.execution.previous_execution.triggered_at == 0
-            and (
-                not self.automation_state.exchange_account_details
-                or not self.automation_state.exchange_account_details.exchange_details.internal_name
-            )
-        )
+        if self.automation_state.automation.execution.previous_execution.triggered_at != 0:
+            return False
+        if self.automation_state.has_exchange():
+            return False
+        if self._has_pending_apply_configuration_actions():
+            return True
+        if octobot_flow.logic.dsl.dag_has_only_process_bound_dsl_actions(
+            self.automation_state.automation.actions_dag.actions,
+            exchange_account_details=self.automation_state.exchange_account_details,
+            automation_id=self.automation_state.automation.metadata.automation_id,
+        ):
+            return False
+        return True
+
+    def _has_pending_apply_configuration_actions(self) -> bool:
+        for action in self.automation_state.automation.actions_dag.actions:
+            if (
+                isinstance(action, octobot_flow.entities.ConfiguredActionDetails)
+                and action.action == octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value
+                and action.executed_at is None
+            ):
+                return True
+        return False
 
     async def _fetch_dependencies(
         self,
@@ -361,10 +377,14 @@ class AutomationJob:
             default_next_execution_scheduled_to
         )
         automation = self.automation_state.automation
-        exchange_account_desc = (
-            'simulated exchange account' if self.automation_state.exchange_account_details.is_simulated()
-            else 'real exchange account'
-        )
+        if self.automation_state.has_exchange():
+            exchange_account_desc = (
+                'simulated exchange account'
+                if self.automation_state.exchange_account_details.is_simulated()
+                else 'real exchange account'
+            )
+        else:
+            exchange_account_desc = 'process-bound automation'
         automation_signature = f"{exchange_account_desc} automation {automation.metadata.automation_id}"
         try:
             self._logger.info(f"Updating {automation_signature}")

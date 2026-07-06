@@ -32,6 +32,23 @@ class TestTradeIdentityKey:
             "order-42",
         )
 
+    def test_prefers_id_over_exchange_id_when_exchange_trade_id_missing(self):
+        trade = {
+            _ORDER_COLUMNS.ID.value: "local-trade-1",
+            _ORDER_COLUMNS.EXCHANGE_ID.value: "exchange-order-9",
+        }
+        assert trades_util_module.trade_identity_key(trade) == (
+            _ORDER_COLUMNS.EXCHANGE_TRADE_ID.value,
+            "local-trade-1",
+        )
+
+    def test_normalizes_numeric_identity_values_to_str(self):
+        trade = {_ORDER_COLUMNS.EXCHANGE_TRADE_ID.value: 12345}
+        assert trades_util_module.trade_identity_key(trade) == (
+            _ORDER_COLUMNS.EXCHANGE_TRADE_ID.value,
+            "12345",
+        )
+
     def test_returns_none_when_no_identity_fields(self):
         assert trades_util_module.trade_identity_key({}) is None
 
@@ -56,3 +73,34 @@ class TestMergeTradesDeduped:
         incoming = [{"symbol": "BTC/USDT"}]
         merged = trades_util_module.merge_trades_deduped(existing, incoming)
         assert len(merged) == 1
+
+    def test_skips_duplicate_after_protocol_round_trip_identity(self):
+        local_trade_id = "local-trade-1"
+        existing = [
+            {
+                _ORDER_COLUMNS.EXCHANGE_TRADE_ID.value: local_trade_id,
+                _ORDER_COLUMNS.EXCHANGE_ID.value: local_trade_id,
+                _ORDER_COLUMNS.ID.value: local_trade_id,
+            }
+        ]
+        incoming = [
+            {
+                _ORDER_COLUMNS.ID.value: local_trade_id,
+                _ORDER_COLUMNS.EXCHANGE_ID.value: "exchange-order-9",
+            }
+        ]
+        merged = trades_util_module.merge_trades_deduped(existing, incoming)
+        assert len(merged) == 1
+
+    def test_repeated_merge_with_same_incoming_full_trade_list(self):
+        local_trade_id = "local-trade-2"
+        incoming = [
+            {
+                _ORDER_COLUMNS.ID.value: local_trade_id,
+                _ORDER_COLUMNS.EXCHANGE_ID.value: "exchange-order-10",
+                _ORDER_COLUMNS.SYMBOL.value: "BTC/USDT",
+            }
+        ]
+        merged_once = trades_util_module.merge_trades_deduped([], incoming)
+        merged_twice = trades_util_module.merge_trades_deduped(merged_once, incoming)
+        assert len(merged_twice) == 1

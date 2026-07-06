@@ -13,6 +13,7 @@ import uuid
 import dbos
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_flow.entities as flow_entities
+import octobot_node.constants as node_constants_module
 import octobot_protocol.models as protocol_models_module
 import pytest
 
@@ -22,7 +23,15 @@ GENERIC_PROCESS_DEFAULT_STRATEGY_ID = "functional-generic-process-default-strate
 GENERIC_PROCESS_ACTION_ID = f"{protocol_models_module.ActionConfigurationType.GENERIC_PROCESS.value}_1"
 GLOBAL_INIT_TIMEOUT_SEC = 60.0
 INIT_POLL_INTERVAL_SEC = 2.0
-CHILD_STOP_WAIT_SEC = 20.0
+# Graceful child STOP is bounded by ping_timeout; add recall + scheduler margin.
+STOP_WORKFLOW_COMPLETE_SECONDS = max(
+    node_constants_module.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS * 2
+    + node_constants_module.RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS * 2,
+    90.0,
+)
+CHILD_STOP_WAIT_SEC = (
+    node_constants_module.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS + 10.0
+)
 
 
 def build_generic_process_configuration(
@@ -136,7 +145,7 @@ def build_create_account_user_action(
 
 def build_create_generic_process_user_action(
     *,
-    account_id: str,
+    account_id: str | None = None,
     name: str,
     strategy_id: str = GENERIC_PROCESS_DEFAULT_STRATEGY_ID,
     automation_id: str | None = None,
@@ -145,11 +154,14 @@ def build_create_generic_process_user_action(
         id=strategy_id,
         version=workflow_common_module.SIMULATOR_FUNCTIONAL_STRATEGY_VERSION,
     )
+    account_references: list[protocol_models_module.AccountReference] = []
+    if account_id is not None:
+        account_references = [protocol_models_module.AccountReference(id=account_id)]
     automation_configuration_fields: dict[str, typing.Any] = {
         "name": name,
         "created_at": datetime.datetime(2026, 6, 1, 11, 0, 0, tzinfo=datetime.UTC),
         "strategy": strategy_reference,
-        "accounts": [protocol_models_module.AccountReference(id=account_id)],
+        "accounts": account_references,
     }
     if automation_id is not None:
         automation_configuration_fields["id"] = automation_id

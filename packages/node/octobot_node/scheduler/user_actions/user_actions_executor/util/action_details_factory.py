@@ -197,6 +197,32 @@ def init_action_factory(
     )
 
 
+def generic_process_metadata_init_action_factory(
+    *,
+    automation_id: str,
+    strategy_reference: protocol_models.StrategyReference,
+) -> flow_entities.AbstractActionDetails:
+    """
+    Build a minimal APPLY_CONFIGURATION action for account-less generic-process automations:
+    automation metadata only (no exchange_account_details or portfolio seeding).
+    """
+    automation_metadata = flow_entities.AutomationMetadata(
+        automation_id=automation_id,
+        strategy_id=strategy_reference.id,
+        emit_signals=bool(strategy_reference.emit_signals),
+        strategy_version=strategy_reference.version,
+    )
+    automation_details = flow_entities.AutomationDetails(metadata=automation_metadata)
+    init_config = {
+        "automation": automation_details.to_dict(include_default_values=False),
+    }
+    return flow_entities.ConfiguredActionDetails(
+        id=_ACTION_ID_INIT,
+        action=flow_enums.ActionType.APPLY_CONFIGURATION.value,
+        config=init_config,
+    )
+
+
 def copy_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     copy_configuration: protocol_models.CopyConfiguration,
@@ -446,16 +472,18 @@ def market_making_action_factory(
 def generic_process_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     generic_process_configuration: protocol_models.GenericProcessConfiguration,
-    protocol_account: protocol_models.Account,
+    protocol_account: protocol_models.Account | None,
     user_id: str,
     *,
     automation_id: str,
     strategy_id: str | None = None,
 ) -> flow_entities.AbstractActionDetails:
-    exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
-        protocol_account,
-        user_id,
-    )
+    exchange_auth_data = None
+    if protocol_account is not None:
+        exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
+            protocol_account,
+            user_id,
+        )
     dsl_arguments = [f"{automation_id!r}", f"user_id={user_id!r}"]
     if strategy_id is not None:
         dsl_arguments.append(f"sync_profile_id={strategy_id!r}")

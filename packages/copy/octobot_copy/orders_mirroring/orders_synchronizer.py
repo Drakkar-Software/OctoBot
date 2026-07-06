@@ -575,6 +575,11 @@ class OrdersSynchronizer:
             replication_failures=replication_failures,
         )
         self._get_logger().info(completion_message)
+        if created and not self._exchange_interface.orders.automatically_synchronize_orders():
+            symbols = {order.symbol for order in created}
+            for symbol in symbols:
+                symbol_created = [order for order in created if order.symbol == symbol]
+                await self._exchange_interface.orders.wait_for_orders_to_open(symbol_created, symbol)
         return created
 
     def _format_grace_deferral_order_details(

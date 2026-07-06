@@ -1632,6 +1632,7 @@
           },
           "accounts": {
             "type": "array",
+            "description": "May be empty only for automations whose strategy configuration is generic_process; otherwise exactly one account reference is required at runtime.",
             "items": {
               "$ref": "#/components/schemas/AccountReference"
             }

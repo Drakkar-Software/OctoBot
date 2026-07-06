@@ -1461,3 +1461,67 @@ class TestMirroredOrderSkipLogging:
         assert "Failed to replicate 2 order(s):" in completion_message
         assert "buy ETH/USDT @ 50745.57 [11111111-1111-1111-1111-111111111111] (insufficient_quote)" in completion_message
         assert "buy ETH/USDT @ 49245.57 [22222222-2222-2222-2222-222222222222] (insufficient_quote)" in completion_message
+
+
+class TestOrdersSynchronizerWaitForMirroredOrdersOpen:
+    def _synchronizer_with_auto_sync(self, auto_sync_enabled: bool):
+        reference = _copied_account(
+            copied_assets=_eth_usdt_pair_assets(),
+            orders=[_replicable_buy_limit_order()],
+        )
+        exchange_if = _exchange_interface_stub(
+            currency_totals={
+                "ETH": decimal.Decimal("1"),
+                "USDT": decimal.Decimal("10000"),
+            },
+            market_price=decimal.Decimal("2000"),
+        )
+        exchange_if.portfolio.mirror_sync_available_updates = _passthrough_mirror_sync_available_updates
+        exchange_if.orders.automatically_synchronize_orders = mock.Mock(return_value=auto_sync_enabled)
+        exchange_if.orders.wait_for_orders_to_open = mock.AsyncMock()
+        exchange_if.orders.get_open_orders = mock.Mock(return_value=[])
+        synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+            reference,
+            exchange_if,
+            copy_entities.AccountCopySettings(),
+        )
+        return synchronizer, exchange_if
+
+    def test_waits_for_created_orders_when_auto_sync_disabled(self):
+        synchronizer, exchange_if = self._synchronizer_with_auto_sync(False)
+        created_order = mock.Mock()
+        created_order.symbol = "ETH/USDT"
+        with mock.patch.object(
+            synchronizer,
+            "cancel_orders_pending_synchronization",
+            mock.AsyncMock(return_value=0),
+        ), mock.patch.object(
+            synchronizer,
+            "_upsert_mirrored_reference_order",
+            mock.AsyncMock(return_value=([created_order], 0, 0, None)),
+        ):
+            created = asyncio.run(synchronizer.synchronize())
+
+        assert created == [created_order]
+        exchange_if.orders.wait_for_orders_to_open.assert_awaited_once_with(
+            [created_order],
+            "ETH/USDT",
+        )
+
+    def test_skips_wait_when_auto_sync_enabled(self):
+        synchronizer, exchange_if = self._synchronizer_with_auto_sync(True)
+        created_order = mock.Mock()
+        created_order.symbol = "ETH/USDT"
+        with mock.patch.object(
+            synchronizer,
+            "cancel_orders_pending_synchronization",
+            mock.AsyncMock(return_value=0),
+        ), mock.patch.object(
+            synchronizer,
+            "_upsert_mirrored_reference_order",
+            mock.AsyncMock(return_value=([created_order], 0, 0, None)),
+        ):
+            created = asyncio.run(synchronizer.synchronize())
+
+        assert created == [created_order]
+        exchange_if.orders.wait_for_orders_to_open.assert_not_awaited()

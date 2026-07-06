@@ -13,6 +13,9 @@ import {
   buildUserActionTemplate,
   buildUserActionTemplateJson,
   defaultSignalPayloadText,
+  TEMPLATE_ACCOUNT_ID,
+  TEMPLATE_AUTOMATION_ID,
+  TEMPLATE_MASTER_STRATEGY_ID,
   userActionTemplateKeyFromActionType,
 } from "@/lib/debug/user-action-templates"
 
@@ -33,7 +36,7 @@ describe("buildUserActionTemplate", () => {
     expect(action.id).toContain("automation_stop")
     expect(action.configuration).toMatchObject({
       action_type: "automation_stop",
-      id: "<automation-id>",
+      id: TEMPLATE_AUTOMATION_ID,
     })
   })
 
@@ -42,7 +45,7 @@ describe("buildUserActionTemplate", () => {
     expect(action.id).toContain("automation_restart")
     expect(action.configuration).toMatchObject({
       action_type: "automation_restart",
-      id: "<automation-id>",
+      id: TEMPLATE_AUTOMATION_ID,
     })
   })
 
@@ -66,7 +69,7 @@ describe("buildUserActionTemplate", () => {
     const action = buildUserActionTemplate("automation_edit")
     expect(action.configuration).toMatchObject({
       action_type: "automation_edit",
-      id: "<automation-id>",
+      id: TEMPLATE_AUTOMATION_ID,
     })
 
     const automationConfiguration = (
@@ -96,7 +99,7 @@ describe("buildUserActionTemplate", () => {
     const action = buildUserActionTemplate("account_edit")
     expect(action.configuration).toMatchObject({
       action_type: "account_edit",
-      id: "<account-id>",
+      id: TEMPLATE_ACCOUNT_ID,
     })
 
     const accountConfiguration = (
@@ -123,7 +126,7 @@ describe("buildUserActionTemplate", () => {
 
     const config = tradingConfiguration.config as Record<string, unknown>
     const pairSettings = config.pair_settings as Array<Record<string, unknown>>
-    expect(pairSettings[0].pair).toBe("BTC/USDT")
+    expect(pairSettings[0].pair).toBe("BTC/USDC")
     expect(tradingConfiguration).not.toHaveProperty("symbols")
   })
 
@@ -157,11 +160,11 @@ describe("buildUserActionTemplate", () => {
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    expect(strategy.reference_market).toBe("USDT")
+    expect(strategy.reference_market).toBe("USDC")
 
     const copyConfiguration = strategy.configuration as Record<string, unknown>
     expect(copyConfiguration.configuration_type).toBe("copy")
-    expect(copyConfiguration.strategy_id).toBe("<master-strategy-id>")
+    expect(copyConfiguration.strategy_id).toBe(TEMPLATE_MASTER_STRATEGY_ID)
   })
 
   it("builds a DCA strategy create template with two evaluators", () => {
@@ -241,7 +244,7 @@ describe("buildUserActionTemplate", () => {
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    expect(strategy.reference_market).toBe("USDT")
+    expect(strategy.reference_market).toBe("USDC")
 
     const marketMakingConfiguration = strategy.configuration as Record<
       string,
@@ -253,7 +256,7 @@ describe("buildUserActionTemplate", () => {
       Record<string, unknown>
     >
     expect(pairSettings).toHaveLength(1)
-    expect(pairSettings[0].trading_pair).toBe("BTC/USDT")
+    expect(pairSettings[0].trading_pair).toBe("BTC/USDC")
     expect(pairSettings[0].exchange).toBe("binance")
     expect(pairSettings[0].min_spread).toBe(5)
     expect(pairSettings[0].max_spread).toBe(20)

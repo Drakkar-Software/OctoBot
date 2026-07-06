@@ -160,3 +160,55 @@ class TestFetchDependencies:
         )
 
         assert fetched_dependencies.skip_exchange is False
+
+
+class TestRequiresInitializationRun:
+    def _automation_job_without_exchange(
+        self,
+        *dag_actions: action_details.AbstractActionDetails,
+    ) -> automation_job_module.AutomationJob:
+        automation_state = octobot_flow.entities.AutomationState.from_dict(
+            {
+                "automation": {
+                    "metadata": {"automation_id": "automation_1"},
+                    "actions_dag": {"actions": []},
+                },
+            }
+        )
+        automation_state.automation.actions_dag.actions = list(dag_actions)
+        user_auth_details = octobot_flow.entities.UserAuthentication(wallet_address="0xtest")
+        return automation_job_module.AutomationJob(
+            automation_state.to_dict(include_default_values=False),
+            [],
+            [],
+            user_auth_details,
+        )
+
+    def test_skips_initialization_for_process_bound_dag_without_exchange(self):
+        process_bound_action = _dsl_action(_PROCESS_BOUND_DSL_SCRIPT, action_id="action_run")
+        automation_job = self._automation_job_without_exchange(process_bound_action)
+        assert automation_job.is_initialization_run is False
+
+    def test_requires_initialization_for_non_process_bound_dag_without_exchange(self):
+        stop_automation_action = _dsl_action("stop_automation()", action_id="action_stop")
+        automation_job = self._automation_job_without_exchange(stop_automation_action)
+        assert automation_job.is_initialization_run is True
+
+    def test_requires_initialization_for_pending_apply_configuration_without_exchange(self):
+        init_action = action_details.ConfiguredActionDetails(
+            id="action_init",
+            action=octobot_flow.enums.ActionType.APPLY_CONFIGURATION.value,
+            config={
+                "automation": {
+                    "metadata": {"automation_id": "automation_1"},
+                },
+            },
+        )
+        process_bound_action = _dsl_action(_PROCESS_BOUND_DSL_SCRIPT, action_id="action_run")
+        process_bound_action.dependencies = [
+            {
+                octobot_flow.enums.ActionDependencyParameter.ACTION_ID.value: init_action.id,
+            }
+        ]
+        automation_job = self._automation_job_without_exchange(init_action, process_bound_action)
+        assert automation_job.is_initialization_run is True

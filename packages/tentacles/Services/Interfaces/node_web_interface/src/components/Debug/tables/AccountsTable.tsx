@@ -247,10 +247,9 @@ export function AccountsTable({
                 >
                   <AutomationTradingCountCell
                     count={getAccountOrdersCount(row.id, accountTradings)}
-                    tooltip={getAccountOrdersTooltipContent(
-                      row.id,
-                      accountTradings,
-                    )}
+                    getTooltip={() =>
+                      getAccountOrdersTooltipContent(row.id, accountTradings)
+                    }
                   />
                 </TableCell>
                 <TableCell
@@ -261,10 +260,9 @@ export function AccountsTable({
                 >
                   <AutomationTradingCountCell
                     count={getAccountTradesCount(row.id, accountTradings)}
-                    tooltip={getAccountTradesTooltipContent(
-                      row.id,
-                      accountTradings,
-                    )}
+                    getTooltip={() =>
+                      getAccountTradesTooltipContent(row.id, accountTradings)
+                    }
                   />
                 </TableCell>
                 <TableCell className={debugTableCellClass("center")}>

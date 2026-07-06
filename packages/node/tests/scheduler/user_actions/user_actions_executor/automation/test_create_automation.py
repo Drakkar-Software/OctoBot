@@ -59,7 +59,7 @@ def _automation_configuration(
     *,
     name: str,
     strategy_reference: protocol_models.StrategyReference,
-    account_id: str,
+    account_id: str | None = "acc-1",
     created_at: datetime.datetime | None = None,
     automation_id: str | None = None,
 ) -> protocol_models.AutomationConfiguration:
@@ -71,7 +71,11 @@ def _automation_configuration(
             else datetime.datetime(2026, 5, 14, 11, 30, tzinfo=datetime.UTC)
         ),
         "strategy": strategy_reference,
-        "accounts": [protocol_models.AccountReference(id=account_id)],
+        "accounts": (
+            [protocol_models.AccountReference(id=account_id)]
+            if account_id is not None
+            else []
+        ),
     }
     if automation_id is not None:
         configuration_fields["id"] = automation_id
@@ -871,6 +875,69 @@ class TestCreateAutomationExecutor:
         assert main_action.id == f"{protocol_models.ActionConfigurationType.GENERIC_PROCESS.value}_1"
         assert main_action.dsl_script == expected_dsl
         assert "profile_data" not in main_action.dsl_script
+
+    def test_generic_process_with_empty_accounts_uses_metadata_init_without_exchange_auth(self):
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="generic-process-no-account",
+                strategy_reference=strat_ref,
+                account_id=None,
+            ),
+        )
+        user_action = _user_action_with_context(
+            action_id="ua-generic-process-no-account",
+            payload=create_payload,
+        )
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, generic_process_configuration)
+        with mock.patch(_STRATEGY_PROVIDER_INSTANCE_PATCH) as strategy_mock:
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        assert len(actions) == 2
+        init_action = actions[0]
+        assert init_action.id == "action_init"
+        init_config = init_action.config
+        metadata = init_config["automation"]["metadata"]
+        assert metadata["automation_id"] == "ua-generic-process-no-account"
+        assert metadata["strategy_id"] == strat_ref.id
+        assert "exchange_account_details" not in init_config
+        assert "exchange_account_elements" not in init_config["automation"]
+
+        main_action = actions[1]
+        assert isinstance(main_action, flow_entities.DSLScriptActionDetails)
+        expected_dsl = (
+            "run_octobot_process("
+            f"{'ua-generic-process-no-account'!r}, user_id={_TEST_WALLET_ADDRESS!r}, "
+            f"sync_profile_id={strat_ref.id!r}, "
+            f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
+        )
+        assert main_action.dsl_script == expected_dsl
+        assert "exchange_auth_data" not in main_action.dsl_script
+
+    def test_non_generic_process_with_empty_accounts_raises(self):
+        dca_configuration = trading_tentacles_test_utils.functional_dca_trading_configuration()
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="dca-no-account",
+                strategy_reference=strat_ref,
+                account_id=None,
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-dca-no-account", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, dca_configuration)
+        with mock.patch(_STRATEGY_PROVIDER_INSTANCE_PATCH) as strategy_mock:
+            strategy_mock.return_value.get_item.return_value = stored
+            with pytest.raises(node_errors.InvalidAutomationConfigurationError):
+                executor._create_automation_actions(user_action)
 
     def test_generic_process_run_octobot_process_uses_configuration_id_as_user_folder(self):
         configuration_automation_id = _DEFAULT_AUTOMATION_CONFIGURATION_ID

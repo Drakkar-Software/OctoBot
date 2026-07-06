@@ -11,6 +11,7 @@ import type {
   Trade,
   TradeSummary,
 } from "@/client"
+import { TRADING_TOOLTIP_MAX_ITEMS } from "@/lib/debug/constants"
 import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 
 export function getAccountExchangeConfigIds(account: Account): string[] {
@@ -111,29 +112,13 @@ function buildTradingSummaryIdSet<T extends { id: string }>(
   return new Set(summaries.map((summary) => summary.id))
 }
 
-function tradeBelongsToAutomationSummaries(
-  trade: Trade,
-  summaryIds: Set<string>,
-): boolean {
-  return summaryIds.has(trade.trade_id) || summaryIds.has(trade.id)
-}
-
-function orderBelongsToAutomationSummaries(
-  order: Order,
-  summaryIds: Set<string>,
-): boolean {
-  return summaryIds.has(order.exchange_id) || summaryIds.has(order.id)
-}
-
 function filterTradesToAutomationSummaries(
   trades: Trade[],
   automationTradeSummaries: TradeSummary[],
 ): Trade[] {
   const summaryIds = buildTradingSummaryIdSet(automationTradeSummaries)
   if (!summaryIds.size) return trades
-  return trades.filter((trade) =>
-    tradeBelongsToAutomationSummaries(trade, summaryIds),
-  )
+  return resolveTradesFromSummaries(trades, automationTradeSummaries)
 }
 
 function filterOrdersToAutomationSummaries(
@@ -142,9 +127,53 @@ function filterOrdersToAutomationSummaries(
 ): Order[] {
   const summaryIds = buildTradingSummaryIdSet(automationOrderSummaries)
   if (!summaryIds.size) return orders
-  return orders.filter((order) =>
-    orderBelongsToAutomationSummaries(order, summaryIds),
-  )
+  return resolveOrdersFromSummaries(orders, automationOrderSummaries)
+}
+
+function resolveOrdersFromSummaries(
+  orders: Order[],
+  automationOrderSummaries: OrderSummary[],
+): Order[] {
+  if (!automationOrderSummaries.length) return orders
+
+  const ordersById = new Map<string, Order>()
+  for (const order of orders) {
+    ordersById.set(order.id, order)
+    ordersById.set(order.exchange_id, order)
+  }
+
+  const resolved: Order[] = []
+  const seen = new Set<string>()
+  for (const summary of automationOrderSummaries) {
+    const order = ordersById.get(summary.id)
+    if (!order || seen.has(order.id)) continue
+    seen.add(order.id)
+    resolved.push(order)
+  }
+  return resolved
+}
+
+function resolveTradesFromSummaries(
+  trades: Trade[],
+  automationTradeSummaries: TradeSummary[],
+): Trade[] {
+  if (!automationTradeSummaries.length) return trades
+
+  const tradesById = new Map<string, Trade>()
+  for (const trade of trades) {
+    tradesById.set(trade.id, trade)
+    tradesById.set(trade.trade_id, trade)
+  }
+
+  const resolved: Trade[] = []
+  const seen = new Set<string>()
+  for (const summary of automationTradeSummaries) {
+    const trade = tradesById.get(summary.id)
+    if (!trade || seen.has(trade.id)) continue
+    seen.add(trade.id)
+    resolved.push(trade)
+  }
+  return resolved
 }
 
 export function getDetailedOrdersForAutomation(
@@ -276,24 +305,55 @@ function formatTradeSummaryLine(summary: TradeSummary): string {
   return `${summary.id} ${summary.symbol}`
 }
 
+function takeTradingTooltipItems<T>(
+  items: T[],
+  maxItems: number = TRADING_TOOLTIP_MAX_ITEMS,
+): { visibleItems: T[]; hiddenCount: number } {
+  if (items.length <= maxItems) {
+    return { visibleItems: items, hiddenCount: 0 }
+  }
+  return {
+    visibleItems: items.slice(0, maxItems),
+    hiddenCount: items.length - maxItems,
+  }
+}
+
+function takeTradingTooltipLines(
+  lines: string[],
+  maxItems: number = TRADING_TOOLTIP_MAX_ITEMS,
+): { visibleLines: string[]; hiddenCount: number } {
+  const { visibleItems, hiddenCount } = takeTradingTooltipItems(lines, maxItems)
+  return { visibleLines: visibleItems, hiddenCount }
+}
+
+function appendTradingTooltipHiddenFooter(
+  text: string,
+  hiddenCount: number,
+): string {
+  if (hiddenCount <= 0) return text
+  return `${text}\n\n… ${hiddenCount} older hidden`
+}
+
 function formatAutomationOrderSummariesTooltip(
   summaries: OrderSummary[],
 ): string | null {
   if (!summaries.length) return null
-  return [...summaries]
+  const lines = [...summaries]
     .sort((left, right) => left.symbol.localeCompare(right.symbol))
     .map(formatOrderSummaryLine)
-    .join("\n")
+  const { visibleLines, hiddenCount } = takeTradingTooltipLines(lines)
+  return appendTradingTooltipHiddenFooter(visibleLines.join("\n"), hiddenCount)
 }
 
 function formatAutomationTradeSummariesTooltip(
   summaries: TradeSummary[],
 ): string | null {
   if (!summaries.length) return null
-  return [...summaries]
+  const lines = [...summaries]
     .sort((left, right) => left.symbol.localeCompare(right.symbol))
     .map(formatTradeSummaryLine)
-    .join("\n")
+  const { visibleLines, hiddenCount } = takeTradingTooltipLines(lines)
+  return appendTradingTooltipHiddenFooter(visibleLines.join("\n"), hiddenCount)
 }
 
 function formatTradingBlocksFromSummaries<T>(
@@ -308,19 +368,37 @@ function formatTradingBlocksFromSummaries<T>(
 
   const showAccountHeaders = withItems.length > 1
   const blocks: string[] = []
+  let contentLineCount = 0
+  let hiddenCount = 0
+  let reachedLimit = false
+
   for (const summary of withItems) {
-    if (showAccountHeaders) {
-      blocks.push(`${summary.account_id}:`)
-    }
-    for (const item of getItems(summary) ?? []) {
+    const items = getItems(summary) ?? []
+    let headerAdded = false
+
+    for (const item of items) {
+      if (reachedLimit) {
+        hiddenCount++
+        continue
+      }
+      if (showAccountHeaders && !headerAdded) {
+        blocks.push(`${summary.account_id}:`)
+        headerAdded = true
+      }
       blocks.push(formatLine(item))
+      contentLineCount++
+      if (contentLineCount >= TRADING_TOOLTIP_MAX_ITEMS) {
+        reachedLimit = true
+      }
     }
-    if (showAccountHeaders) {
+    if (showAccountHeaders && headerAdded) {
       blocks.push("")
     }
   }
+
   const text = blocks.join("\n").trim()
-  return text.length > 0 ? text : null
+  if (text.length === 0) return null
+  return appendTradingTooltipHiddenFooter(text, hiddenCount)
 }
 
 export function formatOrdersTradingTooltip(
@@ -338,7 +416,12 @@ export function formatOrdersTradingTooltip(
     if (fromSummaries) return fromSummaries
   }
 
-  return sortOrdersForTooltip(orders).map(formatOrderLine).join("\n\n")
+  const orderLines = sortOrdersForTooltip(orders)
+  const { visibleItems, hiddenCount } = takeTradingTooltipItems(orderLines)
+  return appendTradingTooltipHiddenFooter(
+    visibleItems.map(formatOrderLine).join("\n\n"),
+    hiddenCount,
+  )
 }
 
 export function formatTradesTradingTooltip(
@@ -356,7 +439,12 @@ export function formatTradesTradingTooltip(
     if (fromSummaries) return fromSummaries
   }
 
-  return sortTradesForTooltip(trades).map(formatTradeLine).join("\n\n")
+  const tradeLines = sortTradesForTooltip(trades)
+  const { visibleItems, hiddenCount } = takeTradingTooltipItems(tradeLines)
+  return appendTradingTooltipHiddenFooter(
+    visibleItems.map(formatTradeLine).join("\n\n"),
+    hiddenCount,
+  )
 }
 
 function formatAutomationFilteredOrdersTooltip(
@@ -370,9 +458,7 @@ function formatAutomationFilteredOrdersTooltip(
       const orders = summary.account_trading?.orders ?? []
       if (!summaryIds.size) return sortOrdersForTooltip(orders)
       return sortOrdersForTooltip(
-        orders.filter((order) =>
-          orderBelongsToAutomationSummaries(order, summaryIds),
-        ),
+        resolveOrdersFromSummaries(orders, automationOrderSummaries),
       )
     },
     formatOrderLine,
@@ -390,9 +476,7 @@ function formatAutomationFilteredTradesTooltip(
       const trades = summary.account_trading?.trades ?? []
       if (!summaryIds.size) return sortTradesForTooltip(trades)
       return sortTradesForTooltip(
-        trades.filter((trade) =>
-          tradeBelongsToAutomationSummaries(trade, summaryIds),
-        ),
+        resolveTradesFromSummaries(trades, automationTradeSummaries),
       )
     },
     formatTradeLine,
@@ -405,19 +489,18 @@ export function getAutomationOrdersTooltipContent(
 ): string | null {
   const automationOrderSummaries = automation.orders ?? []
   const matched = getTradingSummariesForAutomation(automation, summaries)
-  const summaryIds = buildTradingSummaryIdSet(automationOrderSummaries)
-  const detailed = matched.flatMap(
-    (summary) => summary.account_trading?.orders ?? [],
+  const hasAccountTrading = matched.some(
+    (summary) => (summary.account_trading?.orders?.length ?? 0) > 0,
   )
-  const filtered = summaryIds.size
-    ? filterOrdersToAutomationSummaries(detailed, automationOrderSummaries)
-    : detailed
-  if (filtered.length) {
-    return formatAutomationFilteredOrdersTooltip(
+
+  if (hasAccountTrading) {
+    const fromDetailed = formatAutomationFilteredOrdersTooltip(
       matched,
       automationOrderSummaries,
     )
+    if (fromDetailed) return fromDetailed
   }
+
   return formatAutomationOrderSummariesTooltip(automationOrderSummaries)
 }
 
@@ -427,19 +510,18 @@ export function getAutomationTradesTooltipContent(
 ): string | null {
   const automationTradeSummaries = automation.trades ?? []
   const matched = getTradingSummariesForAutomation(automation, summaries)
-  const summaryIds = buildTradingSummaryIdSet(automationTradeSummaries)
-  const detailed = matched.flatMap(
-    (summary) => summary.account_trading?.trades ?? [],
+  const hasAccountTrading = matched.some(
+    (summary) => (summary.account_trading?.trades?.length ?? 0) > 0,
   )
-  const filtered = summaryIds.size
-    ? filterTradesToAutomationSummaries(detailed, automationTradeSummaries)
-    : detailed
-  if (filtered.length) {
-    return formatAutomationFilteredTradesTooltip(
+
+  if (hasAccountTrading) {
+    const fromDetailed = formatAutomationFilteredTradesTooltip(
       matched,
       automationTradeSummaries,
     )
+    if (fromDetailed) return fromDetailed
   }
+
   return formatAutomationTradeSummariesTooltip(automationTradeSummaries)
 }
 

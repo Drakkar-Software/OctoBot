@@ -61,7 +61,7 @@ export function DebugView() {
     return walletAddress
   }, [isSuperuser, walletAddress, currentAddress])
 
-  const { data: wallets = [] } = useQuery({
+  const { data: wallets = [], isPending: isWalletsLoading } = useQuery({
     queryKey: ["wallets"],
     queryFn: () => WalletsService.listWallets(),
     enabled: isSuperuser,
@@ -160,6 +160,7 @@ export function DebugView() {
             <DebugToolbar
               isImportedMode={isImportedMode}
               isSuperuser={isSuperuser}
+              isWalletsLoading={isWalletsLoading}
               wallets={wallets}
               walletAddress={walletAddress}
               onWalletAddressChange={setWalletAddress}
@@ -167,6 +168,7 @@ export function DebugView() {
               onReturnToLive={returnToLiveView}
               onExport={handleExportSnapshot}
               canExportSnapshot={canExportSnapshot}
+              isRefreshPending={!isImportedMode && debugQuery.isFetching}
               onRefresh={refresh}
               onExecute={() => openExecuteAction()}
             />

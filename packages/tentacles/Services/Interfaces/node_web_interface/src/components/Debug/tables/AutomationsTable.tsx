@@ -337,10 +337,9 @@ export function AutomationsTable({
                   >
                     <AutomationTradingCountCell
                       count={row.orders?.length ?? 0}
-                      tooltip={getAutomationOrdersTooltipContent(
-                        row,
-                        accountTradings,
-                      )}
+                      getTooltip={() =>
+                        getAutomationOrdersTooltipContent(row, accountTradings)
+                      }
                     />
                   </TableCell>
                   <TableCell
@@ -351,10 +350,9 @@ export function AutomationsTable({
                   >
                     <AutomationTradingCountCell
                       count={row.trades?.length ?? 0}
-                      tooltip={getAutomationTradesTooltipContent(
-                        row,
-                        accountTradings,
-                      )}
+                      getTooltip={() =>
+                        getAutomationTradesTooltipContent(row, accountTradings)
+                      }
                     />
                   </TableCell>
                   <TableCell>

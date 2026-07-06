@@ -1,5 +1,6 @@
 import asyncio
 import decimal
+import time
 import typing
 
 import octobot_commons.constants as commons_constants
@@ -185,6 +186,105 @@ class OrdersInterface:
         return await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
             self._exchange_manager, orders, copy_constants.FILL_ORDER_TIMEOUT, True, temp_refresh_portfolio_on_static_wait=False
         )
+
+    async def wait_for_orders_to_open(
+        self,
+        orders: list,
+        symbol: str,
+        *,
+        timeout: float = trading_constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+        poll_interval: float = copy_constants.OPEN_ORDER_POLL_INTERVAL,
+    ) -> None:
+        if not orders:
+            return
+        exchange_id_column = trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
+        start_time = time.monotonic()
+        logger = commons_logging.get_logger(self.__class__.__name__)
+        exchange = self._exchange_manager.exchange
+        total_order_count = len(orders)
+        exchange_name = self._exchange_manager.exchange_name
+        poll_iteration = 0
+        started_wait_log = False
+        while True:
+            pending_orders = [
+                order for order in orders if order.is_pending_creation()
+            ]
+            if not pending_orders:
+                logger.info(
+                    "All %s mirrored order(s) open on %s for %s after %.1fs",
+                    total_order_count,
+                    exchange_name,
+                    symbol,
+                    time.monotonic() - start_time,
+                )
+                return
+            if not started_wait_log:
+                logger.info(
+                    "Waiting for %s mirrored order(s) on %s to open on %s (timeout=%ss)",
+                    len(pending_orders),
+                    symbol,
+                    exchange_name,
+                    timeout,
+                )
+                started_wait_log = True
+            if time.monotonic() - start_time >= timeout:
+                pending_exchange_ids = [
+                    order.exchange_order_id for order in pending_orders if order.exchange_order_id
+                ]
+                logger.warning(
+                    "Timed out waiting for %s mirrored order(s) to open on %s: %s",
+                    len(pending_orders),
+                    exchange_name,
+                    pending_exchange_ids,
+                )
+                return
+            poll_iteration += 1
+            raw_open_orders = await exchange.get_open_orders(symbol=symbol)
+            exchange_open_order_ids = {
+                raw_order[exchange_id_column]
+                for raw_order in raw_open_orders
+                if raw_order.get(exchange_id_column) is not None
+            }
+            promoted_count = 0
+            for order in pending_orders:
+                if not order.exchange_order_id:
+                    continue
+                if order.exchange_order_id not in exchange_open_order_ids:
+                    continue
+                await self._promote_pending_order_to_open(order)
+                promoted_count += 1
+            remaining_pending_count = sum(
+                1 for order in orders if order.is_pending_creation()
+            )
+            open_count = total_order_count - remaining_pending_count
+            if promoted_count:
+                logger.info(
+                    "Promoted %s mirrored order(s) to open on %s for %s (%s/%s open, %s remaining)",
+                    promoted_count,
+                    exchange_name,
+                    symbol,
+                    open_count,
+                    total_order_count,
+                    remaining_pending_count,
+                )
+            else:
+                logger.debug(
+                    "Still waiting for %s mirrored order(s) on %s to open on %s (poll %s)",
+                    remaining_pending_count,
+                    symbol,
+                    exchange_name,
+                    poll_iteration,
+                )
+            await asyncio.sleep(poll_interval)
+
+    async def _promote_pending_order_to_open(self, order) -> None:
+        orders_manager = self._exchange_manager.exchange_personal_data.orders_manager
+        for index, pending_order in enumerate(orders_manager.pending_creation_orders):
+            if pending_order is order or pending_order.order_id == order.order_id:
+                orders_manager.pending_creation_orders.pop(index)
+                break
+        order.status = trading_enums.OrderStatus.OPEN
+        await order.on_open(force_open=True, is_from_exchange_data=False)
 
     def get_open_orders(self, symbol: typing.Optional[str] = None, active: typing.Optional[bool] = None) -> list:
         return trading_api.get_open_orders(self._exchange_manager, symbol=symbol, active=active)
