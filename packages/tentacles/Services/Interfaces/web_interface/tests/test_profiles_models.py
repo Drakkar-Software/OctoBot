@@ -413,3 +413,33 @@ class TestDuplicateProfile:
         refresh_mock.assert_called_once_with("/profiles/new")
         reloaded_profile.init_tentacles_setup_config.assert_not_called()
         assert result is reloaded_profile
+
+
+class TestUpdateProfile:
+    def test_rename_updates_name_without_rename_folder(self):
+        profile = mock.Mock()
+        profile.profile_id = "profile-id"
+        profile.name = "old-name"
+        profile.description = "desc"
+        profile.avatar = "avatar.png"
+        profile.complexity = profiles_model.commons_enums.ProfileComplexity.MEDIUM
+        profile.risk = profiles_model.commons_enums.ProfileRisk.MODERATE
+        profile.is_sync_backed.return_value = False
+
+        current_profile = mock.Mock()
+        current_profile.profile_id = "other-profile-id"
+
+        with mock.patch.object(profiles_model, "get_profile", mock.Mock(return_value=profile)), mock.patch.object(
+            profiles_model,
+            "get_current_profile",
+            mock.Mock(return_value=current_profile),
+        ):
+            success, message = profiles_model.update_profile(
+                "profile-id",
+                {"name": "new-name"},
+            )
+
+        assert success is True
+        assert message == "Profile updated"
+        assert profile.name == "new-name"
+        profile.validate_and_save_config.assert_called_once_with()

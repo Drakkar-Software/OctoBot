@@ -172,7 +172,7 @@ class Configuration:
         if (
             save_profile
             and self.profile is not None
-            and not self.profile_storage.is_master_overlay_profile(self.profile)
+            and not self.profile_storage.is_readonly_master_overlay_profile(self.profile)
         ):
             self.profile.save_config(self.config)
         if sync_all_profiles:

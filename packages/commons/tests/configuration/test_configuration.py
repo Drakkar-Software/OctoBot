@@ -701,6 +701,15 @@ class TestConfigurationReadonlyProfileOverlay:
         profile_folder_path: str,
         profile_id: str,
     ) -> None:
+        self._write_master_profile(profile_folder_path, profile_id, read_only=True)
+
+    def _write_master_profile(
+        self,
+        profile_folder_path: str,
+        profile_id: str,
+        *,
+        read_only: bool,
+    ) -> None:
         import octobot_commons.json_util as json_util_module
 
         os.makedirs(profile_folder_path, exist_ok=True)
@@ -708,7 +717,7 @@ class TestConfigurationReadonlyProfileOverlay:
             constants.CONFIG_PROFILE: {
                 constants.CONFIG_ID: profile_id,
                 constants.CONFIG_NAME: "Non-Trading",
-                constants.CONFIG_READ_ONLY: True,
+                constants.CONFIG_READ_ONLY: read_only,
             },
             constants.PROFILE_CONFIG: {
                 constants.CONFIG_CRYPTO_CURRENCIES: {},
@@ -757,6 +766,33 @@ class TestConfigurationReadonlyProfileOverlay:
         )
         return bot_config, str(master_profiles_path)
 
+    def _child_config_with_editable_overlay(
+        self,
+        tmp_path,
+    ) -> tuple[configuration.Configuration, str]:
+        child_user_root = tmp_path / "child" / "user"
+        child_profiles_path = child_user_root / constants.PROFILES_FOLDER
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        self._write_master_profile(
+            str(master_profiles_path / "editable-strategy"),
+            "editable-strategy",
+            read_only=False,
+        )
+        child_user_root.mkdir(parents=True)
+        config_path = child_user_root / constants.CONFIG_FILE
+        config_data = {
+            constants.CONFIG_PROFILE: "editable-strategy",
+            constants.CONFIG_READONLY_PROFILES_PATH: str(master_profiles_path),
+            constants.CONFIG_ACCEPTED_TERMS: True,
+        }
+        with open(config_path, "w", encoding="utf-8") as config_file:
+            json.dump(config_data, config_file)
+        bot_config = configuration.Configuration(
+            str(config_path),
+            str(child_profiles_path),
+        )
+        return bot_config, str(master_profiles_path)
+
     def test_are_profiles_empty_or_missing_false_with_readonly_overlay(self, tmp_path):
         bot_config, _master_profiles_path = self._child_config_with_readonly_overlay(tmp_path)
         bot_config.read(should_raise=False, fill_missing_fields=True)
@@ -779,3 +815,14 @@ class TestConfigurationReadonlyProfileOverlay:
         ) as save_active_profile_mock:
             bot_config.save()
         save_active_profile_mock.assert_not_called()
+
+    def test_save_persists_editable_master_overlay_profile(self, tmp_path):
+        bot_config, _master_profiles_path = self._child_config_with_editable_overlay(tmp_path)
+        bot_config.read(should_raise=False, fill_missing_fields=True)
+        with mock.patch.object(
+            bot_config.profile_storage,
+            "save_active_profile",
+            mock.Mock(),
+        ) as save_active_profile_mock:
+            bot_config.save(save_profile=True)
+        save_active_profile_mock.assert_called_once()

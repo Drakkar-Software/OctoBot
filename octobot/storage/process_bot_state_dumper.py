@@ -56,12 +56,12 @@ def _synced_exchange_account_elements_for_first_trading_exchange(
     elements.sync_from_exchange_manager(first_exchange_manager, [])
     for skipped_exchange_manager in trading_managers[1:]:
         _get_logger().error(
-            "process bot state dump includes only the first trading exchange; dumping %s (%s). "
-            "Skipping additional trading exchange %s (%s).",
-            trading_api.get_exchange_name(first_exchange_manager),
-            trading_api.get_exchange_manager_id(first_exchange_manager),
-            trading_api.get_exchange_name(skipped_exchange_manager),
-            trading_api.get_exchange_manager_id(skipped_exchange_manager),
+            f"process bot state dump includes only the first trading exchange; dumping "
+            f"{trading_api.get_exchange_name(first_exchange_manager)} "
+            f"({trading_api.get_exchange_manager_id(first_exchange_manager)}). "
+            f"Skipping additional trading exchange "
+            f"{trading_api.get_exchange_name(skipped_exchange_manager)} "
+            f"({trading_api.get_exchange_manager_id(skipped_exchange_manager)})."
         )
     return elements
 
@@ -113,7 +113,7 @@ async def run_periodic_dump_loop(state_file_path: str, bot: "octobot.octobot.Oct
         except asyncio.CancelledError:
             raise
         except Exception as err:  # pylint: disable=broad-except
-            _get_logger().exception(err, True, "process bot state dump failed: %s", err)
+            _get_logger().exception(err, True, f"process bot state dump failed: {err}")
         try:
             await asyncio.sleep(interval)
         except asyncio.CancelledError:

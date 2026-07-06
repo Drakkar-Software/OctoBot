@@ -204,8 +204,6 @@ def update_profile(profile_id, json_profile_desc, json_profile_content=None):
     if json_profile_content is not None:
         profile.config = json_profile_content
     profile.validate_and_save_config()
-    if renamed and not profile.is_sync_backed():
-        profile.rename_folder(new_name, False)
     return True, "Profile updated"
 
 def remove_profile(profile_id):

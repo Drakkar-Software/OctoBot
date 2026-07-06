@@ -88,6 +88,9 @@ class ProfileStorage:
             readonly_prefix
         )
 
+    def is_readonly_master_overlay_profile(self, profile: profile_module.Profile) -> bool:
+        return self.is_master_overlay_profile(profile) and profile.read_only
+
     def configure_readonly_profiles_path(self, path: str) -> None:
         normalized_path = os.path.normpath(path)
         self._readonly_profiles_path = normalized_path
@@ -185,7 +188,7 @@ class ProfileStorage:
         profile: profile_module.Profile,
         global_config: dict,
     ) -> None:
-        if self.is_master_overlay_profile(profile):
+        if self.is_readonly_master_overlay_profile(profile):
             raise errors.ProfileDataError(
                 f"{profile.name} profile is shared from the master and can't be saved"
             )
@@ -209,7 +212,7 @@ class ProfileStorage:
             profile = self.find_profile(profile_id)
         if profile is None:
             raise errors.ProfileRemovalError(f"Profile {profile_id} not found")
-        if self.is_master_overlay_profile(profile):
+        if self.is_readonly_master_overlay_profile(profile):
             raise errors.ProfileRemovalError(
                 f"{profile.name} profile is shared from the master and can't be removed"
             )
@@ -269,17 +272,10 @@ class ProfileStorage:
     def migrate_filesystem_profiles_to_sync(self) -> list[str]:
         return profile_migration.migrate_user_profiles_to_sync(self)
 
-    def _should_expose_master_profile(self, profile: profile_module.Profile) -> bool:
-        return profile.read_only
-
     def _master_overlay_profiles(self) -> dict[str, profile_module.Profile]:
         if self._readonly_filesystem_backend is None:
             return {}
-        overlay_profiles = {}
-        for profile_id, profile in self._readonly_filesystem_backend.list_profiles().items():
-            if self._should_expose_master_profile(profile):
-                overlay_profiles[profile_id] = profile
-        return overlay_profiles
+        return self._readonly_filesystem_backend.list_profiles()
 
     def _master_overlay_profile_ids(self, ignore: str = None) -> list[str]:
         overlay_ids = []
@@ -309,10 +305,7 @@ class ProfileStorage:
             return sync_profile
         if self._readonly_filesystem_backend is None:
             return None
-        master_profile = self._readonly_filesystem_backend.get_profile(profile_id)
-        if master_profile is not None and self._should_expose_master_profile(master_profile):
-            return master_profile
-        return None
+        return self._readonly_filesystem_backend.get_profile(profile_id)
 
     def _ensure_profile_persistable(self, profile: profile_module.Profile) -> None:
         if profile.get_storage_source() == enums.ProfileSource.EPHEMERAL:

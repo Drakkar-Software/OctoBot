@@ -329,7 +329,7 @@ class TestProfileStorageMasterOverlay:
         assert readonly_profile_id in profiles
         assert profiles[readonly_profile_id].read_only is True
 
-    def test_overlay_ignores_editable_non_shared_profiles(self, tmp_path):
+    def test_overlay_exposes_editable_profiles(self, tmp_path):
         child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
         child_profiles_path.mkdir(parents=True)
         master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
@@ -342,7 +342,8 @@ class TestProfileStorageMasterOverlay:
         profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
         profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
         profiles = profile_storage.load_all_profiles()
-        assert editable_profile_id not in profiles
+        assert editable_profile_id in profiles
+        assert profiles[editable_profile_id].read_only is False
 
     def test_local_filesystem_profile_wins_on_id_conflict(self, tmp_path):
         child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
@@ -384,6 +385,37 @@ class TestProfileStorageMasterOverlay:
         ):
             profile_storage.save_active_profile(overlay_profile, {})
 
+    def test_save_active_profile_persists_editable_master_overlay_on_master_path(self, tmp_path):
+        import octobot_commons.json_util as json_util
+
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        editable_profile_id = "editable-strategy"
+        master_profile_path = os.path.join(master_profiles_path, editable_profile_id)
+        self._write_profile_file(
+            master_profile_path,
+            editable_profile_id,
+            read_only=False,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        overlay_profile = profile_storage.get_profile(editable_profile_id)
+        overlay_profile.config[constants.CONFIG_TRADER] = {
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        profile_storage.save_active_profile(overlay_profile, {})
+        master_profile_file = json_util.read_file(
+            os.path.join(master_profile_path, constants.PROFILE_CONFIG_FILE)
+        )
+        assert (
+            master_profile_file[constants.PROFILE_CONFIG][constants.CONFIG_TRADER][
+                constants.CONFIG_ENABLED_OPTION
+            ]
+            is True
+        )
+        assert not os.path.isdir(os.path.join(child_profiles_path, editable_profile_id))
+
     def test_delete_profile_blocks_master_overlay_profile(self, tmp_path):
         child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
         child_profiles_path.mkdir(parents=True)
@@ -402,6 +434,24 @@ class TestProfileStorageMasterOverlay:
             match="shared from the master",
         ):
             profile_storage.delete_profile(readonly_profile_id, profile=overlay_profile)
+
+    def test_delete_profile_removes_editable_master_overlay_from_master_path(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        editable_profile_id = "editable-strategy"
+        master_profile_path = os.path.join(master_profiles_path, editable_profile_id)
+        self._write_profile_file(
+            master_profile_path,
+            editable_profile_id,
+            read_only=False,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        overlay_profile = profile_storage.get_profile(editable_profile_id)
+        profile_storage.delete_profile(editable_profile_id, profile=overlay_profile)
+        assert not os.path.isdir(master_profile_path)
+        assert not os.path.isdir(os.path.join(child_profiles_path, editable_profile_id))
 
 
 class TestSyncProfileBackendSaveProfile:

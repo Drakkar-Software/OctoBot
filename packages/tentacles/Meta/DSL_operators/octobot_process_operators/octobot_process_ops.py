@@ -617,7 +617,7 @@ async def ensure_user_profile_and_layout(
             **_child_master_profile_config_kwargs(working_directory),
         )
     else:
-        # Generic process: master non-trading + read-only profiles via overlay config.
+        # Generic process: master profiles via overlay config.
         profile_id = DEFAULT_DSL_PROFILE_ID
         _write_user_root_config_json(
             config_path,
