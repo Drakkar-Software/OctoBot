@@ -37,7 +37,6 @@ import octobot_services.constants as services_constants
 
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_storage as profile_storage_module
-import octobot_commons.profiles.exchange_auth_data as exchange_auth_data_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
 import octobot_tentacles_manager.constants as tentacles_manager_constants
@@ -372,6 +371,29 @@ def _automation_child_config_path(tmp_path, automation_id: str = "test-automatio
     return str(automation_root / commons_constants.CONFIG_FILE)
 
 
+def _seed_master_user_config(tmp_path, exchanges: dict) -> pathlib.Path:
+    master_config_path = tmp_path / commons_constants.USER_FOLDER / commons_constants.CONFIG_FILE
+    master_config_path.parent.mkdir(parents=True, exist_ok=True)
+    master_config_path.write_text(
+        json.dumps({commons_constants.CONFIG_EXCHANGES: exchanges}),
+        encoding="utf-8",
+    )
+    return master_config_path
+
+
+def _default_config_read_side_effect(tmp_path, master_config: dict | None = None):
+    default_template = _fresh_default_like_cfg_template()
+    master_config_path = tmp_path / commons_constants.USER_FOLDER / commons_constants.CONFIG_FILE
+
+    def _read_file_side_effect(path, *_unused, **_kwargs):
+        normalized_path = os.path.normpath(str(path))
+        if master_config is not None and normalized_path == os.path.normpath(str(master_config_path)):
+            return master_config
+        return default_template
+
+    return _read_file_side_effect
+
+
 class TestWriteUserRootConfigJson:
     def test_sets_profile_and_disables_browser_auto_open(self, tmp_path):
         config_path = _automation_child_config_path(tmp_path)
@@ -382,7 +404,7 @@ class TestWriteUserRootConfigJson:
             side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
         ):
             octobot_process_ops._write_user_root_config_json(
-                config_path, profile_id, None, None
+                config_path, profile_id, None, None, str(tmp_path)
             )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         assert written[commons_constants.CONFIG_PROFILE] == profile_id
@@ -407,7 +429,7 @@ class TestWriteUserRootConfigJson:
             side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
         ):
             octobot_process_ops._write_user_root_config_json(
-                config_path, "p1", profile_data, None
+                config_path, "p1", profile_data, None, str(tmp_path)
             )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         exchanges_cfg = written[commons_constants.CONFIG_EXCHANGES]
@@ -435,7 +457,9 @@ class TestWriteUserRootConfigJson:
             "read_file",
             side_effect=lambda *_unused: template,
         ):
-            octobot_process_ops._write_user_root_config_json(config_path, "p0", None, None)
+            octobot_process_ops._write_user_root_config_json(
+                config_path, "p0", None, None, str(tmp_path)
+            )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         exch = written[commons_constants.CONFIG_EXCHANGES]["prefilled_exchange"]
         assert exch[commons_constants.CONFIG_EXCHANGE_KEY] == octobot_process_ops._DEFAULT_ENCRYPTED_VALUE
@@ -443,22 +467,24 @@ class TestWriteUserRootConfigJson:
 
     def test_applies_exchange_auth_credentials(self, tmp_path):
         config_path = _automation_child_config_path(tmp_path)
-        auth_list = [
-            exchange_auth_data_module.ExchangeAuthData(
-                internal_name="binance_test",
-                api_key="key-a",
-                api_secret="secret-b",
-                api_password="pwd-c",
-                exchange_type="spot",
-                sandboxed=True,
-            )
+        auth_overrides = [
+            {
+                "internal_name": "binance_test",
+                "api_key": "key-a",
+                "api_secret": "secret-b",
+                "api_password": "pwd-c",
+                "exchange_type": "spot",
+                "sandboxed": True,
+            }
         ]
         with mock.patch.object(
             octobot_process_ops.json_util,
             "read_file",
             side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
         ):
-            octobot_process_ops._write_user_root_config_json(config_path, "p2", None, auth_list)
+            octobot_process_ops._write_user_root_config_json(
+                config_path, "p2", None, auth_overrides, str(tmp_path)
+            )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         exch = written[commons_constants.CONFIG_EXCHANGES]["binance_test"]
         assert exch[commons_constants.CONFIG_EXCHANGE_KEY] == "key-a"
@@ -475,13 +501,13 @@ class TestWriteUserRootConfigJson:
             "exchanges": [{"internal_name": exchange_internal_name, "exchange_type": "spot"}],
         }
         profile_data = profile_data_module.ProfileData.from_dict(profile_dict)
-        auth_list = [
-            exchange_auth_data_module.ExchangeAuthData(
-                internal_name=exchange_internal_name,
-                api_key="overlay-key",
-                api_secret="overlay-secret",
-                exchange_type="spot",
-            )
+        auth_overrides = [
+            {
+                "internal_name": exchange_internal_name,
+                "api_key": "overlay-key",
+                "api_secret": "overlay-secret",
+                "exchange_type": "spot",
+            }
         ]
         with mock.patch.object(
             octobot_process_ops.json_util,
@@ -489,7 +515,7 @@ class TestWriteUserRootConfigJson:
             side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
         ):
             octobot_process_ops._write_user_root_config_json(
-                config_path, "p3", profile_data, auth_list
+                config_path, "p3", profile_data, auth_overrides, str(tmp_path)
             )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         exch = written[commons_constants.CONFIG_EXCHANGES][exchange_internal_name]
@@ -510,6 +536,7 @@ class TestWriteUserRootConfigJson:
                 "sync-profile-id",
                 None,
                 None,
+                str(tmp_path),
             )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         assert written[commons_constants.CONFIG_PROFILE] == "sync-profile-id"
@@ -528,10 +555,133 @@ class TestWriteUserRootConfigJson:
                 octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
                 None,
                 None,
+                str(tmp_path),
                 readonly_profiles_path=master_profiles_path,
             )
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         assert written[commons_constants.CONFIG_READONLY_PROFILES_PATH] == master_profiles_path
+
+    def test_forwards_master_exchange_auth_when_no_overrides(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        master_exchange_internal_name = "master_binance"
+        master_api_key = "master-forwarded-key"
+        master_api_secret = "master-forwarded-secret"
+        master_api_password = "master-forwarded-password"
+        master_config = {
+            commons_constants.CONFIG_EXCHANGES: {
+                master_exchange_internal_name: {
+                    commons_constants.CONFIG_EXCHANGE_KEY: master_api_key,
+                    commons_constants.CONFIG_EXCHANGE_SECRET: master_api_secret,
+                    commons_constants.CONFIG_EXCHANGE_PASSWORD: master_api_password,
+                    commons_constants.CONFIG_EXCHANGE_TYPE: commons_constants.CONFIG_EXCHANGE_SPOT,
+                    commons_constants.CONFIG_EXCHANGE_SANDBOXED: True,
+                }
+            }
+        }
+        _seed_master_user_config(
+            tmp_path,
+            master_config[commons_constants.CONFIG_EXCHANGES],
+        )
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=_default_config_read_side_effect(tmp_path, master_config),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                "p-master-forward",
+                None,
+                None,
+                str(tmp_path),
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        exchange_cfg = written[commons_constants.CONFIG_EXCHANGES][master_exchange_internal_name]
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_KEY] == master_api_key
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SECRET] == master_api_secret
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_PASSWORD] == master_api_password
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_TYPE] == commons_constants.CONFIG_EXCHANGE_SPOT
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SANDBOXED] is True
+
+    def test_exchange_auth_override_fully_replaces_master_entry(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        exchange_internal_name = "binance"
+        master_config = {
+            commons_constants.CONFIG_EXCHANGES: {
+                exchange_internal_name: {
+                    commons_constants.CONFIG_EXCHANGE_KEY: "master-key",
+                    commons_constants.CONFIG_EXCHANGE_SECRET: "master-secret",
+                    commons_constants.CONFIG_EXCHANGE_TYPE: commons_constants.CONFIG_EXCHANGE_SPOT,
+                    commons_constants.CONFIG_EXCHANGE_SANDBOXED: False,
+                }
+            }
+        }
+        _seed_master_user_config(
+            tmp_path,
+            master_config[commons_constants.CONFIG_EXCHANGES],
+        )
+        auth_overrides = [
+            {
+                "internal_name": exchange_internal_name,
+                "sandboxed": True,
+            }
+        ]
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=_default_config_read_side_effect(tmp_path, master_config),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                "p-master-override",
+                None,
+                auth_overrides,
+                str(tmp_path),
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        exchange_cfg = written[commons_constants.CONFIG_EXCHANGES][exchange_internal_name]
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_KEY] == ""
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SECRET] == ""
+        assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SANDBOXED] is True
+
+    def test_master_missing_config_preserves_current_behavior(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                "p-no-master",
+                None,
+                None,
+                str(tmp_path),
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        assert written[commons_constants.CONFIG_EXCHANGES] == {}
+
+    def test_unreadable_master_config_raises(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        master_config_path = _seed_master_user_config(tmp_path, {})
+        default_template = _fresh_default_like_cfg_template()
+
+        def read_file_side_effect(path, *_unused, **_kwargs):
+            if os.path.normpath(str(path)) == os.path.normpath(str(master_config_path)):
+                raise OSError("permission denied")
+            return default_template
+
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=read_file_side_effect,
+        ), pytest.raises(commons_errors.DSLInterpreterError, match="Failed to read master user config"):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                "p-bad-master",
+                None,
+                None,
+                str(tmp_path),
+            )
 
 
 class TestAutomationChildPathGuards:
@@ -545,6 +695,7 @@ class TestAutomationChildPathGuards:
                 octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
                 None,
                 None,
+                str(tmp_path),
             )
 
     def test_write_user_root_config_json_rejects_automations_root_without_leaf(self, tmp_path):
@@ -560,6 +711,7 @@ class TestAutomationChildPathGuards:
                 octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
                 None,
                 None,
+                str(tmp_path),
             )
 
     def test_assert_spawn_cmd_isolation_rejects_master_user_folder(self):
@@ -888,21 +1040,21 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
     async def test_applies_exchange_auth_without_profile_data(self, tmp_path):
         _seed_executor_non_trading_profile(tmp_path)
         exchange_internal_name = "default_layout_exchange"
-        exchange_auth_list = [
-            exchange_auth_data_module.ExchangeAuthData(
-                internal_name=exchange_internal_name,
-                api_key="layout-key",
-                api_secret="layout-secret",
-                exchange_type=commons_constants.CONFIG_EXCHANGE_SPOT,
-                sandboxed=True,
-            )
+        exchange_auth_overrides = [
+            {
+                "internal_name": exchange_internal_name,
+                "api_key": "layout-key",
+                "api_secret": "layout-secret",
+                "exchange_type": commons_constants.CONFIG_EXCHANGE_SPOT,
+                "sandboxed": True,
+            }
         ]
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             "default_exchange_user",
             str(tmp_path),
             None,
             None,
-            exchange_auth_list,
+            exchange_auth_overrides,
         )
         user_root = pathlib.Path(result["user_root"])
         root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
@@ -929,15 +1081,15 @@ class TestEnsureUserProfileAndLayoutFunctional:
                 }
             ],
         }
-        exchange_auth_list = [
-            exchange_auth_data_module.ExchangeAuthData(
-                internal_name=exchange_internal_name,
-                api_key=fake_api_key,
-                api_secret=fake_api_secret,
-                api_password=fake_api_password,
-                exchange_type=commons_constants.CONFIG_EXCHANGE_SPOT,
-                sandboxed=True,
-            )
+        exchange_auth_overrides = [
+            {
+                "internal_name": exchange_internal_name,
+                "api_key": fake_api_key,
+                "api_secret": fake_api_secret,
+                "api_password": fake_api_password,
+                "exchange_type": commons_constants.CONFIG_EXCHANGE_SPOT,
+                "sandboxed": True,
+            }
         ]
 
         result = await octobot_process_ops.ensure_user_profile_and_layout(
@@ -945,7 +1097,7 @@ class TestEnsureUserProfileAndLayoutFunctional:
             str(tmp_path),
             profile_dict,
             None,
-            exchange_auth_list,
+            exchange_auth_overrides,
         )
 
         assert result["already_prepared"] is False
@@ -1349,14 +1501,14 @@ class TestEnsureOctobotProcessOperatorExchangeAuthData:
         ensure_layout_mock.assert_awaited_once()
         await_arguments = ensure_layout_mock.await_args.args
         assert len(await_arguments) >= 5
-        parsed_exchange_auth = await_arguments[4]
-        assert parsed_exchange_auth is not None
-        assert len(parsed_exchange_auth) == 1
-        assert isinstance(parsed_exchange_auth[0], exchange_auth_data_module.ExchangeAuthData)
-        assert parsed_exchange_auth[0].internal_name == "dsl_exchange_okx"
-        assert parsed_exchange_auth[0].api_key == "dsl-precompute-key"
-        assert parsed_exchange_auth[0].api_secret == "dsl-precompute-secret"
-        assert parsed_exchange_auth[0].exchange_type == commons_constants.CONFIG_EXCHANGE_SPOT
+        passed_exchange_auth_overrides = await_arguments[4]
+        assert passed_exchange_auth_overrides is not None
+        assert len(passed_exchange_auth_overrides) == 1
+        assert isinstance(passed_exchange_auth_overrides[0], dict)
+        assert passed_exchange_auth_overrides[0]["internal_name"] == "dsl_exchange_okx"
+        assert passed_exchange_auth_overrides[0]["api_key"] == "dsl-precompute-key"
+        assert passed_exchange_auth_overrides[0]["api_secret"] == "dsl-precompute-secret"
+        assert passed_exchange_auth_overrides[0]["exchange_type"] == commons_constants.CONFIG_EXCHANGE_SPOT
 
 
 class TestEnsureChildEnviron:

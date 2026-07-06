@@ -431,19 +431,77 @@ def _assert_spawn_cmd_isolation(cmd: list[str], rel_user: str, rel_log: str) -> 
     _assert_automation_rel_log_folder(rel_log)
 
 
+def _master_user_config_path(working_directory: str) -> str:
+    return os.path.join(
+        working_directory,
+        commons_constants.USER_FOLDER,
+        commons_constants.CONFIG_FILE,
+    )
+
+
+def _load_master_exchange_auth_data(
+    working_directory: str,
+) -> dict[str, exchange_auth_data_module.ExchangeAuthData]:
+    master_config_path = _master_user_config_path(working_directory)
+    if not os.path.isfile(master_config_path):
+        return {}
+    try:
+        master_config = json_util.read_file(master_config_path)
+    except Exception as error:
+        raise commons_errors.DSLInterpreterError(
+            f"Failed to read master user config at {master_config_path!r}: {error}"
+        ) from error
+    exchanges_config = master_config.get(commons_constants.CONFIG_EXCHANGES) or {}
+    return {
+        internal_name: exchange_auth_data_module.ExchangeAuthData(
+            internal_name=internal_name,
+            api_key=exchange_config.get(commons_constants.CONFIG_EXCHANGE_KEY, ""),
+            api_secret=exchange_config.get(commons_constants.CONFIG_EXCHANGE_SECRET, ""),
+            api_password=exchange_config.get(commons_constants.CONFIG_EXCHANGE_PASSWORD, ""),
+            exchange_type=exchange_config.get(
+                commons_constants.CONFIG_EXCHANGE_TYPE,
+                commons_constants.DEFAULT_EXCHANGE_TYPE,
+            ),
+            sandboxed=exchange_config.get(commons_constants.CONFIG_EXCHANGE_SANDBOXED, False),
+        )
+        for internal_name, exchange_config in exchanges_config.items()
+        if isinstance(exchange_config, dict)
+    }
+
+
+def _resolved_exchange_auth_data(
+    working_directory: str,
+    override_dicts: list[dict] | None,
+) -> list[exchange_auth_data_module.ExchangeAuthData] | None:
+    merged_auth = _load_master_exchange_auth_data(working_directory)
+    if override_dicts:
+        for override_dict in override_dicts:
+            if not isinstance(override_dict, dict):
+                continue
+            internal_name = override_dict.get("internal_name")
+            if not internal_name:
+                continue
+            merged_auth[internal_name] = exchange_auth_data_module.ExchangeAuthData.from_dict(
+                override_dict
+            )
+    if not merged_auth:
+        return None
+    return list(merged_auth.values())
+
+
 def _write_user_root_config_json(
     config_path: str,
     profile_id: str,
     profile_data: typing.Optional[profile_data_module.ProfileData] = None,
-    exchange_auth_data: typing.Optional[
-        list[exchange_auth_data_module.ExchangeAuthData]
-    ] = None,
+    exchange_auth_overrides: list[dict] | None = None,
+    working_directory: str = "",
     readonly_profiles_path: str | None = None,
 ) -> None:
     """
     Writes user-root ``config.json``: selected profile, disabled web auto-open for DSL-spawned
-    processes, optional exchange stubs from ``profile_data``, then credentials from
-    ``exchange_auth_data`` (merged into ``exchanges``).
+    processes, optional exchange stubs from ``profile_data``, then credentials from the executor
+    master ``user/config.json`` (forwarded for all exchanges), with optional
+    ``exchange_auth_overrides`` fully replacing matching entries by ``internal_name``.
     """
     _assert_automation_child_config_path(config_path)
     # Load packaged defaults; pin profile and disable browser auto-open for headless DSL children.
@@ -468,10 +526,11 @@ def _write_user_root_config_json(
                 commons_constants.CONFIG_EXCHANGE_TYPE,
                 exchange_details.exchange_type or commons_constants.DEFAULT_EXCHANGE_TYPE,
             )
-    # Overlay credentials onto matching exchange entries (adds exchange if missing).
-    if exchange_auth_data:
+    # Overlay master credentials and optional overrides onto matching exchange entries.
+    resolved_auth = _resolved_exchange_auth_data(working_directory, exchange_auth_overrides)
+    if resolved_auth:
         exchange_config_holder = types.SimpleNamespace(config=default_cfg)
-        for auth_element in exchange_auth_data:
+        for auth_element in resolved_auth:
             auth_element.apply_to_exchange_config(exchange_config_holder)
     exchanges_cfg = default_cfg.get(commons_constants.CONFIG_EXCHANGES) or {}
     for exchange_cfg in exchanges_cfg.values():
@@ -532,9 +591,7 @@ async def ensure_user_profile_and_layout(
     working_directory: str,
     profile_data_dict: dict | None,
     source_reference_tentacles_config: str | None,
-    exchange_auth_data: typing.Optional[
-        list[exchange_auth_data_module.ExchangeAuthData]
-    ] = None,
+    exchange_auth_overrides: list[dict] | None = None,
     *,
     sync_profile_id: str | None = None,
     user_id: str | None = None,
@@ -596,7 +653,8 @@ async def ensure_user_profile_and_layout(
             config_path,
             profile_id,
             profile_data,
-            exchange_auth_data,
+            exchange_auth_overrides,
+            working_directory,
             **_child_master_profile_config_kwargs(working_directory),
         )
     elif sync_profile_id is not None:
@@ -613,7 +671,8 @@ async def ensure_user_profile_and_layout(
             config_path,
             profile_id,
             None,
-            exchange_auth_data,
+            exchange_auth_overrides,
+            working_directory,
             **_child_master_profile_config_kwargs(working_directory),
         )
     else:
@@ -623,7 +682,8 @@ async def ensure_user_profile_and_layout(
             config_path,
             profile_id,
             None,
-            exchange_auth_data,
+            exchange_auth_overrides,
+            working_directory,
             **_child_master_profile_config_kwargs(working_directory),
         )
 
@@ -889,7 +949,9 @@ def create_octobot_process_operators(
                     description=(
                         "Optional list of dicts compatible with "
                         "octobot_commons.profiles.exchange_auth_data.ExchangeAuthData "
-                        "(e.g. internal_name, api_key, api_secret, api_password, exchange_type, sandboxed)."
+                        "(e.g. internal_name, api_key, api_secret, api_password, exchange_type, sandboxed). "
+                        "Exchanges not listed inherit credentials from the executor master user/config.json; "
+                        "each listed entry fully replaces the master entry for that internal_name."
                     ),
                     required=False,
                     type=list[dict],
@@ -1126,23 +1188,13 @@ def create_octobot_process_operators(
             recall_interval: float,
         ) -> None:
             # One-time (or re-) materialization, free ports, env, and `Popen` at project root.
-            raw_exchange_auth = params.get("exchange_auth_data")
-            exchange_auth: typing.Optional[
-                list[exchange_auth_data_module.ExchangeAuthData]
-            ] = None
-            if raw_exchange_auth:
-                exchange_auth = [
-                    exchange_auth_data_module.ExchangeAuthData.from_dict(entry)
-                    if isinstance(entry, dict)
-                    else entry
-                    for entry in raw_exchange_auth
-                ]
+            exchange_auth_overrides = params.get("exchange_auth_data")
             init_info = await ensure_user_profile_and_layout(
                 user_folder,
                 working_directory,
                 params.get("profile_data"),
                 None,
-                exchange_auth,
+                exchange_auth_overrides,
                 sync_profile_id=params.get("sync_profile_id"),
                 user_id=params.get("user_id"),
             )
