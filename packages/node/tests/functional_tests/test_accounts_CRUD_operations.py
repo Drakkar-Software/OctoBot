@@ -437,6 +437,40 @@ class TestExecuteUserActionAccountCrud:
                 assert len(account_provider.list_items(user_id)) == 1
                 _assert_functional_assets(persisted_created_account.assets)
 
+                # Step 2b — Create (duplicate identity): same remote_account_id, new Account.id; workflow fails; nothing new persisted.
+                duplicate_account = build_account(
+                    account_id="functional-account-2",
+                    account_name="Duplicate account",
+                )
+                duplicate_create = build_create_user_action(
+                    user_action_id="ua-account-create-duplicate",
+                    account=duplicate_account,
+                )
+                await _run_user_action_to_completion(user_id, duplicate_create)
+
+                listed_after_duplicate = await scheduler_api.list_user_actions(user_id, active_only=True)
+                _assert_listed_user_actions_match_expected_id_status_pairs(
+                    listed_after_duplicate,
+                    [
+                        (doomed_create.id, protocol_models.UserActionStatus.FAILED),
+                        (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (duplicate_create.id, protocol_models.UserActionStatus.FAILED),
+                    ],
+                )
+                duplicate_latest = next(
+                    row for row in listed_after_duplicate if row.id == duplicate_create.id
+                )
+                assert duplicate_latest.status == protocol_models.UserActionStatus.FAILED
+                assert duplicate_latest.result is not None
+                duplicate_inner = duplicate_latest.result.actual_instance
+                assert isinstance(duplicate_inner, protocol_models.AccountActionResult)
+                assert duplicate_inner.result_type == protocol_models.UserActionResultType.ACCOUNT
+                assert duplicate_inner.error_message == protocol_models.AccountActionResultErrorMessage.DUPLICATE_ITEM
+                assert duplicate_inner.error_details is not None
+                assert "functional-account-1" in duplicate_inner.error_details
+                assert len(account_provider.list_items(user_id)) == 1
+                assert account_provider.get_item(user_id, "functional-account-1").name == "Functional account"
+
                 # Step 3 — Edit: enqueue workflow only first; poll listings mid retry before awaiting terminal output.
                 edited_account = build_account(
                     account_id="functional-account-1",
@@ -468,6 +502,7 @@ class TestExecuteUserActionAccountCrud:
                             [
                                 (doomed_create.id, protocol_models.UserActionStatus.FAILED),
                                 (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                                (duplicate_create.id, protocol_models.UserActionStatus.FAILED),
                                 (edit_action.id, protocol_models.UserActionStatus.PENDING),
                             ],
                         )
@@ -493,6 +528,7 @@ class TestExecuteUserActionAccountCrud:
                     [
                         (doomed_create.id, protocol_models.UserActionStatus.FAILED),
                         (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (duplicate_create.id, protocol_models.UserActionStatus.FAILED),
                         (edit_action.id, protocol_models.UserActionStatus.COMPLETED),
                     ],
                 )
@@ -527,6 +563,7 @@ class TestExecuteUserActionAccountCrud:
                     [
                         (doomed_create.id, protocol_models.UserActionStatus.FAILED),
                         (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (duplicate_create.id, protocol_models.UserActionStatus.FAILED),
                         (edit_action.id, protocol_models.UserActionStatus.COMPLETED),
                         (refresh_action.id, protocol_models.UserActionStatus.COMPLETED),
                     ],
@@ -553,13 +590,14 @@ class TestExecuteUserActionAccountCrud:
                 )
                 await _run_user_action_to_completion(user_id, delete_action)
 
-                # Step 5 (continued) — Full listing is five terminal rows with expected id/status pairs.
+                # Step 5 (continued) — Full listing is six terminal rows with expected id/status pairs.
                 listed_after_delete = await scheduler_api.list_user_actions(user_id, active_only=True)
                 _assert_listed_user_actions_match_expected_id_status_pairs(
                     listed_after_delete,
                     [
                         (doomed_create.id, protocol_models.UserActionStatus.FAILED),
                         (happy_create.id, protocol_models.UserActionStatus.COMPLETED),
+                        (duplicate_create.id, protocol_models.UserActionStatus.FAILED),
                         (edit_action.id, protocol_models.UserActionStatus.COMPLETED),
                         (refresh_action.id, protocol_models.UserActionStatus.COMPLETED),
                         (delete_action.id, protocol_models.UserActionStatus.COMPLETED),

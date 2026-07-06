@@ -24,6 +24,7 @@ import octobot_sync.enums as sync_enums
 
 import octobot_sync.sync.collection_backend.base_local_collection_provider as base_provider
 import octobot_sync.sync.collection_backend.errors as collection_errors
+import octobot_sync.sync.collection_providers.validation.exchange_account_identity as exchange_account_identity
 
 
 class AccountProvider(
@@ -53,6 +54,30 @@ class AccountProvider(
         raise collection_errors.UnsupportedItemsKeyError(
             f"Unsupported items key {items_key!r} for {self.__class__.__name__}"
         )
+
+    def _assert_unique_exchange_account_identity(
+        self,
+        user_id: str,
+        account: protocol_models.Account,
+        *,
+        exclude_account_id: str | None = None,
+    ) -> None:
+        state = self._load_state(user_id)
+        exchange_account_identity.assert_unique_exchange_account_identity(
+            user_id,
+            account,
+            state.accounts,
+            state.exchange_configs,
+            exclude_account_id=exclude_account_id,
+        )
+
+    def create_item(self, user_id: str, item: protocol_models.Account) -> protocol_models.Account:
+        self._assert_unique_exchange_account_identity(user_id, item)
+        return super().create_item(user_id, item)
+
+    def update_item(self, user_id: str, item: protocol_models.Account) -> protocol_models.Account:
+        self._assert_unique_exchange_account_identity(user_id, item, exclude_account_id=item.id)
+        return super().update_item(user_id, item)
 
     def list_accounts(self, address: str) -> list[protocol_models.Account]:
         return self.list_items(address)
