@@ -22,17 +22,37 @@ _NOT_SUPPORTED_STOP_LOSS_ORDER_MESSAGE = "STOP_LOSS orders are not supported on 
 _NOT_SUPPORTED_BUY_MARKET_ORDER_MESSAGE = "BUY_MARKET orders are not supported on binance"
 _BLOCKCHAIN_WALLET_ERROR_MESSAGE = "Blockchain wallet connection failed"
 _GENERIC_EXCEPTION_MESSAGE = "Unexpected DSL execution failure"
+_FAILED_REQUEST_ERROR_MESSAGE = "Exchange API request failed"
 
 
-class TestDslActionExecutionReraisesPortfolioNegativeValueError:
+class TestDslActionExecutionReraisesRetriableErrors:
     @pytest.mark.asyncio
-    async def test_reraises_portfolio_negative_value_error(self):
+    @pytest.mark.parametrize(
+        "raised_exception,expected_exception_type",
+        [
+            pytest.param(
+                octobot_trading.errors.PortfolioNegativeValueError(
+                    _PORTFOLIO_NEGATIVE_VALUE_ERROR_MESSAGE
+                ),
+                octobot_trading.errors.PortfolioNegativeValueError,
+                id="portfolio_negative_value_error",
+            ),
+            pytest.param(
+                octobot_trading.errors.FailedRequest(_FAILED_REQUEST_ERROR_MESSAGE),
+                octobot_trading.errors.FailedRequest,
+                id="failed_request",
+            ),
+        ],
+    )
+    async def test_reraises_retriable_error(
+        self,
+        raised_exception,
+        expected_exception_type,
+    ):
         class StubExecutor:
             @octobot_flow.logic.dsl.dsl_action_execution_context.dsl_action_execution
             async def execute_action(self, action, **_kwargs):
-                raise octobot_trading.errors.PortfolioNegativeValueError(
-                    _PORTFOLIO_NEGATIVE_VALUE_ERROR_MESSAGE
-                )
+                raise raised_exception
 
         action = octobot_flow.entities.DSLScriptActionDetails(
             id="copy_1",
@@ -40,10 +60,10 @@ class TestDslActionExecutionReraisesPortfolioNegativeValueError:
         )
         stub_executor = StubExecutor()
 
-        with pytest.raises(octobot_trading.errors.PortfolioNegativeValueError) as raised_error:
+        with pytest.raises(expected_exception_type) as raised_error:
             await stub_executor.execute_action(action)
 
-        assert str(raised_error.value) == _PORTFOLIO_NEGATIVE_VALUE_ERROR_MESSAGE
+        assert str(raised_error.value) == str(raised_exception)
         assert action.error_status is None
         assert action.error_message is None
 

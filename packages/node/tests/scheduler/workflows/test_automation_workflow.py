@@ -637,6 +637,40 @@ class TestExecuteIteration:
 
     @pytest.mark.asyncio
     @required_imports
+    async def test_execute_iteration_logs_and_reraises_on_retriable_failed_request(
+        self, import_automation_workflow, task
+    ):
+        task.content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
+            "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
+            "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        run_error = octobot_trading_errors.RetriableFailedRequest("transient exchange failure")
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_side_effect=run_error,
+        )
+        mock_logger = mock.Mock()
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            automation_workflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            with pytest.raises(octobot_trading_errors.RetriableFailedRequest, match="transient exchange failure"):
+                await automation_workflow.execute_iteration(inputs, None)
+
+        mock_logger.exception.assert_called_once_with(
+            run_error,
+            True,
+            f"Retriable error while running automation job: {run_error}",
+        )
+
+    @pytest.mark.asyncio
+    @required_imports
     @pytest.mark.parametrize(
         "run_side_effect,expected_error_status,expected_retry_delay_seconds",
         [
@@ -653,6 +687,12 @@ class TestExecuteIteration:
                 octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
                 octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
                 id="portfolio_negative_value_error",
+            ),
+            pytest.param(
+                octobot_trading_errors.FailedRequest("Exchange API request failed"),
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="failed_request",
             ),
         ],
     )
@@ -1223,6 +1263,12 @@ class TestGetPostponedIterationErrorStatusAndDelay:
                 octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
                 octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
                 id="portfolio_negative_value_error",
+            ),
+            pytest.param(
+                octobot_trading_errors.FailedRequest("Exchange API request failed"),
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="failed_request",
             ),
         ],
     )
