@@ -65,7 +65,7 @@ export async function getWalletBoundIdentity(
     }
     if (parsed.userId) {
       clearSpaceAccessStore()
-      await kvRemove(`octospaces.spaceaccess.${parsed.userId}`).catch(() => undefined)
+      await kvRemove(`dk.spaceaccess.${parsed.userId}`).catch(() => undefined)
     }
   }
 

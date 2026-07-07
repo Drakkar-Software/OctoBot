@@ -1158,8 +1158,8 @@ function Settings() {
       <div className="grid gap-4 md:grid-cols-2">
         <NodeTypeCard />
         <SupportCard />
-        <ClientEncryptionKeysCard />
         <WalletManagementCard />
+        <ClientEncryptionKeysCard />
       </div>
       <div className="flex justify-center pt-2">
         <Button variant="outline" asChild>

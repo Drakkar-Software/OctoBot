@@ -130,7 +130,7 @@ describe("getWalletBoundIdentity", () => {
 
     expect(mockedClearSpaceAccessStore).toHaveBeenCalledOnce()
     expect(mockedKvRemove).toHaveBeenCalledWith(
-      "octospaces.spaceaccess.old-user-id",
+      "dk.spaceaccess.old-user-id",
     )
   })
 

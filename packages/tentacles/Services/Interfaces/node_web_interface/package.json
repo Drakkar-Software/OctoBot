@@ -13,7 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@drakkar.software/octochat-sdk": "^0.6.1",
+    "@drakkar.software/octochat-sdk": "^0.8.1",
     "@drakkar.software/starfish-identities": "3.0.0-alpha.27",
     "@hookform/resolvers": "^5.2.2",
     "@noble/curves": "^2.2.0",
