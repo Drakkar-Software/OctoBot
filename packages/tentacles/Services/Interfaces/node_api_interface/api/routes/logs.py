@@ -36,10 +36,13 @@ router = APIRouter(tags=["logs"])
 _SAFE_TASK_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 # Top-level log files in BASE_LOGS_FOLDER (no subdirectories), including RotatingFileHandler backups.
 _SAFE_MAIN_LOG_NAME_RE = re.compile(r"^[a-zA-Z0-9_.-]+\.log(\.\d+)?$")
+# Active log file (no ``.log.N`` rotation suffix).
+_ACTIVE_LOG_NAME_RE = re.compile(r"^[a-zA-Z0-9_.-]+\.log$")
 
 
 class ExportLogsRequest(BaseModel):
     task_ids: list[str] | None = None
+    latest_only: bool = False
 
 
 def _build_zip_from_log_files(log_entries: list[tuple[str, str]]) -> bytes | None:
@@ -107,17 +110,54 @@ def _collect_task_log_entries(task_id: str) -> list[tuple[str, str]]:
     return entries
 
 
-def build_logs_zip(task_ids: list[str]) -> bytes | None:
+def _collect_latest_task_log_entries(task_id: str) -> list[tuple[str, str]]:
+    """Active ``.log`` files for one automation (flat file and/or folder tree)."""
+    logs_root = octobot_node.constants.AUTOMATION_LOGS_FOLDER
+    entries: list[tuple[str, str]] = []
+
+    log_file_path = os.path.join(logs_root, f"{task_id}.log")
+    if os.path.isfile(log_file_path):
+        entries.append((log_file_path, f"{task_id}.log"))
+
+    log_dir_path = os.path.join(logs_root, task_id)
+    if os.path.isdir(log_dir_path):
+        log_dir_real = os.path.realpath(log_dir_path)
+        for dirpath, _dirnames, filenames in os.walk(log_dir_path):
+            for filename in filenames:
+                if not _ACTIVE_LOG_NAME_RE.match(filename):
+                    continue
+                if not _SAFE_MAIN_LOG_NAME_RE.match(filename):
+                    continue
+                file_path = os.path.join(dirpath, filename)
+                if not os.path.isfile(file_path):
+                    continue
+                file_real = os.path.realpath(file_path)
+                if not _is_path_under_root(file_real, log_dir_real):
+                    continue
+                rel_path = os.path.relpath(file_real, logs_root)
+                arcname = rel_path.replace(os.sep, "/")
+                entries.append((file_real, arcname))
+
+    return entries
+
+
+def build_logs_zip(task_ids: list[str], *, latest_only: bool = False) -> bytes | None:
     """Zip per-automation logs for the given task ids.
 
-    Includes ``AUTOMATION_LOGS_FOLDER/<id>.log`` when present and, for process
-    automations, all files under ``AUTOMATION_LOGS_FOLDER/<id>/``.
+    When ``latest_only`` is False, includes ``AUTOMATION_LOGS_FOLDER/<id>.log`` when
+    present and, for process automations, all files under ``AUTOMATION_LOGS_FOLDER/<id>/``.
+
+    When ``latest_only`` is True, includes only active ``.log`` files (no ``.log.N``
+    backups) from the flat path and/or automation folder for each id.
 
     Missing files or folders are skipped. Returns None when nothing was found.
     """
     log_entries: list[tuple[str, str]] = []
+    collector = (
+        _collect_latest_task_log_entries if latest_only else _collect_task_log_entries
+    )
     for task_id in task_ids:
-        log_entries.extend(_collect_task_log_entries(task_id))
+        log_entries.extend(collector(task_id))
     return _build_zip_from_log_files(log_entries)
 
 
@@ -136,7 +176,12 @@ def export_logs(body: ExportLogsRequest, current_user: CurrentUser) -> fastapi.R
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid task id"
             )
-    archive = build_logs_zip(body.task_ids)
+    if body.latest_only and not body.task_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="task_ids required when latest_only is true",
+        )
+    archive = build_logs_zip(body.task_ids, latest_only=body.latest_only)
     if archive is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

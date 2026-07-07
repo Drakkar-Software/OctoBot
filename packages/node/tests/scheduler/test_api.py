@@ -24,6 +24,8 @@ from octobot_node.scheduler.api import (
     get_all_tasks,
     get_task_result,
     get_tasks_export_results,
+    await_workflow_result_from_id,
+    retrieve_workflow_handle,
 )
 
 from tests.scheduler import temp_dbos_scheduler
@@ -673,3 +675,37 @@ class TestGetTaskResult:
             result = await get_task_result(task_id)
 
             assert result["status"] == "pending or running"
+
+
+class TestAwaitWorkflowResultFromId:
+    @pytest.mark.asyncio
+    async def test_await_workflow_result_from_id(self, temp_dbos_scheduler) -> None:
+        workflow_result = {"updated_user_action": {"id": "ua-1", "status": "completed"}}
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_result = mock.AsyncMock(return_value=workflow_result)
+
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "retrieve_workflow_async",
+            mock.AsyncMock(return_value=mock_handle),
+        ) as mock_retrieve:
+            result = await await_workflow_result_from_id("workflow-1")
+
+        assert result == workflow_result
+        mock_retrieve.assert_awaited_once_with("workflow-1")
+        mock_handle.get_result.assert_awaited_once()
+
+
+class TestRetrieveWorkflowHandle:
+    @pytest.mark.asyncio
+    async def test_retrieve_workflow_handle(self, temp_dbos_scheduler) -> None:
+        mock_handle = mock.AsyncMock()
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "retrieve_workflow_async",
+            mock.AsyncMock(return_value=mock_handle),
+        ) as mock_retrieve:
+            handle = await retrieve_workflow_handle("workflow-2")
+
+        assert handle is mock_handle
+        mock_retrieve.assert_awaited_once_with("workflow-2")

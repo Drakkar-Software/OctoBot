@@ -244,12 +244,16 @@ async def wait_for_stop_success_output(
     poll_interval_seconds: float = DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS,
 ) -> str:
     stop_deadline = time.monotonic() + deadline_seconds
+    observed_statuses: set[str] = set()
+    success_without_stop_automation = False
+    success_with_output_error = False
     while time.monotonic() < stop_deadline:
         workflow_rows = await scheduler.INSTANCE.list_workflows_async()
         for workflow_row in workflow_rows:
-            if workflow_row.status != dbos.WorkflowStatusString.SUCCESS.value:
-                continue
             if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+                continue
+            observed_statuses.add(workflow_row.status)
+            if workflow_row.status != dbos.WorkflowStatusString.SUCCESS.value:
                 continue
             workflow_handle = await scheduler.INSTANCE.retrieve_workflow_async(workflow_row.workflow_id)
             result_text = await workflow_handle.get_result()
@@ -257,13 +261,25 @@ async def wait_for_stop_success_output(
                 continue
             parsed_output = parse_automation_workflow_output(result_text)
             if parsed_output.error:
+                success_with_output_error = True
                 continue
             job_dict = job_description_dict_from_output(parsed_output)
             automation_payload = job_dict["state"]["automation"]
             if automation_payload.get("post_actions", {}).get("stop_automation"):
                 return result_text
+            success_without_stop_automation = True
         await asyncio.sleep(poll_interval_seconds)
-    pytest.fail(f"Timed out waiting for stop completion for {automation_id}")
+    diagnostic_details = [
+        f"observed workflow statuses: {sorted(observed_statuses) or ['none']}",
+    ]
+    if success_without_stop_automation:
+        diagnostic_details.append("found SUCCESS output without post_actions.stop_automation")
+    if success_with_output_error:
+        diagnostic_details.append("found SUCCESS output with workflow error")
+    pytest.fail(
+        f"Timed out waiting for stop completion for {automation_id} "
+        f"within {deadline_seconds}s; {'; '.join(diagnostic_details)}"
+    )
 
 
 async def enqueue_forced_trigger_and_await(

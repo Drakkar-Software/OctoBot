@@ -694,6 +694,20 @@ class TestExecuteIteration:
                 octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
                 id="failed_request",
             ),
+            pytest.param(
+                octobot_trading_errors.MissingFunds("Insufficient funds for order"),
+                octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="missing_funds",
+            ),
+            pytest.param(
+                octobot_trading_errors.MissingMinimalExchangeTradeVolume(
+                    "Order volume below exchange minimum"
+                ),
+                octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="missing_minimal_exchange_trade_volume",
+            ),
         ],
     )
     async def test_execute_iteration_postponed_error_sets_postponed_iteration(
@@ -704,9 +718,7 @@ class TestExecuteIteration:
         expected_error_status,
         expected_retry_delay_seconds,
     ):
-        task_content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
-            "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
-            "ORDER_SIDE": "BUY", "SIMULATED_PORTFOLIO": {"BTC": 1}}})
+        task_content = json.dumps({"state": _automation_state_dict([])})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
         mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
@@ -738,7 +750,11 @@ class TestExecuteIteration:
             fixed_now + expected_retry_delay_seconds
         )
         assert result["has_next_actions"] is True
-        assert result["next_iteration_description"] == task_content
+        next_iteration_description = json.loads(result["next_iteration_description"])
+        degraded_state = next_iteration_description["state"]["automation"]["execution"]["degraded_state"]
+        assert degraded_state["error"] == expected_error_status
+        assert degraded_state["reason"] == str(run_side_effect)
+        assert degraded_state["since"] == fixed_now
 
     @pytest.mark.asyncio
     @required_imports
@@ -1269,6 +1285,20 @@ class TestGetPostponedIterationErrorStatusAndDelay:
                 octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
                 octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
                 id="failed_request",
+            ),
+            pytest.param(
+                octobot_trading_errors.MissingFunds("Insufficient funds for order"),
+                octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="missing_funds",
+            ),
+            pytest.param(
+                octobot_trading_errors.MissingMinimalExchangeTradeVolume(
+                    "Order volume below exchange minimum"
+                ),
+                octobot_flow.enums.ActionErrorStatus.INVALID_ORDER,
+                octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS,
+                id="missing_minimal_exchange_trade_volume",
             ),
         ],
     )

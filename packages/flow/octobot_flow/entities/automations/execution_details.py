@@ -37,6 +37,7 @@ class TriggerDetails(octobot_commons.dataclasses.MinimizableDataclass):
 @dataclasses.dataclass
 class DegradedStateDetails(octobot_commons.dataclasses.MinimizableDataclass):
     since: float = 0
+    error: typing.Optional[str] = None
     reason: typing.Optional[str] = None
 
 
@@ -72,3 +73,4 @@ class ExecutionDetails(octobot_commons.dataclasses.MinimizableDataclass):
             trigger_reason=octobot_flow.enums.LastTriggerReason.SCHEDULED.value,
             additional_actions=additional_actions_import.AdditionalActions.default_iteration(),
         )
+        self.degraded_state = DegradedStateDetails()

@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router"
 import { Star, Upload } from "lucide-react"
+import { useState } from "react"
 
+import { CreateGenericProcessBotDialog } from "@/components/Common/CreateGenericProcessBotDialog"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -17,6 +19,7 @@ import {
 import { getAssetPath } from "@/lib/utils"
 
 export function NewBotCards() {
+  const [genericProcessDialogOpen, setGenericProcessDialogOpen] = useState(false)
   const launchImage = getAssetPath("images/octobot_launching_512.png")
   const designImage = getAssetPath("images/octobot_design_512.png")
   const labImage = getAssetPath("images/octobot_lab_512.png")
@@ -94,11 +97,12 @@ export function NewBotCards() {
             />
           </div>
           <CardTitle className="flex items-center gap-2">
-            Custom configuration
+            Manual configuration
           </CardTitle>
           <CardDescription>
-            Full control with advanced options. You'll configure everything
-            after start, including each parameter.
+            Start an OctoBot you configure manually with its dedicated
+            interface. Best for backtesting and in-depth analysis — aimed at
+            strategy creators who want full control.
           </CardDescription>
         </CardHeader>
         <CardContent className="mt-auto flex items-center justify-between pt-2">
@@ -112,11 +116,18 @@ export function NewBotCards() {
             </TooltipTrigger>
             <TooltipContent>Advanced setup</TooltipContent>
           </Tooltip>
-          <Button variant="outline">
-            <Link to="/octobots/new/defaults">Start with defaults</Link>
+          <Button
+            variant="outline"
+            onClick={() => setGenericProcessDialogOpen(true)}
+          >
+            Start manual OctoBot
           </Button>
         </CardContent>
       </Card>
+      <CreateGenericProcessBotDialog
+        open={genericProcessDialogOpen}
+        onOpenChange={setGenericProcessDialogOpen}
+      />
       <div className="col-span-full flex flex-col items-center gap-1 text-sm text-muted-foreground">
         <span>Already have a saved configuration?</span>
         <Link

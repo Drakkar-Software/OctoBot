@@ -26,13 +26,13 @@ import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.scheduler
 import octobot_protocol.models as protocol_models
-import octobot_sync.server as _sync_server
-import octobot.community.authentication as _community_auth
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]
+    from tentacles.Services.Interfaces.node_api_interface.api.user_id import evm_to_user_id  # type: ignore[no-redef]
 except ImportError:
     from api.deps import CurrentUser  # type: ignore[no-redef]
+    from api.user_id import evm_to_user_id  # type: ignore[no-redef]
 
 router = APIRouter(tags=["debug"])
 
@@ -94,8 +94,7 @@ def _resolve_user_id(
     internal protocol and scheduler calls use the Starfish user_id.
     """
     evm_address = _resolve_wallet_address(current_user, wallet_address)
-    wallet = _community_auth.CommunityAuthentication.instance().get_wallet(evm_address)
-    return _sync_server.derive_user_id(wallet.private_key)
+    return evm_to_user_id(evm_address)
 
 
 def _ensure_debug_routes_enabled() -> None:

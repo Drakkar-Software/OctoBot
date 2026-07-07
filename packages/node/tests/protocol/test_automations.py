@@ -426,6 +426,66 @@ class TestFillProtocolAutomationStateAutomationStatus:
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.status == protocol_models.WorkflowStatus.RUNNING
 
+    def test_running_with_degraded_state_exposes_error_fields(self):
+        trigger = flow_entities.TriggerDetails(scheduled_to=1, triggered_at=2)
+        execution = flow_entities.ExecutionDetails(
+            current_execution=trigger,
+            degraded_state=flow_entities.DegradedStateDetails(
+                since=100.0,
+                error=flow_enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value,
+                reason="Insufficient funds",
+            ),
+        )
+        pending_action = flow_entities.DSLScriptActionDetails(id="a1", dsl_script="True")
+        flow_state = flow_entities.AutomationState(
+            automation=flow_entities.AutomationDetails(
+                metadata=flow_entities.AutomationMetadata(automation_id="automation_1"),
+                actions_dag=flow_entities.ActionsDAG(actions=[pending_action]),
+                execution=execution,
+            ),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.status == protocol_models.WorkflowStatus.RUNNING
+        assert filled.error == flow_enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value
+        assert filled.error_message == "Insufficient funds"
+
+    def test_active_workflow_preserves_degraded_error_fields(self):
+        state_dict = {
+            "automation": {
+                "metadata": {"automation_id": "automation_1"},
+                "actions_dag": {
+                    "actions": [
+                        {
+                            "id": "a1",
+                            "dsl_script": "True",
+                        }
+                    ]
+                },
+                "execution": {
+                    "previous_execution": {"triggered_at": 0},
+                    "current_execution": {"triggered_at": 2},
+                    "degraded_state": {
+                        "since": 100.0,
+                        "error": flow_enums.ActionErrorStatus.INVALID_ORDER.value,
+                        "reason": "Order volume below exchange minimum",
+                    },
+                },
+            },
+        }
+        task = node_models.Task(
+            id="task-1",
+            name="automation",
+            content=json.dumps({"state": state_dict}),
+            type="execute_actions",
+        )
+        state = automations_protocol._to_protocol_automation_state(
+            task,
+            workflow_status=dbos.WorkflowStatusString.PENDING.value,
+        )
+        assert state.status == protocol_models.WorkflowStatus.RUNNING
+        assert state.error == flow_enums.ActionErrorStatus.INVALID_ORDER.value
+        assert state.error_message == "Order volume below exchange minimum"
+
     def test_running_when_previous_execution_but_current_not_started(self):
         previous_trigger = flow_entities.TriggerDetails(triggered_at=1_600_000_000.0)
         execution = flow_entities.ExecutionDetails(

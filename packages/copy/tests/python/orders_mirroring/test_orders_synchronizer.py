@@ -30,6 +30,7 @@ import octobot_trading.personal_data.orders.order_util as order_util
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.entities as copy_entities
+import octobot_copy.orders_mirroring.mirrored_quantity_compute_result as mirrored_quantity_compute_result
 import octobot_copy.orders_mirroring.orders_synchronizer as orders_synchronizer_module
 
 
@@ -1525,3 +1526,342 @@ class TestOrdersSynchronizerWaitForMirroredOrdersOpen:
 
         assert created == [created_order]
         exchange_if.orders.wait_for_orders_to_open.assert_not_awaited()
+
+
+def _btc_usdc_buy_limit_reference_order(
+    *,
+    order_id: str,
+    amount: decimal.Decimal = decimal.Decimal("0.0001"),
+    price: decimal.Decimal = decimal.Decimal("59326.7"),
+) -> protocol_models.Order:
+    return protocol_models.Order(
+        id=order_id,
+        symbol="BTC/USDC",
+        price=float(price),
+        quantity=float(amount),
+        filled=0.0,
+        exchange_id="ref-ex",
+        side=protocol_models.Side.BUY,
+        type=protocol_models.OrderType.LIMIT,
+        trigger_above=False,
+        reduce_only=False,
+        is_active=True,
+        status=protocol_models.OrderStatus.OPEN,
+        created_at=timestamp_util.utc_datetime_from_timestamp(time.time()),
+    )
+
+
+def _open_limit_order_stub(
+    *,
+    order_id: str,
+    exchange_order_id: str,
+    symbol: str = "BTC/USDC",
+    side=trading_enums.TradeOrderSide.BUY,
+    quantity: decimal.Decimal,
+    price: decimal.Decimal,
+    tag: str | None = None,
+    order_type=trading_enums.TraderOrderType.BUY_LIMIT,
+):
+    order = mock.Mock()
+    order.order_id = order_id
+    order.exchange_order_id = exchange_order_id
+    order.symbol = symbol
+    order.side = side
+    order.origin_quantity = quantity
+    order.origin_price = price
+    order.order_type = order_type
+    order.tag = tag
+    return order
+
+
+def _synchronizer_with_open_orders(
+    *,
+    reference_orders: list[protocol_models.Order],
+    open_orders: list,
+    currency_totals: dict[str, decimal.Decimal] | None = None,
+) -> tuple[orders_synchronizer_module.OrdersSynchronizer, mock.MagicMock]:
+    currency_totals = currency_totals or {
+        "BTC": decimal.Decimal("0.01"),
+        "USDC": decimal.Decimal("10000"),
+    }
+    reference = _copied_account(
+        copied_assets=[
+            protocol_models.CopiedAsset(name="BTC", total=1.0, available=1.0, ratio=0.5),
+            protocol_models.CopiedAsset(name="USDC", total=10000.0, available=10000.0, ratio=0.5),
+        ],
+        orders=reference_orders,
+    )
+    exchange_if = _exchange_interface_stub(
+        currency_totals=currency_totals,
+        market_price=decimal.Decimal("59326.7"),
+    )
+    exchange_if.orders.get_open_orders = mock.Mock(return_value=open_orders)
+    orders_manager = mock.Mock()
+    exchange_if.orders._exchange_manager = mock.Mock()
+    exchange_if.orders._exchange_manager.exchange_personal_data.orders_manager = orders_manager
+    synchronizer = orders_synchronizer_module.OrdersSynchronizer(
+        reference,
+        exchange_if,
+        copy_entities.AccountCopySettings(),
+    )
+    return synchronizer, exchange_if
+
+
+class TestOpenOrdersMatchingSymbolSidePrice:
+    def test_matches_limit_order_within_price_tolerance(self):
+        reference_price = decimal.Decimal("59326.7")
+        matching_order = _open_limit_order_stub(
+            order_id="wrong-bot-id",
+            exchange_order_id="OGE3T6-NDOIV-LR6MZI",
+            quantity=decimal.Decimal("0.0001"),
+            price=reference_price,
+        )
+        synchronizer, _exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[],
+            open_orders=[matching_order],
+        )
+        candidates = synchronizer._open_orders_matching_symbol_side_price(
+            "BTC/USDC",
+            trading_enums.TradeOrderSide.BUY,
+            reference_price,
+            trading_enums.TraderOrderType.BUY_LIMIT,
+        )
+        assert candidates == [matching_order]
+
+    def test_excludes_wrong_price(self):
+        reference_price = decimal.Decimal("59326.7")
+        wrong_price_order = _open_limit_order_stub(
+            order_id="wrong-bot-id",
+            exchange_order_id="OTHER-TXID",
+            quantity=decimal.Decimal("0.0001"),
+            price=decimal.Decimal("58326.7"),
+        )
+        synchronizer, _exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[],
+            open_orders=[wrong_price_order],
+        )
+        candidates = synchronizer._open_orders_matching_symbol_side_price(
+            "BTC/USDC",
+            trading_enums.TradeOrderSide.BUY,
+            reference_price,
+            trading_enums.TraderOrderType.BUY_LIMIT,
+        )
+        assert candidates == []
+
+    def test_excludes_opposite_side(self):
+        reference_price = decimal.Decimal("59326.7")
+        sell_order = _open_limit_order_stub(
+            order_id="sell-id",
+            exchange_order_id="SELL-TXID",
+            side=trading_enums.TradeOrderSide.SELL,
+            quantity=decimal.Decimal("0.0001"),
+            price=reference_price,
+            order_type=trading_enums.TraderOrderType.SELL_LIMIT,
+        )
+        synchronizer, _exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[],
+            open_orders=[sell_order],
+        )
+        candidates = synchronizer._open_orders_matching_symbol_side_price(
+            "BTC/USDC",
+            trading_enums.TradeOrderSide.BUY,
+            reference_price,
+            trading_enums.TraderOrderType.BUY_LIMIT,
+        )
+        assert candidates == []
+
+    def test_excludes_market_orders(self):
+        reference_price = decimal.Decimal("59326.7")
+        market_order = _open_limit_order_stub(
+            order_id="market-id",
+            exchange_order_id="MARKET-TXID",
+            quantity=decimal.Decimal("0.0001"),
+            price=reference_price,
+            order_type=trading_enums.TraderOrderType.BUY_MARKET,
+        )
+        synchronizer, _exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[],
+            open_orders=[market_order],
+        )
+        candidates = synchronizer._open_orders_matching_symbol_side_price(
+            "BTC/USDC",
+            trading_enums.TradeOrderSide.BUY,
+            reference_price,
+            trading_enums.TraderOrderType.BUY_LIMIT,
+        )
+        assert candidates == []
+
+
+class TestMapUnmappedOpenOrderForReference:
+    def test_returns_none_when_no_candidates(self):
+        reference_order = _btc_usdc_buy_limit_reference_order(order_id="28c1394b-dcb7-4f90-8878-4a61827471ca")
+        synchronizer, _exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[reference_order],
+            open_orders=[],
+        )
+        mapped = synchronizer._map_unmapped_open_order_for_reference(
+            reference_order=reference_order,
+            reference_order_id=str(reference_order.id),
+            side=trading_enums.TradeOrderSide.BUY,
+            trader_order_type=trading_enums.TraderOrderType.BUY_LIMIT,
+            order_target_price=decimal.Decimal("59326.7"),
+            active_reference_ids={str(reference_order.id)},
+            scaled_reference_quantity=decimal.Decimal("0.0001"),
+        )
+        assert mapped is None
+
+    def test_relinks_single_unmapped_candidate(self):
+        reference_order = _btc_usdc_buy_limit_reference_order(order_id="28c1394b-dcb7-4f90-8878-4a61827471ca")
+        open_order = _open_limit_order_stub(
+            order_id="stale-bot-id",
+            exchange_order_id="OGE3T6-NDOIV-LR6MZI",
+            quantity=decimal.Decimal("0.0001"),
+            price=decimal.Decimal("59326.7"),
+            tag=copy_constants.MIRRORED_ORDER_TAG,
+        )
+        synchronizer, exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[reference_order],
+            open_orders=[open_order],
+        )
+        mapped = synchronizer._map_unmapped_open_order_for_reference(
+            reference_order=reference_order,
+            reference_order_id=str(reference_order.id),
+            side=trading_enums.TradeOrderSide.BUY,
+            trader_order_type=trading_enums.TraderOrderType.BUY_LIMIT,
+            order_target_price=decimal.Decimal("59326.7"),
+            active_reference_ids={str(reference_order.id)},
+            scaled_reference_quantity=decimal.Decimal("0.0001"),
+        )
+        assert mapped is open_order
+        assert open_order.order_id == str(reference_order.id)
+        exchange_if.orders._exchange_manager.exchange_personal_data.orders_manager.replace_order.assert_called_once_with(
+            "stale-bot-id",
+            open_order,
+        )
+
+    def test_ambiguous_candidates_relinks_one_without_cancel(self, caplog):
+        caplog.set_level(logging.WARNING)
+        reference_order = _btc_usdc_buy_limit_reference_order(order_id="28c1394b-dcb7-4f90-8878-4a61827471ca")
+        first_candidate = _open_limit_order_stub(
+            order_id="first-bot-id",
+            exchange_order_id="O7GDOQ-5ALJT-5QPQE4",
+            quantity=decimal.Decimal("0.00009"),
+            price=decimal.Decimal("59326.7"),
+        )
+        second_candidate = _open_limit_order_stub(
+            order_id="second-bot-id",
+            exchange_order_id="OGE3T6-NDOIV-LR6MZI",
+            quantity=decimal.Decimal("0.0001"),
+            price=decimal.Decimal("59326.7"),
+            tag=copy_constants.MIRRORED_ORDER_TAG,
+        )
+        synchronizer, exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[reference_order],
+            open_orders=[first_candidate, second_candidate],
+        )
+        exchange_if.orders.cancel_order = mock.AsyncMock()
+        mapped = synchronizer._map_unmapped_open_order_for_reference(
+            reference_order=reference_order,
+            reference_order_id=str(reference_order.id),
+            side=trading_enums.TradeOrderSide.BUY,
+            trader_order_type=trading_enums.TraderOrderType.BUY_LIMIT,
+            order_target_price=decimal.Decimal("59326.7"),
+            active_reference_ids={str(reference_order.id)},
+            scaled_reference_quantity=decimal.Decimal("0.0001"),
+        )
+        assert mapped is second_candidate
+        assert second_candidate.order_id == str(reference_order.id)
+        exchange_if.orders.cancel_order.assert_not_called()
+        assert any("Ambiguous unmapped open order match" in record.message for record in caplog.records)
+
+    def test_skips_order_claimed_by_another_reference(self):
+        reference_order = _btc_usdc_buy_limit_reference_order(order_id="28c1394b-dcb7-4f90-8878-4a61827471ca")
+        other_reference_id = "other-reference-id"
+        claimed_order = _open_limit_order_stub(
+            order_id=other_reference_id,
+            exchange_order_id="CLAIMED-TXID",
+            quantity=decimal.Decimal("0.0001"),
+            price=decimal.Decimal("59326.7"),
+            tag=copy_constants.MIRRORED_ORDER_TAG,
+        )
+        synchronizer, _exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[reference_order],
+            open_orders=[claimed_order],
+        )
+        mapped = synchronizer._map_unmapped_open_order_for_reference(
+            reference_order=reference_order,
+            reference_order_id=str(reference_order.id),
+            side=trading_enums.TradeOrderSide.BUY,
+            trader_order_type=trading_enums.TraderOrderType.BUY_LIMIT,
+            order_target_price=decimal.Decimal("59326.7"),
+            active_reference_ids={str(reference_order.id), other_reference_id},
+            scaled_reference_quantity=decimal.Decimal("0.0001"),
+        )
+        assert mapped is None
+
+
+class TestRelinkOpenOrderToReference:
+    def test_replace_order_tag_and_id_updated(self):
+        reference_order_id = "28c1394b-dcb7-4f90-8878-4a61827471ca"
+        open_order = _open_limit_order_stub(
+            order_id="previous-bot-id",
+            exchange_order_id="OGE3T6-NDOIV-LR6MZI",
+            quantity=decimal.Decimal("0.0001"),
+            price=decimal.Decimal("59326.7"),
+            tag=None,
+        )
+        synchronizer, exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[],
+            open_orders=[open_order],
+        )
+        relinked = synchronizer._relink_open_order_to_reference(open_order, reference_order_id)
+        assert relinked.order_id == reference_order_id
+        assert relinked.tag == copy_constants.MIRRORED_ORDER_TAG
+        exchange_if.orders._exchange_manager.exchange_personal_data.orders_manager.replace_order.assert_called_once_with(
+            "previous-bot-id",
+            open_order,
+        )
+
+
+class TestUpsertMirroredReferenceOrderMapsBeforeCreate:
+    def test_unmapped_same_price_order_is_already_synchronized_without_create(self):
+        reference_order_id = "28c1394b-dcb7-4f90-8878-4a61827471ca"
+        reference_order = _btc_usdc_buy_limit_reference_order(order_id=reference_order_id)
+        open_order = _open_limit_order_stub(
+            order_id="stale-bot-id",
+            exchange_order_id="OGE3T6-NDOIV-LR6MZI",
+            quantity=decimal.Decimal("0.0001"),
+            price=decimal.Decimal("59326.7"),
+            tag=None,
+        )
+        synchronizer, exchange_if = _synchronizer_with_open_orders(
+            reference_orders=[reference_order],
+            open_orders=[open_order],
+        )
+        exchange_if.orders.create_orders = mock.AsyncMock()
+        exchange_if.orders.cancel_order = mock.AsyncMock()
+        compute_result = mirrored_quantity_compute_result.MirroredQuantityComputeResult(
+            ideal_quantity=decimal.Decimal("0.0001"),
+            resolved_trader_order_type=trading_enums.TraderOrderType.BUY_LIMIT,
+            limit_price=decimal.Decimal("59326.7"),
+            current_price=decimal.Decimal("59326.7"),
+        )
+        with mock.patch.object(
+            synchronizer,
+            "_is_late_reference_fill_for_order",
+            return_value=False,
+        ), mock.patch.object(
+            synchronizer,
+            "_compute_mirrored_quantity_type_and_price",
+            mock.AsyncMock(return_value=compute_result),
+        ):
+            created, replaced_cancelled, already_synchronized, replication_failure = asyncio.run(
+                synchronizer._upsert_mirrored_reference_order(reference_order)
+            )
+        assert created == []
+        assert replaced_cancelled == 0
+        assert already_synchronized == 1
+        assert replication_failure is None
+        exchange_if.orders.create_orders.assert_not_called()
+        exchange_if.orders.cancel_order.assert_not_called()
+        assert open_order.order_id == reference_order_id
