@@ -88,9 +88,14 @@ def dsl_action_execution(func):
                 octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
                 str(err),
             )
-        except octobot_trading.errors.PortfolioNegativeValueError:
+        except (
+            # (instantly or not) retriable errors
+            octobot_trading.errors.PortfolioNegativeValueError,
+            octobot_trading.errors.FailedRequest
+        ) as err:
             raise
         except Exception as err:
+            # swallowed errors: warning: will stop the workflow
             octobot_commons.logging.get_logger("action_execution").exception(
                 err,
                 True,

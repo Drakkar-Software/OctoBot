@@ -185,13 +185,18 @@ class AutomationWorkflow:
                         # identity so the community sync client resolves correctly.
                         wallet_address=_user_id_to_evm(parsed_inputs.task.user_id),
                     ).run()
-                except octobot_flow.errors.CommunityTradingSignalError as err:
-                    execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
-                    execution_error_message = str(err)
+                except octobot_trading.errors.RetriableFailedRequest as err:
+                    # instantly retriable errors, retry immediately
+                    AutomationWorkflow.get_logger(parsed_inputs).exception(
+                        err, True, f"Retriable error while running automation job: {err}"
+                    )
+                    raise
                 except (
                     octobot_trading.errors.AuthenticationError,
                     octobot_trading.errors.PortfolioNegativeValueError,
+                    octobot_trading.errors.FailedRequest,
                 ) as err:
+                    # postponing errors, retry after a delay
                     AutomationWorkflow.get_logger(parsed_inputs).error(
                         f"{err.__class__.__name__} error (postponed iteration): {err}"
                     )
@@ -205,8 +210,13 @@ class AutomationWorkflow:
                     has_next_actions_override = True
                     next_iteration_description_override = parsed_inputs.task.content
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
+                except octobot_flow.errors.CommunityTradingSignalError as err:
+                    # Stop cases: don't forward error, just stop the workflow
+                    execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
+                    execution_error_message = str(err)
                 except Exception as err:
-                    # log propagated errors to also associate them to the automation's error tracking
+                    # use retry policy & log propagated errors to also associate 
+                    # them to the automation's error tracking
                     AutomationWorkflow.get_logger(parsed_inputs).exception(
                         err, True, f"Error while running automation job: {err}"
                     )
