@@ -76,6 +76,9 @@ from octobot_services.interfaces.util.profitability import (
     get_global_profitability,
     get_reference_market,
 )
+from octobot_services.interfaces.util.web import (
+    open_in_background_browser,
+)
 
 __all__ = [
     "get_bot_api",
@@ -118,4 +121,5 @@ __all__ = [
     "get_all_positions",
     "close_positions",
     "async_close_positions",
+    "open_in_background_browser",
 ]

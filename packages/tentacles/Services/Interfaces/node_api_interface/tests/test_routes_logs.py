@@ -23,9 +23,12 @@ import mock
 import octobot_node.constants
 
 try:
-    from tentacles.Services.Interfaces.node_api_interface.api.routes.logs import build_logs_zip
+    from tentacles.Services.Interfaces.node_api_interface.api.routes.logs import (
+        build_logs_zip,
+        build_main_logs_zip,
+    )
 except ImportError:
-    from api.routes.logs import build_logs_zip  # type: ignore[no-redef]
+    from api.routes.logs import build_logs_zip, build_main_logs_zip  # type: ignore[no-redef]
 
 from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, TENANT_ADDRESS
 
@@ -53,6 +56,38 @@ class TestBuildLogsZip:
         with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
             assert zip_file.namelist() == ["task-a.log"]
             assert zip_file.read("task-a.log") == b"hello a"
+
+
+class TestBuildMainLogsZip:
+    def test_returns_none_when_folder_missing(self, tmp_path):
+        missing_folder = tmp_path / "missing"
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(missing_folder)):
+            assert build_main_logs_zip() is None
+
+    def test_zips_top_level_log_files_and_ignores_subfolders(self, tmp_path):
+        (tmp_path / "OctoBot.log").write_text("main log")
+        (tmp_path / "automations").mkdir()
+        (tmp_path / "automations" / "task-a.log").write_text("automation log")
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            archive = build_main_logs_zip()
+        assert archive is not None
+        with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+            assert zip_file.namelist() == ["OctoBot.log"]
+            assert zip_file.read("OctoBot.log") == b"main log"
+
+    def test_zips_rotated_log_backups(self, tmp_path):
+        (tmp_path / "OctoBot.log").write_text("current")
+        (tmp_path / "OctoBot.log.1").write_text("backup 1")
+        (tmp_path / "OctoBot.log.2").write_text("backup 2")
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            archive = build_main_logs_zip()
+        assert archive is not None
+        with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+            assert sorted(zip_file.namelist()) == [
+                "OctoBot.log",
+                "OctoBot.log.1",
+                "OctoBot.log.2",
+            ]
 
 
 # POST /logs/export requires authentication, like every other data route
@@ -84,6 +119,43 @@ class TestExportLogsRequireAuth:
 
 
 class TestExportLogs:
+    def test_empty_body_exports_main_logs(self, admin_client, tmp_path):
+        (tmp_path / "OctoBot.log").write_text("main log line")
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            response = admin_client.post("/api/v1/logs/export", json={})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/zip"
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            assert zip_file.namelist() == ["OctoBot.log"]
+
+    def test_empty_body_exports_rotated_main_logs(self, admin_client, tmp_path):
+        (tmp_path / "OctoBot.log").write_text("current")
+        (tmp_path / "OctoBot.log.1").write_text("backup 1")
+        (tmp_path / "OctoBot.log.2").write_text("backup 2")
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            response = admin_client.post("/api/v1/logs/export", json={})
+        assert response.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            assert sorted(zip_file.namelist()) == [
+                "OctoBot.log",
+                "OctoBot.log.1",
+                "OctoBot.log.2",
+            ]
+
+    def test_null_task_ids_exports_main_logs(self, admin_client, tmp_path):
+        (tmp_path / "OctoBot.log").write_text("main log line")
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            response = admin_client.post("/api/v1/logs/export", json={"task_ids": None})
+        assert response.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            assert zip_file.namelist() == ["OctoBot.log"]
+
+    def test_no_main_logs_returns_404(self, admin_client, tmp_path):
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            response = admin_client.post("/api/v1/logs/export", json={})
+        assert response.status_code == 404
+        assert response.json()["detail"] == "No logs found in the node logs folder"
+
     def test_invalid_task_id_returns_400(self, admin_client):
         response = admin_client.post(
             "/api/v1/logs/export", json={"task_ids": ["../etc/passwd"]}

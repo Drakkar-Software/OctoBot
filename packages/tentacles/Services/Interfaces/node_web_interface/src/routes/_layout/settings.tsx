@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import {
-  Bug,
   Check,
   Copy,
   Download,
@@ -23,6 +22,7 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { QRCode } from "react-qr-code"
 import { type WalletInfo, WalletsService } from "@/client"
+import { NodeManagementCard } from "@/components/Settings/NodeManagementCard"
 import { SupportCard } from "@/components/Support/SupportCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -1110,7 +1110,7 @@ function WalletManagementCard() {
     : wallets.filter((w) => w.address.toLowerCase() === currentAddressLower)
 
   return (
-    <Card className="relative md:col-span-2">
+    <Card className="relative">
       <div className="absolute right-4 top-4">
         <Button variant="outline" size="sm" onClick={() => void logout()}>
           <LogOut className="size-4" />
@@ -1158,16 +1158,9 @@ function Settings() {
       <div className="grid gap-4 md:grid-cols-2">
         <NodeTypeCard />
         <SupportCard />
+        <NodeManagementCard />
         <WalletManagementCard />
         <ClientEncryptionKeysCard />
-      </div>
-      <div className="flex justify-center pt-2">
-        <Button variant="outline" asChild>
-          <Link to="/debug">
-            <Bug className="size-4" />
-            Debug view
-          </Link>
-        </Button>
       </div>
     </div>
   )

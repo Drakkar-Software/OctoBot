@@ -37,7 +37,7 @@ import tentacles.Services.Interfaces.web_interface.security as security
 import tentacles.Services.Interfaces.web_interface.websockets as websockets
 import tentacles.Services.Interfaces.web_interface.plugins as web_interface_plugins
 import tentacles.Services.Interfaces.web_interface.flask_util as flask_util
-import tentacles.Services.Interfaces.web_interface.util as web_interface_util
+import octobot_services.interfaces.util.web as web_util
 import tentacles.Services.Interfaces.web_interface as web_interface_root
 import tentacles.Services.Interfaces.web_interface.controllers
 import tentacles.Services.Interfaces.web_interface.advanced_controllers
@@ -272,7 +272,7 @@ class WebInterface(services_interfaces.AbstractWebInterface):
 
     def _open_web_interface_on_browser(self):
         try:
-            web_interface_util.open_in_background_browser(
+            web_util.open_in_background_browser(
                 f"http://{socket.gethostbyname(socket.gethostname())}:{self.port}"
             )
         except Exception as err:

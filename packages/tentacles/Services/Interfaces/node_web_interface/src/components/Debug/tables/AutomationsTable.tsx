@@ -38,6 +38,7 @@ import {
   AUTOMATION_ASSETS_MAX_VISIBLE,
   AUTOMATION_COMPACT_COLUMN_CLASS,
   AUTOMATION_NAME_DISPLAY_LENGTH,
+  AUTOMATION_TABLE_DEFAULT_SORT,
   LATEST_ACTION_DISPLAY_LENGTH,
 } from "@/lib/debug/constants"
 import {
@@ -86,10 +87,9 @@ export function AutomationsTable({
 }: AutomationsTableProps) {
   const [detail, setDetail] = useState<AutomationState | null>(null)
   const [signalTarget, setSignalTarget] = useState<AutomationState | null>(null)
-  const [sort, setSort] = useState<SortState<AutomationSortKey>>({
-    key: "updated",
-    dir: "desc",
-  })
+  const [sort, setSort] = useState<SortState<AutomationSortKey>>(
+    AUTOMATION_TABLE_DEFAULT_SORT,
+  )
   const [filters, setFilters] = useState<ColumnFilters<AutomationSortKey>>({})
 
   const displayRows = useMemo(

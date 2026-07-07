@@ -18,6 +18,8 @@ import os
 import socket
 
 import octobot_commons.constants as commons_constants
+import octobot.configuration_manager as configuration_manager
+import octobot.enums as octobot_enums
 import octobot_services.constants as services_constants
 import octobot_services.services as services
 import octobot_node.scheduler
@@ -45,6 +47,8 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_SQLITE_FILE: "SQLite database file path for the Node scheduler.",
             services_constants.NODE_REDIS_URL: "Redis URI for the Node scheduler (optional).",
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: "Allowed CORS origins for the Node API backend.",
+            services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER: "When enabled, OctoBot will open the Node web UI "
+                                                                "in your browser upon startup.",
             commons_constants.CONFIG_ENABLED_OPTION: "Enable the Node API interface.",
         }
 
@@ -55,6 +59,7 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_SQLITE_FILE: "tasks.db",
             services_constants.NODE_REDIS_URL: None,
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: services_constants.DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS,
+            services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER: True,
             commons_constants.CONFIG_ENABLED_OPTION: False,
         }
 
@@ -70,6 +75,8 @@ class NodeApiService(services.AbstractService):
 
     @staticmethod
     def get_is_enabled(config):
+        if configuration_manager.get_distribution(config) is octobot_enums.OctoBotDistribution.NODE:
+            return True
         if os.getenv(services_constants.ENV_ENABLE_NODE_API):
             return commons_constants.parse_boolean_environment_var(
                 services_constants.ENV_ENABLE_NODE_API, "false"

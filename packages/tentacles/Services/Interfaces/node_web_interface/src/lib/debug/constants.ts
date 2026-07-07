@@ -1,5 +1,6 @@
 import type { AutomationSignalType } from "@/client"
 import type { AccountSortKey, AutomationSortKey } from "@/lib/debug/types"
+import type { SortState } from "@/lib/table-types"
 
 export const SIGNAL_TYPE_OPTIONS: {
   value: AutomationSignalType
@@ -43,3 +44,8 @@ export const DEBUG_DELETABLE_TAB_VALUES = [
   "automations",
   "user-actions",
 ] as const
+
+export const AUTOMATION_TABLE_DEFAULT_SORT: SortState<AutomationSortKey> = {
+  key: "updated",
+  dir: "desc",
+}

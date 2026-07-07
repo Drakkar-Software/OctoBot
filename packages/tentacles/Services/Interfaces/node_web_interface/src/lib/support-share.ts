@@ -8,7 +8,10 @@
  * there is no open ticket it reports the ticket state so the UI can guide the user to Settings.
  */
 
-import { loadPassword } from "@/lib/device-key"
+import {
+  buildWorkflowLogsExportFilename,
+  fetchAutomationLogsArchive,
+} from "@/lib/logs-export"
 import { getSupportTicket, sendAttachment } from "@/lib/octochat"
 
 export type ShareLogsOutcome =
@@ -17,46 +20,16 @@ export type ShareLogsOutcome =
   | { status: "pending" }
   | { status: "disabled" }
 
-async function buildAuthHeader(): Promise<string> {
-  const username = localStorage.getItem("auth_username") || "node"
-  const password = (await loadPassword()) ?? ""
-  return `Basic ${btoa(`${username}:${password}`)}`
-}
-
 /** Timestamped name for the shared logs archive (mirrors the debug-export filename style). */
 export function buildLogsExportFilename(): string {
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\..+/, "")
-    .slice(0, 13)
-  return `workflow-logs-${stamp}.zip`
+  return buildWorkflowLogsExportFilename()
 }
 
 /** Fetch the selected OctoBots' logs from the node as a zip file ready to attach. */
 export async function fetchWorkflowLogs(
   taskIds: string[],
 ): Promise<{ bytes: Uint8Array; name: string; mime: string }> {
-  const res = await fetch("/api/v1/logs/export", {
-    method: "POST",
-    headers: {
-      Authorization: await buildAuthHeader(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ task_ids: taskIds }),
-  })
-  if (res.status === 404) {
-    throw new Error("No logs found for the selected OctoBots")
-  }
-  if (!res.ok) {
-    throw new Error(`Failed to fetch logs (${res.status})`)
-  }
-  const buf = await res.arrayBuffer()
-  return {
-    bytes: new Uint8Array(buf),
-    name: buildLogsExportFilename(),
-    mime: "application/zip",
-  }
+  return fetchAutomationLogsArchive(taskIds, buildWorkflowLogsExportFilename())
 }
 
 /**

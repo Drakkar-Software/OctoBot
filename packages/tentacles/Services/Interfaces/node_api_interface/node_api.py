@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import asyncio
+import threading
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -23,7 +25,9 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 import octobot.community.authentication as community_auth
+import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
+import octobot_services.interfaces.util.web as web_util
 import octobot_node.config as node_config
 import octobot_node.scheduler as scheduler # noqa: F401
 import octobot_sync.server as sync_server
@@ -32,8 +36,10 @@ import octobot_sync.server as sync_server
 # Service_bases is only needed at runtime, not for build
 try:
     import tentacles.Services.Services_bases as Service_bases
+    import tentacles.Services.Services_bases.node_api_service.node_api as node_api_service
 except ImportError:
     Service_bases = None
+    node_api_service = None
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
@@ -72,6 +78,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         self.host = None
         self.port = None
         self.node_api_service = None
+        self._serve_finished: threading.Event | None = None
 
     async def _inner_start(self) -> bool:
         return self.threaded_start()
@@ -110,12 +117,37 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         )
         config = uvicorn.Config(self.app, host=host, port=port, log_level="info")
         self.server = uvicorn.Server(config)
-        await self.server.serve()
+        self._serve_finished = threading.Event()
+        dist_dir = get_dist_directory()
+        if dist_dir and self._should_open_node_ui_in_browser():
+            self._open_node_ui_on_browser()
+        try:
+            await self.server.serve()
+        finally:
+            if self._serve_finished is not None:
+                self._serve_finished.set()
         return True
 
     async def stop(self):
         if self.server is not None:
             self.server.should_exit = True
+
+    def _should_open_node_ui_in_browser(self) -> bool:
+        try:
+            return self.config[services_constants.CONFIG_CATEGORY_SERVICES] \
+                [services_constants.CONFIG_NODE_API][services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER]
+        except KeyError:
+            return True
+
+    def _open_node_ui_on_browser(self):
+        try:
+            web_util.open_in_background_browser(
+                f"http://{node_api_service.LOCAL_HOST_IP}:{self.port}/app"
+            )
+        except Exception as err:
+            self.logger.warning(
+                f"Impossible to open automatically node web interface: {err} ({err.__class__.__name__})"
+            )
 
     @classmethod
     def create_app(cls) -> FastAPI:

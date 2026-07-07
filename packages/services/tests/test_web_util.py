@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Interfaces
+#  Drakkar-Software OctoBot-Services
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
 #  This library is free software; you can redistribute it and/or
@@ -14,15 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-from tentacles.Services.Interfaces.web_interface.util import flask_util
-from tentacles.Services.Interfaces.web_interface.util.flask_util import (
-    get_rest_reply,
-)
-from octobot_services.interfaces.util.web import (
-    open_in_background_browser,
-)
+import mock
 
-__all__ = [
-    "get_rest_reply",
-    "open_in_background_browser",
-]
+from octobot_services.interfaces.util.web import open_in_background_browser
+
+
+class TestOpenInBackgroundBrowser:
+    def test_open_in_background_browser_is_importable_from_octobot_services(self):
+        assert callable(open_in_background_browser)
+
+    def test_open_in_background_browser_calls_webbrowser_open(self):
+        with mock.patch("octobot_services.interfaces.util.web.webbrowser.open") as webbrowser_open_mock:
+            open_in_background_browser("http://localhost:8000/app")
+        webbrowser_open_mock.assert_called_once_with("http://localhost:8000/app")

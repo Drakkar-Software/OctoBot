@@ -605,6 +605,7 @@ def start_node(args, default_config_file=None):
     if args.master:
         octobot_node.config.settings.IS_MASTER_MODE = True
     octobot_node.config.settings.CONSUMER_ONLY = args.consumer_only
+    args.no_web = True
     start_octobot(args, default_config_file)
 
 

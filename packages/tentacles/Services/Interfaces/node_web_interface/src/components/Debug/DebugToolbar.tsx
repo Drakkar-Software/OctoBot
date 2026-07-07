@@ -33,7 +33,7 @@ export function DebugToolbar({
 }: DebugToolbarProps) {
   if (isImportedMode) {
     return (
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <>
         <Button variant="outline" size="sm" onClick={onImport}>
           <Upload className="size-4" />
           Import
@@ -41,12 +41,12 @@ export function DebugToolbar({
         <Button variant="outline" size="sm" onClick={onReturnToLive}>
           Return to live view
         </Button>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <>
       {isSuperuser && (
         <select
           id="debug-wallet"
@@ -84,6 +84,6 @@ export function DebugToolbar({
         <Play className="size-4" />
         Execute
       </Button>
-    </div>
+    </>
   )
 }

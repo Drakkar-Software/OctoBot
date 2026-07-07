@@ -15,10 +15,13 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import threading
+import time
 import typing
 
 import pydantic
-from fastapi import APIRouter
+import octobot_services.interfaces.util as interfaces_util
+from fastapi import APIRouter, status
 
 import octobot_node.config
 import octobot_node.constants
@@ -27,9 +30,9 @@ import octobot_node.scheduler.api
 import octobot_node.scheduler.scheduler
 
 try:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import AdminUser, CurrentUser
 except ImportError:
-    from api.deps import CurrentUser
+    from api.deps import AdminUser, CurrentUser  # type: ignore[no-redef]
 
 try:
     import octobot_commons.logging.context_based_file_handler as context_based_file_handler
@@ -58,6 +61,19 @@ def get_node_config(current_user: CurrentUser) -> typing.Any:
         "tasks_encryption_enabled": octobot_node.config.settings.tasks_encryption_enabled,
         "server_encryption_env_vars": octobot_node.constants.TASKS_ENCRYPTION_ENV_VARS,
     }
+
+
+def _schedule_stop_bot(delay_seconds: float = 0.1) -> None:
+    def _delayed_stop() -> None:
+        time.sleep(delay_seconds)
+        interfaces_util.get_bot_api().stop_bot()
+
+    threading.Thread(target=_delayed_stop, daemon=True).start()
+
+
+@router.post("/stop", status_code=status.HTTP_204_NO_CONTENT)
+def stop_node(current_user: AdminUser) -> None:
+    _schedule_stop_bot()
 
 
 @router.patch("/config")

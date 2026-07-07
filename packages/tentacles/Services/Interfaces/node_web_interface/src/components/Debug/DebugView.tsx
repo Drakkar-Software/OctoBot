@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Bug } from "lucide-react"
+import { Bug, ScrollText } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { type ApiError, type DebugState, WalletsService } from "@/client"
@@ -10,8 +10,11 @@ import {
 import { DebugSchedulerWarning } from "@/components/Debug/DebugSchedulerWarning"
 import { DebugTabsPanel } from "@/components/Debug/DebugTabsPanel"
 import { DebugToolbar } from "@/components/Debug/DebugToolbar"
+import { DownloadLogsDialog } from "@/components/Debug/dialogs/DownloadLogsDialog"
 import { ImportDebugStateDialog } from "@/components/Debug/dialogs/ImportDebugStateDialog"
 import { ImportedDebugSnapshotBanner } from "@/components/Debug/ImportedDebugSnapshotBanner"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
@@ -32,6 +35,7 @@ export function DebugView() {
 
   const [walletAddress, setWalletAddress] = useState(currentAddress)
   const [importOpen, setImportOpen] = useState(false)
+  const [downloadLogsOpen, setDownloadLogsOpen] = useState(false)
   const [importedSnapshot, setImportedSnapshot] = useState<DebugState | null>(
     null,
   )
@@ -143,19 +147,30 @@ export function DebugView() {
             <Bug className="size-6" />
             Debug view
           </h1>
-          <DebugToolbar
-            isImportedMode={isImportedMode}
-            isSuperuser={isSuperuser}
-            wallets={wallets}
-            walletAddress={walletAddress}
-            onWalletAddressChange={setWalletAddress}
-            onImport={() => setImportOpen(true)}
-            onReturnToLive={returnToLiveView}
-            onExport={handleExportSnapshot}
-            canExportSnapshot={canExportSnapshot}
-            onRefresh={refresh}
-            onExecute={() => openExecuteAction()}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDownloadLogsOpen(true)}
+            >
+              <ScrollText className="size-4" />
+              Download logs
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <DebugToolbar
+              isImportedMode={isImportedMode}
+              isSuperuser={isSuperuser}
+              wallets={wallets}
+              walletAddress={walletAddress}
+              onWalletAddressChange={setWalletAddress}
+              onImport={() => setImportOpen(true)}
+              onReturnToLive={returnToLiveView}
+              onExport={handleExportSnapshot}
+              canExportSnapshot={canExportSnapshot}
+              onRefresh={refresh}
+              onExecute={() => openExecuteAction()}
+            />
+          </div>
         </div>
         <p className="text-muted-foreground text-sm">
           Snapshot of current and historical activity. Contains no API secret or
@@ -200,6 +215,12 @@ export function DebugView() {
         open={importOpen}
         onOpenChange={setImportOpen}
         onImported={handleImported}
+      />
+
+      <DownloadLogsDialog
+        open={downloadLogsOpen}
+        onOpenChange={setDownloadLogsOpen}
+        automations={automations}
       />
 
       <DebugExecuteActionDialogHost

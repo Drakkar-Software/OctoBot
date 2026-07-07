@@ -105,3 +105,6 @@ def get_current_active_superuser(current_user: CurrentUser) -> octobot_node.mode
             detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+AdminUser = typing.Annotated[octobot_node.models.User, Depends(get_current_active_superuser)]
