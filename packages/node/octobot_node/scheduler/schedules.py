@@ -13,9 +13,22 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import logging
+
+import dbos
+import octobot_node.scheduler.scheduler as scheduler_module
+import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
 
 
-def register_workflows() -> None:
-    import octobot_node.scheduler.workflows.automation_workflow
-    import octobot_node.scheduler.workflows.user_action_workflow
-    import octobot_node.scheduler.workflows.dbos_cleanup_workflow
+def register_schedules(scheduler: scheduler_module.Scheduler) -> None:
+    logger = logging.getLogger("schedules")
+    schedule_inputs: list[dbos.ScheduleInput] = [
+        dbos_cleanup_workflow.get_schedule_input(),
+    ]
+    for schedule_input in schedule_inputs:
+        logger.info(
+            "Registering schedule %s (%s)",
+            schedule_input["schedule_name"],
+            schedule_input["schedule"],
+        )
+        scheduler.INSTANCE.apply_schedules([schedule_input])

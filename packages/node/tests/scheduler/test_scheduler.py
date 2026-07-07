@@ -29,6 +29,7 @@ import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.encryption.task_inputs as task_inputs_encryption
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.workflows_retention as workflows_retention
 import octobot_node.scheduler.scheduler as scheduler_module
 
 PARENT_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
@@ -88,12 +89,7 @@ def _make_scheduler_with_mock_instance() -> tuple[scheduler_module.Scheduler, mo
     return sched, sched.INSTANCE
 
 
-_DELETE_WORKFLOW_STATUSES = [
-    dbos.WorkflowStatusString.SUCCESS,
-    dbos.WorkflowStatusString.ERROR,
-    dbos.WorkflowStatusString.CANCELLED,
-    dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED,
-]
+_DELETE_WORKFLOW_STATUSES = workflows_retention._TERMINAL_DELETE_WORKFLOW_STATUSES
 
 
 def _build_user_action_workflow_with_inputs(
@@ -1037,32 +1033,28 @@ class TestSchedulerGetUserActionWorkflowIds:
         )
         assert result == ["wf-done"]
 
+
+class TestSchedulerDeleteWorkflows:
     @pytest.mark.asyncio
-    async def test_get_workflows_to_delete_merges_automation_and_user_action_ids(self):
-        automation_task = octobot_node.models.Task(
-            id=PARENT_ID,
-            name="automation-task",
-            content="encrypted_content",
-            content_metadata="meta",
-            type="execute_actions",
-        )
-        automation_workflow = _build_mock_workflow_status(
-            automation_task,
-            "encrypted_state",
-            None,
-            workflow_id=PARENT_ID,
-        )
-        user_action_workflow = _build_user_action_workflow_with_output("ua-delete", "wf-ua-delete")
-
-        async def list_workflows_side_effect(**kwargs):
-            queue_name = kwargs.get("queue_name")
-            if queue_name == [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value]:
-                return [automation_workflow]
-            if queue_name == [octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value]:
-                return [user_action_workflow]
-            return []
-
+    async def test_delegates_to_workflows_retention_helpers(self):
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=list_workflows_side_effect)
-        result = await sched._get_workflows_to_delete([PARENT_ID, "ua-delete"])
-        assert result == [PARENT_ID, "wf-ua-delete"]
+        input_workflow_ids = ["parent-id"]
+        merged_workflow_ids = ["wf-a", "wf-b"]
+
+        with mock.patch.object(
+            workflows_retention,
+            "get_workflows_to_delete",
+            mock.AsyncMock(return_value=merged_workflow_ids),
+        ) as get_workflows_mock, mock.patch.object(
+            workflows_retention,
+            "delete_workflows_and_vacuum",
+            mock.AsyncMock(),
+        ) as delete_vacuum_mock:
+            await sched.delete_workflows(input_workflow_ids)
+
+        get_workflows_mock.assert_awaited_once_with(sched, input_workflow_ids)
+        delete_vacuum_mock.assert_awaited_once_with(
+            mock_instance,
+            merged_workflow_ids,
+            logger=sched.logger,
+        )
