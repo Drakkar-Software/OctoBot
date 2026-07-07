@@ -195,6 +195,8 @@ class AutomationWorkflow:
                     octobot_trading.errors.AuthenticationError,
                     octobot_trading.errors.PortfolioNegativeValueError,
                     octobot_trading.errors.FailedRequest,
+                    octobot_trading.errors.MissingFunds,
+                    octobot_trading.errors.MissingMinimalExchangeTradeVolume,
                 ) as err:
                     # postponing errors, retry after a delay
                     AutomationWorkflow.get_logger(parsed_inputs).error(
@@ -208,7 +210,12 @@ class AutomationWorkflow:
                     execution_error_message = str(err)
                     postponed_iteration = True
                     has_next_actions_override = True
-                    next_iteration_description_override = parsed_inputs.task.content
+                    next_iteration_description_override = workflows_util.patch_task_content_degraded_state(
+                        parsed_inputs.task.content,
+                        execution_error,
+                        execution_error_message,
+                        since=time.time(),
+                    )
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
                 except octobot_flow.errors.CommunityTradingSignalError as err:
                     # Stop cases: don't forward error, just stop the workflow
@@ -500,5 +507,9 @@ class AutomationWorkflow:
     ]:
         if isinstance(error, octobot_trading.errors.AuthenticationError):
             return octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR, constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
-        # other errors, like PortfolioNegativeValueError
+        if isinstance(error, octobot_trading.errors.MissingFunds):
+            return octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS
+        if isinstance(error, octobot_trading.errors.MissingMinimalExchangeTradeVolume):
+            return octobot_flow.enums.ActionErrorStatus.INVALID_ORDER, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS
+        # other errors, like PortfolioNegativeValueError and FailedRequest
         return octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS

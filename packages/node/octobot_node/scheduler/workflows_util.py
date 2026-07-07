@@ -378,6 +378,32 @@ def get_automation_dict(description: typing.Union[str, dict]) -> dict:
     raise ValueError("No automation state found in description")
 
 
+def patch_task_content_degraded_state(
+    task_content: str,
+    error_status: str,
+    error_message: str,
+    *,
+    since: float,
+) -> str:
+    if octobot_flow is None:
+        raise RuntimeError("octobot_flow is required to patch automation degraded state")
+    description = get_automation_dict(task_content)
+    automation_state = octobot_flow.entities.AutomationState.from_dict(description[STATE_KEY])
+    existing_degraded_state = automation_state.automation.execution.degraded_state
+    degraded_since = (
+        existing_degraded_state.since
+        if existing_degraded_state.since > 0
+        else since
+    )
+    automation_state.automation.execution.degraded_state = octobot_flow.entities.DegradedStateDetails(
+        since=degraded_since,
+        error=error_status,
+        reason=error_message,
+    )
+    description[STATE_KEY] = automation_state.to_dict(include_default_values=False)
+    return json.dumps(description)
+
+
 async def get_automation_workflow_status(automation_id: str) -> dbos_lib.WorkflowStatus:
     for workflow_status in await dbos_lib.DBOS.list_workflows_async(status=[
         dbos_lib.WorkflowStatusString.PENDING.value, dbos_lib.WorkflowStatusString.ENQUEUED.value

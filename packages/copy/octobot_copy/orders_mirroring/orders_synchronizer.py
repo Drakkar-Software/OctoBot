@@ -33,6 +33,8 @@ class OrdersSynchronizer:
         self._copy_settings = copy_settings
         self._force_immediate_orphan_cancel_next: bool = False
         self._mirrored_orphan_cancel_was_deferred_in_episode: bool = False
+        self._claimed_reference_order_ids: set[str] = set()
+        self._claimed_exchange_order_ids: set[str] = set()
 
     def _get_replicable_reference_orders_from(
         self,
@@ -499,6 +501,8 @@ class OrdersSynchronizer:
 
     async def _synchronize_impl(self) -> list:
         """Align copier open orders with reference_account.orders (synched mirror rows)."""
+        self._claimed_reference_order_ids = set()
+        self._claimed_exchange_order_ids = set()
         replicable = self._get_replicable_reference_orders()
         skip_symbols_for_upsert = self._reference_symbols_skipped_while_grace_orphans_uncancelled(replicable)
         skip_symbols_for_upsert = self._maybe_bypass_grace_for_missing_mirrored_reference_orders(
@@ -784,6 +788,135 @@ class OrdersSynchronizer:
                 return order
         return None
 
+    def _claim_mirrored_open_order(self, order: trading_personal_data.Order) -> None:
+        self._claimed_reference_order_ids.add(str(order.order_id))
+        if order.exchange_order_id:
+            self._claimed_exchange_order_ids.add(str(order.exchange_order_id))
+
+    def _limit_order_price_match_threshold(self, reference_price: decimal.Decimal) -> decimal.Decimal:
+        price_tolerance = reference_price * self._copy_settings.mirrored_order_price_ratio_threshold
+        return max(price_tolerance, decimal.Decimal("1e-12"))
+
+    def _open_orders_matching_symbol_side_price(
+        self,
+        symbol: str,
+        side: trading_enums.TradeOrderSide,
+        reference_price: decimal.Decimal,
+        trader_order_type: trading_enums.TraderOrderType,
+    ) -> list[trading_personal_data.Order]:
+        if trading_personal_data.get_trade_order_type(trader_order_type) is trading_enums.TradeOrderType.MARKET:
+            return []
+        price_threshold = self._limit_order_price_match_threshold(reference_price)
+        candidates: list[trading_personal_data.Order] = []
+        for open_order in self._exchange_interface.orders.get_open_orders(symbol=symbol):
+            if open_order.symbol != symbol:
+                continue
+            if open_order.side != side:
+                continue
+            if trading_personal_data.get_trade_order_type(open_order.order_type) is trading_enums.TradeOrderType.MARKET:
+                continue
+            if abs(open_order.origin_price - reference_price) > price_threshold:
+                continue
+            candidates.append(open_order)
+        return candidates
+
+    def _is_order_claimed_by_another_reference(
+        self,
+        order: trading_personal_data.Order,
+        reference_order_id: str,
+        active_reference_ids: set[str],
+    ) -> bool:
+        order_id = str(order.order_id)
+        if order_id in active_reference_ids and order_id != reference_order_id:
+            return True
+        exchange_order_id = str(order.exchange_order_id) if order.exchange_order_id else None
+        if exchange_order_id is not None and exchange_order_id in self._claimed_exchange_order_ids:
+            return True
+        return False
+
+    def _relink_open_order_to_reference(
+        self,
+        order: trading_personal_data.Order,
+        reference_order_id: str,
+    ) -> trading_personal_data.Order:
+        previous_id = order.order_id
+        order.order_id = reference_order_id
+        if order.tag != copy_constants.MIRRORED_ORDER_TAG:
+            order.tag = copy_constants.MIRRORED_ORDER_TAG
+        orders_manager = self._exchange_interface.orders._exchange_manager.exchange_personal_data.orders_manager
+        orders_manager.replace_order(previous_id, order)
+        self._get_logger().info(
+            "Mapped unmapped open order exchange_id=%s previous_bot_id=%s reference_id=%s",
+            order.exchange_order_id,
+            previous_id,
+            reference_order_id,
+        )
+        return order
+
+    def _pick_best_unmapped_open_order_candidate(
+        self,
+        candidates: list[trading_personal_data.Order],
+        scaled_reference_quantity: decimal.Decimal,
+    ) -> trading_personal_data.Order:
+        def sort_key(open_order: trading_personal_data.Order) -> tuple:
+            has_mirrored_tag = open_order.tag == copy_constants.MIRRORED_ORDER_TAG
+            quantity_distance = abs(open_order.origin_quantity - scaled_reference_quantity)
+            exchange_order_id = str(open_order.exchange_order_id or "")
+            return (
+                0 if has_mirrored_tag else 1,
+                quantity_distance,
+                exchange_order_id,
+            )
+
+        return min(candidates, key=sort_key)
+
+    def _map_unmapped_open_order_for_reference(
+        self,
+        reference_order: protocol_models.Order,
+        reference_order_id: str,
+        side: trading_enums.TradeOrderSide,
+        trader_order_type: trading_enums.TraderOrderType,
+        order_target_price: decimal.Decimal,
+        active_reference_ids: set[str],
+        scaled_reference_quantity: decimal.Decimal,
+    ) -> typing.Optional[trading_personal_data.Order]:
+        candidates = self._open_orders_matching_symbol_side_price(
+            reference_order.symbol,
+            side,
+            order_target_price,
+            trader_order_type,
+        )
+        unclaimed_candidates = [
+            candidate
+            for candidate in candidates
+            if not self._is_order_claimed_by_another_reference(
+                candidate, reference_order_id, active_reference_ids
+            )
+        ]
+        if not unclaimed_candidates:
+            return None
+        if len(unclaimed_candidates) == 1:
+            mapped_order = self._relink_open_order_to_reference(unclaimed_candidates[0], reference_order_id)
+            self._claim_mirrored_open_order(mapped_order)
+            return mapped_order
+        chosen_candidate = self._pick_best_unmapped_open_order_candidate(
+            unclaimed_candidates,
+            scaled_reference_quantity,
+        )
+        self._get_logger().warning(
+            "Ambiguous unmapped open order match for reference_id=%s symbol=%s side=%s price=%s: "
+            "%s candidate(s) at same price; relinking exchange_id=%s only (no cancel)",
+            reference_order_id,
+            reference_order.symbol,
+            side,
+            order_target_price,
+            len(unclaimed_candidates),
+            chosen_candidate.exchange_order_id,
+        )
+        mapped_order = self._relink_open_order_to_reference(chosen_candidate, reference_order_id)
+        self._claim_mirrored_open_order(mapped_order)
+        return mapped_order
+
     def _count_unmirrored_reference_orders(self, replicable: list[protocol_models.Order]) -> int:
         missing_count = 0
         for order in replicable:
@@ -857,10 +990,18 @@ class OrdersSynchronizer:
             )
             return [], 0, 0, None
         reference_order_id = str(order.id)
+        current_price_val = order.price
+        order_target_price = (
+            decimal.Decimal(str(current_price_val))
+            if current_price_val not in (None, "")
+            else trading_constants.ZERO
+        )
         existing = self._find_open_order_by_bot_order_id(reference_order_id)
         replicable_orders = self._get_replicable_reference_orders()
         active_reference_ids = self._active_reference_order_ids(replicable_orders)
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
+        if existing is not None:
+            self._claim_mirrored_open_order(existing)
         if existing is None and not self._force_immediate_orphan_cancel_next and self._is_late_reference_fill_for_order(order, orphan_orders):
             self._get_logger().info(
                 f"Skipping mirrored order creation (late reference fill on copier): symbol={symbol} "
@@ -883,12 +1024,16 @@ class OrdersSynchronizer:
                     self._exchange_interface,
                 ),
             )
-        current_price_val = order.price
-        order_target_price = (
-            decimal.Decimal(str(current_price_val))
-            if current_price_val not in (None, "")
-            else trading_constants.ZERO
-        )
+        if existing is None:
+            existing = self._map_unmapped_open_order_for_reference(
+                reference_order=order,
+                reference_order_id=reference_order_id,
+                side=side,
+                trader_order_type=trader_order_type,
+                order_target_price=order_target_price,
+                active_reference_ids=active_reference_ids,
+                scaled_reference_quantity=scaled_quantity,
+            )
         compute_result = await self._compute_mirrored_quantity_type_and_price(
             symbol,
             side,

@@ -1,3 +1,4 @@
+import mock
 import pytest
 
 import octobot_commons.errors
@@ -14,6 +15,8 @@ _PORTFOLIO_NEGATIVE_VALUE_ERROR_MESSAGE = (
 )
 _DISABLED_FUNDS_TRANSFER_ERROR_MESSAGE = "Funds transfer is disabled"
 _MISSING_MINIMAL_EXCHANGE_TRADE_VOLUME_MESSAGE = "Order volume below exchange minimum"
+_MISSING_FUNDS_MESSAGE = "Insufficient funds for order"
+_AUTHENTICATION_ERROR_MESSAGE = "Invalid API credentials"
 _UNSUPPORTED_HEDGE_CONTRACT_MESSAGE = "Hedge mode is not supported for this contract"
 _INVALID_POSITION_SIDE_MESSAGE = "Invalid position side for this order"
 _EXCHANGE_ACCOUNT_SYMBOL_PERMISSION_MESSAGE = "Symbol is not allowed on this account"
@@ -25,11 +28,21 @@ _GENERIC_EXCEPTION_MESSAGE = "Unexpected DSL execution failure"
 _FAILED_REQUEST_ERROR_MESSAGE = "Exchange API request failed"
 
 
-class TestDslActionExecutionReraisesRetriableErrors:
+class TestDslActionExecutionReraisesRecallablePostponeErrors:
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "raised_exception,expected_exception_type",
         [
+            pytest.param(
+                octobot_trading.errors.MissingFunds(_MISSING_FUNDS_MESSAGE),
+                octobot_trading.errors.MissingFunds,
+                id="missing_funds",
+            ),
+            pytest.param(
+                octobot_trading.errors.FailedRequest(_FAILED_REQUEST_ERROR_MESSAGE),
+                octobot_trading.errors.FailedRequest,
+                id="failed_request",
+            ),
             pytest.param(
                 octobot_trading.errors.PortfolioNegativeValueError(
                     _PORTFOLIO_NEGATIVE_VALUE_ERROR_MESSAGE
@@ -38,13 +51,20 @@ class TestDslActionExecutionReraisesRetriableErrors:
                 id="portfolio_negative_value_error",
             ),
             pytest.param(
-                octobot_trading.errors.FailedRequest(_FAILED_REQUEST_ERROR_MESSAGE),
-                octobot_trading.errors.FailedRequest,
-                id="failed_request",
+                octobot_trading.errors.AuthenticationError(_AUTHENTICATION_ERROR_MESSAGE),
+                octobot_trading.errors.AuthenticationError,
+                id="authentication_error",
+            ),
+            pytest.param(
+                octobot_trading.errors.MissingMinimalExchangeTradeVolume(
+                    _MISSING_MINIMAL_EXCHANGE_TRADE_VOLUME_MESSAGE
+                ),
+                octobot_trading.errors.MissingMinimalExchangeTradeVolume,
+                id="missing_minimal_exchange_trade_volume",
             ),
         ],
     )
-    async def test_reraises_retriable_error(
+    async def test_reraises_when_action_is_recallable(
         self,
         raised_exception,
         expected_exception_type,
@@ -60,12 +80,79 @@ class TestDslActionExecutionReraisesRetriableErrors:
         )
         stub_executor = StubExecutor()
 
-        with pytest.raises(expected_exception_type) as raised_error:
-            await stub_executor.execute_action(action)
+        with mock.patch(
+            "octobot_flow.logic.dsl.dsl_action_execution_context._should_postpone_recallable_trading_error",
+            return_value=True,
+        ):
+            with pytest.raises(expected_exception_type) as raised_error:
+                await stub_executor.execute_action(action)
 
         assert str(raised_error.value) == str(raised_exception)
         assert action.error_status is None
         assert action.error_message is None
+
+
+class TestDslActionExecutionMapsNonRecallablePostponeErrors:
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "raised_exception,expected_error_status",
+        [
+            pytest.param(
+                octobot_trading.errors.MissingFunds(_MISSING_FUNDS_MESSAGE),
+                octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS,
+                id="missing_funds",
+            ),
+            pytest.param(
+                octobot_trading.errors.FailedRequest(_FAILED_REQUEST_ERROR_MESSAGE),
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
+                id="failed_request",
+            ),
+            pytest.param(
+                octobot_trading.errors.PortfolioNegativeValueError(
+                    _PORTFOLIO_NEGATIVE_VALUE_ERROR_MESSAGE
+                ),
+                octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
+                id="portfolio_negative_value_error",
+            ),
+            pytest.param(
+                octobot_trading.errors.AuthenticationError(_AUTHENTICATION_ERROR_MESSAGE),
+                octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR,
+                id="authentication_error",
+            ),
+            pytest.param(
+                octobot_trading.errors.MissingMinimalExchangeTradeVolume(
+                    _MISSING_MINIMAL_EXCHANGE_TRADE_VOLUME_MESSAGE
+                ),
+                octobot_flow.enums.ActionErrorStatus.INVALID_ORDER,
+                id="missing_minimal_exchange_trade_volume",
+            ),
+        ],
+    )
+    async def test_maps_to_action_error_when_not_recallable(
+        self,
+        raised_exception,
+        expected_error_status,
+    ):
+        class StubExecutor:
+            @octobot_flow.logic.dsl.dsl_action_execution_context.dsl_action_execution
+            async def execute_action(self, action, **_kwargs):
+                raise raised_exception
+
+        action = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_1",
+            dsl_script="True",
+            resolved_dsl_script="True",
+        )
+        stub_executor = StubExecutor()
+
+        with mock.patch(
+            "octobot_flow.logic.dsl.dsl_action_execution_context._should_postpone_recallable_trading_error",
+            return_value=False,
+        ):
+            await stub_executor.execute_action(action)
+
+        assert action.error_status == expected_error_status.value
+        assert action.error_message == str(raised_exception)
 
 
 class TestDslActionExecutionMapsCaughtException:

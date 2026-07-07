@@ -5,6 +5,7 @@ import {
   formatActionProgress,
   getActionExecutionStats,
   getAutomationActions,
+  getAutomationDebugStatusDisplay,
   getAutomationErrorTooltipLines,
   getAutomationUpdatedAt,
   getLatestExecutedAction,
@@ -13,6 +14,7 @@ import {
   isActionExecuted,
   isRestartableAutomation,
   isRunningAutomation,
+  isRunningAutomationWithDegradedError,
   signalTypeRequiresPayload,
   validateAutomationCanReceiveSignal,
 } from "@/lib/debug/automation"
@@ -197,6 +199,43 @@ describe("getAutomationErrorTooltipLines", () => {
         }),
       ),
     ).toEqual(["error: timeout", "error_message: deadline exceeded"])
+  })
+})
+
+describe("isRunningAutomationWithDegradedError", () => {
+  it("returns true for running automations with error fields", () => {
+    expect(
+      isRunningAutomationWithDegradedError(
+        makeAutomation({
+          error: "not_enough_funds",
+          error_message: "Insufficient funds",
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it("returns false for running automations without errors", () => {
+    expect(isRunningAutomationWithDegradedError(makeAutomation())).toBe(false)
+  })
+})
+
+describe("getAutomationDebugStatusDisplay", () => {
+  it("returns orange running-with-error display", () => {
+    expect(
+      getAutomationDebugStatusDisplay(
+        makeAutomation({
+          error: "not_enough_funds",
+          error_message: "Insufficient funds",
+        }),
+      ),
+    ).toEqual({ emoji: "🟠", label: "Running (error)" })
+  })
+
+  it("returns green display for healthy running automations", () => {
+    expect(getAutomationDebugStatusDisplay(makeAutomation())).toEqual({
+      emoji: "🟢",
+      label: "Running",
+    })
   })
 })
 

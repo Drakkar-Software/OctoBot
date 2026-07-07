@@ -146,6 +146,15 @@ def _base_protocol_automation_state(task: node_models.Task) -> protocol_models.A
     )
 
 
+def _degraded_state_protocol_errors(
+    execution: flow_entities.ExecutionDetails,
+) -> tuple[typing.Optional[str], typing.Optional[str]]:
+    degraded_state = execution.degraded_state
+    if degraded_state.since <= 0 or not degraded_state.error:
+        return None, None
+    return degraded_state.error, degraded_state.reason
+
+
 def _apply_workflow_resolution_to_automation_state(
     filled: protocol_models.AutomationState,
     task: node_models.Task,
@@ -167,6 +176,8 @@ def _apply_workflow_resolution_to_automation_state(
         )
     else:
         error, error_message = resolved_error, resolved_error_message
+    if error is None and error_message is None:
+        error, error_message = filled.error, filled.error_message
     return filled.model_copy(update={
         "status": resolved_status,
         "error": error,
@@ -375,9 +386,14 @@ def _fill_protocol_automation_state(
             ),
         }
     )
+    degraded_error, degraded_error_message = _degraded_state_protocol_errors(
+        flow_automation_state.automation.execution
+    )
     return protocol_automation_state.model_copy(
         update={
             "status": status,
+            "error": degraded_error,
+            "error_message": degraded_error_message,
             "metadata": metadata,
             "actions": dag_actions or None,
             "priority_actions": priority_actions or None,

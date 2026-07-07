@@ -33,9 +33,7 @@ def validate_profile_strategy_configuration(
         return
     generic_configuration = configuration.actual_instance
     if generic_configuration.profile_data is None:
-        raise node_errors.InvalidUserActionPayloadError(
-            "GenericProcessConfiguration.profile_data is required for profile strategies."
-        )
+        return
     profile_details = dict(
         generic_configuration.profile_data.get("profile_details") or {}
     )

@@ -8,6 +8,17 @@ import octobot_trading.enums
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.logic.dsl.action_error_util
+import octobot_flow.logic.dsl.dsl_actions_util as dsl_actions_util_module
+import octobot_flow.logic.dsl.dsl_executor as dsl_executor_module
+
+
+POSTPONE_ON_RECALLABLE_TRADING_ERRORS: tuple[type[Exception], ...] = (
+    octobot_trading.errors.MissingFunds,
+    octobot_trading.errors.FailedRequest,
+    octobot_trading.errors.PortfolioNegativeValueError,
+    octobot_trading.errors.AuthenticationError,
+    octobot_trading.errors.MissingMinimalExchangeTradeVolume,
+)
 
 
 def _dsl_action_error_call_result(
@@ -20,6 +31,48 @@ def _dsl_action_error_call_result(
         action.get_resolved_dsl_script(),
         error_status,
         error_message,
+    )
+
+
+def _should_postpone_recallable_trading_error(
+    executor: object,
+    action: octobot_flow.entities.DSLScriptActionDetails,
+) -> bool:
+
+    if not isinstance(executor, dsl_executor_module.DSLExecutor):
+        return False
+    return dsl_actions_util_module.is_recallable_dsl_action(executor, action)
+
+
+def _map_non_recallable_postpone_trading_error(
+    action: octobot_flow.entities.DSLScriptActionDetails,
+    err: Exception,
+) -> octobot_commons.dsl_interpreter.DSLCallResult:
+    if isinstance(err, octobot_trading.errors.MissingMinimalExchangeTradeVolume):
+        octobot_commons.logging.get_logger("action_execution").exception(
+            err, True, f"Missing minimal exchange trade volume error: {err}"
+        )
+        return _dsl_action_error_call_result(
+            action,
+            octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value,
+            str(err),
+        )
+    if isinstance(err, octobot_trading.errors.AuthenticationError):
+        return _dsl_action_error_call_result(
+            action,
+            octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value,
+            str(err),
+        )
+    if isinstance(err, octobot_trading.errors.MissingFunds):
+        return _dsl_action_error_call_result(
+            action,
+            octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS.value,
+            str(err),
+        )
+    return _dsl_action_error_call_result(
+        action,
+        octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+        str(err),
     )
 
 
@@ -47,13 +100,6 @@ def dsl_action_execution(func):
             return _dsl_action_error_call_result(
                 action,
                 octobot_flow.enums.ActionErrorStatus.DISABLED_FUNDS_TRANSFER_ERROR.value,
-                str(err),
-            )
-        except octobot_trading.errors.MissingMinimalExchangeTradeVolume as err:
-            octobot_commons.logging.get_logger("action_execution").exception(err, True, f"Missing minimal exchange trade volume error: {err}")
-            return _dsl_action_error_call_result(
-                action,
-                octobot_flow.enums.ActionErrorStatus.INVALID_ORDER.value,
                 str(err),
             )
         except (octobot_trading.errors.UnsupportedHedgeContractError, octobot_trading.errors.InvalidPositionSide) as err:
@@ -88,12 +134,10 @@ def dsl_action_execution(func):
                 octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
                 str(err),
             )
-        except (
-            # (instantly or not) retriable errors
-            octobot_trading.errors.PortfolioNegativeValueError,
-            octobot_trading.errors.FailedRequest
-        ) as err:
-            raise
+        except POSTPONE_ON_RECALLABLE_TRADING_ERRORS as err:
+            if _should_postpone_recallable_trading_error(self, action):
+                raise
+            return _map_non_recallable_postpone_trading_error(action, err)
         except Exception as err:
             # swallowed errors: warning: will stop the workflow
             octobot_commons.logging.get_logger("action_execution").exception(

@@ -205,9 +205,21 @@ async def cancel_tasks(task_ids: list[str]) -> list[str]:
     return await octobot_node.scheduler.SCHEDULER.cancel_workflows(task_ids)
 
 
+async def retrieve_workflow_handle(workflow_id: str):
+    return await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(workflow_id)
+
+
+async def await_workflow_result_from_id(workflow_id: str) -> typing.Any:
+    workflow_handle = await retrieve_workflow_handle(workflow_id)
+    return await asyncio.wait_for(
+        workflow_handle.get_result(),
+        timeout=octobot_node.constants.USER_ACTION_WORKFLOW_RESULT_TIMEOUT_SECONDS,
+    )
+
+
 async def get_task_result(task_id: str):
     try:
-        handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(task_id)
+        handle = await retrieve_workflow_handle(task_id)
     except Exception:
         return {"error": "task not found"}
 
@@ -222,9 +234,9 @@ async def get_task_result(task_id: str):
         if wf_status == "ERROR":
             try:
                 result_data = await handle.get_result()
-            except Exception as e:
-                result_data = {"error": str(e)}
+            except Exception as error:
+                result_data = {"error": str(error)}
             return {"status": "completed", "data": result_data}
-    except Exception as e:
-        logger.debug(f"Workflow {task_id} not yet complete: {e}")
+    except Exception as error:
+        logger.debug(f"Workflow {task_id} not yet complete: {error}")
     return {"status": "pending or running"}

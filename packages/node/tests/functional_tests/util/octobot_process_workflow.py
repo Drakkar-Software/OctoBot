@@ -24,14 +24,18 @@ GENERIC_PROCESS_ACTION_ID = f"{protocol_models_module.ActionConfigurationType.GE
 GLOBAL_INIT_TIMEOUT_SEC = 60.0
 INIT_POLL_INTERVAL_SEC = 2.0
 # Graceful child STOP is bounded by ping_timeout; add recall + scheduler margin.
-STOP_WORKFLOW_COMPLETE_SECONDS = max(
-    node_constants_module.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS * 2
-    + node_constants_module.RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS * 2,
-    90.0,
-)
-CHILD_STOP_WAIT_SEC = (
-    node_constants_module.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS + 10.0
-)
+
+
+def stop_workflow_complete_seconds() -> float:
+    ping_timeout_seconds = node_constants_module.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS
+    waiting_time_seconds = node_constants_module.RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS
+    # Allow multiple recall cycles (each bounded by ping) + workflow teardown margin.
+    return max(ping_timeout_seconds * 4 + waiting_time_seconds * 4 + 30.0, 180.0)
+
+
+def child_stop_wait_seconds() -> float:
+    ping_timeout_seconds = node_constants_module.RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS
+    return max(ping_timeout_seconds + 30.0, 60.0)
 
 
 def build_generic_process_configuration(

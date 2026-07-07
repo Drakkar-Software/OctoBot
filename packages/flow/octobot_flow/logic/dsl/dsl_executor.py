@@ -21,6 +21,7 @@ import octobot_flow.logic.dsl.action_error_util
 # avoid circular import
 from octobot_flow.logic.dsl.dsl_action_execution_context import dsl_action_execution
 from octobot_flow.logic.actions.abstract_action_executor import AbstractActionExecutor
+from octobot_flow.logic.dsl.dsl_actions_util import is_recallable_dsl_action
 
 import tentacles.Meta.DSL_operators as dsl_operators
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
@@ -113,6 +114,11 @@ class DSLExecutor(AbstractActionExecutor):
         octobot_commons.dsl_interpreter.ComputedOperatorParameterType,
     ]:
         return self._interpreter.get_top_operator()
+
+    def is_action_recallable(
+        self, action: octobot_flow.entities.DSLScriptActionDetails
+    ) -> bool:
+        return is_recallable_dsl_action(self, action)
 
     @dsl_action_execution
     async def execute_action(

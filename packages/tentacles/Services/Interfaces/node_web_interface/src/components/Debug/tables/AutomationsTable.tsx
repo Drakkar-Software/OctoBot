@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip"
 import {
   formatActionProgress,
+  getAutomationDebugStatusDisplay,
   getAutomationErrorTooltipLines,
   getAutomationUpdatedAt,
   isRestartableAutomation,
@@ -288,6 +289,7 @@ export function AutomationsTable({
                     <CenteredCellContent>
                       <DebugStatusCell
                         status={row.status}
+                        display={getAutomationDebugStatusDisplay(row)}
                         extraTooltipLines={getAutomationErrorTooltipLines(row)}
                         pulseWhenRunning
                       />

@@ -4,6 +4,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
+  type DebugStatusDisplay,
   formatDebugStatusTooltip,
   getDebugStatusDisplay,
 } from "@/lib/debug/display-utils"
@@ -11,16 +12,18 @@ import { cn } from "@/lib/utils"
 
 type DebugStatusCellProps = {
   status: string | null | undefined
+  display?: DebugStatusDisplay
   extraTooltipLines?: string[]
   pulseWhenRunning?: boolean
 }
 
 export function DebugStatusCell({
   status,
+  display,
   extraTooltipLines,
   pulseWhenRunning = false,
 }: DebugStatusCellProps) {
-  const { emoji, label } = getDebugStatusDisplay(status)
+  const { emoji, label } = display ?? getDebugStatusDisplay(status)
   const tooltip = formatDebugStatusTooltip(status, extraTooltipLines)
   const isLive = pulseWhenRunning && status?.toLowerCase() === "running"
 
