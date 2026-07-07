@@ -24,13 +24,15 @@ import {
   ID_DISPLAY_LENGTH,
 } from "@/lib/debug/constants"
 import { getDebugStatusDisplay } from "@/lib/debug/display-utils"
+import { isRunningAutomation } from "@/lib/debug/automation"
 import { sortAutomations } from "@/lib/debug/table-automations"
 import {
   downloadAutomationLogsArchive,
   downloadNodeLogsArchive,
+  downloadRunningAutomationsLatestLogsArchive,
 } from "@/lib/logs-export"
 
-type LogsTarget = "node" | "automation"
+type LogsTarget = "node" | "automation" | "running-latest"
 
 type DownloadLogsDialogProps = {
   open: boolean
@@ -61,6 +63,16 @@ export function DownloadLogsDialog({
     [automations],
   )
 
+  const runningAutomations = useMemo(
+    () => automations.filter(isRunningAutomation),
+    [automations],
+  )
+
+  const runningCountLabel =
+    runningAutomations.length === 1
+      ? "1 running automation"
+      : `${runningAutomations.length} running automations`
+
   useEffect(() => {
     if (!open) return
     setTarget("node")
@@ -73,6 +85,10 @@ export function DownloadLogsDialog({
     try {
       if (target === "node") {
         await downloadNodeLogsArchive()
+      } else if (target === "running-latest") {
+        await downloadRunningAutomationsLatestLogsArchive(
+          runningAutomations.map((automation) => automation.id),
+        )
       } else {
         const automation = sortedAutomations.find(
           (row) => row.id === selectedAutomationId,
@@ -102,7 +118,8 @@ export function DownloadLogsDialog({
         <DialogHeader>
           <DialogTitle>Download logs</DialogTitle>
           <DialogDescription>
-            Download the node log files or logs for a single automation.
+            Download node logs, one automation&apos;s logs, or the latest active
+            log file from each running automation.
           </DialogDescription>
         </DialogHeader>
 
@@ -129,7 +146,25 @@ export function DownloadLogsDialog({
               />
               Automation logs
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="logs-target"
+                value="running-latest"
+                checked={target === "running-latest"}
+                onChange={() => setTarget("running-latest")}
+              />
+              Running automations (latest logs)
+            </label>
           </fieldset>
+
+          {target === "running-latest" && (
+            <p className="text-xs text-muted-foreground">
+              {runningAutomations.length === 0
+                ? "No running automations"
+                : runningCountLabel}
+            </p>
+          )}
 
           {target === "automation" && (
             <div className="flex flex-col gap-1.5">
@@ -166,7 +201,10 @@ export function DownloadLogsDialog({
           </Button>
           <LoadingButton
             loading={downloading}
-            disabled={target === "automation" && sortedAutomations.length === 0}
+            disabled={
+              (target === "automation" && sortedAutomations.length === 0) ||
+              (target === "running-latest" && runningAutomations.length === 0)
+            }
             onClick={() => void handleDownload()}
           >
             Download

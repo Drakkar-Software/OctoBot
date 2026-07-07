@@ -45,6 +45,11 @@ export function buildAutomationLogsArchiveFilename(
   return `automation-logs-${safeName}-${buildLogsTimestamp()}.zip`
 }
 
+/** Timestamped name for running automations latest logs archive. */
+export function buildRunningAutomationsLatestLogsFilename(): string {
+  return `running-automations-latest-logs-${buildLogsTimestamp()}.zip`
+}
+
 async function fetchLogsZip(
   body: object,
   notFoundMessage: string,
@@ -85,12 +90,15 @@ export async function fetchNodeLogsArchive(): Promise<{
 export async function fetchAutomationLogsArchive(
   taskIds: string[],
   archiveName: string,
+  options?: { latestOnly?: boolean },
 ): Promise<{ bytes: Uint8Array; name: string; mime: string }> {
-  return fetchLogsZip(
-    { task_ids: taskIds },
-    AUTOMATION_LOGS_NOT_FOUND_MESSAGE,
-    archiveName,
-  )
+  const body: { task_ids: string[]; latest_only?: boolean } = {
+    task_ids: taskIds,
+  }
+  if (options?.latestOnly) {
+    body.latest_only = true
+  }
+  return fetchLogsZip(body, AUTOMATION_LOGS_NOT_FOUND_MESSAGE, archiveName)
 }
 
 export function downloadBytesAsFile(
@@ -123,6 +131,18 @@ export async function downloadAutomationLogsArchive(
   const archive = await fetchAutomationLogsArchive(
     [taskId],
     buildAutomationLogsArchiveFilename(automationName, taskId),
+  )
+  downloadBytesAsFile(archive.bytes, archive.name, archive.mime)
+}
+
+/** Fetch and trigger a browser download of latest logs for running automations. */
+export async function downloadRunningAutomationsLatestLogsArchive(
+  taskIds: string[],
+): Promise<void> {
+  const archive = await fetchAutomationLogsArchive(
+    taskIds,
+    buildRunningAutomationsLatestLogsFilename(),
+    { latestOnly: true },
   )
   downloadBytesAsFile(archive.bytes, archive.name, archive.mime)
 }

@@ -57,6 +57,45 @@ class TestBuildLogsZip:
             assert zip_file.namelist() == ["task-a.log"]
             assert zip_file.read("task-a.log") == b"hello a"
 
+    def test_latest_only_zips_flat_log(self, tmp_path):
+        (tmp_path / "task-a.log").write_text("hello a")
+        with mock.patch.object(octobot_node.constants, "AUTOMATION_LOGS_FOLDER", str(tmp_path)):
+            archive = build_logs_zip(["task-a"], latest_only=True)
+        assert archive is not None
+        with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+            assert zip_file.namelist() == ["task-a.log"]
+
+    def test_latest_only_picks_active_log_in_folder(self, tmp_path):
+        task_dir = tmp_path / "task-a"
+        task_dir.mkdir()
+        (task_dir / "OctoBot.log").write_text("current")
+        (task_dir / "OctoBot.log.1").write_text("backup")
+        with mock.patch.object(octobot_node.constants, "AUTOMATION_LOGS_FOLDER", str(tmp_path)):
+            archive = build_logs_zip(["task-a"], latest_only=True)
+        assert archive is not None
+        with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+            assert zip_file.namelist() == ["task-a/OctoBot.log"]
+            assert zip_file.read("task-a/OctoBot.log") == b"current"
+
+    def test_latest_only_includes_flat_and_folder(self, tmp_path):
+        (tmp_path / "task-a.log").write_text("flat")
+        task_dir = tmp_path / "task-a"
+        task_dir.mkdir()
+        (task_dir / "OctoBot.log").write_text("process")
+        with mock.patch.object(octobot_node.constants, "AUTOMATION_LOGS_FOLDER", str(tmp_path)):
+            archive = build_logs_zip(["task-a"], latest_only=True)
+        assert archive is not None
+        with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+            assert sorted(zip_file.namelist()) == ["task-a.log", "task-a/OctoBot.log"]
+
+    def test_latest_only_skips_missing_tasks(self, tmp_path):
+        (tmp_path / "task-a.log").write_text("hello a")
+        with mock.patch.object(octobot_node.constants, "AUTOMATION_LOGS_FOLDER", str(tmp_path)):
+            archive = build_logs_zip(["task-a", "task-missing"], latest_only=True)
+        assert archive is not None
+        with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+            assert zip_file.namelist() == ["task-a.log"]
+
 
 class TestBuildMainLogsZip:
     def test_returns_none_when_folder_missing(self, tmp_path):
@@ -182,3 +221,18 @@ class TestExportLogs:
         with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
             assert zip_file.namelist() == ["task-a.log"]
             assert zip_file.read("task-a.log") == b"log line a"
+
+    def test_export_latest_only_route(self, admin_client, tmp_path):
+        task_dir = tmp_path / "task-a"
+        task_dir.mkdir()
+        (task_dir / "OctoBot.log").write_text("process log")
+        (task_dir / "OctoBot.log.1").write_text("rotated")
+        with mock.patch.object(octobot_node.constants, "AUTOMATION_LOGS_FOLDER", str(tmp_path)):
+            response = admin_client.post(
+                "/api/v1/logs/export",
+                json={"task_ids": ["task-a"], "latest_only": True},
+            )
+        assert response.status_code == 200
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            assert zip_file.namelist() == ["task-a/OctoBot.log"]
+            assert zip_file.read("task-a/OctoBot.log") == b"process log"
