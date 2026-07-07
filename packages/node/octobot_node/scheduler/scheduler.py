@@ -16,13 +16,13 @@
 
 import contextlib
 import datetime
+import asyncio
 import dbos
 import json
 import logging
 import typing
 import decimal
 import enum
-import sqlalchemy
 
 import octobot_commons.logging
 import octobot_commons.timestamp_util as timestamp_util
@@ -32,6 +32,7 @@ import octobot_node.enums
 import octobot_node.models
 import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.workflows_retention as workflows_retention
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.user_actions.user_action_util as user_action_util
 import octobot_node.scheduler.encryption as encryption
@@ -69,6 +70,7 @@ class Scheduler:
     INSTANCE: dbos.DBOS = None # type: ignore
     AUTOMATION_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
     USER_ACTION_QUEUE: dbos.Queue = None # type: ignore
+    STARTUP_CLEANUP_TASK: asyncio.Task | None = None
 
     @staticmethod
     def _wallet_filter_queue(queue_names: typing.Optional[list[str]]) -> octobot_node.enums.SchedulerQueues:
@@ -152,6 +154,7 @@ class Scheduler:
         Scheduler.INSTANCE = None
         Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
         Scheduler.USER_ACTION_QUEUE = None
+        Scheduler.STARTUP_CLEANUP_TASK = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
@@ -233,7 +236,7 @@ class Scheduler:
             if workflows_util.normalize_parent_automation_id(workflow.workflow_id) in parent_workflow_ids
         ]
 
-    async def _get_parent_and_children_automation_workflow_ids(
+    async def get_parent_and_children_automation_workflow_ids(
         self,
         wallet_address: typing.Optional[str],
         workflow_ids: list[str],
@@ -340,7 +343,7 @@ class Scheduler:
 
     async def cancel_workflows(self, workflow_ids: list[str]) -> list[str]:
         try:
-            to_cancel = await self._get_parent_and_children_automation_workflow_ids(
+            to_cancel = await self.get_parent_and_children_automation_workflow_ids(
                 None,
                 workflow_ids,
                 [
@@ -355,37 +358,19 @@ class Scheduler:
             self.logger.exception(e, True, f"Failed to cancel workflows {workflow_ids}: {e}")
             return []
     
-    async def _get_workflows_to_delete(self, workflow_ids: list[str]) -> list[str]:
-        automation_workflows = await self._get_parent_and_children_automation_workflow_ids(
-            None,
-            workflow_ids,
-            [
-                dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR,
-                dbos.WorkflowStatusString.CANCELLED, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED
-            ]
-        )
-        user_action_workflows = await self._get_user_action_workflow_ids(
-            None,
-            workflow_ids,
-            [
-                dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR,
-                dbos.WorkflowStatusString.CANCELLED, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED
-            ],
-            load_output=True,
-        )
-        return automation_workflows + user_action_workflows
-
     async def delete_workflows(self, to_delete_workflow_ids: list[str]):
-        self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
-        merged_to_delete_workflow_ids = await self._get_workflows_to_delete(to_delete_workflow_ids)
+        merged_to_delete_workflow_ids = await workflows_retention.get_workflows_to_delete(
+            self,
+            to_delete_workflow_ids,
+        )
         self.logger.info(
             f"Including {len(merged_to_delete_workflow_ids) - len(to_delete_workflow_ids)} associated children workflows to delete"
         )
-        await self.INSTANCE.delete_workflows_async(merged_to_delete_workflow_ids, delete_children=False)
-        self.logger.info(f"Vacuuming database")
-        with self.INSTANCE._sys_db.engine.begin() as conn:
-            conn.execute(sqlalchemy.text("VACUUM"))
-        self.logger.info(f"Database vacuum completed")
+        await workflows_retention.delete_workflows_and_vacuum(
+            self.INSTANCE,
+            merged_to_delete_workflow_ids,
+            logger=self.logger,
+        )
 
     async def get_scheduled_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""

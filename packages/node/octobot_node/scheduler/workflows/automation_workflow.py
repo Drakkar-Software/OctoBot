@@ -40,6 +40,8 @@ import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
+WORKFLOW_NAME = "execute_automation"
+
 
 def _user_id_to_evm(user_id: typing.Optional[str]) -> typing.Optional[str]:
     """Return the EVM wallet address for a Starfish *user_id*, or None if unresolvable.
@@ -67,7 +69,7 @@ class AutomationWorkflow:
     # Always use dict as input to parse minimizable dataclasses and facilitate data format updates
 
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name="execute_automation")
+    @SCHEDULER.INSTANCE.workflow(name=WORKFLOW_NAME)
     async def execute_automation(inputs: dict) -> typing.Optional[str]:
         """
         Automation workflow runner: 
