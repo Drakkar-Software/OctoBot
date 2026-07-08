@@ -112,10 +112,18 @@ def _wrap_as_stored_document(encrypted_payload: str, plaintext_for_hash: str) ->
 def _unwrap_stored_document_data(body: str) -> str:
     """Inverse of _wrap_as_stored_document for the push path: extract the
     encrypted payload from the StoredDocument wrapper the client sends.
+
+    The client's symmetric encryptor returns the sealed blob as a JSON object
+    (``{iv, data}``), so `data` arrives as a dict here, not a string — while
+    `_wrap_as_stored_document` (the pull path) always emits `data` as a JSON
+    string. Serialize a dict payload the same way so push/pull stay symmetric
+    and the client's `decrypt` (which parses a JSON string) keeps working.
     """
     parsed = json.loads(body)
     payload = parsed.get("data")
-    if not isinstance(payload, str):
+    if isinstance(payload, dict):
+        payload = json.dumps(payload)
+    elif not isinstance(payload, str):
         raise errors.OctobotSyncError(
             f"Push body missing string 'data' field; got {type(payload).__name__}"
         )

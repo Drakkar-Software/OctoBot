@@ -306,6 +306,25 @@ class TestPutData:
         )
 
     @pytest.mark.asyncio
+    async def test_put_data_accepts_dict_payload_from_client_encryptor(self):
+        """End-to-end regression for the accounts/userData/settings/strategies 500:
+        the client's symmetric encryptor sends the sealed blob as a JSON object,
+        not a string. put_data must accept and persist it (as a JSON string),
+        matching what a subsequent get_data pull will re-wrap and the client's
+        decrypt (which parses a JSON string) expects."""
+        blob = {"iv": "base64-iv", "data": "base64-ciphertext"}
+        body = json.dumps({"v": 1, "data": blob, "timestamps": {}, "hash": "x"})
+        mock_store = mock.MagicMock()
+        mock_store.put = mock.AsyncMock()
+        context = _make_context(identity="0xwallet", collection=enums.Collections.USER_ACCOUNTS.value)
+        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
+            await server.put_data("users/0xwallet/accounts", body, context)
+        mock_store.put.assert_awaited_once()
+        stored_key, stored_value = mock_store.put.call_args.args
+        assert stored_key == "users/0xwallet/accounts"
+        assert json.loads(stored_value) == blob
+
+    @pytest.mark.asyncio
     async def test_product_signals_stores_full_body_verbatim(self):
         body = json.dumps({
             "v": 1,
@@ -352,10 +371,35 @@ class TestStoredDocumentHelpers:
         with pytest.raises(errors.OctobotSyncError):
             server._unwrap_stored_document_data(body)
 
-    def test_unwrap_raises_when_data_not_string(self):
-        body = json.dumps({"v": 1, "data": {"nested": True}, "timestamps": {}, "hash": "abc"})
+    def test_unwrap_raises_when_data_not_string_or_dict(self):
+        """Only str and dict are accepted — anything else (e.g. a list/int) still errors."""
+        body = json.dumps({"v": 1, "data": 42, "timestamps": {}, "hash": "abc"})
         with pytest.raises(errors.OctobotSyncError):
             server._unwrap_stored_document_data(body)
+
+    def test_unwrap_serializes_dict_payload_to_json_string(self):
+        """Regression test: the client's symmetric encryptor (secretEncryptor.ts)
+        returns the sealed blob as a JSON object ({iv, data}), not a string — the
+        push body's `data` field arrives as a dict. `_unwrap_stored_document_data`
+        must accept it and serialize it the same way `_wrap_as_stored_document`
+        does on the pull side (json.dumps), instead of rejecting it as before.
+        """
+        blob = {"iv": "base64-iv", "data": "base64-ciphertext"}
+        body = json.dumps({"v": 1, "data": blob, "timestamps": {}, "hash": "abc"})
+        result = server._unwrap_stored_document_data(body)
+        assert isinstance(result, str)
+        assert json.loads(result) == blob
+
+    def test_unwrap_dict_payload_round_trips_through_wrap(self):
+        """The serialized-dict push output must be exactly what the pull-side
+        wrap/unwrap round trip already produces for a string payload, so a
+        pushed encrypted blob can be pulled back and decrypted unchanged."""
+        blob = {"iv": "base64-iv", "data": "base64-ciphertext"}
+        push_body = json.dumps({"v": 1, "data": blob, "timestamps": {}, "hash": "abc"})
+        stored = server._unwrap_stored_document_data(push_body)
+
+        pulled = json.loads(server._wrap_as_stored_document(stored, stored))
+        assert json.loads(pulled["data"]) == blob
 
 
 class TestSetDataCallbacks:
