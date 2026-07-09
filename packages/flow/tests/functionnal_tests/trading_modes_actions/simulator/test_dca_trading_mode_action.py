@@ -73,6 +73,12 @@ BINANCEUS_DCA_TENTACLE_CONFIG = tentacle_test_configs.binanceus_dca_tentacle_con
 
 BINANCEUS_DCA_MAXIMUM_EVALUATORS_CONFIG = tentacle_test_configs.binanceus_dca_maximum_evaluators_config()
 
+BINANCEUS_DCA_TIME_BASED_CONFIG = tentacle_test_configs.binanceus_dca_time_based_config(
+    **{
+        dca_trading.DCATradingMode.TRADING_PAIRS: [BTC_USDC, ETH_USDC],
+    }
+)
+
 BINANCEUS_DCA_MAXIMUM_EVALUATORS_FROM_STRATEGY_SYMBOLS_CONFIG = (
     tentacle_test_configs.binanceus_dca_maximum_evaluators_config(
         **{
@@ -248,6 +254,23 @@ def dca_trading_mode_action(dependency_action: dict) -> dict:
     config_parts = ", ".join(
         f"{key}={dsl_interpreter.format_parameter_value(value)}"
         for key, value in BINANCEUS_DCA_TENTACLE_CONFIG.items()
+    )
+    return {
+        "id": "action_1",
+        "dsl_script": f"{DCA_TRADING_MODE_DSL_OPERATOR}({config_parts})",
+        "dependencies": [{"action_id": dependency_action["id"]}],
+    }
+
+
+def time_based_dca_trading_mode_action(
+    dependency_action: dict,
+    *,
+    dca_config: dict | None = None,
+) -> dict:
+    resolved_dca_config = dca_config or BINANCEUS_DCA_TIME_BASED_CONFIG
+    config_parts = ", ".join(
+        f"{key}={dsl_interpreter.format_parameter_value(value)}"
+        for key, value in resolved_dca_config.items()
     )
     return {
         "id": "action_1",
@@ -945,6 +968,158 @@ async def test_simulator_dca_init_from_empty_state_always_long_and_fill_buy_orde
                 insert_trading_signal_mock.assert_not_awaited()
 
             _assert_exchange_price_mocks_called(exchange_price_mock_calls)
+
+
+@pytest.mark.asyncio
+async def test_simulator_dca_time_based_entry_recall(init_action: dict):
+    """
+    DCA in TIME_BASED mode on BTC/USDC + ETH/USDC: init then DCA places buy ladders,
+    schedules recall from minutes_before_next_buy, resets only the DCA action, and
+    re-applies the entry sequence on the next automation run.
+    """
+    simulated_close_by_symbol = _default_close_prices_by_symbol()
+    one_minute_seconds = common_constants.MINUTE_TO_SECONDS
+    allowed_execution_time = 20
+
+    with patch_dca_simulator_exchange_prices(
+        lambda symbol: simulated_close_by_symbol[symbol]
+    ) as exchange_price_mock_calls:
+        all_actions = [init_action, time_based_dca_trading_mode_action(init_action)]
+        automation_state = automation_state_dict(resolved_actions(all_actions))
+
+        # Step 1 — init: only action_init completed
+        async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
+            await automation_job.run()
+        after_init_dump = automation_job.dump()
+        actions_dag = automation_job.automation_state.automation.actions_dag
+        # init applied configuration; DCA action is pending and depends on init
+        _assert_dag_snapshot(actions_dag, {
+            "action_init": {"completed": True, "result_is_none": True, "previous_result_is_none": True},
+            "action_1": {"completed": False, "result_is_none": True, "previous_result_is_none": True},
+        })
+        assert {action.id for action in actions_dag.get_executable_actions()} == {"action_1"}
+
+        # Step 2 — first DCA run: orders placed, recall scheduled, DCA reset
+        async with octobot_flow.jobs.AutomationJob(after_init_dump, [], [], {}) as automation_job:
+            await automation_job.run()
+        after_first_dca_dump = automation_job.dump()
+        actions_dag = automation_job.automation_state.automation.actions_dag
+        # DCA ran and was reset for recall; init stays completed (TIME_BASED does not reset the DAG to init)
+        _assert_dag_snapshot(actions_dag, {
+            "action_init": {"completed": True, "result_is_none": True, "previous_result_is_none": True},
+            "action_1": {"completed": False, "result_is_none": True, "previous_result_is_none": False},
+        })
+        dca_action = actions_dag.get_actions_by_id()["action_1"]
+        # recall payload: ReCallingOperatorResult with waiting_time from minutes_before_next_buy=1
+        assert isinstance(dca_action.previous_execution_result, dict)
+        assert dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
+            dca_action.previous_execution_result
+        )
+        recall_wrapper = dsl_interpreter.ReCallingOperatorResult.from_dict(
+            dca_action.previous_execution_result[dsl_interpreter.ReCallingOperatorResult.__name__]
+        )
+        # reset_to_id defaults to the DCA action itself (not action_init)
+        assert recall_wrapper.reset_to_id is None
+        assert abs(recall_wrapper.last_execution_result["waiting_time"] - one_minute_seconds) < 20
+        assert {action.id for action in actions_dag.get_executable_actions()} == {"action_1"}
+        assert not actions_dag.completed_all_actions()
+
+        # automation is scheduled for the next recall at triggered_at + 1 minute
+        schedule_delay = (
+            after_first_dca_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+            - after_first_dca_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+        )
+        assert one_minute_seconds - allowed_execution_time < schedule_delay < one_minute_seconds + allowed_execution_time
+
+        # TIME_BASED manual trigger placed entry ladders on both symbols (2 buys each)
+        open_after_first_dca = _open_orders_from_dump(after_first_dca_dump)
+        buy_after_first_dca = _sorted_orders_by_side(
+            open_after_first_dca, trading_enums.TradeOrderSide.BUY.value
+        )
+        buy_after_first_dca_btc = _sorted_orders_by_side_and_symbol(
+            open_after_first_dca, trading_enums.TradeOrderSide.BUY.value, BTC_USDC
+        )
+        buy_after_first_dca_eth = _sorted_orders_by_side_and_symbol(
+            open_after_first_dca, trading_enums.TradeOrderSide.BUY.value, ETH_USDC
+        )
+        assert len(buy_after_first_dca) == 4
+        assert len(buy_after_first_dca_btc) == 2
+        assert len(buy_after_first_dca_eth) == 2
+        _assert_dca_buy_ladder_prices(buy_after_first_dca_btc, close=_FIXED_BTC_USDC_CLOSE)
+        _assert_dca_buy_ladder_prices(buy_after_first_dca_eth, close=_FIXED_ETH_USDC_CLOSE)
+
+        first_dca_buy_order_ids = {
+            order[trading_enums.ExchangeConstantsOrderColumns.ID.value]
+            for order in buy_after_first_dca
+        }
+
+        # Step 3 — second DCA run after recall interval: entry sequence re-applied
+        scheduled_to = after_first_dca_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+        with mock.patch.object(time, "time", mock.Mock(return_value=scheduled_to + 1)):
+            async with octobot_flow.jobs.AutomationJob(after_first_dca_dump, [], [], {}) as automation_job:
+                await automation_job.run()
+        after_second_dca_dump = automation_job.dump()
+        actions_dag = automation_job.automation_state.automation.actions_dag
+        dca_action = actions_dag.get_actions_by_id()["action_1"]
+        # recallable actions are reset again after each run (executed_at cleared)
+        assert dca_action.executed_at is None
+        assert isinstance(dca_action.previous_execution_result, dict)
+        recall_wrapper = dsl_interpreter.ReCallingOperatorResult.from_dict(
+            dca_action.previous_execution_result[dsl_interpreter.ReCallingOperatorResult.__name__]
+        )
+        assert abs(recall_wrapper.last_execution_result["waiting_time"] - one_minute_seconds) < 20
+
+        open_after_second_dca = _open_orders_from_dump(after_second_dca_dump)
+        buy_after_second_dca = _sorted_orders_by_side(
+            open_after_second_dca, trading_enums.TradeOrderSide.BUY.value
+        )
+        assert len(buy_after_second_dca) == 4
+        second_dca_buy_order_ids = {
+            order[trading_enums.ExchangeConstantsOrderColumns.ID.value]
+            for order in buy_after_second_dca
+        }
+        # cancel_open_orders_at_each_entry=True: recall re-triggered entry and replaced the ladders
+        assert second_dca_buy_order_ids != first_dca_buy_order_ids
+
+        second_schedule_delay = (
+            after_second_dca_dump["automation"]["execution"]["current_execution"]["scheduled_to"]
+            - after_second_dca_dump["automation"]["execution"]["previous_execution"]["triggered_at"]
+        )
+        assert one_minute_seconds - allowed_execution_time < second_schedule_delay < one_minute_seconds + allowed_execution_time
+
+        # Step 4 — fill lowest buy after recall to verify orders remain functional
+        lowest_buy_order = min(
+            buy_after_second_dca,
+            key=lambda order: d_order_price(
+                order[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+            ),
+        )
+        fill_symbol = lowest_buy_order[trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value]
+        lowest_buy = d_order_price(
+            lowest_buy_order[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]
+        )
+        simulated_close_by_symbol[fill_symbol] = float(lowest_buy - decimal.Decimal("10"))
+
+        async with octobot_flow.jobs.AutomationJob(after_second_dca_dump, [], [], {}) as automation_job:
+            await automation_job.run()
+        after_fill_dump = automation_job.dump()
+
+        after_fill_portfolio = _portfolio_content_from_dump(after_fill_dump)
+        after_second_dca_portfolio = _portfolio_content_from_dump(after_second_dca_dump)
+        filled_base_asset = _base_asset_from_symbol(fill_symbol)
+        # price drop filled the lowest buy limit on the recalled ladder
+        assert _portfolio_asset_total(after_fill_portfolio, filled_base_asset) > _portfolio_asset_total(
+            after_second_dca_portfolio, filled_base_asset
+        )
+
+        open_after_fill = _open_orders_from_dump(after_fill_dump)
+        sell_after_fill = _sorted_orders_by_side(
+            open_after_fill, trading_enums.TradeOrderSide.SELL.value
+        )
+        # chained take-profit sell was created from the filled entry
+        assert len(sell_after_fill) >= 1
+
+        _assert_exchange_price_mocks_called(exchange_price_mock_calls)
 
 
 @pytest.mark.asyncio

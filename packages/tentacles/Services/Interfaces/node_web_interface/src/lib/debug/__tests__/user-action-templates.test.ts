@@ -237,6 +237,29 @@ describe("buildUserActionTemplate", () => {
     expect(dcaConfig.time_frames).toEqual(["1h"])
   })
 
+  it("builds a DCA time-based daily strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_dca_time_based")
+    expect(action.id).toBe("ua-manual-strategy_create_dca_time_based")
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    const tradingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
+    expect(tradingConfiguration.name).toBe("DCATradingMode")
+    expect(tradingConfiguration).not.toHaveProperty("evaluators")
+    expect(tradingConfiguration).not.toHaveProperty("strategies")
+
+    const dcaConfig = tradingConfiguration.config as Record<string, unknown>
+    expect(dcaConfig.trigger_mode).toBe("Time based")
+    expect(dcaConfig.minutes_before_next_buy).toBe(1440)
+    expect(dcaConfig.trading_pairs).toEqual(["BTC/USDC", "ETH/USDC"])
+    expect(dcaConfig.use_init_entry_orders).toBe(false)
+    expect(dcaConfig.time_frames).toEqual([])
+  })
+
   it("builds a market making strategy create template", () => {
     const action = buildUserActionTemplate("strategy_create_market_making")
     expect(action.id).toBe("ua-manual-strategy_create_market_making")

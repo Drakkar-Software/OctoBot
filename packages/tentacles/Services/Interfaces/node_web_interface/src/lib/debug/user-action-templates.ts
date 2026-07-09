@@ -57,6 +57,7 @@ export type UserActionTemplateKey =
   | "strategy_create_copy"
   | "strategy_create_dca"
   | "strategy_create_dca_always_long"
+  | "strategy_create_dca_time_based"
   | "strategy_create_market_making"
   | "strategy_create_generic_process"
 
@@ -93,6 +94,10 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   {
     value: "strategy_create_dca_always_long",
     label: "Strategy create (DCA, always trigger long)",
+  },
+  {
+    value: "strategy_create_dca_time_based",
+    label: "Strategy create (DCA, time based daily)",
   },
   {
     value: "strategy_create_market_making",
@@ -503,6 +508,35 @@ function sampleDcaAlwaysLongStrategyConfiguration(
   )
 }
 
+function sampleDcaTimeBasedStrategyConfiguration(
+  id = TEMPLATE_STRATEGY_ID,
+): Strategy {
+  return sampleTradingTentaclesStrategyShell(
+    id,
+    "My DCA strategy (time based daily)",
+    {
+      configuration_type: "trading_tentacles",
+      name: "DCATradingMode",
+      config: {
+        buy_order_amount: "8%t",
+        exit_limit_orders_price_percent: 1.75,
+        entry_limit_orders_price_percent: 1.5,
+        secondary_entry_orders_count: 1,
+        secondary_entry_orders_amount: "7%t",
+        secondary_entry_orders_price_percent: 1.0,
+        use_stop_losses: false,
+        stop_loss_price_percent: 10,
+        trigger_mode: "Time based",
+        minutes_before_next_buy: 1440,
+        use_init_entry_orders: false,
+        trading_pairs: [...DCA_TRADED_SYMBOLS],
+        time_frames: [],
+      },
+    } satisfies TradingTentaclesConfiguration,
+    "USDC",
+  )
+}
+
 function sampleMarketMakingSymbolConfiguration(
   tradingPair: string,
   exchange: string,
@@ -588,6 +622,13 @@ export function buildUserActionTemplate(
     return userAction("ua-manual-strategy_create_dca_always_long", {
       action_type: "strategy_create",
       configuration: sampleDcaAlwaysLongStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
+  }
+
+  if (templateKey === "strategy_create_dca_time_based") {
+    return userAction("ua-manual-strategy_create_dca_time_based", {
+      action_type: "strategy_create",
+      configuration: sampleDcaTimeBasedStrategyConfiguration(newResourceId()),
     } satisfies CreateStrategyConfiguration)
   }
 
