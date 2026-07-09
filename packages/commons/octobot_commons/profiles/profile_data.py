@@ -1,4 +1,4 @@
-# pylint: disable=C0103,R0902,C0301
+# pylint: disable=C0103,R0902,C0301,C0415,R0401
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -16,7 +16,6 @@
 #  License along with this library.
 import copy
 import dataclasses
-import os
 import typing
 
 import octobot_commons.profiles.profile_types.profile as profile_import

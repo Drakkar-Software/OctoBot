@@ -1,3 +1,4 @@
+# pylint: disable=W0212,C0415,R0401
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -28,6 +29,7 @@ import octobot_commons.profiles.profile_storage as profile_storage_module
 def migrate_user_profiles_to_sync(
     profile_storage: profile_storage_module.ProfileStorage,
 ) -> list[str]:
+    """Migrate local filesystem profiles into the sync backend for the configured wallet."""
     if not profile_storage.is_sync_available():
         raise errors.ProfileDataError(
             "Profile migration requires a configured wallet user id"

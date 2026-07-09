@@ -1,3 +1,4 @@
+# pylint: disable=C0116,C0415,C0412
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #

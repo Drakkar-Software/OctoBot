@@ -55,6 +55,13 @@ class AccountProvider(
             f"Unsupported items key {items_key!r} for {self.__class__.__name__}"
         )
 
+    def _empty_state(self) -> protocol_models.AccountsState:
+        return protocol_models.AccountsState(
+            version=self.STATE_VERSION,
+            accounts=[],
+            exchange_configs=[],
+        )
+
     def _assert_unique_exchange_account_identity(
         self,
         user_id: str,
@@ -66,8 +73,8 @@ class AccountProvider(
         exchange_account_identity.assert_unique_exchange_account_identity(
             user_id,
             account,
-            state.accounts,
-            state.exchange_configs,
+            self._items_from_state(state, self.ITEMS_KEY),
+            self._items_from_state(state, self.EXCHANGE_CONFIGS_KEY),
             exclude_account_id=exclude_account_id,
         )
 

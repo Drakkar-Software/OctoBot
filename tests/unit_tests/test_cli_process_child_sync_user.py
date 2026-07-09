@@ -22,7 +22,7 @@ class TestConfigureProfileSyncUserProcessChild:
         config.profile_storage.configure_sync_user.assert_not_called()
         config.profile_storage.bind_process_child_sync_user_id.assert_not_called()
 
-    def test_configures_sync_user_from_env_for_process_child(self, monkeypatch):
+    def test_binds_sync_user_from_env_for_process_child(self, monkeypatch):
         monkeypatch.setattr(octobot_constants, "PROCESS_BOT_SYNC_USER_ID", "child-user")
         config = mock.Mock()
         octobot_cli._configure_profile_sync_user(
@@ -30,21 +30,22 @@ class TestConfigureProfileSyncUserProcessChild:
             None,
             is_process_child=True,
         )
-        config.profile_storage.configure_sync_user.assert_called_once_with("child-user")
-        config.profile_storage.bind_process_child_sync_user_id.assert_not_called()
+        config.profile_storage.bind_process_child_sync_user_id.assert_called_once_with("child-user")
+        config.profile_storage.configure_sync_user.assert_not_called()
 
-    def test_raises_when_parent_wallet_missing_for_process_child(self, monkeypatch):
+    def test_raises_when_bind_process_child_sync_user_id_fails(self, monkeypatch):
         monkeypatch.setattr(octobot_constants, "PROCESS_BOT_SYNC_USER_ID", "child-user")
         config = mock.Mock()
-        config.profile_storage.configure_sync_user.side_effect = commons_errors.ProfileDataError(
-            "Unknown sync user id: child-user"
+        config.profile_storage.bind_process_child_sync_user_id.side_effect = commons_errors.ProfileDataError(
+            "Process child sync user id must be non-empty"
         )
-        with pytest.raises(commons_errors.ProfileDataError, match="Unknown sync user id"):
+        with pytest.raises(commons_errors.ProfileDataError, match="Process child sync user id must be non-empty"):
             octobot_cli._configure_profile_sync_user(
                 config,
                 None,
                 is_process_child=True,
             )
+        config.profile_storage.configure_sync_user.assert_not_called()
 
 
 class TestActivateSavedProfileAfterSync:

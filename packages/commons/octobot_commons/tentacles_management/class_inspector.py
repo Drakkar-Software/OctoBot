@@ -93,7 +93,7 @@ def get_deep_class_from_parent_subclasses(class_string, parent):
     return None
 
 
-def get_class_from_string(
+def get_class_from_string(  # pylint: disable=too-many-arguments
     class_string: str,
     parent,
     module,
