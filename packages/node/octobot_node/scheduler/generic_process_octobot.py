@@ -15,10 +15,12 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
+import json
 import typing
 import uuid
 
 import octobot_protocol.models as protocol_models
+import octobot_commons.constants as commons_constants
 
 import octobot_node.constants
 import octobot_node.errors as node_errors
@@ -43,7 +45,7 @@ def _build_non_trading_generic_process_octobot_strategy() -> protocol_models.Str
         id=octobot_node.constants.NON_TRADING_GENERIC_PROCESS_OCTOBOT_STRATEGY_ID,
         version=octobot_node.constants.NON_TRADING_GENERIC_PROCESS_OCTOBOT_STRATEGY_VERSION,
         name="Generic process OctoBot strategy",
-        reference_market="USDC",
+        reference_market=commons_constants.DEFAULT_REFERENCE_MARKET,
         configuration=protocol_models.StrategyConfiguration(generic_process_configuration),
     )
 
@@ -93,7 +95,7 @@ def _updated_user_action_from_workflow_result(
     workflow_result: typing.Any,
 ) -> protocol_models.UserAction:
     if isinstance(workflow_result, str):
-        workflow_result = workflow_params.UserActionWorkflowOutput.from_json(workflow_result)
+        workflow_result = workflow_params.UserActionWorkflowOutput.from_dict(json.loads(workflow_result))
     elif isinstance(workflow_result, dict):
         workflow_result = workflow_params.UserActionWorkflowOutput.from_dict(workflow_result)
     elif not isinstance(workflow_result, workflow_params.UserActionWorkflowOutput):

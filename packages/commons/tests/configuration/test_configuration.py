@@ -91,12 +91,12 @@ def test_read(default_config):
         assert default_config.profile is None
 
 
-def test_select_profile(config):
+def test_select_profile(config, tmp_path):
     with mock.patch.object(config, "_generate_config_from_user_config_and_profile",
                               mock.Mock()) as _generate_config_from_user_config_and_profile_mock:
         config.profile_by_id = {
-            "1": profiles.Profile("plop"),
-            "hoo": profiles.Profile("ah")
+            "1": profiles.Profile(str(tmp_path / "plop")),
+            "hoo": profiles.Profile(str(tmp_path / "ah")),
         }
         config.profile_by_id["1"].name = "ploup"
         config.config = {}
