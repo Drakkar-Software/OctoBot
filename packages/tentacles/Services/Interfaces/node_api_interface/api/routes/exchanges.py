@@ -50,15 +50,17 @@ def _exchange_config_from_query(
 async def get_traded_pairs(
     exchange_config: typing.Annotated[protocol_models.ExchangeConfig, Depends(_exchange_config_from_query)],
     trading_type: typing.Annotated[protocol_models.TradingType, Query()] = protocol_models.TradingType.SPOT,
+    with_volume: typing.Annotated[bool, Query()] = False,
 ) -> JSONResponse:
-    pairs_and_tf_by_exchange = await exchange_core.get_traded_pairs_and_timeframes_by_exchange(
-        exchange_config,
-        trading_type=trading_type,
-    )
-    return JSONResponse(content={
-        exchange: pairs_and_tf[exchange_core.ExchangeInfo.PAIRS.value]
-        for exchange, pairs_and_tf in pairs_and_tf_by_exchange.items()
-    })
+    try:
+        content = await exchange_core.get_traded_pairs_by_exchange(
+            exchange_config,
+            trading_type=trading_type,
+            with_volume=with_volume,
+        )
+    except trading_errors.NotSupported as err:
+        return JSONResponse(status_code=501, content={"error": str(err)})
+    return JSONResponse(content=json_util.sanitize(content))
 
 
 @router.get("/traded-pairs-and-timeframes")

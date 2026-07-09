@@ -146,6 +146,100 @@ class TestGetTradedPairsAndTimeframesByExchange:
         assert profile_data.exchanges[0].exchange_type == commons_constants.CONFIG_EXCHANGE_FUTURE
 
 
+class TestGetTradedPairsByExchange:
+    pytestmark = pytest.mark.asyncio
+
+    async def test_without_volume_returns_empty_volume_objects(
+        self,
+    ) -> None:
+        config = _spot_exchange_config()
+        exchange_mock = mock.Mock()
+        exchange_mock.get_all_currencies_price_ticker = mock.AsyncMock()
+        exchange_manager_mock = mock.Mock()
+        exchange_manager_mock.exchange = exchange_mock
+        context_manager_mock = mock.MagicMock()
+        context_manager_mock.__aenter__ = mock.AsyncMock(return_value=exchange_manager_mock)
+        context_manager_mock.__aexit__ = mock.AsyncMock(return_value=False)
+        with (
+            mock.patch(
+                "octobot_trading.exchanges.exchange_manager_from_exchange_data",
+                return_value=context_manager_mock,
+            ),
+            mock.patch(
+                "octobot_trading.api.get_all_available_symbols",
+                return_value=["BTC/USDT", "ETH/USDC"],
+            ),
+        ):
+            result = await exchanges.get_traded_pairs_by_exchange(config, with_volume=False)
+        exchange_mock.get_all_currencies_price_ticker.assert_not_called()
+        assert result == {
+            config.exchange: {
+                "BTC/USDT": {},
+                "ETH/USDC": {},
+            }
+        }
+
+    async def test_with_volume_fetches_all_tickers_and_maps_volumes(
+        self,
+    ) -> None:
+        config = _spot_exchange_config()
+        ticker_columns = trading_enums.ExchangeConstantsTickersColumns
+        exchange_mock = mock.Mock()
+        exchange_mock.get_option_value = mock.Mock(return_value=False)
+        exchange_mock.get_all_currencies_price_ticker = mock.AsyncMock(return_value={
+            "BTC/USDT": {
+                ticker_columns.BASE_VOLUME.value: 12345.6,
+                ticker_columns.QUOTE_VOLUME.value: 987654321.0,
+            },
+            "ETH/USDC": {
+                ticker_columns.BASE_VOLUME.value: 5000.0,
+                ticker_columns.QUOTE_VOLUME.value: 10000000.0,
+            },
+        })
+        exchange_manager_mock = mock.Mock()
+        exchange_manager_mock.exchange = exchange_mock
+        context_manager_mock = mock.MagicMock()
+        context_manager_mock.__aenter__ = mock.AsyncMock(return_value=exchange_manager_mock)
+        context_manager_mock.__aexit__ = mock.AsyncMock(return_value=False)
+        with (
+            mock.patch(
+                "octobot_trading.exchanges.exchange_manager_from_exchange_data",
+                return_value=context_manager_mock,
+            ),
+            mock.patch(
+                "octobot_trading.api.get_all_available_symbols",
+                return_value=["BTC/USDT", "ETH/USDC"],
+            ),
+        ):
+            result = await exchanges.get_traded_pairs_by_exchange(config, with_volume=True)
+        exchange_mock.get_all_currencies_price_ticker.assert_awaited_once_with(symbols=None)
+        assert result == {
+            config.exchange: {
+                "BTC/USDT": {
+                    ticker_columns.BASE_VOLUME.value: 12345.6,
+                    ticker_columns.QUOTE_VOLUME.value: 987654321.0,
+                },
+                "ETH/USDC": {
+                    ticker_columns.BASE_VOLUME.value: 5000.0,
+                    ticker_columns.QUOTE_VOLUME.value: 10000000.0,
+                },
+            }
+        }
+
+    async def test_with_volume_on_public_exchange_returns_btc_usdt_volumes(
+        self,
+    ) -> None:
+        public_name = _public_exchange_name_for_test()
+        config = _spot_exchange_config()
+        result = await exchanges.get_traded_pairs_by_exchange(config, with_volume=True)
+        assert public_name in result
+        assert LIQUID_TEST_SYMBOL in result[public_name]
+        btc_usdt_volume = result[public_name][LIQUID_TEST_SYMBOL]
+        ticker_columns = trading_enums.ExchangeConstantsTickersColumns
+        assert btc_usdt_volume[ticker_columns.BASE_VOLUME.value] > 0
+        assert btc_usdt_volume[ticker_columns.QUOTE_VOLUME.value] > 0
+
+
 class TestDexPairsForInputSymbol:
     def test_plain_trading_pair_returns_all_matching_dex_pairs(self) -> None:
         dex_pairs = _mock_btcb_usdt_dex_pairs()

@@ -183,12 +183,17 @@ class TestExchangesGetTradedPairs:
         self,
         client: typing.Any,
     ) -> None:
-        raw = _mock_pairs_timeframes_payload()
+        expected = {
+            "binance": {
+                "BTC/USDT": {},
+                "ETH/USDC": {},
+            }
+        }
         with mock.patch.object(
             node_exchanges_core,
-            "get_traded_pairs_and_timeframes_by_exchange",
-            mock.AsyncMock(return_value=raw),
-        ) as get_pairs_tf_mock:
+            "get_traded_pairs_by_exchange",
+            mock.AsyncMock(return_value=expected),
+        ) as get_traded_pairs_mock:
             response = client.get(
                 _TRADED_PAIRS,
                 params={
@@ -199,13 +204,75 @@ class TestExchangesGetTradedPairs:
                     "trading_type": "spot",
                 },
             )
-            get_pairs_tf_mock.assert_awaited_once()
+            get_traded_pairs_mock.assert_awaited_once_with(
+                mock.ANY,
+                trading_type=protocol_models.TradingType.SPOT,
+                with_volume=False,
+            )
             assert response.status_code == 200
-            pair_key = node_exchanges_core.ExchangeInfo.PAIRS.value
-            assert response.json() == {
-                "binance": raw["binance"][pair_key],
-            }
+            assert response.json() == expected
             assert_response_headers(response)
+
+    def test_returns_volumes_when_with_volume_true(
+        self,
+        client: typing.Any,
+    ) -> None:
+        expected = {
+            "binance": {
+                "BTC/USDT": {"baseVolume": 12345.6, "quoteVolume": 987654321.0},
+                "ETH/USDC": {"baseVolume": 5000.0, "quoteVolume": 10000000.0},
+            }
+        }
+        with mock.patch.object(
+            node_exchanges_core,
+            "get_traded_pairs_by_exchange",
+            mock.AsyncMock(return_value=expected),
+        ) as get_traded_pairs_mock:
+            response = client.get(
+                _TRADED_PAIRS,
+                params={
+                    "id": "test-exchange-config",
+                    "name": "binance-test",
+                    "exchange": "binance",
+                    "sandboxed": False,
+                    "trading_type": "spot",
+                    "with_volume": True,
+                },
+            )
+            get_traded_pairs_mock.assert_awaited_once_with(
+                mock.ANY,
+                trading_type=protocol_models.TradingType.SPOT,
+                with_volume=True,
+            )
+            assert response.status_code == 200
+            assert response.json() == expected
+            assert_response_headers(response)
+
+    def test_returns_501_when_tickers_not_supported(
+        self,
+        client: typing.Any,
+    ) -> None:
+        not_supported_error = trading_errors.NotSupported(
+            "This exchange doesn't support fetchTickers"
+        )
+        with mock.patch.object(
+            node_exchanges_core,
+            "get_traded_pairs_by_exchange",
+            mock.AsyncMock(side_effect=not_supported_error),
+        ):
+            response = client.get(
+                _TRADED_PAIRS,
+                params={
+                    "id": "binance-config",
+                    "name": "binance-test",
+                    "exchange": "binance",
+                    "sandboxed": False,
+                    "trading_type": "spot",
+                    "with_volume": True,
+                },
+            )
+            assert response.status_code == 501
+            assert response.json() == {"error": str(not_supported_error)}
 
 
 class TestExchangesGetTradedPairsAndTimeframes:
