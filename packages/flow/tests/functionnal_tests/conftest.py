@@ -5,7 +5,14 @@ import pytest
 
 import octobot_commons.constants as commons_constants
 
+import octobot_flow.environment
 import tests.functionnal_tests as functionnal_tests
+
+
+@pytest.fixture(autouse=True)
+def _register_functional_executor_id():
+    octobot_flow.environment.register_executor_id("func-test-executor")
+    yield
 
 
 @pytest.fixture(autouse=True)
