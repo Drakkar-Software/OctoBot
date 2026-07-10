@@ -20,7 +20,6 @@ import time
 import flask
 import threading
 import gevent.pywsgi
-import pyngrok.ngrok as ngrok
 import pyngrok.exception
 
 import octobot_commons.logging as bot_logging
@@ -33,8 +32,10 @@ import octobot_services.services as services
 import octobot.constants as constants
 import octobot.community.errors as community_errors
 
+from . import backends
 
-class WebHookService(services.AbstractService):
+
+class TunnelService(services.AbstractService):
     CONNECTION_TIMEOUT = 8  # can take up to 5s on slow setups
     LOGGERS = ["pyngrok.ngrok", "werkzeug"]
 
@@ -47,8 +48,18 @@ class WebHookService(services.AbstractService):
             services_constants.CONFIG_ENABLE_NGROK: "Use Ngrok",
             services_constants.CONFIG_NGROK_TOKEN: "The ngrok token used to expose the webhook to the internet.",
             services_constants.CONFIG_NGROK_DOMAIN: "[Optional] The ngrok subdomain.",
-            services_constants.CONFIG_WEBHOOK_SERVER_IP: "WebHook bind IP: used for webhook when ngrok is not enabled.",
-            services_constants.CONFIG_WEBHOOK_SERVER_PORT: "WebHook port: used for webhook when ngrok is not enabled."
+            services_constants.CONFIG_ENABLE_TAILSCALE: "Use Tailscale",
+            services_constants.CONFIG_TAILSCALE_AUTH_KEY: "The tailscale auth key used to join your tailnet.",
+            services_constants.CONFIG_TAILSCALE_HOSTNAME: "[Optional] The hostname to use on the tailnet.",
+            services_constants.CONFIG_ENABLE_TAILSCALE_FUNNEL:
+                "[Experimental, not yet supported by tailscale-py] Try to expose the webhook publicly via "
+                "Tailscale Funnel instead of only on the tailnet.",
+            services_constants.CONFIG_TUNNEL_SERVE_UI:
+                "Also expose the web interface through the Tailscale tunnel.",
+            services_constants.CONFIG_WEBHOOK_SERVER_IP:
+                "WebHook bind IP: used for webhook when no cloud backend is enabled.",
+            services_constants.CONFIG_WEBHOOK_SERVER_PORT:
+                "WebHook port: used for webhook when no cloud backend is enabled."
         }
 
     def get_default_value(self):
@@ -59,6 +70,11 @@ class WebHookService(services.AbstractService):
             services_constants.CONFIG_ENABLE_NGROK: True,
             services_constants.CONFIG_NGROK_TOKEN: "",
             services_constants.CONFIG_NGROK_DOMAIN: "",
+            services_constants.CONFIG_ENABLE_TAILSCALE: False,
+            services_constants.CONFIG_TAILSCALE_AUTH_KEY: "",
+            services_constants.CONFIG_TAILSCALE_HOSTNAME: "",
+            services_constants.CONFIG_ENABLE_TAILSCALE_FUNNEL: False,
+            services_constants.CONFIG_TUNNEL_SERVE_UI: False,
             services_constants.CONFIG_WEBHOOK_SERVER_IP: services_constants.DEFAULT_WEBHOOK_SERVER_IP,
             services_constants.CONFIG_WEBHOOK_SERVER_PORT: services_constants.DEFAULT_WEBHOOK_SERVER_PORT
         }
@@ -71,10 +87,21 @@ class WebHookService(services.AbstractService):
         self.use_web_interface_for_webhook = constants.IS_CLOUD_ENV
         self.use_octobot_cloud_webhook = False
         self.use_octobot_cloud_email_webhook = False
-        self.ngrok_tunnel = None
         self.webhook_public_url = ""
+
         self.ngrok_enabled = True
+        self.ngrok_token = None
         self.ngrok_domain = None
+
+        self.tailscale_enabled = False
+        self.tailscale_auth_key = None
+        self.tailscale_hostname = None
+        self.tailscale_state_file = None
+        self.tailscale_funnel_enabled = False
+        self.tailscale_backend = None
+
+        self.serve_ui = False
+        self.ui_public_url = ""
 
         self.service_feed_webhooks = {}
         self.service_feed_auth_callbacks = {}
@@ -89,9 +116,11 @@ class WebHookService(services.AbstractService):
 
     @staticmethod
     def is_setup_correctly(config):
-        return services_constants.CONFIG_WEBHOOK in config[services_constants.CONFIG_CATEGORY_SERVICES] \
-               and services_constants.CONFIG_SERVICE_INSTANCE in config[services_constants.CONFIG_CATEGORY_SERVICES][
-                   services_constants.CONFIG_WEBHOOK]
+        services_config = config[services_constants.CONFIG_CATEGORY_SERVICES]
+        for bucket in (services_constants.CONFIG_TUNNEL, services_constants.CONFIG_WEBHOOK):
+            if bucket in services_config and services_constants.CONFIG_SERVICE_INSTANCE in services_config[bucket]:
+                return True
+        return False
 
     @staticmethod
     def get_is_enabled(config):
@@ -103,9 +132,13 @@ class WebHookService(services.AbstractService):
         if self.is_using_octobot_cloud_webhook() or self.is_using_octobot_cloud_email_webhook():
             return True
         try:
-            token = config.get(services_constants.CONFIG_NGROK_TOKEN)
+            enabled_tailscale = config.get(services_constants.CONFIG_ENABLE_TAILSCALE, False)
             enabled_ngrok = config.get(services_constants.CONFIG_ENABLE_NGROK, True)
+            if enabled_tailscale:
+                auth_key = config.get(services_constants.CONFIG_TAILSCALE_AUTH_KEY)
+                return auth_key and not configuration.has_invalid_default_config_value(auth_key)
             if enabled_ngrok:
+                token = config.get(services_constants.CONFIG_NGROK_TOKEN)
                 return token and not configuration.has_invalid_default_config_value(token)
             return not (
                 configuration.has_invalid_default_config_value(
@@ -119,12 +152,12 @@ class WebHookService(services.AbstractService):
 
     def has_required_configuration(self):
         try:
-            return self.check_required_config(self.get_webhook_config())
+            return self.check_required_config(self.get_tunnel_config())
         except KeyError:
             return False
 
     def is_using_octobot_cloud_webhook(self):
-        return self.get_webhook_config().get(services_constants.CONFIG_ENABLE_OCTOBOT_WEBHOOK)
+        return self.get_tunnel_config().get(services_constants.CONFIG_ENABLE_OCTOBOT_WEBHOOK)
 
     def is_using_octobot_cloud_email_webhook(self):
         return self.config[services_constants.CONFIG_CATEGORY_SERVICES].get(
@@ -133,35 +166,32 @@ class WebHookService(services.AbstractService):
             services_constants.CONFIG_TRADING_VIEW_USE_EMAIL_ALERTS, False
         )
 
-    def get_webhook_config(self):
-        return self.config[services_constants.CONFIG_CATEGORY_SERVICES].get(services_constants.CONFIG_WEBHOOK, {})
+    def get_tunnel_config(self):
+        services_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES]
+        # fall back to the legacy "webhook" bucket when this config hasn't been migrated yet
+        return services_config.get(
+            services_constants.CONFIG_TUNNEL, services_config.get(services_constants.CONFIG_WEBHOOK, {})
+        )
 
     def get_required_config(self):
-        return [] if self.use_web_interface_for_webhook else \
-            [services_constants.CONFIG_ENABLE_NGROK, services_constants.CONFIG_NGROK_TOKEN]
+        if self.use_web_interface_for_webhook:
+            return []
+        if self.tailscale_enabled:
+            return [services_constants.CONFIG_ENABLE_TAILSCALE, services_constants.CONFIG_TAILSCALE_AUTH_KEY]
+        return [services_constants.CONFIG_ENABLE_NGROK, services_constants.CONFIG_NGROK_TOKEN]
 
     @classmethod
     def get_help_page(cls) -> str:
         return f"{constants.OCTOBOT_DOCS_URL}/octobot-interfaces/tradingview/using-a-webhook"
 
     def get_type(self) -> None:
-        return services_constants.CONFIG_WEBHOOK
+        return services_constants.CONFIG_TUNNEL
 
     def get_logo(self):
         return None
 
     def is_subscribed(self, feed_name):
         return feed_name in self.service_feed_webhooks
-
-    @staticmethod
-    def connect(port, protocol="http", domain=None) -> ngrok.NgrokTunnel:
-        """
-        Create a new ngrok tunnel
-        :param port: the tunnel local port
-        :param protocol: the protocol to use
-        :return: the ngrok url
-        """
-        return ngrok.connect(port, protocol, domain=domain)
 
     def subscribe_feed(self, service_feed_name, service_feed_callback, auth_callback) -> None:
         """
@@ -238,7 +268,7 @@ class WebHookService(services.AbstractService):
             return True
         return False
 
-    def is_valid_webhook_call(self, webhook_name:str , data: str):
+    def is_valid_webhook_call(self, webhook_name: str, data: str):
         if webhook_name in self.service_feed_webhooks:
             if self.service_feed_auth_callbacks[webhook_name](data):
                 return True
@@ -261,31 +291,40 @@ class WebHookService(services.AbstractService):
             self.use_octobot_cloud_webhook = True
             return
         bot_logging.set_logging_level(self.LOGGERS, logging.WARNING)
-        self.ngrok_enabled = self.config[services_constants.CONFIG_CATEGORY_SERVICES][
-            services_constants.CONFIG_WEBHOOK].get(services_constants.CONFIG_ENABLE_NGROK, True)
+        tunnel_config = self.get_tunnel_config()
+        self.tailscale_enabled = tunnel_config.get(services_constants.CONFIG_ENABLE_TAILSCALE, False)
+        # tailscale and ngrok are mutually exclusive: tailscale takes priority when both are enabled
+        self.ngrok_enabled = tunnel_config.get(services_constants.CONFIG_ENABLE_NGROK, True) and not self.tailscale_enabled
         if self.ngrok_enabled:
-            ngrok.set_auth_token(
-                self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEBHOOK][
-                    services_constants.CONFIG_NGROK_TOKEN])
-        self.ngrok_domain = self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEBHOOK]\
-            .get(services_constants.CONFIG_NGROK_DOMAIN, None)
+            self.ngrok_token = tunnel_config[services_constants.CONFIG_NGROK_TOKEN]
+        self.ngrok_domain = tunnel_config.get(services_constants.CONFIG_NGROK_DOMAIN, None)
         if self.ngrok_domain in commons_constants.DEFAULT_CONFIG_VALUES:
             # ignore default values
             self.ngrok_domain = None
+        if self.tailscale_enabled:
+            self.tailscale_auth_key = tunnel_config[services_constants.CONFIG_TAILSCALE_AUTH_KEY]
+            self.tailscale_hostname = tunnel_config.get(services_constants.CONFIG_TAILSCALE_HOSTNAME, None) or None
+            self.tailscale_state_file = tunnel_config.get(
+                services_constants.CONFIG_TAILSCALE_STATE_FILE, services_constants.DEFAULT_TAILSCALE_STATE_FILE
+            )
+            self.tailscale_funnel_enabled = tunnel_config.get(
+                services_constants.CONFIG_ENABLE_TAILSCALE_FUNNEL, False
+            )
+            self.serve_ui = tunnel_config.get(services_constants.CONFIG_TUNNEL_SERVE_UI, False)
         try:
             self.webhook_host = os.getenv(services_constants.ENV_WEBHOOK_ADDRESS,
-                                          self.config[services_constants.CONFIG_CATEGORY_SERVICES]
-                                          [services_constants.CONFIG_WEBHOOK][services_constants.CONFIG_WEBHOOK_SERVER_IP])
+                                          tunnel_config[services_constants.CONFIG_WEBHOOK_SERVER_IP])
         except KeyError:
             self.webhook_host = os.getenv(services_constants.ENV_WEBHOOK_ADDRESS,
                                           services_constants.DEFAULT_WEBHOOK_SERVER_IP)
         try:
             self.webhook_port = int(
-                os.getenv(services_constants.ENV_WEBHOOK_PORT, self.config[services_constants.CONFIG_CATEGORY_SERVICES]
-                [services_constants.CONFIG_WEBHOOK][services_constants.CONFIG_WEBHOOK_SERVER_PORT]))
+                os.getenv(services_constants.ENV_WEBHOOK_PORT, tunnel_config[services_constants.CONFIG_WEBHOOK_SERVER_PORT])
+            )
         except KeyError:
             self.webhook_port = int(
-                os.getenv(services_constants.ENV_WEBHOOK_PORT, services_constants.DEFAULT_WEBHOOK_SERVER_PORT))
+                os.getenv(services_constants.ENV_WEBHOOK_PORT, services_constants.DEFAULT_WEBHOOK_SERVER_PORT)
+            )
 
     def _start_server(self):
         try:
@@ -293,8 +332,9 @@ class WebHookService(services.AbstractService):
             self._register_webhook_routes(self.webhook_app)
             self.webhook_public_url = f"http://{self.webhook_host}:{self.webhook_port}/webhook"
             if self.ngrok_enabled:
-                self.ngrok_tunnel = self.connect(self.webhook_port, protocol="http", domain=self.ngrok_domain)
-                self.webhook_public_url = f"{self.ngrok_tunnel.public_url}/webhook"
+                ngrok_backend = backends.NgrokBackend(self.ngrok_token, self.ngrok_domain)
+                public_url = asyncio.run(ngrok_backend.open(self.webhook_host, self.webhook_port))
+                self.webhook_public_url = f"{public_url}/webhook"
             if self.webhook_server:
                 self.connected = True
                 self.webhook_server.serve_forever()
@@ -367,6 +407,39 @@ class WebHookService(services.AbstractService):
             self.logger.exception(err, True, f"Impossible to start OctoBot cloud based webhook {err}")
             return False
 
+    def _get_tailscale_backend(self) -> "backends.TailscaleBackend":
+        if self.tailscale_backend is None:
+            self.tailscale_backend = backends.TailscaleBackend(
+                self.tailscale_auth_key, self.tailscale_hostname, self.tailscale_state_file
+            )
+        return self.tailscale_backend
+
+    async def _start_tailscale_webhook_tunnel(self) -> None:
+        tailscale_backend = self._get_tailscale_backend()
+        if self.tailscale_funnel_enabled:
+            public_url = await tailscale_backend.open_funnel(self.webhook_host, self.webhook_port)
+        else:
+            public_url = await tailscale_backend.open(self.webhook_host, self.webhook_port)
+        self.webhook_public_url = f"{public_url}/webhook"
+
+    async def _start_ui_tunnel(self) -> None:
+        if not self.tailscale_enabled:
+            self.logger.warning(f"{services_constants.CONFIG_TUNNEL_SERVE_UI} is only supported with the "
+                                 f"tailscale backend: ignoring.")
+            return
+        web_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES].get(
+            services_constants.CONFIG_WEB, {}
+        )
+        ui_host = os.getenv(services_constants.ENV_WEB_ADDRESS,
+                             web_config.get(services_constants.CONFIG_WEB_IP, services_constants.DEFAULT_SERVER_IP))
+        ui_port = int(os.getenv(services_constants.ENV_WEB_PORT,
+                                 web_config.get(services_constants.CONFIG_WEB_PORT,
+                                                 services_constants.DEFAULT_SERVER_PORT)))
+        # the web UI binds on all interfaces by default: bridge to loopback for the local half of the tunnel
+        local_ui_host = "127.0.0.1" if ui_host in ("0.0.0.0", "") else ui_host
+        tailscale_backend = self._get_tailscale_backend()
+        self.ui_public_url = await tailscale_backend.open(local_ui_host, ui_port)
+
     async def start_webhooks(self) -> bool:
         if self.use_web_interface_for_webhook:
             return await self._register_on_web_interface()
@@ -379,7 +452,12 @@ class WebHookService(services.AbstractService):
                     f"is required to use OctoBot {'email' if self.use_octobot_cloud_email_webhook else 'webhook' } "
                     f"alerts for TradingView."
                 )
-        return await self._start_isolated_server()
+        success = await self._start_isolated_server()
+        if success and self.tailscale_enabled:
+            await self._start_tailscale_webhook_tunnel()
+        if success and self.serve_ui:
+            await self._start_ui_tunnel()
+        return success
 
     def _is_healthy(self):
         return (
@@ -391,6 +469,8 @@ class WebHookService(services.AbstractService):
 
     def get_successful_startup_message(self):
         webhook_endpoint = f"ngrok address"
+        if self.tailscale_enabled:
+            webhook_endpoint = "tailscale tailnet address"
         if self.use_web_interface_for_webhook:
             webhook_endpoint = "web interface webhook api"
         if self.is_using_octobot_cloud_webhook() or self.is_using_octobot_cloud_email_webhook():
@@ -399,7 +479,9 @@ class WebHookService(services.AbstractService):
 
     async def stop(self):
         if not self.use_web_interface_for_webhook and self.connected:
-            ngrok.kill()
+            if self.tailscale_backend is not None:
+                await self.tailscale_backend.close()
+                self.tailscale_backend = None
             if self.webhook_server:
                 try:
                     self.webhook_server.stop()

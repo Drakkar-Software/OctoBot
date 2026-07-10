@@ -11,6 +11,8 @@ telethon==1.42.0
 simplifiedpytrends>=1.1.2
 # Ngrok
 pyngrok==7.5.0
+# Tailscale
+tailscale-py==0.4.0
 # Web
 ## http server
 flask==3.1.2

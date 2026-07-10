@@ -103,6 +103,16 @@ DEFAULT_WEBHOOK_SERVER_IP = '127.0.0.1'
 DEFAULT_WEBHOOK_SERVER_PORT = 9000
 TRADINGVIEW_WEBHOOK_SERVICE_NAME = "trading_view"
 
+# Tunnel (WebHookService successor: exposes the webhook server and/or the web interface)
+CONFIG_TUNNEL = "tunnel"
+CONFIG_ENABLE_TAILSCALE = "enable-tailscale"
+CONFIG_TAILSCALE_AUTH_KEY = "tailscale-auth-key"
+CONFIG_TAILSCALE_HOSTNAME = "tailscale-hostname"
+CONFIG_TAILSCALE_STATE_FILE = "tailscale-state-file"
+CONFIG_ENABLE_TAILSCALE_FUNNEL = "tailscale-funnel"
+CONFIG_TUNNEL_SERVE_UI = "tunnel-serve-ui"
+DEFAULT_TAILSCALE_STATE_FILE = "tailscale_state.json"
+
 # GPT
 CONFIG_GPT = "GPT"
 DEPRECATED_CONFIG_OPENAI_SECRET_KEY = "openai-secret-key"

@@ -26,7 +26,7 @@ class TradingViewServiceFeedChannel(services_channel.AbstractServiceFeedChannel)
 
 class TradingViewServiceFeed(service_feeds.AbstractServiceFeed):
     FEED_CHANNEL = TradingViewServiceFeedChannel
-    REQUIRED_SERVICES = [Services_bases.WebHookService, Services_bases.TradingViewService]
+    REQUIRED_SERVICES = [Services_bases.TunnelService, Services_bases.TradingViewService]
 
     def __init__(self, config, main_async_loop, bot_id, backtesting=None, importer=None):
         super().__init__(config, main_async_loop, bot_id, backtesting=backtesting, importer=importer)

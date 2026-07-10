@@ -57,3 +57,15 @@ class AIProvider(enum.Enum):
     AMAZON = "amazon"
     NVIDIA = "nvidia"
     OTHER = "other"
+
+
+class TunnelBackend(enum.Enum):
+    NGROK = "ngrok"
+    TAILSCALE = "tailscale"
+    OCTOBOT_CLOUD = "octobot_cloud"
+    WEB_INTERFACE = "web_interface"
+
+
+class TunnelTarget(enum.Enum):
+    WEBHOOK = "webhook"
+    WEB_INTERFACE = "web_interface"
