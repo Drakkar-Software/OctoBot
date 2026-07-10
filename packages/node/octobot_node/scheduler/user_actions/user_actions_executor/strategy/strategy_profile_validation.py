@@ -23,6 +23,16 @@ import octobot_node.errors as node_errors
 def validate_profile_strategy_configuration(
     strategy: protocol_models.Strategy,
 ) -> None:
+    """
+    Keep strategy.id and embedded profile_data.profile_details.id aligned for
+    generic-process strategies.
+
+    GenericProcessConfiguration can carry OctoBot profile JSON in profile_data.
+    Downstream sync/runtime code uses profile_details.id for profile paths and
+    identity; the stored strategy's canonical id is strategy.id. Clients may omit
+    profile_details.id or send a stale id from another profile, so normalize or
+    reject before create/edit persistence.
+    """
     configuration = strategy.configuration
     if configuration is None or configuration.actual_instance is None:
         return
@@ -39,10 +49,12 @@ def validate_profile_strategy_configuration(
     )
     profile_id = profile_details.get("id")
     if profile_id is None:
+        # Client omitted profile_details.id: default to the strategy id before storage.
         profile_details["id"] = strategy.id
         generic_configuration.profile_data["profile_details"] = profile_details
         return
     if profile_id != strategy.id:
+        # Conflicting ids would bind the wrong profile at runtime; reject the payload.
         raise node_errors.InvalidUserActionPayloadError(
             "profile_data.profile_details.id must match strategy.id."
         )

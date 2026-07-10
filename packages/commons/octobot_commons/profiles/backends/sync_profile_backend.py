@@ -17,7 +17,6 @@
 
 import datetime
 import os
-import shutil
 import typing
 import uuid
 
@@ -116,9 +115,6 @@ class SyncProfileBackend(abstract_profile_backend_module.AbstractProfileBackend)
                 "Sync profile delete requires a configured wallet user id"
             )
         self._get_strategy_provider().delete_item(self._sync_user_id, profile_id)
-        runtime_path = self._runtime_profile_path(profile_id)
-        if os.path.isdir(runtime_path):
-            shutil.rmtree(runtime_path)
 
     def list_profile_ids(
         self,

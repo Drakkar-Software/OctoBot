@@ -205,19 +205,11 @@ class OrdersInterface:
         exchange_name = self._exchange_manager.exchange_name
         poll_iteration = 0
         started_wait_log = False
-        while True:
-            pending_orders = [
-                order for order in orders if order.is_pending_creation()
-            ]
-            if not pending_orders:
-                logger.info(
-                    "All %s mirrored order(s) open on %s for %s after %.1fs",
-                    total_order_count,
-                    exchange_name,
-                    symbol,
-                    time.monotonic() - start_time,
-                )
-                return
+        deadline = start_time + timeout
+        pending_orders = [
+            order for order in orders if order.is_pending_creation()
+        ]
+        while pending_orders and time.monotonic() < deadline:
             if not started_wait_log:
                 logger.info(
                     "Waiting for %s mirrored order(s) on %s to open on %s (timeout=%ss)",
@@ -227,17 +219,6 @@ class OrdersInterface:
                     timeout,
                 )
                 started_wait_log = True
-            if time.monotonic() - start_time >= timeout:
-                pending_exchange_ids = [
-                    order.exchange_order_id for order in pending_orders if order.exchange_order_id
-                ]
-                logger.warning(
-                    "Timed out waiting for %s mirrored order(s) to open on %s: %s",
-                    len(pending_orders),
-                    exchange_name,
-                    pending_exchange_ids,
-                )
-                return
             poll_iteration += 1
             raw_open_orders = await exchange.get_open_orders(symbol=symbol)
             exchange_open_order_ids = {
@@ -253,9 +234,10 @@ class OrdersInterface:
                     continue
                 await self._promote_pending_order_to_open(order)
                 promoted_count += 1
-            remaining_pending_count = sum(
-                1 for order in orders if order.is_pending_creation()
-            )
+            pending_orders = [
+                order for order in orders if order.is_pending_creation()
+            ]
+            remaining_pending_count = len(pending_orders)
             open_count = total_order_count - remaining_pending_count
             if promoted_count:
                 logger.info(
@@ -276,6 +258,24 @@ class OrdersInterface:
                     poll_iteration,
                 )
             await asyncio.sleep(poll_interval)
+        if pending_orders:
+            pending_exchange_ids = [
+                order.exchange_order_id for order in pending_orders if order.exchange_order_id
+            ]
+            logger.warning(
+                "Timed out waiting for %s mirrored order(s) to open on %s: %s",
+                len(pending_orders),
+                exchange_name,
+                pending_exchange_ids,
+            )
+        else:
+            logger.info(
+                "All %s mirrored order(s) open on %s for %s after %.1fs",
+                total_order_count,
+                exchange_name,
+                symbol,
+                time.monotonic() - start_time,
+            )
 
     async def _promote_pending_order_to_open(self, order) -> None:
         orders_manager = self._exchange_manager.exchange_personal_data.orders_manager
