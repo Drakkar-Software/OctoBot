@@ -826,3 +826,29 @@ class TestConfigurationReadonlyProfileOverlay:
         ) as save_active_profile_mock:
             bot_config.save(save_profile=True)
         save_active_profile_mock.assert_called_once()
+
+    def test_read_configures_readonly_reference_tentacles_path(self, tmp_path):
+        import octobot_commons.user_root_folder_provider as user_root_folder_provider
+
+        child_user_root = tmp_path / "child" / "user"
+        child_profiles_path = child_user_root / constants.PROFILES_FOLDER
+        master_reference_path = tmp_path / "master" / "reference_tentacles_config"
+        master_reference_path.mkdir(parents=True)
+        (master_reference_path / constants.CONFIG_TENTACLES_FILE).write_text("{}", encoding="utf-8")
+        child_user_root.mkdir(parents=True)
+        config_path = child_user_root / constants.CONFIG_FILE
+        config_data = {
+            constants.CONFIG_PROFILE: constants.DEFAULT_PROFILE,
+            constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH: str(master_reference_path),
+            constants.CONFIG_ACCEPTED_TERMS: True,
+        }
+        with open(config_path, "w", encoding="utf-8") as config_file:
+            json.dump(config_data, config_file)
+        provider = user_root_folder_provider.UserRootFolderProvider.instance()
+        provider.configure_readonly_reference_tentacles_path("")
+        bot_config = configuration.Configuration(
+            str(config_path),
+            str(child_profiles_path),
+        )
+        bot_config.read(should_raise=False, fill_missing_fields=True)
+        assert provider.get_user_reference_tentacle_config_path() == str(master_reference_path)

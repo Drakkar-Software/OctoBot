@@ -326,9 +326,14 @@ def _repair_with_default_profile(config, logger):
     config.load_profiles_if_possible_and_necessary()
 
 
-def _load_or_create_tentacles(community_auth, config, logger):
+def _load_or_create_tentacles(community_auth, config, logger, *, is_process_child: bool = False):
     # add tentacles folder to Python path
     sys.path.append(os.path.realpath(os.getcwd()))
+
+    # Process children store readonly_reference_tentacles_path in config.json and have no
+    # local reference_tentacles_config/. Apply the override before probing whether the
+    # reference config file exists, so the path resolves to the master tree.
+    config.apply_readonly_reference_tentacles_override()
 
     if os.path.isfile(
         user_root_folder_provider.get_user_reference_tentacle_config_file_path()
@@ -336,7 +341,18 @@ def _load_or_create_tentacles(community_auth, config, logger):
         # when tentacles folder already exists
         config.load_profiles_if_possible_and_necessary()
         tentacles_setup_config = config.get_active_tentacles_setup_config()
-        commands.run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config)
+        if (
+            is_process_child
+            and config.config.get(common_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH)
+        ):
+            # Process children share the master reference tree; skip repair that would write to it.
+            if not tentacles_manager_api.load_tentacles(verbose=True):
+                logger.error("OctoBot tentacles failed to load for process child.")
+            config.save(schema_file=config.config_schema_path)
+        else:
+            commands.run_update_or_repair_tentacles_if_necessary(
+                community_auth, config, tentacles_setup_config
+            )
     else:
         # when no tentacles folder has been found
         logger.info("OctoBot tentacles can't be found. Installing default tentacles ...")
@@ -468,7 +484,7 @@ def start_octobot(args, default_config_file=None):
         _activate_saved_profile_after_sync(config, logger)
 
         # tries to load, install or repair tentacles
-        _load_or_create_tentacles(community_auth, config, logger)
+        _load_or_create_tentacles(community_auth, config, logger, is_process_child=is_process_child)
 
         # patch setup with forced values
         if not args.backtesting:

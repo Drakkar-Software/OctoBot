@@ -225,6 +225,17 @@ def _seed_executor_user_config(working_directory: pathlib.Path) -> None:
     config_path.write_text("{}", encoding="utf-8")
 
 
+def _seed_executor_reference_tentacles_config(working_directory: pathlib.Path) -> None:
+    reference_directory = working_directory.joinpath(
+        commons_constants.USER_FOLDER,
+        "reference_tentacles_config",
+    )
+    reference_directory.mkdir(parents=True, exist_ok=True)
+    tentacles_config_path = reference_directory / commons_constants.CONFIG_TENTACLES_FILE
+    if not tentacles_config_path.is_file():
+        tentacles_config_path.write_text("{}", encoding="utf-8")
+
+
 def _generic_process_sync_strategy(
     strategy_id: str,
     *,
@@ -244,6 +255,7 @@ def _generic_process_sync_strategy(
 
 
 def _seed_executor_non_trading_profile(working_directory: pathlib.Path) -> None:
+    _seed_executor_reference_tentacles_config(working_directory)
     source_profile_path = _octobot_project_root_from_test_file().joinpath(
         commons_constants.USER_FOLDER,
         commons_constants.PROFILES_FOLDER,
@@ -561,6 +573,28 @@ class TestWriteUserRootConfigJson:
         written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
         assert written[commons_constants.CONFIG_READONLY_PROFILES_PATH] == master_profiles_path
 
+    def test_writes_master_reference_tentacles_overlay_config_when_provided(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        master_reference_path = str(tmp_path / "master" / "reference_tentacles_config")
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                octobot_process_ops.DEFAULT_DSL_PROFILE_ID,
+                None,
+                None,
+                str(tmp_path),
+                readonly_reference_tentacles_path=master_reference_path,
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        assert (
+            written[commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH]
+            == master_reference_path
+        )
+
     def test_forwards_master_exchange_auth_when_no_overrides(self, tmp_path):
         config_path = _automation_child_config_path(tmp_path)
         master_exchange_internal_name = "master_binance"
@@ -752,7 +786,7 @@ class TestAutomationChildPathGuards:
 
 
 class TestEnsureUserProfileAndLayout:
-    async def test_marked_prepared_is_skipped(self, tmp_path):
+    async def test_prepared_layout_is_skipped_when_config_exists(self, tmp_path):
         user = tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "u1"
         user.mkdir(parents=True)
         config_path = user / commons_constants.CONFIG_FILE
@@ -760,15 +794,20 @@ class TestEnsureUserProfileAndLayout:
             json.dumps({commons_constants.CONFIG_PROFILE: "p1"}),
             encoding="utf-8",
         )
-        (user / octobot_process_ops.DSL_PREPARED_MARKER).write_text("1", encoding="utf-8")
         res = await octobot_process_ops.ensure_user_profile_and_layout(
             "u1",
             str(tmp_path),
             _MINIMAL_PROFILE_DATA,
-            None,
         )
         assert res["already_prepared"] is True
         assert res["profile_id"] == "p1"
+
+    async def test_raises_when_master_reference_missing(self, tmp_path):
+        with pytest.raises(commons_errors.DSLInterpreterError, match="Master reference tentacles"):
+            await octobot_process_ops.ensure_user_profile_and_layout(
+                "missing_ref_user",
+                str(tmp_path),
+            )
 
 
 class TestEnsureOctobotProcessOperatorProfileDataOptional:
@@ -841,13 +880,11 @@ class TestAssertSyncStrategyExists:
 
 class TestEnsureUserProfileAndLayoutSyncProfileId:
     async def test_raises_when_user_id_missing_with_sync_profile_id(self, tmp_path):
+        _seed_executor_reference_tentacles_config(tmp_path)
         with pytest.raises(commons_errors.DSLInterpreterError, match="requires user_id"):
             await octobot_process_ops.ensure_user_profile_and_layout(
                 "sync_user_folder",
                 str(tmp_path),
-                None,
-                None,
-                None,
                 sync_profile_id="sync-strategy-1",
             )
 
@@ -855,6 +892,7 @@ class TestEnsureUserProfileAndLayoutSyncProfileId:
         sync_profile_id = "sync-strategy-1"
         executor_sync_user_id = "wallet-user"
         bare_strategy = _generic_process_sync_strategy(sync_profile_id)
+        _seed_executor_reference_tentacles_config(tmp_path)
         with mock.patch.object(
             octobot_process_ops,
             "_assert_sync_strategy_exists",
@@ -867,9 +905,6 @@ class TestEnsureUserProfileAndLayoutSyncProfileId:
             result = await octobot_process_ops.ensure_user_profile_and_layout(
                 "sync_user_folder",
                 str(tmp_path),
-                None,
-                None,
-                None,
                 sync_profile_id=sync_profile_id,
                 user_id=executor_sync_user_id,
             )
@@ -879,6 +914,9 @@ class TestEnsureUserProfileAndLayoutSyncProfileId:
         root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
         assert root_cfg[commons_constants.CONFIG_PROFILE] == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
         assert "sync_user_id" not in root_cfg
+        assert root_cfg[commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH] == (
+            octobot_process_ops._executor_reference_tentacles_directory(str(tmp_path))
+        )
 
     async def test_strategy_with_profile_data_uses_sync_profile_id(self, tmp_path):
         sync_profile_id = "sync-strategy-1"
@@ -887,6 +925,7 @@ class TestEnsureUserProfileAndLayoutSyncProfileId:
             sync_profile_id,
             profile_data={"profile_details": {"id": sync_profile_id}},
         )
+        _seed_executor_reference_tentacles_config(tmp_path)
         with mock.patch.object(
             octobot_process_ops,
             "_assert_sync_strategy_exists",
@@ -899,9 +938,6 @@ class TestEnsureUserProfileAndLayoutSyncProfileId:
             result = await octobot_process_ops.ensure_user_profile_and_layout(
                 "sync_user_folder",
                 str(tmp_path),
-                None,
-                None,
-                None,
                 sync_profile_id=sync_profile_id,
                 user_id=executor_sync_user_id,
             )
@@ -919,12 +955,11 @@ class TestEnsureUserProfileAndLayoutSyncProfileId:
 class TestEnsureUserProfileAndLayoutProfileDataPriority:
     async def test_profile_data_wins_over_sync_profile_id(self, tmp_path):
         sync_profile_id = "ignored-sync-profile"
+        _seed_executor_reference_tentacles_config(tmp_path)
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             "priority_user_folder",
             str(tmp_path),
             _MINIMAL_PROFILE_DATA,
-            None,
-            None,
             sync_profile_id=sync_profile_id,
         )
         user_root = pathlib.Path(result["user_root"])
@@ -950,9 +985,6 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             user_leaf,
             str(tmp_path),
-            None,
-            None,
-            None,
         )
         assert result["already_prepared"] is False
         assert result["profile_id"] == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
@@ -983,21 +1015,29 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             "default_overlay_resolution_user",
             str(tmp_path),
-            None,
-            None,
-            None,
         )
         user_root = pathlib.Path(result["user_root"])
         child_profiles_path = user_root / commons_constants.PROFILES_FOLDER
         child_profiles_path.mkdir(parents=True, exist_ok=True)
-        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
         root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+        profile_schema_path = str(
+            _octobot_project_root_from_test_file() / octobot_constants.PROFILE_FILE_SCHEMA
+        )
+        profile_storage = profile_storage_module.ProfileStorage(
+            str(child_profiles_path),
+            profile_schema_path,
+        )
         profile_storage.configure_readonly_profiles_path(
             root_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH],
         )
-        resolved_profile = profile_storage.get_profile(octobot_process_ops.DEFAULT_DSL_PROFILE_ID)
+        loaded_profiles = profile_storage.load_all_profiles()
+        resolved_profile = loaded_profiles.get(commons_constants.DEFAULT_PROFILE)
+        if resolved_profile is None:
+            resolved_profile = loaded_profiles.get(octobot_process_ops.DEFAULT_DSL_PROFILE_ID)
         assert resolved_profile is not None
-        assert resolved_profile.profile_id == octobot_process_ops.DEFAULT_DSL_PROFILE_ID
+        assert octobot_process_ops.DEFAULT_DSL_PROFILE_ID in resolved_profile.path.replace(
+            "\\", "/"
+        )
 
     async def test_default_layout_does_not_copy_read_only_profiles(self, tmp_path):
         _seed_executor_non_trading_profile(tmp_path)
@@ -1007,9 +1047,6 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             user_leaf,
             str(tmp_path),
-            None,
-            None,
-            None,
         )
         user_root = pathlib.Path(result["user_root"])
         profiles_root = user_root / commons_constants.PROFILES_FOLDER
@@ -1029,9 +1066,6 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             "default_layout_without_sync_user",
             str(tmp_path),
-            None,
-            None,
-            None,
         )
         user_root = pathlib.Path(result["user_root"])
         root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
@@ -1052,9 +1086,7 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             "default_exchange_user",
             str(tmp_path),
-            None,
-            None,
-            exchange_auth_overrides,
+            exchange_auth_overrides=exchange_auth_overrides,
         )
         user_root = pathlib.Path(result["user_root"])
         root_cfg = json.loads((user_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
@@ -1092,11 +1124,11 @@ class TestEnsureUserProfileAndLayoutFunctional:
             }
         ]
 
+        _seed_executor_reference_tentacles_config(tmp_path)
         result = await octobot_process_ops.ensure_user_profile_and_layout(
             user_leaf,
             str(tmp_path),
             profile_dict,
-            None,
             exchange_auth_overrides,
         )
 
@@ -1108,21 +1140,21 @@ class TestEnsureUserProfileAndLayoutFunctional:
             tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / user_leaf
         )
 
-        marker_path = user_root / octobot_process_ops.DSL_PREPARED_MARKER
         root_config_path = user_root / commons_constants.CONFIG_FILE
         profile_dir = user_root / commons_constants.PROFILES_FOLDER / profile_id
         profile_json_path = profile_dir / commons_constants.PROFILE_CONFIG_FILE
         tentacles_setup_path = profile_dir / commons_constants.CONFIG_TENTACLES_FILE
 
-        assert marker_path.is_file()
         assert root_config_path.is_file()
         assert profile_json_path.is_file()
         assert tentacles_setup_path.is_file()
-        reference_layout = user_root / "reference_tentacles_config"
-        assert reference_layout.is_dir()
+        assert not (user_root / "reference_tentacles_config").exists()
 
         root_cfg = json.loads(root_config_path.read_text(encoding="utf-8"))
         assert root_cfg[commons_constants.CONFIG_PROFILE] == profile_id
+        assert root_cfg[commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH] == (
+            octobot_process_ops._executor_reference_tentacles_directory(str(tmp_path))
+        )
         assert (
             root_cfg[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEB][
                 services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER
@@ -1500,8 +1532,8 @@ class TestEnsureOctobotProcessOperatorExchangeAuthData:
 
         ensure_layout_mock.assert_awaited_once()
         await_arguments = ensure_layout_mock.await_args.args
-        assert len(await_arguments) >= 5
-        passed_exchange_auth_overrides = await_arguments[4]
+        assert len(await_arguments) >= 4
+        passed_exchange_auth_overrides = await_arguments[3]
         assert passed_exchange_auth_overrides is not None
         assert len(passed_exchange_auth_overrides) == 1
         assert isinstance(passed_exchange_auth_overrides[0], dict)
@@ -1915,6 +1947,7 @@ class TestEnsureOctobotProcessDslIntegration:
         # Minimal OctoBot project: `getcwd` must resolve `start.py` where `pre_compute` expects it.
         monkeypatch.chdir(tmp_path)
         (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        _seed_executor_reference_tentacles_config(tmp_path)
         user_folder = "integration_dsl_bot"
         expression = (
             f"run_octobot_process({user_folder!r}, {repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
@@ -1947,7 +1980,10 @@ class TestEnsureOctobotProcessDslIntegration:
                 / user_folder
             )
             assert (user_data_root / commons_constants.CONFIG_FILE).is_file()
-            assert (user_data_root / octobot_process_ops.DSL_PREPARED_MARKER).is_file()
+            root_cfg = json.loads((user_data_root / commons_constants.CONFIG_FILE).read_text(encoding="utf-8"))
+            assert root_cfg[commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH] == (
+                octobot_process_ops._executor_reference_tentacles_directory(str(tmp_path))
+            )
             # Same normpath as ensure uses for the computed absolute log path (dir may not exist until the child runs).
             expected_log_folder = os.path.normpath(
                 os.path.join(
@@ -2012,6 +2048,7 @@ class TestEnsureOctobotProcessDslIntegration:
         """
         monkeypatch.chdir(tmp_path)
         (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        _seed_executor_reference_tentacles_config(tmp_path)
         user_folder = "integration_dsl_exchange_auth_bot"
         exchange_internal_name = "dsl_integration_cred_exchange"
         fake_api_key = "dsl-integration-api-key"
@@ -2404,6 +2441,7 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
     async def test_update_config_triggers_respawn_and_recallable_result(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        _seed_executor_reference_tentacles_config(tmp_path)
         user_automation = (
             tmp_path
             / commons_constants.USER_FOLDER

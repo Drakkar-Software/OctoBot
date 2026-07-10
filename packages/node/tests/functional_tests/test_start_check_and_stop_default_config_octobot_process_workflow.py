@@ -14,6 +14,7 @@ import dbos
 
 import octobot.constants as octobot_constants_module
 import octobot_protocol.models as octobot_protocol_models
+import octobot_commons.constants as commons_constants_module
 import octobot_commons.process_util as process_util_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
 
@@ -343,7 +344,7 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
                     user_id,
                     octobot_node_constants_module.NON_TRADING_GENERIC_PROCESS_OCTOBOT_STRATEGY_ID,
                 )
-                assert stored_strategy.reference_market == "USDC"
+                assert stored_strategy.reference_market == commons_constants_module.DEFAULT_REFERENCE_MARKET
                 strategy_configuration = stored_strategy.configuration
                 assert strategy_configuration is not None
                 generic_process_configuration = strategy_configuration.actual_instance

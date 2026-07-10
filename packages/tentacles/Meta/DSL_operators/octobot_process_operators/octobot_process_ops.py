@@ -52,8 +52,6 @@ import octobot_protocol.models.generic_process_configuration as generic_process_
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers as collection_providers
 
-# Written only after a successful full init so re-runs can detect an existing per-bot tree.
-DSL_PREPARED_MARKER = ".octobot_dsl_prepared"
 DEFAULT_PING_WAITING_TIME = 2.0
 DEFAULT_ENSURE_TIMEOUT = 120.0
 DEFAULT_DSL_PROFILE_ID = "non-trading"
@@ -496,6 +494,7 @@ def _write_user_root_config_json(
     exchange_auth_overrides: list[dict] | None = None,
     working_directory: str = "",
     readonly_profiles_path: str | None = None,
+    readonly_reference_tentacles_path: str | None = None,
 ) -> None:
     """
     Writes user-root ``config.json``: selected profile, disabled web auto-open for DSL-spawned
@@ -510,6 +509,10 @@ def _write_user_root_config_json(
     default_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] = True
     if readonly_profiles_path:
         default_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH] = readonly_profiles_path
+    if readonly_reference_tentacles_path:
+        default_cfg[commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH] = (
+            readonly_reference_tentacles_path
+        )
     services_cfg = default_cfg.setdefault(services_constants.CONFIG_CATEGORY_SERVICES, {})
     web_cfg = services_cfg.setdefault(services_constants.CONFIG_WEB, {})
     web_cfg[services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER] = False
@@ -550,11 +553,24 @@ def _executor_profiles_directory(working_directory: str) -> str:
     )
 
 
+def _executor_reference_tentacles_directory(working_directory: str) -> str:
+    return os.path.normpath(
+        os.path.join(
+            working_directory,
+            commons_constants.USER_FOLDER,
+            "reference_tentacles_config",
+        )
+    )
+
+
 def _child_master_profile_config_kwargs(
     working_directory: str,
 ) -> dict[str, typing.Any]:
     return {
         "readonly_profiles_path": _executor_profiles_directory(working_directory),
+        "readonly_reference_tentacles_path": _executor_reference_tentacles_directory(
+            working_directory
+        ),
     }
 
 
@@ -589,8 +605,7 @@ def _assert_sync_strategy_exists(sync_user_id: str, sync_profile_id: str) -> typ
 async def ensure_user_profile_and_layout(
     user_folder: str,
     working_directory: str,
-    profile_data_dict: dict | None,
-    source_reference_tentacles_config: str | None,
+    profile_data_dict: dict | None = None,
     exchange_auth_overrides: list[dict] | None = None,
     *,
     sync_profile_id: str | None = None,
@@ -598,8 +613,8 @@ async def ensure_user_profile_and_layout(
 ) -> dict[str, typing.Any]:
     """
     One-time layout under user_root (<working_directory>/user/automations/<user_folder>/):
-    profile tree, top-level config.json, reference_tentacles_config copy.
-    Idempotent when config.json + marker both exist.
+    profile tree and top-level config.json (with master readonly overlays).
+    Idempotent when config.json already exists.
     """
     dsl_interpreter.ProcessBoundOperatorMixin.reject_user_path_segment(user_folder)
     user_folder_leaf_segments = _path_segments(user_folder)
@@ -611,15 +626,21 @@ async def ensure_user_profile_and_layout(
         )
     )
     config_path = os.path.join(user_root, commons_constants.CONFIG_FILE)
-    marker_path = os.path.join(user_root, DSL_PREPARED_MARKER)
     # Already prepared: do not rewrite files (host may have re-used this folder).
-    if os.path.isfile(config_path) and os.path.isfile(marker_path):
+    if os.path.isfile(config_path):
         profile_id = _read_top_level_profile_id(config_path)
         return {
             "user_root": user_root,
             "profile_id": profile_id,
             "already_prepared": True,
         }
+
+    master_reference_tentacles_path = _executor_reference_tentacles_directory(working_directory)
+    if not os.path.isdir(master_reference_tentacles_path):
+        raise commons_errors.DSLInterpreterError(
+            f"Master reference tentacles config not found at {master_reference_tentacles_path!r}. "
+            "Install tentacles on the executor (master OctoBot) before spawning process children."
+        )
 
     os.makedirs(user_root, exist_ok=True)
 
@@ -686,23 +707,6 @@ async def ensure_user_profile_and_layout(
             working_directory,
             **_child_master_profile_config_kwargs(working_directory),
         )
-
-    # Mirror default reference tentacles layout expected by the child.
-    ref_src = source_reference_tentacles_config or os.path.join(
-        working_directory, commons_constants.USER_FOLDER, "reference_tentacles_config"
-    )
-    ref_src = os.path.normpath(ref_src)
-    ref_dst = os.path.join(user_root, "reference_tentacles_config")
-    if os.path.isdir(ref_src):
-        if os.path.exists(ref_dst):
-            shutil.rmtree(ref_dst)
-        shutil.copytree(ref_src, ref_dst)
-    else:
-        os.makedirs(ref_dst, exist_ok=True)
-
-    # Marker last: if anything above failed, a partial tree will not look "prepared".
-    with open(marker_path, "w", encoding="utf-8") as marker_file:
-        marker_file.write("1")
 
     return {
         "user_root": user_root,
@@ -867,7 +871,7 @@ def create_octobot_process_operators(
         dsl_interpreter.ProcessBoundOperatorMixin,
     ):
         DESCRIPTION = (
-            "Prepares a per-bot user directory (profile + config + reference_tentacles_config), "
+            "Prepares a per-bot user directory (profile + config with master readonly overlays), "
             "spawns an OctoBot child with unique WEB/NODE ports and --dump-state for process_bot_state.json. "
             "Always re-callable: each fresh state file (updated_at within twice the dump interval) schedules the next check (see waiting_time). "
             "If the state file never becomes live before ping_timeout from the first spawn, the keyword fails and the child is killed."
@@ -1193,7 +1197,6 @@ def create_octobot_process_operators(
                 user_folder,
                 working_directory,
                 params.get("profile_data"),
-                None,
                 exchange_auth_overrides,
                 sync_profile_id=params.get("sync_profile_id"),
                 user_id=params.get("user_id"),

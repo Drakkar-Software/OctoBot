@@ -30,6 +30,7 @@ class TestCreateGenericProcessBotCreatesMissingStrategy:
         tmp_path,
         temp_dbos_scheduler,
     ) -> None:
+        import octobot_commons.constants as commons_constants_module
         import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
         import octobot_node.constants as octobot_node_constants_module
         import octobot_protocol.models as protocol_models_module
@@ -60,7 +61,7 @@ class TestCreateGenericProcessBotCreatesMissingStrategy:
                 user_id,
                 octobot_node_constants_module.NON_TRADING_GENERIC_PROCESS_OCTOBOT_STRATEGY_ID,
             )
-            assert stored_strategy.reference_market == "USDC"
+            assert stored_strategy.reference_market == commons_constants_module.DEFAULT_REFERENCE_MARKET
             generic_process_configuration = stored_strategy.configuration.actual_instance
             assert isinstance(generic_process_configuration, protocol_models_module.GenericProcessConfiguration)
             assert generic_process_configuration.profile_data is None
