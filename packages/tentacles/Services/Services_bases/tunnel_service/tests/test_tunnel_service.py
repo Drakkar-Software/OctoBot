@@ -14,13 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import json
 import logging
 from unittest import mock
 
 import pytest
 
 from tentacles.Services.Services_bases.tunnel_service import TunnelService, WebHookService
-from tentacles.Services.Services_bases.tunnel_service.backends import ngrok_backend, tailscale_backend
+from tentacles.Services.Services_bases.tunnel_service.backends import ngrok_backend, tailscale_backend, \
+    tailscale_cli_backend
+from tentacles.Services.Services_bases.tunnel_service.backends.tailscale_cli_backend import TailscaleCliBackend
 
 import octobot_services.constants as services_constants
 
@@ -188,3 +191,103 @@ async def test_tailscale_funnel_is_mocked_and_warns(caplog):
 
     assert url == "https://octobot.mock-tailnet.ts.net"
     assert any("Funnel is not yet supported" in record.message for record in caplog.records)
+
+
+class _FakeCliProcess:
+    def __init__(self, stdout: bytes, returncode: int = 0):
+        self._stdout = stdout
+        self.returncode = returncode
+
+    async def communicate(self):
+        return self._stdout, b""
+
+
+def _fake_tailscale_cli(calls, dns_name="octobot.tailxxxx.ts.net.", initially_connected=True):
+    state = {"connected": initially_connected}
+
+    async def fake_create_subprocess_exec(binary, *args, **kwargs):
+        calls.append(args)
+        if args[0] == "up":
+            state["connected"] = True
+            return _FakeCliProcess(b"")
+        if args[0] == "status":
+            backend_state = "Running" if state["connected"] else "Stopped"
+            payload = json.dumps({
+                "BackendState": backend_state,
+                "Self": {"DNSName": dns_name},
+            }).encode()
+            return _FakeCliProcess(payload)
+        return _FakeCliProcess(b"")
+
+    return fake_create_subprocess_exec
+
+
+def test_tailscale_cli_backend_is_available_checks_path(monkeypatch):
+    monkeypatch.setattr(tailscale_cli_backend.shutil, "which", lambda name: "/usr/bin/tailscale")
+    assert TailscaleCliBackend.is_available() is True
+    monkeypatch.setattr(tailscale_cli_backend.shutil, "which", lambda name: None)
+    assert TailscaleCliBackend.is_available() is False
+
+
+@pytest.mark.asyncio
+async def test_tailscale_cli_backend_open_uses_serve_command(monkeypatch):
+    calls = []
+    monkeypatch.setattr(tailscale_cli_backend.asyncio, "create_subprocess_exec", _fake_tailscale_cli(calls))
+
+    backend = TailscaleCliBackend("tskey-auth-xxx", "octobot")
+    url = await backend.open("127.0.0.1", 9000)
+
+    assert url == "https://octobot.tailxxxx.ts.net"
+    assert ("serve", "--bg", "http://127.0.0.1:9000") in calls
+
+    await backend.close()
+    assert ("serve", "reset") in calls
+
+
+@pytest.mark.asyncio
+async def test_tailscale_cli_backend_open_funnel_uses_funnel_command(monkeypatch):
+    calls = []
+    monkeypatch.setattr(tailscale_cli_backend.asyncio, "create_subprocess_exec", _fake_tailscale_cli(calls))
+
+    backend = TailscaleCliBackend("tskey-auth-xxx", "octobot")
+    url = await backend.open_funnel("127.0.0.1", 9000)
+
+    assert url == "https://octobot.tailxxxx.ts.net"
+    assert ("funnel", "--bg", "http://127.0.0.1:9000") in calls
+
+
+@pytest.mark.asyncio
+async def test_tailscale_cli_backend_runs_up_when_not_connected(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        tailscale_cli_backend.asyncio, "create_subprocess_exec",
+        _fake_tailscale_cli(calls, initially_connected=False)
+    )
+
+    backend = TailscaleCliBackend("tskey-auth-xxx", "octobot")
+    await backend.open("127.0.0.1", 9000)
+
+    up_calls = [call for call in calls if call[0] == "up"]
+    assert len(up_calls) == 1
+    assert "--authkey=tskey-auth-xxx" in up_calls[0]
+    assert "--hostname=octobot" in up_calls[0]
+
+
+def test_get_tailscale_backend_prefers_cli_when_available(monkeypatch):
+    monkeypatch.setattr(TailscaleCliBackend, "is_available", lambda: True)
+    service = _service_with_config(_minimal_tunnel_config())
+    service.tailscale_auth_key = "tskey-auth-xxx"
+    service.tailscale_hostname = "octobot"
+    service.tailscale_state_file = "state.json"
+
+    assert isinstance(service._get_tailscale_backend(), TailscaleCliBackend)
+
+
+def test_get_tailscale_backend_falls_back_to_lib_when_cli_unavailable(monkeypatch):
+    monkeypatch.setattr(TailscaleCliBackend, "is_available", lambda: False)
+    service = _service_with_config(_minimal_tunnel_config())
+    service.tailscale_auth_key = "tskey-auth-xxx"
+    service.tailscale_hostname = "octobot"
+    service.tailscale_state_file = "state.json"
+
+    assert isinstance(service._get_tailscale_backend(), tailscale_backend.TailscaleBackend)

@@ -52,8 +52,9 @@ class TunnelService(services.AbstractService):
             services_constants.CONFIG_TAILSCALE_AUTH_KEY: "The tailscale auth key used to join your tailnet.",
             services_constants.CONFIG_TAILSCALE_HOSTNAME: "[Optional] The hostname to use on the tailnet.",
             services_constants.CONFIG_ENABLE_TAILSCALE_FUNNEL:
-                "[Experimental, not yet supported by tailscale-py] Try to expose the webhook publicly via "
-                "Tailscale Funnel instead of only on the tailnet.",
+                "[Experimental] Try to expose the webhook publicly via Tailscale Funnel instead of only on "
+                "the tailnet. Genuinely works when the tailscale CLI is available in PATH; otherwise falls "
+                "back to a mocked (unreachable) URL since tailscale-py doesn't support Funnel yet.",
             services_constants.CONFIG_TUNNEL_SERVE_UI:
                 "Also expose the web interface through the Tailscale tunnel.",
             services_constants.CONFIG_WEBHOOK_SERVER_IP:
@@ -407,11 +408,18 @@ class TunnelService(services.AbstractService):
             self.logger.exception(err, True, f"Impossible to start OctoBot cloud based webhook {err}")
             return False
 
-    def _get_tailscale_backend(self) -> "backends.TailscaleBackend":
+    def _get_tailscale_backend(self) -> "backends.AbstractTunnelBackend":
         if self.tailscale_backend is None:
-            self.tailscale_backend = backends.TailscaleBackend(
-                self.tailscale_auth_key, self.tailscale_hostname, self.tailscale_state_file
-            )
+            # prefer the tailscale CLI when available: tailscaled handles serve/funnel
+            # itself, so it needs no userspace-netstack bridge and genuinely supports Funnel.
+            if backends.TailscaleCliBackend.is_available():
+                self.tailscale_backend = backends.TailscaleCliBackend(
+                    self.tailscale_auth_key, self.tailscale_hostname
+                )
+            else:
+                self.tailscale_backend = backends.TailscaleBackend(
+                    self.tailscale_auth_key, self.tailscale_hostname, self.tailscale_state_file
+                )
         return self.tailscale_backend
 
     async def _start_tailscale_webhook_tunnel(self) -> None:
