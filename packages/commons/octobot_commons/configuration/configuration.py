@@ -27,6 +27,7 @@ import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.json_util as json_util
 import octobot_commons.configuration.config_file_manager as config_file_manager
 import octobot_commons.configuration.config_operations as config_operations
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 
 class Configuration:
@@ -400,6 +401,22 @@ class Configuration:
             return commons_constants.DEFAULT_PROFILE
         raise errors.NoProfileError
 
+    def apply_readonly_reference_tentacles_override(self) -> None:
+        """
+        Point ``UserRootFolderProvider`` at the master ``reference_tentacles_config`` tree
+        when ``readonly_reference_tentacles_path`` is set in user ``config.json`` (DSL process
+        children share the executor's reference tentacles instead of copying them locally).
+        """
+        if not isinstance(self.config, dict):
+            return
+        readonly_reference_tentacles_path = self.config.get(
+            commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH
+        )
+        if readonly_reference_tentacles_path:
+            user_root_folder_provider.instance().configure_readonly_reference_tentacles_path(
+                readonly_reference_tentacles_path
+            )
+
     def _prepare_profile_storage(self) -> None:
         self.profile_storage.configure_paths(
             self.profiles_path, self.profile_schema_path
@@ -412,6 +429,10 @@ class Configuration:
                 self.profile_storage.configure_readonly_profiles_path(
                     readonly_profiles_path
                 )
+            # Same config.json readonly overlay as profiles above: profile load and tentacles
+            # setup read reference paths via UserRootFolderProvider, so apply it whenever
+            # profile storage is prepared (load_profiles, refresh_sync_profiles, etc.).
+            self.apply_readonly_reference_tentacles_override()
 
     def load_profiles(self) -> None:
         """

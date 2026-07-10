@@ -106,6 +106,42 @@ class TestLoadOrCreateTentaclesProfileDataBacked:
         config.get_tentacles_config_path.assert_not_called()
         repair_mock.assert_called_once_with(community_auth, config, setup_config)
 
+    def test_process_child_with_readonly_reference_skips_repair(self):
+        config = mock.Mock()
+        setup_config = mock.Mock()
+        config.config = {
+            octobot_cli.common_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH: "/master/reference",
+        }
+        config.get_active_tentacles_setup_config.return_value = setup_config
+        community_auth = mock.Mock()
+        logger = mock.Mock()
+        with mock.patch.object(
+            octobot_cli.user_root_folder_provider,
+            "get_user_reference_tentacle_config_file_path",
+            mock.Mock(return_value="/master/reference/tentacles_config.json"),
+        ), mock.patch("octobot.cli.os.path.isfile", mock.Mock(return_value=True)), mock.patch.object(
+            octobot_cli.tentacles_manager_api,
+            "load_tentacles",
+            mock.Mock(return_value=True),
+        ) as load_tentacles_mock, mock.patch.object(
+            config,
+            "save",
+            mock.Mock(),
+        ) as save_mock, mock.patch.object(
+            octobot_cli.commands,
+            "run_update_or_repair_tentacles_if_necessary",
+            mock.Mock(),
+        ) as repair_mock:
+            octobot_cli._load_or_create_tentacles(
+                community_auth,
+                config,
+                logger,
+                is_process_child=True,
+            )
+        load_tentacles_mock.assert_called_once_with(verbose=True)
+        save_mock.assert_called_once()
+        repair_mock.assert_not_called()
+
 
 class TestConfigureProfileSyncUserNormalBot:
     def test_uses_auto_init_sync_client(self):
