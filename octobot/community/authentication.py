@@ -153,6 +153,8 @@ class CommunityAuthentication(authentication.Authenticator):
         sync_data_root = os.path.normpath(user_root_folder_provider.get_sync_data_root())
         user_root = os.path.normpath(user_root_folder_provider.get_user_root_folder())
         if sync_data_root != user_root:
+            # This is a child octobot process using the master sync data root, 
+            # configure storage accordingly
             master_config_path = os.path.join(sync_data_root, commons_constants.CONFIG_FILE)
             master_config = commons_configuration.Configuration(
                 master_config_path,

@@ -463,6 +463,7 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
                 root_cfg[common_constants.CONFIG_READONLY_PROFILES_PATH]
                 == expected_readonly_profiles_path
             )
+            # make sure profiles are not stored in filesystem
             local_non_trading_profile_json = (
                 user_root
                 / common_constants.PROFILES_FOLDER

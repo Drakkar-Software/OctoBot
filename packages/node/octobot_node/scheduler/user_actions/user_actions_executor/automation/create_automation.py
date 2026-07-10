@@ -181,7 +181,8 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                 user_id=self._user_id,
                 reference_market=stored_strategy.reference_market,
             )
-        elif isinstance(inner_configuration, protocol_models.GenericProcessConfiguration):
+        elif not _requires_account(inner_configuration):
+            # unlike others, generic process configuration does not require an account
             init_action = action_details_factory.generic_process_metadata_init_action_factory(
                 automation_id=automation_id,
                 strategy_reference=automation_configuration.strategy,
@@ -270,12 +271,16 @@ def _get_create_automation_payload(
     return payload
 
 
+def _requires_account(inner_configuration: typing.Any) -> bool:
+    return not isinstance(inner_configuration, protocol_models.GenericProcessConfiguration)
+
+
 def _resolve_automation_account_id(
     automation_configuration: protocol_models.AutomationConfiguration,
     inner_configuration: typing.Any,
 ) -> str | None:
     accounts_list = list(automation_configuration.accounts or [])
-    if isinstance(inner_configuration, protocol_models.GenericProcessConfiguration):
+    if not _requires_account(inner_configuration):
         if not accounts_list:
             return None
         if len(accounts_list) > 1:

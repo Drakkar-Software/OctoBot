@@ -23,7 +23,6 @@ import pytest
 import octobot_flow.jobs
 import octobot_flow.jobs.automation_runner_job as automation_runner_job_module
 import octobot_flow.entities
-import octobot_flow.environment
 import octobot_flow.enums
 import tests.functionnal_tests as functionnal_tests
 import tests.functionnal_tests.tentacle_test_configs as tentacle_test_configs
@@ -364,12 +363,6 @@ def _make_tracked_spawn_managed_with_forward_terminal_output(
         return real_spawn_managed(*args, **merged_kwargs)
 
     return _tracked
-
-
-@pytest.fixture(autouse=True)
-def register_functional_executor_id():
-    octobot_flow.environment.register_executor_id("func-test-executor")
-    yield
 
 
 @pytest.fixture

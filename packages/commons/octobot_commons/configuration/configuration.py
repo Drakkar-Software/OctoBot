@@ -292,6 +292,7 @@ class Configuration:
                 self.profile.init_tentacles_setup_config()
             tentacles_setup_config = self.profile.tentacles_setup_config
             return self.profile.bind_tentacles_setup_config(tentacles_setup_config)
+        # create it from filesystem config path
         import octobot_tentacles_manager.api as tentacles_manager_api
 
         return tentacles_manager_api.get_tentacles_setup_config(
