@@ -3,6 +3,7 @@ import asyncio
 import typing
 
 import octobot.community
+import octobot_commons.logging
 
 import octobot_sync.client
 import octobot_flow.entities
@@ -17,6 +18,27 @@ class CommunityRepository:
     @classmethod
     def from_community_repository(cls, other_repository: "CommunityRepository") -> typing.Self:
         return cls(other_repository.authenticator, other_repository.wallet_address)
+
+    @staticmethod
+    def user_id_to_evm(user_id: typing.Optional[str]) -> typing.Optional[str]:
+        """Return the EVM wallet address for a Starfish *user_id*, or None if unresolvable.
+
+        The community repository (used inside OctoBotActionsJob) requires the EVM wallet
+        address for the community sync client.  We store Starfish user_id in Task.user_id
+        (the sync-core identity), so we must translate back to the EVM address at the
+        automation-job boundary.
+        """
+        if user_id is None:
+            return None
+        try:
+            return octobot.community.CommunityAuthentication.instance().get_wallet_by_user_id(
+                user_id
+            ).address
+        except Exception as err:
+            octobot_commons.logging.get_logger("CommunityRepository").warning(
+                f"Could not resolve EVM address for user_id={user_id!r}: {err}"
+            )
+            return None
 
     async def insert_bot_logs(self, log_data: list[octobot.community.BotLogData]):
         await asyncio.gather(

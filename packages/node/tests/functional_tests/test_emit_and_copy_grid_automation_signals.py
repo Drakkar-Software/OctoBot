@@ -494,8 +494,8 @@ class TestEmitAndCopyGridAutomationSignals:
                                 None,
                                 True,
                             )
-                        # Persistent auth singleton so _user_id_to_evm() resolves correctly when
-                        # automation_workflow.py translates the Starfish user_id → EVM address for
+                        # Persistent auth singleton so CommunityRepository.user_id_to_evm() resolves correctly when
+                        # translating the Starfish user_id → EVM address for
                         # auth_details["wallet_address"] (needed by CommunityRepository inside the job).
                         auth_config = local_authenticator_module.get_stateless_configuration()
                         auth_instance_for_singleton = community_authentication_module.CommunityAuthentication(

@@ -20,13 +20,13 @@ import dbos
 
 import octobot_commons.logging
 
-import octobot.community.authentication as community_authentication
 import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_trading.errors
 
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.errors
+import octobot_flow.repositories.community.community_repository as community_repository
 
 import octobot_node.enums
 import octobot_node.models
@@ -41,27 +41,6 @@ import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
 WORKFLOW_NAME = "execute_automation"
-
-
-def _user_id_to_evm(user_id: typing.Optional[str]) -> typing.Optional[str]:
-    """Return the EVM wallet address for a Starfish *user_id*, or None if unresolvable.
-
-    The community repository (used inside OctoBotActionsJob) requires the EVM wallet
-    address for the community sync client.  We store Starfish user_id in Task.user_id
-    (the sync-core identity), so we must translate back to the EVM address at the
-    automation-job boundary.
-    """
-    if user_id is None:
-        return None
-    try:
-        return community_authentication.CommunityAuthentication.instance().get_wallet_by_user_id(
-            user_id
-        ).address
-    except Exception as err:
-        octobot_commons.logging.get_logger("AutomationWorkflow").warning(
-            f"Could not resolve EVM address for user_id={user_id!r}: {err}"
-        )
-        return None
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -186,7 +165,9 @@ class AutomationWorkflow:
                         # CommunityRepository (used inside the job) needs the EVM wallet
                         # address, not the Starfish user_id — derive it from the task
                         # identity so the community sync client resolves correctly.
-                        wallet_address=_user_id_to_evm(parsed_inputs.task.user_id),
+                        wallet_address=community_repository.CommunityRepository.user_id_to_evm(
+                            parsed_inputs.task.user_id
+                        ),
                     )
                     await action_job.run()
                 except octobot_trading.errors.RetriableFailedRequest as err:
