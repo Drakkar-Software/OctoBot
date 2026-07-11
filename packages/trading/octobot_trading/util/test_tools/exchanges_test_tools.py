@@ -349,6 +349,7 @@ async def _create_order(
     order_dict: dict,
     order_creation_timeout: float,
     price_by_symbol: dict[str, float],
+    defer_status_confirmation: bool = False,
 ) -> typing.Optional[personal_data.Order]:
     symbol = order_dict[enums.ExchangeConstantsOrderColumns.SYMBOL.value]
     side, order_type = personal_data.parse_order_type(order_dict)
@@ -375,6 +376,8 @@ async def _create_order(
         )
         return order
     if order.status is enums.OrderStatus.PENDING_CREATION and order_creation_timeout > 0:
+        if defer_status_confirmation:
+            return order
         try:
             return await wait_for_other_status(order, order_creation_timeout)
         except TimeoutError as err:
@@ -388,38 +391,111 @@ async def create_orders(
     orders: list,
     order_creation_timeout: float,
     price_by_symbol: dict[str, float],
+    defer_status_confirmation: bool = False,
 ) -> list:
     if len(orders) == 1:
         return [
-            await _create_order(exchange_manager, next(iter(orders)), order_creation_timeout, price_by_symbol)
+            await _create_order(
+                exchange_manager, next(iter(orders)), order_creation_timeout, price_by_symbol,
+                defer_status_confirmation=defer_status_confirmation,
+            )
         ]
     # wait all as a not-stopped exchange manager is required to parse orders
     return await asyncio_tools.gather_waiting_for_all_before_raising(*(
-        _create_order(exchange_manager, order_dict, order_creation_timeout, price_by_symbol)
+        _create_order(
+            exchange_manager, order_dict, order_creation_timeout, price_by_symbol,
+            defer_status_confirmation=defer_status_confirmation,
+        )
         for order_dict in orders
     ))
 
 
+def _describe_raw_order_poll_outcome(raw_order: typing.Optional[dict], origin_status: str) -> str:
+    # used for logging only
+    if raw_order is None:
+        return "None"
+    raw_status = raw_order.get(enums.ExchangeConstantsOrderColumns.STATUS.value)
+    if raw_status == origin_status:
+        return f"unchanged status ({raw_status})"
+    return f"status={raw_status}"
+
+
+async def _try_fetch_order_from_open_orders(
+    exchange_manager, exchange_order_id: str, symbol: str,
+) -> typing.Optional[dict]:
+    try:
+        open_orders = await exchange_manager.exchange.get_open_orders(symbol=symbol)
+    except Exception:
+        return None
+    for open_order in open_orders or []:
+        if open_order.get(enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value) == exchange_order_id:
+            return open_order
+    return None
+
+
 async def wait_for_other_status(order: personal_data.Order, timeout) -> personal_data.Order:
+    # Poll get_order until the exchange reports a status other than origin_status (typically
+    # PENDING_CREATION right after create). Used by _create_order and confirm_order_status.
     t0 = time.time()
     iterations = 0
+    consecutive_none_polls = 0
     origin_status = order.status.value
+    last_poll_outcome = "not started"
+    order_logger = logging.get_logger(order.get_logger_name())
+    exchange_manager = order.exchange_manager
     while time.time() - t0 < timeout:
-        raw_order = await order.exchange_manager.exchange.get_order(
+        # Primary path: fetch the order by exchange id until status leaves origin_status.
+        raw_order = await exchange_manager.exchange.get_order(
             order.exchange_order_id, order.symbol, order_type=order.order_type
         )
         iterations += 1
-        if raw_order is not None and raw_order[enums.ExchangeConstantsOrderColumns.STATUS.value] != origin_status:
-            logging.get_logger(order.get_logger_name()).info(
-                f"Order fetched with status different from {origin_status} after {iterations} "
-                f"iterations and {round(time.time() - t0)}s"
+        last_poll_outcome = _describe_raw_order_poll_outcome(raw_order, origin_status)
+        if raw_order is None:
+            consecutive_none_polls += 1
+            # Some exchanges (e.g. Coinbase) return None from get_order briefly after create
+            # even though the order exists; fall back to open_orders after repeated None polls.
+            if consecutive_none_polls >= constants.ORDER_STATUS_OPEN_ORDERS_FALLBACK_AFTER_NONE_POLLS:
+                if fallback_order := await _try_fetch_order_from_open_orders(
+                    exchange_manager, order.exchange_order_id, order.symbol
+                ):
+                    order_logger.info(
+                        f"[{exchange_manager.exchange_name}] order {order.exchange_order_id} found in open orders "
+                        f"after {iterations} get_order polls ({round(time.time() - t0, 2)}s)"
+                    )
+                    if parsed_order := _parse_order_dict(exchange_manager, fallback_order, False):
+                        return parsed_order
+                    last_poll_outcome = "open_orders match parse failed"
+        else:
+            consecutive_none_polls = 0
+            if raw_order[enums.ExchangeConstantsOrderColumns.STATUS.value] != origin_status:
+                order_logger.info(
+                    f"Order fetched with status different from {origin_status} after {iterations} "
+                    f"iterations and {round(time.time() - t0)}s"
+                )
+                if parsed_order := _parse_order_dict(exchange_manager, raw_order, False):
+                    return parsed_order
+                last_poll_outcome = f"status changed to {raw_order[enums.ExchangeConstantsOrderColumns.STATUS.value]} but parse failed"
+        # Log progress every N polls so long waits are visible in production logs.
+        if iterations % constants.ORDER_STATUS_POLL_LOG_INTERVAL == 0:
+            order_logger.info(
+                f"[{exchange_manager.exchange_name}] pending order status poll {iterations} for "
+                f"{order.symbol} exchange id {order.exchange_order_id} "
+                f"({round(time.time() - t0, 2)}s elapsed, last result: {last_poll_outcome})"
             )
-            if parsed_order := _parse_order_dict(order.exchange_manager, raw_order, False):
-                return parsed_order
+        # Avoid sleeping past the timeout budget on the last iteration.
         if time.time() - t0 + constants.CREATED_ORDER_FORCED_UPDATE_PERIOD >= timeout:
             break
         await asyncio.sleep(constants.CREATED_ORDER_FORCED_UPDATE_PERIOD)
+    order_logger.error(
+        f"[{exchange_manager.exchange_name}] pending order status poll timed out after {iterations} attempts "
+        f"for {order.symbol} exchange id {order.exchange_order_id} "
+        f"({round(time.time() - t0, 2)}s elapsed, last result: {last_poll_outcome})"
+    )
     raise TimeoutError(f"Order was not found with another status than {origin_status} within {timeout} seconds")
+
+
+async def confirm_order_status(order: personal_data.Order, timeout: float) -> personal_data.Order:
+    return await wait_for_other_status(order, timeout)
 
 
 @exchanges.retried_failed_network_request(
