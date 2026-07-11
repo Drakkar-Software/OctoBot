@@ -465,9 +465,6 @@ def start_octobot(args, default_config_file=None):
             commands.exchange_keys_encrypter()
             return
 
-        # add args to config
-        update_config_with_args(args, config, logger)
-
         # show terms
         _log_terms_if_unaccepted(config, logger)
 
@@ -489,6 +486,9 @@ def start_octobot(args, default_config_file=None):
         # patch setup with forced values
         if not args.backtesting:
             _apply_forced_configs(community_auth, logger, config, is_first_startup)
+
+        # apply CLI overrides after profile activation (trader keys come from profile)
+        update_config_with_args(args, config, logger)
 
         # Can now perform config health check (some checks require a loaded profile)
         configuration_manager.config_health_check(config, args.backtesting)
