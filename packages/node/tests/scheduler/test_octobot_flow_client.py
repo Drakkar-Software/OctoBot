@@ -1622,3 +1622,61 @@ class TestOctoBotActionsJob:
         assert post_withdraw_portfolio["BTC"] == post_trade_portfolio["BTC"]
         assert "ETH" not in post_withdraw_portfolio
         assert result.has_next_actions is False # no more actions to execute
+
+
+class TestOctoBotActionsJobRunLogging:
+    @pytest.mark.asyncio
+    async def test_logs_executed_actions_not_input_priority_actions(self):
+        if message := misses_required_octobot_flow_client_import():
+            pytest.skip(reason=message)
+
+        executed_action = octobot_flow.entities.ConfiguredActionDetails(
+            id="executed_stop",
+            action="stop_automation()",
+        )
+        priority_user_actions = [
+            {
+                "id": "action_stop_priority_input_priority",
+                "dsl_script": "stop_automation()",
+            }
+        ]
+        mock_automation_job = mock.AsyncMock()
+        mock_automation_job.run = mock.AsyncMock(return_value=[executed_action])
+        mock_automation_job.automation_state = mock.Mock()
+        mock_automation_job.automation_state.automation = mock.Mock()
+        mock_automation_job.automation_state.automation.actions_dag = mock.Mock()
+        mock_automation_job.automation_state.automation.actions_dag.get_executable_actions = mock.Mock(
+            return_value=[]
+        )
+        mock_automation_job.automation_state.automation.actions_dag.get_pending_actions = mock.Mock(
+            return_value=[]
+        )
+        mock_automation_job.automation_state.automation.post_actions = mock.Mock(stop_automation=False)
+        mock_automation_job.dump = mock.Mock(
+            return_value={"automation": {"metadata": {"automation_id": "automation_1"}}}
+        )
+
+        mock_automation_job_context = mock.AsyncMock()
+        mock_automation_job_context.__aenter__ = mock.AsyncMock(return_value=mock_automation_job)
+        mock_automation_job_context.__aexit__ = mock.AsyncMock(return_value=False)
+
+        mock_logger = mock.Mock()
+        job = octobot_flow_client.OctoBotActionsJob(
+            {"state": {"automation": {"metadata": {"automation_id": "automation_1"}}}},
+            priority_user_actions,
+            [],
+            octobot_flow_client.OctoBotActionsJobResult(),
+        )
+
+        with mock.patch(
+            "octobot_flow.jobs.AutomationJob",
+            return_value=mock_automation_job_context,
+        ), mock.patch(
+            "octobot_commons.logging.get_logger",
+            return_value=mock_logger,
+        ):
+            await job.run()
+
+        mock_logger.info.assert_called_once_with(
+            f"Running automation actions: {[executed_action]}"
+        )

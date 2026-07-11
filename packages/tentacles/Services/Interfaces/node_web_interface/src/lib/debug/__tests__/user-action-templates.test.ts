@@ -31,9 +31,14 @@ describe("defaultSignalPayloadText", () => {
 })
 
 describe("buildUserActionTemplate", () => {
-  it("builds an automation stop template", () => {
-    const action = buildUserActionTemplate("automation_stop")
-    expect(action.id).toContain("automation_stop")
+  it("builds an automation stop template with a unique user-action id", () => {
+    const firstAction = buildUserActionTemplate("automation_stop")
+    const secondAction = buildUserActionTemplate("automation_stop")
+    expect(firstAction.id).toMatch(
+      /^ua-manual-automation_stop-[0-9a-f-]{36}$/,
+    )
+    expect(secondAction.id).not.toBe(firstAction.id)
+    const action = firstAction
     expect(action.configuration).toMatchObject({
       action_type: "automation_stop",
       id: TEMPLATE_AUTOMATION_ID,
@@ -367,9 +372,12 @@ describe("buildStrategyEditUserActionJson", () => {
 })
 
 describe("buildAutomationStopUserActionJson", () => {
-  it("targets the automation id", () => {
-    const json = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
-    expect(json.configuration).toEqual({
+  it("targets the automation id with a unique user-action id", () => {
+    const firstJson = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
+    const secondJson = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
+    expect(firstJson.id).toMatch(/^ua-stop-auto-1-[0-9a-f-]{36}$/)
+    expect(secondJson.id).not.toBe(firstJson.id)
+    expect(firstJson.configuration).toEqual({
       action_type: "automation_stop",
       id: "auto-1",
     })
