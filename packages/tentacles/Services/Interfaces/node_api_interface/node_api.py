@@ -28,6 +28,7 @@ import octobot.community.authentication as community_auth
 import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
 import octobot_services.interfaces.util.web as web_util
+import octobot_commons.logging as octobot_commons_logging
 import octobot_node.config as node_config
 import octobot_node.scheduler as scheduler # noqa: F401
 import octobot_sync.server as sync_server
@@ -163,6 +164,8 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             generate_unique_id_function=custom_generate_unique_id,
             lifespan=lifespan,
         )
+
+        octobot_commons_logging.register_unhandled_exception_handler(app, "node_api_interface")
 
         app.include_router(build_api_router(), prefix="/api/v1")
 

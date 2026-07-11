@@ -27,6 +27,7 @@ from starfish_server.auth.revocation_store import create_in_memory_revocation_st
 
 import starfish_identities
 
+import octobot_commons.logging as octobot_commons_logging
 import octobot_sync.constants as constants
 import octobot_sync.sync as sync
 
@@ -107,6 +108,8 @@ def create_app(
         sync_config = sync.load_sync_config(collections_path)
 
     app = FastAPI(title="OctoBot Sync — Signal Sync Server")
+
+    octobot_commons_logging.register_unhandled_exception_handler(app, "OctoBot-Sync")
 
     sync_router = create_sync_router(
         SyncRouterOptions(

@@ -45,6 +45,9 @@ from octobot_commons.logging.context_based_file_handler import (
     add_context_based_file_handler,
     ContextBasedFileHandler,
 )
+from octobot_commons.logging.fastapi_unhandled_exception_handlers import (
+    register_unhandled_exception_handler,
+)
 
 
 __all__ = [
@@ -74,4 +77,5 @@ __all__ = [
     "set_enable_web_interface_logs",
     "add_context_based_file_handler",
     "ContextBasedFileHandler",
+    "register_unhandled_exception_handler",
 ]
