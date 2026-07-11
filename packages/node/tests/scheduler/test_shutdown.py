@@ -22,6 +22,12 @@ import octobot_node.scheduler as scheduler_module
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture(autouse=True)
+def reset_scheduler_shutdown_guard():
+    yield
+    scheduler_module._shutdown_done = False
+
+
 class TestShutdownSchedulerAndTradingSignalChannel:
     async def test_second_call_is_no_op_after_shutdown(self):
         with mock.patch.object(scheduler_module.SCHEDULER, "is_initialized", return_value=True):
@@ -79,23 +85,31 @@ class TestShutdownSchedulerAndTradingSignalChannel:
         def track_schedule_startup_cleanup_trigger(*args, **kwargs) -> None:
             init_call_order.append("schedule_startup_cleanup_trigger")
 
-        with mock.patch.object(scheduler_module.SCHEDULER, "create"):
-            with mock.patch.object(
-                scheduler_module.SCHEDULER,
-                "start",
-                side_effect=track_start,
-            ):
-                with mock.patch("octobot_node.scheduler.workflows.register_workflows"):
-                    with mock.patch(
-                        "octobot_node.scheduler.schedules.register_schedules",
-                        side_effect=track_register_schedules,
-                    ):
-                        with mock.patch(
-                            "octobot_node.scheduler.workflows_retention.schedule_startup_cleanup_trigger",
-                            side_effect=track_schedule_startup_cleanup_trigger,
+        previous_instance = scheduler_module.SCHEDULER.INSTANCE
+        scheduler_module.SCHEDULER.INSTANCE = mock.Mock()
+        try:
+            import octobot_node.scheduler.schedules as schedules_module
+
+            with mock.patch.object(scheduler_module.SCHEDULER, "create"):
+                with mock.patch.object(
+                    scheduler_module.SCHEDULER,
+                    "start",
+                    side_effect=track_start,
+                ):
+                    with mock.patch("octobot_node.scheduler.workflows.register_workflows"):
+                        with mock.patch.object(
+                            schedules_module,
+                            "register_schedules",
+                            side_effect=track_register_schedules,
                         ):
-                            scheduler_module._shutdown_done = True
-                            scheduler_module.initialize_scheduler()
+                            with mock.patch(
+                                "octobot_node.scheduler.workflows_retention.schedule_startup_cleanup_trigger",
+                                side_effect=track_schedule_startup_cleanup_trigger,
+                            ):
+                                scheduler_module._shutdown_done = True
+                                scheduler_module.initialize_scheduler()
+        finally:
+            scheduler_module.SCHEDULER.INSTANCE = previous_instance
         assert scheduler_module._shutdown_done is False
         assert init_call_order == [
             "start",

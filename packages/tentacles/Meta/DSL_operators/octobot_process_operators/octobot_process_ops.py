@@ -54,6 +54,7 @@ import octobot_sync.sync.collection_providers as collection_providers
 
 DEFAULT_PING_WAITING_TIME = 2.0
 DEFAULT_ENSURE_TIMEOUT = 120.0
+DEFAULT_FORCE_KILL_EXIT_WAIT_SECONDS = 5.0
 DEFAULT_DSL_PROFILE_ID = "non-trading"
 
 
@@ -1313,6 +1314,43 @@ def create_octobot_process_operators(
                 parsed_process_bot_state=loaded,
             )
 
+        async def _stop_bound_child_and_wait_for_exit(
+            self,
+            pid: int,
+            *,
+            ping_timeout: float,
+            logger: typing.Any,
+        ) -> dict[str, typing.Any]:
+            # 1. Ask the child to shut down gracefully, then wait up to ping_timeout.
+            stop_outcome = self.request_graceful_stop(logger=logger)
+            try:
+                await self.wait_until_pid_stopped(
+                    pid,
+                    logger=logger,
+                    timeout_seconds=ping_timeout,
+                )
+                return stop_outcome
+            except commons_errors.DSLInterpreterError as graceful_wait_error:
+                logger.warning(
+                    "Graceful stop timed out after %ss for pid=%s; attempting force kill: %s",
+                    ping_timeout,
+                    pid,
+                    graceful_wait_error,
+                )
+            # 2. Escalate to force kill when graceful shutdown does not complete in time.
+            process_util.request_force_kill(pid, logger=logger)
+            try:
+                await self.wait_until_pid_stopped(
+                    pid,
+                    logger=logger,
+                    timeout_seconds=DEFAULT_FORCE_KILL_EXIT_WAIT_SECONDS,
+                )
+            except commons_errors.DSLInterpreterError as force_wait_error:
+                raise commons_errors.DSLInterpreterError(
+                    f"Child pid={pid} did not exit after graceful stop and force kill."
+                ) from force_wait_error
+            return {"status": "force_killed"}
+
         async def _pre_compute_update_config_refresh(
             self,
             last_result: dict,
@@ -1347,13 +1385,12 @@ def create_octobot_process_operators(
                 recall_state.log_folder,
                 resolved_pid,
             )
-            stop_outcome = self.request_graceful_stop(logger=process_logger)
-            process_logger.info("configuration update: graceful stop outcome: %s", stop_outcome)
-            await self.wait_until_pid_stopped(
+            stop_outcome = await self._stop_bound_child_and_wait_for_exit(
                 resolved_pid,
+                ping_timeout=ping_timeout,
                 logger=process_logger,
-                timeout_seconds=ping_timeout,
             )
+            process_logger.info("configuration update: stop outcome: %s", stop_outcome)
             _release_recall_state_listen_ports(recall_state)
             process_logger.info("configuration update: removing automation user and log directories")
             _remove_path_for_fresh_start(recall_state.user_root, logger=process_logger)
@@ -1385,7 +1422,13 @@ def create_octobot_process_operators(
                 resolved_pid = _resolve_bound_pid(recall_state, loaded_state)
                 if resolved_pid is not None:
                     self.pid = resolved_pid
-                    self.value = self.request_graceful_stop(logger=_get_logger())
+                    process_logger = _get_logger()
+                    ping_timeout = float(params.get("ping_timeout") or DEFAULT_ENSURE_TIMEOUT)
+                    self.value = await self._stop_bound_child_and_wait_for_exit(
+                        resolved_pid,
+                        ping_timeout=ping_timeout,
+                        logger=process_logger,
+                    )
                     _release_recall_state_listen_ports(recall_state)
                     return
                 # Grace with dead metadata pid: child restarting; no SIGTERM, report already_stopped.

@@ -212,3 +212,87 @@ class TestRequiresInitializationRun:
         ]
         automation_job = self._automation_job_without_exchange(init_action, process_bound_action)
         assert automation_job.is_initialization_run is True
+
+
+class TestGetActionsToExecuteWithStaleCompletedPriority:
+    def _automation_job_with_priority_actions(
+        self,
+        priority_actions: list[action_details.AbstractActionDetails],
+        *,
+        persisted_priority_actions: list[action_details.AbstractActionDetails] | None = None,
+        dag_actions: list[action_details.AbstractActionDetails] | None = None,
+    ) -> automation_job_module.AutomationJob:
+        automation_state = octobot_flow.entities.AutomationState.from_dict(
+            {
+                "automation": {
+                    "metadata": {"automation_id": "automation_1"},
+                    "actions_dag": {"actions": []},
+                    "execution": {"previous_execution": {"triggered_at": 1.0}},
+                },
+                "priority_actions": persisted_priority_actions or [],
+            }
+        )
+        if dag_actions is not None:
+            automation_state.automation.actions_dag.actions = list(dag_actions)
+        user_auth_details = octobot_flow.entities.UserAuthentication(wallet_address="0xtest")
+        return automation_job_module.AutomationJob(
+            automation_state.to_dict(include_default_values=False),
+            priority_actions,
+            [],
+            user_auth_details,
+        )
+
+    def test_returns_fresh_priority_when_stale_completed_exists(self):
+        completed_stop_action = _dsl_action(
+            "stop_automation()",
+            action_id="action_stop_priority_ua-stop-auto-1-stale",
+        )
+        completed_stop_action.executed_at = time.time()
+        fresh_stop_action = _dsl_action(
+            "stop_automation()",
+            action_id="action_stop_priority_ua-stop-auto-1-fresh",
+        )
+        process_bound_action = _dsl_action(_PROCESS_BOUND_DSL_SCRIPT, action_id="action_run")
+        automation_job = self._automation_job_with_priority_actions(
+            [fresh_stop_action],
+            persisted_priority_actions=[completed_stop_action],
+            dag_actions=[process_bound_action],
+        )
+
+        selected_actions, are_priority_actions = automation_job._get_actions_to_execute()
+
+        assert are_priority_actions is True
+        assert len(selected_actions) == 1
+        assert selected_actions[0].id == fresh_stop_action.id
+
+
+class TestRunRaisesWhenSuppliedPriorityAlreadyCompleted:
+    @pytest.mark.asyncio
+    async def test_raises_pending_priority_actions_skipped_error(self):
+        completed_stop_action = _dsl_action(
+            "stop_automation()",
+            action_id="action_stop_priority_ua-stop-1",
+        )
+        completed_stop_action.executed_at = time.time()
+        process_bound_action = _dsl_action(_PROCESS_BOUND_DSL_SCRIPT, action_id="action_run")
+        automation_state = octobot_flow.entities.AutomationState.from_dict(
+            {
+                "automation": {
+                    "metadata": {"automation_id": "automation_1"},
+                    "actions_dag": {"actions": []},
+                    "execution": {"previous_execution": {"triggered_at": 1.0}},
+                },
+                "priority_actions": [completed_stop_action],
+            }
+        )
+        automation_state.automation.actions_dag.actions = [process_bound_action]
+        user_auth_details = octobot_flow.entities.UserAuthentication()
+        automation_job = automation_job_module.AutomationJob(
+            automation_state.to_dict(include_default_values=False),
+            [completed_stop_action],
+            [],
+            user_auth_details,
+        )
+
+        with pytest.raises(octobot_flow.errors.PendingPriorityActionsSkippedError):
+            await automation_job.run()

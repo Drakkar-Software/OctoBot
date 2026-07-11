@@ -9,6 +9,7 @@ import datetime
 import json
 import time
 import typing
+import uuid
 
 import dbos
 import pytest
@@ -121,6 +122,10 @@ def build_stop_user_action(
         id=user_action_id,
         configuration=wrap_user_action_configuration(payload),
     )
+
+
+def unique_stop_user_action_id(prefix: str) -> str:
+    return f"{prefix}-{uuid.uuid4()}"
 
 
 def build_restart_user_action(

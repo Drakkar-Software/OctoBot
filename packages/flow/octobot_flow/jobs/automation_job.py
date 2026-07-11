@@ -40,6 +40,9 @@ class AutomationJob:
         self.automation_state: octobot_flow.entities.AutomationState = (
             octobot_flow.entities.AutomationState.from_dict(automation_state)
         )
+        self._added_priority_actions: list[octobot_flow.entities.AbstractActionDetails] = (
+            list(added_priority_actions) if added_priority_actions else []
+        )
         if added_priority_actions:
             # Include added priority actions in the automation state. 
             # All pending priority actions will be executed before any other actions.
@@ -75,6 +78,15 @@ class AutomationJob:
             )
             with octobot_flow.encryption.decrypted_bots_configurations(self.automation_state):
                 to_execute_actions, are_priority_actions = self._get_actions_to_execute()
+                if self._added_priority_actions and not are_priority_actions:
+                    added_action_ids = [action.id for action in self._added_priority_actions]
+                    self._logger.error(
+                        f"Skipped {len(self._added_priority_actions)} supplied priority action(s) "
+                        f"because they are already completed or duplicate in state: {added_action_ids}"
+                    )
+                    raise octobot_flow.errors.PendingPriorityActionsSkippedError(
+                        f"Supplied priority actions were not pending and were skipped: {added_action_ids}"
+                    )
                 if are_priority_actions:
                     self._logger.info(f"Running {len(to_execute_actions)} priority actions: {to_execute_actions}")
                     self._resolve_dsl_scripts(to_execute_actions, True)

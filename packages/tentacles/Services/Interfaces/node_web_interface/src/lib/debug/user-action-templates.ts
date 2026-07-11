@@ -205,6 +205,10 @@ function newResourceId(): string {
   return crypto.randomUUID()
 }
 
+function uniqueUserActionId(prefix: string): string {
+  return `${prefix}-${newResourceId()}`
+}
+
 function sampleStrategyReference(
   id = TEMPLATE_STRATEGY_ID,
   emitSignals = false,
@@ -647,7 +651,10 @@ export function buildUserActionTemplate(
   }
 
   const actionType: UserActionType = templateKey
-  const id = `ua-manual-${actionType}`
+  const id =
+    actionType === "automation_stop"
+      ? uniqueUserActionId(`ua-manual-${actionType}`)
+      : `ua-manual-${actionType}`
 
   switch (actionType) {
     case "automation_create":
@@ -804,7 +811,7 @@ export function buildAutomationStopUserActionJson(
   automationId: string,
 ): string {
   return userActionJson(
-    userAction(`ua-stop-${automationId}`, {
+    userAction(uniqueUserActionId(`ua-stop-${automationId}`), {
       action_type: "automation_stop",
       id: automationId,
     } satisfies StopAutomationConfiguration),

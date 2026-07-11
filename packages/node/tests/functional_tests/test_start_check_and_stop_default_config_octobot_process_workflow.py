@@ -44,6 +44,9 @@ _GENERIC_PROCESS_ACCOUNT_ID = "functional_generic_process_account"
 _GENERIC_PROCESS_AUTOMATION_NAME = "test_generic_process_default_config_automation"
 _GENERIC_PROCESS_ACCOUNTLESS_AUTOMATION_NAME = "test_generic_process_accountless_automation"
 
+# Spawn real OctoBot child processes on fixed local ports; serialize under pytest-xdist.
+pytestmark = pytest.mark.xdist_group("octobot_process_functional")
+
 
 class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
     @pytest.mark.asyncio
@@ -173,7 +176,9 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
 
             stop_user_action = workflow_common_module.build_stop_user_action(
                 automation_id=parent_automation_id,
-                user_action_id=f"ua-stop-{create_user_action.id}",
+                user_action_id=workflow_common_module.unique_stop_user_action_id(
+                    f"ua-stop-{create_user_action.id}"
+                ),
             )
             try:
                 await asyncio.wait_for(
@@ -275,6 +280,8 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
             )
             assert protocol_automation_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING
 
+        if child_pid is not None and process_util_module.pid_is_running(child_pid):
+            process_util_module.request_graceful_stop_via_sigterm(child_pid)
         if child_user_root and os.path.isdir(child_user_root):
             shutil.rmtree(child_user_root, ignore_errors=True)
         if child_log_folder and os.path.isdir(child_log_folder):
@@ -388,7 +395,9 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
 
                 stop_user_action = workflow_common_module.build_stop_user_action(
                     automation_id=parent_automation_id,
-                    user_action_id=f"ua-stop-accountless-{parent_automation_id}",
+                    user_action_id=workflow_common_module.unique_stop_user_action_id(
+                        f"ua-stop-accountless-{parent_automation_id}"
+                    ),
                 )
                 try:
                     await asyncio.wait_for(
@@ -436,9 +445,10 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
                 else:
                     pytest.fail(f"expected child pid {child_pid} to exit after AUTOMATION_STOP")
         finally:
+            if child_pid is not None and process_util_module.pid_is_running(child_pid):
+                process_util_module.request_graceful_stop_via_sigterm(child_pid)
             user_root_provider.set_root(previous_user_root)
-
-        if child_user_root and os.path.isdir(child_user_root):
-            shutil.rmtree(child_user_root, ignore_errors=True)
-        if child_log_folder and os.path.isdir(child_log_folder):
-            shutil.rmtree(child_log_folder, ignore_errors=True)
+            if child_user_root and os.path.isdir(child_user_root):
+                shutil.rmtree(child_user_root, ignore_errors=True)
+            if child_log_folder and os.path.isdir(child_log_folder):
+                shutil.rmtree(child_log_folder, ignore_errors=True)

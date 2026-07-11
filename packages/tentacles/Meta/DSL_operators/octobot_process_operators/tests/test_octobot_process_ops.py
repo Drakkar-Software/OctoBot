@@ -2406,6 +2406,146 @@ class TestEnsureOctobotProcessOperatorExecutionStop:
             with pytest.raises(commons_errors.DSLInterpreterError, match="simulated"):
                 await op.pre_compute()
 
+    async def test_execution_stop_waits_for_child_exit_after_graceful_stop(self):
+        inner = _stop_test_ensure_state_dict("http://127.0.0.1:7")
+        operator_signals_holder = dsl_interpreter.OperatorSignals()
+        operator_under_test = octobot_process_ops.create_octobot_process_operators(
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
+        )[0]
+        operator_signals_holder.sync({
+            operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
+        })
+        stop_operator = operator_under_test(
+            user_folder="u1",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        graceful_stop_mock = mock.Mock(return_value={"status": "stopped", "signal": "sigterm"})
+        wait_mock = mock.AsyncMock()
+        with (
+            mock.patch.object(
+                process_util,
+                "pid_is_running",
+                return_value=True,
+            ),
+            mock.patch.object(
+                stop_operator,
+                "request_graceful_stop",
+                new=graceful_stop_mock,
+            ),
+            mock.patch.object(
+                stop_operator,
+                "wait_until_pid_stopped",
+                new=wait_mock,
+            ),
+        ):
+            await stop_operator.pre_compute()
+        graceful_stop_mock.assert_called_once()
+        wait_mock.assert_awaited_once()
+        assert stop_operator.value == {"status": "stopped", "signal": "sigterm"}
+
+    async def test_execution_stop_force_kills_when_graceful_wait_times_out(self):
+        inner = _stop_test_ensure_state_dict("http://127.0.0.1:7")
+        operator_signals_holder = dsl_interpreter.OperatorSignals()
+        operator_under_test = octobot_process_ops.create_octobot_process_operators(
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
+        )[0]
+        operator_signals_holder.sync({
+            operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
+        })
+        stop_operator = operator_under_test(
+            user_folder="u1",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        graceful_stop_mock = mock.Mock(return_value={"status": "stopped", "signal": "sigterm"})
+        wait_mock = mock.AsyncMock(
+            side_effect=[
+                commons_errors.DSLInterpreterError("timed out waiting for pid=1 to exit"),
+                None,
+            ],
+        )
+        force_kill_mock = mock.Mock(return_value={"status": "force_killed"})
+        with (
+            mock.patch.object(
+                process_util,
+                "pid_is_running",
+                return_value=True,
+            ),
+            mock.patch.object(
+                stop_operator,
+                "request_graceful_stop",
+                new=graceful_stop_mock,
+            ),
+            mock.patch.object(
+                stop_operator,
+                "wait_until_pid_stopped",
+                new=wait_mock,
+            ),
+            mock.patch.object(
+                process_util,
+                "request_force_kill",
+                new=force_kill_mock,
+            ),
+        ):
+            await stop_operator.pre_compute()
+        graceful_stop_mock.assert_called_once()
+        force_kill_mock.assert_called_once()
+        assert force_kill_mock.call_args.args[0] == 1
+        assert wait_mock.await_count == 2
+        assert stop_operator.value == {"status": "force_killed"}
+
+    async def test_execution_stop_raises_when_force_kill_insufficient(self):
+        inner = _stop_test_ensure_state_dict("http://127.0.0.1:7")
+        operator_signals_holder = dsl_interpreter.OperatorSignals()
+        operator_under_test = octobot_process_ops.create_octobot_process_operators(
+            operator_signals_holder,
+            TEST_EXECUTOR_ID,
+        )[0]
+        operator_signals_holder.sync({
+            operator_under_test.get_name(): dsl_interpreter.OperatorSignal.STOP.value,
+        })
+        stop_operator = operator_under_test(
+            user_folder="u1",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        wait_mock = mock.AsyncMock(
+            side_effect=commons_errors.DSLInterpreterError("still running"),
+        )
+        with (
+            mock.patch.object(
+                process_util,
+                "pid_is_running",
+                return_value=True,
+            ),
+            mock.patch.object(
+                stop_operator,
+                "request_graceful_stop",
+                return_value={"status": "stopped", "signal": "sigterm"},
+            ),
+            mock.patch.object(
+                stop_operator,
+                "wait_until_pid_stopped",
+                new=wait_mock,
+            ),
+            mock.patch.object(
+                process_util,
+                "request_force_kill",
+                return_value={"status": "force_killed"},
+            ),
+            pytest.raises(
+                commons_errors.DSLInterpreterError,
+                match="did not exit after graceful stop and force kill",
+            ),
+        ):
+            await stop_operator.pre_compute()
+
 
 class TestEnsureOctobotProcessOperatorSignalDispatch:
     def test_should_dispatch_stop_and_update_config_for_valid_ensure_payload(self):
@@ -2493,14 +2633,9 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
             with (
                 mock.patch.object(
                     operator_under_test,
-                    "wait_until_pid_stopped",
-                    new=mock.AsyncMock(),
-                ) as wait_mock,
-                mock.patch.object(
-                    dsl_interpreter.ProcessBoundOperatorMixin,
-                    "request_graceful_stop",
-                    return_value={"status": "stopped", "signal": "sigterm"},
-                ) as stop_mock,
+                    "_stop_bound_child_and_wait_for_exit",
+                    new=mock.AsyncMock(return_value={"status": "stopped", "signal": "sigterm"}),
+                ) as stop_child_mock,
                 mock.patch.object(
                     process_util,
                     "pid_is_running",
@@ -2518,8 +2653,11 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
             ):
                 spawn_mock.return_value = mock.Mock(spec=["pid"], pid=5151)
                 await op.pre_compute()
-            stop_mock.assert_called_once()
-            wait_mock.assert_awaited_once()
+            stop_child_mock.assert_awaited_once_with(
+                4242,
+                ping_timeout=octobot_process_ops.DEFAULT_ENSURE_TIMEOUT,
+                logger=mock.ANY,
+            )
             spawn_mock.assert_called_once()
             assert dsl_interpreter.ReCallingOperatorResult.__name__ in op.value
         finally:
@@ -2779,6 +2917,7 @@ class TestStopAdoptsPidFromProcessBotState:
             last_execution_result=_re_calling_ensure_value(inner),
         )
         graceful_stop_mock = mock.Mock(return_value={"status": "stopped", "signal": "sigterm"})
+        wait_mock = mock.AsyncMock()
         with (
             mock.patch.object(
                 process_util,
@@ -2795,9 +2934,15 @@ class TestStopAdoptsPidFromProcessBotState:
                 "request_graceful_stop",
                 new=graceful_stop_mock,
             ),
+            mock.patch.object(
+                operator_under_test,
+                "wait_until_pid_stopped",
+                new=wait_mock,
+            ),
         ):
             await op.pre_compute()
         graceful_stop_mock.assert_called_once()
+        wait_mock.assert_awaited_once()
         assert op.pid == 20002
         assert op.value == {"status": "stopped", "signal": "sigterm"}
 

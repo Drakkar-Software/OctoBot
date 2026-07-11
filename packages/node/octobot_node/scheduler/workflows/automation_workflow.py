@@ -176,8 +176,9 @@ class AutomationWorkflow:
                 AutomationWorkflow._log_iteration_execution_intent(
                     parsed_inputs, user_actions, trading_signals
                 )
+                action_job = None
                 try:
-                    await octobot_flow_client.OctoBotActionsJob(
+                    action_job = octobot_flow_client.OctoBotActionsJob(
                         parsed_inputs.task.content,
                         user_actions,
                         trading_signals,
@@ -186,13 +187,29 @@ class AutomationWorkflow:
                         # address, not the Starfish user_id — derive it from the task
                         # identity so the community sync client resolves correctly.
                         wallet_address=_user_id_to_evm(parsed_inputs.task.user_id),
-                    ).run()
+                    )
+                    await action_job.run()
                 except octobot_trading.errors.RetriableFailedRequest as err:
                     # instantly retriable errors, retry immediately
                     AutomationWorkflow.get_logger(parsed_inputs).exception(
                         err, True, f"Retriable error while running automation job: {err}"
                     )
                     raise
+                except octobot_flow.errors.PendingPriorityActionsSkippedError as err:
+                    # don't retry, just skip the iteration
+                    AutomationWorkflow.get_logger(parsed_inputs).error(
+                        f"Pending priority actions were skipped: {err}"
+                    )
+                    if action_job is None:
+                        # should never happen, but just in case
+                        raise
+                    next_step_at = octobot_flow_client.OctoBotActionsJobDescription.get_next_execution_time(
+                        action_job.description.state
+                    )
+                    postponed_iteration = True
+                    has_next_actions_override = True
+                    next_iteration_description_override = parsed_inputs.task.content
+                    next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
                 except (
                     octobot_trading.errors.AuthenticationError,
                     octobot_trading.errors.PortfolioNegativeValueError,
@@ -249,7 +266,9 @@ class AutomationWorkflow:
                     if result.actions_dag:
                         next_actions = result.actions_dag.get_executable_actions()
                         remaining_steps = len(result.actions_dag.get_pending_actions())
-                    next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
+                    next_step_at = octobot_flow_client.OctoBotActionsJobDescription.get_next_execution_time(
+                        result.next_actions_description.state
+                    ) if result.next_actions_description else None
                 next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
                 next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
                 AutomationWorkflow.get_logger(parsed_inputs).info(
