@@ -83,7 +83,7 @@ class TestTriggerTaskGridDbosIntegration:
             automation_id=_GRID_AUTOMATION_CONFIGURATION_ID,
         )
 
-        # Step 0 (continued) — Import test wallet so _user_id_to_evm() can resolve the EVM address
+        # Step 0 (continued) — Import test wallet so CommunityRepository.user_id_to_evm() can resolve the EVM address
         # from the Starfish user_id inside automation_workflow.py (needed for auth_details assertion).
         authentication_instance = authenticator_mocks_module.build_community_authentication(
             workflow_common_module.SIMULATOR_GRID_TEST_PRIVATE_KEY,
@@ -390,7 +390,7 @@ class TestTriggerTaskGridDbosIntegration:
             final_job = workflow_common_module.job_description_dict_from_output(parsed_final)
             # OctoBotActionsJobDescription serialises only non-default fields (empty params omitted).
             # The EVM address (SIMULATOR_GRID_TEST_COMMUNITY_WALLET_ADDRESS) is translated from the
-            # Starfish user_id by _user_id_to_evm() and merged into auth_details as wallet_address.
+            # Starfish user_id by CommunityRepository.user_id_to_evm() and merged into auth_details as wallet_address.
             assert set(final_job.keys()) == {"auth_details", "state"}
             final_auth_details = octobot_flow_entities.UserAuthentication.from_dict(
                 final_job["auth_details"]
