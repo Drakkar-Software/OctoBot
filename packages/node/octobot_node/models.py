@@ -23,7 +23,6 @@ from pydantic import BaseModel, Field
 
 import octobot_protocol.models as protocol_models
 
-
 class UserBase(BaseModel):
     email: str = Field(max_length=255)
     is_active: bool = True
