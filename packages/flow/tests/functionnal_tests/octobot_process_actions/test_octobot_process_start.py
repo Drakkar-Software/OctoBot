@@ -31,6 +31,7 @@ pytest_plugins = (octobot_process_functional_shared.__name__,)
 
 # --- Main lifecycle: spawn child OctoBot; EAE from job.dump() after merge; metadata from file; recall, stop ---
 
+@pytest.mark.xdist_group(name=octobot_process_functional_shared.OCTOBOT_PROCESS_TEST_GROUP)
 async def test_run_octobot_process_lifecycle_grid_trading(
     init_action: dict,
     monkeypatch: pytest.MonkeyPatch,
@@ -303,6 +304,7 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             shutil.rmtree(log_folder_guess, ignore_errors=True)
 
 
+@pytest.mark.xdist_group(name=octobot_process_functional_shared.OCTOBOT_PROCESS_TEST_GROUP)
 async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
     init_action: dict,
     monkeypatch: pytest.MonkeyPatch,

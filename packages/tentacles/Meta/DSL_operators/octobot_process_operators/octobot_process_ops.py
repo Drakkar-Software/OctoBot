@@ -513,6 +513,17 @@ def _write_user_root_config_json(
         exchange_config_holder = types.SimpleNamespace(config=default_cfg)
         for auth_element in resolved_auth:
             auth_element.apply_to_exchange_config(exchange_config_holder)
+    if profile_data is not None:
+        profile_exchange_names = {
+            exchange_details.internal_name
+            for exchange_details in profile_data.exchanges
+            if exchange_details.internal_name
+        }
+        exchanges_cfg = default_cfg.get(commons_constants.CONFIG_EXCHANGES) or {}
+        for exchange_name, exchange_cfg in exchanges_cfg.items():
+            if exchange_name not in profile_exchange_names and isinstance(exchange_cfg, dict):
+                # don't inherit exchange activation from master config
+                exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] = False
     exchanges_cfg = default_cfg.get(commons_constants.CONFIG_EXCHANGES) or {}
     for exchange_cfg in exchanges_cfg.values():
         if isinstance(exchange_cfg, dict):

@@ -575,6 +575,61 @@ class TestWriteUserRootConfigJson:
         assert exch[commons_constants.CONFIG_EXCHANGE_KEY] == "overlay-key"
         assert exch[commons_constants.CONFIG_EXCHANGE_SECRET] == "overlay-secret"
 
+    def test_profile_seed_disables_non_profile_master_exchanges_but_forwards_creds(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        profile_exchange_internal_name = "binanceus"
+        master_exchange_internal_name = "binance"
+        master_api_key = "master-binance-key"
+        master_api_secret = "master-binance-secret"
+        master_api_password = "master-binance-password"
+        master_config = {
+            commons_constants.CONFIG_EXCHANGES: {
+                master_exchange_internal_name: {
+                    commons_constants.CONFIG_EXCHANGE_KEY: master_api_key,
+                    commons_constants.CONFIG_EXCHANGE_SECRET: master_api_secret,
+                    commons_constants.CONFIG_EXCHANGE_PASSWORD: master_api_password,
+                    commons_constants.CONFIG_EXCHANGE_TYPE: commons_constants.CONFIG_EXCHANGE_SPOT,
+                    commons_constants.CONFIG_EXCHANGE_SANDBOXED: True,
+                }
+            }
+        }
+        _seed_master_user_config(tmp_path, master_config[commons_constants.CONFIG_EXCHANGES])
+        profile_dict = {
+            **_MINIMAL_PROFILE_DATA,
+            "exchanges": [
+                {
+                    "internal_name": profile_exchange_internal_name,
+                    "exchange_type": commons_constants.CONFIG_EXCHANGE_SPOT,
+                }
+            ],
+        }
+        profile_data = profile_data_module.ProfileData.from_dict(profile_dict)
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=_default_config_read_side_effect(tmp_path, master_config),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path, "p-profile-master", profile_data, None, str(tmp_path)
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        exchanges_cfg = written[commons_constants.CONFIG_EXCHANGES]
+        profile_exchange_cfg = exchanges_cfg[profile_exchange_internal_name]
+        master_exchange_cfg = exchanges_cfg[master_exchange_internal_name]
+        assert profile_exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] is True
+        assert profile_exchange_cfg[commons_constants.CONFIG_EXCHANGE_KEY] == (
+            octobot_process_ops._DEFAULT_ENCRYPTED_VALUE
+        )
+        assert profile_exchange_cfg[commons_constants.CONFIG_EXCHANGE_SECRET] == (
+            octobot_process_ops._DEFAULT_ENCRYPTED_VALUE
+        )
+        assert master_exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] is False
+        assert master_exchange_cfg[commons_constants.CONFIG_EXCHANGE_KEY] == master_api_key
+        assert master_exchange_cfg[commons_constants.CONFIG_EXCHANGE_SECRET] == master_api_secret
+        assert master_exchange_cfg[commons_constants.CONFIG_EXCHANGE_PASSWORD] == master_api_password
+        assert master_exchange_cfg[commons_constants.CONFIG_EXCHANGE_TYPE] == commons_constants.CONFIG_EXCHANGE_SPOT
+        assert master_exchange_cfg[commons_constants.CONFIG_EXCHANGE_SANDBOXED] is True
+
     def test_does_not_persist_sync_user_id_in_config(self, tmp_path):
         config_path = _automation_child_config_path(tmp_path)
         with mock.patch.object(

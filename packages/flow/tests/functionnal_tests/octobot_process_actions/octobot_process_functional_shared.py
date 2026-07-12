@@ -29,6 +29,8 @@ import tests.functionnal_tests.tentacle_test_configs as tentacle_test_configs
 
 pytestmark = pytest.mark.asyncio
 
+OCTOBOT_PROCESS_TEST_GROUP = "octobot_process_xdist_group"
+
 # --- Timeouts and grid geometry (must match pair_settings spread / increment below) ---
 GLOBAL_START_TIMEOUT_SEC = 30.0
 SLEEP_BETWEEN_JOB_POLLS_SEC = 2.0

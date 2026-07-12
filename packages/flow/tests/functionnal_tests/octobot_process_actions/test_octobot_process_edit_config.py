@@ -66,6 +66,7 @@ def _assert_three_by_three_grid_ladder_orders(orders_wrapped: list[dict]) -> Non
     )
 
 
+@pytest.mark.xdist_group(name=octobot_process_functional_shared.OCTOBOT_PROCESS_TEST_GROUP)
 async def test_run_octobot_process_grid_refresh_four_to_six_orders(
     init_action: dict,
     monkeypatch: pytest.MonkeyPatch,
