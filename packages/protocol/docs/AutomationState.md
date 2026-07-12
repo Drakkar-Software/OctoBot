@@ -19,6 +19,7 @@ Name | Type | Description | Notes
 **orders** | [**List[OrderSummary]**](OrderSummary.md) |  | [optional] 
 **trades** | [**List[TradeSummary]**](TradeSummary.md) |  | [optional] 
 **positions** | [**List[PositionSummary]**](PositionSummary.md) |  | [optional] 
+**child_octobot_process** | [**ChildOctoBotProcessState**](ChildOctoBotProcessState.md) |  | [optional] 
 
 ## Example
 

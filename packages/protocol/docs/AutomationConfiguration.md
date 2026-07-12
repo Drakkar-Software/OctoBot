@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **created_at** | **datetime** |  | 
 **updated_at** | **datetime** |  | [optional] 
 **strategy** | [**StrategyReference**](StrategyReference.md) |  | 
-**accounts** | [**List[AccountReference]**](AccountReference.md) |  | 
+**accounts** | [**List[AccountReference]**](AccountReference.md) | May be empty only for automations whose strategy configuration is generic_process; otherwise exactly one account reference is required at runtime. | 
 
 ## Example
 

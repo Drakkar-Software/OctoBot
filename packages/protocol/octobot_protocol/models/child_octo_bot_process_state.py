@@ -17,27 +17,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from octobot_protocol.models.account_reference import AccountReference
-from octobot_protocol.models.strategy_reference import StrategyReference
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class AutomationConfiguration(BaseModel):
+class ChildOctoBotProcessState(BaseModel):
     """
-    AutomationConfiguration
+    ChildOctoBotProcessState
     """ # noqa: E501
-    id: Optional[StrictStr] = None
-    name: StrictStr
-    description: Optional[StrictStr] = None
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    strategy: StrategyReference
-    accounts: List[AccountReference] = Field(description="May be empty only for automations whose strategy configuration is generic_process; otherwise exactly one account reference is required at runtime.")
-    __properties: ClassVar[List[str]] = ["id", "name", "description", "created_at", "updated_at", "strategy", "accounts"]
+    http_base_url: StrictStr
+    web_port: StrictInt
+    init_state_ok: StrictBool
+    __properties: ClassVar[List[str]] = ["http_base_url", "web_port", "init_state_ok"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -57,7 +50,7 @@ class AutomationConfiguration(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of AutomationConfiguration from a JSON string"""
+        """Create an instance of ChildOctoBotProcessState from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,21 +71,11 @@ class AutomationConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of strategy
-        if self.strategy:
-            _dict['strategy'] = self.strategy.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of each item in accounts (list)
-        _items = []
-        if self.accounts:
-            for _item_accounts in self.accounts:
-                if _item_accounts:
-                    _items.append(_item_accounts.to_dict())
-            _dict['accounts'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of AutomationConfiguration from a dict"""
+        """Create an instance of ChildOctoBotProcessState from a dict"""
         if obj is None:
             return None
 
@@ -100,13 +83,9 @@ class AutomationConfiguration(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "name": obj.get("name"),
-            "description": obj.get("description"),
-            "created_at": obj.get("created_at"),
-            "updated_at": obj.get("updated_at"),
-            "strategy": StrategyReference.from_dict(obj["strategy"]) if obj.get("strategy") is not None else None,
-            "accounts": [AccountReference.from_dict(_item) for _item in obj["accounts"]] if obj.get("accounts") is not None else None
+            "http_base_url": obj.get("http_base_url"),
+            "web_port": obj.get("web_port"),
+            "init_state_ok": obj.get("init_state_ok")
         })
         return _obj
 

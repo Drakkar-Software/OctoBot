@@ -21,6 +21,8 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+import octobot_protocol.models as protocol_models
+
 
 class UserBase(BaseModel):
     email: str = Field(max_length=255)
@@ -74,6 +76,7 @@ class Task(BaseModel):
     error_message: typing.Optional[str] = None
     user_ecdsa_public_key: typing.Optional[str] = None
     user_id: typing.Optional[str] = None
+    child_octobot_process: typing.Optional[protocol_models.ChildOctoBotProcessState] = None
 
 class Node(BaseModel):
     node_type: str
