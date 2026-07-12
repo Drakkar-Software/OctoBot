@@ -30,6 +30,14 @@ def _run_octobot_process_recall_kwarg_segments() -> list[str]:
     ]
 
 
+def _run_octobot_process_octobot_name_kwarg_segment(octobot_name: str | None) -> str | None:
+    if octobot_name and str(octobot_name).strip():
+        return (
+            f"octobot_name={dsl_interpreter.format_parameter_value(str(octobot_name).strip())}"
+        )
+    return None
+
+
 def _protocol_account_updated_at_unix_seconds(protocol_account: protocol_models.Account) -> float:
     moment = protocol_account.updated_at
     if moment.tzinfo is None:
@@ -441,6 +449,7 @@ def market_making_action_factory(
     stored_strategy: protocol_models.Strategy,
     *,
     automation_id: str,
+    octobot_name: str | None = None,
 ) -> flow_entities.AbstractActionDetails:
     profile_data = market_making_profile_data_factory(
         protocol_account=protocol_account,
@@ -456,12 +465,14 @@ def market_making_action_factory(
         user_id,
     )
     exchange_auth_segment = dsl_interpreter.format_parameter_value(exchange_auth_data)
-    run_dsl = (
-        "run_octobot_process("
+    dsl_arguments = [
         f"{automation_id!r}, {dsl_interpreter.format_parameter_value(profile_data_dict)}, "
-        f"{exchange_auth_segment}, "
-        f"{', '.join(_run_octobot_process_recall_kwarg_segments())})"
-    )
+        f"{exchange_auth_segment}",
+    ]
+    if octobot_name_segment := _run_octobot_process_octobot_name_kwarg_segment(octobot_name):
+        dsl_arguments.append(octobot_name_segment)
+    dsl_arguments.extend(_run_octobot_process_recall_kwarg_segments())
+    run_dsl = "run_octobot_process(" + ", ".join(dsl_arguments) + ")"
     return flow_entities.DSLScriptActionDetails(
         id=_action_id_from_configuration(market_making_configuration),
         dsl_script=run_dsl,
@@ -477,6 +488,7 @@ def generic_process_action_factory(
     *,
     automation_id: str,
     strategy_id: str | None = None,
+    octobot_name: str | None = None,
 ) -> flow_entities.AbstractActionDetails:
     exchange_auth_data = None
     if protocol_account is not None:
@@ -495,6 +507,9 @@ def generic_process_action_factory(
         dsl_arguments.append(
             f"exchange_auth_data={dsl_interpreter.format_parameter_value(exchange_auth_data)}"
         )
+    octobot_name_segment = _run_octobot_process_octobot_name_kwarg_segment(octobot_name)
+    if octobot_name_segment is not None:
+        dsl_arguments.append(octobot_name_segment)
     dsl_arguments.extend(_run_octobot_process_recall_kwarg_segments())
     run_dsl = "run_octobot_process(" + ", ".join(dsl_arguments) + ")"
     return flow_entities.DSLScriptActionDetails(

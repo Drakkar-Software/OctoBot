@@ -425,6 +425,44 @@ class TestWriteUserRootConfigJson:
         ] is False
         assert written[commons_constants.CONFIG_EXCHANGES] == {}
 
+    def test_writes_octobot_name_when_provided(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        profile_id = "dsl_profile_abc"
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                profile_id,
+                None,
+                None,
+                str(tmp_path),
+                octobot_name="My Bot",
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        assert written[commons_constants.CONFIG_OCTOBOT_NAME] == "My Bot"
+
+    def test_omits_octobot_name_when_blank(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        profile_id = "dsl_profile_abc"
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: _fresh_default_like_cfg_template(),
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path,
+                profile_id,
+                None,
+                None,
+                str(tmp_path),
+                octobot_name="   ",
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        assert commons_constants.CONFIG_OCTOBOT_NAME not in written
+
     def test_seeds_exchanges_from_profile_data(self, tmp_path):
         config_path = _automation_child_config_path(tmp_path)
         profile_dict = {

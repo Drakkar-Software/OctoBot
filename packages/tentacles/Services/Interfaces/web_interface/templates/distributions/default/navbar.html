@@ -39,8 +39,8 @@
             <img
                 src="{{url_for('static', filename='img/octobot-logo-'+get_color_mode()+'.png')}}" alt="octobot-logo"
                 class="navbar-logo"
-            > OctoBot
-            <i id="navbar-bot-status" class="ml-2 fa fa-check" data-toggle="tooltip" data-placement="bottom" title="OctoBot operational"></i>
+            > {{ OCTOBOT_DISPLAY_NAME }}
+            <i id="navbar-bot-status" class="ml-2 fa fa-check" data-toggle="tooltip" data-placement="bottom" title="{{ OCTOBOT_DISPLAY_NAME }} operational"></i>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
             <span class="navbar-toggler-icon"></span>

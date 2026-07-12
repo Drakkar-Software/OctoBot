@@ -1472,6 +1472,11 @@ def get_distribution() -> octobot_enums.OctoBotDistribution:
     return configuration_manager.get_distribution(interfaces_util.get_edited_config())
 
 
+def get_octobot_display_name() -> str:
+    name = interfaces_util.get_edited_config(dict_only=False).octobot_name()
+    return name if name else "OctoBot"
+
+
 def change_reference_market_on_config_currencies(old_base_currency: str, new_quote_currency: str) -> bool:
     """
     Change the base currency from old to new for all configured pair
