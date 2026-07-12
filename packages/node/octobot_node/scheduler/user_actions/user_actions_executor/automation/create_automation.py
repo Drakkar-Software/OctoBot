@@ -219,6 +219,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         self._user_id,
                         automation_id=automation_id,
                         strategy_id=stored_strategy.id,
+                        octobot_name=automation_configuration.name,
                     ),
                 ]
             case protocol_models.CopyConfiguration() as copy_configuration:
@@ -247,6 +248,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         stored_strategy.reference_market,
                         stored_strategy,
                         automation_id=automation_id,
+                        octobot_name=automation_configuration.name,
                     ),
                 ]
             case _:

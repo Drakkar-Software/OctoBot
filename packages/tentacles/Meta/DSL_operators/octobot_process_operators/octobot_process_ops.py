@@ -496,6 +496,7 @@ def _write_user_root_config_json(
     working_directory: str = "",
     readonly_profiles_path: str | None = None,
     readonly_reference_tentacles_path: str | None = None,
+    octobot_name: str | None = None,
 ) -> None:
     """
     Writes user-root ``config.json``: selected profile, disabled web auto-open for DSL-spawned
@@ -508,6 +509,8 @@ def _write_user_root_config_json(
     default_cfg = json_util.read_file(octobot_constants.DEFAULT_CONFIG_FILE)
     default_cfg[commons_constants.CONFIG_PROFILE] = profile_id
     default_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] = True
+    if octobot_name and str(octobot_name).strip():
+        default_cfg[commons_constants.CONFIG_OCTOBOT_NAME] = str(octobot_name).strip()
     if readonly_profiles_path:
         default_cfg[commons_constants.CONFIG_READONLY_PROFILES_PATH] = readonly_profiles_path
     if readonly_reference_tentacles_path:
@@ -611,6 +614,7 @@ async def ensure_user_profile_and_layout(
     *,
     sync_profile_id: str | None = None,
     user_id: str | None = None,
+    octobot_name: str | None = None,
 ) -> dict[str, typing.Any]:
     """
     One-time layout under user_root (<working_directory>/user/automations/<user_folder>/):
@@ -677,6 +681,7 @@ async def ensure_user_profile_and_layout(
             profile_data,
             exchange_auth_overrides,
             working_directory,
+            octobot_name=octobot_name,
             **_child_master_profile_config_kwargs(working_directory),
         )
     elif sync_profile_id is not None:
@@ -695,6 +700,7 @@ async def ensure_user_profile_and_layout(
             None,
             exchange_auth_overrides,
             working_directory,
+            octobot_name=octobot_name,
             **_child_master_profile_config_kwargs(working_directory),
         )
     else:
@@ -706,6 +712,7 @@ async def ensure_user_profile_and_layout(
             None,
             exchange_auth_overrides,
             working_directory,
+            octobot_name=octobot_name,
             **_child_master_profile_config_kwargs(working_directory),
         )
 
@@ -916,6 +923,16 @@ def create_octobot_process_operators(
                     ),
                     required=True,
                     type=str,
+                ),
+                dsl_interpreter.OperatorParameter(
+                    name="octobot_name",
+                    description=(
+                        "Optional display name for this child OctoBot instance. "
+                        "Written to config.json and shown in the web interface title and navbar."
+                    ),
+                    required=False,
+                    type=str,
+                    default=None,
                 ),
                 dsl_interpreter.OperatorParameter(
                     name="profile_data",
@@ -1204,6 +1221,7 @@ def create_octobot_process_operators(
                 exchange_auth_overrides,
                 sync_profile_id=params.get("sync_profile_id"),
                 user_id=params.get("user_id"),
+                octobot_name=params.get("octobot_name"),
             )
             user_root = init_info["user_root"]
             log_folder = _ensure_log_folder_path(working_directory, user_folder)

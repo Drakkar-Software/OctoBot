@@ -327,6 +327,14 @@ class Configuration:
         """
         return self.config.get(commons_constants.CONFIG_ACCEPTED_TERMS, False)
 
+    def octobot_name(self) -> str | None:
+        """
+        Optional display name for DSL-spawned child OctoBot instances.
+        :return: the configured name, or None when unset or blank
+        """
+        value = self.config.get(commons_constants.CONFIG_OCTOBOT_NAME)
+        return value if value and str(value).strip() else None
+
     def accept_terms(self, accepted) -> None:
         """
         Perform terms acceptation

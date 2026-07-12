@@ -149,3 +149,25 @@ class TestLoadMarketUnknownExchange:
         assert results == []
         logger.warning.assert_called_once()
         logger.exception.assert_not_called()
+
+
+class TestGetOctobotDisplayName:
+    def test_returns_configured_name_when_set(self):
+        config = mock.Mock()
+        config.octobot_name.return_value = "My Automation"
+        with mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_edited_config",
+            mock.Mock(return_value=config),
+        ):
+            assert configuration_model.get_octobot_display_name() == "My Automation"
+
+    def test_returns_octobot_when_unset(self):
+        config = mock.Mock()
+        config.octobot_name.return_value = None
+        with mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_edited_config",
+            mock.Mock(return_value=config),
+        ):
+            assert configuration_model.get_octobot_display_name() == "OctoBot"
