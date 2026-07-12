@@ -1557,6 +1557,21 @@ class TestEnsureChildEnviron:
         assert child_env[commons_constants.ENV_OCTOBOT_SYNC_DATA_ROOT] == os.path.normpath(
             os.path.join(working_directory, commons_constants.USER_FOLDER)
         )
+        assert child_env["DISTRIBUTION"] == commons_constants.DEFAULT_DISTRIBUTION
+        assert child_env[services_constants.ENV_ENABLE_NODE_API] == "false"
+
+
+class TestEnsureStartCmd:
+    def test_includes_trading_flag(self):
+        cmd = octobot_process_ops._ensure_start_cmd(
+            "start.py",
+            "user/automations/bot-1",
+            "logs/automations/bot-1",
+            no_telegram=False,
+            state_file_path="/tmp/process_bot_state.json",
+        )
+        assert "--trading" in cmd
+        assert cmd.index("--trading") < cmd.index("--dump-state")
 
 
 class TestEnsureOctobotProcessOperatorPrecompute:
@@ -2021,6 +2036,7 @@ class TestEnsureOctobotProcessDslIntegration:
                 rel_user,
                 "--log-folder",
                 rel_log,
+                "--trading",
                 "-nt",
                 "--dump-state",
                 expected_state_path,
@@ -2030,6 +2046,8 @@ class TestEnsureOctobotProcessDslIntegration:
             assert child_env[services_constants.ENV_WEB_ADDRESS] == "127.0.0.1"
             assert child_env[services_constants.ENV_NODE_API_PORT] == str(last_execution["node_port"])
             assert child_env[services_constants.ENV_NODE_API_ADDRESS] == "127.0.0.1"
+            assert child_env["DISTRIBUTION"] == commons_constants.DEFAULT_DISTRIBUTION
+            assert child_env[services_constants.ENV_ENABLE_NODE_API] == "false"
             assert child_env[octobot_constants.ENV_PROCESS_BOT_SYNC_USER_ID] == _PROCESS_TEST_USER_ID
             assert spawn_kwargs.get("hide_console_window") is True
         finally:

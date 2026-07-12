@@ -2,6 +2,7 @@
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 
 import argparse
+import contextlib
 import os
 
 import mock
@@ -75,6 +76,36 @@ def deferred_profile_config(tmp_path):
     )
 
 
+def _start_octobot_cli_args(**overrides):
+    cli_args = {
+        "version": False,
+        "encrypter": False,
+        "backtesting": False,
+        "trading": False,
+        "backtesting_files": None,
+        "whole_data_range": True,
+        "enable_backtesting_timeout": True,
+        "risk": None,
+        "user_folder": None,
+        "log_folder": None,
+        "no_web": False,
+        "no_logs": False,
+        "no_telegram": False,
+        "dump_state": None,
+        "identifier": None,
+        "strategy_optimizer": False,
+        "reset_trading_history": False,
+        "update": False,
+        "simulate": False,
+        "master": False,
+        "consumer_only": False,
+        "host": None,
+        "port": None,
+    }
+    cli_args.update(overrides)
+    return argparse.Namespace(**cli_args)
+
+
 class TestUpdateConfigWithArgs:
     def test_requires_activated_profile_for_backtesting_flags(self, deferred_profile_config):
         config = deferred_profile_config
@@ -106,23 +137,7 @@ class TestStartOctobot:
         logger = mock.Mock()
         config = mock.Mock()
         config.is_loaded.return_value = True
-        args = argparse.Namespace(
-            version=False,
-            encrypter=False,
-            backtesting=True,
-            dump_state=None,
-            user_folder=None,
-            log_folder=None,
-            whole_data_range=True,
-            enable_backtesting_timeout=True,
-            no_logs=False,
-            identifier=None,
-            update=False,
-            strategy_optimizer=False,
-            no_telegram=False,
-            no_web=False,
-            reset_trading_history=False,
-        )
+        args = _start_octobot_cli_args(backtesting=True)
         call_order = []
 
         def track(name):
@@ -335,23 +350,245 @@ class TestLoadOrCreateTentacles:
         repair_mock.assert_not_called()
 
 
-class TestStartNode:
-    def test_start_node_disables_web_without_setting_node_api_env(self, monkeypatch):
+class TestApplyNodeStartupSettings:
+    def test_apply_node_startup_settings_disables_web_and_sets_distribution(self, monkeypatch):
         args = argparse.Namespace(
             master=False,
             consumer_only=False,
-            host=None,
-            port=None,
             no_web=False,
         )
-        monkeypatch.delenv(services_constants.ENV_ENABLE_NODE_API, raising=False)
-        monkeypatch.delenv(services_constants.ENV_NODE_API_ADDRESS, raising=False)
-        monkeypatch.delenv(services_constants.ENV_NODE_API_PORT, raising=False)
-        with mock.patch.object(octobot_cli, "start_octobot", mock.Mock()) as start_octobot_mock:
-            octobot_cli.start_node(args, default_config_file="default.json")
+        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
+        octobot_cli._apply_node_startup_settings(args)
         assert args.no_web is True
-        assert services_constants.ENV_ENABLE_NODE_API not in os.environ
-        assert services_constants.ENV_NODE_API_ADDRESS not in os.environ
-        assert services_constants.ENV_NODE_API_PORT not in os.environ
-        start_octobot_mock.assert_called_once_with(args, "default.json")
         assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.NODE.value
+
+
+class TestApplyNodeCliSettings:
+    def test_apply_node_cli_settings_enables_master_mode(self, monkeypatch):
+        import octobot_node.config
+
+        monkeypatch.setattr(octobot_node.config.settings, "IS_MASTER_MODE", False)
+        monkeypatch.setattr(octobot_node.config.settings, "CONSUMER_ONLY", False)
+        args = argparse.Namespace(
+            master=True,
+            consumer_only=True,
+        )
+        octobot_cli._apply_node_cli_settings(args)
+        assert octobot_node.config.settings.IS_MASTER_MODE is True
+        assert octobot_node.config.settings.CONSUMER_ONLY is True
+
+
+class TestApplyStartupDistributionMode:
+    def test_default_path_uses_node_mode(self, monkeypatch):
+        args = argparse.Namespace(
+            trading=False,
+            backtesting=False,
+            master=False,
+            consumer_only=False,
+            no_web=False,
+        )
+        with mock.patch.object(octobot_cli, "_apply_node_cli_settings", mock.Mock()) as node_cli_mock, \
+                mock.patch.object(octobot_cli, "_apply_node_startup_settings", mock.Mock()) as node_mock, \
+                mock.patch.object(octobot_cli, "_apply_trading_startup_settings", mock.Mock()) as trading_mock:
+            octobot_cli._apply_startup_distribution_mode(args)
+        node_cli_mock.assert_called_once_with(args)
+        node_mock.assert_called_once_with(args)
+        trading_mock.assert_not_called()
+
+    def test_trading_flag_uses_trading_mode(self, monkeypatch):
+        args = argparse.Namespace(
+            trading=True,
+            backtesting=False,
+            master=False,
+            consumer_only=False,
+            no_web=False,
+        )
+        with mock.patch.object(octobot_cli, "_apply_node_cli_settings", mock.Mock()) as node_cli_mock, \
+                mock.patch.object(octobot_cli, "_apply_node_startup_settings", mock.Mock()) as node_mock, \
+                mock.patch.object(octobot_cli, "_apply_trading_startup_settings", mock.Mock()) as trading_mock:
+            octobot_cli._apply_startup_distribution_mode(args)
+        node_cli_mock.assert_called_once_with(args)
+        trading_mock.assert_called_once_with()
+        node_mock.assert_not_called()
+
+    def test_backtesting_uses_trading_mode(self, monkeypatch):
+        args = argparse.Namespace(
+            trading=False,
+            backtesting=True,
+            master=False,
+            consumer_only=False,
+            no_web=False,
+        )
+        with mock.patch.object(octobot_cli, "_apply_node_cli_settings", mock.Mock()) as node_cli_mock, \
+                mock.patch.object(octobot_cli, "_apply_node_startup_settings", mock.Mock()) as node_mock, \
+                mock.patch.object(octobot_cli, "_apply_trading_startup_settings", mock.Mock()) as trading_mock:
+            octobot_cli._apply_startup_distribution_mode(args)
+        node_cli_mock.assert_called_once_with(args)
+        trading_mock.assert_called_once_with()
+        node_mock.assert_not_called()
+
+    def test_trading_path_applies_master_settings(self, monkeypatch):
+        import octobot_node.config
+
+        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
+        monkeypatch.setattr(octobot_node.config.settings, "IS_MASTER_MODE", False)
+        monkeypatch.setattr(octobot_node.config.settings, "CONSUMER_ONLY", False)
+        args = argparse.Namespace(
+            trading=True,
+            backtesting=False,
+            master=True,
+            consumer_only=True,
+            no_web=False,
+        )
+        octobot_cli._apply_startup_distribution_mode(args)
+        assert octobot_node.config.settings.IS_MASTER_MODE is True
+        assert octobot_node.config.settings.CONSUMER_ONLY is True
+        assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.DEFAULT.value
+
+
+class TestLogStartupDistributionMode:
+    def _log_message(self, **overrides):
+        logger = mock.Mock()
+        cli_args = {
+            "trading": False,
+            "backtesting": False,
+            "master": False,
+            "consumer_only": False,
+        }
+        cli_args.update(overrides)
+        args = argparse.Namespace(**cli_args)
+        octobot_cli._log_startup_distribution_mode(logger, args)
+        logger.info.assert_called_once()
+        return logger.info.call_args.args[0]
+
+    def test_default_node_mode_message(self):
+        message = self._log_message()
+        assert "node mode" in message
+        assert "start OctoBots" in message
+        assert "selected strategy" in message
+        assert "exchanges of your choice" in message
+
+    def test_trading_mode_message(self):
+        message = self._log_message(trading=True)
+        assert "trading mode" in message
+        assert "selected profile" in message
+
+    def test_backtesting_mode_message(self):
+        message = self._log_message(backtesting=True)
+        assert message == "Starting OctoBot in backtesting mode."
+
+    def test_master_qualifier_on_node_path(self):
+        message = self._log_message(master=True)
+        assert "Master scheduler enabled." in message
+
+    def test_consumer_only_qualifier_on_node_path(self):
+        message = self._log_message(consumer_only=True)
+        assert "Consumer-only worker mode enabled." in message
+
+
+class TestDefaultCliMode:
+    def _run_start_octobot_with_distribution_mock(self, args, distribution):
+        logger = mock.Mock()
+        config = mock.Mock()
+        config.is_loaded.return_value = True
+        octobot_node_mock = mock.Mock()
+        octobot_mock = mock.Mock()
+        patch_targets = (
+            (octobot_cli, "_init_cli_overriden_folders", mock.Mock(return_value=({}, None))),
+            (octobot_cli, "_assert_process_child_folder_overrides", mock.Mock()),
+            (octobot_cli.octobot_logger, "init_logger", mock.Mock(return_value=logger)),
+            (octobot_cli, "_log_environment", mock.Mock()),
+            (octobot_cli.octobot_community, "init_sentry_tracker", mock.Mock()),
+            (octobot_cli, "_create_startup_config", mock.Mock(return_value=(config, False))),
+            (octobot_cli, "_log_terms_if_unaccepted", mock.Mock()),
+            (octobot_cli, "_get_authenticated_community_if_possible", mock.AsyncMock(return_value=None)),
+            (
+                octobot_cli.asyncio,
+                "run",
+                lambda coro: octobot_cli.asyncio.get_event_loop_policy().new_event_loop().run_until_complete(coro),
+            ),
+            (octobot_cli, "_configure_profile_sync_user", mock.Mock()),
+            (octobot_cli, "_activate_saved_profile_after_sync", mock.Mock()),
+            (octobot_cli, "_load_or_create_tentacles", mock.Mock()),
+            (octobot_cli, "_apply_forced_configs", mock.Mock()),
+            (octobot_cli, "update_config_with_args", mock.Mock()),
+            (octobot_cli.configuration_manager, "config_health_check", mock.Mock()),
+            (octobot_cli.limits, "apply_config_limits", mock.Mock(return_value=[])),
+            (
+                octobot_cli.configuration_manager,
+                "get_distribution",
+                mock.Mock(return_value=distribution),
+            ),
+            (octobot_cli.octobot_node_class, "OctoBotNode", octobot_node_mock),
+            (octobot_cli.octobot_class, "OctoBot", octobot_mock),
+            (octobot_cli.commands, "set_global_bot_instance", mock.Mock()),
+            (octobot_cli, "_disable_interface_from_param", mock.Mock()),
+            (octobot_cli.commands, "run_bot", mock.Mock()),
+        )
+        with contextlib.ExitStack() as exit_stack:
+            for target_module, attribute_name, patch_value in patch_targets:
+                exit_stack.enter_context(
+                    mock.patch.object(target_module, attribute_name, patch_value)
+                )
+            octobot_cli.start_octobot(args, "default.json")
+        return octobot_node_mock, octobot_mock
+
+    def test_default_start_uses_node_distribution(self, monkeypatch):
+        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
+        args = _start_octobot_cli_args()
+        octobot_node_mock, octobot_mock = self._run_start_octobot_with_distribution_mock(
+            args,
+            octobot_cli.enums.OctoBotDistribution.NODE,
+        )
+        assert args.no_web is True
+        assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.NODE.value
+        octobot_node_mock.assert_called_once()
+        octobot_mock.assert_not_called()
+
+    def test_trading_flag_uses_default_distribution(self, monkeypatch):
+        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
+        args = _start_octobot_cli_args(trading=True)
+        octobot_node_mock, octobot_mock = self._run_start_octobot_with_distribution_mock(
+            args,
+            octobot_cli.enums.OctoBotDistribution.DEFAULT,
+        )
+        assert args.no_web is False
+        assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.DEFAULT.value
+        octobot_mock.assert_called_once()
+        octobot_node_mock.assert_not_called()
+
+    def test_dump_state_without_trading_stays_node_mode(self, monkeypatch):
+        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
+        args = _start_octobot_cli_args(
+            dump_state="/tmp/process_bot_state.json",
+            user_folder="user/automations/bot-1",
+        )
+        octobot_node_mock, octobot_mock = self._run_start_octobot_with_distribution_mock(
+            args,
+            octobot_cli.enums.OctoBotDistribution.NODE,
+        )
+        assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.NODE.value
+        octobot_node_mock.assert_called_once()
+        octobot_mock.assert_not_called()
+
+
+class TestOctobotParser:
+    def test_parse_args_empty_uses_main_entry_point(self):
+        parser = argparse.ArgumentParser(description="OctoBot")
+        octobot_cli.octobot_parser(parser)
+        args = parser.parse_args([])
+        assert args.func is not None
+        assert args.trading is False
+        assert args.master is False
+
+    def test_parse_args_master_exposed_on_main_parser(self):
+        parser = argparse.ArgumentParser(description="OctoBot")
+        octobot_cli.octobot_parser(parser)
+        args = parser.parse_args(["--master"])
+        assert args.master is True
+
+    def test_parse_args_node_subcommand_removed(self):
+        parser = argparse.ArgumentParser(description="OctoBot")
+        octobot_cli.octobot_parser(parser)
+        with pytest.raises(SystemExit):
+            parser.parse_args(["node"])
