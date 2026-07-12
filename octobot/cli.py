@@ -38,12 +38,16 @@ try:
     import octobot_tentacles_manager.api as tentacles_manager_api
     import octobot_tentacles_manager.cli as tentacles_manager_cli
     import octobot_tentacles_manager.constants as tentacles_manager_constants
+    import octobot_tentacles_manager
+
+    import octobot_backtesting.constants as backtesting_constants
 
     # make tentacles importable
     sys.path.append(os.path.dirname(sys.executable))
 
     import octobot.octobot as octobot_class
     import octobot.octobot_node as octobot_node_class
+    import octobot_node.config
     import octobot.commands as commands
     import octobot.configuration_manager as configuration_manager
     import octobot.octobot_backtesting_factory as octobot_backtesting
@@ -64,13 +68,6 @@ except ImportError as err:
     sys.exit(-1)
 
 def update_config_with_args(starting_args, config: configuration.Configuration, logger):
-    try:
-        import octobot_backtesting.constants as backtesting_constants
-    except ImportError as e:
-        octobot_commons.logging.get_logger().error(
-            "Can't start backtesting without the octobot_backtesting package properly installed.")
-        raise e
-
     if starting_args.backtesting:
         if starting_args.backtesting_files:
             config.config[backtesting_constants.CONFIG_BACKTESTING][
@@ -422,6 +419,49 @@ def _configure_profile_sync_user(config, community_auth, *, is_process_child: bo
         config.profile_storage.configure_sync_user(community_auth.sync_user_id)
 
 
+def _apply_node_cli_settings(args) -> None:
+    if args.master:
+        octobot_node.config.settings.IS_MASTER_MODE = True
+    octobot_node.config.settings.CONSUMER_ONLY = args.consumer_only
+
+
+def _apply_node_startup_settings(args) -> None:
+    constants.FORCED_DISTRIBUTION = enums.OctoBotDistribution.NODE.value
+    args.no_web = True
+
+
+def _apply_trading_startup_settings() -> None:
+    constants.FORCED_DISTRIBUTION = enums.OctoBotDistribution.DEFAULT.value
+
+
+def _apply_startup_distribution_mode(args) -> None:
+    _apply_node_cli_settings(args)
+    if args.trading or args.backtesting:
+        _apply_trading_startup_settings()
+    else:
+        _apply_node_startup_settings(args)
+
+
+def _log_startup_distribution_mode(logger, args) -> None:
+    if args.backtesting:
+        startup_message = "Starting OctoBot in backtesting mode."
+    elif args.trading:
+        startup_message = (
+            "Starting OctoBot in trading mode: will trade using the selected profile."
+        )
+    else:
+        startup_message = (
+            "Starting OctoBot in node mode: use the interface to start OctoBots that trade "
+            "from your selected strategy on the exchanges of your choice."
+        )
+    if not args.backtesting:
+        if args.master:
+            startup_message += " Master scheduler enabled."
+        if args.consumer_only:
+            startup_message += " Consumer-only worker mode enabled."
+    logger.info(startup_message)
+
+
 def start_octobot(args, default_config_file=None):
     logger = None
     try:
@@ -432,6 +472,8 @@ def start_octobot(args, default_config_file=None):
         overrides, logs_folder = _init_cli_overriden_folders(args)
         _assert_process_child_folder_overrides(args)
         logger = octobot_logger.init_logger(logs_folder=logs_folder)
+        _apply_startup_distribution_mode(args)
+        _log_startup_distribution_mode(logger, args)
         startup_messages = []
 
         # Version
@@ -513,7 +555,7 @@ def start_octobot(args, default_config_file=None):
                                         startup_messages=startup_messages)
 
         if not args.backtesting:
-            path = getattr(args, "dump_state", None)
+            path = args.dump_state
             if path:
                 bot.dump_state_path = os.path.normpath(path)
 
@@ -649,6 +691,12 @@ def octobot_parser(parser, default_config_file=None):
                                                            'test. Example: -o TechnicalAnalysisStrategyEvaluator'
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
+    parser.add_argument(
+        '--trading',
+        help='Start classic trading OctoBot with the trading web interface (default startup is node mode).',
+        action='store_true',
+    )
+    _register_node_arguments(parser)
     parser.set_defaults(func= lambda args: start_octobot(args, default_config_file))
 
     # add sub commands
@@ -660,13 +708,6 @@ def octobot_parser(parser, default_config_file=None):
                                                                'tentacles manager help.')
     tentacles_manager_cli.register_tentacles_manager_arguments(tentacles_parser)
     tentacles_parser.set_defaults(func=commands.call_tentacles_manager)
-
-    # node manager
-    node_parser = subparsers.add_parser("node", help='Start OctoBot in node mode.\n'
-                                                     'Use "node --help" to get the '
-                                                     'node manager help.')
-    _register_node_arguments(node_parser)
-    node_parser.set_defaults(func=lambda args: start_node(args, default_config_file))
 
 def _register_node_arguments(parser):
     parser.add_argument(
@@ -694,19 +735,6 @@ def _register_node_arguments(parser):
     )
 
 
-def start_node(args, default_config_file=None):
-    import octobot_node.config
-
-    constants.FORCED_DISTRIBUTION = enums.OctoBotDistribution.NODE.value
-    if args.master:
-        octobot_node.config.settings.IS_MASTER_MODE = True
-    octobot_node.config.settings.CONSUMER_ONLY = args.consumer_only
-    args.no_web = True
-    start_octobot(args, default_config_file)
-
-
-
-
 def start_background_octobot_with_args(
     version=False,
     update=False,
@@ -728,6 +756,11 @@ def start_background_octobot_with_args(
     default_config_file=None,
     user_folder=None,
     log_folder=None,
+    trading=True,
+    master=False,
+    consumer_only=False,
+    host=None,
+    port=None,
 ):
     if backtesting_files is None:
         backtesting_files = []
@@ -748,7 +781,13 @@ def start_background_octobot_with_args(
                               risk=risk,
                               reset_trading_history=reset_trading_history,
                               user_folder=user_folder,
-                              log_folder=log_folder)
+                              log_folder=log_folder,
+                              trading=trading,
+                              master=master,
+                              consumer_only=consumer_only,
+                              host=host,
+                              port=port,
+                              dump_state=None)
     if in_subprocess:
         bot_process = multiprocessing.Process(target=start_octobot, args=(args, default_config_file))
         bot_process.start()
@@ -767,9 +806,7 @@ def main(args=None, default_config_file=None):
 
     # check compatible tentacle manager
     try:
-        from octobot_tentacles_manager import VERSION
-
-        if packaging_version.Version(VERSION) < packaging_version.Version(MIN_TENTACLE_MANAGER_VERSION):
+        if packaging_version.Version(octobot_tentacles_manager.VERSION) < packaging_version.Version(MIN_TENTACLE_MANAGER_VERSION):
             print("OctoBot requires OctoBot-Tentacles-Manager in a minimum version of " + MIN_TENTACLE_MANAGER_VERSION +
                   " you can install and update OctoBot-Tentacles-Manager using the following command: "
                   "python3 -m pip install -U OctoBot-Tentacles-Manager", file=sys.stderr)

@@ -753,6 +753,8 @@ def _ensure_child_environ(
     child_env[services_constants.ENV_NODE_API_PORT] = str(node_port)
     child_env[services_constants.ENV_NODE_API_ADDRESS] = bind_host
     child_env[commons_constants.ENV_USE_MINIMAL_LIBS] = "false"
+    child_env["DISTRIBUTION"] = commons_constants.DEFAULT_DISTRIBUTION
+    child_env[services_constants.ENV_ENABLE_NODE_API] = "false"
     child_env[octobot_constants.ENV_PROCESS_BOT_SYNC_USER_ID] = sync_user_id
     child_env[commons_constants.ENV_OCTOBOT_SYNC_DATA_ROOT] = os.path.normpath(
         os.path.join(working_directory, commons_constants.USER_FOLDER)
@@ -767,7 +769,7 @@ def _ensure_start_cmd(
     no_telegram: bool,
     state_file_path: str,
 ) -> list[str]:
-    """Argv for `python start.py --user-folder … --log-folder …` (+ optional -nt, --dump-state)."""
+    """Argv for `python start.py --user-folder … --log-folder … --trading` (+ optional -nt, --dump-state)."""
     cmd: list[str] = [
         sys.executable,
         start_script,
@@ -775,6 +777,7 @@ def _ensure_start_cmd(
         rel_user,
         "--log-folder",
         rel_log,
+        "--trading",
     ]
     if no_telegram:
         cmd.append("-nt")
