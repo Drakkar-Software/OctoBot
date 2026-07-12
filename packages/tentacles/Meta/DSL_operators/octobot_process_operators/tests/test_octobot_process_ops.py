@@ -39,6 +39,7 @@ import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
+import octobot_flow.entities.automations.octobot_process_state as octobot_process_state_import
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.sync.collection_backend.errors as collection_errors
@@ -123,7 +124,7 @@ def _healthy_recall_inner(
         "executor_id": executor_id,
     }
 def _stop_test_ensure_state_dict(http_base_url: str) -> dict:
-    return octobot_process_ops.EnsureOctobotProcessState(
+    return octobot_process_state_import.OctobotProcessState(
         http_base_url=http_base_url,
         web_port=1,
         node_port=1,
@@ -1451,7 +1452,7 @@ class TestChildListenPortReservation:
                 "127.0.0.1", 5002, 6000, user_folder_a, max_offset=10
             )
         assert web_port_a == 5002
-        stale_recall_b = octobot_process_ops.EnsureOctobotProcessState(
+        stale_recall_b = octobot_process_state_import.OctobotProcessState(
             http_base_url="http://127.0.0.1:5002",
             web_port=5002,
             node_port=node_port_a,
@@ -1484,7 +1485,7 @@ class TestChildListenPortReservation:
             web_port, node_port = octobot_process_ops._allocate_child_listen_port_pair(
                 "127.0.0.1", 5002, 6000, user_folder, max_offset=10
             )
-        recall_state = octobot_process_ops.EnsureOctobotProcessState(
+        recall_state = octobot_process_state_import.OctobotProcessState(
             http_base_url=f"http://127.0.0.1:{web_port}",
             web_port=web_port,
             node_port=node_port,
@@ -2653,7 +2654,7 @@ class TestEnsureOctobotProcessOperatorUpdateConfig:
         )
         log_dir.mkdir(parents=True)
         (user_automation / "stale_marker.txt").write_text("x", encoding="utf-8")
-        inner = octobot_process_ops.EnsureOctobotProcessState(
+        inner = octobot_process_state_import.OctobotProcessState(
             http_base_url="http://127.0.0.1:5001",
             web_port=5001,
             node_port=5002,
@@ -3214,7 +3215,7 @@ class TestRespawnsWhenGraceExpiredAndPidDead:
         spawn_mock.assert_called_once()
 
 
-class TestEnsureOctobotProcessStateEmitsExecutorId:
+class TestOctobotProcessStateEmitsExecutorId:
     async def test_first_spawn_emits_executor_id(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "start.py").write_text("#", encoding="utf-8")

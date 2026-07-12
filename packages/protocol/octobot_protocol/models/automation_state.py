@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.action import Action
 from octobot_protocol.models.automation_metadata import AutomationMetadata
+from octobot_protocol.models.child_octo_bot_process_state import ChildOctoBotProcessState
 from octobot_protocol.models.detailed_assets_for_trading_type import DetailedAssetsForTradingType
 from octobot_protocol.models.order_summary import OrderSummary
 from octobot_protocol.models.position_summary import PositionSummary
@@ -47,7 +48,8 @@ class AutomationState(BaseModel):
     orders: Optional[List[OrderSummary]] = None
     trades: Optional[List[TradeSummary]] = None
     positions: Optional[List[PositionSummary]] = None
-    __properties: ClassVar[List[str]] = ["id", "status", "error", "error_message", "metadata", "actions", "priority_actions", "exchanges", "exchange_account_ids", "assets", "orders", "trades", "positions"]
+    child_octobot_process: Optional[ChildOctoBotProcessState] = None
+    __properties: ClassVar[List[str]] = ["id", "status", "error", "error_message", "metadata", "actions", "priority_actions", "exchanges", "exchange_account_ids", "assets", "orders", "trades", "positions", "child_octobot_process"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -133,6 +135,9 @@ class AutomationState(BaseModel):
                 if _item_positions:
                     _items.append(_item_positions.to_dict())
             _dict['positions'] = _items
+        # override the default output from pydantic by calling `to_dict()` of child_octobot_process
+        if self.child_octobot_process:
+            _dict['child_octobot_process'] = self.child_octobot_process.to_dict()
         return _dict
 
     @classmethod
@@ -157,7 +162,8 @@ class AutomationState(BaseModel):
             "assets": [DetailedAssetsForTradingType.from_dict(_item) for _item in obj["assets"]] if obj.get("assets") is not None else None,
             "orders": [OrderSummary.from_dict(_item) for _item in obj["orders"]] if obj.get("orders") is not None else None,
             "trades": [TradeSummary.from_dict(_item) for _item in obj["trades"]] if obj.get("trades") is not None else None,
-            "positions": [PositionSummary.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None
+            "positions": [PositionSummary.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None,
+            "child_octobot_process": ChildOctoBotProcessState.from_dict(obj["child_octobot_process"]) if obj.get("child_octobot_process") is not None else None
         })
         return _obj
 

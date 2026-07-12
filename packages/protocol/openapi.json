@@ -504,6 +504,26 @@
           }
         }
       },
+      "ChildOctoBotProcessState": {
+        "description": "ChildOctoBotProcessState",
+        "type": "object",
+        "required": [
+          "http_base_url",
+          "web_port",
+          "init_state_ok"
+        ],
+        "properties": {
+          "http_base_url": {
+            "type": "string"
+          },
+          "web_port": {
+            "type": "integer"
+          },
+          "init_state_ok": {
+            "type": "boolean"
+          }
+        }
+      },
       "AutomationState": {
         "description": "AutomationState",
         "type": "object",
@@ -575,6 +595,9 @@
             "items": {
               "$ref": "#/components/schemas/PositionSummary"
             }
+          },
+          "child_octobot_process": {
+            "$ref": "#/components/schemas/ChildOctoBotProcessState"
           }
         }
       },

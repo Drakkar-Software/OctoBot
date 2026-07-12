@@ -571,9 +571,13 @@ class Scheduler:
         else:
             return default_value
 
-    async def get_automation_states(self, user_id: typing.Optional[str]) -> list[protocol_models.AutomationState]:
+    async def get_automation_states(
+        self,
+        user_id: typing.Optional[str],
+        statuses: typing.Optional[list[dbos.WorkflowStatusString]] = None,
+    ) -> list[protocol_models.AutomationState]:
         workflows = await self._get_latest_workflow_for_each_automation(
-            user_id, None, load_output=True
+            user_id, statuses, load_output=True
         )
         sources: list[automations_protocol.AutomationStateSource] = []
         for workflow in workflows:

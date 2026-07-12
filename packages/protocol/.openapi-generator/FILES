@@ -29,6 +29,7 @@ docs/AutomationState.md
 docs/BlockchainAccount.md
 docs/CancelPolicy.md
 docs/CancelPolicyType.md
+docs/ChildOctoBotProcessState.md
 docs/CopiedAccount.md
 docs/CopiedAsset.md
 docs/CopyConfiguration.md
@@ -144,6 +145,7 @@ octobot_protocol/models/automation_state.py
 octobot_protocol/models/blockchain_account.py
 octobot_protocol/models/cancel_policy.py
 octobot_protocol/models/cancel_policy_type.py
+octobot_protocol/models/child_octo_bot_process_state.py
 octobot_protocol/models/copied_account.py
 octobot_protocol/models/copied_asset.py
 octobot_protocol/models/copy_configuration.py
@@ -257,6 +259,7 @@ test/test_automation_state.py
 test/test_blockchain_account.py
 test/test_cancel_policy.py
 test/test_cancel_policy_type.py
+test/test_child_octo_bot_process_state.py
 test/test_copied_account.py
 test/test_copied_asset.py
 test/test_copy_configuration.py
