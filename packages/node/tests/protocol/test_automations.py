@@ -738,3 +738,102 @@ class TestFillProtocolAutomationStateEmpties:
         assert filled.orders is None
         assert filled.positions is None
         assert filled.trades is None
+
+
+class TestFillProtocolAutomationStateChildOctobotProcess:
+    def test_child_octobot_process_from_run_octobot_process_recall(self):
+        import octobot_commons.dsl_interpreter as dsl_interpreter
+
+        inner_recall = {
+            "http_base_url": "http://127.0.0.1:5002",
+            "web_port": 5002,
+            "node_port": 6002,
+            "user_root": "/tmp/user",
+            "user_folder": "automation-a",
+            "log_folder": "/tmp/log",
+            "profile_id": None,
+            "pid": 12345,
+            "init_state_ok": True,
+            "executor_id": "exec-1",
+        }
+        recall_wrapper = dsl_interpreter.ReCallingOperatorResult(
+            keyword="run_octobot_process",
+            reset_to_id="action-1",
+            last_execution_result=inner_recall,
+        )
+        dsl_action = flow_entities.DSLScriptActionDetails(
+            id="action-1",
+            dsl_script='run_octobot_process("folder", {}, [])',
+            previous_execution_result={
+                dsl_interpreter.ReCallingOperatorResult.__name__: recall_wrapper.to_dict(),
+            },
+        )
+        flow_state = flow_entities.AutomationState(
+            automation=flow_entities.AutomationDetails(
+                metadata=flow_entities.AutomationMetadata(automation_id="automation_1"),
+                actions_dag=flow_entities.ActionsDAG(actions=[dsl_action]),
+            ),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.child_octobot_process is not None
+        assert filled.child_octobot_process.http_base_url == "http://127.0.0.1:5002"
+        assert filled.child_octobot_process.web_port == 5002
+        assert filled.child_octobot_process.init_state_ok is True
+
+
+class TestOctobotProcessStateToChildProtocol:
+    def test_octobot_process_state_to_child_protocol_projects_slim_fields(self):
+        import octobot_flow.entities.automations.octobot_process_state as octobot_process_state_module
+
+        full_state = octobot_process_state_module.OctobotProcessState(
+            http_base_url="http://127.0.0.1:5002",
+            web_port=5002,
+            node_port=6002,
+            user_root="/tmp/user",
+            user_folder="automation-a",
+            log_folder="/tmp/log",
+            profile_id=None,
+            pid=12345,
+            init_state_ok=True,
+            executor_id="exec-1",
+        )
+        child_state = automations_protocol._octobot_process_state_to_child_protocol(full_state)
+        assert child_state == protocol_models.ChildOctoBotProcessState(
+            http_base_url="http://127.0.0.1:5002",
+            web_port=5002,
+            init_state_ok=True,
+        )
+
+
+class TestChildOctobotProcessFromFlowActions:
+    def test_child_octobot_process_from_flow_actions_finds_run_octobot_process_recall(self):
+        import octobot_commons.dsl_interpreter as dsl_interpreter
+
+        inner_recall = {
+            "http_base_url": "http://127.0.0.1:5002",
+            "web_port": 5002,
+            "node_port": 6002,
+            "user_root": "/tmp/user",
+            "user_folder": "automation-a",
+            "log_folder": "/tmp/log",
+            "profile_id": None,
+            "pid": 12345,
+            "init_state_ok": True,
+            "executor_id": "exec-1",
+        }
+        recall_wrapper = dsl_interpreter.ReCallingOperatorResult(
+            keyword="run_octobot_process",
+            reset_to_id="action-1",
+            last_execution_result=inner_recall,
+        )
+        dsl_action = flow_entities.DSLScriptActionDetails(
+            id="action-1",
+            dsl_script='run_octobot_process("folder", {}, [])',
+            previous_execution_result={
+                dsl_interpreter.ReCallingOperatorResult.__name__: recall_wrapper.to_dict(),
+            },
+        )
+        child_state = automations_protocol._child_octobot_process_from_flow_actions([dsl_action])
+        assert child_state is not None
+        assert child_state.web_port == 5002
+        assert child_state.init_state_ok is True

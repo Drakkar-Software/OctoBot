@@ -97,7 +97,11 @@ class TestDebug(unittest.TestCase):
                             octobot_protocol.models.position_summary.PositionSummary(
                                 id = '', 
                                 symbol = '', )
-                            ], )
+                            ], 
+                        child_octobot_process = octobot_protocol.models.child_octo_bot_process_state.ChildOctoBotProcessState(
+                            http_base_url = '', 
+                            web_port = 56, 
+                            init_state_ok = True, ), )
                     ],
                 user_actions = [
                     octobot_protocol.models.user_action.UserAction(
@@ -297,7 +301,11 @@ class TestDebug(unittest.TestCase):
                             octobot_protocol.models.position_summary.PositionSummary(
                                 id = '', 
                                 symbol = '', )
-                            ], )
+                            ], 
+                        child_octobot_process = octobot_protocol.models.child_octo_bot_process_state.ChildOctoBotProcessState(
+                            http_base_url = '', 
+                            web_port = 56, 
+                            init_state_ok = True, ), )
                     ],
                 user_actions = [
                     octobot_protocol.models.user_action.UserAction(

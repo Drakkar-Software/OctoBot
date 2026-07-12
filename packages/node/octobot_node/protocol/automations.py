@@ -24,6 +24,7 @@ import dbos
 import octobot_commons.logging as octobot_commons_logging
 import octobot_commons.timestamp_util as octobot_commons_timestamp_util
 import octobot_flow.entities as flow_entities
+import octobot_flow.entities.automations.octobot_process_state as octobot_process_state_module
 import octobot_node.models as node_models
 import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.workflows.params as workflow_params
@@ -337,6 +338,35 @@ def _protocol_action_from_flow(
     )
 
 
+def _octobot_process_state_to_child_protocol(
+    state: octobot_process_state_module.OctobotProcessState,
+) -> protocol_models.ChildOctoBotProcessState:
+    """Project full recall state → slim API shape for task cards."""
+    return protocol_models.ChildOctoBotProcessState(
+        http_base_url=state.http_base_url,
+        web_port=state.web_port,
+        init_state_ok=state.init_state_ok,
+    )
+
+
+def _child_octobot_process_from_flow_actions(
+    actions: typing.Iterable[flow_entities.AbstractActionDetails],
+) -> protocol_models.ChildOctoBotProcessState | None:
+    """Find run_octobot_process recall on DAG actions and map to protocol child state."""
+    for flow_action in actions:
+        if not isinstance(flow_action, flow_entities.DSLScriptActionDetails):
+            continue
+        if not octobot_process_state_module.is_run_octobot_process_dsl_action(flow_action):
+            continue
+        action_result = flow_action.result
+        if action_result is None:
+            action_result = flow_action.previous_execution_result
+        inner = octobot_process_state_module.recall_inner_from_action_result(action_result)
+        if parsed_state := octobot_process_state_module.parse_octobot_process_state(inner or {}):
+            return _octobot_process_state_to_child_protocol(parsed_state)
+    return None
+
+
 def _fill_protocol_automation_state(
     protocol_automation_state: protocol_models.AutomationState,
     flow_automation_state: flow_entities.AutomationState,
@@ -389,6 +419,9 @@ def _fill_protocol_automation_state(
     degraded_error, degraded_error_message = _degraded_state_protocol_errors(
         flow_automation_state.automation.execution
     )
+    child_octobot_process = _child_octobot_process_from_flow_actions(
+        actions_dag.actions
+    )
     return protocol_automation_state.model_copy(
         update={
             "status": status,
@@ -403,6 +436,7 @@ def _fill_protocol_automation_state(
             "orders": orders,
             "trades": trades,
             "positions": positions,
+            "child_octobot_process": child_octobot_process,
         }
     )
 

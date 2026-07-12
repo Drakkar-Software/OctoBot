@@ -44,6 +44,7 @@ from octobot_protocol.models.automation_state import AutomationState
 from octobot_protocol.models.blockchain_account import BlockchainAccount
 from octobot_protocol.models.cancel_policy import CancelPolicy
 from octobot_protocol.models.cancel_policy_type import CancelPolicyType
+from octobot_protocol.models.child_octo_bot_process_state import ChildOctoBotProcessState
 from octobot_protocol.models.copied_account import CopiedAccount
 from octobot_protocol.models.copied_asset import CopiedAsset
 from octobot_protocol.models.copy_configuration import CopyConfiguration

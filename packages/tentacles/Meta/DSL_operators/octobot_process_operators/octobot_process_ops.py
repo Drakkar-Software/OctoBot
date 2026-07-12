@@ -46,6 +46,7 @@ import octobot.constants as octobot_constants
 import octobot.community.supabase_backend.enums as community_enums
 import octobot_flow.entities as octobot_flow_entities
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
+import octobot_flow.entities.automations.octobot_process_state as octobot_process_state_import
 import octobot_node.constants as octobot_node_constants
 import octobot_services.constants as services_constants
 import octobot_protocol.models.generic_process_configuration as generic_process_configuration
@@ -56,34 +57,17 @@ DEFAULT_PING_WAITING_TIME = 2.0
 DEFAULT_ENSURE_TIMEOUT = 120.0
 DEFAULT_FORCE_KILL_EXIT_WAIT_SECONDS = 5.0
 DEFAULT_DSL_PROFILE_ID = "non-trading"
+RUN_OCTOBOT_PROCESS_OPERATOR_NAME = "run_octobot_process"
 
 
 # run_octobot_process uses two state layers:
-# - Recall state (`EnsureOctobotProcessState` in DSL `last_execution_result`): master-side
+# - Recall state (`OctobotProcessState` in DSL `last_execution_result`): master-side
 #   snapshot (ports, paths, stored pid, init_state_ok, executor_id). Persisted across
 #   re-calls until STOP, UPDATE_CONFIG, or respawn.
 # - Child dump (`process_bot_state.json` → `ProcessBotState`): written by the child; used for
 #   timestamp-fresh checks and metadata.pid when the stored recall pid is stale.
 # executor_id ties recall to the current DBOS scheduler worker. On mismatch
 # with all child PIDs dead, respawn is forced immediately (grace is bypassed).
-class EnsureOctobotProcessState(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(validate_assignment=True, extra="ignore")
-    http_base_url: str
-    web_port: int
-    node_port: int
-    user_root: str
-    user_folder: str
-    log_folder: str
-    profile_id: str | None
-    # Last known child PID on the master; may lag after a child self-restart until adoption.
-    pid: int
-    state_file_path: str = ""
-    # Wall-clock when the first spawn began; used only while init_state_ok is False (ping_timeout).
-    started_waiting_at: float = 0.0
-    # True once the child reached confirmed-alive; switches from init ping_timeout to recall/grace rules.
-    init_state_ok: bool = False
-    # Required scheduler executor id at emit time; compared on recall to detect worker restart.
-    executor_id: str
 
 
 # Keys on `last_result` that `create_re_callable_result_dict` takes as top-level args (not state).
@@ -97,7 +81,7 @@ _RECALL_OVERRIDABLE_KEYS = frozenset(
 _DEFAULT_ENCRYPTED_VALUE = octobot_commons.configuration.encrypt("").decode()
 
 
-def _resolve_state_file_path(recall_state: EnsureOctobotProcessState) -> str:
+def _resolve_state_file_path(recall_state: octobot_process_state_import.OctobotProcessState) -> str:
     if recall_state.state_file_path:
         return recall_state.state_file_path
     return os.path.normpath(
@@ -145,16 +129,6 @@ def _is_state_timestamp_fresh(
     return _is_process_state_alive(loaded_state)
 
 
-def _parse_ensure_recall_state(raw: dict) -> typing.Optional[EnsureOctobotProcessState]:
-    """Parse recall payload; empty or invalid dict → None."""
-    if not raw:
-        return None
-    try:
-        return EnsureOctobotProcessState.model_validate(raw)
-    except pydantic.ValidationError:
-        return None
-
-
 def _metadata_pid_is_running(
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
 ) -> bool:
@@ -179,7 +153,7 @@ def _is_child_confirmed_alive(
 
 
 def _any_child_pid_running(
-    recall_state: EnsureOctobotProcessState,
+    recall_state: octobot_process_state_import.OctobotProcessState,
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
 ) -> bool:
     """True when either recall pid or child dump metadata.pid is running."""
@@ -189,7 +163,7 @@ def _any_child_pid_running(
 
 
 def _executor_restarted_requires_respawn(
-    recall_state: EnsureOctobotProcessState,
+    recall_state: octobot_process_state_import.OctobotProcessState,
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
     *,
     current_executor_id: str,
@@ -200,7 +174,7 @@ def _executor_restarted_requires_respawn(
     return recall_state.executor_id != current_executor_id
 
 
-def _stored_pid_is_running(recall_state: EnsureOctobotProcessState) -> bool:
+def _stored_pid_is_running(recall_state: octobot_process_state_import.OctobotProcessState) -> bool:
     """Fast path: recall pid still running."""
     if recall_state.pid <= 0:
         return False
@@ -208,7 +182,7 @@ def _stored_pid_is_running(recall_state: EnsureOctobotProcessState) -> bool:
 
 
 def _in_restart_grace_period(
-    recall_state: EnsureOctobotProcessState,
+    recall_state: octobot_process_state_import.OctobotProcessState,
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
     *,
     now: float,
@@ -227,7 +201,7 @@ def _in_restart_grace_period(
 
 
 def _should_use_recall_path(
-    recall_state: EnsureOctobotProcessState,
+    recall_state: octobot_process_state_import.OctobotProcessState,
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
     *,
     stored_pid_running: bool,
@@ -251,7 +225,7 @@ def _should_use_recall_path(
 
 
 def _resolve_bound_pid(
-    recall_state: EnsureOctobotProcessState,
+    recall_state: octobot_process_state_import.OctobotProcessState,
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
 ) -> typing.Optional[int]:
     """Bind operating PID from recall or fresh dump; None if metadata.pid dead (no raise)."""
@@ -270,9 +244,9 @@ def _resolve_bound_pid(
 
 
 def _apply_resolved_pid_to_state(
-    recall_state: EnsureOctobotProcessState,
+    recall_state: octobot_process_state_import.OctobotProcessState,
     resolved_pid: typing.Optional[int],
-) -> EnsureOctobotProcessState:
+) -> octobot_process_state_import.OctobotProcessState:
     if resolved_pid is None or resolved_pid == recall_state.pid:
         return recall_state
     return recall_state.model_copy(update={"pid": resolved_pid})
@@ -859,7 +833,7 @@ def _allocate_child_listen_port_pair(
 
 
 def _release_recall_state_listen_ports(
-    recall_state: typing.Optional[EnsureOctobotProcessState],
+    recall_state: typing.Optional[octobot_process_state_import.OctobotProcessState],
 ) -> None:
     if recall_state is None:
         return
@@ -888,7 +862,7 @@ def create_octobot_process_operators(
             "If the state file never becomes live before ping_timeout from the first spawn, the keyword fails and the child is killed."
         )
         EXAMPLE = (
-            "run_octobot_process(user_folder='bots/b1', "
+            f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME}(user_folder='bots/b1', "
             "exchange_auth_data=[{'internal_name': 'binance', 'api_key': '...', 'api_secret': '...'}], "
             "last_execution_result=None)"
         )
@@ -901,7 +875,7 @@ def create_octobot_process_operators(
         def _read_executor_id(self) -> str:
             if not executor_id:
                 raise commons_errors.DSLInterpreterError(
-                    "executor_id is required for run_octobot_process"
+                    f"executor_id is required for {RUN_OCTOBOT_PROCESS_OPERATOR_NAME}"
                 )
             return executor_id
 
@@ -911,7 +885,7 @@ def create_octobot_process_operators(
 
         @staticmethod
         def get_name() -> str:
-            return "run_octobot_process"
+            return RUN_OCTOBOT_PROCESS_OPERATOR_NAME
 
         @classmethod
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
@@ -1061,7 +1035,7 @@ def create_octobot_process_operators(
             if not isinstance(inner, dict):
                 return False
             try:
-                return _parse_ensure_recall_state(inner) is not None
+                return octobot_process_state_import.parse_octobot_process_state(inner) is not None
             except commons_errors.DSLInterpreterError:
                 return False
 
@@ -1081,7 +1055,7 @@ def create_octobot_process_operators(
         def _emit_ensure_recall(
             self,
             *,
-            state: EnsureOctobotProcessState,
+            state: octobot_process_state_import.OctobotProcessState,
             last_result: dict,
             start_time: float,
             recall_interval: float,
@@ -1111,7 +1085,7 @@ def create_octobot_process_operators(
 
         async def _pre_compute_recall_path(
             self,
-            recall_state: EnsureOctobotProcessState,
+            recall_state: octobot_process_state_import.OctobotProcessState,
             last_result: dict,
             *,
             start_time: float,
@@ -1230,7 +1204,7 @@ def create_octobot_process_operators(
                     params
                 )
             )
-            prior_recall_state = _parse_ensure_recall_state(last_result)
+            prior_recall_state = octobot_process_state_import.parse_octobot_process_state(last_result)
             _release_recall_state_listen_ports(prior_recall_state)
             web_b = int(params.get("web_port_base") or services_constants.DEFAULT_SERVER_PORT)
             node_b = int(params.get("node_port_base") or services_constants.DEFAULT_NODE_API_PORT)
@@ -1245,7 +1219,7 @@ def create_octobot_process_operators(
             process_sync_user_id = params.get("user_id")
             if not process_sync_user_id or not str(process_sync_user_id).strip():
                 raise commons_errors.DSLInterpreterError(
-                    "run_octobot_process requires user_id to spawn a process child."
+                    f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME} requires user_id to spawn a process child."
                 )
             child_env = _ensure_child_environ(
                 web_port,
@@ -1276,7 +1250,7 @@ def create_octobot_process_operators(
             )
             scheme = str(params.get("http_scheme") or "http").rstrip(":/")
             http_base_url = f"{scheme}://{bind_host}:{web_port}"
-            state = EnsureOctobotProcessState(
+            state = octobot_process_state_import.OctobotProcessState(
                 http_base_url=http_base_url,
                 web_port=web_port,
                 node_port=node_port,
@@ -1384,11 +1358,11 @@ def create_octobot_process_operators(
             ping_timeout: float,
         ) -> None:
             # Resolve prior child layout from re-call payload; required for stop, wait, and paths to remove.
-            recall_state = self._try_parse_ensure_recall_state(last_result)
+            recall_state = self._try_parse_octobot_process_state(last_result)
             if recall_state is None:
                 raise commons_errors.DSLInterpreterError(
-                    "run_octobot_process(UPDATE_CONFIG) requires last_execution_result from a prior "
-                    "run_octobot_process call.",
+                    f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME}(UPDATE_CONFIG) requires last_execution_result from a prior "
+                    f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME} call.",
                 )
             process_logger = _get_logger()
             state_path = _resolve_state_file_path(recall_state)
@@ -1396,7 +1370,7 @@ def create_octobot_process_operators(
             resolved_pid = _resolve_bound_pid(recall_state, loaded_state)
             if resolved_pid is None:
                 raise commons_errors.DSLInterpreterError(
-                    "run_octobot_process(UPDATE_CONFIG) cannot resolve a running child pid to stop."
+                    f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME}(UPDATE_CONFIG) cannot resolve a running child pid to stop."
                 )
             self.pid = resolved_pid
             process_logger.info(
@@ -1432,10 +1406,10 @@ def create_octobot_process_operators(
             params = self.get_computed_value_by_parameter()
             if self.matches_operator_signal(dsl_interpreter.OperatorSignal.STOP.value):
                 last_result = self.get_last_execution_result(params) or {}
-                recall_state = self._try_parse_ensure_recall_state(last_result)
+                recall_state = self._try_parse_octobot_process_state(last_result)
                 if recall_state is None:
                     raise commons_errors.DSLInterpreterError(
-                        "run_octobot_process(execution_stop) requires last_execution_result from a prior run_octobot_process call.",
+                        f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME}(execution_stop) requires last_execution_result from a prior {RUN_OCTOBOT_PROCESS_OPERATOR_NAME} call.",
                     )
                 state_path = _resolve_state_file_path(recall_state)
                 loaded_state = await _load_process_bot_state(state_path)
@@ -1461,7 +1435,7 @@ def create_octobot_process_operators(
                     stored_pid_running=stored_pid_running,
                 ):
                     _get_logger().info(
-                        "run_octobot_process(STOP): child in restart grace; treating as already_stopped"
+                        f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME}(STOP): child in restart grace; treating as already_stopped"
                     )
                 self.value = {"status": "already_stopped", "reason": "not_running"}
                 _release_recall_state_listen_ports(recall_state)
@@ -1486,7 +1460,7 @@ def create_octobot_process_operators(
                     ping_timeout=ping_timeout,
                 )
                 return
-            recall_state = self._try_parse_ensure_recall_state(last_result)
+            recall_state = self._try_parse_octobot_process_state(last_result)
             if recall_state is not None:
                 # 1. Load child dump alongside strict recall state.
                 state_path = _resolve_state_file_path(recall_state)
@@ -1537,7 +1511,7 @@ def create_octobot_process_operators(
                     loaded_state.metadata.updated_at if loaded_state is not None else None
                 )
                 _get_logger().info(
-                    "run_octobot_process: respawning child (recall path declined): user_folder=%r "
+                    f"{RUN_OCTOBOT_PROCESS_OPERATOR_NAME}: respawning child (recall path declined): user_folder=%r "
                     "stored_pid=%s stored_pid_running=%s state_timestamp_fresh=%s init_state_ok=%s "
                     "last_state_updated_at=%s ping_timeout=%s",
                     recall_state.user_folder,
@@ -1558,8 +1532,8 @@ def create_octobot_process_operators(
             )
 
 
-        def _try_parse_ensure_recall_state(self, raw: dict) -> typing.Optional[EnsureOctobotProcessState]:
-            if state := _parse_ensure_recall_state(raw):
+        def _try_parse_octobot_process_state(self, raw: dict) -> typing.Optional[octobot_process_state_import.OctobotProcessState]:
+            if state := octobot_process_state_import.parse_octobot_process_state(raw):
                 if state.pid:
                     self.pid = state.pid
                 return state
