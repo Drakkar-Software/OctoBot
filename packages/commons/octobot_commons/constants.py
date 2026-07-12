@@ -211,6 +211,9 @@ ALLOW_DEFAULT_CONFIG = "allow_default_config"
 # terms of service
 CONFIG_ACCEPTED_TERMS = "accepted_terms"
 
+# child-process display name (DSL-spawned OctoBot instances)
+CONFIG_OCTOBOT_NAME = "octobot_name"
+
 # distribution
 DEFAULT_DISTRIBUTION = "default"
 CONFIG_DISTRIBUTION = "distribution"

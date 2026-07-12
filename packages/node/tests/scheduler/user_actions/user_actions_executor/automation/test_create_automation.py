@@ -531,6 +531,7 @@ class TestCreateAutomationExecutor:
             "run_octobot_process("
             f"{'ua-mm'!r}, {dsl_interpreter.format_parameter_value(expected_profile_dict)}, "
             f"{expected_exchange_auth_segment}, "
+            f"octobot_name={dsl_interpreter.format_parameter_value('market-making-automation')}, "
             f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
         )
         _assert_init_action_matches_minimal_account(
@@ -863,6 +864,7 @@ class TestCreateAutomationExecutor:
             "run_octobot_process("
             f"{'ua-generic-process'!r}, user_id={_TEST_WALLET_ADDRESS!r}, sync_profile_id={strat_ref.id!r}, "
             f"exchange_auth_data={dsl_interpreter.format_parameter_value(expected_exchange_auth)}, "
+            f"octobot_name={dsl_interpreter.format_parameter_value('generic-process-automation')}, "
             f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
         )
         _assert_init_action_matches_minimal_account(
@@ -915,6 +917,7 @@ class TestCreateAutomationExecutor:
             "run_octobot_process("
             f"{'ua-generic-process-no-account'!r}, user_id={_TEST_WALLET_ADDRESS!r}, "
             f"sync_profile_id={strat_ref.id!r}, "
+            f"octobot_name={dsl_interpreter.format_parameter_value('generic-process-no-account')}, "
             f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
         )
         assert main_action.dsl_script == expected_dsl

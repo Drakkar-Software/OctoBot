@@ -4,7 +4,7 @@
 <html lang="en" data-mdb-theme="{{get_color_mode()}}">
     {% set active_page = active_page|default('advanced.home') -%}
     <head>
-        <title>{{ active_page.split(".")[-1] | replace("_", " ") | capitalize }} - OctoBot</title>
+        <title>{{ active_page.split(".")[-1] | replace("_", " ") | capitalize }} - {{ OCTOBOT_DISPLAY_NAME }}</title>
 
         <!-- Required meta tags -->
         <meta charset="utf-8">
@@ -86,8 +86,8 @@
                 </ul>
             </div>
             <div class="mx-auto order-0">
-                <a class="navbar-brand mx-auto" href="{{ url_for('advanced.home') }}">Advanced OctoBot
-                    <i id="navbar-bot-status" class="fa fa-check" data-toggle="tooltip" data-placement="bottom" title="OctoBot operational"></i>
+                <a class="navbar-brand mx-auto" href="{{ url_for('advanced.home') }}">Advanced {{ OCTOBOT_DISPLAY_NAME }}
+                    <i id="navbar-bot-status" class="fa fa-check" data-toggle="tooltip" data-placement="bottom" title="{{ OCTOBOT_DISPLAY_NAME }} operational"></i>
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".dual-collapse2">
                     <span class="navbar-toggler-icon"></span>
@@ -108,7 +108,7 @@
                             </i></a>
                         </li>
                         <li class="nav-item mx-1 px-0 my-auto">
-                            <a class="nav-link" href="{{ url_for('home') }}"><i class="fa fa-home"></i> Back to OctoBot</a>
+                            <a class="nav-link" href="{{ url_for('home') }}"><i class="fa fa-home"></i> Back to {{ OCTOBOT_DISPLAY_NAME }}</a>
                         </li>
                     {% endif %}
                 </ul>
