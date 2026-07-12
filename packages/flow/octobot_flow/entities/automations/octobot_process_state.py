@@ -7,7 +7,6 @@ import pydantic
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_flow.entities.actions.action_details as action_details_module
 
-
 class OctobotProcessState(pydantic.BaseModel):
     """Master-side recall payload for run_octobot_process (former EnsureOctobotProcessState)."""
 
@@ -26,7 +25,6 @@ class OctobotProcessState(pydantic.BaseModel):
     init_state_ok: bool = False  # True once the child reached confirmed-alive; switches from init `ping_timeout` to recall/grace rules.
     executor_id: str  # Required scheduler executor id at emit time; compared on recall to detect worker restart.
 
-
 def parse_octobot_process_state(raw: dict) -> OctobotProcessState | None:
     """Parse recall inner dict; empty or invalid dict → None."""
     if not raw:
@@ -36,12 +34,10 @@ def parse_octobot_process_state(raw: dict) -> OctobotProcessState | None:
     except pydantic.ValidationError:
         return None
 
-
 def _run_octobot_process_operator_name() -> str:
     import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 
     return octobot_process_ops.RUN_OCTOBOT_PROCESS_OPERATOR_NAME
-
 
 def is_run_octobot_process_dsl_action(
     flow_action: action_details_module.DSLScriptActionDetails,
@@ -51,7 +47,6 @@ def is_run_octobot_process_dsl_action(
     if not dsl_value:
         return False
     return dsl_value.strip().startswith(f"{_run_octobot_process_operator_name()}(")
-
 
 def recall_inner_from_action_result(
     action_result: typing.Any,
