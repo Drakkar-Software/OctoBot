@@ -197,7 +197,9 @@ async def _enrich_tasks_with_child_octobot_process(
         }
         for task in tasks:
             if task.id in child_process_by_automation_id:
-                task.child_octobot_process = child_process_by_automation_id[task.id]
+                if task.metadata is None:
+                    task.metadata = octobot_node.models.TaskMetadata()
+                task.metadata.child_octobot_process = child_process_by_automation_id[task.id]
     except Exception as enrich_error:
         logger.exception(
             enrich_error, True, "Failed to enrich tasks with child_octobot_process: %s", enrich_error
