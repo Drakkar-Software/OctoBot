@@ -534,8 +534,9 @@ class TestGetAllTasksChildOctobotProcessEnrichment:
         ]
         active_task = next(task for task in tasks if task.id == parent_id)
         completed_task = next(task for task in tasks if task.id == completed_parent_id)
-        assert active_task.child_octobot_process == child_state
-        assert completed_task.child_octobot_process is None
+        assert active_task.metadata is not None
+        assert active_task.metadata.child_octobot_process == child_state
+        assert completed_task.metadata is None
 
     @pytest.mark.asyncio
     async def test_get_all_tasks_skips_automation_states_when_all_tasks_completed(self) -> None:
@@ -555,7 +556,7 @@ class TestGetAllTasksChildOctobotProcessEnrichment:
             tasks = await get_all_tasks()
 
         mock_scheduler.get_automation_states.assert_not_awaited()
-        assert tasks[0].child_octobot_process is None
+        assert tasks[0].metadata is None
 
 
 class TestGetTasksExportResults:
