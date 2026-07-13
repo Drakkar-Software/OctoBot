@@ -491,6 +491,38 @@ class TestWriteUserRootConfigJson:
         assert seeded[commons_constants.CONFIG_EXCHANGE_KEY] == octobot_process_ops._DEFAULT_ENCRYPTED_VALUE
         assert seeded[commons_constants.CONFIG_EXCHANGE_SECRET] == octobot_process_ops._DEFAULT_ENCRYPTED_VALUE
 
+    def test_profile_exchange_stays_enabled_when_default_template_disables_it(self, tmp_path):
+        config_path = _automation_child_config_path(tmp_path)
+        profile_exchange_internal_name = "binanceus"
+        template = _fresh_default_like_cfg_template()
+        template[commons_constants.CONFIG_EXCHANGES] = {
+            profile_exchange_internal_name: {
+                commons_constants.CONFIG_ENABLED_OPTION: False,
+                commons_constants.CONFIG_EXCHANGE_TYPE: commons_constants.CONFIG_EXCHANGE_SPOT,
+            }
+        }
+        profile_dict = {
+            **_MINIMAL_PROFILE_DATA,
+            "exchanges": [
+                {
+                    "internal_name": profile_exchange_internal_name,
+                    "exchange_type": commons_constants.CONFIG_EXCHANGE_SPOT,
+                }
+            ],
+        }
+        profile_data = profile_data_module.ProfileData.from_dict(profile_dict)
+        with mock.patch.object(
+            octobot_process_ops.json_util,
+            "read_file",
+            side_effect=lambda *_unused: template,
+        ):
+            octobot_process_ops._write_user_root_config_json(
+                config_path, "grid-profile", profile_data, None, str(tmp_path)
+            )
+        written = json.loads(pathlib.Path(config_path).read_text(encoding="utf-8"))
+        profile_exchange_cfg = written[commons_constants.CONFIG_EXCHANGES][profile_exchange_internal_name]
+        assert profile_exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] is True
+
     def test_presets_encrypted_empty_credentials_when_default_config_exchange_has_no_api_fields(
         self, tmp_path
     ):

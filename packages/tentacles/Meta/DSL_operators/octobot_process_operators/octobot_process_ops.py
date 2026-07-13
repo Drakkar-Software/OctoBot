@@ -524,6 +524,11 @@ def _write_user_root_config_json(
             if exchange_name not in profile_exchange_names and isinstance(exchange_cfg, dict):
                 # don't inherit exchange activation from master config
                 exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] = False
+        # Re-enable profile exchanges after master auth overlay and non-profile disable guard.
+        for profile_exchange_name in profile_exchange_names:
+            profile_exchange_cfg = exchanges_cfg.get(profile_exchange_name)
+            if isinstance(profile_exchange_cfg, dict):
+                profile_exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] = True
     exchanges_cfg = default_cfg.get(commons_constants.CONFIG_EXCHANGES) or {}
     for exchange_cfg in exchanges_cfg.values():
         if isinstance(exchange_cfg, dict):
