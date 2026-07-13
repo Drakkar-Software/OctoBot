@@ -2091,7 +2091,7 @@ class TestEnsureOctobotProcessDslIntegration:
         _seed_executor_reference_tentacles_config(tmp_path)
         user_folder = "integration_dsl_bot"
         expression = (
-            f"run_octobot_process({user_folder!r}, {repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
+            f"run_octobot_process({user_folder!r}, profile_data={repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
             f"user_id={_PROCESS_TEST_USER_ID!r})"
         )
         # Contextual operator is excluded from get_all_operators(); append it explicitly.
@@ -2186,7 +2186,7 @@ class TestEnsureOctobotProcessDslIntegration:
         self, tmp_path, monkeypatch
     ):
         """
-        Same pipeline as ``test_run_octobot_process_via_dsl``, plus positional
+        Same pipeline as ``test_run_octobot_process_via_dsl``, plus keyword
         ``exchange_auth_data`` (list of dicts). Verifies API fields land under
         ``exchanges`` in the user-root ``config.json`` written during layout.
         """
@@ -2209,7 +2209,7 @@ class TestEnsureOctobotProcessDslIntegration:
             }
         ]
         expression = (
-            f"run_octobot_process({user_folder!r}, {repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
+            f"run_octobot_process({user_folder!r}, profile_data={repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
             f"exchange_auth_data={repr(exchange_auth_list)}, user_id={_PROCESS_TEST_USER_ID!r})"
         )
         interpreter = dsl_interpreter.Interpreter(
@@ -2244,7 +2244,8 @@ class TestEnsureOctobotProcessDslIntegration:
             assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_PASSWORD] == fake_api_password
             assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_TYPE] == commons_constants.CONFIG_EXCHANGE_SPOT
             assert exchange_cfg[commons_constants.CONFIG_EXCHANGE_SANDBOXED] is True
-            assert exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] is True
+            # Profile has no exchanges: auth-only entries are disabled after non-profile guard.
+            assert exchange_cfg[commons_constants.CONFIG_ENABLED_OPTION] is False
         finally:
             shutil.rmtree(tmp_path / commons_constants.USER_FOLDER, ignore_errors=True)
             if (tmp_path / "logs").exists():

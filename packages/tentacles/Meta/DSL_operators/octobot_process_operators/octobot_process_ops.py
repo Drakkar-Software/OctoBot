@@ -596,6 +596,21 @@ def _assert_sync_strategy_exists(sync_user_id: str, sync_profile_id: str) -> typ
         ) from err
 
 
+def _materialize_dsl_parameter_value(value: typing.Any) -> typing.Any:
+    if isinstance(value, dsl_interpreter.Operator):
+        return _materialize_dsl_parameter_value(value.compute())
+    if isinstance(value, dict):
+        return {
+            key: _materialize_dsl_parameter_value(nested_value)
+            for key, nested_value in value.items()
+        }
+    if isinstance(value, list):
+        return [
+            _materialize_dsl_parameter_value(nested_value) for nested_value in value
+        ]
+    return value
+
+
 async def ensure_user_profile_and_layout(
     user_folder: str,
     working_directory: str,
@@ -640,6 +655,7 @@ async def ensure_user_profile_and_layout(
     os.makedirs(user_root, exist_ok=True)
 
     if profile_data_dict is not None:
+        profile_data_dict = _materialize_dsl_parameter_value(profile_data_dict)
         # Import writes to a throwaway folder first: the real profile id is assigned during import (see rename below).
         temp_profile_path = os.path.join(
             user_root,
@@ -1556,7 +1572,6 @@ def create_octobot_process_operators(
             return None
     
     return [EnsureOctobotProcessOperator]
-
 
 
 def _get_logger():

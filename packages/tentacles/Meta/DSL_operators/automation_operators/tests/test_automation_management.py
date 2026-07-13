@@ -40,7 +40,7 @@ def _assert_stop_automation_result(result):
     assert details.stop_automation is True
 
 
-_SAMPLE_CONFIGURATION_UPDATE_DSL = 'run_octobot_process("u", {})'
+_SAMPLE_CONFIGURATION_UPDATE_DSL = 'run_octobot_process("u", profile_data={})'
 
 
 def _assert_update_automation_configuration_result(result, expected_configuration_update: str):

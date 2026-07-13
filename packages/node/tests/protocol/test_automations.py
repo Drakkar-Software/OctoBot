@@ -763,7 +763,7 @@ class TestFillProtocolAutomationStateChildOctobotProcess:
         )
         dsl_action = flow_entities.DSLScriptActionDetails(
             id="action-1",
-            dsl_script='run_octobot_process("folder", {}, [])',
+            dsl_script='run_octobot_process("folder", profile_data={})',
             previous_execution_result={
                 dsl_interpreter.ReCallingOperatorResult.__name__: recall_wrapper.to_dict(),
             },
@@ -828,7 +828,7 @@ class TestChildOctobotProcessFromFlowActions:
         )
         dsl_action = flow_entities.DSLScriptActionDetails(
             id="action-1",
-            dsl_script='run_octobot_process("folder", {}, [])',
+            dsl_script='run_octobot_process("folder", profile_data={})',
             previous_execution_result={
                 dsl_interpreter.ReCallingOperatorResult.__name__: recall_wrapper.to_dict(),
             },

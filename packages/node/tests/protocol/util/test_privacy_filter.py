@@ -42,7 +42,7 @@ class TestPrivatizeDagActions:
             id="dsl-1",
             action_type="dsl_script",
             status=protocol_models.WorkflowStatus.COMPLETED,
-            dsl='run_octobot_process("acc", {}, [{"api_key": "leak"}])',
+            dsl='run_octobot_process("acc", profile_data={}, exchange_auth_data=[{"api_key": "leak"}])',
         )
         privatized_actions = privacy_filter.privatize_dag_actions([dsl_action])
         returned_action = privatized_actions[0]
