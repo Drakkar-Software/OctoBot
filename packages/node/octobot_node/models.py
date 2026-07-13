@@ -63,6 +63,10 @@ class Execution(BaseModel):
     user_id: typing.Optional[str] = None
 
 
+class TaskMetadata(BaseModel):
+    child_octobot_process: typing.Optional[protocol_models.ChildOctoBotProcessState] = None
+
+
 class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: typing.Optional[str] = None
@@ -75,7 +79,7 @@ class Task(BaseModel):
     error_message: typing.Optional[str] = None
     user_ecdsa_public_key: typing.Optional[str] = None
     user_id: typing.Optional[str] = None
-    child_octobot_process: typing.Optional[protocol_models.ChildOctoBotProcessState] = None
+    metadata: typing.Optional[TaskMetadata] = None
 
 class Node(BaseModel):
     node_type: str
