@@ -16,7 +16,6 @@
 
 import contextlib
 import datetime
-import asyncio
 import dbos
 import json
 import logging
@@ -70,7 +69,7 @@ class Scheduler:
     INSTANCE: dbos.DBOS = None # type: ignore
     AUTOMATION_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
     USER_ACTION_QUEUE: dbos.Queue = None # type: ignore
-    STARTUP_CLEANUP_TASK: asyncio.Task | None = None
+    DBOS_CLEANUP_QUEUE: dbos.Queue = None # type: ignore
 
     @staticmethod
     def _wallet_filter_queue(queue_names: typing.Optional[list[str]]) -> octobot_node.enums.SchedulerQueues:
@@ -154,11 +153,16 @@ class Scheduler:
         Scheduler.INSTANCE = None
         Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
         Scheduler.USER_ACTION_QUEUE = None
-        Scheduler.STARTUP_CLEANUP_TASK = None
+        Scheduler.DBOS_CLEANUP_QUEUE = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
         self.USER_ACTION_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value)
+        self.DBOS_CLEANUP_QUEUE = dbos.Queue(
+            name=octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
+            # only one cleanup workflow can run at a time
+            concurrency=1,
+        )
 
     async def get_periodic_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""

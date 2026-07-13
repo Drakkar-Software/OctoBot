@@ -16,7 +16,6 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 import octobot_commons.json_util as json_util
 import octobot_backtesting.constants as backtesting_constants
-import octobot_services.constants as services_constants
 
 
 def _write_minimal_profile(profile_folder):
@@ -81,7 +80,7 @@ def _start_octobot_cli_args(**overrides):
         "version": False,
         "encrypter": False,
         "backtesting": False,
-        "trading": False,
+        "standalone": False,
         "backtesting_files": None,
         "whole_data_range": True,
         "enable_backtesting_timeout": True,
@@ -378,10 +377,41 @@ class TestApplyNodeCliSettings:
         assert octobot_node.config.settings.CONSUMER_ONLY is True
 
 
+class TestApplyStandaloneStartupSettings:
+    def test_applies_default_distribution_and_disables_node_stack(self, monkeypatch):
+        import octobot_node.config
+
+        args = argparse.Namespace(no_web=False)
+        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
+        monkeypatch.setattr(octobot_node.config.settings, "IS_MASTER_MODE", True)
+        monkeypatch.setattr(octobot_node.config.settings, "CONSUMER_ONLY", True)
+        octobot_cli._apply_standalone_startup_settings()
+        assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.DEFAULT.value
+        assert octobot_node.config.settings.IS_MASTER_MODE is False
+        assert octobot_node.config.settings.CONSUMER_ONLY is False
+        assert args.no_web is False
+
+
+class TestValidateStartupModeArgs:
+    def test_standalone_rejects_master_flag(self):
+        args = argparse.Namespace(standalone=True, master=True, consumer_only=False)
+        with pytest.raises(commons_errors.ConfigError, match="--standalone cannot be used"):
+            octobot_cli._validate_startup_mode_args(args)
+
+    def test_standalone_rejects_consumer_only_flag(self):
+        args = argparse.Namespace(standalone=True, master=False, consumer_only=True)
+        with pytest.raises(commons_errors.ConfigError, match="--standalone cannot be used"):
+            octobot_cli._validate_startup_mode_args(args)
+
+    def test_standalone_allows_no_node_flags(self):
+        args = argparse.Namespace(standalone=True, master=False, consumer_only=False)
+        octobot_cli._validate_startup_mode_args(args)
+
+
 class TestApplyStartupDistributionMode:
     def test_default_path_uses_node_mode(self, monkeypatch):
         args = argparse.Namespace(
-            trading=False,
+            standalone=False,
             backtesting=False,
             master=False,
             consumer_only=False,
@@ -389,15 +419,15 @@ class TestApplyStartupDistributionMode:
         )
         with mock.patch.object(octobot_cli, "_apply_node_cli_settings", mock.Mock()) as node_cli_mock, \
                 mock.patch.object(octobot_cli, "_apply_node_startup_settings", mock.Mock()) as node_mock, \
-                mock.patch.object(octobot_cli, "_apply_trading_startup_settings", mock.Mock()) as trading_mock:
+                mock.patch.object(octobot_cli, "_apply_standalone_startup_settings", mock.Mock()) as standalone_mock:
             octobot_cli._apply_startup_distribution_mode(args)
         node_cli_mock.assert_called_once_with(args)
         node_mock.assert_called_once_with(args)
-        trading_mock.assert_not_called()
+        standalone_mock.assert_not_called()
 
-    def test_trading_flag_uses_trading_mode(self, monkeypatch):
+    def test_standalone_flag_uses_trading_mode(self, monkeypatch):
         args = argparse.Namespace(
-            trading=True,
+            standalone=True,
             backtesting=False,
             master=False,
             consumer_only=False,
@@ -405,15 +435,15 @@ class TestApplyStartupDistributionMode:
         )
         with mock.patch.object(octobot_cli, "_apply_node_cli_settings", mock.Mock()) as node_cli_mock, \
                 mock.patch.object(octobot_cli, "_apply_node_startup_settings", mock.Mock()) as node_mock, \
-                mock.patch.object(octobot_cli, "_apply_trading_startup_settings", mock.Mock()) as trading_mock:
+                mock.patch.object(octobot_cli, "_apply_standalone_startup_settings", mock.Mock()) as standalone_mock:
             octobot_cli._apply_startup_distribution_mode(args)
-        node_cli_mock.assert_called_once_with(args)
-        trading_mock.assert_called_once_with()
+        standalone_mock.assert_called_once_with()
+        node_cli_mock.assert_not_called()
         node_mock.assert_not_called()
 
     def test_backtesting_uses_trading_mode(self, monkeypatch):
         args = argparse.Namespace(
-            trading=False,
+            standalone=False,
             backtesting=True,
             master=False,
             consumer_only=False,
@@ -421,36 +451,18 @@ class TestApplyStartupDistributionMode:
         )
         with mock.patch.object(octobot_cli, "_apply_node_cli_settings", mock.Mock()) as node_cli_mock, \
                 mock.patch.object(octobot_cli, "_apply_node_startup_settings", mock.Mock()) as node_mock, \
-                mock.patch.object(octobot_cli, "_apply_trading_startup_settings", mock.Mock()) as trading_mock:
+                mock.patch.object(octobot_cli, "_apply_standalone_startup_settings", mock.Mock()) as standalone_mock:
             octobot_cli._apply_startup_distribution_mode(args)
-        node_cli_mock.assert_called_once_with(args)
-        trading_mock.assert_called_once_with()
+        standalone_mock.assert_called_once_with()
+        node_cli_mock.assert_not_called()
         node_mock.assert_not_called()
-
-    def test_trading_path_applies_master_settings(self, monkeypatch):
-        import octobot_node.config
-
-        monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
-        monkeypatch.setattr(octobot_node.config.settings, "IS_MASTER_MODE", False)
-        monkeypatch.setattr(octobot_node.config.settings, "CONSUMER_ONLY", False)
-        args = argparse.Namespace(
-            trading=True,
-            backtesting=False,
-            master=True,
-            consumer_only=True,
-            no_web=False,
-        )
-        octobot_cli._apply_startup_distribution_mode(args)
-        assert octobot_node.config.settings.IS_MASTER_MODE is True
-        assert octobot_node.config.settings.CONSUMER_ONLY is True
-        assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.DEFAULT.value
 
 
 class TestLogStartupDistributionMode:
     def _log_message(self, **overrides):
         logger = mock.Mock()
         cli_args = {
-            "trading": False,
+            "standalone": False,
             "backtesting": False,
             "master": False,
             "consumer_only": False,
@@ -469,7 +481,7 @@ class TestLogStartupDistributionMode:
         assert "exchanges of your choice" in message
 
     def test_trading_mode_message(self):
-        message = self._log_message(trading=True)
+        message = self._log_message(standalone=True)
         assert "trading mode" in message
         assert "selected profile" in message
 
@@ -545,9 +557,9 @@ class TestDefaultCliMode:
         octobot_node_mock.assert_called_once()
         octobot_mock.assert_not_called()
 
-    def test_trading_flag_uses_default_distribution(self, monkeypatch):
+    def test_standalone_flag_uses_default_distribution(self, monkeypatch):
         monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
-        args = _start_octobot_cli_args(trading=True)
+        args = _start_octobot_cli_args(standalone=True)
         octobot_node_mock, octobot_mock = self._run_start_octobot_with_distribution_mock(
             args,
             octobot_cli.enums.OctoBotDistribution.DEFAULT,
@@ -557,7 +569,7 @@ class TestDefaultCliMode:
         octobot_mock.assert_called_once()
         octobot_node_mock.assert_not_called()
 
-    def test_dump_state_without_trading_stays_node_mode(self, monkeypatch):
+    def test_dump_state_without_standalone_stays_node_mode(self, monkeypatch):
         monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
         args = _start_octobot_cli_args(
             dump_state="/tmp/process_bot_state.json",
@@ -578,7 +590,7 @@ class TestOctobotParser:
         octobot_cli.octobot_parser(parser)
         args = parser.parse_args([])
         assert args.func is not None
-        assert args.trading is False
+        assert args.standalone is False
         assert args.master is False
 
     def test_parse_args_master_exposed_on_main_parser(self):
@@ -592,3 +604,10 @@ class TestOctobotParser:
         octobot_cli.octobot_parser(parser)
         with pytest.raises(SystemExit):
             parser.parse_args(["node"])
+
+    def test_standalone_with_master_raises_config_error(self):
+        parser = argparse.ArgumentParser(description="OctoBot")
+        octobot_cli.octobot_parser(parser)
+        args = parser.parse_args(["--standalone", "--master"])
+        with pytest.raises(commons_errors.ConfigError, match="--standalone cannot be used"):
+            octobot_cli._validate_startup_mode_args(args)

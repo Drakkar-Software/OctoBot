@@ -37,3 +37,4 @@ class AutomationWorkflowMessageTopics(enum.Enum):
 class SchedulerQueues(enum.Enum):
     AUTOMATION_WORKFLOW_QUEUE = "automation_workflow_queue"
     USER_ACTION_QUEUE = "user_action_queue"
+    DBOS_CLEANUP_QUEUE = "dbos_cleanup_queue"

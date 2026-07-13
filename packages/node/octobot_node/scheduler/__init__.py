@@ -41,11 +41,9 @@ def initialize_scheduler():
     SCHEDULER.create()
     octobot_node.scheduler.workflows.register_workflows()
     import octobot_node.scheduler.schedules as schedules
-    import octobot_node.scheduler.workflows_retention as workflows_retention
     SCHEDULER.start()
     # apply_schedules requires DBOS launch (sys_db); must run after start().
     schedules.register_schedules(SCHEDULER)
-    workflows_retention.schedule_startup_cleanup_trigger(SCHEDULER)
 
 
 async def shutdown_scheduler_and_trading_signal_channel() -> None:
@@ -57,7 +55,5 @@ async def shutdown_scheduler_and_trading_signal_channel() -> None:
         await trading_signals_channel.shutdown_internal_trading_signal_channel()
     except ImportError:
         pass
-    import octobot_node.scheduler.workflows_retention as workflows_retention
-    workflows_retention.cancel_startup_cleanup_trigger(SCHEDULER)
     SCHEDULER.stop()
     _shutdown_done = True

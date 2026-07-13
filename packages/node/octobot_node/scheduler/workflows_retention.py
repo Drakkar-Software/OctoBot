@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import asyncio
+import datetime
 import logging
 import os
 import time
@@ -217,22 +217,12 @@ def _get_latest_cleanup_execution_timestamp_ms(
     return workflow_status.updated_at or workflow_status.created_at or 0
 
 
-def _is_cleanup_execution_stale(
-    *,
-    latest_timestamp_ms: int,
-    now_ms: int,
-    threshold_seconds: float,
+async def should_skip_retention_cleanup_for_scheduled_time(
+    scheduler: "scheduler_module.Scheduler",
+    scheduled_time: datetime.datetime,
 ) -> bool:
-    if latest_timestamp_ms == 0:
-        return True
-    return (now_ms - latest_timestamp_ms) > int(threshold_seconds * 1000)
-
-
-async def _should_trigger_stale_cleanup(scheduler: "scheduler_module.Scheduler") -> bool:
-    if should_skip_retention_cleanup_on_this_node():
-        return False
     if not scheduler.is_initialized():
-        return False
+        return True
     import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
     cleanup_workflows = await scheduler.INSTANCE.list_workflows_async(
         name=dbos_cleanup_workflow.WORKFLOW_NAME,
@@ -241,54 +231,8 @@ async def _should_trigger_stale_cleanup(scheduler: "scheduler_module.Scheduler")
         load_input=False,
         load_output=False,
     )
-    now_ms = int(time.time() * 1000)
     latest_timestamp_ms = _get_latest_cleanup_execution_timestamp_ms(cleanup_workflows)
-    return _is_cleanup_execution_stale(
-        latest_timestamp_ms=latest_timestamp_ms,
-        now_ms=now_ms,
-        threshold_seconds=dbos_cleanup_workflow.STALE_EXECUTION_THRESHOLD_SECONDS,
-    )
-
-
-async def _run_delayed_cleanup_trigger_if_stale(scheduler: "scheduler_module.Scheduler") -> None:
-    import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
-    logger = logging.getLogger("workflows_retention")
-    logger.info(
-        "Scheduling stale dbos_cleanup check in %s seconds",
-        dbos_cleanup_workflow.STARTUP_TRIGGER_DELAY_SECONDS,
-    )
-    await asyncio.sleep(dbos_cleanup_workflow.STARTUP_TRIGGER_DELAY_SECONDS)
-    if not scheduler.is_initialized():
-        logger.info("Skipping stale dbos_cleanup trigger: scheduler is no longer initialized")
-        return
-    if not await _should_trigger_stale_cleanup(scheduler):
-        logger.info("Skipping stale dbos_cleanup trigger: latest execution is recent enough")
-        return
-    logger.info("Triggering stale dbos_cleanup schedule %s", dbos_cleanup_workflow.SCHEDULE_NAME)
-    dbos.DBOS.trigger_schedule(dbos_cleanup_workflow.SCHEDULE_NAME)
-
-
-def schedule_startup_cleanup_trigger(scheduler: "scheduler_module.Scheduler") -> None:
-    logger = logging.getLogger("workflows_retention")
-    if should_skip_retention_cleanup_on_this_node():
-        logger.info("Skipping stale dbos_cleanup startup trigger: consumer-only node")
-        return
-    try:
-        event_loop = asyncio.get_running_loop()
-    except RuntimeError:
-        logger.warning(
-            "No running event loop; skipping stale dbos_cleanup startup trigger scheduling",
-        )
-        return
-    scheduler.__class__.STARTUP_CLEANUP_TASK = event_loop.create_task(
-        _run_delayed_cleanup_trigger_if_stale(scheduler),
-    )
-
-
-def cancel_startup_cleanup_trigger(scheduler: "scheduler_module.Scheduler") -> None:
-    logger = logging.getLogger("workflows_retention")
-    startup_cleanup_task = scheduler.__class__.STARTUP_CLEANUP_TASK
-    if startup_cleanup_task is not None and not startup_cleanup_task.done():
-        startup_cleanup_task.cancel()
-        logger.info("Cancelled stale dbos_cleanup startup trigger task")
-    scheduler.__class__.STARTUP_CLEANUP_TASK = None
+    if latest_timestamp_ms == 0:
+        return False
+    scheduled_timestamp_ms = int(scheduled_time.timestamp() * 1000)
+    return latest_timestamp_ms > scheduled_timestamp_ms

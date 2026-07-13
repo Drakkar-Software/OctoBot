@@ -14,11 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import datetime
-import os
 import typing
 
 import dbos
 
+import octobot_node.enums
 import octobot_node.scheduler.workflows_retention as workflows_retention
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
@@ -26,12 +26,6 @@ from octobot_node.scheduler import SCHEDULER  # avoid circular import
 WORKFLOW_NAME = "dbos_cleanup"
 SCHEDULE_NAME = "dbos_cleanup_daily"
 SCHEDULE_CRON = "0 0 * * *"  # daily at midnight UTC
-STARTUP_TRIGGER_DELAY_SECONDS = float(
-    os.getenv("DBOS_CLEANUP_STARTUP_TRIGGER_DELAY_SECONDS", 5 * 60)
-)
-STALE_EXECUTION_THRESHOLD_SECONDS = float(
-    os.getenv("DBOS_CLEANUP_STALE_EXECUTION_THRESHOLD_SECONDS", 60 * 60 * 24)
-)
 
 _EMPTY_CLEANUP_SUMMARY: dict[str, typing.Any] = {
     "deleted_by_automation": {},
@@ -61,6 +55,11 @@ class DbosCleanupWorkflow:
     ) -> dict[str, typing.Any]:
         if workflows_retention.should_skip_retention_cleanup_on_this_node():
             return dict(_EMPTY_CLEANUP_SUMMARY)
+        if await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            SCHEDULER,
+            scheduled_time,
+        ):
+            return dict(_EMPTY_CLEANUP_SUMMARY)
         return await workflows_retention.cleanup_outdated_automation_executions(SCHEDULER)
 
 
@@ -70,4 +69,6 @@ def get_schedule_input() -> dbos.ScheduleInput:
         "workflow_fn": DbosCleanupWorkflow.dbos_cleanup,
         "schedule": SCHEDULE_CRON,
         "context": None,
+        "automatic_backfill": True,
+        "queue_name": octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
     }

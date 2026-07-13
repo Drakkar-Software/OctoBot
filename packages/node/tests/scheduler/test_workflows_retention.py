@@ -1,6 +1,7 @@
 #  Drakkar-Software OctoBot-Node
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 
+import datetime
 import json
 import logging
 import mock
@@ -444,3 +445,69 @@ class TestCleanupOutdatedAutomationExecutions:
         }
         mock_instance.delete_workflows_async.assert_not_called()
         mock_instance._sys_db.engine.begin.assert_not_called()
+
+
+class TestShouldSkipRetentionCleanupForScheduledTime:
+    @pytest.mark.asyncio
+    async def test_returns_true_when_scheduler_not_initialized(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        sched.INSTANCE = None
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc),
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_cleanup_never_ran(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc),
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_true_when_latest_cleanup_is_newer_than_scheduled_time(self, temp_dbos_scheduler):
+        scheduled_time = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
+        latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.updated_at = int(datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        latest_cleanup.created_at = 0
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[latest_cleanup])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_latest_cleanup_is_older_than_scheduled_time(self, temp_dbos_scheduler):
+        scheduled_time = datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc)
+        latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.updated_at = int(datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        latest_cleanup.created_at = 0
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[latest_cleanup])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is False

@@ -1656,7 +1656,7 @@ class TestEnsureChildEnviron:
 
 
 class TestEnsureStartCmd:
-    def test_includes_trading_flag(self):
+    def test_includes_standalone_flag(self):
         cmd = octobot_process_ops._ensure_start_cmd(
             "start.py",
             "user/automations/bot-1",
@@ -1664,8 +1664,8 @@ class TestEnsureStartCmd:
             no_telegram=False,
             state_file_path="/tmp/process_bot_state.json",
         )
-        assert "--trading" in cmd
-        assert cmd.index("--trading") < cmd.index("--dump-state")
+        assert "--standalone" in cmd
+        assert cmd.index("--standalone") < cmd.index("--dump-state")
 
 
 class TestEnsureOctobotProcessOperatorPrecompute:
@@ -2130,7 +2130,7 @@ class TestEnsureOctobotProcessDslIntegration:
                 rel_user,
                 "--log-folder",
                 rel_log,
-                "--trading",
+                "--standalone",
                 "-nt",
                 "--dump-state",
                 expected_state_path,
