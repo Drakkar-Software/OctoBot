@@ -1,10 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+﻿import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { Ban, ScrollText, Trash2 } from "lucide-react"
+import { Ban, ScrollText, Square, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
 import { TasksService } from "@/client"
+import { StopAutomationDialog } from "@/components/OctoBots/StopAutomationDialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
+import { canStopOctoBot } from "@/lib/octobots/stop-automation"
 import { shareWorkflowLogs } from "@/lib/support-share"
 import { getTaskFilterGroup } from "@/utils/task-status"
 
@@ -52,6 +54,8 @@ export function SelectionToolbar({
   onDeleted: () => void
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [stopOpen, setStopOpen] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [logsModal, setLogsModal] = useState<
     null | "none" | "pending" | "disabled"
@@ -63,17 +67,26 @@ export function SelectionToolbar({
   const activeTasks = useMemo(
     () =>
       allTasks.filter(
-        (t) =>
-          t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) === "active",
+        (task) =>
+          task.id &&
+          selectedIds.has(task.id) &&
+          getTaskFilterGroup(task) === "active",
       ),
     [allTasks, selectedIds],
+  )
+
+  const stoppableActiveTasks = useMemo(
+    () => activeTasks.filter(canStopOctoBot),
+    [activeTasks],
   )
 
   const inactiveTasks = useMemo(
     () =>
       allTasks.filter(
-        (t) =>
-          t.id && selectedIds.has(t.id) && getTaskFilterGroup(t) !== "active",
+        (task) =>
+          task.id &&
+          selectedIds.has(task.id) &&
+          getTaskFilterGroup(task) !== "active",
       ),
     [allTasks, selectedIds],
   )
@@ -81,7 +94,7 @@ export function SelectionToolbar({
   const deleteMutation = useMutation({
     mutationFn: () =>
       TasksService.deleteTasks({
-        taskIds: inactiveTasks.map((t) => t.id as string),
+        taskIds: inactiveTasks.map((task) => task.id as string),
       }),
     onSuccess: () => {
       showSuccessToast(
@@ -99,12 +112,13 @@ export function SelectionToolbar({
   const cancelMutation = useMutation({
     mutationFn: () =>
       TasksService.cancelTasks({
-        requestBody: { task_ids: activeTasks.map((t) => t.id as string) },
+        requestBody: { task_ids: activeTasks.map((task) => task.id as string) },
       }),
     onSuccess: () => {
       showSuccessToast(
         `Cancelled ${activeTasks.length} OctoBot${activeTasks.length !== 1 ? "s" : ""}`,
       )
+      setCancelOpen(false)
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
     },
     onError: () => {
@@ -136,14 +150,14 @@ export function SelectionToolbar({
     }
     setExportLoading(true)
     const taskIds = exportableTasks
-      .map((t) => t.id)
+      .map((task) => task.id)
       .filter(Boolean)
       .join(",")
     navigate({ to: "/octobots/export", search: { tasks: taskIds } })
   }
 
   const allFilteredSelected = filteredTasks.every(
-    (t) => t.id && selectedIds.has(t.id),
+    (task) => task.id && selectedIds.has(task.id),
   )
 
   return (
@@ -179,15 +193,24 @@ export function SelectionToolbar({
             Share logs
           </LoadingButton>
           {activeTasks.length > 0 && (
-            <LoadingButton
+            <Button
               variant="outline"
               size="sm"
-              loading={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate()}
+              onClick={() => setCancelOpen(true)}
             >
               <Ban className="size-3.5" />
               Cancel
-            </LoadingButton>
+            </Button>
+          )}
+          {stoppableActiveTasks.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStopOpen(true)}
+            >
+              <Square className="size-3.5 fill-current" />
+              Stop
+            </Button>
           )}
           {inactiveTasks.length > 0 && (
             <Button
@@ -201,6 +224,48 @@ export function SelectionToolbar({
           )}
         </div>
       </div>
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Cancel {activeTasks.length} OctoBot
+              {activeTasks.length !== 1 ? "s" : ""}
+            </DialogTitle>
+            <DialogDescription className="flex flex-col gap-2">
+              <span>
+                This will interrupt the current execution and force the
+                automation to immediately stop.
+              </span>
+              <span>
+                Cancelling an automation bypasses the regular stop process and
+                should only be used when the Stop command is not working.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={cancelMutation.isPending}>
+                Keep running
+              </Button>
+            </DialogClose>
+            <LoadingButton
+              variant="destructive"
+              loading={cancelMutation.isPending}
+              onClick={() => cancelMutation.mutate()}
+            >
+              Cancel
+            </LoadingButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <StopAutomationDialog
+        open={stopOpen}
+        onOpenChange={setStopOpen}
+        tasks={stoppableActiveTasks}
+        onSuccess={onDeselectAll}
+      />
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="sm:max-w-md">

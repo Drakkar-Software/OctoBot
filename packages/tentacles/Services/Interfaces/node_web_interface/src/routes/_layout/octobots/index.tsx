@@ -20,7 +20,6 @@ function BotsContent() {
   const [filterValue, setFilterValue] = useState<TaskFilterGroup>("active")
   const [searchValue, setSearchValue] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-
   const filteredTasks = useMemo(() => {
     const query = searchValue.trim().toLowerCase()
     const matched = tasks.filter((task: Task) => {
