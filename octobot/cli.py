@@ -419,6 +419,13 @@ def _configure_profile_sync_user(config, community_auth, *, is_process_child: bo
         config.profile_storage.configure_sync_user(community_auth.sync_user_id)
 
 
+def _validate_startup_mode_args(args) -> None:
+    if args.standalone and (args.master or args.consumer_only):
+        raise errors.ConfigError(
+            "--standalone cannot be used with --master or --consumer_only."
+        )
+
+
 def _apply_node_cli_settings(args) -> None:
     if args.master:
         octobot_node.config.settings.IS_MASTER_MODE = True
@@ -430,22 +437,24 @@ def _apply_node_startup_settings(args) -> None:
     args.no_web = True
 
 
-def _apply_trading_startup_settings() -> None:
+def _apply_standalone_startup_settings() -> None:
     constants.FORCED_DISTRIBUTION = enums.OctoBotDistribution.DEFAULT.value
+    octobot_node.config.settings.IS_MASTER_MODE = False
+    octobot_node.config.settings.CONSUMER_ONLY = False
 
 
 def _apply_startup_distribution_mode(args) -> None:
-    _apply_node_cli_settings(args)
-    if args.trading or args.backtesting:
-        _apply_trading_startup_settings()
+    if args.standalone or args.backtesting:
+        _apply_standalone_startup_settings()
     else:
+        _apply_node_cli_settings(args)
         _apply_node_startup_settings(args)
 
 
 def _log_startup_distribution_mode(logger, args) -> None:
     if args.backtesting:
         startup_message = "Starting OctoBot in backtesting mode."
-    elif args.trading:
+    elif args.standalone:
         startup_message = (
             "Starting OctoBot in trading mode: will trade using the selected profile."
         )
@@ -472,6 +481,7 @@ def start_octobot(args, default_config_file=None):
         overrides, logs_folder = _init_cli_overriden_folders(args)
         _assert_process_child_folder_overrides(args)
         logger = octobot_logger.init_logger(logs_folder=logs_folder)
+        _validate_startup_mode_args(args)
         _apply_startup_distribution_mode(args)
         _log_startup_distribution_mode(logger, args)
         startup_messages = []
@@ -692,8 +702,8 @@ def octobot_parser(parser, default_config_file=None):
                                                            ' Warning: this process may take a long time.',
                         nargs='+')
     parser.add_argument(
-        '--trading',
-        help='Start classic trading OctoBot with the trading web interface (default startup is node mode).',
+        '--standalone',
+        help='Start standalone OctoBot with the trading web interface (default startup is node mode).',
         action='store_true',
     )
     _register_node_arguments(parser)
@@ -756,7 +766,7 @@ def start_background_octobot_with_args(
     default_config_file=None,
     user_folder=None,
     log_folder=None,
-    trading=True,
+    standalone=True,
     master=False,
     consumer_only=False,
     host=None,
@@ -782,7 +792,7 @@ def start_background_octobot_with_args(
                               reset_trading_history=reset_trading_history,
                               user_folder=user_folder,
                               log_folder=log_folder,
-                              trading=trading,
+                              standalone=standalone,
                               master=master,
                               consumer_only=consumer_only,
                               host=host,

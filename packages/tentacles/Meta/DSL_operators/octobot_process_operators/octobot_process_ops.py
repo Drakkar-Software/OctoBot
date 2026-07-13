@@ -761,7 +761,7 @@ def _ensure_start_cmd(
     no_telegram: bool,
     state_file_path: str,
 ) -> list[str]:
-    """Argv for `python start.py --user-folder … --log-folder … --trading` (+ optional -nt, --dump-state)."""
+    """Argv for `python start.py --user-folder … --log-folder … --standalone` (+ optional -nt, --dump-state)."""
     cmd: list[str] = [
         sys.executable,
         start_script,
@@ -769,7 +769,7 @@ def _ensure_start_cmd(
         rel_user,
         "--log-folder",
         rel_log,
-        "--trading",
+        "--standalone",
     ]
     if no_telegram:
         cmd.append("-nt")
