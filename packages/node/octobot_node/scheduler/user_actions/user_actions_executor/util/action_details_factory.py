@@ -466,8 +466,9 @@ def market_making_action_factory(
     )
     exchange_auth_segment = dsl_interpreter.format_parameter_value(exchange_auth_data)
     dsl_arguments = [
-        f"{automation_id!r}, {dsl_interpreter.format_parameter_value(profile_data_dict)}, "
-        f"{exchange_auth_segment}",
+        f"{automation_id!r}",
+        f"profile_data={dsl_interpreter.format_parameter_value(profile_data_dict)}",
+        f"exchange_auth_data={exchange_auth_segment}",
     ]
     if octobot_name_segment := _run_octobot_process_octobot_name_kwarg_segment(octobot_name):
         dsl_arguments.append(octobot_name_segment)
@@ -501,7 +502,7 @@ def generic_process_action_factory(
         dsl_arguments.append(f"sync_profile_id={strategy_id!r}")
     elif generic_process_configuration.profile_data is not None:
         dsl_arguments.append(
-            dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)
+            f"profile_data={dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)}"
         )
     if exchange_auth_data is not None:
         dsl_arguments.append(

@@ -529,8 +529,9 @@ class TestCreateAutomationExecutor:
         expected_exchange_auth_segment = dsl_interpreter.format_parameter_value(expected_exchange_auth)
         expected_dsl = (
             "run_octobot_process("
-            f"{'ua-mm'!r}, {dsl_interpreter.format_parameter_value(expected_profile_dict)}, "
-            f"{expected_exchange_auth_segment}, "
+            f"{'ua-mm'!r}, "
+            f"profile_data={dsl_interpreter.format_parameter_value(expected_profile_dict)}, "
+            f"exchange_auth_data={expected_exchange_auth_segment}, "
             f"octobot_name={dsl_interpreter.format_parameter_value('market-making-automation')}, "
             f"{', '.join(action_details_factory._run_octobot_process_recall_kwarg_segments())})"
         )

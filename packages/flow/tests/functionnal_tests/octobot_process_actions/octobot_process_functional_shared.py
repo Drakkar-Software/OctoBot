@@ -108,7 +108,7 @@ ACTION_ID_INIT = "action_init"
 ACTION_ID_RUN_OCTOBOT = "action_run_octobot"
 ACTION_ID_STOP_AUTOMATION = "action_stop_automation"
 
-# --- Child profile for run_octobot_process: simulator (trader.enabled False) + GridTradingMode BTC/USDT 2×2 ---
+# --- Child profile for run_octobot_process: simulator (trader.enabled False) + GridTradingMode BTC/USDT 2×2 --- Use profile_data= keyword (2nd positional is octobot_name).
 GRID_BINANCEUS_PROFILE_DATA = {
     "profile_details": {"name": "func_test_grid_octoprocess", "id": "func_test_grid_octoprocess"},
     "crypto_currencies": [

@@ -45,7 +45,7 @@ async def test_run_octobot_process_lifecycle_grid_trading(
     user_folder = f"functionnal_tests/octlife_{uuid.uuid4().hex[:12]}"
     run_dsl = (
         "run_octobot_process("
-        f"{user_folder!r}, {repr(octobot_process_functional_shared.GRID_BINANCEUS_PROFILE_DATA)}, "
+        f"{user_folder!r}, profile_data={repr(octobot_process_functional_shared.GRID_BINANCEUS_PROFILE_DATA)}, "
         f"user_id={octobot_process_functional_shared.FUNCTIONAL_TEST_USER_ID!r}, "
         f"waiting_time={octobot_process_functional_shared.WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC}, ping_timeout=30.0)"
     )

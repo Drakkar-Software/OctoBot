@@ -82,7 +82,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
     profile_2x2 = octobot_process_functional_shared._grid_binanceus_profile_data(2, 2)
     run_dsl = (
         "run_octobot_process("
-        f"{user_folder!r}, {repr(profile_2x2)}, "
+        f"{user_folder!r}, profile_data={repr(profile_2x2)}, "
         f"user_id={octobot_process_functional_shared.FUNCTIONAL_TEST_USER_ID!r}, "
         f"waiting_time={octobot_process_functional_shared.WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC}, ping_timeout=30.0)"
     )
@@ -239,7 +239,7 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             profile_3x3 = octobot_process_functional_shared._grid_binanceus_profile_data(3, 3)
             new_run_dsl = (
                 "run_octobot_process("
-                f"{user_folder!r}, {repr(profile_3x3)}, "
+                f"{user_folder!r}, profile_data={repr(profile_3x3)}, "
                 f"user_id={octobot_process_functional_shared.FUNCTIONAL_TEST_USER_ID!r}, "
                 f"waiting_time={octobot_process_functional_shared.WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC}, ping_timeout=30.0)"
             )

@@ -33,7 +33,7 @@ class TestIsRunOctobotProcessDslAction(unittest.TestCase):
     def test_is_run_octobot_process_dsl_action_returns_true_for_run_octobot_process_script(self):
         dsl_action = action_details.DSLScriptActionDetails(
             id="action-1",
-            dsl_script='run_octobot_process("folder", {}, [])',
+            dsl_script='run_octobot_process("folder", profile_data={})',
         )
         self.assertTrue(
             octobot_process_state_module.is_run_octobot_process_dsl_action(dsl_action)
@@ -52,7 +52,7 @@ class TestIsRunOctobotProcessDslAction(unittest.TestCase):
         dsl_action = action_details.DSLScriptActionDetails(
             id="action-1",
             dsl_script='placeholder',
-            resolved_dsl_script='run_octobot_process("folder", {}, [])',
+            resolved_dsl_script='run_octobot_process("folder", profile_data={})',
         )
         self.assertTrue(
             octobot_process_state_module.is_run_octobot_process_dsl_action(dsl_action)

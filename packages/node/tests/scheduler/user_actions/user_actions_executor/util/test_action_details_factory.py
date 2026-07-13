@@ -329,3 +329,22 @@ class TestGenericProcessActionFactoryWithoutAccount:
         assert "exchange_auth_data" not in process_action.dsl_script
         assert "user_id=" in process_action.dsl_script
         assert "sync_profile_id=" in process_action.dsl_script
+
+
+class TestGenericProcessActionFactoryWithEmbeddedProfileData:
+    def test_uses_profile_data_keyword_when_strategy_id_is_omitted(self):
+        embedded_profile_data = {"profile_details": {"id": "embedded-profile"}}
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+            profile_data=embedded_profile_data,
+        )
+        process_action = action_details_factory_module.generic_process_action_factory(
+            _init_action(),
+            generic_process_configuration,
+            None,
+            _WALLET_ADDRESS,
+            automation_id="automation-1",
+        )
+        assert "profile_data=" in process_action.dsl_script
+        assert "sync_profile_id=" not in process_action.dsl_script
+        assert process_action.dsl_script.startswith("run_octobot_process('automation-1', user_id=")
