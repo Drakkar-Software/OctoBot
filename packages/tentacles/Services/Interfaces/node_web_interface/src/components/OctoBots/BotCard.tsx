@@ -183,7 +183,7 @@ function BotCardBody({
   const group = getStatusGroup(activeExec?.status)
   const date = getDisplayDate(task)
   const actionCount = parseActionCount(activeExec?.actions)
-  const childProcess = task.child_octobot_process ?? null
+  const childProcess = task.metadata?.child_octobot_process ?? null
 
   const errorPanel =
     errorInfo && (errorInfo.status || errorInfo.message) ? (
@@ -275,8 +275,8 @@ function areTaskPropsEqual(
     prev.task.executions?.length === next.task.executions?.length &&
     JSON.stringify(prev.task.executions) ===
       JSON.stringify(next.task.executions) &&
-    JSON.stringify(prev.task.child_octobot_process) ===
-      JSON.stringify(next.task.child_octobot_process)
+    JSON.stringify(prev.task.metadata?.child_octobot_process) ===
+      JSON.stringify(next.task.metadata?.child_octobot_process)
   )
 }
 
@@ -323,7 +323,6 @@ export const BotCard = memo(function BotCard({
 
   const isRunning = displayLabel === "Running"
   const isScheduled = displayLabel === "Scheduled"
-
   return (
     <Card
       className={cn(
