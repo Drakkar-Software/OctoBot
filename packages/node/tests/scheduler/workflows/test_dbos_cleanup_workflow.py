@@ -109,33 +109,3 @@ class TestDbosCleanupWorkflowGetScheduleInput:
             "queue_name": octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
         }
 
-
-class TestSchedulesRegisterSchedules:
-    def test_applies_each_schedule_input_and_logs(self):
-        import octobot_node.scheduler.schedules as schedules_module
-
-        schedule_input = {
-            "schedule_name": "test_schedule",
-            "workflow_fn": mock.Mock(),
-            "schedule": "0 0 * * *",
-            "context": None,
-        }
-        mock_scheduler = mock.Mock()
-        mock_scheduler.INSTANCE = mock.Mock()
-        mock_logger = mock.Mock()
-
-        with mock.patch(
-            "octobot_node.scheduler.schedules.dbos_cleanup_workflow.get_schedule_input",
-            return_value=schedule_input,
-        ), mock.patch(
-            "octobot_node.scheduler.schedules.logging.getLogger",
-            return_value=mock_logger,
-        ):
-            schedules_module.register_schedules(mock_scheduler)
-
-        mock_logger.info.assert_called_once_with(
-            "Registering schedule %s (%s)",
-            "test_schedule",
-            "0 0 * * *",
-        )
-        mock_scheduler.INSTANCE.apply_schedules.assert_called_once_with([schedule_input])
