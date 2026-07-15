@@ -196,13 +196,16 @@ async def _check_exchange_account_state(
         ),
     )
     tentacles_setup_config = tentacles_manager_api.get_full_tentacles_setup_config()
-    async with trading_exchanges.exchange_manager_from_exchange_data(
-        exchange_data,
-        profile_data,
-        tentacles_setup_config,
-        price_fallback=None,
-    ) as exchange_manager:
-        return await _check_exchange_manager_state(exchange_manager, account)
+    try:
+        async with trading_exchanges.exchange_manager_from_exchange_data(
+            exchange_data,
+            profile_data,
+            tentacles_setup_config,
+            price_fallback=None,
+        ) as exchange_manager:
+            return await _check_exchange_manager_state(exchange_manager, account)
+    except Exception as error:
+        return _account_check_failure_result(error)
 
 
 async def _check_exchange_manager_state(
@@ -224,22 +227,30 @@ async def _check_exchange_manager_state(
             ),
             assets,
         )
-    except trading_errors.RetriableFailedRequest:
-        raise
-    except trading_errors.InvalidAPIKeyIPWhitelistError:
+    except Exception as error:
+        return _account_check_failure_result(error, permissions=permissions)
+
+
+def _account_check_failure_result(
+    error: BaseException,
+    *,
+    permissions: list[protocol_models.AccountPermission] | None = None,
+) -> tuple[protocol_models.AccountState, None]:
+    if isinstance(error, trading_errors.RetriableFailedRequest):
+        raise error
+    if isinstance(error, trading_errors.InvalidAPIKeyIPWhitelistError):
         return _invalid_state(protocol_models.AccountStatusMessage.INVALID_API_IP_WHITELIST), None
-    except trading_errors.InvalidAPIKeyPermissionsError as permissions_error:
+    if isinstance(error, trading_errors.InvalidAPIKeyPermissionsError):
         return _invalid_state_from_permissions_error(permissions), None
-    except trading_errors.AuthenticationError:
+    if isinstance(error, trading_errors.AuthenticationError):
         return _invalid_state(
             protocol_models.AccountStatusMessage.INVALID_API_KEYS,
             permissions=[],
         ), None
-    except Exception:
-        return _invalid_state(
-            protocol_models.AccountStatusMessage.INTERNAL_SERVER_ERROR,
-            permissions=permissions,
-        ), None
+    return _invalid_state(
+        protocol_models.AccountStatusMessage.INTERNAL_SERVER_ERROR,
+        permissions=permissions,
+    ), None
 
 
 def _balance_currency_holdings(balance: dict) -> list[tuple[str, float, float]]:
