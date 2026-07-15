@@ -75,6 +75,8 @@ def init_logger(logs_folder: str = constants.DEFAULT_LOGS_FOLDER):
         )
         os._exit(-1)
 
+    # log once rolling over is done to save in the correct file
+    logger.info(f"Saving logs in '{os.path.join(os.getcwd(), logs_folder)}' folder")
     sys.excepthook = _log_uncaught_exceptions
     return logger
 
@@ -95,7 +97,6 @@ def _load_logger_config(logs_folder: str):
             shutil.copyfile(constants.LOGGING_CONFIG_FILE, configuration_manager.get_user_local_config_file())
         logging.config.fileConfig(configuration_manager.get_user_local_config_file())
         logger = logging.getLogger("Logging Configuration")
-        logger.info(f"Saving logs in '{os.path.join(os.getcwd(), logs_folder)}' folder")
         if logs_folder != constants.DEFAULT_LOGS_FOLDER:
             _set_log_folder(os.path.join(os.getcwd(), logs_folder))
         if constants.FORCED_LOG_LEVEL:
