@@ -18,6 +18,7 @@ import typing
 
 import dbos
 
+import octobot_commons.logging as logging
 import octobot_node.enums
 import octobot_node.scheduler.workflows_retention as workflows_retention
 
@@ -26,12 +27,6 @@ from octobot_node.scheduler import SCHEDULER  # avoid circular import
 WORKFLOW_NAME = "dbos_cleanup"
 SCHEDULE_NAME = "dbos_cleanup_daily"
 SCHEDULE_CRON = "0 0 * * *"  # daily at midnight UTC
-
-_EMPTY_CLEANUP_SUMMARY: dict[str, typing.Any] = {
-    "deleted_by_automation": {},
-    "deleted_cleanup_executions": 0,
-    "total_deleted": 0,
-}
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -53,13 +48,19 @@ class DbosCleanupWorkflow:
         scheduled_time: datetime.datetime,
         context: typing.Any,
     ) -> dict[str, typing.Any]:
+        logger = logging.get_logger(DbosCleanupWorkflow.__name__)
         if workflows_retention.should_skip_retention_cleanup_on_this_node():
-            return dict(_EMPTY_CLEANUP_SUMMARY)
+            logger.info("dbos_cleanup skipped: consumer-only node")
+            return dict(workflows_retention.EMPTY_CLEANUP_SUMMARY)
         if await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
             SCHEDULER,
             scheduled_time,
         ):
-            return dict(_EMPTY_CLEANUP_SUMMARY)
+            logger.info(
+                "dbos_cleanup skipped for scheduled_time %s: latest completed cleanup is newer",
+                scheduled_time.isoformat(),
+            )
+            return dict(workflows_retention.EMPTY_CLEANUP_SUMMARY)
         return await workflows_retention.cleanup_outdated_automation_executions(SCHEDULER)
 
 

@@ -1056,5 +1056,4 @@ class TestSchedulerDeleteWorkflows:
         delete_vacuum_mock.assert_awaited_once_with(
             mock_instance,
             merged_workflow_ids,
-            logger=sched.logger,
         )

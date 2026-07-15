@@ -16,6 +16,7 @@
 
 import contextlib
 import datetime
+import asyncio
 import dbos
 import json
 import logging
@@ -373,7 +374,6 @@ class Scheduler:
         await workflows_retention.delete_workflows_and_vacuum(
             self.INSTANCE,
             merged_to_delete_workflow_ids,
-            logger=self.logger,
         )
 
     async def get_scheduled_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:

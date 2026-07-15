@@ -34,7 +34,7 @@ def is_initialized() -> bool:
     return SCHEDULER.is_initialized()
 
 
-def initialize_scheduler():
+async def initialize_scheduler():
     global _shutdown_done
     _shutdown_done = False
     scheduler_logger.info("Initializing scheduler")
@@ -43,7 +43,7 @@ def initialize_scheduler():
     import octobot_node.scheduler.schedules as schedules
     SCHEDULER.start()
     # apply_schedules requires DBOS launch (sys_db); must run after start().
-    schedules.register_schedules(SCHEDULER)
+    await schedules.register_schedules(SCHEDULER)
 
 
 async def shutdown_scheduler_and_trading_signal_channel() -> None:
