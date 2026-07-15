@@ -3,7 +3,6 @@
 
 import datetime
 import json
-import logging
 import mock
 import pytest
 import dbos
@@ -330,12 +329,18 @@ class TestVacuumDbosSystemDatabase:
         mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
         mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
         mock_instance._sys_db.engine = mock_engine
-        test_logger = logging.getLogger("test_vacuum")
+        mock_logger = mock.Mock()
 
-        workflows_retention.vacuum_dbos_system_database(mock_instance, logger=test_logger)
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            workflows_retention.vacuum_dbos_system_database(mock_instance)
 
         mock_connection.execute.assert_called_once()
         assert mock_connection.execute.call_args[0][0].text == "VACUUM"
+        mock_logger.info.assert_any_call("Vacuuming database")
+        mock_logger.info.assert_any_call("Database vacuum completed")
 
 
 class TestDeleteWorkflowsAndVacuum:
@@ -348,14 +353,17 @@ class TestDeleteWorkflowsAndVacuum:
         mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
         mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
         mock_instance._sys_db.engine = mock_engine
-        test_logger = logging.getLogger("test_delete_vacuum")
+        mock_logger = mock.Mock()
         workflow_ids = ["wf-a", "wf-b"]
 
-        await workflows_retention.delete_workflows_and_vacuum(
-            mock_instance,
-            workflow_ids,
-            logger=test_logger,
-        )
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            await workflows_retention.delete_workflows_and_vacuum(
+                mock_instance,
+                workflow_ids,
+            )
 
         mock_instance.delete_workflows_async.assert_awaited_once_with(
             workflow_ids,
@@ -363,6 +371,9 @@ class TestDeleteWorkflowsAndVacuum:
         )
         mock_connection.execute.assert_called_once()
         assert mock_connection.execute.call_args[0][0].text == "VACUUM"
+        mock_logger.info.assert_any_call("Deleting %s workflows", len(workflow_ids))
+        mock_logger.info.assert_any_call("Vacuuming database")
+        mock_logger.info.assert_any_call("Database vacuum completed")
 
 
 class TestCleanupOutdatedAutomationExecutions:
@@ -405,11 +416,15 @@ class TestCleanupOutdatedAutomationExecutions:
         mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
         mock_instance._sys_db.engine = mock_engine
         sched.INSTANCE = mock_instance
+        mock_logger = mock.Mock()
 
         with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch.object(
             workflows_retention,
             "AUTOMATION_EXECUTION_RETENTION_SECONDS",
             retention_seconds,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
         ):
             summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
 
@@ -426,6 +441,13 @@ class TestCleanupOutdatedAutomationExecutions:
             delete_children=False,
         )
         mock_connection.execute.assert_called_once()
+        mock_logger.info.assert_any_call(
+            "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs",
+            2,
+            1,
+            1,
+        )
+        mock_logger.info.assert_any_call("DBOS cleanup summary: %s", summary)
 
     @pytest.mark.asyncio
     async def test_skips_delete_and_vacuum_when_nothing_to_delete(self, temp_dbos_scheduler):
@@ -435,8 +457,13 @@ class TestCleanupOutdatedAutomationExecutions:
         mock_instance.delete_workflows_async = mock.AsyncMock()
         mock_instance._sys_db.engine = mock.Mock()
         sched.INSTANCE = mock_instance
+        mock_logger = mock.Mock()
 
-        summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
 
         assert summary == {
             "deleted_by_automation": {},
@@ -445,6 +472,7 @@ class TestCleanupOutdatedAutomationExecutions:
         }
         mock_instance.delete_workflows_async.assert_not_called()
         mock_instance._sys_db.engine.begin.assert_not_called()
+        mock_logger.info.assert_called_once_with("DBOS cleanup summary: %s", summary)
 
 
 class TestShouldSkipRetentionCleanupForScheduledTime:
@@ -473,11 +501,20 @@ class TestShouldSkipRetentionCleanupForScheduledTime:
         )
 
         assert result is False
+        mock_instance.list_workflows_async.assert_awaited_once_with(
+            name="dbos_cleanup",
+            status=[dbos.WorkflowStatusString.SUCCESS.value],
+            sort_desc=True,
+            limit=1,
+            load_input=False,
+            load_output=False,
+        )
 
     @pytest.mark.asyncio
     async def test_returns_true_when_latest_cleanup_is_newer_than_scheduled_time(self, temp_dbos_scheduler):
         scheduled_time = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
         latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.status = dbos.WorkflowStatusString.SUCCESS.value
         latest_cleanup.updated_at = int(datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc).timestamp() * 1000)
         latest_cleanup.created_at = 0
 
@@ -497,7 +534,52 @@ class TestShouldSkipRetentionCleanupForScheduledTime:
     async def test_returns_false_when_latest_cleanup_is_older_than_scheduled_time(self, temp_dbos_scheduler):
         scheduled_time = datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc)
         latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.status = dbos.WorkflowStatusString.SUCCESS.value
         latest_cleanup.updated_at = int(datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        latest_cleanup.created_at = 0
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[latest_cleanup])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_latest_non_terminal_cleanup_is_newer_than_scheduled_time(
+        self,
+        temp_dbos_scheduler,
+    ):
+        scheduled_time = datetime.datetime(2026, 7, 15, 0, 0, 0, tzinfo=datetime.timezone.utc)
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_latest_terminal_cleanup_is_older_than_backfilled_slot(
+        self,
+        temp_dbos_scheduler,
+    ):
+        scheduled_time = datetime.datetime(2026, 7, 15, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.status = dbos.WorkflowStatusString.SUCCESS.value
+        latest_cleanup.updated_at = int(
+            datetime.datetime(2026, 7, 7, 20, 16, 40, tzinfo=datetime.timezone.utc).timestamp() * 1000,
+        )
         latest_cleanup.created_at = 0
 
         sched = scheduler_module.Scheduler()

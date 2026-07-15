@@ -126,7 +126,7 @@ class NodeApiService(services.AbstractService):
             self.node_external_host = None
         self._sync_config()
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
-            octobot_node.scheduler.initialize_scheduler()
+            await octobot_node.scheduler.initialize_scheduler()
             await internal_trading_signals.subscribe_internal_trading_signal_consumer()
 
     def _sync_config(self):
