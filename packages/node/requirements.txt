@@ -2,4 +2,4 @@ fastapi[standard]==0.135.1
 passlib[bcrypt]==1.7.4
 pydantic
 
-dbos==2.21.0
+dbos==2.27.0

@@ -48,7 +48,7 @@ class TestShutdownSchedulerAndTradingSignalChannel:
         def track_start() -> None:
             init_call_order.append("start")
 
-        def track_register_schedules(*args, **kwargs) -> None:
+        async def track_register_schedules(*args, **kwargs) -> None:
             init_call_order.append("register_schedules")
 
         previous_instance = scheduler_module.SCHEDULER.INSTANCE
@@ -69,7 +69,7 @@ class TestShutdownSchedulerAndTradingSignalChannel:
                             side_effect=track_register_schedules,
                         ):
                             scheduler_module._shutdown_done = True
-                            scheduler_module.initialize_scheduler()
+                            await scheduler_module.initialize_scheduler()
         finally:
             scheduler_module.SCHEDULER.INSTANCE = previous_instance
         assert scheduler_module._shutdown_done is False

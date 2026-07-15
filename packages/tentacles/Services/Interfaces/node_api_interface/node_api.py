@@ -100,7 +100,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             self.logger.warning(
                 "Scheduler not initialized by NodeApiService.prepare(); initializing now"
             )
-            scheduler.initialize_scheduler()
+            await scheduler.initialize_scheduler()
         host = self.host
         port = self.port
         self.app = self.create_app(external_host=self.node_api_service.get_node_external_host())

@@ -16,6 +16,7 @@
 
 import asyncio
 import contextlib
+import importlib
 import json
 import os
 import functools
@@ -65,8 +66,15 @@ def import_automation_workflow():
     if not AUTOMATION_WORKFLOW_IMPORTED:
         with tempfile.NamedTemporaryFile() as temp_file:
             init_and_destroy_scheduler(temp_file.name)
-        import octobot_node.scheduler.workflows.automation_workflow
-    AUTOMATION_WORKFLOW_IMPORTED = True
+        importlib.import_module("octobot_node.scheduler.workflows.automation_workflow")
+        AUTOMATION_WORKFLOW_IMPORTED = True
+    # init_and_destroy_scheduler() tears down DBOS after registering workflows, leaving
+    # INSTANCE/queues as None. Unit tests patch recv_async/enqueue_async on these objects;
+    # provide mocks so patch.object has a real target (re-apply after other fixtures tear down).
+    if octobot_node.scheduler.SCHEDULER.INSTANCE is None:
+        octobot_node.scheduler.SCHEDULER.INSTANCE = mock.Mock()
+    if octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE is None:
+        octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE = mock.Mock()
 
 
 def _automation_state_dict(actions: list[dict[str, typing.Any]]) -> dict[str, typing.Any]:

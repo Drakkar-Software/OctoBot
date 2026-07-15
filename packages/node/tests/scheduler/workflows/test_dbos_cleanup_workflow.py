@@ -46,9 +46,13 @@ class TestDbosCleanupWorkflowDbosCleanup:
 
     @pytest.mark.asyncio
     async def test_skips_cleanup_on_consumer_only(self, dbos_cleanup_workflow_module):
+        mock_logger = mock.Mock()
         with mock.patch(
             "octobot_node.scheduler.workflows.dbos_cleanup_workflow.workflows_retention.should_skip_retention_cleanup_on_this_node",
             return_value=True,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows.dbos_cleanup_workflow.logging.get_logger",
+            return_value=mock_logger,
         ), mock.patch(
             "octobot_node.scheduler.workflows_retention.cleanup_outdated_automation_executions",
             mock.AsyncMock(),
@@ -63,6 +67,7 @@ class TestDbosCleanupWorkflowDbosCleanup:
 
         cleanup_mock.assert_not_called()
         skip_for_scheduled_time_mock.assert_not_called()
+        mock_logger.info.assert_called_once_with("dbos_cleanup skipped: consumer-only node")
         assert result == {
             "deleted_by_automation": {},
             "deleted_cleanup_executions": 0,
@@ -71,9 +76,14 @@ class TestDbosCleanupWorkflowDbosCleanup:
 
     @pytest.mark.asyncio
     async def test_skips_cleanup_when_newer_execution_already_ran(self, dbos_cleanup_workflow_module):
+        scheduled_time = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
+        mock_logger = mock.Mock()
         with mock.patch(
             "octobot_node.scheduler.workflows.dbos_cleanup_workflow.workflows_retention.should_skip_retention_cleanup_on_this_node",
             return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows.dbos_cleanup_workflow.logging.get_logger",
+            return_value=mock_logger,
         ), mock.patch(
             "octobot_node.scheduler.workflows.dbos_cleanup_workflow.workflows_retention.should_skip_retention_cleanup_for_scheduled_time",
             mock.AsyncMock(return_value=True),
@@ -82,11 +92,15 @@ class TestDbosCleanupWorkflowDbosCleanup:
             mock.AsyncMock(),
         ) as cleanup_mock:
             result = await dbos_cleanup_workflow_module.DbosCleanupWorkflow._cleanup_outdated_automation_executions(
-                datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc),
+                scheduled_time,
                 None,
             )
 
         cleanup_mock.assert_not_called()
+        mock_logger.info.assert_called_once_with(
+            "dbos_cleanup skipped for scheduled_time %s: latest completed cleanup is newer",
+            scheduled_time.isoformat(),
+        )
         assert result == {
             "deleted_by_automation": {},
             "deleted_cleanup_executions": 0,

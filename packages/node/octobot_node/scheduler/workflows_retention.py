@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import datetime
-import logging
 import os
 import time
 import typing
@@ -22,6 +21,7 @@ import typing
 import dbos
 import sqlalchemy
 
+import octobot_commons.logging as logging
 import octobot_node.config
 import octobot_node.enums
 import octobot_node.scheduler.workflows_util as workflows_util
@@ -34,6 +34,12 @@ AUTOMATION_EXECUTION_RETENTION_SECONDS = float(
 )  # 2 days
 AUTOMATION_EXECUTIONS_TO_KEEP = 2
 
+EMPTY_CLEANUP_SUMMARY: dict[str, typing.Any] = {
+    "deleted_by_automation": {},
+    "deleted_cleanup_executions": 0,
+    "total_deleted": 0,
+}
+
 _TERMINAL_WORKFLOW_STATUS_VALUES = frozenset(
     workflow_status.value
     for workflow_status in workflows_util.get_user_action_terminal_workflow_statuses()
@@ -44,7 +50,12 @@ def should_skip_retention_cleanup_on_this_node() -> bool:
 
 
 def is_terminal_workflow(workflow_status: dbos.WorkflowStatus) -> bool:
-    return workflow_status.status in _TERMINAL_WORKFLOW_STATUS_VALUES
+    status = (
+        workflow_status["status"]
+        if isinstance(workflow_status, dict)
+        else workflow_status.status
+    )
+    return status in _TERMINAL_WORKFLOW_STATUS_VALUES
 
 
 def _retention_cutoff_ms(*, retention_seconds: float, now_ms: int) -> int:
@@ -126,7 +137,8 @@ async def get_workflows_to_delete(
     return automation_workflows + user_action_workflows
 
 
-def vacuum_dbos_system_database(dbos_instance: dbos.DBOS, *, logger: logging.Logger) -> None:
+def vacuum_dbos_system_database(dbos_instance: dbos.DBOS) -> None:
+    logger = _get_logger()
     logger.info("Vacuuming database")
     with dbos_instance._sys_db.engine.begin() as conn:
         conn.execute(sqlalchemy.text("VACUUM"))
@@ -135,24 +147,19 @@ def vacuum_dbos_system_database(dbos_instance: dbos.DBOS, *, logger: logging.Log
 
 async def delete_workflows_and_vacuum(
     dbos_instance: dbos.DBOS,
-    workflow_ids: list[str],
-    *,
-    logger: logging.Logger,
+    workflow_ids: list[str]
 ) -> None:
-    logger.info("Deleting %s workflows", len(workflow_ids))
+    _get_logger().info("Deleting %s workflows", len(workflow_ids))
     await dbos_instance.delete_workflows_async(workflow_ids, delete_children=False)
-    vacuum_dbos_system_database(dbos_instance, logger=logger)
+    vacuum_dbos_system_database(dbos_instance)
 
 
 async def cleanup_outdated_automation_executions(
     scheduler: "scheduler_module.Scheduler",
 ) -> dict[str, typing.Any]:
     if not scheduler.INSTANCE:
-        return {
-            "deleted_by_automation": {},
-            "deleted_cleanup_executions": 0,
-            "total_deleted": 0,
-        }
+        _get_logger().warning("Scheduler not initialized, skipping cleanup")
+        return dict(EMPTY_CLEANUP_SUMMARY)
     now_ms = int(time.time() * 1000)
     retention_seconds = AUTOMATION_EXECUTION_RETENTION_SECONDS
     import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
@@ -193,7 +200,7 @@ async def cleanup_outdated_automation_executions(
         "total_deleted": len(all_ids_to_delete),
     }
     if all_ids_to_delete:
-        scheduler.logger.info(
+        _get_logger().info(
             "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs",
             len(all_ids_to_delete),
             len(deletions_by_automation),
@@ -202,13 +209,11 @@ async def cleanup_outdated_automation_executions(
         await delete_workflows_and_vacuum(
             scheduler.INSTANCE,
             all_ids_to_delete,
-            logger=scheduler.logger,
         )
-    scheduler.logger.info("DBOS cleanup summary: %s", summary)
+    _get_logger().info("DBOS cleanup summary: %s", summary)
     return summary
 
-
-def _get_latest_cleanup_execution_timestamp_ms(
+def _get_latest_completed_cleanup_timestamp_ms(
     cleanup_workflows: list[dbos.WorkflowStatus],
 ) -> int:
     if not cleanup_workflows:
@@ -226,13 +231,18 @@ async def should_skip_retention_cleanup_for_scheduled_time(
     import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
     cleanup_workflows = await scheduler.INSTANCE.list_workflows_async(
         name=dbos_cleanup_workflow.WORKFLOW_NAME,
+        status=[dbos.WorkflowStatusString.SUCCESS.value],
         sort_desc=True,
         limit=1,
         load_input=False,
         load_output=False,
     )
-    latest_timestamp_ms = _get_latest_cleanup_execution_timestamp_ms(cleanup_workflows)
+    latest_timestamp_ms = _get_latest_completed_cleanup_timestamp_ms(cleanup_workflows)
     if latest_timestamp_ms == 0:
         return False
     scheduled_timestamp_ms = int(scheduled_time.timestamp() * 1000)
     return latest_timestamp_ms > scheduled_timestamp_ms
+
+
+def _get_logger() -> logging.BotLogger:
+    return logging.get_logger("workflows_retention")
