@@ -319,6 +319,54 @@ class TestAccountStateUpdaterCheckExchangeAccountState:
         profile_data = captured_exchange_data_args["profile_data"]
         assert profile_data.exchanges[0].exchange_type == expected_exchange_type
 
+    @pytest.mark.asyncio
+    async def test_maps_authentication_error_on_exchange_manager_init_to_invalid_api_keys(self):
+        exchange_account = account_executor_test_utils.exchange_account_payload()
+        account = _sample_account()
+
+        @contextlib.asynccontextmanager
+        async def failing_exchange_manager_from_exchange_data(*args, **kwargs):
+            raise trading_errors.AuthenticationError("Incorrect apiKey")
+            yield  # pragma: no cover
+
+        with (
+            mock.patch.object(
+                account_state_updater_module.exchange_account_resolver,
+                "get_exchange_config",
+                return_value=account_executor_test_utils.exchange_config_payload(),
+            ),
+            mock.patch.object(
+                account_state_updater_module.account_authentication_resolver,
+                "get_exchange_authentication",
+                return_value=_authentication(),
+            ),
+            mock.patch.object(
+                account_state_updater_module.fields_utils,
+                "encrypt",
+                side_effect=lambda plain_text: ("enc:" + plain_text).encode(),
+            ),
+            mock.patch.object(
+                account_state_updater_module.trading_exchanges,
+                "exchange_manager_from_exchange_data",
+                failing_exchange_manager_from_exchange_data,
+            ),
+            mock.patch.object(
+                account_state_updater_module.tentacles_manager_api,
+                "get_full_tentacles_setup_config",
+                return_value=mock.Mock(),
+            ),
+        ):
+            account_state, assets = await account_state_updater_module._check_exchange_account_state(
+                exchange_account,
+                account,
+                _WALLET_ADDRESS,
+            )
+
+        assert account_state.status == protocol_models.AccountStatus.INVALID
+        assert account_state.message == protocol_models.AccountStatusMessage.INVALID_API_KEYS
+        assert account_state.permissions == []
+        assert assets is None
+
 
 class TestAccountStateUpdaterCheckExchangeManagerState:
     @pytest.mark.asyncio
