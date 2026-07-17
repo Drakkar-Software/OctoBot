@@ -85,14 +85,16 @@ def format_order_mirror_completion_message(
     *,
     orphan_cancelled_count: int,
     replaced_cancelled_count: int,
+    reconciled_cancelled_count: int = 0,
     total_created: int,
     already_synchronized_count: int,
     replication_failures: list[mirrored_order_replication_failure.MirroredOrderReplicationFailure],
 ) -> str:
-    total_cancelled = orphan_cancelled_count + replaced_cancelled_count
+    total_cancelled = orphan_cancelled_count + replaced_cancelled_count + reconciled_cancelled_count
     completion_message = (
         f"Order mirror completed: {total_cancelled} cancelled "
-        f"[{orphan_cancelled_count} orphan(s), {replaced_cancelled_count} replaced], "
+        f"[{orphan_cancelled_count} orphan(s), {replaced_cancelled_count} replaced, "
+        f"{reconciled_cancelled_count} reconciled], "
         f"{total_created} created, "
         f"{already_synchronized_count} already synchronized orders."
     )

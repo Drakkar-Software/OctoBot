@@ -417,6 +417,39 @@ class TestTrader:
         finally:
             trader_inst.simulate = True
 
+    async def test_cancel_order_skip_pending_cancel_status(self):
+        _, exchange_manager, trader_inst = await init_default()
+        orders_manager = exchange_manager.exchange_personal_data.orders_manager
+
+        limit_buy = BuyLimitOrder(trader_inst)
+        limit_buy.update(
+            order_type=TraderOrderType.BUY_LIMIT,
+            symbol=self.DEFAULT_SYMBOL,
+            current_price=decimal.Decimal("70"),
+            quantity=decimal.Decimal("10"),
+            price=decimal.Decimal("70"),
+        )
+        assert await trader_inst.create_order(limit_buy)
+        assert limit_buy in orders_manager.get_open_orders()
+
+        try:
+            trader_inst.simulate = False
+            with mock.patch.object(
+                exchange_manager.exchange,
+                "cancel_order",
+                mock.AsyncMock(return_value=OrderStatus.PENDING_CANCEL),
+            ) as cancel_order_mock:
+                assert await trader_inst.cancel_order(
+                    limit_buy,
+                    skip_pending_cancel_status=True,
+                ) is True
+                cancel_order_mock.assert_called_once()
+            assert limit_buy.status is OrderStatus.CANCELED
+            assert limit_buy not in orders_manager.get_open_orders()
+        finally:
+            trader_inst.simulate = True
+
+        await stop(exchange_manager)
 
     async def test_cancel_open_orders_default_symbol(self):
         config, exchange_manager, trader_inst = await init_default()

@@ -369,6 +369,7 @@ class OrdersInterface:
         ignored_order: object = None,
         wait_for_cancelling: bool = True,
         dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+        skip_pending_cancel_status: bool = True,
     ) -> tuple[bool, commons_signals.SignalDependencies]:
         if self._trading_mode is not None:
             return await self._trading_mode.cancel_order(
@@ -376,6 +377,7 @@ class OrdersInterface:
                 ignored_order=ignored_order,
                 wait_for_cancelling=wait_for_cancelling,
                 dependencies=dependencies,
+                skip_pending_cancel_status=skip_pending_cancel_status,
             )
         return await signal_creation.cancel_order(
             self._exchange_manager,
@@ -384,6 +386,7 @@ class OrdersInterface:
             ignored_order=ignored_order,
             wait_for_cancelling=wait_for_cancelling,
             dependencies=dependencies,
+            skip_pending_cancel_status=skip_pending_cancel_status,
         )
 
     async def cancel_symbol_open_orders(

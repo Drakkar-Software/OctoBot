@@ -150,7 +150,8 @@ async def test_cancel_order(trading_mode, buy_limit_order):
         cancel_order_mock.assert_called_once_with(
             buy_limit_order, ignored_order="ignored", wait_for_cancelling=True,
             cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-            force_if_disabled=False
+            force_if_disabled=False,
+            skip_pending_cancel_status=False
         )
         should_emit_trading_signal_mock.reset_mock()
         cancel_order_mock.reset_mock()
@@ -161,7 +162,8 @@ async def test_cancel_order(trading_mode, buy_limit_order):
         cancel_order_mock.assert_called_once_with(
             buy_limit_order, ignored_order="ignored", wait_for_cancelling=True,
             cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-            force_if_disabled=False
+            force_if_disabled=False,
+            skip_pending_cancel_status=False
         )
         should_emit_trading_signal_mock.reset_mock()
         cancel_order_mock.reset_mock()
@@ -175,7 +177,8 @@ async def test_cancel_order(trading_mode, buy_limit_order):
                 cancel_order_mock.assert_called_once_with(
                     buy_limit_order, ignored_order="ignored", wait_for_cancelling=True,
                     cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-                    force_if_disabled=False
+                    force_if_disabled=False,
+                    skip_pending_cancel_status=False
                 )
                 should_emit_trading_signal_mock.reset_mock()
                 cancel_order_mock.reset_mock()
@@ -189,7 +192,8 @@ async def test_cancel_order(trading_mode, buy_limit_order):
                 cancel_order_mock.assert_called_once_with(
                     buy_limit_order, ignored_order="ignored", wait_for_cancelling=True,
                     cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-                    force_if_disabled=False
+                    force_if_disabled=False,
+                    skip_pending_cancel_status=False
                 )
                 should_emit_trading_signal_mock.reset_mock()
                 cancel_order_mock.reset_mock()
