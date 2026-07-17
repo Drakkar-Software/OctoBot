@@ -672,13 +672,15 @@ class AbstractTradingMode(abstract_tentacle.AbstractTentacle):
 
     async def cancel_order(
         self, order, ignored_order: object = None, wait_for_cancelling: bool = True,
-        dependencies: typing.Optional[commons_signals.SignalDependencies] = None
+        dependencies: typing.Optional[commons_signals.SignalDependencies] = None,
+        skip_pending_cancel_status: bool = False,
     ) -> tuple[bool, commons_signals.SignalDependencies]:
         return await signals.cancel_order(
             self.exchange_manager, self.should_emit_trading_signal(), order,
             ignored_order=ignored_order,
             wait_for_cancelling=wait_for_cancelling,
-            dependencies=dependencies
+            dependencies=dependencies,
+            skip_pending_cancel_status=skip_pending_cancel_status,
         )
 
     async def cancel_all_orders(

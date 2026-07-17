@@ -2,7 +2,7 @@
 jsonschema==4.26.0
 psutil==7.2.2
 
-certifi==2026.1.4
+certifi==2026.6.17
 
 tinydb==4.8.2
 
