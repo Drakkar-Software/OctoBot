@@ -166,7 +166,10 @@ class HollaexAutofilled(hollaex):
 
     @classmethod
     def _get_autofilled_config(cls, tentacle_config, exchange_name):
-        return tentacle_config[cls.AUTO_FILLED_KEY][exchange_name]
+        try:
+            return tentacle_config[cls.AUTO_FILLED_KEY][exchange_name]
+        except KeyError as err:
+            raise KeyError(f"{exchange_name} not in {tentacle_config[cls.AUTO_FILLED_KEY].keys()}") from err
 
     @classmethod
     def get_exchange_details(cls, tentacle_config, exchange_name) -> typing.Optional[exchanges.ExchangeDetails]:

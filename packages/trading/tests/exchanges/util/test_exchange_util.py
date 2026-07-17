@@ -20,6 +20,7 @@ import mock
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as commons_configuration
+import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as exchanges
@@ -28,6 +29,37 @@ import octobot_trading.exchanges.util.exchange_util as exchange_util
 from tests import event_loop
 from tests.exchanges import MockedRestExchange, MockedAutoFillRestExchange
 import octobot_tentacles_manager.api as api
+import octobot_tentacles_manager.configuration.tentacle_configuration as tentacle_configuration
+
+
+def _mocked_exchange_builder(exchange_manager):
+    builder = mock.Mock()
+    for method_name in (
+        "use_tentacles_setup_config",
+        "is_checking_credentials",
+        "disable_unauth_retry",
+        "is_sandboxed",
+        "is_using_exchange_type",
+        "use_exchange_config_by_exchange",
+        "is_exchange_only",
+        "is_rest_only",
+        "is_broker_enabled",
+        "use_cached_markets",
+        "use_market_filter",
+        "is_ignoring_config",
+        "disable_trading_mode",
+    ):
+        getattr(builder, method_name).return_value = builder
+    builder.build = mock.AsyncMock(return_value=exchange_manager)
+    builder.clear = mock.Mock()
+    return builder
+
+
+def _mocked_local_exchange_manager():
+    exchange_manager = mock.Mock()
+    exchange_manager.exchange.connector.logger = mock.Mock()
+    exchange_manager.stop = mock.AsyncMock()
+    return exchange_manager
 
 
 @pytest.fixture
@@ -328,3 +360,95 @@ def test_update_raw_order_from_raw_trade():
             assert with_trade_values[key.value] == "EXCHANGE_ID"
         else:
             assert with_trade_values[key.value] == key.name
+
+
+class TestGetLocalExchangeManager:
+    @pytest.mark.asyncio
+    async def test_attaches_ephemeral_profile_when_exchange_config_by_exchange_provided(self):
+        tentacles_setup_config = mock.Mock()
+        tentacles_setup_config.profile = None
+        exchange_config_by_exchange = {
+            "HollaexAutofilled": {
+                "auto_filled": {
+                    "cne": {"url": "https://www.cne.kg/api/"},
+                }
+            }
+        }
+        exchange_manager = _mocked_local_exchange_manager()
+        builder = _mocked_exchange_builder(exchange_manager)
+
+        async with exchange_util.get_local_exchange_manager(
+            "cne",
+            {},
+            tentacles_setup_config,
+            False,
+            builder=builder,
+            exchange_config_by_exchange=exchange_config_by_exchange,
+        ):
+            pass
+
+        assert isinstance(
+            tentacles_setup_config.profile, commons_profiles.EphemeralProfile
+        )
+        assert tentacles_setup_config.profile.get_profile_data().get_config_by_tentacle() == (
+            exchange_config_by_exchange
+        )
+
+    @pytest.mark.asyncio
+    async def test_leaves_profile_none_when_exchange_config_by_exchange_missing(self):
+        tentacles_setup_config = mock.Mock()
+        tentacles_setup_config.profile = None
+        exchange_manager = _mocked_local_exchange_manager()
+        builder = _mocked_exchange_builder(exchange_manager)
+
+        async with exchange_util.get_local_exchange_manager(
+            "binance",
+            {},
+            tentacles_setup_config,
+            False,
+            builder=builder,
+            exchange_config_by_exchange=None,
+        ):
+            pass
+
+        assert tentacles_setup_config.profile is None
+
+    @pytest.mark.asyncio
+    async def test_ephemeral_profile_preserves_auto_filled_in_tentacle_config(self):
+        tentacles_setup_config = mock.Mock()
+        tentacles_setup_config.profile = None
+        exchange_config_by_exchange = {
+            "HollaexAutofilled": {
+                "auto_filled": {
+                    "cne": {"url": "https://www.cne.kg/api/"},
+                }
+            }
+        }
+        exchange_manager = _mocked_local_exchange_manager()
+        builder = _mocked_exchange_builder(exchange_manager)
+        tentacle_klass = type(
+            "HollaexAutofilled",
+            (),
+            {"get_name": staticmethod(lambda: "HollaexAutofilled")},
+        )()
+
+        async with exchange_util.get_local_exchange_manager(
+            "cne",
+            {},
+            tentacles_setup_config,
+            False,
+            builder=builder,
+            exchange_config_by_exchange=exchange_config_by_exchange,
+        ):
+            with mock.patch.object(
+                tentacle_configuration,
+                "_get_config_from_file_system",
+                mock.Mock(return_value={"auto_filled": {}}),
+            ):
+                tentacle_config = api.get_tentacle_config(
+                    tentacles_setup_config, tentacle_klass
+                )
+
+        assert tentacle_config["auto_filled"] == {
+            "cne": {"url": "https://www.cne.kg/api/"},
+        }

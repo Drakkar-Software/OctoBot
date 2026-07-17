@@ -345,6 +345,10 @@ async def get_local_exchange_manager(
         _get_minimal_exchange_config(exchange_name, exchange_config),
         exchange_name
     )
+    if tentacles_setup_config.profile is None and exchange_config_by_exchange:
+        profile_data = commons_profiles.ProfileData()
+        profile_data.set_tentacles_config(exchange_config_by_exchange)
+        tentacles_setup_config.profile = commons_profiles.EphemeralProfile.from_profile_data(profile_data)
     exchange_manager = await builder.use_tentacles_setup_config(tentacles_setup_config) \
         .is_checking_credentials(False) \
         .disable_unauth_retry(disable_unauth_retry) \
