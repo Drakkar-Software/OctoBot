@@ -544,7 +544,8 @@ class Trader(util.Initializable):
         if order and order.is_open():
             with order.active_or_inactive_transition():
                 cancelled = await self._handle_order_cancellation(
-                    order, ignored_order, wait_for_cancelling, cancelling_timeout
+                    order, ignored_order, wait_for_cancelling, cancelling_timeout,
+                    skip_pending_cancel_status=False,
                 )
         else:
             self.logger.error(
@@ -570,7 +571,8 @@ class Trader(util.Initializable):
     @enabled_or_forced_only
     async def cancel_order(self, order, ignored_order=None,
                            wait_for_cancelling=True,
-                           cancelling_timeout=octobot_trading.constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT) -> bool:
+                           cancelling_timeout=octobot_trading.constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
+                           skip_pending_cancel_status: bool = False) -> bool:
         """
         Cancels the given order and updates the portfolio, publish in order channel
         if order is from a real exchange.
@@ -581,19 +583,23 @@ class Trader(util.Initializable):
         On exchanges async api, a cancel request will return before the order is actually cancelled, in this case
         the associated order state will make sure that the order is cancelled by polling the order from the exchange.
         :param cancelling_timeout: time before raising a timeout error when waiting for an order cancel
+        :param skip_pending_cancel_status: when True, treat exchange PENDING_CANCEL as CANCELED so local
+        cancel/close and portfolio update run immediately (used when no order auto-sync/WS is available).
         :return: None
         """
         if order and order.is_open() or not order.is_active:
             self.logger.info(f"Cancelling order: {logging.get_private_minimized_message_if_necessary(order)}")
             # always cancel this order first to avoid infinite loop followed by deadlock
             return await self._handle_order_cancellation(
-                order, ignored_order, wait_for_cancelling, cancelling_timeout
+                order, ignored_order, wait_for_cancelling, cancelling_timeout,
+                skip_pending_cancel_status=skip_pending_cancel_status,
             )
         return False
 
     @authentication_required
     async def _handle_order_cancellation(
-        self, order, ignored_order, wait_for_cancelling: bool, cancelling_timeout: float
+        self, order, ignored_order, wait_for_cancelling: bool, cancelling_timeout: float,
+        skip_pending_cancel_status: bool = False,
     ) -> bool:
         success = True
         if order.is_waiting_for_chained_trigger:
@@ -635,6 +641,13 @@ class Trader(util.Initializable):
                     err, True, f"Failed to cancel order {logging.get_private_minimized_message_if_necessary(order)}"
                 )
                 return False
+            if skip_pending_cancel_status:
+                self.logger.info(
+                    f"Skipping PENDING_CANCEL status after cancel request "
+                    f"(exchange returned {order_status}): treating as CANCELED for "
+                    f"{logging.get_private_minimized_message_if_necessary(order)}"
+                )
+                order_status = enums.OrderStatus.CANCELED
             is_order_refreshing = order.is_refreshing()
             if order_status is enums.OrderStatus.CANCELED:
                 order.status = enums.OrderStatus.CANCELED
