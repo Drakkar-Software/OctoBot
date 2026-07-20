@@ -27,7 +27,7 @@ class TestSyncAppUnhandledExceptionHandler:
     async def test_create_app_registers_unhandled_exception_handler(self):
         store = mock.Mock()
         wrapped_app = sync_app.create_app(store)
-        inner_app = wrapped_app.app
+        inner_app = wrapped_app.app.app
         assert Exception in inner_app.exception_handlers
 
     def test_mounted_sync_unhandled_exception_is_logged(self):
