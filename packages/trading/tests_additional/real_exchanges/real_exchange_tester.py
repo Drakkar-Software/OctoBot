@@ -1019,9 +1019,9 @@ class RealExchangeTester:
         )
         self.ensure_elements_order(recent_trades, trading_enums.ExchangeConstantsTickersColumns.TIMESTAMP.value)
 
-    async def get_price_ticker(self, symbol: typing.Optional[str] = None):
+    async def get_price_ticker(self, symbol: typing.Optional[str] = None, **kwargs: dict):
         async with self.get_exchange_manager() as exchange_manager:
-            return await exchange_manager.exchange.get_price_ticker(symbol or self.SYMBOL)
+            return await exchange_manager.exchange.get_price_ticker(symbol or self.SYMBOL, **kwargs)
 
     async def assert_get_price_ticker(
         self,
@@ -1029,13 +1029,14 @@ class RealExchangeTester:
         *,
         symbol: typing.Optional[str] = None,
         ticker_expectations: typing.Optional[TickerRequiredExpectations] = None,
+        **kwargs: dict,
     ):
         symbol = symbol or self.SYMBOL
         async with self.get_exchange_manager() as exchange_manager:
             no_volume_in_ticker = exchange_manager.exchange.get_option_value(
                 trading_enums.ExchangeClientOptions.NO_VOLUME_IN_TICKER
             )
-            ticker = await exchange_manager.exchange.get_price_ticker(symbol)
+            ticker = await exchange_manager.exchange.get_price_ticker(symbol, **kwargs)
         self._check_ticker(
             ticker, symbol, extra_checks=extra_checks, no_volume_in_ticker=no_volume_in_ticker,
         )
