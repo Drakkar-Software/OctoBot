@@ -66,6 +66,38 @@ class SignedPathMiddleware:
         await self.app(scope, receive, send)
 
 
+class HostNormalizeMiddleware:
+    """Rewrite the inbound ``Host`` header to a configured external host.
+
+    The Starfish cap resolver binds each request signature to a host (the ``h``
+    field of the canonical signing input) to stop a signed request from being
+    replayed against a different server. The client signs the host it dialed
+    (e.g. a tailnet hostname); when a reverse proxy in front of this app — such
+    as ``tailscale serve`` — terminates TLS and forwards to this process, the
+    ``Host`` header the ASGI server sees is the proxy's local target, not the
+    host the client signed, so every signature mismatches. When ``external_host``
+    is set, force the header the resolver reads back to that value so it equals
+    what the client signed. No-op when unset (e.g. the community sync server,
+    which is not behind such a proxy).
+    """
+
+    def __init__(self, app, external_host: str | None):
+        self.app = app
+        self.external_host = external_host
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and self.external_host:
+            headers = [
+                (name, value)
+                for name, value in scope.get("headers", [])
+                if name != b"host"
+            ]
+            headers.append((b"host", self.external_host.encode("latin-1")))
+            scope = dict(scope)
+            scope["headers"] = headers
+        await self.app(scope, receive, send)
+
+
 def _build_role_resolver(is_allowed_user_id: Callable[[str], bool] | None):
     """Cap-cert role resolver (device caps), optionally gated by a userId allowlist.
 
@@ -103,6 +135,7 @@ def create_app(
     is_allowed_user_id: Callable[[str], bool] | None = None,
     sync_config: SyncConfig | None = None,
     plugins: list[ServerPlugin] | None = None,
+    external_host: str | None = None,
 ):
     if sync_config is None:
         sync_config = sync.load_sync_config(collections_path)
@@ -128,5 +161,8 @@ def create_app(
 
     # Always wrap: the cap resolver verifies the request signature against
     # request.url.path, which must equal the client-signed /v1/... path
-    # regardless of how this app is mounted (see SignedPathMiddleware).
-    return SignedPathMiddleware(app)
+    # regardless of how this app is mounted (see SignedPathMiddleware), and
+    # against request.url's host, which must equal the client-signed host even
+    # behind a reverse proxy that presents a different Host (see
+    # HostNormalizeMiddleware).
+    return HostNormalizeMiddleware(SignedPathMiddleware(app), external_host)

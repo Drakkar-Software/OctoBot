@@ -6,6 +6,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Globe,
   KeyRound,
   LogOut,
   Network,
@@ -423,6 +424,112 @@ function NodeTypeCard() {
           The node type can only be changed from the CLI. Use the{" "}
           <code>--node-type</code> flag when starting the node.
         </span>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SyncHostCard() {
+  const [externalHost, setExternalHost] = useState("")
+  const [envOverride, setEnvOverride] = useState(false)
+  const [status, setStatus] = useState<"loading" | "ready" | "saving" | "saved" | "error">(
+    "loading",
+  )
+  const [error, setError] = useState("")
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const data = await fetchNodeConfig()
+        setExternalHost(data.external_host ?? "")
+        setEnvOverride(Boolean(data.external_host_env_override))
+        setStatus("ready")
+      } catch {
+        setStatus("error")
+        setError("Failed to load sync host configuration.")
+      }
+    })()
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  const handleSave = async () => {
+    setStatus("saving")
+    setError("")
+    try {
+      const res = await fetch("/api/v1/nodes/config", {
+        method: "PATCH",
+        headers: {
+          Authorization: await buildAuthHeader(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ external_host: externalHost }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      setExternalHost(data.external_host ?? "")
+      setStatus("saved")
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setStatus("ready"), 2000)
+    } catch (e) {
+      setStatus("error")
+      setError(e instanceof Error ? e.message : "Failed to save sync host")
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="size-4" />
+          Sync host
+        </CardTitle>
+        <CardDescription>
+          Host your sync/mobile client uses to reach this node — required
+          behind a reverse proxy that rewrites the Host header (e.g.{" "}
+          <code>tailscale serve</code>).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {status === "loading" ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : envOverride ? (
+          <>
+            <div className="min-h-[38px] w-full rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground flex items-center">
+              {externalHost || "(empty)"}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Set via the <code>NODE_EXTERNAL_HOST</code> environment
+              variable; remove it to edit this value here.
+            </span>
+          </>
+        ) : (
+          <>
+            <input
+              type="text"
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              placeholder="my-node.tailnet.ts.net"
+              value={externalHost}
+              onChange={(e) => setExternalHost(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                onClick={handleSave}
+                disabled={status === "saving"}
+              >
+                {status === "saved" ? <Check className="size-4" /> : null}
+                {status === "saved" ? "Saved" : status === "saving" ? "Saving…" : "Save"}
+              </button>
+              {status === "error" && (
+                <span className="text-xs text-destructive">{error}</span>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )
@@ -1157,6 +1264,7 @@ function Settings() {
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2">
         <NodeTypeCard />
+        <SyncHostCard />
         <SupportCard />
         <NodeManagementCard />
         <WalletManagementCard />
