@@ -19,6 +19,9 @@ import threading
 import time
 
 import mock
+import pytest
+
+import octobot_node.config as octobot_node_config
 
 from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, TENANT_ADDRESS, TENANT_PASSPHRASE
 
@@ -78,3 +81,73 @@ class TestStopNodePrivileges:
             headers=_auth_header(TENANT_ADDRESS, TENANT_PASSPHRASE),
         )
         assert response.status_code == 403
+
+
+class TestNodeConfigExternalHost:
+    @pytest.fixture(autouse=True)
+    def _configured_node_settings(self, admin_client, monkeypatch):
+        # admin_client's unit_app fixture patches octobot_node.config.settings with a bare
+        # mock.Mock(); explicitly set the attributes get_node_config() reads so the response
+        # can be JSON-serialized.
+        monkeypatch.setattr(octobot_node_config.settings, "IS_MASTER_MODE", False)
+        monkeypatch.setattr(octobot_node_config.settings, "USE_DEDICATED_LOG_FILE_PER_AUTOMATION", False)
+        monkeypatch.setattr(octobot_node_config.settings, "tasks_encryption_enabled", False)
+
+    def test_get_config_reflects_stored_and_env_override(self, admin_client, monkeypatch):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = "node.example.com"
+        monkeypatch.setenv("NODE_EXTERNAL_HOST", "node.example.com")
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.get("/api/v1/nodes/config")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["external_host"] == "node.example.com"
+        assert body["external_host_env_override"] is True
+
+    def test_get_config_without_env_override(self, admin_client, monkeypatch):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = "stored.example.com"
+        monkeypatch.delenv("NODE_EXTERNAL_HOST", raising=False)
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.get("/api/v1/nodes/config")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["external_host"] == "stored.example.com"
+        assert body["external_host_env_override"] is False
+
+    def test_patch_config_persists_external_host(self, admin_client, monkeypatch):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = "new-host.example.com"
+        monkeypatch.delenv("NODE_EXTERNAL_HOST", raising=False)
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.patch(
+                "/api/v1/nodes/config", json={"external_host": "new-host.example.com"}
+            )
+        assert response.status_code == 200
+        node_api_service.set_node_external_host.assert_called_once_with("new-host.example.com")
+        assert response.json()["external_host"] == "new-host.example.com"
+
+    def test_patch_config_without_external_host_does_not_set(self, admin_client, monkeypatch):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = None
+        monkeypatch.delenv("NODE_EXTERNAL_HOST", raising=False)
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.patch("/api/v1/nodes/config", json={"node_type": "standalone"})
+        assert response.status_code == 200
+        node_api_service.set_node_external_host.assert_not_called()

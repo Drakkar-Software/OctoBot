@@ -102,7 +102,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             scheduler.initialize_scheduler()
         host = self.host
         port = self.port
-        self.app = self.create_app()
+        self.app = self.create_app(external_host=self.node_api_service.get_node_external_host())
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()
         cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()] if cors_origins_str else []
@@ -151,7 +151,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             )
 
     @classmethod
-    def create_app(cls) -> FastAPI:
+    def create_app(cls, external_host: str | None = None) -> FastAPI:
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
@@ -182,6 +182,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
                     sync_server.derive_user_id(w.private_key) == user_id
                     for w in community_auth.CommunityAuthentication.instance().list_wallet_entries()
                 ),
+                external_host=external_host,
             ),
         )
 

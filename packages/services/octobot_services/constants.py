@@ -86,8 +86,10 @@ NODE_API_URL = "node-api-url"
 NODE_SQLITE_FILE = "node-sqlite-file"
 NODE_REDIS_URL = "node-redis-url"
 BACKEND_CORS_ALLOWED_ORIGINS = "backend-cors-allowed-origins"
+NODE_EXTERNAL_HOST = "node-external-host"
 ENV_NODE_SQLITE_FILE = "ENV_NODE_SQLITE_FILE"
 ENV_NODE_POSTGRES_URL = "ENV_NODE_POSTGRES_URL"
+ENV_NODE_EXTERNAL_HOST = "NODE_EXTERNAL_HOST"
 
 # Webhook
 CONFIG_WEBHOOK = "webhook"

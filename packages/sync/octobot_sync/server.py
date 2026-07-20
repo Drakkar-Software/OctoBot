@@ -312,10 +312,12 @@ def build_object_store() -> AbstractObjectStore:
 def build_default_sync_app(
     is_allowed_user_id: Callable[[str], bool] | None = None,
     sync_config: SyncConfig | None = None,
+    external_host: str | None = None,
 ):
     return sync_app.create_app(
         build_object_store(),
         is_allowed_user_id=is_allowed_user_id,
         sync_config=sync_config,
         plugins=[user_actions_plugin],
+        external_host=external_host,
     )
