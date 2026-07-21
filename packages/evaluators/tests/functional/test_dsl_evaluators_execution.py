@@ -187,7 +187,7 @@ class TestEvaluatorDslInterpreterFakeMatrixReadingStrategyEvaluator:
 
             async def _create_strategy_instance(*_args, **_kwargs):
                 strategy_instance = fake_evaluators.FakeMatrixReadingStrategyEvaluator(
-                    evaluator_dsl_factory._get_local_tentacles_setup_config()
+                    None
                 )
                 strategy_instance.matrix_id = matrix_id
                 strategy_instance.evaluator_type = evaluators_enums.EvaluatorMatrixTypes.STRATEGIES

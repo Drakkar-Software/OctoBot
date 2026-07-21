@@ -18,7 +18,6 @@ import typing
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.evaluators_util as evaluators_util
-import octobot_commons.time_frame_manager as time_frame_manager
 import octobot_evaluators.api as evaluators_api
 import octobot_evaluators.evaluators.channel as evaluators_channel
 import octobot_evaluators.matrix as matrix
@@ -27,7 +26,6 @@ import octobot_evaluators.constants as evaluators_constants
 import octobot_evaluators.errors as errors
 import octobot_evaluators.evaluators as evaluators
 import octobot_tentacles_manager.api.configurator as tentacles_manager_api
-import octobot_tentacles_manager.configuration as tm_configuration
 import octobot_trading.api as trading_api
 
 
@@ -256,11 +254,15 @@ class TechnicalAnalysisStrategyEvaluator(evaluators.StrategyEvaluator):
         super().__init__(tentacles_setup_config)
         self.allowed_evaluator_types = [evaluators_enums.EvaluatorMatrixTypes.TA.value,
                                         evaluators_enums.EvaluatorMatrixTypes.REAL_TIME.value]
-        config = tentacles_manager_api.get_tentacle_config(self.tentacles_setup_config, self.__class__)
-        if config:
-            self.weight_by_time_frames = TechnicalAnalysisStrategyEvaluator._get_weight_by_time_frames(
-                config[TechnicalAnalysisStrategyEvaluator.TIME_FRAMES_TO_WEIGHT]
+        self.weight_by_time_frames = {}
+        if self.tentacles_setup_config is not None:
+            config = tentacles_manager_api.get_tentacle_config(
+                self.tentacles_setup_config, self.__class__
             )
+            if config and self.TIME_FRAMES_TO_WEIGHT in config:
+                self.weight_by_time_frames = TechnicalAnalysisStrategyEvaluator._get_weight_by_time_frames(
+                    config[TechnicalAnalysisStrategyEvaluator.TIME_FRAMES_TO_WEIGHT]
+                )
 
     def init_user_inputs(self, inputs: dict) -> None:
         """
@@ -275,8 +277,14 @@ class TechnicalAnalysisStrategyEvaluator(evaluators.StrategyEvaluator):
             item_title="Time frame",
             title="Analysed time frames and their associated weight."
         )
-        # init one user input to generate user input schema and default values
-        time_frames_and_weight.append(self._init_tf_and_weight(inputs, commons_enums.TimeFrames.THIRTY_MINUTES, 30))
+        # Register nested OBJECT_ARRAY item schema/defaults.
+        # Commons ensures a placeholder at [0] when the array is empty (no pre-append).
+        # Nested user_input prefers saved values over these def_vals, so existing
+        # user config is not replaced. Do not assign to [0] / append the init result
+        # (append after ensure would duplicate the row).
+        self._init_tf_and_weight(
+            inputs, commons_enums.TimeFrames.THIRTY_MINUTES, 30
+        )
         self.weight_by_time_frames = TechnicalAnalysisStrategyEvaluator._get_weight_by_time_frames(
             config_time_frames_and_weight
         )

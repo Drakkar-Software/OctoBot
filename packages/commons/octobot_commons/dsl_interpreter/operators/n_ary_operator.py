@@ -13,7 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
+import octobot_commons.dsl_interpreter.operator_parameter as dsl_interpreter_operator_parameter
 
 
 class NaryOperator(
@@ -23,3 +25,14 @@ class NaryOperator(
     Base class for n-ary operators.
     N-ary operators have one or more operands.
     """
+
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
+
+    @classmethod
+    def get_return_values(
+        cls,
+    ) -> list[dsl_interpreter_operator_parameter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.BOOLEAN.value,
+            description="N-ary boolean operation result",
+        )

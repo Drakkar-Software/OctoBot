@@ -16,6 +16,9 @@
 #  License along with this library.
 import ast
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.dsl_interpreter.operators.unary_operator as dsl_interpreter_unary_operator
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 
@@ -57,6 +60,13 @@ class NotOperator(dsl_interpreter_unary_operator.UnaryOperator):
     def get_name() -> str:
         return ast.Not.__name__
 
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.BOOLEAN.value,
+            description="Logical NOT of the operand",
+        )
+
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         operand = self.get_computed_operand()
         return not operand
@@ -70,6 +80,13 @@ class InvertOperator(dsl_interpreter_unary_operator.UnaryOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Invert.__name__
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.BOOLEAN.value,
+            description="Logical NOT of the operand (bitwise invert behaves as not)",
+        )
 
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         operand = self.get_computed_operand()

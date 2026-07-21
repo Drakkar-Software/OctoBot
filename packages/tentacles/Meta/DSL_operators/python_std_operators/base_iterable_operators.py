@@ -16,6 +16,9 @@
 #  License along with this library.
 import ast
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.dsl_interpreter.operators.iterable_operator as dsl_interpreter_iterable_operator
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 
@@ -28,10 +31,18 @@ class ListOperator(dsl_interpreter_iterable_operator.IterableOperator):
     NAME = "[...]"
     DESCRIPTION = "List constructor operator. Creates a list from the given operands."
     EXAMPLE = "[1, 2, 3]"
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     @staticmethod
     def get_name() -> str:
         return ast.List.__name__
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="List of computed operands",
+        )
 
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         # Compute the test condition

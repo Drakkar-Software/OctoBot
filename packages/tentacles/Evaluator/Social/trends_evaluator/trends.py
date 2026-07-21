@@ -44,7 +44,8 @@ class GoogleTrendsEvaluator(evaluators.SocialEvaluator):
                                                        self.relevant_history_months, inputs, min_val=3, max_val=3,
                                                        title="Number of months to look into to compute the trend "
                                                              "evaluation (for now works only with 3).")
-        self.feed_config[services_constants.CONFIG_TREND_TOPICS] = self._build_trend_topics()
+        if self.cryptocurrency_name:
+            self.feed_config[services_constants.CONFIG_TREND_TOPICS] = self._build_trend_topics()
 
     @classmethod
     def get_is_cryptocurrencies_wildcard(cls) -> bool:

@@ -62,7 +62,6 @@ def _create_operator_parameters_from_user_inputs(
             if isinstance(user_input.input_type, str)
             else user_input.input_type.value
         )
-        param_type = user_inputs.USER_INPUT_TYPE_TO_PYTHON_TYPE[input_type]
         param_name = user_inputs.sanitize_user_input_name(user_input.name)
         description = user_input.title or user_input.name
         params.append(
@@ -70,20 +69,10 @@ def _create_operator_parameters_from_user_inputs(
                 name=param_name,
                 description=str(description),
                 required=False,
-                type=param_type,
-                default=user_input.def_val,
-            )
+                type=dsl_interpreter.dsl_value_type_for_user_input(input_type),
+                default=user_input.def_val)
         )
     return params
-
-
-class _LocalTentaclesSetupConfig:
-    def is_tentacle_activated(self, _klass_name) -> bool:
-        return True
-
-
-def _get_local_tentacles_setup_config():
-    return _LocalTentaclesSetupConfig()
 
 
 async def _ensure_dsl_bot_storage_registered() -> None:
@@ -102,10 +91,8 @@ def _create_evaluator_operator_parameters(
     evaluator_class: type,
     config: dict,
 ) -> list[dsl_interpreter.OperatorParameter]:
-    tentacles_setup_config = _get_local_tentacles_setup_config()
-    loaded_config = {}
     tentacle_instance = evaluator_class.create_local_instance(
-        config, tentacles_setup_config, loaded_config
+        config, None, {}
     )
     created_user_inputs = {}
     tentacle_instance.init_user_inputs(created_user_inputs)
@@ -134,6 +121,8 @@ class EvaluatorOperator(
     dsl_interpreter.ReCallableOperatorMixin,
     dsl_interpreter.DynamicDependenciesOperatorMixin,
 ):
+    CATEGORY = common_enums.DslKeywordCategory.SOURCE.value
+
     def __init__(
         self,
         *parameters: dsl_interpreter.OperatorParameterType,
@@ -144,6 +133,13 @@ class EvaluatorOperator(
     @staticmethod
     def get_library() -> str:
         return common_constants.CONTEXTUAL_OPERATORS_LIBRARY
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            common_enums.DslValueType.SIGNAL.value,
+            description="Evaluator result",
+        )
 
     def get_exchange_manager(
         self,
@@ -214,7 +210,6 @@ class EvaluatorOperator(
         await _ensure_dsl_bot_storage_registered()
         evaluator_instance = await evaluator_factory.create_dsl_evaluator(
             evaluator_class,
-            _get_local_tentacles_setup_config(),
             matrix_id,
             exchange_manager.exchange_name,
             tentacle_config,
@@ -236,7 +231,7 @@ class EvaluatorOperator(
     ) -> None:
         evaluator_instance.strategy_time_frames = evaluators.StrategyEvaluator.get_required_time_frames(
             self.get_config(),
-            _get_local_tentacles_setup_config(),
+            None,
             strategy_config=tentacle_config,
         )
 
@@ -668,9 +663,8 @@ def create_evaluator_operator(
                     name=TIME_FRAMES_PARAM,
                     description="Evaluated time frames",
                     required=False,
-                    type=list,
-                    default=None,
-                ),
+                    type=common_enums.DslValueType.ANY.value,
+                    default=None),
             ]
             if not issubclass(evaluator_class, evaluators.StrategyEvaluator):
                 meta_parameters.extend([
@@ -678,16 +672,14 @@ def create_evaluator_operator(
                         name=SYMBOLS_PARAM,
                         description="Evaluated trading symbols",
                         required=False,
-                        type=list,
-                        default=None,
-                    ),
+                        type=common_enums.DslValueType.ANY.value,
+                        default=None),
                     dsl_interpreter.OperatorParameter(
                         name=CRYPTOCURRENCY_PARAM,
                         description="Evaluated cryptocurrency",
                         required=False,
-                        type=str,
-                        default=None,
-                    ),
+                        type=common_enums.DslValueType.TEXT.value,
+                        default=None),
                 ])
             if issubclass(evaluator_class, evaluators.TAEvaluator):
                 meta_parameters.append(
@@ -695,9 +687,8 @@ def create_evaluator_operator(
                         name=INCLUDE_IN_CONSTRUCTION_CANDLE_PARAM,
                         description="Include the in-construction candle when executing the TA evaluator",
                         required=False,
-                        type=bool,
-                        default=False,
-                    )
+                        type=common_enums.DslValueType.BOOLEAN.value,
+                        default=False)
                 )
             return meta_parameters
 

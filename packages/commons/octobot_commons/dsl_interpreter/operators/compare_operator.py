@@ -15,7 +15,9 @@
 #  License along with this library.
 import typing
 
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
+import octobot_commons.dsl_interpreter.operator_parameter as dsl_interpreter_operator_parameter
 
 
 class CompareOperator(
@@ -25,6 +27,8 @@ class CompareOperator(
     Base class for compare operators.
     Compare operators have two operands.
     """
+
+    CATEGORY = commons_enums.DslKeywordCategory.CONDITION.value
 
     def __init__(
         self,
@@ -37,6 +41,15 @@ class CompareOperator(
         """
         super().__init__(left, right, **kwargs)
 
+    @classmethod
+    def get_return_values(
+        cls,
+    ) -> list[dsl_interpreter_operator_parameter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.BOOLEAN.value,
+            description="Comparison result",
+        )
+
     def get_computed_left_and_right_parameters(
         self,
     ) -> typing.Tuple[
@@ -44,7 +57,7 @@ class CompareOperator(
         dsl_interpreter_operator.ComputedOperatorParameterType,
     ]:
         """
-        Get the computed left and right computed operands.
+        Get the computed left and right parameters of the compare operator.
         """
         computed_parameters = self.get_computed_parameters()
         return computed_parameters[0], computed_parameters[1]

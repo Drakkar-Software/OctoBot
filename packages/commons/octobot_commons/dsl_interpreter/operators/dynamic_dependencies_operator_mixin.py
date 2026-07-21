@@ -19,6 +19,7 @@ import typing
 
 import octobot_commons.dataclasses
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
+import octobot_commons.enums as commons_enums
 
 
 @dataclasses.dataclass
@@ -61,7 +62,7 @@ class DynamicDependenciesOperatorMixin:
                 name=cls.DYNAMIC_DEPENDENCIES_KEY,
                 description="Injected upstream operator results (list of DynamicDependency JSON objects)",
                 required=False,
-                type=list,
+                type=commons_enums.DslValueType.ANY.value,
                 default=None,
             ),
         ]

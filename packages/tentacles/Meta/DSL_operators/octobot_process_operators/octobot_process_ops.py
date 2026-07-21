@@ -13,7 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
 # pylint: disable=missing-class-docstring,missing-function-docstring
-import asyncio
 import json
 import os
 import pathlib
@@ -25,7 +24,6 @@ import types
 import typing
 import uuid
 import aiofiles
-import pydantic
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
@@ -37,7 +35,6 @@ import octobot_commons.process_util as process_util
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_data_import as profile_data_import
 import octobot_commons.profiles.exchange_auth_data as exchange_auth_data_module
-import octobot_commons.profiles.profile_types.profile as profiles_profile_module
 import octobot_commons.profiles.tentacles_profile_data_translator as tentacles_profile_data_translator
 import octobot_commons.enums as commons_enums
 import octobot_commons.configuration
@@ -898,6 +895,7 @@ def create_octobot_process_operators(
             "exchange_auth_data=[{'internal_name': 'binance', 'api_key': '...', 'api_secret': '...'}], "
             "last_execution_result=None)"
         )
+        CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
         def __init__(self, *args, **kwargs):
             dsl_interpreter.PreComputingCallOperator.__init__(self, *args, **kwargs)
@@ -928,7 +926,7 @@ def create_octobot_process_operators(
                         "Path segment(s) under <cwd>/user/automations/ for this bot."
                     ),
                     required=True,
-                    type=str,
+                    type=commons_enums.DslValueType.TEXT.value,
                 ),
                 dsl_interpreter.OperatorParameter(
                     name="octobot_name",
@@ -937,9 +935,8 @@ def create_octobot_process_operators(
                         "Written to config.json and shown in the web interface title and navbar."
                     ),
                     required=False,
-                    type=str,
-                    default=None,
-                ),
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
                 dsl_interpreter.OperatorParameter(
                     name="profile_data",
                     description=(
@@ -949,9 +946,8 @@ def create_octobot_process_operators(
                         "via master profile overlay."
                     ),
                     required=False,
-                    type=dict,
-                    default=None,
-                ),
+                    type=commons_enums.DslValueType.DICT.value,
+                    default=None),
                 dsl_interpreter.OperatorParameter(
                     name="sync_profile_id",
                     description=(
@@ -961,7 +957,7 @@ def create_octobot_process_operators(
                         f"otherwise the child uses {DEFAULT_DSL_PROFILE_ID!r} from the executor profiles overlay."
                     ),
                     required=False,
-                    type=str,
+                    type=commons_enums.DslValueType.TEXT.value,
                     default=None,
                 ),
                 dsl_interpreter.OperatorParameter(
@@ -972,7 +968,7 @@ def create_octobot_process_operators(
                         "when sync_profile_id is set for strategy validation."
                     ),
                     required=False,
-                    type=str,
+                    type=commons_enums.DslValueType.TEXT.value,
                     default=None,
                 ),
                 dsl_interpreter.OperatorParameter(
@@ -985,44 +981,39 @@ def create_octobot_process_operators(
                         "each listed entry fully replaces the master entry for that internal_name."
                     ),
                     required=False,
-                    type=list[dict],
+                    type=commons_enums.DslValueType.ANY.value,
                     default=None,
                 ),
                 dsl_interpreter.OperatorParameter(
                     name="web_port_base",
                     description="Base port for the web interface (uses base+offset; default from services constants).",
                     required=False,
-                    type=int,
-                    default=services_constants.DEFAULT_SERVER_PORT,
-                ),
+                    type=commons_enums.DslValueType.NUMBER.value,
+                    default=services_constants.DEFAULT_SERVER_PORT),
                 dsl_interpreter.OperatorParameter(
                     name="node_port_base",
                     description="Base port for the node API (uses base+offset).",
                     required=False,
-                    type=int,
-                    default=services_constants.DEFAULT_NODE_API_PORT,
-                ),
+                    type=commons_enums.DslValueType.NUMBER.value,
+                    default=services_constants.DEFAULT_NODE_API_PORT),
                 dsl_interpreter.OperatorParameter(
                     name="bind_host",
                     description="Host used for free-port checks and WEB_ADDRESS / NODE_API_ADDRESS for the child.",
                     required=False,
-                    type=str,
-                    default="127.0.0.1",
-                ),
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default="127.0.0.1"),
                 dsl_interpreter.OperatorParameter(
                     name="http_scheme",
                     description="Scheme for http_base_url (default http).",
                     required=False,
-                    type=str,
-                    default="http",
-                ),
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default="http"),
                 dsl_interpreter.OperatorParameter(
                     name="no_telegram",
                     description="If true, spawns with -nt (default true).",
                     required=False,
-                    type=bool,
-                    default=True,
-                ),
+                    type=commons_enums.DslValueType.BOOLEAN.value,
+                    default=True),
                 dsl_interpreter.OperatorParameter(
                     name="ping_timeout",
                     description=(
@@ -1031,7 +1022,7 @@ def create_octobot_process_operators(
                         "Does not cap liveness re-calls once up."
                     ),
                     required=False,
-                    type=float,
+                    type=commons_enums.DslValueType.NUMBER.value,
                     default=DEFAULT_ENSURE_TIMEOUT,
                 ),
                 dsl_interpreter.OperatorParameter(
@@ -1040,10 +1031,17 @@ def create_octobot_process_operators(
                         "Fixed interval in seconds before each re-call (init polling and ongoing liveness while the state file is live)."
                     ),
                     required=False,
-                    type=float,
+                    type=commons_enums.DslValueType.NUMBER.value,
                     default=DEFAULT_PING_WAITING_TIME,
                 ),
             ] + super().get_re_callable_parameters()
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Re-callable process state or stop outcome",
+            )
 
         @classmethod
         def _re_calling_result_dispatches_this_ensure(

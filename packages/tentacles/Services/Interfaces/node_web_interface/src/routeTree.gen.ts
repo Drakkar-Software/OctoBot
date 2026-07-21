@@ -19,6 +19,7 @@ import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
 import { Route as LayoutSupportRouteImport } from './routes/_layout/support'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
+import { Route as LayoutDslKeywordsRouteImport } from './routes/_layout/dsl-keywords'
 import { Route as LayoutDebugRouteImport } from './routes/_layout/debug'
 import { Route as LayoutOctobotsIndexRouteImport } from './routes/_layout/octobots/index'
 import { Route as LayoutOctobotsNewRouteImport } from './routes/_layout/octobots/new'
@@ -77,6 +78,11 @@ const LayoutOctobotsRoute = LayoutOctobotsRouteImport.update({
   path: '/octobots',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutDslKeywordsRoute = LayoutDslKeywordsRouteImport.update({
+  id: '/dsl-keywords',
+  path: '/dsl-keywords',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutDebugRoute = LayoutDebugRouteImport.update({
   id: '/debug',
   path: '/debug',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRouteWithChildren
   '/debug': typeof LayoutDebugRoute
+  '/dsl-keywords': typeof LayoutDslKeywordsRoute
   '/octobots': typeof LayoutOctobotsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/support': typeof LayoutSupportRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/debug': typeof LayoutDebugRoute
+  '/dsl-keywords': typeof LayoutDslKeywordsRoute
   '/settings': typeof LayoutSettingsRoute
   '/support': typeof LayoutSupportRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRouteWithChildren
   '/_layout/debug': typeof LayoutDebugRoute
+  '/_layout/dsl-keywords': typeof LayoutDslKeywordsRoute
   '/_layout/octobots': typeof LayoutOctobotsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/support': typeof LayoutSupportRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/debug'
+    | '/dsl-keywords'
     | '/octobots'
     | '/settings'
     | '/support'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/debug'
+    | '/dsl-keywords'
     | '/settings'
     | '/support'
     | '/setup/first-bot'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/_layout/debug'
+    | '/_layout/dsl-keywords'
     | '/_layout/octobots'
     | '/_layout/settings'
     | '/_layout/support'
@@ -313,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/octobots'
       fullPath: '/octobots'
       preLoaderRoute: typeof LayoutOctobotsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/dsl-keywords': {
+      id: '/_layout/dsl-keywords'
+      path: '/dsl-keywords'
+      fullPath: '/dsl-keywords'
+      preLoaderRoute: typeof LayoutDslKeywordsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/debug': {
@@ -409,6 +428,7 @@ const LayoutOctobotsRouteWithChildren = LayoutOctobotsRoute._addFileChildren(
 
 interface LayoutRouteChildren {
   LayoutDebugRoute: typeof LayoutDebugRoute
+  LayoutDslKeywordsRoute: typeof LayoutDslKeywordsRoute
   LayoutOctobotsRoute: typeof LayoutOctobotsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutSupportRoute: typeof LayoutSupportRoute
@@ -417,6 +437,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutDebugRoute: LayoutDebugRoute,
+  LayoutDslKeywordsRoute: LayoutDslKeywordsRoute,
   LayoutOctobotsRoute: LayoutOctobotsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutSupportRoute: LayoutSupportRoute,

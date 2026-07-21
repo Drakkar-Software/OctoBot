@@ -14,6 +14,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operators.call_operator as dsl_interpreter_call_operator
 
 
@@ -21,6 +23,7 @@ TA_LIBRARY = "ta"
 
 
 class TAOperator(dsl_interpreter_call_operator.CallOperator):
+    CATEGORY = commons_enums.DslKeywordCategory.SOURCE.value
 
     @staticmethod
     def get_library() -> str:

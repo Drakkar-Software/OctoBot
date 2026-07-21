@@ -16,6 +16,7 @@ import os
 import mock
 import typing
 
+import pytest
 import octobot_commons
 import octobot_commons.symbols.symbol_util as commons_symbols
 import octobot_protocol.models as protocol_models
@@ -273,6 +274,73 @@ class TestExchangesGetTradedPairs:
             )
             assert response.status_code == 501
             assert response.json() == {"error": str(not_supported_error)}
+
+    def test_returns_null_volumes_when_ticker_missing(
+        self,
+        client: typing.Any,
+    ) -> None:
+        expected = {
+            "binance": {
+                "BTC/USDT": {"baseVolume": None, "quoteVolume": None},
+            }
+        }
+        with mock.patch.object(
+            node_exchanges_core,
+            "get_traded_pairs_by_exchange",
+            mock.AsyncMock(return_value=expected),
+        ) as get_traded_pairs_mock:
+            response = client.get(
+                _TRADED_PAIRS,
+                params={
+                    "id": "test-exchange-config",
+                    "name": "binance-test",
+                    "exchange": "binance",
+                    "sandboxed": False,
+                    "trading_type": "spot",
+                    "with_volume": True,
+                },
+            )
+            get_traded_pairs_mock.assert_awaited_once_with(
+                mock.ANY,
+                trading_type=protocol_models.TradingType.SPOT,
+                with_volume=True,
+            )
+            assert response.status_code == 200
+            assert response.json() == expected
+            assert_response_headers(response)
+
+    def test_raises_when_protocol_from_dict_returns_none(
+        self,
+        client: typing.Any,
+    ) -> None:
+        core_payload = {
+            "binance": {
+                "BTC/USDT": {},
+            }
+        }
+        with mock.patch.object(
+            node_exchanges_core,
+            "get_traded_pairs_by_exchange",
+            mock.AsyncMock(return_value=core_payload),
+        ), mock.patch.object(
+            protocol_models.TradedPairsByExchange,
+            "from_dict",
+            return_value=None,
+        ):
+            with pytest.raises(
+                RuntimeError,
+                match="TradedPairsByExchange.from_dict returned None for non-null content",
+            ):
+                client.get(
+                    _TRADED_PAIRS,
+                    params={
+                        "id": "test-exchange-config",
+                        "name": "binance-test",
+                        "exchange": "binance",
+                        "sandboxed": False,
+                        "trading_type": "spot",
+                    },
+                )
 
 
 class TestExchangesGetTradedPairsAndTimeframes:

@@ -17,7 +17,8 @@ import typing
 import asyncio
 import json
 
-import octobot_commons.constants
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.signals as commons_signals
 import octobot_commons.dsl_interpreter as dsl_interpreter
@@ -34,7 +35,6 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_operator as exch
 
 
 CREATED_ORDERS_KEY = "created_orders"
-
 
 _CANCEL_POLICIES_CACHE = {}
 def _parse_cancel_policy(kwargs: dict) -> typing.Optional[octobot_trading.personal_data.OrderCancelPolicy]:
@@ -58,6 +58,8 @@ def _parse_cancel_policy(kwargs: dict) -> typing.Optional[octobot_trading.person
 
 
 class CreateOrderOperator(exchange_operator.ExchangeOperator):
+    CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
+
     def __init__(self, *parameters: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(*parameters, **kwargs)
         self.param_by_name: dict[str, dsl_interpreter.ComputedOperatorParameterType] = dsl_interpreter.UNINITIALIZED_VALUE # type: ignore
@@ -65,7 +67,7 @@ class CreateOrderOperator(exchange_operator.ExchangeOperator):
     @staticmethod
     def get_library() -> str:
         # this is a contextual operator, so it should not be included by default in the get_all_operators function return values
-        return octobot_commons.constants.CONTEXTUAL_OPERATORS_LIBRARY
+        return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
 
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
@@ -78,9 +80,22 @@ class CreateOrderOperator(exchange_operator.ExchangeOperator):
     @classmethod
     def get_first_required_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="side", description="the side of the order", required=True, type=str),
-            dsl_interpreter.OperatorParameter(name="symbol", description="the symbol of the order", required=True, type=str),
-            dsl_interpreter.OperatorParameter(name="amount", description="the amount of the order", required=True, type=float),
+            dsl_interpreter.OperatorParameter(
+                name="side",
+                description="the side of the order",
+                required=True,
+                type=commons_enums.DslValueType.TEXT.value,
+                options=octobot_trading.enums.TRADE_ORDER_SIDE_OPERATOR_PARAMETER_OPTIONS),
+            dsl_interpreter.OperatorParameter(
+                name="symbol",
+                description="the symbol of the order",
+                required=True,
+                type=commons_enums.DslValueType.TEXT.value),
+            dsl_interpreter.OperatorParameter(
+                name="amount",
+                description="the amount of the order",
+                required=True,
+                type=commons_enums.DslValueType.TEXT.value),
         ]
 
     @classmethod
@@ -90,19 +105,74 @@ class CreateOrderOperator(exchange_operator.ExchangeOperator):
     @classmethod
     def get_last_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="reduce_only", description="whether the order is reduce only", required=False, type=bool),
-            dsl_interpreter.OperatorParameter(name="tag", description="the tag of the order", required=False, type=str),
-            dsl_interpreter.OperatorParameter(name="take_profit_prices", description="the price or price offset of the take profit order(s)", required=False, type=list[str]),
-            dsl_interpreter.OperatorParameter(name="take_profit_volume_percents", description="% volume of the entry for each take profit", required=False, type=list[float]),
-            dsl_interpreter.OperatorParameter(name="stop_loss_price", description="the stop loss price or price offset of the order", required=False, type=str),
-            dsl_interpreter.OperatorParameter(name="trailing_profile", description="the trailing profile of the order", required=False, type=dict),
-            dsl_interpreter.OperatorParameter(name="cancel_policy", description="the cancel policy of the order", required=False, type=str),
-            dsl_interpreter.OperatorParameter(name="cancel_policy_params", description="the cancel policy params of the order", required=False, type=dict),
-            dsl_interpreter.OperatorParameter(name="active_order_swap_strategy", description="the type of the active order swap strategy", required=False, type=str),
-            dsl_interpreter.OperatorParameter(name="active_order_swap_strategy_params", description="the params of the active order swap strategy", required=False, type=dict),
-            dsl_interpreter.OperatorParameter(name="params", description="additional  params for the order", required=False, type=dict),
-            dsl_interpreter.OperatorParameter(name="allow_holdings_adaptation", description="allow reducing the order amount to account for available holdings", required=False, type=bool),
+            dsl_interpreter.OperatorParameter(
+                name="reduce_only",
+                description="whether the order is reduce only",
+                required=False,
+                type=commons_enums.DslValueType.BOOLEAN.value),
+            dsl_interpreter.OperatorParameter(
+                name="tag",
+                description="the tag of the order",
+                required=False,
+                type=commons_enums.DslValueType.TEXT.value),
+            dsl_interpreter.OperatorParameter(
+                name="take_profit_prices",
+                description="the price or price offset of the take profit order(s)",
+                required=False,
+                type=commons_enums.DslValueType.ANY.value),
+            dsl_interpreter.OperatorParameter(
+                name="take_profit_volume_percents",
+                description="% volume of the entry for each take profit",
+                required=False,
+                type=commons_enums.DslValueType.ANY.value),
+            dsl_interpreter.OperatorParameter(
+                name="stop_loss_price",
+                description="the stop loss price or price offset of the order",
+                required=False,
+                type=commons_enums.DslValueType.TEXT.value),
+            dsl_interpreter.OperatorParameter(
+                name="trailing_profile",
+                description="the trailing profile of the order",
+                required=False,
+                type=commons_enums.DslValueType.ANY.value),
+            dsl_interpreter.OperatorParameter(
+                name="cancel_policy",
+                description="the cancel policy of the order",
+                required=False,
+                type=commons_enums.DslValueType.TEXT.value),
+            dsl_interpreter.OperatorParameter(
+                name="cancel_policy_params",
+                description="the cancel policy params of the order",
+                required=False,
+                type=commons_enums.DslValueType.DICT.value),
+            dsl_interpreter.OperatorParameter(
+                name="active_order_swap_strategy",
+                description="the type of the active order swap strategy",
+                required=False,
+                type=commons_enums.DslValueType.TEXT.value),
+            dsl_interpreter.OperatorParameter(
+                name="active_order_swap_strategy_params",
+                description="the params of the active order swap strategy",
+                required=False,
+                type=commons_enums.DslValueType.DICT.value),
+            dsl_interpreter.OperatorParameter(
+                name="params",
+                description="additional  params for the order",
+                required=False,
+                type=commons_enums.DslValueType.DICT.value),
+            dsl_interpreter.OperatorParameter(
+                name="allow_holdings_adaptation",
+                description="allow reducing the order amount to account for available holdings",
+                required=False,
+                type=commons_enums.DslValueType.BOOLEAN.value),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ORDER.value,
+            description="Created order result",
+        )
 
     def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
         local_dependencies = []
@@ -216,7 +286,11 @@ def create_create_order_operators(
         @classmethod
         def get_second_required_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
-                dsl_interpreter.OperatorParameter(name="price", description="the limit price of the order: a flat or offset price", required=True, type=str),
+                dsl_interpreter.OperatorParameter(
+                    name="price",
+                    description="the limit price of the order: a flat or offset price",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
             ]
 
         def get_order_type(self) -> octobot_trading.enums.TraderOrderType:
@@ -243,7 +317,11 @@ def create_create_order_operators(
         @classmethod
         def get_second_required_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
-                dsl_interpreter.OperatorParameter(name="price", description="the trigger price of the order: a flat or offset price", required=True, type=str),
+                dsl_interpreter.OperatorParameter(
+                    name="price",
+                    description="the trigger price of the order: a flat or offset price",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
             ]
 
         def get_order_type(self) -> octobot_trading.enums.TraderOrderType:

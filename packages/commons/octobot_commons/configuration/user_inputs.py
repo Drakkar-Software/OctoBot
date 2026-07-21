@@ -333,6 +333,10 @@ def _find_parent_config_node(tentacle_config, parent_input_name, array_indexes):
         if found and isinstance(nested_parent, dict):
             return nested_parent
         if found and isinstance(nested_parent, list) and array_indexes:
+            # Nested OBJECT_ARRAY item inputs may create placeholder objects for
+            # schema/default seeding on empty config.
+            while len(nested_parent) <= array_indexes[-1]:
+                nested_parent.append({})
             return nested_parent[array_indexes[-1]]
         # non dict or list with array_indexes nested parents are not supported
         return None

@@ -2519,6 +2519,210 @@
             "$ref": "#/components/schemas/Debug"
           }
         }
+      },
+      "DslKeywordCategory": {
+        "description": "Composition role of a DSL keyword.",
+        "type": "string",
+        "enum": [
+          "trigger",
+          "source",
+          "condition",
+          "logic",
+          "action"
+        ]
+      },
+      "DslValueType": {
+        "description": "Typed value carried by a DSL keyword parameter.",
+        "type": "string",
+        "enum": [
+          "number",
+          "text",
+          "series",
+          "signal",
+          "dict",
+          "boolean",
+          "order",
+          "time_frame",
+          "any"
+        ]
+      },
+      "DslParameterOption": {
+        "description": "Selectable value for a DSL parameter.",
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "DslParameter": {
+        "description": "Configurable parameter on a DSL keyword.",
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "value_type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique within this keyword."
+          },
+          "label": {
+            "type": "string"
+          },
+          "value_type": {
+            "$ref": "#/components/schemas/DslValueType"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "description": "Must match parameter_type; for select/time_frame must be one of options[].value."
+          },
+          "minimum": {
+            "type": "number",
+            "description": "Only for parameter_type=number."
+          },
+          "maximum": {
+            "type": "number",
+            "description": "Only for parameter_type=number."
+          },
+          "step": {
+            "type": "number",
+            "description": "Only for parameter_type=number."
+          },
+          "options": {
+            "type": "array",
+            "description": "Allowed choices for value_type=text or value_type=time_frame.",
+            "items": {
+              "$ref": "#/components/schemas/DslParameterOption"
+            }
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "multiple": {
+            "type": "boolean",
+            "description": "Accepts more than one value of this parameter."
+          },
+          "primary": {
+            "type": "boolean",
+            "description": "Prefer in compact editors."
+          }
+        }
+      },
+      "DslKeyword": {
+        "description": "Definition of one DSL keyword (signature and configuration).",
+        "type": "object",
+        "required": [
+          "name",
+          "category",
+          "label",
+          "description",
+          "inputs",
+          "outputs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable DSL keyword id."
+          },
+          "category": {
+            "$ref": "#/components/schemas/DslKeywordCategory"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DslParameter"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DslParameter"
+            }
+          }
+        }
+      },
+      "DslKeywordsState": {
+        "description": "Versioned list of DSL keywords available on a node.",
+        "type": "object",
+        "required": [
+          "version",
+          "keywords"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "array",
+            "description": "Available keywords in intended display order.",
+            "items": {
+              "$ref": "#/components/schemas/DslKeyword"
+            }
+          }
+        }
+      },
+      "TradedPairVolume": {
+        "description": "Optional 24h volume for a traded pair. Empty object when volume was not requested.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseVolume": {
+            "description": "24h base-currency volume.",
+            "type": ["number", "null"]
+          },
+          "quoteVolume": {
+            "description": "24h quote-currency volume.",
+            "type": ["number", "null"]
+          }
+        }
+      },
+      "TradedPairsForExchange": {
+        "description": "Map of trading pair symbol to optional volume fields.",
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/TradedPairVolume"
+        }
+      },
+      "TradedPairsByExchange": {
+        "description": "Map of exchange internal name to traded pairs (and optional volumes).",
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/TradedPairsForExchange"
+        }
       }
     }
   }

@@ -206,7 +206,8 @@ async def _mocked_create_evaluator(evaluator_class,
                                    all_symbols_by_crypto_currencies=None,
                                    time_frames=None,
                                    real_time_time_frames=None,
-                                   evaluator_configuration=None):
+                                   evaluator_configuration=None,
+                                   force_enabled: bool = False):
     return evaluator_class(cryptocurrency, cryptocurrency_name, symbol, time_frame, all_symbols_by_crypto_currencies)
 
 

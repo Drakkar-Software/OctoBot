@@ -44,16 +44,16 @@ def find_nested_value(dict_, field, list_indexes=None):
 def _find_nested_value_in_list(list_value, field, list_indexes):
     if list_indexes:
         # list_indexes is provided: only look at the given index
-        try:
-            item = list_value[list_indexes[0]]
-            if isinstance(item, dict):
-                found_value, possible_value = find_nested_value(
-                    item, field, list_indexes=list_indexes[1:]
-                )
-                if found_value:
-                    return found_value, possible_value
-        except IndexError:
-            pass
+        target_index = list_indexes[0]
+        while len(list_value) <= target_index:
+            list_value.append({})
+        item = list_value[target_index]
+        if isinstance(item, dict):
+            found_value, possible_value = find_nested_value(
+                item, field, list_indexes=list_indexes[1:]
+            )
+            if found_value:
+                return found_value, possible_value
     else:
         for item in list_value:
             if isinstance(item, dict):

@@ -15,7 +15,8 @@
 #  License along with this library.
 import typing
 
-import octobot_commons.constants
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.signals
@@ -41,6 +42,7 @@ def create_cancel_order_operators(
     class _CancelOrderOperator(exchange_operator.ExchangeOperator):
         DESCRIPTION = "Cancels one or many orders"
         EXAMPLE = "cancel_order('BTC/USDT', side='buy')"
+        CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
         @staticmethod
         def get_name() -> str:
@@ -49,16 +51,43 @@ def create_cancel_order_operators(
         @staticmethod
         def get_library() -> str:
             # this is a contextual operator, so it should not be included by default in the get_all_operators function return values
-            return octobot_commons.constants.CONTEXTUAL_OPERATORS_LIBRARY
+            return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
 
         @classmethod
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
-                dsl_interpreter.OperatorParameter(name="symbol", description="the symbol of the orders to cancel", required=True, type=str, default=None),
-                dsl_interpreter.OperatorParameter(name="side", description="the side of the orders to cancel", required=False, type=str, default=None),
-                dsl_interpreter.OperatorParameter(name="tag", description="the tag of the orders to cancel", required=False, type=str, default=None),
-                dsl_interpreter.OperatorParameter(name="exchange_order_ids", description="the exchange id of the orders to cancel", required=False, type=list[str], default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="symbol",
+                    description="the symbol of the orders to cancel",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="side",
+                    description="the side of the orders to cancel",
+                    required=False,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="tag",
+                    description="the tag of the orders to cancel",
+                    required=False,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="exchange_order_ids",
+                    description="the exchange id of the orders to cancel",
+                    required=False,
+                    type=commons_enums.DslValueType.ANY.value,
+                    default=None),
             ]
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Cancelled orders result",
+            )
 
         def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
             local_dependencies = []

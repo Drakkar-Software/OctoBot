@@ -13,9 +13,9 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import json
 import time
 import typing
-import json
 
 import octobot_commons.constants as common_constants
 import octobot_commons.enums as common_enums
@@ -61,7 +61,6 @@ def _create_operator_parameters_from_user_inputs(
             if isinstance(u_input.input_type, str)
             else u_input.input_type.value
         )
-        param_type = user_inputs.USER_INPUT_TYPE_TO_PYTHON_TYPE[input_type]
         param_name = user_inputs.sanitize_user_input_name(u_input.name)
         description = u_input.title or u_input.name
         params.append(
@@ -69,9 +68,8 @@ def _create_operator_parameters_from_user_inputs(
                 name=param_name,
                 description=str(description),
                 required=False,
-                type=param_type,
-                default=u_input.def_val,
-            )
+                type=dsl_interpreter.dsl_value_type_for_user_input(input_type),
+                default=u_input.def_val)
         )
     return params
 
@@ -84,10 +82,8 @@ def _create_trading_mode_operator_parameters(
     Derive operator parameters from the trading mode's init_user_inputs.
     Leverages inheritance: subclasses call super().init_user_inputs(inputs).
     """
-    tentacles_setup_config = None
-    loaded_config = {}
     tentacle_instance = trading_mode_class.create_local_instance(
-        config, tentacles_setup_config, loaded_config
+        config, None, {}
     )
     tentacle_instance.synchronous_execution = True
     created_user_inputs = {}
@@ -104,6 +100,7 @@ class TradingModeOperator(
     Base DSL operator that instantiates and executes a trading mode when called.
     Subclasses are created dynamically by create_trading_mode_operator.
     """
+    CATEGORY = common_enums.DslKeywordCategory.ACTION.value
 
     def __init__(
         self,
@@ -115,6 +112,13 @@ class TradingModeOperator(
     @staticmethod
     def get_library() -> str:
         return common_constants.CONTEXTUAL_OPERATORS_LIBRARY
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            common_enums.DslValueType.DICT.value,
+            description="Trading mode execution result",
+        )
 
     def get_exchange_manager(
         self,
@@ -423,16 +427,14 @@ def create_trading_mode_operator(
                     name=ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION,
                     description="Enable initial portfolio optimization",
                     required=False,
-                    type=bool,
-                    default=True,
-                ),
+                    type=common_enums.DslValueType.BOOLEAN.value,
+                    default=True),
                 dsl_interpreter.OperatorParameter(
                     name=DAG_RESET_TO_ACTION_ID,
                     description="DAG action id to reset to after execution",
                     required=False,
-                    type=str,
-                    default=None,
-                ),
+                    type=common_enums.DslValueType.TEXT.value,
+                    default=None),
             ]
 
         @classmethod

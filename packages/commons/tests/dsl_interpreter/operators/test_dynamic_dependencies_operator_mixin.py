@@ -11,6 +11,7 @@
 import pytest
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operators.dynamic_dependencies_operator_mixin as dynamic_dependencies_operator_mixin
 
 
@@ -50,7 +51,7 @@ class TestDynamicDependenciesOperatorMixin:
         parameters = _DynamicDependenciesOperator.get_dynamic_dependencies_parameters()
         assert len(parameters) == 1
         assert parameters[0].name == "_dynamic_dependencies"
-        assert parameters[0].type is list
+        assert parameters[0].type == commons_enums.DslValueType.ANY.value
 
     def test_dsl_statement_uses_dynamic_dependencies_true(self):
         unresolved_placeholder = commons_constants.UNRESOLVED_PARAMETER_PLACEHOLDER

@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
-import { Check, Network, Power, Server, Sliders } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { Bug, Check, Code, Network, Power, Server, Sliders } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NodesService } from "@/client"
 import { CardCornerButton } from "@/components/Settings/CardCornerButton"
@@ -196,6 +197,27 @@ export function NodeConfigurationCard() {
               (e.g. <code>tailscale serve</code>).
             </span>
           </div>
+          <div className="border-t" />
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Expert
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/debug">
+                  <Bug className="size-4" />
+                  Debug view
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/dsl-keywords">
+                  <Code className="size-4" />
+                  DSL keywords
+                </Link>
+              </Button>
+            </div>
+          </div>
+
         </CardContent>
       </Card>
 

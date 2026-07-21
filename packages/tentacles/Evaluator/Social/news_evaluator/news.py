@@ -53,8 +53,14 @@ class TwitterNewsEvaluator:
             item_title="Crypto currency",
             title="Crypto currencies to watch."
         )
-        # init one user input to generate user input schema and default values
-        cryptocurrencies.append(self._init_cryptocurrencies(inputs, "Bitcoin", ["BTCFoundation"], []))
+        # Register nested OBJECT_ARRAY item schema/defaults.
+        # Commons ensures a placeholder at [0] when the array is empty (no pre-append).
+        # Nested user_input prefers saved values over these def_vals, so existing
+        # user config is not replaced. Do not assign to [0] / append the init result
+        # (append after ensure would duplicate the row).
+        self._init_cryptocurrencies(
+            inputs, "Bitcoin", ["BTCFoundation"], []
+        )
         # remove other symbols data to avoid unnecessary entries
         self.accounts_by_cryptocurrency = self._get_config_elements(config_cryptocurrencies,
                                                                     services_constants.CONFIG_TWITTERS_ACCOUNTS)

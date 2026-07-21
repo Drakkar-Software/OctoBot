@@ -20,10 +20,10 @@ import octobot_commons.dsl_interpreter.operator_parameter as dsl_interpreter_ope
 
 
 @dataclasses.dataclass
-class OperatorDocs:
+class OperatorDocs:  # pylint: disable=too-many-instance-attributes
     """
     Operator documentation class, used to store operators metadata to
-    generate an operator documentation.
+    generate an operator documentation and protocol keyword conversion.
     """
 
     name: str
@@ -31,6 +31,11 @@ class OperatorDocs:
     type: str
     example: str
     parameters: list[dsl_interpreter_operator_parameter.OperatorParameter]
+    label: str = ""
+    category: str = ""
+    return_values: list[dsl_interpreter_operator_parameter.OperatorParameter] = (
+        dataclasses.field(default_factory=list)
+    )
 
     def to_json(self) -> dict:
         """
@@ -42,4 +47,9 @@ class OperatorDocs:
             "type": self.type,
             "example": self.example,
             "parameters": [parameter.to_json() for parameter in self.parameters],
+            "label": self.label or self.name,
+            "category": self.category,
+            "return_values": [
+                return_value.to_json() for return_value in self.return_values
+            ],
         }

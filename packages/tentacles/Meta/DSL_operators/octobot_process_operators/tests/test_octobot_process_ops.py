@@ -29,6 +29,7 @@ import pytest
 import octobot.constants as octobot_constants
 import octobot_commons.constants as commons_constants
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors as commons_errors
 import octobot_commons.os_util as os_util
 import octobot_commons.process_util as process_util
@@ -1608,7 +1609,7 @@ class TestEnsureOctobotProcessOperatorExchangeAuthData:
         assert auth_parameter is not None
         assert auth_parameter.required is False
         assert auth_parameter.default is None
-        assert auth_parameter.type == list[dict]
+        assert auth_parameter.type == commons_enums.DslValueType.ANY.value
 
     async def test_pre_compute_passes_dict_exchange_auth_into_ensure_layout(self, tmp_path):
         exchange_auth_dicts = [

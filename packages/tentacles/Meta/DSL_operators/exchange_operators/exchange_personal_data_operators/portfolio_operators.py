@@ -18,7 +18,8 @@ import dataclasses
 import decimal
 
 import octobot_commons.dataclasses
-import octobot_commons.constants
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.personal_data
@@ -42,17 +43,30 @@ class WithdrawFundsParams(octobot_commons.dataclasses.FlexibleDataclass):
 
 
 class PortfolioOperator(exchange_operator.ExchangeOperator):
+    CATEGORY = commons_enums.DslKeywordCategory.SOURCE.value
+
     @staticmethod
     def get_library() -> str:
         # this is a contextual operator, so it should not be included by default in the get_all_operators function return values
-        return octobot_commons.constants.CONTEXTUAL_OPERATORS_LIBRARY
+        return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
 
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="asset", description="the asset to get the value for", required=False, type=str),
+            dsl_interpreter.OperatorParameter(
+                name="asset",
+                description="the asset to get the value for",
+                required=False,
+                type=commons_enums.DslValueType.TEXT.value),
         ]
-    
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.NUMBER.value,
+            description="Portfolio asset amount",
+        )
+
 
 def create_portfolio_operators(
     exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
@@ -94,6 +108,7 @@ def create_portfolio_operators(
     class _WithdrawOperator(PortfolioOperator):
         DESCRIPTION = "Withdraws an asset from the exchange's portfolio. requires ALLOW_FUNDS_TRANSFER env to be True (disabled by default to protect funds)"
         EXAMPLE = "withdraw('BTC', 'ethereum', '0x1234567890abcdef1234567890abcdef12345678', 0.1)"
+        CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
         @staticmethod
         def get_name() -> str:
@@ -102,14 +117,46 @@ def create_portfolio_operators(
         @classmethod
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
-                dsl_interpreter.OperatorParameter(name="asset", description="the asset to withdraw", required=True, type=str),
-                dsl_interpreter.OperatorParameter(name="network", description="the network to withdraw to", required=True, type=str),
-                dsl_interpreter.OperatorParameter(name="address", description="the address to withdraw to", required=True, type=str),
-                dsl_interpreter.OperatorParameter(name="amount", description="the amount to withdraw", required=False, type=float, default=None),
-                dsl_interpreter.OperatorParameter(name="tag", description="a tag to associate with the withdrawal", required=False, type=str, default=None),
-                dsl_interpreter.OperatorParameter(name="params", description="extra parameters specific to the exchange API endpoint", required=False, type=dict),
+                dsl_interpreter.OperatorParameter(
+                    name="asset",
+                    description="the asset to withdraw",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
+                dsl_interpreter.OperatorParameter(
+                    name="network",
+                    description="the network to withdraw to",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
+                dsl_interpreter.OperatorParameter(
+                    name="address",
+                    description="the address to withdraw to",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
+                dsl_interpreter.OperatorParameter(
+                    name="amount",
+                    description="the amount to withdraw",
+                    required=False,
+                    type=commons_enums.DslValueType.NUMBER.value,
+                    default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="tag",
+                    description="a tag to associate with the withdrawal",
+                    required=False,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="params",
+                    description="extra parameters specific to the exchange API endpoint",
+                    required=False,
+                    type=commons_enums.DslValueType.DICT.value),
             ]
-            
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Created withdrawal result",
+            )
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
