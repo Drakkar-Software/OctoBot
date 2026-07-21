@@ -232,15 +232,22 @@ class RSIWeightMomentumEvaluator(evaluators.TAEvaluator):
                                                   title="Number of recent RSI values to consider to get the current fast "
                                                         "moving market sentiment.")
         weights = []
-        self.weights = sorted(
-            self.UI.user_input(self.RSI_TO_WEIGHTS, enums.UserInputTypes.OBJECT_ARRAY, weights, inputs,
-                               item_title="Slow RSI interpretation",
-                               other_schema_values={"minItems": 1, "uniqueItems": True},
-                               title="RSI values and interpretations."),
-            key=lambda a: a[self.SLOW_THRESHOLD]
+        config_weights = self.UI.user_input(
+            self.RSI_TO_WEIGHTS, enums.UserInputTypes.OBJECT_ARRAY, weights, inputs,
+            item_title="Slow RSI interpretation",
+            other_schema_values={"minItems": 1, "uniqueItems": True},
+            title="RSI values and interpretations.",
         )
-        # init one user input to generate user input schema and default values
-        weights.append(self._init_RSI_to_weight(inputs, 30, [[20, 2, 2]]))
+        # Register nested OBJECT_ARRAY item schema/defaults.
+        # Commons ensures a placeholder at [0] when the array is empty (no pre-append).
+        # Nested user_input prefers saved values over these def_vals, so existing
+        # user config is not replaced. For this multi-level nested array, assign the
+        # full init tree only when config was empty (do not append after ensure).
+        config_was_empty = not config_weights
+        seeded_weight = self._init_RSI_to_weight(inputs, 30, [[20, 2, 2]])
+        if config_was_empty:
+            config_weights[0] = seeded_weight
+        self.weights = sorted(config_weights, key=lambda a: a[self.SLOW_THRESHOLD])
 
         for i, fast_threshold in enumerate(self.weights):
             fast_threshold[self.FAST_THRESHOLDS] = sorted(fast_threshold[self.FAST_THRESHOLDS],

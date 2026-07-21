@@ -19,6 +19,7 @@ import numpy
 import pytest
 
 import octobot_commons.constants as constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.parameters_util as parameters_util
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 import octobot_commons.errors as commons_errors
@@ -93,10 +94,10 @@ class TestResoveOperatorParams:
 
     def test_required_params_only(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=str
+            name="b", description="second", required=True, type=commons_enums.DslValueType.TEXT.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b]
@@ -106,7 +107,7 @@ class TestResoveOperatorParams:
 
     def test_optional_params_only(self):
         param_x = operator_parameter.OperatorParameter(
-            name="x", description="optional", required=False, type=int
+            name="x", description="optional", required=False, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_x]
@@ -116,10 +117,10 @@ class TestResoveOperatorParams:
 
     def test_mixed_required_and_optional(self):
         param_req = operator_parameter.OperatorParameter(
-            name="req", description="required", required=True, type=int
+            name="req", description="required", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_opt = operator_parameter.OperatorParameter(
-            name="opt", description="optional", required=False, type=str
+            name="opt", description="optional", required=False, type=commons_enums.DslValueType.TEXT.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_req, param_opt]
@@ -129,10 +130,10 @@ class TestResoveOperatorParams:
 
     def test_skips_missing_params(self):
         param_req = operator_parameter.OperatorParameter(
-            name="req", description="required", required=True, type=int
+            name="req", description="required", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_opt = operator_parameter.OperatorParameter(
-            name="opt", description="optional", required=False, type=str
+            name="opt", description="optional", required=False, type=commons_enums.DslValueType.TEXT.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_req, param_opt]
@@ -142,7 +143,7 @@ class TestResoveOperatorParams:
 
     def test_extra_values_ignored(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a]
@@ -163,10 +164,10 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_positional_args_only(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=int
+            name="b", description="second", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b]
@@ -178,10 +179,10 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_positional_arg_as_keyword_arg(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=int
+            name="b", description="second", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b]
@@ -193,13 +194,13 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_positional_arg_as_keyword_arg_in_a_wrong_order(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=int
+            name="b", description="second", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_c = operator_parameter.OperatorParameter(
-            name="c", description="third", required=True, type=int
+            name="c", description="third", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b, param_c]
@@ -211,13 +212,13 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_positional_all_args_as_keywords_in_a_wrong_order(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=int
+            name="b", description="second", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_c = operator_parameter.OperatorParameter(
-            name="c", description="third", required=True, type=int
+            name="c", description="third", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b, param_c]
@@ -229,10 +230,10 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_kwargs_only(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=int
+            name="b", description="second", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b]
@@ -244,13 +245,13 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_mixed_args_and_kwargs(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=True, type=int
+            name="b", description="second", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_c = operator_parameter.OperatorParameter(
-            name="c", description="optional", required=False, type=int
+            name="c", description="optional", required=False, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b, param_c]
@@ -262,7 +263,7 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_extra_kwargs_preserved(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a]
@@ -274,7 +275,7 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_raises_when_too_many_positional_args(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a]
@@ -287,10 +288,10 @@ class TestResolveOperatorArgsAndKwargs:
 
     def test_partial_params_allowed(self):
         param_a = operator_parameter.OperatorParameter(
-            name="a", description="first", required=True, type=int
+            name="a", description="first", required=True, type=commons_enums.DslValueType.NUMBER.value
         )
         param_b = operator_parameter.OperatorParameter(
-            name="b", description="second", required=False, type=int
+            name="b", description="second", required=False, type=commons_enums.DslValueType.NUMBER.value
         )
         operator_class = mock.Mock()
         operator_class.get_parameters.return_value = [param_a, param_b]

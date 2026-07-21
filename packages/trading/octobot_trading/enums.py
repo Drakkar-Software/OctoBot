@@ -15,10 +15,18 @@
 #  License along with this library
 import enum
 
+import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
+
 
 class TradeOrderSide(enum.Enum):
     BUY = "buy"
     SELL = "sell"
+
+
+TRADE_ORDER_SIDE_OPERATOR_PARAMETER_OPTIONS = [
+    operator_parameter.OperatorParameterOption(value=side.value, label=side.value)
+    for side in TradeOrderSide
+]
 
 
 class HistoricalPortfolioValue(enum.Enum):

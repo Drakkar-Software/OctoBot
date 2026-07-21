@@ -18,7 +18,10 @@ import ast
 import numpy as np
 import typing
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.dsl_interpreter.operators.subscripting_operator as dsl_interpreter_subscripting_operator
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 
@@ -31,6 +34,7 @@ class SubscriptOperator(dsl_interpreter_subscripting_operator.SubscriptingOperat
     NAME = "[...]"
     DESCRIPTION = "Subscripting operator. Accesses an element from a list or array using an index."
     EXAMPLE = "my_list[0]"
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     def __init__(
         self,
@@ -65,6 +69,13 @@ class SubscriptOperator(dsl_interpreter_subscripting_operator.SubscriptingOperat
     def get_name() -> str:
         return ast.Subscript.__name__
 
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="Element at the given index",
+        )
+
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         # Compute the test condition
         array_or_list, index, context = self.get_computed_array_or_list_and_index_or_slice_and_context_parameters()
@@ -81,10 +92,18 @@ class SliceOperator(dsl_interpreter_subscripting_operator.SubscriptingOperator):
     NAME = "[start:stop:step]"
     DESCRIPTION = "Slice operator. Creates a slice object for array/list slicing with optional start, stop, and step parameters."
     EXAMPLE = "my_list[1:5:2]"
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     @staticmethod
     def get_name() -> str:
         return ast.Slice.__name__
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="Python slice object",
+        )
 
     def get_computed_lower_and_upper_and_step_parameters(
         self,

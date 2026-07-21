@@ -16,6 +16,9 @@
 #  License along with this library.
 import ast
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.dsl_interpreter.operators.expression_operator as dsl_interpreter_expression_operator
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
 
@@ -28,6 +31,7 @@ class IfExpOperator(dsl_interpreter_expression_operator.ExpressionOperator):
     NAME = "if ... else"
     DESCRIPTION = "Conditional expression operator. Returns the body expression if the test condition is True, otherwise returns the orelse expression."
     EXAMPLE = "5 if True else 3"
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     def __init__(
         self,
@@ -43,6 +47,13 @@ class IfExpOperator(dsl_interpreter_expression_operator.ExpressionOperator):
     @staticmethod
     def get_name() -> str:
         return ast.IfExp.__name__
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="Body or orelse expression result",
+        )
 
     def compute(self) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         # Compute the test condition

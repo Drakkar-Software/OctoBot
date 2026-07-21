@@ -129,7 +129,6 @@ def _parse_time_frame(time_frame):
 
 async def create_dsl_evaluator(
     evaluator_class,
-    tentacles_setup_config: object,
     matrix_id: str,
     exchange_name: str,
     evaluator_configuration: dict,
@@ -138,11 +137,12 @@ async def create_dsl_evaluator(
     time_frame: typing.Optional[str] = None,
     cryptocurrency: typing.Optional[str] = None,
 ):
+    # DSL-referenced evaluators are always enabled; tentacles_setup_config activation does not apply.
     parsed_time_frame = _parse_time_frame(time_frame)
     time_frames = [parsed_time_frame] if parsed_time_frame is not None else None
     return await create_evaluator(
         evaluator_class,
-        tentacles_setup_config,
+        None,
         bot_id=bot_id,
         matrix_id=matrix_id,
         exchange_name=exchange_name,
@@ -155,6 +155,7 @@ async def create_dsl_evaluator(
         ),
         time_frames=time_frames,
         evaluator_configuration=evaluator_configuration,
+        force_enabled=True,
     )
 
 
@@ -172,10 +173,13 @@ async def create_evaluator(
     all_symbols_by_crypto_currencies=None,
     time_frames=None,
     real_time_time_frames=None,
-    evaluator_configuration=None
+    evaluator_configuration=None,
+    force_enabled: bool = False,
 ):
     try:
         eval_class_instance = _instantiate_evaluator(evaluator_class, tentacles_setup_config, True)
+        if force_enabled:
+            eval_class_instance.enabled = True
         if api.is_relevant_evaluator(eval_class_instance, relevant_evaluators):
             eval_class_instance.matrix_id = matrix_id
             eval_class_instance.exchange_name = exchange_name if exchange_name else None

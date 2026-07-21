@@ -17,7 +17,8 @@
 import typing
 import decimal
 
-import octobot_commons.constants
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.exchanges
@@ -29,10 +30,12 @@ import tentacles.Meta.DSL_operators.exchange_operators.exchange_public_data_oper
 
 
 class PriceOperator(exchange_operator.ExchangeOperator):
+    CATEGORY = commons_enums.DslKeywordCategory.SOURCE.value
+
     @staticmethod
     def get_library() -> str:
         # this is a contextual operator, so it should not be included by default in the get_all_operators function return values
-        return octobot_commons.constants.CONTEXTUAL_OPERATORS_LIBRARY
+        return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
 
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
@@ -41,9 +44,15 @@ class PriceOperator(exchange_operator.ExchangeOperator):
                 name="symbol",
                 description="the symbol to get the latest mark price for",
                 required=False,
-                type=str,
-            ),
+                type=commons_enums.DslValueType.TEXT.value),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.NUMBER.value,
+            description="Latest mark price",
+        )
 
     def get_symbol(self) -> typing.Optional[str]:
         if parameters := self.get_computed_parameters():

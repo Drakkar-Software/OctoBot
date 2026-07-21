@@ -18,7 +18,10 @@ import typing
 import time
 import asyncio
 import random
+import dataclasses
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 
@@ -33,6 +36,7 @@ class WaitOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReC
     NAME = "wait"
     DESCRIPTION = "Pauses execution for the specified number of seconds. If return_remaining_time is True, instantly returns the remaining time to wait."
     EXAMPLE = "wait(5)"
+    CATEGORY = commons_enums.DslKeywordCategory.TRIGGER.value
 
     @staticmethod
     def get_name() -> str:
@@ -41,10 +45,36 @@ class WaitOperator(dsl_interpreter.PreComputingCallOperator, dsl_interpreter.ReC
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="min_seconds", description="minimum number of seconds to wait", required=True, type=float),
-            dsl_interpreter.OperatorParameter(name="max_seconds", description="maximum number of seconds to wait", required=False, type=float, default=None),
-            dsl_interpreter.OperatorParameter(name="return_remaining_time", description="if True, instantly returns the remaining time to wait", required=False, type=bool, default=False),
-        ] + cls.get_re_callable_parameters()
+            dsl_interpreter.OperatorParameter(
+                name="min_seconds",
+                description="minimum number of seconds to wait",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(
+                name="max_seconds",
+                description="maximum number of seconds to wait",
+                required=False,
+                type=commons_enums.DslValueType.NUMBER.value,
+                default=None),
+            dsl_interpreter.OperatorParameter(
+                name="return_remaining_time",
+                description="if True, instantly returns the remaining time to wait",
+                required=False,
+                type=commons_enums.DslValueType.BOOLEAN.value,
+                default=False),
+        ] + [
+            dataclasses.replace(
+                parameter,
+            )
+            for parameter in cls.get_re_callable_parameters()
+        ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="None after waiting, or remaining-time re-callable result",
+        )
 
     async def pre_compute(self) -> None:
         await super().pre_compute()
@@ -101,6 +131,7 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
         "Returns the condition value when it becomes true."
     )
     EXAMPLE = "loop_until(x > 0, 1, timeout=30, max_attempts=10)"
+    CATEGORY = commons_enums.DslKeywordCategory.TRIGGER.value
 
     LOOP_START_TIME_KEY = "loop_until_start_time"
     ATTEMPT_COUNT_KEY = "loop_until_attempt_count"
@@ -116,36 +147,43 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
                 name="condition",
                 description="expression that must become true",
                 required=True,
-                type=bool,
-            ),
+                type=commons_enums.DslValueType.BOOLEAN.value),
             dsl_interpreter.OperatorParameter(
                 name="retry_interval",
                 description="seconds to wait between condition checks",
                 required=True,
-                type=float,
-            ),
+                type=commons_enums.DslValueType.NUMBER.value),
             dsl_interpreter.OperatorParameter(
                 name="timeout",
                 description="if set, maximum total seconds; if still false, raises ErrorStatementEncountered",
                 required=False,
-                type=float,
-                default=None,
-            ),
+                type=commons_enums.DslValueType.NUMBER.value,
+                default=None),
             dsl_interpreter.OperatorParameter(
                 name="max_attempts",
                 description="if set, maximum condition evaluations; if still false, raises ErrorStatementEncountered",
                 required=False,
-                type=int,
-                default=None,
-            ),
+                type=commons_enums.DslValueType.NUMBER.value,
+                default=None),
             dsl_interpreter.OperatorParameter(
                 name="return_remaining_time",
                 description="if True, instantly returns the remaining time until the next check",
                 required=False,
-                type=bool,
-                default=False,
-            ),
-        ] + cls.get_re_callable_parameters()
+                type=commons_enums.DslValueType.BOOLEAN.value,
+                default=False),
+        ] + [
+            dataclasses.replace(
+                parameter,
+            )
+            for parameter in cls.get_re_callable_parameters()
+        ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="Condition value when true, or remaining-time re-callable result",
+        )
 
     async def pre_compute(self) -> None:
         await super().pre_compute()

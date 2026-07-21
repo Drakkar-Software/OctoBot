@@ -20,6 +20,7 @@ import time
 import enum
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors as commons_errors
 
@@ -62,6 +63,7 @@ def create_copy_exchange_account_operators(
             r"""reference_account='{"version":"1.0.0","updated_at":1710000000,"copied_assets":[{"name":"BTC","total":1,"available":1,"ratio":1}]}', """
             r"""account_copy_settings='{"reference_market_ratio":"1","allow_skip_asset":false}')"""
         )
+        CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
         @staticmethod
         def get_library() -> str:
@@ -80,14 +82,12 @@ def create_copy_exchange_account_operators(
                         "Identifier of the copied community strategy."
                     ),
                     required=True,
-                    type=str,
-                ),
+                    type=commons_enums.DslValueType.TEXT.value),
                 dsl_interpreter.OperatorParameter(
                     name="reference_market",
                     description="Quote asset symbol for rebalance (e.g. USDT).",
                     required=True,
-                    type=str,
-                ),
+                    type=commons_enums.DslValueType.TEXT.value),
                 dsl_interpreter.OperatorParameter(
                     name="reference_account",
                     description=(
@@ -95,7 +95,7 @@ def create_copy_exchange_account_operators(
                         "(list of {name, total, available, ratio}); optional orders, positions, historical_snapshots."
                     ),
                     required=True,
-                    type=str,
+                    type=commons_enums.DslValueType.TEXT.value,
                 ),
                 dsl_interpreter.OperatorParameter(
                     name="account_copy_settings",
@@ -107,9 +107,16 @@ def create_copy_exchange_account_operators(
                         "(omit keys to use defaults)."
                     ),
                     required=False,
-                    type=str,
+                    type=commons_enums.DslValueType.TEXT.value,
                 ),
             ] + super().get_re_callable_parameters()
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Re-callable copy result including created orders",
+            )
 
         def _parse_reference_account(self, raw: typing.Any) -> protocol_models.CopiedAccount:
             if raw is None:

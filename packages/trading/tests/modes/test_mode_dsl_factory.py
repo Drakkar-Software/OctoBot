@@ -234,7 +234,7 @@ class TestCreateOperatorParametersFromUserInputs:
         assert len(params) == 1
         p = params[0]
         assert p.name == user_inputs.sanitize_user_input_name(ui.name)
-        assert p.type is str
+        assert p.type == common_enums.DslValueType.TEXT.value
         assert p.default == "d"
         assert p.description == "Shown title"
         assert p.required is False
@@ -247,7 +247,7 @@ class TestCreateOperatorParametersFromUserInputs:
         )
         params = trading_mode_dsl_factory._create_operator_parameters_from_user_inputs({"f": ui})
         assert len(params) == 1
-        assert params[0].type is float
+        assert params[0].type == common_enums.DslValueType.NUMBER.value
         assert params[0].default == 2.0
         assert params[0].description == "float_param"
 
@@ -264,7 +264,7 @@ class TestCreateTradingModeOperatorParameters:
         assert "Nested" not in names
         assert trading_mode_dsl_factory.ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION not in names
         int_param = next(p for p in params if p.name == "Top_Level_Int")
-        assert int_param.type is int
+        assert int_param.type == common_enums.DslValueType.NUMBER.value
         assert int_param.description == "Integer setting"
 
 
@@ -279,7 +279,7 @@ class TestGetTradingModeMetaParameters:
         assert len(meta) == 2
         meta_by_name = {parameter.name: parameter for parameter in meta}
         p = meta_by_name[trading_mode_dsl_factory.ENABLE_INITIAL_PORTFOLIO_OPTIMIZATION]
-        assert p.type is bool
+        assert p.type == common_enums.DslValueType.BOOLEAN.value
         assert p.default is True
         assert p.required is False
         assert "initial portfolio optimization" in p.description.lower()

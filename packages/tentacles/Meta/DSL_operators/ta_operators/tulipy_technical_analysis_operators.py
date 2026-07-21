@@ -17,9 +17,11 @@
 import tulipy
 import numpy as np
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
-import tentacles.Meta.DSL_operators.ta_operators.ta_operator as ta_operator
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import tentacles.Meta.DSL_operators.ta_operators.ta_operator as ta_operator
 
 
 def _to_numpy_array(data):
@@ -66,9 +68,25 @@ class RSIOperator(ta_operator.TAOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the RSI on", required=True, type=list),
-            dsl_interpreter.OperatorParameter(name="period", description="the period to use for the RSI", required=True, type=int),
+            dsl_interpreter.OperatorParameter(
+                name="data",
+                description="the data to compute the RSI on",
+                required=True,
+                type=commons_enums.DslValueType.SERIES.value),
+            dsl_interpreter.OperatorParameter(
+                name="period",
+                description="the period to use for the RSI",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.SERIES.value,
+            description="RSI series",
+        )
 
     @converted_tulipy_error
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -87,11 +105,37 @@ class MACDOperator(ta_operator.TAOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the MACD on", required=True, type=list),
-            dsl_interpreter.OperatorParameter(name="short_period", description="the short period to use for the MACD", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="long_period", description="the long period to use for the MACD", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="signal_period", description="the signal period to use for the MACD", required=True, type=int),
+            dsl_interpreter.OperatorParameter(
+                name="data",
+                description="the data to compute the MACD on",
+                required=True,
+                type=commons_enums.DslValueType.SERIES.value),
+            dsl_interpreter.OperatorParameter(
+                name="short_period",
+                description="the short period to use for the MACD",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
+            dsl_interpreter.OperatorParameter(
+                name="long_period",
+                description="the long period to use for the MACD",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
+            dsl_interpreter.OperatorParameter(
+                name="signal_period",
+                description="the signal period to use for the MACD",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.SERIES.value,
+            description="MACD histogram series",
+        )
 
     @converted_tulipy_error
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -113,9 +157,25 @@ class MAOperator(ta_operator.TAOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the moving average on", required=True, type=list),
-            dsl_interpreter.OperatorParameter(name="period", description="the period to use for the moving average", required=True, type=int),
+            dsl_interpreter.OperatorParameter(
+                name="data",
+                description="the data to compute the moving average on",
+                required=True,
+                type=commons_enums.DslValueType.SERIES.value),
+            dsl_interpreter.OperatorParameter(
+                name="period",
+                description="the period to use for the moving average",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.SERIES.value,
+            description="Moving average series",
+        )
 
     @converted_tulipy_error
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -134,9 +194,25 @@ class EMAOperator(ta_operator.TAOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the exponential moving average on", required=True, type=list),
-            dsl_interpreter.OperatorParameter(name="period", description="the period to use for the exponential moving average", required=True, type=int),
+            dsl_interpreter.OperatorParameter(
+                name="data",
+                description="the data to compute the exponential moving average on",
+                required=True,
+                type=commons_enums.DslValueType.SERIES.value),
+            dsl_interpreter.OperatorParameter(
+                name="period",
+                description="the period to use for the exponential moving average",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.SERIES.value,
+            description="Exponential moving average series",
+        )
 
     @converted_tulipy_error
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -155,10 +231,30 @@ class VWMAOperator(ta_operator.TAOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the volume weighted moving average on", required=True, type=list),
-            dsl_interpreter.OperatorParameter(name="volume", description="the volume data to use for the volume weighted moving average", required=True, type=list),
-            dsl_interpreter.OperatorParameter(name="period", description="the period to use for the volume weighted moving average", required=True, type=int),
+            dsl_interpreter.OperatorParameter(
+                name="data",
+                description="the data to compute the volume weighted moving average on",
+                required=True,
+                type=commons_enums.DslValueType.SERIES.value),
+            dsl_interpreter.OperatorParameter(
+                name="volume",
+                description="the volume data to use for the volume weighted moving average",
+                required=True,
+                type=commons_enums.DslValueType.SERIES.value),
+            dsl_interpreter.OperatorParameter(
+                name="period",
+                description="the period to use for the volume weighted moving average",
+                required=True,
+                type=commons_enums.DslValueType.NUMBER.value,
+                minimum=1),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.SERIES.value,
+            description="Volume weighted moving average series",
+        )
 
     @converted_tulipy_error
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:

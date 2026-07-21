@@ -17,6 +17,7 @@ import typing
 import dataclasses
 import decimal
 
+import octobot_commons.enums as commons_enums
 import octobot_commons.dataclasses
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
@@ -51,6 +52,8 @@ WALLET_DETAILS_KEY = "wallet_details"
 
 
 class BlockchainWalletOperator(dsl_interpreter.PreComputingCallOperator):
+    CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
+
     @staticmethod
     def get_library() -> str:
         # this is a contextual operator, so it should not be included by default in the get_all_operators function return values
@@ -59,8 +62,16 @@ class BlockchainWalletOperator(dsl_interpreter.PreComputingCallOperator):
     @classmethod
     def get_blockchain_wallet_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="blockchain_descriptor", description="descriptor of the blockchain to use as in octobot_trading.blockchain_wallets.BlockchainDescriptor", required=True, type=dict),
-            dsl_interpreter.OperatorParameter(name="wallet_descriptor", description="descriptor of the wallet to use as in octobot_trading.blockchain_wallets.WalletDescriptor", required=True, type=dict),
+            dsl_interpreter.OperatorParameter(
+                name="blockchain_descriptor",
+                description="descriptor of the blockchain to use as in octobot_trading.blockchain_wallets.BlockchainDescriptor",
+                required=True,
+                type=commons_enums.DslValueType.DICT.value),
+            dsl_interpreter.OperatorParameter(
+                name="wallet_descriptor",
+                description="descriptor of the wallet to use as in octobot_trading.blockchain_wallets.WalletDescriptor",
+                required=True,
+                type=commons_enums.DslValueType.DICT.value),
         ]
 
 
@@ -71,6 +82,7 @@ def create_blockchain_wallet_operators(
     class _BlockchainWalletBalanceOperator(BlockchainWalletOperator):
         DESCRIPTION = "Returns the balance of the asset in the blockchain wallet"
         EXAMPLE = "blockchain_wallet_balance({blockchain_descriptor}, {wallet_descriptor}, 'BTC')"
+        CATEGORY = commons_enums.DslKeywordCategory.SOURCE.value
 
         @staticmethod
         def get_name() -> str:
@@ -80,8 +92,19 @@ def create_blockchain_wallet_operators(
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
                 *cls.get_blockchain_wallet_parameters(),
-                dsl_interpreter.OperatorParameter(name="asset", description="the asset to get the balance for", required=True, type=str),
+                dsl_interpreter.OperatorParameter(
+                    name="asset",
+                    description="the asset to get the balance for",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
             ]
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.NUMBER.value,
+                description="Free wallet balance for the asset",
+            )
 
         async def pre_compute(self) -> None:
             param_by_name = self.get_computed_value_by_parameter()
@@ -112,11 +135,36 @@ def create_blockchain_wallet_operators(
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
                 *cls.get_blockchain_wallet_parameters(),
-                dsl_interpreter.OperatorParameter(name="asset", description="the asset to transfer", required=True, type=str),
-                dsl_interpreter.OperatorParameter(name="amount", description="the amount to transfer", required=True, type=float),
-                dsl_interpreter.OperatorParameter(name="address", description="the address to transfer to", required=False, type=str, default=None),
-                dsl_interpreter.OperatorParameter(name="destination_exchange", description="the exchange to transfer to", required=False, type=str, default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="asset",
+                    description="the asset to transfer",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value),
+                dsl_interpreter.OperatorParameter(
+                    name="amount",
+                    description="the amount to transfer",
+                    required=True,
+                    type=commons_enums.DslValueType.NUMBER.value),
+                dsl_interpreter.OperatorParameter(
+                    name="address",
+                    description="the address to transfer to",
+                    required=False,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
+                dsl_interpreter.OperatorParameter(
+                    name="destination_exchange",
+                    description="the exchange to transfer to",
+                    required=False,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
             ]
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Created transfer transactions",
+            )
 
         async def pre_compute(self) -> None:
             await super().pre_compute()
@@ -159,6 +207,13 @@ def create_blockchain_wallet_operators(
         @classmethod
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return cls.get_blockchain_wallet_parameters()
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Open wallet details",
+            )
 
         async def pre_compute(self) -> None:
             param_by_name = self.get_computed_value_by_parameter()

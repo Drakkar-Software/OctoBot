@@ -16,6 +16,7 @@
 import typing
 
 import octobot_commons.constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_trading.constants as trading_constants
@@ -118,6 +119,7 @@ def create_fetch_order_operators(
             "fetch_order('BTC/USDT', exchange_order_id='12345') "
             "or fetch_order('BTC/USDT', exchange_order_id='12345', raise_if_not_found=True)"
         )
+        CATEGORY = commons_enums.DslKeywordCategory.SOURCE.value
 
         @staticmethod
         def get_name() -> str:
@@ -131,25 +133,33 @@ def create_fetch_order_operators(
         def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
             return [
                 dsl_interpreter.OperatorParameter(
-                    name="symbol", description="the symbol of the order", required=True, type=str, default=None
-                ),
+                    name="symbol",
+                    description="the symbol of the order",
+                    required=True,
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
                 dsl_interpreter.OperatorParameter(
                     name="exchange_order_id",
                     description="the exchange id of the order",
                     required=True,
-                    type=str,
-                    default=None,
-                ),
+                    type=commons_enums.DslValueType.TEXT.value,
+                    default=None),
                 dsl_interpreter.OperatorParameter(
                     name="raise_if_not_found",
                     description=(
                         "if True, raise when the order cannot be resolved; if False, return None."
                     ),
                     required=False,
-                    type=bool,
-                    default=False,
-                ),
+                    type=commons_enums.DslValueType.BOOLEAN.value,
+                    default=False),
             ]
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.ORDER.value,
+                description="Fetched order, or None when not found",
+            )
 
         def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
             local_dependencies = []

@@ -13,8 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter as dsl_interpreter
-import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 
 import octobot_flow.entities
 
@@ -24,10 +24,18 @@ class StopAutomationOperator(dsl_interpreter.CallOperator):
     MAX_PARAMS = 0
     DESCRIPTION = "Signals the automation to stop."
     EXAMPLE = "stop_automation()"
+    CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
     @staticmethod
     def get_name() -> str:
         return "stop_automation"
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.DICT.value,
+            description="Automation stop signal",
+        )
 
     def compute(self) -> dict:
         return {
@@ -47,15 +55,16 @@ class UpdateAutomationConfigurationOperator(dsl_interpreter.CallOperator):
         "executable DSL action can be retargeted."
     )
     EXAMPLE = 'update_automation_configuration("your_dsl_call(...)")'
+    CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
     @staticmethod
     def get_name() -> str:
         return "update_automation_configuration"
 
     @classmethod
-    def get_parameters(cls) -> list[operator_parameter.OperatorParameter]:
+    def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            operator_parameter.OperatorParameter(
+            dsl_interpreter.OperatorParameter(
                 name="configuration_update",
                 description=(
                     "Full replacement DSL for the single currently executable DAG script action "
@@ -64,10 +73,17 @@ class UpdateAutomationConfigurationOperator(dsl_interpreter.CallOperator):
                     "exchange calls, etc.)."
                 ),
                 required=True,
-                type=str,
+                type=commons_enums.DslValueType.TEXT.value,
                 default=None,
             ),
         ]
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.DICT.value,
+            description="Automation configuration update signal",
+        )
 
     def compute(self) -> dict:
         configuration_update = self.get_computed_value_by_parameter()["configuration_update"]

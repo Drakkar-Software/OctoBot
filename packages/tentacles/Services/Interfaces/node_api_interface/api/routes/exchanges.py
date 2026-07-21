@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import json
 import typing
 
 import octobot_commons.json_util as json_util
@@ -46,7 +47,7 @@ def _exchange_config_from_query(
     )
 
 
-@router.get("/traded-pairs")
+@router.get("/traded-pairs", response_model=protocol_models.TradedPairsByExchange)
 async def get_traded_pairs(
     exchange_config: typing.Annotated[protocol_models.ExchangeConfig, Depends(_exchange_config_from_query)],
     trading_type: typing.Annotated[protocol_models.TradingType, Query()] = protocol_models.TradingType.SPOT,
@@ -60,7 +61,12 @@ async def get_traded_pairs(
         )
     except trading_errors.NotSupported as err:
         return JSONResponse(status_code=501, content={"error": str(err)})
-    return JSONResponse(content=json_util.sanitize(content))
+    traded_pairs = protocol_models.TradedPairsByExchange.from_dict(
+        json_util.sanitize(content)
+    )
+    if traded_pairs is None:
+        raise RuntimeError("TradedPairsByExchange.from_dict returned None for non-null content")
+    return JSONResponse(content=json.loads(traded_pairs.to_json()))
 
 
 @router.get("/traded-pairs-and-timeframes")
