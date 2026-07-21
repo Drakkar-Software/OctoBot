@@ -112,10 +112,10 @@ def test_create_wallet_with_private_key(admin_client, mock_auth):
     )
 
 
-def test_create_wallet_duplicate_raises_422(admin_client, mock_auth):
+def test_create_wallet_duplicate_raises_409(admin_client, mock_auth):
     mock_auth.create_wallet.side_effect = wallet_backend.WalletAlreadyExistsError("Wallet already exists")
     resp = admin_client.post("/api/v1/wallets/", json={"passphrase": "newpass123"})
-    assert resp.status_code == 422
+    assert resp.status_code == 409
 
 
 def test_create_wallet_service_unavailable(admin_client):
