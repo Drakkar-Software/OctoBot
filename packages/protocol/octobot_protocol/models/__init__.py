@@ -61,6 +61,13 @@ from octobot_protocol.models.delete_exchange_config_configuration import DeleteE
 from octobot_protocol.models.delete_strategy_configuration import DeleteStrategyConfiguration
 from octobot_protocol.models.detailed_asset import DetailedAsset
 from octobot_protocol.models.detailed_assets_for_trading_type import DetailedAssetsForTradingType
+from octobot_protocol.models.dsl_keyword import DslKeyword
+from octobot_protocol.models.dsl_keyword_category import DslKeywordCategory
+from octobot_protocol.models.dsl_keywords_state import DslKeywordsState
+from octobot_protocol.models.dsl_parameter import DslParameter
+from octobot_protocol.models.dsl_parameter_default_value import DslParameterDefaultValue
+from octobot_protocol.models.dsl_parameter_option import DslParameterOption
+from octobot_protocol.models.dsl_value_type import DslValueType
 from octobot_protocol.models.edit_account_auth_configuration import EditAccountAuthConfiguration
 from octobot_protocol.models.edit_account_configuration import EditAccountConfiguration
 from octobot_protocol.models.edit_automation_configuration import EditAutomationConfiguration
@@ -113,6 +120,9 @@ from octobot_protocol.models.strategy_reference import StrategyReference
 from octobot_protocol.models.time_frame import TimeFrame
 from octobot_protocol.models.trade import Trade
 from octobot_protocol.models.trade_summary import TradeSummary
+from octobot_protocol.models.traded_pair_volume import TradedPairVolume
+from octobot_protocol.models.traded_pairs_by_exchange import TradedPairsByExchange
+from octobot_protocol.models.traded_pairs_for_exchange import TradedPairsForExchange
 from octobot_protocol.models.trading_tentacles_configuration import TradingTentaclesConfiguration
 from octobot_protocol.models.trading_type import TradingType
 from octobot_protocol.models.trailing_profile import TrailingProfile

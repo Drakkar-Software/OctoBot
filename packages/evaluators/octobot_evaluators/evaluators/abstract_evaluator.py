@@ -528,6 +528,8 @@ class AbstractEvaluator(tentacles_management.AbstractTentacle):
         :param default: default value if evaluator config is not found
         :return: evaluator config
         """
+        if tentacles_setup_config is None:
+            return default
         try:
             return api.is_tentacle_activated_in_tentacles_setup_config(tentacles_setup_config,
                                                                        cls.get_name(),

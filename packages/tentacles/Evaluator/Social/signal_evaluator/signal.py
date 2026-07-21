@@ -125,8 +125,14 @@ class TelegramChannelSignalEvaluator(evaluators.SocialEvaluator):
                                           channels, inputs, item_title="Channel",
                                           other_schema_values={"minItems": 1, "uniqueItems": True},
                                           title="Channels to watch")
-        channels.append(self._init_channel_config(inputs, "Test-Channel", "Pair: (.*)$",
-                                                  "Side: (BUY)$", "Side: (SELL)$"))
+        # Register nested OBJECT_ARRAY item schema/defaults.
+        # Commons ensures a placeholder at [0] when the array is empty (no pre-append).
+        # Nested user_input prefers saved values over these def_vals, so existing
+        # user config is not replaced. Do not assign to [0] / append the init result
+        # (append after ensure would duplicate the row).
+        self._init_channel_config(
+            inputs, "Test-Channel", "Pair: (.*)$", "Side: (BUY)$", "Side: (SELL)$"
+        )
         self.channels_config_by_channel_name = {
             channel[self.SIGNAL_CHANNEL_NAME_KEY]: channel
             for channel in config_channels

@@ -23,6 +23,9 @@ export class AutomationConfiguration {
     'created_at': string;
     'updated_at'?: string;
     'strategy': StrategyReference;
+    /**
+    * May be empty only for automations whose strategy configuration is generic_process; otherwise exactly one account reference is required at runtime.
+    */
     'accounts': Array<AccountReference>;
 
     static readonly discriminator: string | undefined = undefined;

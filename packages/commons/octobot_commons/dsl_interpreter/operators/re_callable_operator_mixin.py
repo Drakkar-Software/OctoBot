@@ -21,6 +21,7 @@ import typing
 import octobot_commons.dataclasses
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 import octobot_commons.dsl_interpreter.parameters_util as parameters_util
+import octobot_commons.enums as commons_enums
 
 
 class ReCallingOperatorResultKeys(str, enum.Enum):
@@ -94,7 +95,7 @@ class ReCallableOperatorMixin:
                 name=cls.LAST_EXECUTION_RESULT_KEY,
                 description="the return value of the previous call",
                 required=False,
-                type=dict,
+                type=commons_enums.DslValueType.DICT.value,
                 default=None,
             ),
         ]

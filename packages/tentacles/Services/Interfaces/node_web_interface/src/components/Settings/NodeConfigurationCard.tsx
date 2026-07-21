@@ -177,7 +177,9 @@ export function NodeConfigurationCard() {
                     onClick={handleSaveHost}
                     disabled={hostStatus === "saving"}
                   >
-                    {hostStatus === "saved" ? <Check className="size-4" /> : null}
+                    {hostStatus === "saved" ? (
+                      <Check className="size-4" />
+                    ) : null}
                     {hostStatus === "saved"
                       ? "Saved"
                       : hostStatus === "saving"

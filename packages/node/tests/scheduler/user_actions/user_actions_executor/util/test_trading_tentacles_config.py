@@ -1,5 +1,6 @@
 import pytest
 
+import octobot_commons.enums as commons_enums
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory_module
 import octobot_node.scheduler.user_actions.user_actions_executor.util.trading_tentacles_config as trading_tentacles_config_module
@@ -10,6 +11,205 @@ import tentacles.Trading.Mode.grid_trading_mode.grid_trading as grid_trading
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
 
 from . import trading_tentacles_test_utils
+
+
+class _StubStructuredPayload:
+    pass
+
+
+class TestIsValueCastableToParameterType:
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (42, True),
+            (3.5, True),
+            ("42", True),
+            ("3.5", True),
+            (True, False),
+            (False, False),
+            ("not-a-number", False),
+            (None, False),
+            ([], False),
+            ({}, False),
+        ],
+    )
+    def test_number(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.NUMBER.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (True, True),
+            (False, True),
+            (0, False),
+            (1, False),
+            ("true", False),
+            (None, False),
+        ],
+    )
+    def test_boolean(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.BOOLEAN.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("hello", True),
+            ("", True),
+            (1, False),
+            (True, False),
+            (None, False),
+            ([], False),
+        ],
+    )
+    def test_text(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.TEXT.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("1h", True),
+            (1, False),
+            (None, False),
+            ([], False),
+        ],
+    )
+    def test_time_frame(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.TIME_FRAME.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ({}, True),
+            ({"key": "value"}, True),
+            ([], False),
+            ("dict", False),
+            (None, False),
+        ],
+    )
+    def test_dict(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.DICT.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        "value",
+        [None, 1, "text", [], {}, True],
+    )
+    def test_any_always_accepts(self, value):
+        assert trading_tentacles_config_module._is_value_castable_to_parameter_type(
+            value,
+            commons_enums.DslValueType.ANY.value,
+        ) is True
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ([1, 2], True),
+            ((1, 2), True),
+            ([], True),
+            (range(3), True),
+            ("series", False),
+            (b"bytes", False),
+            (None, False),
+            (1, False),
+            ({}, False),
+            (True, False),
+        ],
+    )
+    def test_series(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.SERIES.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (None, True),
+            ({}, True),
+            ({"eval_note": 1}, True),
+            (_StubStructuredPayload(), True),
+            (True, False),
+            (1, False),
+            (1.5, False),
+            ("signal", False),
+            ([], False),
+            ((), False),
+        ],
+    )
+    def test_signal(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.SIGNAL.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (None, True),
+            ({}, True),
+            ({"order_id": "1"}, True),
+            (_StubStructuredPayload(), True),
+            (True, False),
+            (1, False),
+            (1.5, False),
+            ("order", False),
+            ([], False),
+            ((), False),
+        ],
+    )
+    def test_order(self, value, expected: bool):
+        assert (
+            trading_tentacles_config_module._is_value_castable_to_parameter_type(
+                value,
+                commons_enums.DslValueType.ORDER.value,
+            )
+            is expected
+        )
+
+    @pytest.mark.parametrize(
+        "value",
+        [None, 1, "text", [], {}, True, _StubStructuredPayload()],
+    )
+    def test_unknown_type_rejects(self, value):
+        assert trading_tentacles_config_module._is_value_castable_to_parameter_type(
+            value,
+            "not_a_type",
+        ) is False
 
 
 class TestNormalizeTentacleName:
@@ -241,7 +441,7 @@ class TestValidateTradingModeConfig:
             )
         error_message = str(error_info.value)
         assert dca_trading.DCATradingModeProducer.MAX_ASSET_HOLDING_PERCENT in error_message
-        assert "expected type: float" in error_message
+        assert "expected type: number" in error_message
 
     def test_collects_multiple_configuration_issues_in_one_error(self):
         trading_configuration = trading_tentacles_test_utils.trading_tentacles_configuration(
@@ -396,7 +596,7 @@ class TestValidateEvaluatorConfig:
             )
         error_message = str(error_info.value)
         assert ".evaluators[0].config.period_length" in error_message
-        assert "expected type: int" in error_message
+        assert "expected type: number" in error_message
 
 
 class TestValidateStrategyEvaluator:

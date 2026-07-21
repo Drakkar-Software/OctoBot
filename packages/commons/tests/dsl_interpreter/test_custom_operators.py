@@ -54,8 +54,8 @@ class SumPlusXOperatorWithPreCompute(dsl_interpreter.NaryOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the sum of", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="data2", description="the data to compute the sum of", required=False, type=int),
+            dsl_interpreter.OperatorParameter(name="data", description="the data to compute the sum of", required=True, type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(name="data2", description="the data to compute the sum of", required=False, type=commons_enums.DslValueType.NUMBER.value),
         ]
 
     async def pre_compute(self) -> None:
@@ -212,8 +212,8 @@ class Add2Operator(dsl_interpreter.CallOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="left", description="the left operand", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="right", description="the right operand", required=True, type=int),
+            dsl_interpreter.OperatorParameter(name="left", description="the left operand", required=True, type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(name="right", description="the right operand", required=True, type=commons_enums.DslValueType.NUMBER.value),
         ]
 
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -228,8 +228,8 @@ class PreComputeSumOperator(dsl_interpreter.PreComputingCallOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="a", description="first value", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="b", description="second value", required=True, type=int),
+            dsl_interpreter.OperatorParameter(name="a", description="first value", required=True, type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(name="b", description="second value", required=True, type=commons_enums.DslValueType.NUMBER.value),
         ]
 
     async def pre_compute(self) -> None:
@@ -246,10 +246,10 @@ class CallWithDefaultParametersOperator(dsl_interpreter.CallOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="value1", description="the first value", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="value2", description="the second value", required=False, type=int, default=0),
-            dsl_interpreter.OperatorParameter(name="added_extra_value", description="value to add to the result", required=False, type=int, default=0),
-            dsl_interpreter.OperatorParameter(name="substracted_extra_value", description="value to substract from the result", required=False, type=int, default=0),
+            dsl_interpreter.OperatorParameter(name="value1", description="the first value", required=True, type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(name="value2", description="the second value", required=False, type=commons_enums.DslValueType.NUMBER.value, default=0),
+            dsl_interpreter.OperatorParameter(name="added_extra_value", description="value to add to the result", required=False, type=commons_enums.DslValueType.NUMBER.value, default=0),
+            dsl_interpreter.OperatorParameter(name="substracted_extra_value", description="value to substract from the result", required=False, type=commons_enums.DslValueType.NUMBER.value, default=0),
         ]
 
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -270,8 +270,8 @@ class ParamMerger(dsl_interpreter.CallOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="p1", description="the first value", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="p2", description="the second value", required=True, type=int),
+            dsl_interpreter.OperatorParameter(name="p1", description="the first value", required=True, type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(name="p2", description="the second value", required=True, type=commons_enums.DslValueType.NUMBER.value),
         ]
 
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -287,7 +287,7 @@ class NestedDictSumOperator(dsl_interpreter.CallOperator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="values", description="the dictionary to sum the values of", required=True, type=dict),
+            dsl_interpreter.OperatorParameter(name="values", description="the dictionary to sum the values of", required=True, type=commons_enums.DslValueType.ANY.value),
         ]
 
     def nested_sum(self, values: dict) -> float:
@@ -499,8 +499,8 @@ class OperatorWithParameters(dsl_interpreter.Operator):
     @classmethod
     def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
         return [
-            dsl_interpreter.OperatorParameter(name="x", description="first parameter", required=True, type=int),
-            dsl_interpreter.OperatorParameter(name="y", description="second parameter", required=False, type=int),
+            dsl_interpreter.OperatorParameter(name="x", description="first parameter", required=True, type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(name="y", description="second parameter", required=False, type=commons_enums.DslValueType.NUMBER.value),
         ]
     
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
@@ -582,12 +582,12 @@ def test_get_docs_with_parameters():
     assert docs.parameters[0].name == "x"
     assert docs.parameters[0].description == "first parameter"
     assert docs.parameters[0].required
-    assert docs.parameters[0].type == int
+    assert docs.parameters[0].type == commons_enums.DslValueType.NUMBER.value
     assert isinstance(docs.parameters[1], dsl_interpreter.OperatorParameter)
     assert docs.parameters[1].name == "y"
     assert docs.parameters[1].description == "second parameter"
     assert not docs.parameters[1].required
-    assert docs.parameters[1].type == int
+    assert docs.parameters[1].type == commons_enums.DslValueType.NUMBER.value
 
 
 def test_get_docs_without_parameters():
@@ -639,11 +639,11 @@ def test_get_docs_to_json():
     assert json_data["parameters"][0]["name"] == "x"
     assert json_data["parameters"][0]["description"] == "first parameter"
     assert json_data["parameters"][0]["required"] is True
-    assert json_data["parameters"][0]["type"] == "int"
+    assert json_data["parameters"][0]["type"] == commons_enums.DslValueType.NUMBER.value
     assert json_data["parameters"][1]["name"] == "y"
     assert json_data["parameters"][1]["description"] == "second parameter"
     assert json_data["parameters"][1]["required"] is False
-    assert json_data["parameters"][1]["type"] == "int"
+    assert json_data["parameters"][1]["type"] == commons_enums.DslValueType.NUMBER.value
 
 
 @pytest.mark.asyncio

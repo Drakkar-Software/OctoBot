@@ -319,7 +319,7 @@ def init_action():
 
 @pytest.mark.asyncio
 @pytest.mark.xdist_group(name=AUTHENTICATED_TEST_GROUP)
-async def test_authenticated_grid_init_from_empty_state(init_action: dict):
+async def test_authenticated_grid_init_from_empty_state(init_action: dict, skip_on_exchange_proxy_error):
     """
     Same flow as the simulator grid test, but against a real authenticated account: current market price
     anchors the ladder (no ticker/ohlcv mocks).
@@ -491,7 +491,7 @@ async def test_authenticated_grid_init_from_empty_state(init_action: dict):
 
 @pytest.mark.asyncio
 @pytest.mark.xdist_group(name=AUTHENTICATED_TEST_GROUP)
-async def test_authenticated_copy_grid(init_action: dict):
+async def test_authenticated_copy_grid(init_action: dict, skip_on_exchange_proxy_error):
     """
     Same flow as test_simulator_copy_grid: init, then copy a synthetic reference BTC/USDC grid onto the
     account, then a no-op second copy run. Uses live BTC/USDC price to build valid limit prices (no mocks).
