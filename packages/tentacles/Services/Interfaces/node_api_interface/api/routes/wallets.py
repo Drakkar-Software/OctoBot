@@ -110,6 +110,11 @@ def create_wallet(body: CreateWalletBody, current_user: CurrentUser) -> WalletIn
                 passphrase=body.passphrase,
                 is_admin=False,
             )
+    except wallet_backend.WalletAlreadyExistsError as err:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(err),
+        ) from err
     except wallet_backend.WalletError as err:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

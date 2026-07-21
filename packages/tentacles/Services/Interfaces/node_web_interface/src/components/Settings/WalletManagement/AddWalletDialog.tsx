@@ -1,7 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
 import { Plus, TriangleAlert } from "lucide-react"
 import { useState } from "react"
-import { WalletsService } from "@/client"
+import { type ApiError, WalletsService } from "@/client"
+import { extractErrorMessage } from "@/utils"
 import {
   Dialog,
   DialogContent,
@@ -50,8 +51,12 @@ export function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
       onSuccess()
     },
     onError: (e: unknown) => {
-      const msg = e instanceof Error ? e.message : "Failed to add wallet"
-      setError(msg)
+      const err = e as ApiError
+      if (err?.status === 409) {
+        setError("This wallet is already imported.")
+        return
+      }
+      setError(extractErrorMessage(err))
     },
   })
 
