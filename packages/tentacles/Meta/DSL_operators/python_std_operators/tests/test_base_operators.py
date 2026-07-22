@@ -22,6 +22,7 @@ import time
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 
 import tentacles.Meta.DSL_operators.python_std_operators.base_call_operators as base_call_operators
 
@@ -30,10 +31,18 @@ class RaisesInPreComputeTestOperator(dsl_interpreter.CallOperator):
     """Fails in pre_compute only; used to assert if_error runs the on_error DSL."""
 
     NAME = "raises_in_precompute_test_op"
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     @staticmethod
     def get_name() -> str:
         return "raises_in_precompute_test_op"
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.TEXT.value,
+            description="Test result",
+        )
 
     async def pre_compute(self) -> None:
         raise ValueError("pre_compute failed for test")

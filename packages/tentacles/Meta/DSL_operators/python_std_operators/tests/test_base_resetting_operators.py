@@ -22,15 +22,24 @@ import mock
 import tentacles.Meta.DSL_operators.python_std_operators.base_resetting_operators as base_resetting_operators
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors
+import octobot_commons.enums as commons_enums
 
 
 class _LoopUntilSingleEvalTestConditionOperator(dsl_interpreter.CallOperator):
     MIN_PARAMS = 0
     MAX_PARAMS = 0
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     @staticmethod
     def get_name() -> str:
         return "test_loop_until_single_eval_condition"
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.BOOLEAN.value,
+            description="Test condition result",
+        )
 
     def compute(self):
         return True
