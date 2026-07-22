@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { loadPassword } from "@/lib/device-key"
+import { buildPairingQrValue } from "@/lib/pairing"
 
 export function PairDeviceDialog() {
   const [qrValue, setQrValue] = useState<string | null>(null)
@@ -23,20 +23,7 @@ export function PairDeviceDialog() {
   const buildQrValue = async () => {
     setError(null)
     try {
-      const address = localStorage.getItem("auth_username") || ""
-      const passphrase = (await loadPassword()) ?? ""
-      if (!address || !passphrase) {
-        throw new Error(
-          "No active wallet session — log out and back in to refresh device key.",
-        )
-      }
-      setQrValue(
-        JSON.stringify({
-          url: window.location.origin,
-          address,
-          passphrase,
-        }),
-      )
+      setQrValue(await buildPairingQrValue())
     } catch (e) {
       console.error("PairDeviceDialog: failed to build QR value", e)
       setError(e instanceof Error ? e.message : "Failed to build QR code")
