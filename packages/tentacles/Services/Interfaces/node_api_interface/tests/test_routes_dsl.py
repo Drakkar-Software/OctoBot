@@ -20,11 +20,11 @@ import octobot_sync.constants as sync_constants
 class TestGetDslKeywords:
     def test_without_auth_returns_401(self, client, mock_auth):
         response = client.get("/api/v1/dsl/keywords")
-        assert response.status_code == 401
+        assert response.status_code == 401, response.text
 
     def test_returns_keywords_state(self, admin_client):
         response = admin_client.get("/api/v1/dsl/keywords")
-        assert response.status_code == 200
+        assert response.status_code == 200, response.text
         body = response.json()
         assert body["version"] == sync_constants.DSL_KEYWORDS_STATE_VERSION
         assert isinstance(body["keywords"], list)

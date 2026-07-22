@@ -33,5 +33,12 @@ router = APIRouter(tags=["dsl"])
 @router.get("/keywords", response_model=protocol_models.DslKeywordsState)
 def get_dsl_keywords(current_user: CurrentUser) -> JSONResponse:
     """Return the versioned DSL keywords state for this node."""
-    dsl_keywords_state = dsl_protocol.get_dsl_keywords_state()
-    return JSONResponse(content=json.loads(dsl_keywords_state.to_json()))
+    try:
+        dsl_keywords_state = dsl_protocol.get_dsl_keywords_state()
+        resp = json.loads(dsl_keywords_state.to_json())
+        return JSONResponse(content=resp)
+    except Exception as e:
+        print(e)
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
