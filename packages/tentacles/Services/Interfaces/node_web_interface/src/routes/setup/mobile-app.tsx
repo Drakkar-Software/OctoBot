@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { isLoggedIn } from "@/hooks/useAuth"
-import { loadPassword } from "@/lib/device-key"
+import { buildPairingQrValue } from "@/lib/pairing"
 
 export const Route = createFileRoute("/setup/mobile-app")({
   beforeLoad: () => {
@@ -40,6 +40,7 @@ function SetupMobileApp() {
   const navigate = useNavigate()
   const [showQr, setShowQr] = useState(false)
   const [qrValue, setQrValue] = useState<string | null>(null)
+  const [qrError, setQrError] = useState<string | null>(null)
 
   const finishSetup = () => {
     sessionStorage.removeItem("setup_in_progress")
@@ -47,15 +48,14 @@ function SetupMobileApp() {
   }
 
   const revealQr = async () => {
-    const address = localStorage.getItem("auth_username") || ""
-    const passphrase = (await loadPassword()) ?? ""
-    setQrValue(
-      JSON.stringify({
-        url: window.location.origin,
-        address,
-        passphrase,
-      }),
-    )
+    setQrError(null)
+    try {
+      setQrValue(await buildPairingQrValue())
+    } catch (e) {
+      console.error("SetupMobileApp: failed to build QR value", e)
+      setQrError(e instanceof Error ? e.message : "Failed to build QR code")
+      return
+    }
     setShowQr(true)
   }
 
@@ -144,6 +144,11 @@ function SetupMobileApp() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
+              {qrError && (
+                <p className="text-sm text-destructive text-center">
+                  {qrError}
+                </p>
+              )}
               {!showQr ? (
                 <Button variant="outline" onClick={revealQr}>
                   Show QR code
