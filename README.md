@@ -16,6 +16,14 @@
 [![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://x.com/DrakkarsOctoBot)
 [![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://www.youtube.com/@octobot1134)
 
+## OctoBot beta is live
+
+The latest release runs in **node mode** by default. Your node acts as the backend for the [new OctoBot interface](https://new.mobile.octobot.cloud/home?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_new_interface), where you manage wallets, automations, and multiple strategies from one dashboard.
+
+OctoBot beta is work in progress. You may hit bugs or incomplete features. For setup steps, see the [OctoBot beta getting-started guide](https://www.octobot.cloud/en/guides/octobot-beta-getting-started?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_beta_getting_started).
+
+From the new interface, you can also start a **manual OctoBot** instance for backtesting, Telegram, TradingView, and other classic workflows. The guides linked below still cover those features.
+
 ## Open source crypto trading bot with a visual user interface
 
 [OctoBot](https://www.octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_what_is_octobot) is an open source cryptocurrency trading robot designed for crypto investors who want to automate their investment strategies. The bot can automate strategies using built-in:
@@ -26,6 +34,8 @@
 - Technical analysis indicators such as RSI, Moving Averages or MACD
 - [15+ exchange integrations](#your-trading-bot-for-binance-coinbase-hyperliquid-and-15-other-exchanges) including Binance, Coinbase, MEXC and Hyperliquid
 
+The latest release also supports **portfolio automation** from desktop and mobile through node mode and the new OctoBot interface.
+
 
 <p align="middle">
   <a href='https://www.youtube.com/watch?v=TJUU62e1jR8'  target="_blank" rel="noopener"><img alt='OctoBot - Open Source Crypto Trading Bot Introduction Video from the official OctoBot YouTube Channel' src='../assets/meet_octobot_preview.png' width="630px"/></a>
@@ -33,8 +43,16 @@
 
 The trading bot is written in Python being built and improved as a free open source software since 2018. It can be [installed on your system or executed on a cloud provider](#installing-octobot-open-source-crypto-trading-bot).
 
-### An easy to use trading bot with a Mobile App, Web and Telegram user interfaces
+### Control OctoBot from desktop, mobile, web, or Telegram
 Are you looking for a bot you can setup from the peaceful environment of your home computer and that you can follow from anywhere using your phone?
+
+#### OctoBot beta: node mode and the new interface
+
+Install the latest release and run OctoBot in **node mode** on your computer or server. Connect to it from the [new OctoBot interface](https://new.mobile.octobot.cloud/home?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_new_interface) in your browser (recommended), or from the [Android beta app](https://play.google.com/store/apps/details?id=com.drakkar.octobotapp&utm_source=octobot-github&utm_media=readme&utm_content=beta-android-app) (enable the app's beta program on the Play Store).
+
+From one node, run multiple **automations** (DCA, grids, crypto baskets, TradingView, and more) and monitor your full portfolio in one dashboard. For advanced workflows, start a **manual OctoBot** from the new interface.
+
+#### Classic OctoBot: web interface and Telegram
 
 OctoBot is designed for crypto investors who want to automate their trading strategies in a simple way, using a graphic interface to:
 - Configure the details of their strategy and its traded markets and exchange(s)
@@ -42,8 +60,10 @@ OctoBot is designed for crypto investors who want to automate their trading stra
 - Live test it with paper money
 - Execute it on a real exchange account, by automatically sending orders to the exchange
 
-Once started, an OctoBot can be followed using its web interface, making it reachable when running on a cloud server.  
-OctoBot can also be connected to a Telegram bot, therefore turning OctoBot into a [Telegram trading bot](https://www.octobot.cloud/en/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=telegram).
+A **manual OctoBot** instance can still be configured and followed using its built-in web interface, making it reachable when running on a cloud server.
+OctoBot can also be connected to a Telegram bot, turning OctoBot into a [Telegram trading bot](https://www.octobot.cloud/en/guides/octobot-interfaces/telegram?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=telegram).
+
+The OctoBot mobile app below is designed for [octobot.cloud](https://www.octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_app_section) strategies. To manage your open-source node, use the new OctoBot interface or Android beta app instead.
 
 You can also follow your trading bot from the OctoBot mobile app, which is designed to automate [octobot.cloud](https://www.octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_app_section) strategies, the app can also be used to follow your open source OctoBot's profits, portfolio, open orders and trades.
 
@@ -130,6 +150,8 @@ If you represent an institution that is interested in a commercial license or cu
 <p align="center">
   <img src="../assets/a-man-relaxing-in-his-couch-while-octobot-the-free-open-source-crypto-trading-bot-is-making-money-by-automating-cryptocurrency-strategies.png" alt="A man relaxing in his couch while octobot the free open source crypto trading bot is making money by automating cryptocurrency strategies" width="630px">
 </p>
+
+Starting the [latest release](https://github.com/Drakkar-Software/OctoBot/releases/latest) runs OctoBot in **node mode**. See the [getting-started guide](https://www.octobot.cloud/en/guides/octobot-beta-getting-started?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_install_beta) to connect the new OctoBot interface to your node.
 
 OctoBot can be deployed on the cloud or for free on your computer, server or [Raspberry Pi](https://www.raspberrypi.com/).
 
