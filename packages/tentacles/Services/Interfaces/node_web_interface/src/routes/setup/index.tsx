@@ -7,6 +7,7 @@ import { z } from "zod"
 
 import { type ApiError, type SetupResult, SetupService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
+import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
 import {
   Form,
   FormControl,
@@ -26,7 +27,7 @@ import { handleError } from "@/utils"
 export const Route = createFileRoute("/setup/")({
   component: SetupWallet,
   head: () => ({
-    meta: [{ title: "Setup — Secure your node" }],
+    meta: [{ title: "Setup - Set up your wallet" }],
   }),
 })
 
@@ -56,6 +57,16 @@ const importSchema = baseSchema
 
 type GenerateData = z.infer<typeof generateSchema>
 type ImportData = z.infer<typeof importSchema>
+
+function NodeWalletNote() {
+  return (
+    <div className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
+      <span className="font-medium text-foreground">About your Node wallet:</span>{" "}
+      Your Node is secured by its own cryptographic wallet. It is independent
+      from any cryptocurrency wallet you might already have.
+    </div>
+  )
+}
 
 function SetupWallet() {
   const navigate = useNavigate()
@@ -102,7 +113,7 @@ function SetupWallet() {
       }
       await savePassword(passphrase)
       sessionStorage.setItem("setup_in_progress", "true")
-      navigate({ to: "/setup/first-bot" })
+      navigate({ to: "/setup/connect" })
     },
     onError: async (error) => {
       const apiError = error as ApiError
@@ -133,13 +144,12 @@ function SetupWallet() {
   return (
     <AuthLayout>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <p className="text-xs text-muted-foreground">Step 1 / 3</p>
-          <h1 className="text-2xl font-bold">Secure your node</h1>
-          <p className="text-sm text-muted-foreground">
-            Your wallet is your node's cryptographic identity.
-          </p>
-        </div>
+        <SetupStepHeader
+          step={1}
+          total={3}
+          title="Set up your wallet"
+          subtitle="Create a new wallet or import an existing one."
+        />
 
         <div className="flex rounded-md border text-sm">
           <button
@@ -222,6 +232,7 @@ function SetupWallet() {
                   </FormItem>
                 )}
               />
+              <NodeWalletNote />
               <LoadingButton type="submit" loading={initMutation.isPending}>
                 Continue
               </LoadingButton>
@@ -300,6 +311,7 @@ function SetupWallet() {
                   </FormItem>
                 )}
               />
+              <NodeWalletNote />
               <LoadingButton type="submit" loading={initMutation.isPending}>
                 Continue
               </LoadingButton>

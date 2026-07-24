@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import { Check, Network, Power, Server, Sliders } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NodesService } from "@/client"
@@ -197,6 +198,21 @@ export function NodeConfigurationCard() {
               required behind a reverse proxy that rewrites the Host header
               (e.g. <code>tailscale serve</code>).
             </span>
+          </div>
+          <div className="border-t" />
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              OctoBot interface
+            </span>
+            <div className="flex flex-col items-start gap-2">
+              <p className="text-sm text-muted-foreground">
+                Connect to your node, manage your OctoBots, and link your exchange
+                accounts.
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/settings/connect">Open connect guide</Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

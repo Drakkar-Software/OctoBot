@@ -20,7 +20,7 @@ export const Route = createRootRoute({
       // network error — do not block navigation
     }
     if (!configured && !location.pathname.startsWith("/setup")) {
-      throw redirect({ to: "/setup" })
+      throw redirect({ to: "/setup/welcome" })
     }
   },
   component: () => (
