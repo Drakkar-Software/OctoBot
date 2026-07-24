@@ -1,5 +1,7 @@
 import { Check, Copy, Download, Eye, EyeOff, TriangleAlert } from "lucide-react"
 import { useState } from "react"
+
+import { ConfirmWalletSecretCopyDialog } from "@/components/Common/ConfirmWalletSecretCopyDialog"
 import {
   Dialog,
   DialogContent,
@@ -13,9 +15,19 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { buildAuthHeader } from "@/lib/node-config"
+import { useConfirmWalletSecretCopy } from "@/lib/use-confirm-wallet-secret-copy"
+import {
+  fetchOwnWalletExport,
+  fetchWalletExport,
+} from "@/lib/wallet-export"
 
-export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddress: string; isOwnWallet: boolean }) {
+export function ExportWalletDialog({
+  walletAddress,
+  isOwnWallet,
+}: {
+  walletAddress: string
+  isOwnWallet: boolean
+}) {
   const [privateKey, setPrivateKey] = useState<string | null>(null)
   const [seed, setSeed] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -25,26 +37,31 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
   const [showKey, setShowKey] = useState(false)
   const [showSeed, setShowSeed] = useState(false)
   const [passphraseInput, setPassphraseInput] = useState("")
+  const walletSecretCopy = useConfirmWalletSecretCopy({
+    onCopied: (secretType) => {
+      if (secretType === "private_key") {
+        setCopiedKey(true)
+        setTimeout(() => setCopiedKey(false), 2000)
+        return
+      }
+      setCopiedSeed(true)
+      setTimeout(() => setCopiedSeed(false), 2000)
+    },
+  })
 
-  const fetchWalletExport = async (passphrase?: string) => {
+  const loadWalletExport = async (passphrase?: string) => {
     setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams()
-      if (!isOwnWallet) {
-        params.set("address", walletAddress)
-        params.set("passphrase", passphrase ?? "")
-      }
-      const url = `/api/v1/setup/wallet/export${params.size ? `?${params}` : ""}`
-      const res = await fetch(url, {
-        headers: { Authorization: await buildAuthHeader() },
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      setPrivateKey(data.private_key)
-      setSeed(data.seed ?? null)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to export wallet")
+      const exportData = isOwnWallet
+        ? await fetchOwnWalletExport()
+        : await fetchWalletExport(walletAddress, passphrase ?? "")
+      setPrivateKey(exportData.private_key)
+      setSeed(exportData.seed ?? null)
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error ? loadError.message : "Failed to export wallet",
+      )
     } finally {
       setLoading(false)
     }
@@ -52,21 +69,17 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
 
   const copyKey = () => {
     if (!privateKey) return
-    navigator.clipboard.writeText(privateKey)
-    setCopiedKey(true)
-    setTimeout(() => setCopiedKey(false), 2000)
+    walletSecretCopy.requestCopy(privateKey, "private_key")
   }
 
   const copySeed = () => {
     if (!seed) return
-    navigator.clipboard.writeText(seed)
-    setCopiedSeed(true)
-    setTimeout(() => setCopiedSeed(false), 2000)
+    walletSecretCopy.requestCopy(seed, "seed_phrase")
   }
 
   const onOpenChange = (open: boolean) => {
     if (open && isOwnWallet) {
-      void fetchWalletExport()
+      void loadWalletExport()
     }
     if (!open) {
       setPrivateKey(null)
@@ -79,6 +92,7 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
   }
 
   return (
+    <>
     <Dialog onOpenChange={onOpenChange}>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -120,24 +134,26 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
                   className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
                   placeholder="Enter wallet passphrase"
                   value={passphraseInput}
-                  onChange={(e) => setPassphraseInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && passphraseInput) void fetchWalletExport(passphraseInput)
+                  onChange={(event) => setPassphraseInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && passphraseInput) {
+                      void loadWalletExport(passphraseInput)
+                    }
                   }}
                 />
                 <button
                   type="button"
                   className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   disabled={!passphraseInput || loading}
-                  onClick={() => void fetchWalletExport(passphraseInput)}
+                  onClick={() => void loadWalletExport(passphraseInput)}
                 >
-                  {loading ? "…" : "Decrypt"}
+                  {loading ? "..." : "Decrypt"}
                 </button>
               </div>
             </div>
           )}
           {loading && !privateKey && isOwnWallet && (
-            <p className="text-sm text-muted-foreground">Decrypting wallet…</p>
+            <p className="text-sm text-muted-foreground">Decrypting wallet...</p>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {privateKey && (
@@ -147,7 +163,7 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
                 <button
                   type="button"
                   className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                  onClick={() => setShowKey((v) => !v)}
+                  onClick={() => setShowKey((visible) => !visible)}
                 >
                   {showKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                   {showKey ? "Hide" : "Show"}
@@ -155,7 +171,7 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
               </div>
               <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
                 <code className="text-xs break-all">
-                  {showKey ? privateKey : "•".repeat(Math.min(privateKey.length, 32))}
+                  {showKey ? privateKey : "\u2022".repeat(Math.min(privateKey.length, 32))}
                 </code>
                 <button
                   type="button"
@@ -175,7 +191,7 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
                 <button
                   type="button"
                   className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                  onClick={() => setShowSeed((v) => !v)}
+                  onClick={() => setShowSeed((visible) => !visible)}
                 >
                   {showSeed ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                   {showSeed ? "Hide" : "Show"}
@@ -183,7 +199,7 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
               </div>
               <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
                 <code className="text-xs break-all">
-                  {showSeed ? seed : "•".repeat(Math.min(seed.length, 32))}
+                  {showSeed ? seed : "\u2022".repeat(Math.min(seed.length, 32))}
                 </code>
                 <button
                   type="button"
@@ -199,5 +215,12 @@ export function ExportWalletDialog({ walletAddress, isOwnWallet }: { walletAddre
         </div>
       </DialogContent>
     </Dialog>
+    <ConfirmWalletSecretCopyDialog
+      open={walletSecretCopy.confirmOpen}
+      onOpenChange={walletSecretCopy.handleOpenChange}
+      secretType={walletSecretCopy.pendingSecretType}
+      onConfirm={walletSecretCopy.handleConfirm}
+    />
+    </>
   )
 }

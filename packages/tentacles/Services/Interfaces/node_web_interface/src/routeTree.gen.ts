@@ -14,14 +14,18 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as SetupWelcomeRouteImport } from './routes/setup/welcome'
 import { Route as SetupMobileAppRouteImport } from './routes/setup/mobile-app'
 import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
+import { Route as SetupConnectRouteImport } from './routes/setup/connect'
 import { Route as LayoutSupportRouteImport } from './routes/_layout/support'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
 import { Route as LayoutDslKeywordsRouteImport } from './routes/_layout/dsl-keywords'
 import { Route as LayoutDebugRouteImport } from './routes/_layout/debug'
+import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout/settings/index'
 import { Route as LayoutOctobotsIndexRouteImport } from './routes/_layout/octobots/index'
+import { Route as LayoutSettingsConnectRouteImport } from './routes/_layout/settings/connect'
 import { Route as LayoutOctobotsNewRouteImport } from './routes/_layout/octobots/new'
 import { Route as LayoutOctobotsImportRouteImport } from './routes/_layout/octobots/import'
 import { Route as LayoutOctobotsExportRouteImport } from './routes/_layout/octobots/export'
@@ -53,6 +57,11 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const SetupWelcomeRoute = SetupWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => SetupRoute,
+} as any)
 const SetupMobileAppRoute = SetupMobileAppRouteImport.update({
   id: '/mobile-app',
   path: '/mobile-app',
@@ -61,6 +70,11 @@ const SetupMobileAppRoute = SetupMobileAppRouteImport.update({
 const SetupFirstBotRoute = SetupFirstBotRouteImport.update({
   id: '/first-bot',
   path: '/first-bot',
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupConnectRoute = SetupConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
   getParentRoute: () => SetupRoute,
 } as any)
 const LayoutSupportRoute = LayoutSupportRouteImport.update({
@@ -88,10 +102,20 @@ const LayoutDebugRoute = LayoutDebugRouteImport.update({
   path: '/debug',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutSettingsRoute,
+} as any)
 const LayoutOctobotsIndexRoute = LayoutOctobotsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LayoutOctobotsRoute,
+} as any)
+const LayoutSettingsConnectRoute = LayoutSettingsConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => LayoutSettingsRoute,
 } as any)
 const LayoutOctobotsNewRoute = LayoutOctobotsNewRouteImport.update({
   id: '/new',
@@ -134,15 +158,19 @@ export interface FileRoutesByFullPath {
   '/debug': typeof LayoutDebugRoute
   '/dsl-keywords': typeof LayoutDslKeywordsRoute
   '/octobots': typeof LayoutOctobotsRouteWithChildren
-  '/settings': typeof LayoutSettingsRoute
+  '/settings': typeof LayoutSettingsRouteWithChildren
   '/support': typeof LayoutSupportRoute
+  '/setup/connect': typeof SetupConnectRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
   '/setup/mobile-app': typeof SetupMobileAppRoute
+  '/setup/welcome': typeof SetupWelcomeRoute
   '/setup/': typeof SetupIndexRoute
   '/octobots/export': typeof LayoutOctobotsExportRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
   '/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
+  '/settings/connect': typeof LayoutSettingsConnectRoute
   '/octobots/': typeof LayoutOctobotsIndexRoute
+  '/settings/': typeof LayoutSettingsIndexRoute
   '/octobots/new/builder': typeof LayoutOctobotsNewBuilderRoute
   '/octobots/new/defaults': typeof LayoutOctobotsNewDefaultsRoute
   '/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
@@ -151,16 +179,19 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/debug': typeof LayoutDebugRoute
   '/dsl-keywords': typeof LayoutDslKeywordsRoute
-  '/settings': typeof LayoutSettingsRoute
   '/support': typeof LayoutSupportRoute
+  '/setup/connect': typeof SetupConnectRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
   '/setup/mobile-app': typeof SetupMobileAppRoute
+  '/setup/welcome': typeof SetupWelcomeRoute
   '/': typeof LayoutIndexRoute
   '/setup': typeof SetupIndexRoute
   '/octobots/export': typeof LayoutOctobotsExportRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
   '/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
+  '/settings/connect': typeof LayoutSettingsConnectRoute
   '/octobots': typeof LayoutOctobotsIndexRoute
+  '/settings': typeof LayoutSettingsIndexRoute
   '/octobots/new/builder': typeof LayoutOctobotsNewBuilderRoute
   '/octobots/new/defaults': typeof LayoutOctobotsNewDefaultsRoute
   '/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
@@ -173,16 +204,20 @@ export interface FileRoutesById {
   '/_layout/debug': typeof LayoutDebugRoute
   '/_layout/dsl-keywords': typeof LayoutDslKeywordsRoute
   '/_layout/octobots': typeof LayoutOctobotsRouteWithChildren
-  '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/settings': typeof LayoutSettingsRouteWithChildren
   '/_layout/support': typeof LayoutSupportRoute
+  '/setup/connect': typeof SetupConnectRoute
   '/setup/first-bot': typeof SetupFirstBotRoute
   '/setup/mobile-app': typeof SetupMobileAppRoute
+  '/setup/welcome': typeof SetupWelcomeRoute
   '/_layout/': typeof LayoutIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/_layout/octobots/export': typeof LayoutOctobotsExportRoute
   '/_layout/octobots/import': typeof LayoutOctobotsImportRoute
   '/_layout/octobots/new': typeof LayoutOctobotsNewRouteWithChildren
+  '/_layout/settings/connect': typeof LayoutSettingsConnectRoute
   '/_layout/octobots/': typeof LayoutOctobotsIndexRoute
+  '/_layout/settings/': typeof LayoutSettingsIndexRoute
   '/_layout/octobots/new/builder': typeof LayoutOctobotsNewBuilderRoute
   '/_layout/octobots/new/defaults': typeof LayoutOctobotsNewDefaultsRoute
   '/_layout/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
@@ -198,13 +233,17 @@ export interface FileRouteTypes {
     | '/octobots'
     | '/settings'
     | '/support'
+    | '/setup/connect'
     | '/setup/first-bot'
     | '/setup/mobile-app'
+    | '/setup/welcome'
     | '/setup/'
     | '/octobots/export'
     | '/octobots/import'
     | '/octobots/new'
+    | '/settings/connect'
     | '/octobots/'
+    | '/settings/'
     | '/octobots/new/builder'
     | '/octobots/new/defaults'
     | '/octobots/new/presets'
@@ -213,16 +252,19 @@ export interface FileRouteTypes {
     | '/login'
     | '/debug'
     | '/dsl-keywords'
-    | '/settings'
     | '/support'
+    | '/setup/connect'
     | '/setup/first-bot'
     | '/setup/mobile-app'
+    | '/setup/welcome'
     | '/'
     | '/setup'
     | '/octobots/export'
     | '/octobots/import'
     | '/octobots/new'
+    | '/settings/connect'
     | '/octobots'
+    | '/settings'
     | '/octobots/new/builder'
     | '/octobots/new/defaults'
     | '/octobots/new/presets'
@@ -236,14 +278,18 @@ export interface FileRouteTypes {
     | '/_layout/octobots'
     | '/_layout/settings'
     | '/_layout/support'
+    | '/setup/connect'
     | '/setup/first-bot'
     | '/setup/mobile-app'
+    | '/setup/welcome'
     | '/_layout/'
     | '/setup/'
     | '/_layout/octobots/export'
     | '/_layout/octobots/import'
     | '/_layout/octobots/new'
+    | '/_layout/settings/connect'
     | '/_layout/octobots/'
+    | '/_layout/settings/'
     | '/_layout/octobots/new/builder'
     | '/_layout/octobots/new/defaults'
     | '/_layout/octobots/new/presets'
@@ -292,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/setup/welcome': {
+      id: '/setup/welcome'
+      path: '/welcome'
+      fullPath: '/setup/welcome'
+      preLoaderRoute: typeof SetupWelcomeRouteImport
+      parentRoute: typeof SetupRoute
+    }
     '/setup/mobile-app': {
       id: '/setup/mobile-app'
       path: '/mobile-app'
@@ -304,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/first-bot'
       fullPath: '/setup/first-bot'
       preLoaderRoute: typeof SetupFirstBotRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/connect': {
+      id: '/setup/connect'
+      path: '/connect'
+      fullPath: '/setup/connect'
+      preLoaderRoute: typeof SetupConnectRouteImport
       parentRoute: typeof SetupRoute
     }
     '/_layout/support': {
@@ -341,12 +401,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDebugRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/settings/': {
+      id: '/_layout/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof LayoutSettingsIndexRouteImport
+      parentRoute: typeof LayoutSettingsRoute
+    }
     '/_layout/octobots/': {
       id: '/_layout/octobots/'
       path: '/'
       fullPath: '/octobots/'
       preLoaderRoute: typeof LayoutOctobotsIndexRouteImport
       parentRoute: typeof LayoutOctobotsRoute
+    }
+    '/_layout/settings/connect': {
+      id: '/_layout/settings/connect'
+      path: '/connect'
+      fullPath: '/settings/connect'
+      preLoaderRoute: typeof LayoutSettingsConnectRouteImport
+      parentRoute: typeof LayoutSettingsRoute
     }
     '/_layout/octobots/new': {
       id: '/_layout/octobots/new'
@@ -426,11 +500,25 @@ const LayoutOctobotsRouteWithChildren = LayoutOctobotsRoute._addFileChildren(
   LayoutOctobotsRouteChildren,
 )
 
+interface LayoutSettingsRouteChildren {
+  LayoutSettingsConnectRoute: typeof LayoutSettingsConnectRoute
+  LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
+}
+
+const LayoutSettingsRouteChildren: LayoutSettingsRouteChildren = {
+  LayoutSettingsConnectRoute: LayoutSettingsConnectRoute,
+  LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
+}
+
+const LayoutSettingsRouteWithChildren = LayoutSettingsRoute._addFileChildren(
+  LayoutSettingsRouteChildren,
+)
+
 interface LayoutRouteChildren {
   LayoutDebugRoute: typeof LayoutDebugRoute
   LayoutDslKeywordsRoute: typeof LayoutDslKeywordsRoute
   LayoutOctobotsRoute: typeof LayoutOctobotsRouteWithChildren
-  LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutSettingsRoute: typeof LayoutSettingsRouteWithChildren
   LayoutSupportRoute: typeof LayoutSupportRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
@@ -439,7 +527,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutDebugRoute: LayoutDebugRoute,
   LayoutDslKeywordsRoute: LayoutDslKeywordsRoute,
   LayoutOctobotsRoute: LayoutOctobotsRouteWithChildren,
-  LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutSettingsRoute: LayoutSettingsRouteWithChildren,
   LayoutSupportRoute: LayoutSupportRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
@@ -448,14 +536,18 @@ const LayoutRouteWithChildren =
   LayoutRoute._addFileChildren(LayoutRouteChildren)
 
 interface SetupRouteChildren {
+  SetupConnectRoute: typeof SetupConnectRoute
   SetupFirstBotRoute: typeof SetupFirstBotRoute
   SetupMobileAppRoute: typeof SetupMobileAppRoute
+  SetupWelcomeRoute: typeof SetupWelcomeRoute
   SetupIndexRoute: typeof SetupIndexRoute
 }
 
 const SetupRouteChildren: SetupRouteChildren = {
+  SetupConnectRoute: SetupConnectRoute,
   SetupFirstBotRoute: SetupFirstBotRoute,
   SetupMobileAppRoute: SetupMobileAppRoute,
+  SetupWelcomeRoute: SetupWelcomeRoute,
   SetupIndexRoute: SetupIndexRoute,
 }
 
