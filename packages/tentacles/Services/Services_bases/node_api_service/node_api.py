@@ -18,15 +18,13 @@ import os
 import socket
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.network as network_module
 import octobot.configuration_manager as configuration_manager
 import octobot.enums as octobot_enums
 import octobot_services.constants as services_constants
 import octobot_services.services as services
 import octobot_node.scheduler
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
-
-
-LOCAL_HOST_IP = "127.0.0.1"
 
 
 class NodeApiService(services.AbstractService):
@@ -150,7 +148,7 @@ class NodeApiService(services.AbstractService):
 
     def _get_default_node_api_url(self):
         port = self._get_node_api_server_port()
-        return f"http://{LOCAL_HOST_IP}:{port}"
+        return f"http://{network_module.LOCAL_HOST_IP}:{port}"
 
     def _get_node_api_server_port(self) -> str:
         try:
@@ -171,7 +169,7 @@ class NodeApiService(services.AbstractService):
             self.logger.warning(
                 f"Impossible to find local node web interface url, using default instead: {err} ({err.__class__.__name__})"
             )
-        return f"{LOCAL_HOST_IP}:{port}"
+        return f"{network_module.LOCAL_HOST_IP}:{port}"
 
     def get_successful_startup_message(self):
         return f"Node API interface successfully initialized and accessible at: http://{self._get_node_api_server_url()}.", True

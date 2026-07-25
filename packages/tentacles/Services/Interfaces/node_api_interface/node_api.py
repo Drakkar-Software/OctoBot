@@ -29,6 +29,7 @@ import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
 import octobot_services.interfaces.util.web as web_util
 import octobot_commons.logging as octobot_commons_logging
+import octobot_commons.network as network_module
 import octobot_node.config as node_config
 import octobot_node.constants as node_constants
 import octobot_node.scheduler as scheduler # noqa: F401
@@ -158,7 +159,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
     def _open_node_ui_on_browser(self):
         try:
             web_util.open_in_background_browser(
-                f"http://{node_api_service.LOCAL_HOST_IP}:{self.port}/app"
+                f"http://{network_module.LOCAL_HOST_IP}:{self.port}/app"
             )
         except Exception as err:
             self.logger.warning(

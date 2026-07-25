@@ -22,6 +22,7 @@ import psutil
 PREFERRED_LOCAL_IPV4_PREFIX = "192."
 UDP_ROUTE_PROBE_HOST = "8.8.8.8"
 UDP_ROUTE_PROBE_PORT = 80
+LOCAL_HOST_IP = "127.0.0.1"
 
 
 def _is_private_ipv4(ip_address: str) -> bool:
