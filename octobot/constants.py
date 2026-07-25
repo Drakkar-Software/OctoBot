@@ -226,6 +226,7 @@ ENV_TRADING_ENABLE_DEBUG_LOGS = os_util.parse_boolean_environment_var("ENV_TRADI
 
 # distribution
 FORCED_DISTRIBUTION = os.getenv("DISTRIBUTION")
+FORCE_OCTOBOT_STANDALONE = os_util.parse_boolean_environment_var("OCTOBOT_STANDALONE", "False")
 
 # system
 ENABLE_CLOCK_SYNCH = os_util.parse_boolean_environment_var("ENABLE_CLOCK_SYNCH", "True")

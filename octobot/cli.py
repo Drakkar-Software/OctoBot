@@ -419,6 +419,11 @@ def _configure_profile_sync_user(config, community_auth, *, is_process_child: bo
         config.profile_storage.configure_sync_user(community_auth.sync_user_id)
 
 
+def _apply_env_vars_to_startup_args(args) -> None:
+    if constants.FORCE_OCTOBOT_STANDALONE:
+        args.standalone = True
+
+
 def _validate_startup_mode_args(args) -> None:
     if args.standalone and (args.master or args.consumer_only):
         raise errors.ConfigError(
@@ -481,6 +486,7 @@ def start_octobot(args, default_config_file=None):
         overrides, logs_folder = _init_cli_overriden_folders(args)
         _assert_process_child_folder_overrides(args)
         logger = octobot_logger.init_logger(logs_folder=logs_folder)
+        _apply_env_vars_to_startup_args(args)
         _validate_startup_mode_args(args)
         _apply_startup_distribution_mode(args)
         _log_startup_distribution_mode(logger, args)
@@ -703,7 +709,8 @@ def octobot_parser(parser, default_config_file=None):
                         nargs='+')
     parser.add_argument(
         '--standalone',
-        help='Start standalone OctoBot with the trading web interface (default startup is node mode).',
+        help='Start standalone OctoBot with the trading web interface (default startup is node mode). '
+             'Can also be enabled with OCTOBOT_STANDALONE=true.',
         action='store_true',
     )
     _register_node_arguments(parser)
