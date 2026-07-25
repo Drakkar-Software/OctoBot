@@ -60,6 +60,12 @@ _TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SEC = 2
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture(autouse=True)
+def _disable_auto_open_in_web_browser():
+    with mock.patch.object(octobot_process_ops, "AUTO_OPEN_IN_WEB_BROWSER", False):
+        yield
+
+
 async def _async_return_none_mock(*_unused):
     return None
 
@@ -409,7 +415,7 @@ def _default_config_read_side_effect(tmp_path, master_config: dict | None = None
 
 
 class TestWriteUserRootConfigJson:
-    def test_sets_profile_and_disables_browser_auto_open(self, tmp_path):
+    def test_sets_profile_and_writes_browser_auto_open_from_constant(self, tmp_path):
         config_path = _automation_child_config_path(tmp_path)
         profile_id = "dsl_profile_abc"
         with mock.patch.object(
@@ -424,7 +430,7 @@ class TestWriteUserRootConfigJson:
         assert written[commons_constants.CONFIG_PROFILE] == profile_id
         assert written[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEB][
             services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER
-        ] is False
+        ] is octobot_process_ops.AUTO_OPEN_IN_WEB_BROWSER
         assert written[commons_constants.CONFIG_EXCHANGES] == {}
 
     def test_writes_octobot_name_when_provided(self, tmp_path):
@@ -1133,9 +1139,9 @@ class TestEnsureUserProfileAndLayoutDefaultProfile:
             root_cfg[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEB][
                 services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER
             ]
-            is False
+            is octobot_process_ops.AUTO_OPEN_IN_WEB_BROWSER
         )
-        assert root_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] is True
+        assert root_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] is False
 
     async def test_resolves_non_trading_profile_from_master_overlay(self, tmp_path):
         _seed_executor_non_trading_profile(tmp_path)
@@ -1286,7 +1292,7 @@ class TestEnsureUserProfileAndLayoutFunctional:
             root_cfg[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEB][
                 services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER
             ]
-            is False
+            is octobot_process_ops.AUTO_OPEN_IN_WEB_BROWSER
         )
         exchange_root = root_cfg[commons_constants.CONFIG_EXCHANGES][exchange_internal_name]
         assert exchange_root[commons_constants.CONFIG_ENABLED_OPTION] is True

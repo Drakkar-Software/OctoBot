@@ -55,6 +55,7 @@ DEFAULT_ENSURE_TIMEOUT = 120.0
 DEFAULT_FORCE_KILL_EXIT_WAIT_SECONDS = 5.0
 DEFAULT_DSL_PROFILE_ID = "non-trading"
 RUN_OCTOBOT_PROCESS_OPERATOR_NAME = "run_octobot_process"
+AUTO_OPEN_IN_WEB_BROWSER = True
 
 
 # run_octobot_process uses two state layers:
@@ -470,16 +471,16 @@ def _write_user_root_config_json(
     octobot_name: str | None = None,
 ) -> None:
     """
-    Writes user-root ``config.json``: selected profile, disabled web auto-open for DSL-spawned
-    processes, optional exchange stubs from ``profile_data``, then credentials from the executor
-    master ``user/config.json`` (forwarded for all exchanges), with optional
+    Writes user-root ``config.json``: selected profile, web auto-open from
+    ``AUTO_OPEN_IN_WEB_BROWSER``, optional exchange stubs from ``profile_data``, then credentials
+    from the executor master ``user/config.json`` (forwarded for all exchanges), with optional
     ``exchange_auth_overrides`` fully replacing matching entries by ``internal_name``.
     """
     _assert_automation_child_config_path(config_path)
-    # Load packaged defaults; pin profile and disable browser auto-open for headless DSL children.
+    # Load packaged defaults; pin profile and apply browser auto-open from module constant.
     default_cfg = json_util.read_file(octobot_constants.DEFAULT_CONFIG_FILE)
     default_cfg[commons_constants.CONFIG_PROFILE] = profile_id
-    default_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] = True
+    default_cfg[commons_constants.CONFIG_ACCEPTED_TERMS] = False
     if octobot_name and str(octobot_name).strip():
         default_cfg[commons_constants.CONFIG_OCTOBOT_NAME] = str(octobot_name).strip()
     if readonly_profiles_path:
@@ -490,7 +491,7 @@ def _write_user_root_config_json(
         )
     services_cfg = default_cfg.setdefault(services_constants.CONFIG_CATEGORY_SERVICES, {})
     web_cfg = services_cfg.setdefault(services_constants.CONFIG_WEB, {})
-    web_cfg[services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER] = False
+    web_cfg[services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER] = AUTO_OPEN_IN_WEB_BROWSER
     # Seed top-level exchanges so partially-managed merge targets exist before applying secrets.
     if profile_data is not None:
         exchanges_cfg = default_cfg.setdefault(commons_constants.CONFIG_EXCHANGES, {})

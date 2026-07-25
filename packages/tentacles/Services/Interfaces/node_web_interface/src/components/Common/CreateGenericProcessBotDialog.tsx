@@ -161,8 +161,9 @@ export function CreateGenericProcessBotDialog({
                 <span className="font-medium text-foreground">
                   {createdBotName}
                 </span>{" "}
-                is starting. You can configure it from the OctoBots list once it
-                is ready.
+                is starting. Your OctoBot web interface will automatically open to let you select your profile once the bot will be ready.
+                <br />
+                If the interface doesn't open automatically, click on the link of the OctoBot's automation.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
