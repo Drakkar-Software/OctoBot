@@ -557,13 +557,26 @@ class TestDefaultCliMode:
         octobot_node_mock.assert_called_once()
         octobot_mock.assert_not_called()
 
-    def test_standalone_flag_uses_default_distribution(self, monkeypatch):
+    @pytest.mark.parametrize(
+        "standalone_source,standalone_arg,force_env_standalone",
+        [
+            ("cli_flag", True, False),
+            ("env_var", False, True),
+        ],
+    )
+    def test_standalone_uses_default_distribution(
+        self, monkeypatch, standalone_source, standalone_arg, force_env_standalone
+    ):
         monkeypatch.setattr(octobot_cli.constants, "FORCED_DISTRIBUTION", None)
-        args = _start_octobot_cli_args(standalone=True)
+        monkeypatch.setattr(
+            octobot_cli.constants, "FORCE_OCTOBOT_STANDALONE", force_env_standalone
+        )
+        args = _start_octobot_cli_args(standalone=standalone_arg)
         octobot_node_mock, octobot_mock = self._run_start_octobot_with_distribution_mock(
             args,
             octobot_cli.enums.OctoBotDistribution.DEFAULT,
         )
+        assert args.standalone is True
         assert args.no_web is False
         assert octobot_cli.constants.FORCED_DISTRIBUTION == octobot_enums.OctoBotDistribution.DEFAULT.value
         octobot_mock.assert_called_once()
