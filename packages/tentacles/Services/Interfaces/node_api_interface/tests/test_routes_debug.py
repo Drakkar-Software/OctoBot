@@ -15,15 +15,18 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import base64
+import contextlib
 import mock
+import pytest
 
 import octobot_node.config
+import octobot_node.scheduler
 import octobot_protocol.models as protocol_models
 import octobot_sync.constants as sync_constants
 
 from datetime import datetime, timezone
 
-from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, TENANT_ADDRESS, TENANT_USER_ID
+from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, ADMIN_USER_ID, TENANT_ADDRESS, TENANT_USER_ID
 
 
 def _sample_debug_state() -> protocol_models.DebugState:
@@ -78,6 +81,62 @@ def _stop_automation_user_action_payload() -> dict:
             "id": "00000000-0000-4000-8000-000000000099",
         },
     }
+
+
+def _restart_automation_user_action_payload() -> dict:
+    return {
+        "id": "ua-restart-api-test",
+        "configuration": {
+            "action_type": "automation_restart",
+            "id": "00000000-0000-4000-8000-000000000099",
+        },
+    }
+
+
+_AUTOMATION_PARENT_ID = "00000000-0000-4000-8000-000000000099"
+
+
+@contextlib.contextmanager
+def _automation_owned_by_caller():
+    with mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_active_automation_workflow_ids_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=[f"{_AUTOMATION_PARENT_ID}_1"],
+    ):
+        yield
+
+
+@contextlib.contextmanager
+def _automation_not_owned_by_caller(*, owner_user_id: str):
+    with mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_active_automation_workflow_ids_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=[],
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_automation_owner_user_id",
+        new_callable=mock.AsyncMock,
+        return_value=owner_user_id,
+    ):
+        yield
+
+
+@contextlib.contextmanager
+def _automation_not_found():
+    with mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_active_automation_workflow_ids_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=[],
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_automation_owner_user_id",
+        new_callable=mock.AsyncMock,
+        return_value=None,
+    ):
+        yield
 
 
 def _auth_header(address: str, passphrase: str) -> dict:
@@ -217,10 +276,11 @@ class TestExecuteUserAction:
             new=mock_execute_user_action,
         ):
             with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
-                response = tenant_client.post(
-                    "/api/v1/debug/",
-                    json=_signal_user_action_payload(),
-                )
+                with _automation_owned_by_caller():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=_signal_user_action_payload(),
+                    )
         assert response.status_code == 204
         assert response.content == b""
         user_action_argument = mock_execute_user_action.await_args[0][0]
@@ -239,10 +299,11 @@ class TestExecuteUserAction:
             new=mock_execute_user_action,
         ):
             with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
-                response = tenant_client.post(
-                    "/api/v1/debug/",
-                    json=_stop_automation_user_action_payload(),
-                )
+                with _automation_owned_by_caller():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=_stop_automation_user_action_payload(),
+                    )
         assert response.status_code == 204
         user_action_argument = mock_execute_user_action.await_args[0][0]
         configuration = user_action_argument.configuration.actual_instance
@@ -320,3 +381,81 @@ class TestExecuteUserAction:
             response = tenant_client.post("/api/v1/debug/", json=_minimal_user_action_payload())
         assert response.status_code == 404
         assert response.json()["detail"] == "Debug routes are disabled when node-side encryption is enabled"
+
+
+class TestExecuteUserActionCrossWalletAutomation:
+    @pytest.mark.parametrize(
+        "payload_factory",
+        [
+            _stop_automation_user_action_payload,
+            _signal_user_action_payload,
+            _restart_automation_user_action_payload,
+        ],
+    )
+    def test_admin_without_wallet_address_uses_owner_user_id(
+        self,
+        admin_client,
+        mock_auth,
+        payload_factory,
+    ):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        with mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _automation_not_owned_by_caller(owner_user_id=TENANT_USER_ID):
+                    response = admin_client.post(
+                        "/api/v1/debug/",
+                        json=payload_factory(),
+                    )
+        assert response.status_code == 204
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
+
+    @pytest.mark.parametrize(
+        "payload_factory",
+        [
+            _stop_automation_user_action_payload,
+            _signal_user_action_payload,
+            _restart_automation_user_action_payload,
+        ],
+    )
+    def test_non_admin_without_wallet_address_returns_404_when_not_owned(
+        self,
+        tenant_client,
+        mock_auth,
+        payload_factory,
+    ):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        with mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _automation_not_found():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=payload_factory(),
+                    )
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Automation not found"
+        mock_execute_user_action.assert_not_awaited()
+
+    def test_admin_without_wallet_address_uses_own_user_id_when_automation_is_owned(
+        self,
+        admin_client,
+        mock_auth,
+    ):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        with mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _automation_owned_by_caller():
+                    response = admin_client.post(
+                        "/api/v1/debug/",
+                        json=_stop_automation_user_action_payload(),
+                    )
+        assert response.status_code == 204
+        assert mock_execute_user_action.await_args[0][1] == ADMIN_USER_ID

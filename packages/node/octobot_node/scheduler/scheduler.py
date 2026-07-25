@@ -300,6 +300,33 @@ class Scheduler:
         latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
         return [latest_workflow.workflow_id]
 
+    async def resolve_automation_owner_user_id(
+        self,
+        parent_id: str,
+    ) -> typing.Optional[str]:
+        """
+        Return the Starfish ``user_id`` that owns the active automation for ``parent_id``.
+
+        Unlike :meth:`resolve_active_automation_workflow_ids_for_parent_id`, this lookup is not
+        wallet-scoped so callers can resolve cross-wallet ownership after API-side authorization.
+        """
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
+            None,
+            [parent_id],
+            [
+                dbos.WorkflowStatusString.ENQUEUED,
+                dbos.WorkflowStatusString.PENDING,
+            ],
+            load_output=False,
+        )
+        if not matching_workflows:
+            return None
+        latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
+        task = workflows_util.get_automation_input_task(latest_workflow)
+        if task is None:
+            return None
+        return task.user_id
+
     async def resolve_latest_terminal_automation_workflow_for_parent_id(
         self,
         user_id: typing.Optional[str],

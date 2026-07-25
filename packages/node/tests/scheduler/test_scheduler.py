@@ -1034,6 +1034,44 @@ class TestSchedulerGetUserActionWorkflowIds:
         assert result == ["wf-done"]
 
 
+class TestResolveAutomationOwnerUserId:
+    @pytest.mark.asyncio
+    async def test_returns_owner_user_id_from_latest_active_workflow(self):
+        parent_id = PARENT_ID
+        owner_user_id = "tenant-starfish-id"
+        task = octobot_node.models.Task(
+            id=parent_id,
+            name="tenant-task",
+            content=None,
+            type="execute_actions",
+            user_id=owner_user_id,
+        )
+        older_child = _build_mock_workflow_status_no_output(task, workflow_id=f"{parent_id}_1")
+        older_child.status = dbos.WorkflowStatusString.PENDING.value
+        older_child.updated_at = 10
+        latest_child = _build_mock_workflow_status_no_output(task, workflow_id=f"{parent_id}_2")
+        latest_child.status = dbos.WorkflowStatusString.ENQUEUED.value
+        latest_child.updated_at = 20
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            return_value=[older_child, latest_child],
+        )
+
+        result = await sched.resolve_automation_owner_user_id(parent_id)
+
+        assert result == owner_user_id
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_no_matching_workflow(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+
+        result = await sched.resolve_automation_owner_user_id("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+
+        assert result is None
+
+
 class TestSchedulerDeleteWorkflows:
     @pytest.mark.asyncio
     async def test_delegates_to_workflows_retention_helpers(self):
