@@ -461,7 +461,7 @@ def _log_startup_distribution_mode(logger, args) -> None:
         startup_message = "Starting OctoBot in backtesting mode."
     elif args.standalone:
         startup_message = (
-            "Starting OctoBot in trading mode: will trade using the selected profile."
+            "Starting OctoBot in standalone mode: will trade using the selected profile."
         )
     else:
         startup_message = (
@@ -530,20 +530,25 @@ def start_octobot(args, default_config_file=None):
             _get_authenticated_community_if_possible(config, logger)
         )
 
+        # Startup order matters: sync user and tentacles/community config must run before
+        # profile activation. First boot (empty user/) has no profiles until tentacles
+        # install and _apply_forced_configs import them; ensure_profile() here would fail too early.
         _configure_profile_sync_user(
             config,
             community_auth,
             is_process_child=is_process_child,
         )
 
-        _activate_saved_profile_after_sync(config, logger)
-
-        # tries to load, install or repair tentacles
+        # Install or repair tentacles before selecting a profile (may create default profiles).
+        # Process children: readonly_reference_tentacles_path from config.json is applied here.
         _load_or_create_tentacles(community_auth, config, logger, is_process_child=is_process_child)
 
-        # patch setup with forced values
+        # Cloud/community forced profiles and env overrides (first startup imports remote profile).
         if not args.backtesting:
             _apply_forced_configs(community_auth, logger, config, is_first_startup)
+
+        # Select saved profile and validate config only after profiles are available.
+        _activate_saved_profile_after_sync(config, logger)
 
         # apply CLI overrides after profile activation (trader keys come from profile)
         update_config_with_args(args, config, logger)
