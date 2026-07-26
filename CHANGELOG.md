@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
-## [3.0.0] - 2026-07-26
+## [3.0.0-beta1] - 2026-07-26
 ### Start of the OctoBot 3.0.0 beta
 OctoBot 3.0.0 a new system for portfolio automation from desktop and mobile.
 You run it on your computer or server in node mode (the new default OctoBot mode), which acts as the backend for the new OctoBot interface.
