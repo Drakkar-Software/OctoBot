@@ -14,8 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import os
+from unittest import mock
 
 import octobot.configuration_manager as configuration_manager
+import octobot.constants as constants
 import octobot_commons.constants as commons_constants
 import octobot_commons.tests.test_config as test_config
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
@@ -61,3 +63,14 @@ def test_init_config_uses_runtime_user_root_not_import_time_default(tmp_path):
             provider._root = None
         if automation_config_path.is_file():
             os.remove(automation_config_path)
+
+
+class TestGetDefaultTentaclesUrl:
+    def test_explicit_version_is_embedded_in_url(self):
+        tentacles_url = configuration_manager.get_default_tentacles_url(version=constants.LONG_VERSION)
+        assert constants.LONG_VERSION in tentacles_url
+
+    def test_default_url_uses_long_version(self):
+        with mock.patch("octobot.configuration_manager.os.getenv", side_effect=lambda key, default=None: default):
+            tentacles_url = configuration_manager.get_default_tentacles_url()
+        assert constants.LONG_VERSION in tentacles_url

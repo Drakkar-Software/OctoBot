@@ -13,8 +13,14 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import octobot.community.tentacles_packages as tentacles_packages
+import octobot.constants as constants
 
-PROJECT_NAME = "OctoBot"
-AUTHOR = "Drakkar-Software"
-VERSION = "3.0.0-beta1"  # major.minor.revision
-LONG_VERSION = f"{VERSION}"
+
+class TestAdaptUrlToBotVersion:
+    def test_replaces_version_placeholder_with_long_version(self):
+        package_url = f"https://example.com/tentacles/{constants.VERSION_PLACEHOLDER}/any_platform.zip"
+        adapted_url = tentacles_packages.adapt_url_to_bot_version(package_url, constants.LONG_VERSION)
+        assert constants.VERSION_PLACEHOLDER not in adapted_url
+        assert constants.LONG_VERSION in adapted_url
+        assert adapted_url == f"https://example.com/tentacles/{constants.LONG_VERSION}/any_platform.zip"
