@@ -136,7 +136,7 @@ class TestStartOctobot:
         logger = mock.Mock()
         config = mock.Mock()
         config.is_loaded.return_value = True
-        args = _start_octobot_cli_args(backtesting=True)
+        args = _start_octobot_cli_args(backtesting=False)
         call_order = []
 
         def track(name):
@@ -155,6 +155,12 @@ class TestStartOctobot:
                     mock.Mock(return_value=(config, False)),
                 ), \
                 mock.patch.object(octobot_cli, "_log_terms_if_unaccepted", track("terms")), \
+                mock.patch.object(octobot_cli, "_get_authenticated_community_if_possible", mock.AsyncMock(return_value=None)), \
+                mock.patch.object(
+                    octobot_cli.asyncio,
+                    "run",
+                    lambda coro: octobot_cli.asyncio.get_event_loop_policy().new_event_loop().run_until_complete(coro),
+                ), \
                 mock.patch.object(octobot_cli, "_configure_profile_sync_user", track("sync_user")), \
                 mock.patch.object(
                     octobot_cli,
@@ -176,17 +182,22 @@ class TestStartOctobot:
                     mock.Mock(return_value=octobot_cli.enums.OctoBotDistribution.DEFAULT),
                 ), \
                 mock.patch.object(
-                    octobot_cli.octobot_backtesting,
-                    "OctoBotBacktestingFactory",
+                    octobot_cli.octobot_class,
+                    "OctoBot",
                     mock.Mock(),
                 ), \
+                mock.patch.object(octobot_cli, "_disable_interface_from_param", mock.Mock()), \
                 mock.patch.object(octobot_cli.commands, "set_global_bot_instance", mock.Mock()), \
                 mock.patch.object(octobot_cli.commands, "run_bot", mock.Mock()):
             octobot_cli.start_octobot(args, "default.json")
 
+        sync_user_index = call_order.index("sync_user")
+        tentacles_index = call_order.index("tentacles")
+        forced_configs_index = call_order.index("forced_configs")
         activate_index = call_order.index("activate_profile")
         update_index = call_order.index("update_config")
         health_check_index = call_order.index("health_check")
+        assert sync_user_index < tentacles_index < forced_configs_index < activate_index
         assert activate_index < update_index < health_check_index
 
 
@@ -480,9 +491,9 @@ class TestLogStartupDistributionMode:
         assert "selected strategy" in message
         assert "exchanges of your choice" in message
 
-    def test_trading_mode_message(self):
+    def test_standalone_mode_message(self):
         message = self._log_message(standalone=True)
-        assert "trading mode" in message
+        assert "standalone mode" in message
         assert "selected profile" in message
 
     def test_backtesting_mode_message(self):
