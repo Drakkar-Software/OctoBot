@@ -190,7 +190,7 @@ async def _apply_db_bot_config(logger, config, community_auth) -> bool:
         profile = await config.profile_storage.import_profile_data(
             profile_data,
             constants.PROFILE_FILE_SCHEMA,
-            None,
+            os.getcwd(),
             name=profile_data.profile_details.name,
             auto_update=False,
             force_simulator=False,
