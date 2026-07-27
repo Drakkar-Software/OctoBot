@@ -16,6 +16,8 @@ export function useVpnNetworkHostname() {
     hostname,
     couldNotDetect,
     isPending: vpnNetworkQuery.isPending,
+    isFetching: vpnNetworkQuery.isFetching,
     isError: vpnNetworkQuery.isError,
+    refresh: () => vpnNetworkQuery.refetch(),
   }
 }

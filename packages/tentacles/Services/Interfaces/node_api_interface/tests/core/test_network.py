@@ -34,6 +34,20 @@ class TestGetVpnNetworkIp:
             assert network.get_vpn_network_ip() == "100.64.0.1"
         get_interface_ipv4.assert_called_once_with(network.TAILSCALE_INTERFACE_NAME_SUBSTRING)
 
+    def test_get_vpn_network_ip_returns_none_when_ip_not_in_tailscale_range(self):
+        with mock.patch(
+            f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
+            return_value="192.168.0.5",
+        ):
+            assert network.get_vpn_network_ip() is None
+
+    def test_get_vpn_network_ip_returns_none_when_no_interface_found(self):
+        with mock.patch(
+            f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
+            return_value=None,
+        ):
+            assert network.get_vpn_network_ip() is None
+
 
 class TestGetLocalNetworkIp:
     def test_get_local_network_ip_delegates_to_commons(self):

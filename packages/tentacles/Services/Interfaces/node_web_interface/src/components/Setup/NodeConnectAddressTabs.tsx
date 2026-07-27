@@ -38,6 +38,8 @@ export function NodeConnectAddressTabs({ audience }: NodeConnectAddressTabsProps
     hostname: vpnHostname,
     couldNotDetect: couldNotDetectVpn,
     isPending: isVpnPending,
+    isFetching: isVpnFetching,
+    refresh: refreshVpnHostname,
   } = useVpnNetworkHostname()
 
   const vpnHostnameHelperText = couldNotDetectVpn ? (
@@ -111,7 +113,12 @@ export function NodeConnectAddressTabs({ audience }: NodeConnectAddressTabsProps
             hostname={vpnHostname}
             hostnameLabel="Tailscale IP address or MagicDNS"
             hostnameHelperText={vpnHostnameHelperText}
-            hostnameLoading={isVpnPending}
+            hostnameLoading={isVpnPending || isVpnFetching}
+            onHostnameRefresh={() => {
+              void refreshVpnHostname()
+            }}
+            hostnameRefreshPending={isVpnFetching}
+            hostnameRefreshAriaLabel="Refresh Tailscale address"
           />
         </>
       )}

@@ -17,12 +17,16 @@
 import octobot_commons.network as commons_network
 
 TAILSCALE_INTERFACE_NAME_SUBSTRING = "tailscale"
+TAILSCALE_IPV4_PREFIX = "100." # tailscale ip range is 100.x.x.x/16
 
 
 def get_vpn_network_ip() -> str | None:
-    return commons_network.get_interface_ipv4_by_name_substring(
+    interface_ipv4 = commons_network.get_interface_ipv4_by_name_substring(
         TAILSCALE_INTERFACE_NAME_SUBSTRING,
     )
+    if interface_ipv4 is None or not interface_ipv4.startswith(TAILSCALE_IPV4_PREFIX):
+        return None
+    return interface_ipv4
 
 
 def get_local_network_ip() -> str | None:
