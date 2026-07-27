@@ -82,3 +82,11 @@ USER_ACTION_WORKFLOW_RESULT_TIMEOUT_SECONDS = float(
 )
 
 SCHEDULER_EXECUTOR_ID = str(uuid.uuid4()) # unique for each worker
+
+# Stable DBOS application_version for workflow recovery across OctoBot releases.
+# Bump only when workflow step order/semantics change in a breaking way.
+SCHEDULER_APPLICATION_VERSION = "octobot_node_v1"
+ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION = bool((
+    os.getenv("ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION") or "false"
+).lower() == "true")
+    

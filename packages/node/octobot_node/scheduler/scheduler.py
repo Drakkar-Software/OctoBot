@@ -39,17 +39,12 @@ import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.protocol.automations as automations_protocol
 
-try:
-    from octobot import VERSION
-except ImportError:
-    VERSION = "unknown"
-
 DEFAULT_NAME = "octobot_node"
 
 _BASE_CONFIG = dbos.DBOSConfig(
     name=DEFAULT_NAME,
     max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
-    application_version=VERSION, # octobot version
+    application_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
     # executor_id=..., # a constant executor_id is required for DBOS workflow recovery: leave its init to DBOS
 )
 
