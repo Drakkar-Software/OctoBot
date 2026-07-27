@@ -10,12 +10,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { OCTOBOT_WEB_INTERFACE_URL } from "@/lib/external-links"
 
-const NODE_PROCESS_NOTE =
-  "This node runs the strategy (you will need the node process to run)."
-
-const AUTOMATION_RESUME_NOTE =
-  "Started automations will show up in this node's dashboard and will automatically resume if you stop and restart your OctoBot node."
-
 type StartAutomationDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -40,15 +34,13 @@ export function StartAutomationDialog({
           <DialogDescription asChild>
             <div className="flex flex-col gap-3 pt-1 text-sm text-muted-foreground">
               <p>
-                Create a new automation in the OctoBot web or  mobile app.
+                Create and start your automation in the OctoBot web or mobile app.
+                It will appear on this node's dashboard once started.
               </p>
             </div>
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 border-t pt-4">
-          <p className="text-center text-sm text-muted-foreground">
-            Use the OctoBot interface to create your automation:
-          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col items-center gap-2 rounded-md border p-4">
               <span className="text-sm font-medium">Browser</span>
@@ -82,12 +74,6 @@ export function StartAutomationDialog({
             </Link>
             .
           </p>
-          <p className="border-t pt-4 text-center text-sm text-muted-foreground">
-            {NODE_PROCESS_NOTE}
-          </p>
-          <div className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
-            <p>{AUTOMATION_RESUME_NOTE}</p>
-          </div>
           <div className="flex flex-wrap justify-center gap-2">
             <Button
               type="button"

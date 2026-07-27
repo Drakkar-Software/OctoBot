@@ -100,6 +100,59 @@ class TestGetInterfaceIpv4ByNameSubstring:
             assert network.get_interface_ipv4_by_name_substring("tailscale") == "100.64.0.4"
 
 
+class TestGetInterfaceIpv4ByPrefix:
+    def test_returns_first_ipv4_matching_prefix_across_interfaces(self):
+        ethernet_address = mock.Mock()
+        ethernet_address.family = socket.AF_INET
+        ethernet_address.address = "192.168.0.5"
+        tailscale_address = mock.Mock()
+        tailscale_address.family = socket.AF_INET
+        tailscale_address.address = "100.115.92.45"
+        with mock.patch(
+            f"{NETWORK_MODULE}.psutil.net_if_addrs",
+            return_value={
+                "eth0": [ethernet_address],
+                "utun3": [tailscale_address],
+            },
+        ):
+            assert network.get_interface_ipv4_by_prefix("100.") == "100.115.92.45"
+
+    def test_returns_none_when_no_address_matches_prefix(self):
+        ethernet_address = mock.Mock()
+        ethernet_address.family = socket.AF_INET
+        ethernet_address.address = "192.168.0.5"
+        with mock.patch(
+            f"{NETWORK_MODULE}.psutil.net_if_addrs",
+            return_value={"eth0": [ethernet_address]},
+        ):
+            assert network.get_interface_ipv4_by_prefix("100.") is None
+
+    def test_skips_non_af_inet_addresses(self):
+        ipv6_address = mock.Mock()
+        ipv6_address.family = socket.AF_INET6
+        ipv6_address.address = "fe80::1"
+        with mock.patch(
+            f"{NETWORK_MODULE}.psutil.net_if_addrs",
+            return_value={"utun3": [ipv6_address]},
+        ):
+            assert network.get_interface_ipv4_by_prefix("100.") is None
+
+    def test_returns_first_matching_ipv4_when_multiple_exist(self):
+        first_address = mock.Mock()
+        first_address.family = socket.AF_INET
+        first_address.address = "100.64.0.4"
+        second_address = mock.Mock()
+        second_address.family = socket.AF_INET
+        second_address.address = "100.64.0.5"
+        with mock.patch(
+            f"{NETWORK_MODULE}.psutil.net_if_addrs",
+            return_value={
+                "utun3": [first_address, second_address],
+            },
+        ):
+            assert network.get_interface_ipv4_by_prefix("100.") == "100.64.0.4"
+
+
 class TestGetInterfaceIpv4ByNameSubstringPsutilIntegration:
     def test_psutil_net_if_addrs_runs_without_error(self):
         interface_addresses = psutil.net_if_addrs()
