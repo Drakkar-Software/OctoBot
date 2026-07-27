@@ -131,6 +131,34 @@ class TestUpdateConfigWithArgs:
         ] == ["test.data"]
 
 
+class TestApplyDbBotConfig:
+    def test_import_profile_data_uses_bot_install_path(self):
+        logger = mock.Mock()
+        config = mock.Mock()
+        profile_data = mock.Mock()
+        profile_data.profile_details.name = "Simple market making"
+        imported_profile = mock.Mock()
+        imported_profile.profile_id = "profile-id"
+        config.profile_storage.import_profile_data = mock.AsyncMock(return_value=imported_profile)
+        community_auth = mock.Mock()
+        community_auth.ensure_async_loop = mock.AsyncMock()
+        community_auth.fetch_bot_tentacles_data_based_config = mock.AsyncMock(
+            return_value=(profile_data, []),
+        )
+        with mock.patch.object(octobot_cli.commands, "select_forced_profile_if_any", mock.Mock(return_value=False)):
+            octobot_cli.asyncio.run(
+                octobot_cli._apply_db_bot_config(logger, config, community_auth)
+            )
+        config.profile_storage.import_profile_data.assert_awaited_once_with(
+            profile_data,
+            octobot_cli.constants.PROFILE_FILE_SCHEMA,
+            os.getcwd(),
+            name="Simple market making",
+            auto_update=False,
+            force_simulator=False,
+        )
+
+
 class TestStartOctobot:
     def test_update_config_runs_after_profile_activation(self):
         logger = mock.Mock()
