@@ -24,9 +24,9 @@ def get_vpn_network_ip() -> str | None:
     interface_ipv4 = commons_network.get_interface_ipv4_by_name_substring(
         TAILSCALE_INTERFACE_NAME_SUBSTRING,
     )
-    if interface_ipv4 is None or not interface_ipv4.startswith(TAILSCALE_IPV4_PREFIX):
-        return None
-    return interface_ipv4
+    if interface_ipv4 is not None and interface_ipv4.startswith(TAILSCALE_IPV4_PREFIX):
+        return interface_ipv4
+    return commons_network.get_interface_ipv4_by_prefix(TAILSCALE_IPV4_PREFIX)
 
 
 def get_local_network_ip() -> str | None:

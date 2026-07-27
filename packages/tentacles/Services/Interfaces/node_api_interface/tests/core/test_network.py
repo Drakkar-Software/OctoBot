@@ -31,22 +31,47 @@ class TestGetVpnNetworkIp:
             f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
             return_value="100.64.0.1",
         ) as get_interface_ipv4:
-            assert network.get_vpn_network_ip() == "100.64.0.1"
+            with mock.patch(
+                f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_prefix",
+            ) as get_interface_ipv4_by_prefix:
+                assert network.get_vpn_network_ip() == "100.64.0.1"
         get_interface_ipv4.assert_called_once_with(network.TAILSCALE_INTERFACE_NAME_SUBSTRING)
+        get_interface_ipv4_by_prefix.assert_not_called()
 
-    def test_get_vpn_network_ip_returns_none_when_ip_not_in_tailscale_range(self):
-        with mock.patch(
-            f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
-            return_value="192.168.0.5",
-        ):
-            assert network.get_vpn_network_ip() is None
-
-    def test_get_vpn_network_ip_returns_none_when_no_interface_found(self):
+    def test_get_vpn_network_ip_falls_back_to_prefix_when_name_scan_returns_none(self):
         with mock.patch(
             f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
             return_value=None,
         ):
-            assert network.get_vpn_network_ip() is None
+            with mock.patch(
+                f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_prefix",
+                return_value="100.64.0.9",
+            ) as get_interface_ipv4_by_prefix:
+                assert network.get_vpn_network_ip() == "100.64.0.9"
+        get_interface_ipv4_by_prefix.assert_called_once_with(network.TAILSCALE_IPV4_PREFIX)
+
+    def test_get_vpn_network_ip_returns_none_when_name_and_prefix_scans_find_nothing(self):
+        with mock.patch(
+            f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
+            return_value=None,
+        ):
+            with mock.patch(
+                f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_prefix",
+                return_value=None,
+            ):
+                assert network.get_vpn_network_ip() is None
+
+    def test_get_vpn_network_ip_falls_back_to_prefix_when_name_scan_returns_non_tailscale_ip(self):
+        with mock.patch(
+            f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_name_substring",
+            return_value="192.168.0.5",
+        ):
+            with mock.patch(
+                f"{NETWORK_MODULE}.commons_network.get_interface_ipv4_by_prefix",
+                return_value="100.64.0.2",
+            ) as get_interface_ipv4_by_prefix:
+                assert network.get_vpn_network_ip() == "100.64.0.2"
+        get_interface_ipv4_by_prefix.assert_called_once_with(network.TAILSCALE_IPV4_PREFIX)
 
 
 class TestGetLocalNetworkIp:

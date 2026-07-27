@@ -104,6 +104,19 @@ def get_interface_ipv4_by_name_substring(interface_name_substring: str) -> str |
     return None
 
 
+def get_interface_ipv4_by_prefix(ipv4_prefix: str) -> str | None:
+    """
+    Return the first IPv4 address on any network interface that starts with the given prefix.
+    :param ipv4_prefix: prefix to match against IPv4 address strings (e.g. "100.")
+    :return: the IPv4 address string, or None if none is found
+    """
+    for addresses in psutil.net_if_addrs().values():
+        for address in addresses:
+            if address.family == socket.AF_INET and address.address.startswith(ipv4_prefix):
+                return address.address
+    return None
+
+
 def get_local_network_ip() -> str | None:
     """
     Return the preferred private IPv4 address for local network access.
