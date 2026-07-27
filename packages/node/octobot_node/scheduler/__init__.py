@@ -16,8 +16,10 @@
 
 import logging
 
+import octobot_node.constants
 import octobot_node.scheduler.scheduler as scheduler_lib
 import octobot_node.scheduler.workflows
+import octobot_node.scheduler.workflows_version_migration as workflows_version_migration
 
 scheduler_logger = logging.getLogger(__name__)
 
@@ -40,6 +42,10 @@ async def initialize_scheduler():
     scheduler_logger.info("Initializing scheduler")
     SCHEDULER.create()
     octobot_node.scheduler.workflows.register_workflows()
+    if octobot_node.constants.ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION:
+        workflows_version_migration.migrate_stranded_workflow_versions(
+            target_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
+        )
     import octobot_node.scheduler.schedules as schedules
     SCHEDULER.start()
     # apply_schedules requires DBOS launch (sys_db); must run after start().

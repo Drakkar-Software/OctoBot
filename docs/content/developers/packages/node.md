@@ -24,6 +24,18 @@ User-triggered actions — things like a manual override sent through the API �
 
 Log messages emitted inside any workflow or step are routed to a per-workflow file under `logs/automations/`. Child workflows share their parent's log file, keyed by the first 36 characters of the workflow ID.
 
+### DBOS application version and recovery
+
+DBOS only dequeues and recovers workflows whose `application_version` matches the runtime. OctoBot Node uses a stable code constant — `SCHEDULER_APPLICATION_VERSION` in `octobot_node.constants` (currently `octobot_node_v1`) — instead of the OctoBot release version, so automations survive OctoBot upgrades.
+
+When `ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION` is enabled, scheduler startup runs `migrate_stranded_workflow_versions()` before `launch()`. That re-tags any `ENQUEUED` or `PENDING` workflows in the system database to `SCHEDULER_APPLICATION_VERSION`, unblocking workflows stranded by older releases that tagged rows with the OctoBot version string. The flag is read from the environment variable of the same name (`true` / `false`); it defaults to `false`.
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION` | `false` | Run startup migration of stranded workflow `application_version` values |
+
+Bump `SCHEDULER_APPLICATION_VERSION` only when workflow step order or semantics change in a breaking way. For branching old vs new code paths within the same version, use [DBOS patching](https://docs.dbos.dev/python/tutorials/upgrading-workflows).
+
 ## Encryption
 
 Task payloads are optionally encrypted using a hybrid RSA/AES-GCM/ECDSA scheme. Each encryption call generates a fresh AES-256-GCM key and IV; the AES key is wrapped with RSA-OAEP so the bulk payload never travels under the asymmetric key directly. An ECDSA signature over the ciphertext — computed as `ciphertext + encrypted_aes_key + iv` concatenated — is verified before any decryption attempt, preventing chosen-ciphertext attacks.

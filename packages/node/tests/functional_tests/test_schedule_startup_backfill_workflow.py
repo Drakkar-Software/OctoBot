@@ -280,3 +280,79 @@ class TestScheduleBackfillFunctional:
             expected_workflow_id,
             _STUCK_POLL_SECONDS,
         )
+
+    async def test_backfill_resumes_after_application_version_migration(
+        self,
+        temp_dbos_scheduler_backfill,
+    ):
+        blank_workflow_fn = temp_dbos_scheduler_backfill
+        schedule_input = _blank_schedule_input(blank_workflow_fn)
+        backfill_anchor = datetime.datetime(
+            2026, 7, 15, 11, 0, 0, tzinfo=datetime.timezone.utc,
+        )
+        backfill_end = datetime.datetime(
+            2026, 7, 15, 12, 30, 0, tzinfo=datetime.timezone.utc,
+        )
+        expected_scheduled_time = datetime.datetime(
+            2026, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc,
+        )
+        expected_workflow_id = (
+            f"sched-{_BLANK_SCHEDULE_NAME}-{expected_scheduled_time.isoformat()}"
+        )
+
+        dbos.DBOS.create_schedule(
+            schedule_name=schedule_input["schedule_name"],
+            workflow_fn=schedule_input["workflow_fn"],
+            schedule=schedule_input["schedule"],
+            context=schedule_input.get("context"),
+            automatic_backfill=schedule_input.get("automatic_backfill", False),
+            queue_name=schedule_input.get("queue_name"),
+        )
+
+        _seed_stale_latest_application_version(_STALE_APP_VERSION)
+        dbos.DBOS.set_latest_application_version(_STALE_APP_VERSION)
+
+        await _run_startup_backfill(
+            schedule_input,
+            backfill_anchor=backfill_anchor,
+            backfill_end=backfill_end,
+        )
+
+        workflow_status = await dbos.DBOS.get_workflow_status_async(expected_workflow_id)
+        assert workflow_status is not None
+        assert workflow_status.app_version == _STALE_APP_VERSION
+        assert workflow_status.app_version != dbos.DBOS.application_version
+
+        import dbos._dbos as dbos_internals
+        import octobot_node.scheduler.workflows_version_migration as workflows_version_migration
+
+        scheduler_database_url = dbos_internals._get_dbos_instance()._sys_db.engine.url
+        assert scheduler_database_url is not None
+        assert scheduler_database_url.database is not None
+
+        with mock.patch.object(
+            workflows_version_migration.octobot_node.config.settings,
+            "SCHEDULER_POSTGRES_URL",
+            None,
+        ), mock.patch.object(
+            workflows_version_migration.octobot_node.config.settings,
+            "SCHEDULER_SQLITE_FILE",
+            scheduler_database_url.database,
+        ):
+            workflows_version_migration.migrate_stranded_workflow_versions(
+                target_version=dbos.DBOS.application_version,
+            )
+
+        workflow_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(
+            expected_workflow_id,
+        )
+        workflow_result = await asyncio.wait_for(
+            workflow_handle.get_result(),
+            timeout=_WORKFLOW_RESULT_TIMEOUT_SECONDS,
+        )
+        assert workflow_result == {"ran": True}
+
+        final_workflow_status = await dbos.DBOS.get_workflow_status_async(expected_workflow_id)
+        assert final_workflow_status is not None
+        assert final_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value
+        assert expected_scheduled_time in blank_backfill_test_runs
