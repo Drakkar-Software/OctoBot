@@ -4,6 +4,7 @@
 import mock
 import pytest
 
+import octobot.constants as octobot_constants
 import octobot_commons.errors as commons_errors
 import octobot_tentacles_manager.constants as tentacles_manager_constants
 import tentacles.Services.Interfaces.web_interface.models.profiles as profiles_model
@@ -309,7 +310,7 @@ class TestGetProfilesTentaclesDetails:
         ), mock.patch.object(
             profiles_model.tentacles_manager_api,
             "get_tentacles_installation_version",
-            mock.Mock(side_effect=["2.1.1", "2.1.1"]),
+            mock.Mock(side_effect=[octobot_constants.VERSION, octobot_constants.VERSION]),
         ), mock.patch.object(
             profiles_model.tentacles_manager_api,
             "is_tentacles_setup_config_successfully_loaded",
