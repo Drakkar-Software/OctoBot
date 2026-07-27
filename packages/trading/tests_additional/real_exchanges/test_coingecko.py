@@ -14,64 +14,64 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import contextlib
+import os
 
-import mock
 import pytest
+import tentacles  # noqa: F401 — registers Coingecko exchange tentacle for USES_TENTACLE
 
-import octobot_commons.constants as commons_constants
+import octobot_commons
 import octobot_commons.enums as common_enums
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
-import octobot_trading.exchanges.abstract_exchange as abstract_exchange
-import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
+import tests_additional.real_exchanges as real_exchanges_test_util
 import tests_additional.real_exchanges.real_exchange_tester as real_exchange_tester
+
+
+WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+UNI_ADDRESS = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+NETWORK_NAME = "ETH"
+NO_DEX_SYMBOL_SUFFIX = f"{octobot_commons.NETWORK_SEPARATOR}{NETWORK_NAME}"
+ANY_DEX_SYMBOL_SUFFIX = f"{octobot_commons.NETWORK_SEPARATOR}{NETWORK_NAME}{octobot_commons.DEX_SEPARATOR}{octobot_commons.ANY_DEX_WILDCARD}"
+
+WETH_BASE_ADDRESS = "0x4200000000000000000000000000000000000006"
+USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+NETWORK_NAME_2 = "BASE"
+ANY_DEX_SYMBOL_SUFFIX_2 = f"{octobot_commons.NETWORK_SEPARATOR}{NETWORK_NAME_2}{octobot_commons.DEX_SEPARATOR}{octobot_commons.ANY_DEX_WILDCARD}"
 
 
 pytestmark = pytest.mark.asyncio
 
 
-COINGECKO_CCXT_OPTIONS = {
-    "vsCurrency": "usd",
-}
+def _get_coingecko_api_key():
+    real_exchanges_test_util._load_exchange_creds_env_variables_if_necessary()
+    return os.getenv("COINGECKO_API_KEY")
 
 
-def _get_coingecko_additional_connector_config():
-    # Real-exchange tests only: production should read this from the CoinGecko tentacle
-    # via Coingecko.get_additional_connector_config() and tentacle_config.
-    return {
-        ccxt_constants.CCXT_OPTIONS: COINGECKO_CCXT_OPTIONS,
-    }
-
+def _require_coingecko_onchain_api_key():
+    if not _get_coingecko_api_key():
+        pytest.skip("COINGECKO_API_KEY environment variable is required for onchain CoinGecko tests")
 
 class TestCoingeckoRealExchangeTester(real_exchange_tester.RealExchangeTester):
     EXCHANGE_NAME = "coingecko"
     SYMBOL = "BTC/USD"
     SYMBOL_2 = "ETH/USD"
     SYMBOL_3 = "SOL/USD"
+    ONCHAIN_SYMBOL = f"{WETH_ADDRESS}/{USDC_ADDRESS}{NO_DEX_SYMBOL_SUFFIX}"
+    ONCHAIN_SYMBOL_2 = f"{WETH_ADDRESS}/{USDT_ADDRESS}{ANY_DEX_SYMBOL_SUFFIX}"
+    ONCHAIN_SYMBOL_3 = f"{UNI_ADDRESS}/{WETH_ADDRESS}{ANY_DEX_SYMBOL_SUFFIX}"
+    ONCHAIN_SYMBOL_4 = f"{USDT_ADDRESS}/USD{NO_DEX_SYMBOL_SUFFIX}"
+    ONCHAIN_SYMBOL_5 = f"{WETH_BASE_ADDRESS}/{USDC_BASE_ADDRESS}{ANY_DEX_SYMBOL_SUFFIX_2}"
     USES_TENTACLE = True
     TIME_FRAME = common_enums.TimeFrames.ONE_DAY
     REQUIRES_AUTH = False
 
     @contextlib.asynccontextmanager
     async def get_exchange_manager(self, market_filter=None):
-        with mock.patch.object(
-            abstract_exchange.AbstractExchange,
-            "get_additional_connector_config",
-            autospec=True,
-            side_effect=lambda self: _get_coingecko_additional_connector_config(),
-        ):
-            async with super().get_exchange_manager(market_filter=market_filter) as exchange_manager:
-                yield exchange_manager
-
-    def get_config(self):
-        return {
-            commons_constants.CONFIG_EXCHANGES: {
-                self.EXCHANGE_NAME: {
-                    commons_constants.CONFIG_EXCHANGE_TYPE: self.EXCHANGE_TYPE,
-                    ccxt_constants.CCXT_OPTIONS: COINGECKO_CCXT_OPTIONS,
-                }
-            }
-        }
+        real_exchanges_test_util._load_exchange_creds_env_variables_if_necessary()
+        async with super().get_exchange_manager(market_filter=market_filter) as exchange_manager:
+            yield exchange_manager
 
     async def test_time_frames(self):
         time_frames = await self.time_frames()
@@ -131,25 +131,26 @@ class TestCoingeckoRealExchangeTester(real_exchange_tester.RealExchangeTester):
             f"ticker {extra_columns.LOGO_URL.value!r} must be an http(s) URL, got {logo_url!r}"
         )
 
-    async def test_get_price_ticker(self):
-        def _price_ticker_expectations() -> real_exchange_tester.TickerRequiredExpectations:
-            ticker_expect = real_exchange_tester.TickerExpect
-            return real_exchange_tester.TickerRequiredExpectations(
-                open=ticker_expect.NONE,
-                high=ticker_expect.NONE,
-                low=ticker_expect.NONE,
-                close=ticker_expect.TRUTHY,
-                last=ticker_expect.TRUTHY,
-                bid_volume=ticker_expect.NONE,
-                ask_volume=ticker_expect.NONE,
-                base_volume=ticker_expect.NONE,
-                quote_volume=ticker_expect.NONE,
-                previous_close=ticker_expect.NONE,
-            )
+    def _coingecko_ticker_expectations(self) -> real_exchange_tester.TickerRequiredExpectations:
+        ticker_expect = real_exchange_tester.TickerExpect
+        return real_exchange_tester.TickerRequiredExpectations(
+            open=ticker_expect.NONE,
+            high=ticker_expect.NONE,
+            low=ticker_expect.NONE,
+            close=ticker_expect.TRUTHY,
+            last=ticker_expect.TRUTHY,
+            bid_volume=ticker_expect.NONE,
+            ask_volume=ticker_expect.NONE,
+            base_volume=ticker_expect.NONE,
+            quote_volume=ticker_expect.NONE,
+            previous_close=ticker_expect.NONE,
+            timestamp=ticker_expect.TRUTHY,
+        )
 
+    async def test_get_price_ticker(self):
         await self.assert_get_price_ticker(
             extra_checks=self._coingecko_ticker_extra_checks,
-            ticker_expectations=_price_ticker_expectations(),
+            ticker_expectations=self._coingecko_ticker_expectations(),
         )
 
     async def test_get_all_currencies_price_ticker(self):
@@ -157,9 +158,93 @@ class TestCoingeckoRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_get_all_currencies_price_ticker(
             symbols=symbols,
             extra_checks=self._coingecko_ticker_extra_checks,
+            ticker_expectations=self._coingecko_ticker_expectations(),
         )
 
     async def test_get_all_currencies_price_ticker_without_symbols(self):
         await self.assert_get_all_currencies_price_ticker(
             extra_checks=self._coingecko_ticker_extra_checks,
+            ticker_expectations=self._coingecko_ticker_expectations(),
+        )
+
+    async def test_get_market_status_onchain_symbols(self):
+        _require_coingecko_onchain_api_key()
+        symbols = [
+            self.ONCHAIN_SYMBOL,
+            self.ONCHAIN_SYMBOL_2,
+            self.ONCHAIN_SYMBOL_3,
+            self.ONCHAIN_SYMBOL_4,
+            self.ONCHAIN_SYMBOL_5,
+        ]
+        await self.assert_lazy_loaded_markets(
+            symbols=symbols,
+            has_price_limits=False,
+            can_have_cache=True,
+        )
+
+    async def test_get_price_ticker_onchain_symbols(self):
+        _require_coingecko_onchain_api_key()
+        max_price_per_symbol = {
+            self.ONCHAIN_SYMBOL: 99999,
+            self.ONCHAIN_SYMBOL_2: 99999,
+            self.ONCHAIN_SYMBOL_3: 1,
+            self.ONCHAIN_SYMBOL_4: 2,
+            self.ONCHAIN_SYMBOL_5: 99999,
+        }
+
+        def extra_checks(ticker):
+            symbol = ticker[real_exchange_tester.Ectc.SYMBOL.value]
+            max_price = max_price_per_symbol.get(symbol)
+            if max_price:
+                assert ticker[real_exchange_tester.Ectc.LAST.value] < max_price, (
+                    f"ticker {symbol} price is too high: "
+                    f"{ticker[real_exchange_tester.Ectc.LAST.value]} > {max_price}"
+                )
+            real_exchange_tester.RealExchangeTester.check_ticker_typing(
+                ticker,
+                check_open=False,
+                check_high=False,
+                check_low=False,
+                check_base_volume=False,
+                check_quote_volume=False,
+                check_last=True,
+            )
+            self._coingecko_ticker_extra_checks(ticker)
+
+        for symbol in [
+            self.ONCHAIN_SYMBOL,
+            self.ONCHAIN_SYMBOL_2,
+            self.ONCHAIN_SYMBOL_3,
+            self.ONCHAIN_SYMBOL_4,
+        ]:
+            await self.assert_get_price_ticker(
+                extra_checks=extra_checks,
+                symbol=symbol,
+                ticker_expectations=self._coingecko_ticker_expectations(),
+            )
+
+    async def test_get_all_currencies_price_ticker_onchain_symbols(self):
+        _require_coingecko_onchain_api_key()
+        def extra_checks(ticker):
+            real_exchange_tester.RealExchangeTester.check_ticker_typing(
+                ticker,
+                check_open=False,
+                check_high=False,
+                check_low=False,
+                check_base_volume=False,
+                check_quote_volume=False,
+                check_last=True,
+            )
+            self._coingecko_ticker_extra_checks(ticker)
+
+        await self.assert_get_all_currencies_price_ticker(
+            symbols=[
+                self.ONCHAIN_SYMBOL,
+                self.ONCHAIN_SYMBOL_2,
+                self.ONCHAIN_SYMBOL_3,
+                self.ONCHAIN_SYMBOL_4,
+                self.ONCHAIN_SYMBOL_5,
+            ],
+            extra_checks=extra_checks,
+            ticker_expectations=self._coingecko_ticker_expectations(),
         )

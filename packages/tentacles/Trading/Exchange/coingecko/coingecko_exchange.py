@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
 
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
@@ -24,12 +25,14 @@ class Coingecko(exchanges.RestExchange):
         return "coingecko"
 
     def get_additional_connector_config(self):
-        tentacle_config = self.tentacle_config or {}
-        vs_currency = tentacle_config.get("vsCurrency")
-        if not vs_currency:
+        options = {}
+        if api_key := os.getenv("COINGECKO_API_KEY"):
+            options["defaultAPIKey"] = api_key
+            options["forceDefaultAPIKey"] = True
+        if vs_currency := (self.tentacle_config or {}).get("vsCurrency"):
+            options["vsCurrency"] = vs_currency
+        if not options:
             return {}
         return {
-            ccxt_constants.CCXT_OPTIONS: {
-                "vsCurrency": vs_currency,
-            },
+            ccxt_constants.CCXT_OPTIONS: options,
         }
