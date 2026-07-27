@@ -137,7 +137,7 @@ def _get_profile(
             constants.CONFIG_ENABLED_OPTION
         ] = True
     profile.description = description
-    profile.risk = risk
+    profile.risk = risk if risk is not None else enums.ProfileRisk.MODERATE
     profile.auto_update = auto_update
     profile.slug = slug
     profile.profile_id = str(uuid.uuid4().hex)

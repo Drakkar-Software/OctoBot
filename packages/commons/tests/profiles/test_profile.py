@@ -319,3 +319,23 @@ def test_filter_fill_elements(profile):
             constants.CONFIG_ENABLED_OPTION: True
         }
     }
+
+
+class TestProfileFromDict:
+    @pytest.mark.parametrize(
+        "field_key,attribute_name,expected",
+        [
+            (constants.CONFIG_RISK, "risk", enums.ProfileRisk.MODERATE),
+            (constants.CONFIG_COMPLEXITY, "complexity", enums.ProfileComplexity.MEDIUM),
+            (constants.CONFIG_TYPE, "profile_type", enums.ProfileType.LIVE),
+        ],
+    )
+    def test_null_enum_field_uses_default(self, field_key, attribute_name, expected):
+        profile = profiles.Profile(get_profile_path())
+        profile.from_dict(
+            {
+                constants.CONFIG_PROFILE: {field_key: None},
+                constants.PROFILE_CONFIG: {},
+            }
+        )
+        assert getattr(profile, attribute_name) == expected

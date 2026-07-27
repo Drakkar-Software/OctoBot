@@ -1,6 +1,7 @@
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 
+import asyncio
 import os
 import copy
 
@@ -8,12 +9,15 @@ import mock
 import pytest
 
 import octobot_commons.constants as constants
+import octobot_commons.enums as enums
 import octobot_commons.errors as errors_module
+import octobot_commons.json_util as json_util
 import octobot_commons.profiles.profile_types.profile as profile_module
 import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.profiles.profile_types.sync_profile as sync_profile_module
+import octobot_commons.profiles.profile_data_import as profile_data_import_module
 
 
 class TestProfileStorageListProfiles:
@@ -520,3 +524,146 @@ class TestSyncProfileBackendSaveProfile:
         assert saved_profile_data.exchanges[0].internal_name == "binance"
         assert saved_profile_data.exchanges[0].exchange_type == "spot"
         strategy_provider.update_item.assert_called_once()
+
+
+def _profile_schema_path() -> str:
+    return os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "static",
+        "profile_schema.json",
+    )
+
+
+def _cloud_like_fetched_profile_data() -> profile_data_module.ProfileData:
+    return profile_data_module.ProfileData.from_dict(
+        {
+            "profile_details": {
+                "name": "proud-bear_fetched_config",
+                "id": "test-profile-id",
+                "bot_id": "test-bot-id",
+            },
+            "trading": {"reference_market": "USDT"},
+            "trader": {"enabled": True},
+            "trader_simulator": {"enabled": False},
+            "exchanges": [
+                {
+                    "internal_name": "lbank",
+                    "exchange_type": "spot",
+                }
+            ],
+        }
+    )
+
+
+class TestProfileStorageImportProfileDataFunctional:
+    def test_import_profile_data_round_trips_full_profile_shape(self, tmp_path, monkeypatch):
+        profile_name = "proud-bear_fetched_config"
+        original_slug = profile_name
+        bot_install_path = str(tmp_path)
+        user_folder = tmp_path / constants.USER_FOLDER
+        profiles_path = user_folder / constants.PROFILES_FOLDER
+        profiles_path.mkdir(parents=True)
+        monkeypatch.chdir(bot_install_path)
+        profile_schema = os.path.abspath(_profile_schema_path())
+        profile_storage = profile_storage_module.ProfileStorage(str(profiles_path), None)
+        assert profile_storage.is_sync_available() is False
+        profile_data = _cloud_like_fetched_profile_data()
+        tentacles_setup_config_mock = mock.Mock()
+        tentacles_setup_config_mock.save_config.return_value = True
+
+        with mock.patch(
+            "octobot_tentacles_manager.configuration.profile_tentacles_util.build_setup_config_from_profile_data",
+            mock.Mock(return_value=tentacles_setup_config_mock),
+        ), mock.patch(
+            "octobot_tentacles_manager.configuration.profile_tentacles_util.write_specific_configs_to_profile_folder",
+            mock.Mock(return_value=False),
+        ):
+            imported_profile = asyncio.run(
+                profile_storage.import_profile_data(
+                    profile_data,
+                    profile_schema,
+                    bot_install_path,
+                    name=profile_name,
+                )
+            )
+
+        profile_folder = profiles_path / profile_name
+        profile_config_path = profile_backends_module.FilesystemProfileBackend.config_file_path(
+            str(profile_folder)
+        )
+
+        assert profile_folder.is_dir()
+        assert os.path.isfile(profile_config_path)
+        assert not os.path.isfile(
+            os.path.join(profile_folder, constants.CONFIG_TENTACLES_FILE)
+        )
+
+        on_disk_profile = json_util.read_file(profile_config_path)
+        on_disk_metadata = on_disk_profile[constants.CONFIG_PROFILE]
+        assert on_disk_metadata[constants.CONFIG_RISK] is not None
+        assert on_disk_metadata[constants.CONFIG_COMPLEXITY] is not None
+        assert on_disk_metadata[constants.CONFIG_TYPE] is not None
+        assert on_disk_metadata[constants.CONFIG_NAME] == profile_name
+        assert on_disk_metadata[constants.CONFIG_SLUG] == original_slug
+        assert on_disk_metadata[constants.CONFIG_READ_ONLY] is True
+        assert on_disk_metadata[constants.CONFIG_IMPORTED] is True
+        assert on_disk_metadata[constants.CONFIG_AUTO_UPDATE] is False
+        assert on_disk_metadata[constants.CONFIG_RISK] == enums.ProfileRisk.MODERATE.value
+        assert on_disk_metadata[constants.CONFIG_COMPLEXITY] == enums.ProfileComplexity.MEDIUM.value
+        assert on_disk_metadata[constants.CONFIG_TYPE] == enums.ProfileType.LIVE.value
+        assert on_disk_metadata[constants.CONFIG_EXTRA_BACKTESTING_TIME_FRAMES] == [
+            profile_data_import_module.IMPORTED_PROFILES_DEFAULT_EXTRA_BACKTESTING_TIMEFRAME
+        ]
+        assert on_disk_metadata[constants.CONFIG_ID]
+
+        on_disk_config = on_disk_profile[constants.PROFILE_CONFIG]
+        assert on_disk_config[constants.CONFIG_EXCHANGES]["lbank"][constants.CONFIG_ENABLED_OPTION] is True
+        assert on_disk_config[constants.CONFIG_TRADER][constants.CONFIG_ENABLED_OPTION] is True
+        assert on_disk_config[constants.CONFIG_SIMULATOR][constants.CONFIG_ENABLED_OPTION] is False
+        assert (
+            on_disk_config[constants.CONFIG_TRADING][constants.CONFIG_TRADER_REFERENCE_MARKET]
+            == "USDT"
+        )
+
+        self._assert_imported_profile_metadata(
+            imported_profile,
+            profile_name=profile_name,
+            original_slug=original_slug,
+        )
+
+        reloaded_profile = profile_backends_module.FilesystemProfileBackend().read_profile_from_path(
+            str(profile_folder),
+            schema_path=profile_schema,
+        )
+        self._assert_imported_profile_metadata(
+            reloaded_profile,
+            profile_name=profile_name,
+            original_slug=original_slug,
+        )
+        assert imported_profile.as_dict()[constants.CONFIG_PROFILE] == reloaded_profile.as_dict()[
+            constants.CONFIG_PROFILE
+        ]
+        assert imported_profile.as_dict()[constants.PROFILE_CONFIG] == reloaded_profile.as_dict()[
+            constants.PROFILE_CONFIG
+        ]
+
+    def _assert_imported_profile_metadata(
+        self,
+        profile: profile_module.Profile,
+        *,
+        profile_name: str,
+        original_slug: str,
+    ):
+        assert profile.name == profile_name
+        assert profile.slug == original_slug
+        assert profile.read_only is True
+        assert profile.imported is True
+        assert profile.auto_update is False
+        assert profile.risk == enums.ProfileRisk.MODERATE
+        assert profile.complexity == enums.ProfileComplexity.MEDIUM
+        assert profile.profile_type == enums.ProfileType.LIVE
+        assert profile.extra_backtesting_time_frames == [
+            profile_data_import_module.IMPORTED_PROFILES_DEFAULT_EXTRA_BACKTESTING_TIMEFRAME
+        ]
+        assert profile.profile_id

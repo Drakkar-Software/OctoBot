@@ -132,15 +132,16 @@ class Profile:
         self.hidden = profile_config.get(constants.CONFIG_HIDDEN, False)
         self.imported = profile_config.get(constants.CONFIG_IMPORTED, False)
         self.complexity = enums.ProfileComplexity(
-            profile_config.get(
-                constants.CONFIG_COMPLEXITY, enums.ProfileComplexity.MEDIUM.value
-            )
+            profile_config.get(constants.CONFIG_COMPLEXITY)
+            or enums.ProfileComplexity.MEDIUM.value
         )
         self.risk = enums.ProfileRisk(
-            profile_config.get(constants.CONFIG_RISK, enums.ProfileRisk.MODERATE.value)
+            profile_config.get(constants.CONFIG_RISK)
+            or enums.ProfileRisk.MODERATE.value
         )
         self.profile_type = enums.ProfileType(
-            profile_config.get(constants.CONFIG_TYPE, enums.ProfileType.LIVE.value)
+            profile_config.get(constants.CONFIG_TYPE)
+            or enums.ProfileType.LIVE.value
         )
         self.extra_backtesting_time_frames = profile_config.get(
             constants.CONFIG_EXTRA_BACKTESTING_TIME_FRAMES, []

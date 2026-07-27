@@ -234,7 +234,7 @@ class ProfileStorage:
         bot_install_path: str,
         name: str = None,
         description: str = None,
-        risk=None,
+        risk=enums.ProfileRisk.MODERATE,
         auto_update: bool = False,
         slug: str = None,
         logo_url: str = None,
