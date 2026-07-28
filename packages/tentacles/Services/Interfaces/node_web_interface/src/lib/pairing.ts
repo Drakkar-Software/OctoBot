@@ -1,5 +1,64 @@
+import { SetupService } from "@/client"
 import { loadPassword } from "@/lib/device-key"
 import { fetchNodeConfig } from "@/lib/node-config"
+
+export function buildOriginWithHostname(origin: string, hostname: string): string {
+  const url = new URL(origin)
+  url.hostname = hostname
+  return url.origin
+}
+
+export function resolveExternalHostUrl(
+  externalHost: string,
+  protocol: string,
+): string {
+  return /^https?:\/\//i.test(externalHost)
+    ? externalHost
+    : `${protocol}//${externalHost}`
+}
+
+export function resolvePairingNodeHostname(
+  vpnIp: string | null | undefined,
+  localIp: string | null | undefined,
+  browserOrigin: string,
+): string {
+  if (vpnIp) {
+    return buildOriginWithHostname(browserOrigin, vpnIp)
+  }
+  if (localIp) {
+    return buildOriginWithHostname(browserOrigin, localIp)
+  }
+  return browserOrigin
+}
+
+export async function resolvePairingNodeUrl(): Promise<string> {
+  // P0: admin-configured external host (reverse proxy / tailscale serve).
+  try {
+    const config = await fetchNodeConfig()
+    if (config?.external_host) {
+      return resolveExternalHostUrl(config.external_host, window.location.protocol)
+    }
+  } catch (error) {
+    console.error("resolvePairingNodeUrl: failed to fetch node config", error)
+  }
+
+  // P1: Tailscale IP, P2: LAN IP, P3: browser origin fallback.
+  const [vpnResult, localResult] = await Promise.allSettled([
+    SetupService.getVpnNetworkAddress(),
+    SetupService.getLocalNetworkAddress(),
+  ])
+
+  const vpnIp =
+    vpnResult.status === "fulfilled"
+      ? (vpnResult.value.vpn_network_ip ?? null)
+      : null
+  const localIp =
+    localResult.status === "fulfilled"
+      ? (localResult.value.local_network_ip ?? null)
+      : null
+
+  return resolvePairingNodeHostname(vpnIp, localIp, window.location.origin)
+}
 
 export async function buildPairingQrValue() {
   const address = localStorage.getItem("auth_username") || ""
@@ -9,20 +68,7 @@ export async function buildPairingQrValue() {
       "No active wallet session — log out and back in to refresh device key.",
     )
   }
-  // Prefer the admin-configured external host (e.g. behind a reverse proxy
-  // like tailscale serve) over the browser's own origin, which may be a LAN
-  // IP or localhost that the pairing mobile device can't reach.
-  let url = window.location.origin
-  try {
-    const config = await fetchNodeConfig()
-    if (config?.external_host) {
-      url = /^https?:\/\//i.test(config.external_host)
-        ? config.external_host
-        : `${window.location.protocol}//${config.external_host}`
-    }
-  } catch (e) {
-    console.error("buildPairingQrValue: failed to fetch node config", e)
-  }
+  const url = await resolvePairingNodeUrl()
   return JSON.stringify({
     url,
     address,
