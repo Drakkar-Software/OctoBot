@@ -1,6 +1,12 @@
 # -*- mode: python -*-
 
+from PyInstaller.utils.hooks import collect_data_files
+
 block_cipher = None
+
+# eth_account.hdaccount reads BIP39 wordlists from disk (hdaccount/wordlist/*.txt).
+# hiddenimports only bundles Python modules; collect_data_files includes those data files.
+eth_account_datas = collect_data_files("eth_account")
 
 OCTOBOT_PACKAGES_FILES = REQUIRED = [s.strip() for s in open('bin/octobot_packages_files.txt').readlines()]
 # hiddenimports=['numpy.core._dtype_ctypes'] from https://github.com/pyinstaller/pyinstaller/issues/3982
@@ -9,11 +15,12 @@ a = Analysis(
    pathex=['../'],
    datas=[
       ('../octobot/config', 'octobot/config'),
-      ('../octobot/strategy_optimizer/optimizer_data_files', 'octobot/strategy_optimizer/optimizer_data_files')
-   ],
+      ('../octobot/strategy_optimizer/optimizer_data_files', 'octobot/strategy_optimizer/optimizer_data_files'),
+   ] + eth_account_datas,  # required for node wallet mnemonic generation (web3.Account.create_with_mnemonic)
    hiddenimports=[
       "colorlog", "numpy.core._dtype_ctypes", "dotenv",
       "pgpy", "imghdr",
+      "web3", "eth_account",
       "aiosqlite", "aiohttp",
       "pyarrow", "pyiceberg",
       "psutil",
@@ -22,6 +29,7 @@ a = Analysis(
       "asyncpraw", "simplifiedpytrends", "simplifiedpytrends.exceptions", "simplifiedpytrends.request",
       "pyngrok", "pyngrok.ngrok", "openai",
       "flask", "flask_login", "flask_wtf", "flask_caching", "flask_compress", "flask_socketio", "flask_cors",
+      "werkzeug.middleware", "werkzeug.middleware.proxy_fix",
       "wtforms", "wtforms.fields", "gevent", "geventwebsocket",
       "vaderSentiment", "vaderSentiment.vaderSentiment",
       "coingecko_openapi_client",
