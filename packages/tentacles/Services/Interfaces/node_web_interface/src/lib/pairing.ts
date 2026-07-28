@@ -1,6 +1,7 @@
 import { SetupService } from "@/client"
 import { loadPassword } from "@/lib/device-key"
 import { fetchNodeConfig } from "@/lib/node-config"
+import { fetchOwnWalletExport, type WalletExportData } from "@/lib/wallet-export"
 
 export function buildOriginWithHostname(origin: string, hostname: string): string {
   const url = new URL(origin)
@@ -60,18 +61,39 @@ export async function resolvePairingNodeUrl(): Promise<string> {
   return resolvePairingNodeHostname(vpnIp, localIp, window.location.origin)
 }
 
+/** The secret a scanner should import.
+ *
+ *  `seed` wins when there is one: a mnemonic restores anywhere, and a node set
+ *  up from a raw key has none to give.
+ *
+ *  The `0x` prefix is not cosmetic. Wallet storage strips it before saving
+ *  (`WalletEntry.private_key = private_key.removeprefix("0x")`), so the export
+ *  hands back bare hex, and the scanner has nothing but the value's shape to
+ *  tell a key from a phrase by. Unprefixed, a private key reads as a seed
+ *  phrase and fails to import. */
+export function pairingSecretFromWallet(wallet: WalletExportData): string {
+  if (wallet.seed) return wallet.seed
+  return wallet.private_key.startsWith("0x")
+    ? wallet.private_key
+    : `0x${wallet.private_key}`
+}
+
+/** The QR carries the wallet itself, not a way to ask this node for it: the
+ *  export happens here, while the browser still holds an authenticated session.
+ *  A phone that scans it can restore the account with the node switched off. */
 export async function buildPairingQrValue() {
   const address = localStorage.getItem("auth_username") || ""
-  const passphrase = (await loadPassword()) ?? ""
-  if (!address || !passphrase) {
+  const password = (await loadPassword()) ?? ""
+  if (!address || !password) {
     throw new Error(
       "No active wallet session — log out and back in to refresh device key.",
     )
   }
   const url = await resolvePairingNodeUrl()
+  const wallet = await fetchOwnWalletExport()
   return JSON.stringify({
     url,
     address,
-    passphrase,
+    password: pairingSecretFromWallet(wallet),
   })
 }
