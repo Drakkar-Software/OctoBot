@@ -218,6 +218,15 @@ async def wait_until_pid_stopped_async(
     )
 
 
+def rebind_managed_child_pid(spawn_pid: int, authoritative_pid: int) -> None:
+    """Replace spawn pid with authoritative app pid in the managed-child registry."""
+    import octobot_commons.managed_child_process_registry as managed_child_process_registry
+    managed_child_process_registry.ManagedChildProcessRegistry.instance().rebind_managed_child_pid(
+        spawn_pid,
+        authoritative_pid,
+    )
+
+
 async def graceful_stop_managed_children(
     *,
     timeout_seconds: float,

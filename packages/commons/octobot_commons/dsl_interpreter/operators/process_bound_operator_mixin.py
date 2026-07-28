@@ -92,6 +92,19 @@ class ProcessBoundOperatorMixin:
         self.pid = proc.pid
         return proc
 
+    def bind_authoritative_child_pid(
+        self,
+        authoritative_pid: int,
+        *,
+        spawn_pid: typing.Optional[int] = None,
+    ) -> None:
+        """Point this operator and the managed-child registry at the authoritative app pid."""
+        previous_pid = spawn_pid if spawn_pid is not None else (self.pid or 0)
+        if previous_pid == authoritative_pid and self.pid == authoritative_pid:
+            return
+        process_util.rebind_managed_child_pid(previous_pid, authoritative_pid)
+        self.pid = authoritative_pid
+
     @staticmethod
     def reject_user_path_segment(path_value: str) -> None:
         """Reject obvious path traversal in user-supplied relative paths."""

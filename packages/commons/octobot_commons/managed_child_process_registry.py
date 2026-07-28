@@ -56,6 +56,33 @@ class ManagedChildProcessRegistry(singleton_class.Singleton):
             self._pids.discard(pid)
         self._logger.debug("Unregistered managed child pid=%s", pid)
 
+    def rebind_managed_child_pid(self, spawn_pid: int, authoritative_pid: int) -> None:
+        """
+        Replace a bootstrap/spawn pid with the authoritative app pid (e.g. PyInstaller child).
+
+        Unregisters ``spawn_pid`` when it differs from ``authoritative_pid``, then registers
+        the authoritative pid. No-op when ``authoritative_pid`` is not positive or already bound.
+        """
+        if authoritative_pid <= 0:
+            return
+        with self._lock:
+            authoritative_already_registered = authoritative_pid in self._pids
+            spawn_in_registry = spawn_pid > 0 and spawn_pid in self._pids
+        if authoritative_already_registered and (
+            spawn_pid <= 0 or spawn_pid == authoritative_pid
+        ):
+            return
+        if spawn_pid > 0 and spawn_pid != authoritative_pid and spawn_in_registry:
+            self.unregister(spawn_pid)
+        if not authoritative_already_registered:
+            self.register(authoritative_pid)
+        if spawn_pid > 0 and spawn_pid != authoritative_pid:
+            self._logger.debug(
+                "Rebound managed child pid from %s to %s",
+                spawn_pid,
+                authoritative_pid,
+            )
+
     def snapshot_running_pids(self) -> frozenset[int]:
         """Prune dead pids, return a point-in-time copy of still-running entries."""
         with self._lock:
