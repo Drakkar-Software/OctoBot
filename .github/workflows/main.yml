@@ -577,6 +577,8 @@ jobs:
         exclude:
           - os: windows-latest
             arch: arm64
+          - os: ubuntu-latest
+            arch: arm64 # todo restore it (current error: Package 'octobot' requires a different Python: 3.12.3 not in '==3.13.*')
           - os: macos-latest
             arch: x64
 
