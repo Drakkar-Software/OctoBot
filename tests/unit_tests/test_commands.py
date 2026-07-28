@@ -279,3 +279,45 @@ class TestInstallDefaultTentacles:
                 community_auth, tentacles_setup_config, config
             )
             mock_install.assert_awaited_once_with(config, [], False)
+
+
+class TestRestartBot:
+    pytestmark = []
+
+    def test_binary_restart_preserves_argv(self, monkeypatch):
+        executable = r"C:\path\OctoBot.exe"
+        argv = [
+            executable,
+            "--user-folder", r"user\automations\abc",
+            "--standalone",
+            "-nt",
+            "--update",
+        ]
+        monkeypatch.setattr(commands.sys, "argv", argv)
+        monkeypatch.setattr(commands, "get_bot_file", lambda: executable)
+
+        popen_calls = []
+
+        def mock_popen(command, env):
+            popen_calls.append((command, env))
+            return mock.Mock()
+
+        monkeypatch.setattr(commands.subprocess, "Popen", mock_popen)
+
+        def mock_exit(exit_code):
+            raise SystemExit(exit_code)
+
+        monkeypatch.setattr(commands.os, "_exit", mock_exit)
+
+        with pytest.raises(SystemExit):
+            commands.restart_bot()
+
+        assert len(popen_calls) == 1
+        command, env = popen_calls[0]
+        assert command == [
+            executable,
+            "--user-folder", r"user\automations\abc",
+            "--standalone",
+            "-nt",
+        ]
+        assert env["PYINSTALLER_RESET_ENVIRONMENT"] == "1"

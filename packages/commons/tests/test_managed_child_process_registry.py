@@ -84,6 +84,75 @@ class TestManagedChildProcessRegistryUnregister:
         assert registry.snapshot_running_pids() == frozenset()
 
 
+class TestRebindManagedChildPid:
+    def test_rebind_replaces_spawn_pid_with_authoritative_pid(self):
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            registry.register(20520)
+            registry.rebind_managed_child_pid(20520, 25044)
+            assert registry.snapshot_running_pids() == frozenset({25044})
+
+    def test_rebind_no_op_for_non_positive_authoritative_pid(self):
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            registry.register(101)
+            registry.rebind_managed_child_pid(101, 0)
+            assert registry.snapshot_running_pids() == frozenset({101})
+
+    def test_rebind_same_pid_is_idempotent(self):
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            registry.register(505)
+            with mock.patch.object(registry, "register") as register_mock:
+                registry.rebind_managed_child_pid(505, 505)
+            register_mock.assert_not_called()
+            assert registry.snapshot_running_pids() == frozenset({505})
+
+    def test_second_rebind_to_same_authoritative_pid_is_no_op(self):
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            registry.register(20520)
+            registry.rebind_managed_child_pid(20520, 25044)
+            with mock.patch.object(registry, "register") as register_mock:
+                registry.rebind_managed_child_pid(20520, 25044)
+            register_mock.assert_not_called()
+            assert registry.snapshot_running_pids() == frozenset({25044})
+
+    @pytest.mark.asyncio
+    async def test_graceful_stop_all_signals_authoritative_pid_after_rebind(self):
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        stop_requested = False
+
+        def pid_is_running_side_effect(pid):
+            if pid == 25044 and stop_requested:
+                return False
+            return True
+
+        def sigterm_side_effect(pid, *, logger=None):
+            nonlocal stop_requested
+            stop_requested = True
+            return {"status": "stopped", "signal": "sigterm"}
+
+        with (
+            mock.patch.object(
+                managed_child_process_registry.process_util,
+                "pid_is_running",
+                side_effect=pid_is_running_side_effect,
+            ),
+            mock.patch.object(
+                managed_child_process_registry.process_util,
+                "request_graceful_stop_via_sigterm",
+                side_effect=sigterm_side_effect,
+            ) as sigterm_mock,
+        ):
+            registry.register(20520)
+            registry.rebind_managed_child_pid(20520, 25044)
+            outcomes = await registry.graceful_stop_all(timeout_seconds=0.1, poll_interval=0.01)
+        sigterm_mock.assert_called_once_with(25044, logger=registry._logger)
+        assert outcomes[25044] == "stopped"
+        assert 20520 not in outcomes
+
+
 class TestManagedChildProcessRegistrySnapshotRunningPids:
     def test_lazy_prunes_dead_pids(self):
         registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()

@@ -226,18 +226,17 @@ def _resolve_bound_pid(
     recall_state: octobot_process_state_import.OctobotProcessState,
     loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
 ) -> typing.Optional[int]:
-    """Bind operating PID from recall or fresh dump; None if metadata.pid dead (no raise)."""
+    """Bind operating PID from recall or fresh dump; None if no running pid (no raise)."""
+    if loaded_state is not None and _is_state_timestamp_fresh(loaded_state):
+        state_pid = loaded_state.metadata.pid
+        if state_pid <= 0:
+            raise commons_errors.DSLInterpreterError(
+                "process_bot_state.json is live but metadata.pid is missing or invalid."
+            )
+        if process_util.pid_is_running(state_pid):
+            return state_pid
     if _stored_pid_is_running(recall_state):
         return recall_state.pid
-    if loaded_state is None or not _is_state_timestamp_fresh(loaded_state):
-        return None
-    state_pid = loaded_state.metadata.pid
-    if state_pid <= 0:
-        raise commons_errors.DSLInterpreterError(
-            "process_bot_state.json is live but metadata.pid is missing or invalid."
-        )
-    if process_util.pid_is_running(state_pid):
-        return state_pid
     return None
 
 
@@ -770,20 +769,32 @@ def _ensure_child_environ(
     child_env[commons_constants.ENV_OCTOBOT_SYNC_DATA_ROOT] = os.path.normpath(
         os.path.join(working_directory, commons_constants.USER_FOLDER)
     )
+    if os_util.is_frozen_binary_octobot():
+        child_env.update(os_util.PYINSTALLER_RESET_ENVIRONMENT_VARS)
     return child_env
 
 
+def _octobot_spawn_argv_prefix(working_directory: str) -> list[str]:
+    if os_util.is_frozen_binary_octobot():
+        return [sys.executable]
+    start_script = os.path.join(working_directory, "start.py")
+    if not os.path.isfile(start_script):
+        raise commons_errors.DSLInterpreterError(
+            f"start.py not found at {start_script} (current working directory must be the OctoBot project root)."
+        )
+    return [sys.executable, start_script]
+
+
 def _ensure_start_cmd(
-    start_script: str,
+    argv_prefix: list[str],
     rel_user: str,
     rel_log: str,
     no_telegram: bool,
     state_file_path: str,
 ) -> list[str]:
-    """Argv for `python start.py --user-folder … --log-folder … --standalone` (+ optional -nt, --dump-state)."""
+    """Argv for OctoBot child: prefix + --user-folder … --standalone (+ optional -nt, --dump-state)."""
     cmd: list[str] = [
-        sys.executable,
-        start_script,
+        *argv_prefix,
         "--user-folder",
         rel_user,
         "--log-folder",
@@ -1137,7 +1148,13 @@ def create_octobot_process_operators(
             ):
                 resolved_pid = _resolve_bound_pid(recall_state, loaded_state)
                 if resolved_pid is not None:
-                    self.pid = resolved_pid
+                    if resolved_pid != recall_state.pid:
+                        self.bind_authoritative_child_pid(
+                            resolved_pid,
+                            spawn_pid=recall_state.pid,
+                        )
+                    else:
+                        self.pid = resolved_pid
                 _release_recall_state_listen_ports(recall_state)
                 self.value = self.request_graceful_stop(logger=_get_logger())
                 raise commons_errors.DSLInterpreterError(
@@ -1163,7 +1180,12 @@ def create_octobot_process_operators(
                         resolved_pid,
                         recall_state.pid,
                     )
-                self.pid = resolved_pid
+                    self.bind_authoritative_child_pid(
+                        resolved_pid,
+                        spawn_pid=recall_state.pid,
+                    )
+                else:
+                    self.pid = resolved_pid
             recall_state = _apply_resolved_pid_to_state(recall_state, resolved_pid)
             _get_logger().info("process state path (re-call path): %s", state_path)
             # Running: stored recall pid or child-confirmed-alive → init_state_ok, optional EAE.
@@ -1242,11 +1264,7 @@ def create_octobot_process_operators(
             web_port, node_port = _allocate_child_listen_port_pair(
                 probe_host, web_b, node_b, user_folder
             )
-            start_script = os.path.join(working_directory, "start.py")
-            if not os.path.isfile(start_script):
-                raise commons_errors.DSLInterpreterError(
-                    f"start.py not found at {start_script} (current working directory must be the OctoBot project root)."
-                )
+            argv_prefix = _octobot_spawn_argv_prefix(working_directory)
             process_sync_user_id = params.get("user_id")
             if not process_sync_user_id or not str(process_sync_user_id).strip():
                 raise commons_errors.DSLInterpreterError(
@@ -1265,7 +1283,7 @@ def create_octobot_process_operators(
                 os.path.join(user_root, octobot_constants.PROCESS_BOT_STATE_FILE_NAME)
             )
             cmd = _ensure_start_cmd(
-                start_script,
+                argv_prefix,
                 rel_user,
                 rel_log,
                 bool(params.get("no_telegram", True)),
@@ -1279,6 +1297,7 @@ def create_octobot_process_operators(
                 environment=child_env,
                 hide_console_window=True,
             )
+            spawn_pid = self.pid or 0
             scheme = str(params.get("http_scheme") or "http").rstrip(":/")
             http_base_url = f"{scheme}://{bind_host}:{web_port}"
             state = octobot_process_state_import.OctobotProcessState(
@@ -1304,7 +1323,10 @@ def create_octobot_process_operators(
                         "process_bot_state.json is live but metadata.pid is missing or invalid."
                     )
                 if process_util.pid_is_running(state_pid):
-                    self.pid = state_pid
+                    if state_pid != spawn_pid:
+                        self.bind_authoritative_child_pid(state_pid, spawn_pid=spawn_pid)
+                    else:
+                        self.pid = state_pid
                     state = state.model_copy(update={"pid": state_pid})
                     _get_logger().info(
                         "OctoBot is running (first-spawn path): user_folder=%r base_url=%r pid=%s",

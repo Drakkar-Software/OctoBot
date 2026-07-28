@@ -1693,11 +1693,72 @@ class TestEnsureChildEnviron:
         assert child_env["DISTRIBUTION"] == commons_constants.DEFAULT_DISTRIBUTION
         assert child_env[services_constants.ENV_ENABLE_NODE_API] == "false"
 
+    def test_sets_pyinstaller_reset_environment_in_binary_mode(self, tmp_path):
+        with mock.patch.object(
+            octobot_process_ops.os_util,
+            "is_frozen_binary_octobot",
+            return_value=True,
+        ):
+            child_env = octobot_process_ops._ensure_child_environ(
+                20050,
+                30050,
+                "127.0.0.1",
+                "wallet-user",
+                str(tmp_path),
+            )
+        assert child_env["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+
+    def test_omits_pyinstaller_reset_environment_in_python_mode(self, tmp_path):
+        with mock.patch.object(
+            octobot_process_ops.os_util,
+            "is_frozen_binary_octobot",
+            return_value=False,
+        ):
+            child_env = octobot_process_ops._ensure_child_environ(
+                20050,
+                30050,
+                "127.0.0.1",
+                "wallet-user",
+                str(tmp_path),
+            )
+        assert "PYINSTALLER_RESET_ENVIRONMENT" not in child_env
+
+
+class TestOctobotSpawnArgvPrefix:
+    def test_binary_mode_returns_executable_only(self):
+        with mock.patch.object(
+            octobot_process_ops.os_util,
+            "is_frozen_binary_octobot",
+            return_value=True,
+        ):
+            argv_prefix = octobot_process_ops._octobot_spawn_argv_prefix("/any/cwd")
+        assert argv_prefix == [sys.executable]
+
+    def test_python_mode_requires_start_py(self, tmp_path):
+        with mock.patch.object(
+            octobot_process_ops.os_util,
+            "is_frozen_binary_octobot",
+            return_value=False,
+        ):
+            with pytest.raises(commons_errors.DSLInterpreterError, match="start.py not found"):
+                octobot_process_ops._octobot_spawn_argv_prefix(str(tmp_path))
+
+    def test_python_mode_includes_start_script(self, tmp_path):
+        start_script = tmp_path / "start.py"
+        start_script.write_text("#", encoding="utf-8")
+        with mock.patch.object(
+            octobot_process_ops.os_util,
+            "is_frozen_binary_octobot",
+            return_value=False,
+        ):
+            argv_prefix = octobot_process_ops._octobot_spawn_argv_prefix(str(tmp_path))
+        assert argv_prefix == [sys.executable, str(start_script)]
+
 
 class TestEnsureStartCmd:
     def test_includes_standalone_flag(self):
         cmd = octobot_process_ops._ensure_start_cmd(
-            "start.py",
+            [sys.executable, "start.py"],
             "user/automations/bot-1",
             "logs/automations/bot-1",
             no_telegram=False,
@@ -1705,6 +1766,18 @@ class TestEnsureStartCmd:
         )
         assert "--standalone" in cmd
         assert cmd.index("--standalone") < cmd.index("--dump-state")
+
+    def test_binary_prefix_omits_start_script(self):
+        cmd = octobot_process_ops._ensure_start_cmd(
+            [sys.executable],
+            "user/automations/bot-1",
+            "logs/automations/bot-1",
+            no_telegram=True,
+            state_file_path="/tmp/process_bot_state.json",
+        )
+        assert cmd[0] == sys.executable
+        assert "start.py" not in cmd
+        assert cmd[1:3] == ["--user-folder", "user/automations/bot-1"]
 
 
 class TestEnsureOctobotProcessOperatorPrecompute:
@@ -1739,6 +1812,53 @@ class TestEnsureOctobotProcessOperatorPrecompute:
         ):
             with pytest.raises(commons_errors.DSLInterpreterError, match="requires user_id"):
                 await op.pre_compute()
+
+    async def test_spawns_child_in_binary_mode_without_start_py(self, tmp_path):
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=None,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os_util,
+            "is_frozen_binary_octobot",
+            return_value=True,
+        ), mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": str(
+                        tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "ub"
+                    ),
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ):
+            spawn_mock.return_value.pid = 99999
+            await op.pre_compute()
+        spawn_argv = spawn_mock.call_args.args[0]
+        assert spawn_argv[0] == sys.executable
+        assert "start.py" not in spawn_argv
+        assert spawn_argv[1] == "--user-folder"
+        assert spawn_mock.call_args.kwargs["environment"]["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
 
     async def test_returns_recallable_when_process_bot_state_not_live(self, tmp_path):
         start_script = tmp_path / "start.py"
@@ -2108,6 +2228,10 @@ class TestEnsureOctobotProcessDslIntegration:
         )
         try:
             with mock.patch.object(
+                octobot_process_ops.os_util,
+                "is_frozen_binary_octobot",
+                return_value=False,
+            ), mock.patch.object(
                 octobot_process_ops,
                 "_load_process_bot_state",
                 new=mock.AsyncMock(side_effect=_async_return_none_mock),
@@ -3392,3 +3516,173 @@ class TestRecallStateRequiresExecutorId:
             spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30007)
             await op.pre_compute()
         spawn_mock.assert_called_once()
+
+
+class TestResolveBoundPid:
+    pytestmark = []
+
+    def test_prefers_metadata_pid_when_both_running_but_differ(self):
+        recall_state = octobot_process_state_import.OctobotProcessState(
+            http_base_url="http://127.0.0.1:20050",
+            web_port=20050,
+            node_port=30050,
+            user_root="/x/ub",
+            user_folder="ub",
+            log_folder="/x/logs/ub",
+            profile_id="p",
+            pid=20520,
+            state_file_path="/x/ub/process_bot_state.json",
+            executor_id=TEST_EXECUTOR_ID,
+        )
+        loaded_state = process_bot_state_import.ProcessBotState(
+            metadata=process_bot_state_import.Metadata(
+                updated_at=octobot_process_ops.time.time() - 0.1,
+                next_updated_at=octobot_process_ops.time.time() + 1.0,
+                pid=25044,
+            ),
+            exchange_account_elements=octobot_flow_entities.ExchangeAccountElements(),
+        )
+        with mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id in {20520, 25044},
+        ):
+            resolved_pid = octobot_process_ops._resolve_bound_pid(recall_state, loaded_state)
+        assert resolved_pid == 25044
+
+    def test_returns_stored_pid_when_metadata_missing(self):
+        recall_state = octobot_process_state_import.OctobotProcessState(
+            http_base_url="http://127.0.0.1:20050",
+            web_port=20050,
+            node_port=30050,
+            user_root="/x/ub",
+            user_folder="ub",
+            log_folder="/x/logs/ub",
+            profile_id="p",
+            pid=10002,
+            state_file_path="/x/ub/process_bot_state.json",
+            executor_id=TEST_EXECUTOR_ID,
+        )
+        with mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 10002,
+        ):
+            resolved_pid = octobot_process_ops._resolve_bound_pid(recall_state, None)
+        assert resolved_pid == 10002
+
+    def test_returns_none_when_both_dead(self):
+        recall_state = octobot_process_state_import.OctobotProcessState(
+            http_base_url="http://127.0.0.1:20050",
+            web_port=20050,
+            node_port=30050,
+            user_root="/x/ub",
+            user_folder="ub",
+            log_folder="/x/logs/ub",
+            profile_id="p",
+            pid=10002,
+            state_file_path="/x/ub/process_bot_state.json",
+            executor_id=TEST_EXECUTOR_ID,
+        )
+        loaded_state = process_bot_state_import.ProcessBotState(
+            metadata=process_bot_state_import.Metadata(
+                updated_at=octobot_process_ops.time.time() - 0.1,
+                next_updated_at=octobot_process_ops.time.time() + 1.0,
+                pid=20002,
+            ),
+            exchange_account_elements=octobot_flow_entities.ExchangeAccountElements(),
+        )
+        with mock.patch.object(process_util, "pid_is_running", return_value=False):
+            resolved_pid = octobot_process_ops._resolve_bound_pid(recall_state, loaded_state)
+        assert resolved_pid is None
+
+
+class TestRecallPathRebindsManagedChildRegistry:
+    @pytest.fixture(autouse=True)
+    def reset_managed_child_process_registry(self):
+        import octobot_commons.managed_child_process_registry as managed_child_process_registry
+        import octobot_commons.singleton.singleton_class as singleton_class
+
+        singleton_class.Singleton._instances.pop(
+            managed_child_process_registry.ManagedChildProcessRegistry,
+            None,
+        )
+        yield
+        singleton_class.Singleton._instances.pop(
+            managed_child_process_registry.ManagedChildProcessRegistry,
+            None,
+        )
+
+    async def test_recall_rebinds_registry_when_metadata_pid_differs(self, tmp_path):
+        import octobot_commons.managed_child_process_registry as managed_child_process_registry
+
+        registry = managed_child_process_registry.ManagedChildProcessRegistry.instance()
+        inner = _healthy_recall_inner(pid=20520, tmp_path=tmp_path)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+
+        async def live_state_with_authoritative_pid(*_unused):
+            return await _async_live_process_bot_state_mock(metadata_pid=25044)
+
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id in {20520, 25044},
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=live_state_with_authoritative_pid),
+        ):
+            registry.register(20520)
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        with mock.patch.object(process_util, "pid_is_running", return_value=True):
+            assert registry.snapshot_running_pids() == frozenset({25044})
+        assert op.pid == 25044
+
+    async def test_recall_does_not_rebind_when_authoritative_pid_unchanged(self, tmp_path):
+        inner = _healthy_recall_inner(pid=25044, tmp_path=tmp_path)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+
+        async def live_state_with_same_pid(*_unused):
+            return await _async_live_process_bot_state_mock(metadata_pid=25044)
+
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 25044,
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=live_state_with_same_pid),
+        ), mock.patch.object(
+            process_util,
+            "rebind_managed_child_pid",
+        ) as rebind_mock:
+            await op.pre_compute()
+        spawn_mock.assert_not_called()
+        rebind_mock.assert_not_called()
+        assert op.pid == 25044
