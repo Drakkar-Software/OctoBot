@@ -89,7 +89,8 @@ export function ConnectNodeGuide() {
               <CardTitle>1. Open the OctoBot web interface</CardTitle>
               <CardDescription>
                 Connect to your node, manage your OctoBots, and link your exchange
-                accounts.
+                accounts. To avoid compatibility issues, we recommend using{" "}
+                <strong>Brave</strong> or <strong>Google Chrome</strong>.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
@@ -140,7 +141,9 @@ export function ConnectNodeGuide() {
             <CardContent className="flex flex-col gap-3">
               <NodeConnectAddressTabs audience="web" />
               <p className="pt-2 text-center text-sm text-muted-foreground">
-                Having trouble connecting to your node? Check out{" "}
+                Having trouble connecting to your node?{" "}
+                Try using <strong>Brave</strong> or <strong>Google Chrome</strong> instead of <strong>Firefox</strong> or <strong>Safari</strong>, which are known to sometimes block the
+                connection to the node. More troubleshooting tips on{" "}
                 <a
                   href={OCTOBOT_BETA_GETTING_STARTED_GUIDE_URL}
                   target="_blank"
