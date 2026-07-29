@@ -26,7 +26,7 @@ telling OctoBot which evaluators, strategies and trading modes to use. It is
 kept up to date after each [Tentacle Manager](/guides/octobot-advanced-usage/tentacle-manager)
 usage (when new elements become available).
 
-An example of **user/profiles/profile_name/tentacles_config.json** is available <a href="https://github.com/Drakkar-Software/OctoBot-Tentacles/blob/master/profiles/daily_trading/tentacles_config.json" rel="nofollow">as default_tentacles_config.json on github</a>.
+An example of **user/profiles/profile_name/tentacles_config.json** is available <a href="https://github.com/Drakkar-Software/OctoBot/blob/master/packages/tentacles/profiles/daily_trading/tentacles_config.json" rel="nofollow">as default_tentacles_config.json on github</a>.
 
 ![custom profile evaluator selector](/images/guides/configuration/custom-profile-evaluator-selector.png)
 
