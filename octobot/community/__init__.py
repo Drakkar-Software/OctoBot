@@ -54,7 +54,6 @@ from octobot.community.supabase_backend import (
 )
 from octobot.community import local_authenticator
 from octobot.community import community_analysis
-from octobot.community import community_manager
 from octobot.community import authentication
 from octobot.community import graphql_requests
 from octobot.community import feeds
@@ -65,8 +64,8 @@ from octobot.community.community_analysis import (
     get_current_octobots_stats,
     can_read_metrics,
 )
-from octobot.community.community_manager import (
-    CommunityManager,
+from octobot.community.activity_analysis.activity_metrics import (
+    ActivityMetrics,
 )
 from octobot.community.authentication import (
     CommunityAuthentication,
@@ -124,7 +123,7 @@ __all__ = [
     "get_community_metrics",
     "get_current_octobots_stats",
     "can_read_metrics",
-    "CommunityManager",
+    "ActivityMetrics",
     "CommunityAuthentication",
     "CommunityTentaclesPackage",
     "CommunitySupports",

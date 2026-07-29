@@ -1965,6 +1965,159 @@ class TestEnsureOctobotProcessPrecomputeWhenProcessStateLiveAfterFirstSpawn:
         assert post.updated_exchange_account_elements is not None
 
 
+class TestReportChildOctobotFirstStartIfNeeded:
+    def test_skips_when_layout_already_prepared(self):
+        with mock.patch.object(
+            octobot_process_ops.activity_metrics.ActivityMetrics,
+            "report_child_octobot_first_start",
+        ) as report_mock:
+            octobot_process_ops._report_child_octobot_first_start_if_needed(
+                {"already_prepared": True},
+            )
+        report_mock.assert_not_called()
+
+    def test_reports_first_child_start_when_layout_was_created(self):
+        with mock.patch.object(
+            octobot_process_ops.activity_metrics.ActivityMetrics,
+            "report_child_octobot_first_start",
+        ) as report_mock:
+            octobot_process_ops._report_child_octobot_first_start_if_needed(
+                {"already_prepared": False},
+            )
+        report_mock.assert_called_once_with()
+
+    def test_logs_exception_when_report_fails(self):
+        report_error = RuntimeError("sentry unavailable")
+        logger_mock = mock.Mock()
+        with mock.patch.object(
+            octobot_process_ops.activity_metrics.ActivityMetrics,
+            "report_child_octobot_first_start",
+            side_effect=report_error,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_get_logger",
+            return_value=logger_mock,
+        ):
+            octobot_process_ops._report_child_octobot_first_start_if_needed(
+                {"already_prepared": False},
+            )
+        logger_mock.exception.assert_called_once_with(
+            report_error,
+            True,
+            f"Failed to report child OctoBot first start {report_error}",
+        )
+
+
+class TestEnsureOctobotProcessPrecomputeReportsChildFirstStart:
+    async def test_reports_child_first_start_on_first_spawn_when_layout_is_new(self, tmp_path):
+        start_script = tmp_path / "start.py"
+        start_script.write_text("#", encoding="utf-8")
+        user_root = str(
+            tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "ub"
+        )
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=None,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": user_root,
+                    "profile_id": "x",
+                    "already_prepared": False,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 10001,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_with_pid_10001),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_report_child_octobot_first_start_if_needed",
+        ) as report_child_mock:
+            spawn_mock.return_value.pid = 10001
+            await op.pre_compute()
+        report_child_mock.assert_called_once_with(
+            {
+                "user_root": user_root,
+                "profile_id": "x",
+                "already_prepared": False,
+            },
+        )
+
+    async def test_reports_child_first_start_on_spawn_when_child_not_yet_live(self, tmp_path):
+        start_script = tmp_path / "start.py"
+        start_script.write_text("#", encoding="utf-8")
+        user_root = str(
+            tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "ub"
+        )
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=None,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": user_root,
+                    "profile_id": "x",
+                    "already_prepared": False,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_report_child_octobot_first_start_if_needed",
+        ) as report_child_mock:
+            spawn_mock.return_value.pid = 10001
+            await op.pre_compute()
+        report_child_mock.assert_called_once_with(
+            {
+                "user_root": user_root,
+                "profile_id": "x",
+                "already_prepared": False,
+            },
+        )
+        first_le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert first_le.get("init_state_ok") is False
+
+
 class TestEnsureOctobotProcessPrecomputeRecallPathWhenProcessStateLive:
     async def test_returns_recallable_with_init_state_ok_on_recall_path(self, tmp_path):
         start_script = tmp_path / "start.py"
@@ -2002,9 +2155,13 @@ class TestEnsureOctobotProcessPrecomputeRecallPathWhenProcessStateLive:
             octobot_process_ops,
             "_load_process_bot_state",
             new=mock.AsyncMock(side_effect=_async_return_none_mock),
-        ):
+        ), mock.patch.object(
+            octobot_process_ops.activity_metrics.ActivityMetrics,
+            "report_child_octobot_first_start",
+        ) as report_child_mock:
             spawn_mock.return_value.pid = 10002
             await op1.pre_compute()
+        report_child_mock.assert_not_called()
         first_value = op1.value
         assert isinstance(first_value, dict)
         first_le = first_value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
@@ -2028,8 +2185,12 @@ class TestEnsureOctobotProcessPrecomputeRecallPathWhenProcessStateLive:
             octobot_process_ops,
             "_load_process_bot_state",
             new=mock.AsyncMock(side_effect=_async_live_process_bot_state_mock),
-        ):
+        ), mock.patch.object(
+            octobot_process_ops.activity_metrics.ActivityMetrics,
+            "report_child_octobot_first_start",
+        ) as report_child_mock:
             await op2.pre_compute()
+        report_child_mock.assert_not_called()
         assert isinstance(op2.value, dict)
         assert dsl_interpreter.ReCallingOperatorResult.__name__ in op2.value
         le2 = op2.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]

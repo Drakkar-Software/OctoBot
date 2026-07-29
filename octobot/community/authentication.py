@@ -16,11 +16,12 @@
 import asyncio
 import contextlib
 import json
+import os
 import time
 import threading
 import typing
-import hashlib
-import os
+import octobot.community.activity_analysis.config_path_binding as config_path_binding
+import octobot.community.activity_analysis.activity_metrics as activity_metrics
 import decimal
 
 import octobot.constants as constants
@@ -577,6 +578,7 @@ class CommunityAuthentication(authentication.Authenticator):
             "and webhook url will be different on this bot."
         )
         self._save_bot_id("")
+        activity_metrics.ActivityMetrics.clear_activity_bot_id(self.config)
         self.save_tradingview_email("")
         # also reset mqtt id to force a new mqtt id creation
         self._save_mqtt_device_uuid("")
@@ -587,20 +589,11 @@ class CommunityAuthentication(authentication.Authenticator):
         if constants.IS_CLOUD_ENV:
             # disabled on cloud environments
             return
-        previous_local_identifier = self._get_saved_bot_scoped_data_identifier()
-        current_local_identifier = self._get_bot_scoped_data_identifier()
-        if not previous_local_identifier:
-            self._save_bot_scoped_data_identifier(current_local_identifier)
-            # nothing to clear
-            return
-        if current_local_identifier != previous_local_identifier:
+        community_section = self.config.config.setdefault(constants.CONFIG_COMMUNITY, {})
+        previous_local_identifier = community_section.get(constants.CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER)
+        resolution = config_path_binding.ensure_config_path_fingerprint(self.config)
+        if resolution.was_regenerated and previous_local_identifier is not None:
             self._clear_bot_scoped_config()
-            self._save_bot_scoped_data_identifier(current_local_identifier)
-
-    def _get_bot_scoped_data_identifier(self) -> str:
-        # identifier is based on the path to the local bot to ensure the same data are not re-used
-        # when copy/pasting a bot config to another bot
-        return hashlib.sha256(os.getcwd().encode()).hexdigest()
 
     async def stop(self):
         self.logger.debug("Stopping ...")

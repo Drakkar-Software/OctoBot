@@ -849,8 +849,15 @@ def activate_metrics(enable_metrics):
     else:
         current_edited_config.config[commons_constants.CONFIG_METRICS][
             commons_constants.CONFIG_ENABLED_OPTION] = enable_metrics
-    if enable_metrics and community.CommunityManager.should_register_bot(current_edited_config):
-        community.CommunityManager.background_get_id_and_register_bot(interfaces_util.get_bot_api())
+    if enable_metrics:
+        bot_api = interfaces_util.get_bot_api()
+        activity_metrics = bot_api.get_activity_metrics()
+        if activity_metrics is not None and not activity_metrics.enabled:
+            activity_metrics.enabled = True
+            community.ActivityMetrics.initialize_tracker(current_edited_config)
+            distribution = configuration_manager.get_distribution(current_edited_config.config)
+            activity_metrics.setup_activity_tracking(distribution)
+            interfaces_util.run_in_bot_async_executor(activity_metrics.start_community_task())
     current_edited_config.save()
 
 

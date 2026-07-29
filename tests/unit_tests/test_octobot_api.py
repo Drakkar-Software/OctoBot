@@ -13,16 +13,18 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+import mock
 
-from octobot.community.errors_upload import sentry_tracker
-from octobot.community.errors_upload.sentry_tracker import (
-    init_sentry_tracker,
-    flush_tracker,
-    update_tracker_bot_id,
-    track_usage_event,
-)
+import octobot.octobot_api as octobot_api
 
-__all__ = [
-    "init_sentry_tracker",
-    "flush_tracker",
-]
+
+class TestGetActivityMetrics:
+    def test_returns_octobot_activity_metrics(self):
+        activity_metrics = mock.Mock(name="activity-metrics")
+        octobot = mock.Mock()
+        octobot.bot_id = "bot-id"
+        octobot.activity_metrics = activity_metrics
+        with mock.patch.object(octobot_api.OctoBotAPIProvider, "instance") as provider_mock:
+            provider_mock.return_value.register_api = mock.Mock()
+            api = octobot_api.OctoBotAPI(octobot)
+        assert api.get_activity_metrics() is activity_metrics

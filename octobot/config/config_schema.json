@@ -36,6 +36,9 @@
         "bot_id": {
           "type": "string"
         },
+        "local_data_identifier": {
+          "type": "string"
+        },
         "supabase.auth.token": {
           "type": "string"
         },
@@ -77,7 +80,7 @@
         "enabled": {
           "type": "boolean"
         },
-        "metrics-bot-id": {
+        "activity_bot_id": {
           "type": "string"
         }
       }
