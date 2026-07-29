@@ -16,10 +16,10 @@ The following [Trading Modes](../octobot-trading-modes/trading-modes) can be use
 - [Daily Trading Mode](../octobot-trading-modes/daily-trading-mode)
 
 ## Supported exchanges
-The following exchanges can be used to trade Futures on OctoBot
-- [Binance](exchanges/binance)
-- [Bybit](exchanges/bybit)
-- [Kucoin](exchanges/kucoin)
+The following exchanges can be used to trade Futures on OctoBot:
+- [Binance](exchanges/binance) (not supported in the EU)
+- [Bybit](exchanges/bybit) (only working with standard (non-UTA) accounts, which have to exist already, because they cannot be created anymore)
+- [Kucoin](exchanges/kucoin) (not available in Europe yet)
 
 ## Leverage configuration
 
