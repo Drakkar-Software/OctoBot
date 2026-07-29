@@ -4,122 +4,146 @@ description: "Apprenez comment installer et démarrer votre OctoBot sur votre pr
 sidebar_position: 6
 ---
 
-
-
-# Installer OctoBot avec Python and Git
-
-:::info
-  La traduction française de cette page est en cours.
-:::
+# Installer OctoBot avec Python et Git
 
 ## Prérequis
 
--   Packages installed : Python3.10.X, Python3.10.X-dev, Python3.10.X-pip, git
+-   Packages installés : Python3.13.X, Python3.13.X-dev, Python3.13.X-pip, git
+-   Système de build: <a href="https://www.pantsbuild.org/" rel="nofollow">Pants</a>
+
+Le code Python d'OctoBot est un monorepo : chaque partie d'OctoBot (`commons`, `trading`, `evaluators`, ...) se trouve dans son propre dossier sous `packages` et est construite avec Pants.
+
+Pants n'est pas fourni avec OctoBot, installez le lanceur `scie-pants` une fois et il téléchargera automatiquement la version de Pants requise par le `pants.toml` d'OctoBot lors de sa première exécution. Les instructions d'installation sont sur la <a href="https://www.pantsbuild.org/stable/docs/getting-started/installing-pants" rel="nofollow">page d'installation de Pants</a>.
+
+:::warning
+Cette installation basée sur Pants n'est pas encore supportée sur Windows. Pants ne fonctionne sur Windows qu'à travers le <a href="https://learn.microsoft.com/windows/wsl/install" rel="nofollow">sous-système Windows pour Linux (WSL 2)</a>.
+
+Si vous êtes sur Windows, installez WSL 2, clonez OctoBot **dans** le système de fichiers Linux de votre distribution WSL et suivez les commandes Linux de ce guide depuis votre terminal WSL. Un dépôt conservé du côté Windows et atteint via `/mnt` n'est pas supporté par Pants et provoque des comportements inattendus.
+:::
 
 ## Installation
 
-**First, make sure you have python3.10 and python3.10-dev and python3.10-pip installed on your computer.**
+**Commencez par vous assurer que python3.13, python3.13-dev et python3.13-pip sont installés sur votre ordinateur.**
 
 ### Avec la version stable actuelle (branche master)
 
-**This is the recommended python installation.**
+**C'est l'installation Python recommandée.**
 
-Clone the OctoBot repository
+Clonez le dépôt OctoBot
 
 ``` bash
 git clone https://github.com/Drakkar-Software/OctoBot
 ```
 
-Install python packages :
+Créez un environnement virtuel pour contenir les dépendances d'OctoBot et activez-le :
 
 ``` bash
 cd OctoBot
-python3 -m pip install -Ur requirements.txt
+python3 -m venv venv
+source venv/bin/activate
 ```
 
+Installez les packages python. Cette commande installe toutes les dépendances tierces des packages OctoBot dans l'environnement virtuel actif :
 
-> On some setup like 32-bit ARM architectures, you might get a `rust` related error while running `python3 -m pip install -Ur requirements.txt` when installing `cryptography`.
-If this happens, you need to install the `rust compiler`: `cryptography` is coded in `rust`.
+``` bash
+pants install-deps --full ::
+```
+
+`--full` inclut également les dépendances optionnelles listées dans les fichiers `full_requirements.txt`, qui sont nécessaires à certaines tentacles.
+
+
+> Sur certaines configurations comme les architectures ARM 32 bits, une erreur liée à `rust` peut apparaître pendant `pants install-deps --full ::`, lors de l'installation de `cryptography`.
+Dans ce cas, installez le `compilateur rust` : `cryptography` est codé en `rust`.
 ``` bash
 sudo apt-get install -y rustc
 ```
-You can then restart `python3 -m pip install -Ur requirements.txt`.
+Vous pouvez ensuite relancer `pants install-deps --full ::`.
 
 ### Avec la version la plus récente (branche dev)
 
-**This is installation allows to use the most up-to-date version of OctoBot but might broken depending on the moment it is being done (modules updates might be in progress in this branch).**
+**Cette installation permet d'utiliser la version la plus à jour d'OctoBot, mais elle peut être instable selon le moment où elle est faite (des mises à jour de modules peuvent être en cours sur cette branche).**
 
-Clone the OctoBot repository using the **dev** branch
+Clonez le dépôt OctoBot en utilisant la branche **dev**
 
 ``` bash
 git clone https://github.com/Drakkar-Software/OctoBot -b dev
 ```
 
-*Or if you already have an OctoBot repository*
+*Ou, si vous avez déjà un dépôt OctoBot*
 
 ``` bash
 git checkout dev
 git pull
 ```
 
-### Installer les dernières tentacles :
-> Warning: using the latest tentacles might break your OctoBot 
+### Configurer PYTHONPATH
 
-#### Sur Unix
+Les packages d'OctoBot ne sont pas installés dans votre environnement virtuel, ils sont utilisés directement depuis leur dossier dans le dépôt. Python a donc besoin de savoir où se trouve chacun d'entre eux : c'est le rôle de `PYTHONPATH`.
+
+Depuis le dossier du dépôt OctoBot :
+
 ``` bash
-cd OctoBot
-python3 -m pip install -Ur requirements.txt
-export TENTACLES_URL_TAG="latest"
-python3 start.py tentacles --install --all
+ROOT=$PWD
+export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROOT/packages/backtesting:$ROOT/packages/binary:$ROOT/packages/commons:$ROOT/packages/copy:$ROOT/packages/evaluators:$ROOT/packages/flow:$ROOT/packages/node:$ROOT/packages/protocol:$ROOT/packages/services:$ROOT/packages/sync:$ROOT/packages/tentacles_manager:$ROOT/packages/trading"
 ```
-#### Sur Windows
+
+Remarques :
+- Utilisez des chemins absolus, certains sous-processus d'OctoBot sont démarrés depuis d'autres dossiers et ne pourraient pas résoudre des chemins relatifs.
+- Cette liste reprend les `root_patterns` du `pants.toml` d'OctoBot, mettez-la à jour lorsqu'un nouveau package est ajouté.
+
+### Installer les dernières tentacles :
+> Attention : utiliser les dernières tentacles peut casser votre OctoBot 
+
 ``` bash
 cd OctoBot
-python3 -m pip install -Ur requirements.txt
-SET TENTACLES_URL_TAG=latest
+pants install-deps --full ::
+export TENTACLES_URL_TAG="latest"
 python3 start.py tentacles --install --all
 ```
 
 ## Utilisation
 
-The following command replaces *OctoBot Launcher*:
+La commande suivante remplace l'*OctoBot Launcher* :
 
 ``` bash
 python3 start.py
 ```
 
+Assurez-vous que votre environnement virtuel est activé et que `PYTHONPATH` est défini dans le terminal qui exécute cette commande. Les deux sont perdus à la fermeture du terminal, ils doivent donc être redéfinis dans chaque nouveau terminal.
+
 ## Mise à jour
 
-Exécuter la commande suivante va mettre à jour votre OctoBot Python en utilisant la dernière version de la branche sélectionnée (`master` ou `dev`) et installer les dépendances associées.
+Exécuter la commande suivante va mettre à jour votre OctoBot Python en utilisant la dernière version de la branche sélectionnée (`master` ou `dev`) et installer les dépendances associées. Activez d'abord votre environnement virtuel, les dépendances y sont installées.
 ``` bash
-git pull
 cd OctoBot
-python3 -m pip install -Ur requirements.txt
+source venv/bin/activate
+git pull
+pants install-deps --full ::
 ```
 Le prochain redémarrage mettra automatiquement à jour les tentacles de votre OctoBot.
 
 ## Python3
 
-There **python3** is refering to your **Python3.10.X** installation, just adapt the commands to match your setup if any different (might be python, python3, python3.10, etc: it depends on your environment).
+Ici, **python3** fait référence à votre installation de **Python3.13.X**, adaptez simplement les commandes à votre configuration si elle diffère (cela peut être python, python3, python3.13, etc : cela dépend de votre environnement).
 
 ## Lancer OctoBot en tâche de fond
 
-> For unix distribution only
+> Pour les distributions unix uniquement
 
-With the Linux screen command, you can push running terminal applications to the background and pull them forward when you want to see them.
+Avec la commande Linux screen, vous pouvez envoyer en arrière-plan des applications lancées dans un terminal et les ramener au premier plan quand vous voulez les consulter.
 
 ``` bash
 sudo apt-get install -y screen
 screen python3 start.py
 ```
 
-You need the number from the start of the window name to reattach it. If you forget it, you can always use the -ls (list) option, as shown below, to get a list of the detached windows:
+Vous avez besoin du numéro au début du nom de la fenêtre pour vous y rattacher. Si vous l'avez oublié, vous pouvez toujours utiliser l'option -ls (list), comme ci-dessous, pour obtenir la liste des fenêtres détachées :
 
 ``` bash
 screen -ls
 screen -r 23167
 ```
 
-(23167 is an example value)
+(23167 est un exemple de valeur)
 
-OctoBot has been working away in the background is now brought back to your terminal window as if it had never left.
+OctoBot, qui tournait en arrière-plan, est ramené dans votre terminal comme s'il ne l'avait jamais quitté.
