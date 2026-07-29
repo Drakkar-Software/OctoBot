@@ -176,9 +176,9 @@ OctoBot can be deployed on the cloud or for free on your computer, server or [Ra
 
 ### Deploying OctoBot with one click on DigitalOcean
 
-OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](https://digitalocean.pxf.io/octobot-app).
+OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](https://marketplace.digitalocean.com/apps/octobot).
 
-[![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://digitalocean.pxf.io/start-octobot)
+[![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://marketplace.digitalocean.com/apps/octobot)
 
 ### Using the OctoBot Executable
 
