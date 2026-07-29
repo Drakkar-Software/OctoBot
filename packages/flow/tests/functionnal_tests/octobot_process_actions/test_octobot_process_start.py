@@ -245,7 +245,15 @@ async def test_run_octobot_process_lifecycle_grid_trading(
                 exchange_account_snapshot.orders.open_orders,
             )
 
+            # Grid polls update recall state (e.g. adopted pid from process_bot_state); refresh inner.
+            run_after_grid = octobot_process_functional_shared._get_action_by_id(
+                grid_poll_job, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
+            )
+            assert run_after_grid is not None
+            inner = octobot_process_functional_shared._recall_inner_from_dsl_action(run_after_grid)
+            assert inner is not None
             child_pid = int(inner["pid"])
+            assert child_pid == process_metadata.pid
             assert process_util.pid_is_running(child_pid)
 
             # 3) Second automation run: re-call path only (no second Popen; same child pid).

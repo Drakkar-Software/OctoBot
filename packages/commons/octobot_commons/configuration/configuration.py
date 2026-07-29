@@ -312,14 +312,6 @@ class Configuration:
             )
         )
 
-    def get_metrics_id(self) -> str:
-        """
-        :return: The current user's metrics id
-        """
-        return self.config[commons_constants.CONFIG_METRICS][
-            commons_constants.CONFIG_METRICS_BOT_ID
-        ]
-
     def accepted_terms(self) -> bool:
         """
         Check if terms has been accepted

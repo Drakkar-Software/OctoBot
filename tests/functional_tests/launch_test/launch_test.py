@@ -16,6 +16,8 @@
 import asyncio
 import pytest
 
+import octobot_commons.constants as commons_constants
+
 from octobot_commons.logging.logging_util import get_logger
 from octobot_trading.api.exchange import cancel_ccxt_throttle_task
 from tentacles.Services.Interfaces.web_interface import WebInterface
@@ -34,7 +36,11 @@ async def test_run_bot():
     # avoid web interface in this test
     WebInterface.enabled = False
     community.IdentifiersProvider.use_production()
-    bot = OctoBot(load_test_config(dict_only=False), ignore_config=True)
+    config = load_test_config(dict_only=False)
+    config.config.setdefault(commons_constants.CONFIG_METRICS, {})[
+        commons_constants.CONFIG_ENABLED_OPTION
+    ] = False
+    bot = OctoBot(config, ignore_config=True)
     bot.task_manager.init_async_loop()
     await start_bot(bot, init_logger(logs_folder=logs_folder))
     await asyncio.sleep(10)
@@ -55,8 +61,8 @@ async def stop_bot(bot):
         bot.task_manager.tools_task_group.cancel()
 
     # close community session
-    if bot.community_handler:
-        await bot.community_handler.stop_task()
+    if bot.activity_metrics:
+        await bot.activity_metrics.stop_task()
 
     cancel_ccxt_throttle_task()
 

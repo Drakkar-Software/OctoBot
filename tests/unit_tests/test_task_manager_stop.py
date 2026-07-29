@@ -24,7 +24,7 @@ import octobot.task_manager as task_manager_module
 class TestStopTasksForceExit:
     def test_force_timeout_calls_os_exit(self):
         octobot_mock = mock.Mock()
-        octobot_mock.community_handler = None
+        octobot_mock.activity_metrics = None
 
         task_manager = task_manager_module.TaskManager(octobot_mock)
         task_manager.async_loop = mock.Mock()
@@ -38,7 +38,7 @@ class TestStopTasksForceExit:
 
     def test_non_force_timeout_calls_sys_exit(self):
         octobot_mock = mock.Mock()
-        octobot_mock.community_handler = None
+        octobot_mock.activity_metrics = None
 
         task_manager = task_manager_module.TaskManager(octobot_mock)
         task_manager.async_loop = mock.Mock()

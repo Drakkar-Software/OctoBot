@@ -504,8 +504,6 @@ def start_octobot(args, default_config_file=None):
         # Current running environment
         _log_environment(logger)
 
-        octobot_community.init_sentry_tracker()
-
         # load configuration
         is_process_child = bool(args.dump_state and str(args.dump_state).strip())
         config, is_first_startup = _create_startup_config(
@@ -517,6 +515,8 @@ def start_octobot(args, default_config_file=None):
         # check config loading
         if not config.is_loaded():
             raise errors.ConfigError
+
+        octobot_community.ActivityMetrics.initialize_tracker(config)
 
         # Handle utility methods before bot initializing if possible
         if args.encrypter:

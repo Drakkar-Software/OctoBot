@@ -14,15 +14,26 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.errors_upload import sentry_tracker
-from octobot.community.errors_upload.sentry_tracker import (
-    init_sentry_tracker,
-    flush_tracker,
-    update_tracker_bot_id,
-    track_usage_event,
+from octobot.community.activity_analysis.activity_metrics import ActivityMetrics
+from octobot.community.activity_analysis.bot_id_resolver import (
+    BotIdResolution,
+    ensure_activity_bot_id,
+)
+from octobot.community.activity_analysis.config_path_binding import (
+    PathBoundValueResolution,
+    ensure_config_path_fingerprint,
+    fingerprint_config_path,
+    get_bound_config_path,
+    path_binding_is_stale,
 )
 
 __all__ = [
-    "init_sentry_tracker",
-    "flush_tracker",
+    "ActivityMetrics",
+    "BotIdResolution",
+    "ensure_activity_bot_id",
+    "PathBoundValueResolution",
+    "ensure_config_path_fingerprint",
+    "fingerprint_config_path",
+    "get_bound_config_path",
+    "path_binding_is_stale",
 ]

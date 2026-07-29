@@ -79,7 +79,7 @@ class OctoBot:
         self._aiohttp_session = None
 
         # community if enabled
-        self.community_handler = None
+        self.activity_metrics = None
 
         # use edited config in community authentication
         community_config = self.get_edited_config(constants.CONFIG_KEY, dict_only=False)
@@ -243,7 +243,9 @@ class OctoBot:
         await self.task_manager.start_tools_tasks()
 
     def _init_community(self):
-        self.community_handler = community.CommunityManager(self.octobot_api)
+        self.activity_metrics = community.ActivityMetrics(self.octobot_api)
+        distribution = configuration_manager.get_distribution(self.config)
+        self.activity_metrics.setup_activity_tracking(distribution)
 
     async def _ensure_clock(self):
         if trading_api.is_trader_enabled_in_config(self.config) and constants.ENABLE_CLOCK_SYNCH:

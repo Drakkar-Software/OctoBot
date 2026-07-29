@@ -176,7 +176,7 @@ class TestStartOctobot:
                 mock.patch.object(octobot_cli, "_assert_process_child_folder_overrides", mock.Mock()), \
                 mock.patch.object(octobot_cli.octobot_logger, "init_logger", mock.Mock(return_value=logger)), \
                 mock.patch.object(octobot_cli, "_log_environment", mock.Mock()), \
-                mock.patch.object(octobot_cli.octobot_community, "init_sentry_tracker", mock.Mock()), \
+                mock.patch.object(octobot_cli.octobot_community.ActivityMetrics, "initialize_tracker", mock.Mock()), \
                 mock.patch.object(
                     octobot_cli,
                     "_create_startup_config",
@@ -549,7 +549,7 @@ class TestDefaultCliMode:
             (octobot_cli, "_assert_process_child_folder_overrides", mock.Mock()),
             (octobot_cli.octobot_logger, "init_logger", mock.Mock(return_value=logger)),
             (octobot_cli, "_log_environment", mock.Mock()),
-            (octobot_cli.octobot_community, "init_sentry_tracker", mock.Mock()),
+            (octobot_cli.octobot_community.ActivityMetrics, "initialize_tracker", mock.Mock()),
             (octobot_cli, "_create_startup_config", mock.Mock(return_value=(config, False))),
             (octobot_cli, "_log_terms_if_unaccepted", mock.Mock()),
             (octobot_cli, "_get_authenticated_community_if_possible", mock.AsyncMock(return_value=None)),

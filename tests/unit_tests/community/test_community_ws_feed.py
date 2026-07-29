@@ -24,7 +24,6 @@ import websockets.asyncio.server
 
 import octobot.community as community
 import octobot.constants as constants
-import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.enums as commons_enums
 import octobot_commons.signals as commons_signals
 
@@ -298,8 +297,6 @@ async def _wait_for_connection_and_subscribe(client):
     assert client.subscribed
 
 
-async def _wait_for_receive(wait_cycles=8):
-    # 5 necessary wait_cycles for both sending, receiving, replying and receiving a reply
-    for _ in range(wait_cycles):
-        # wait for websockets lib trigger client
-        await asyncio_tools.wait_asyncio_next_cycle()
+async def _wait_for_receive():
+    # websocket send/receive round-trips need real I/O time; event-loop cycle waits are not enough
+    await asyncio.sleep(0.3)

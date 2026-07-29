@@ -171,3 +171,74 @@ class TestGetOctobotDisplayName:
             mock.Mock(return_value=config),
         ):
             assert configuration_model.get_octobot_display_name() == "OctoBot"
+
+
+class TestActivateMetrics:
+    def test_deferred_enable_initializes_tracking_and_starts_community_task(self):
+        current_edited_config = mock.Mock()
+        current_edited_config.config = {}
+        activity_metrics = mock.Mock()
+        activity_metrics.enabled = False
+        bot_api = mock.Mock()
+        bot_api.get_activity_metrics.return_value = activity_metrics
+
+        with mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_edited_config",
+            mock.Mock(return_value=current_edited_config),
+        ), mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_bot_api",
+            mock.Mock(return_value=bot_api),
+        ), mock.patch.object(
+            configuration_model.community.ActivityMetrics,
+            "initialize_tracker",
+            mock.Mock(),
+        ) as initialize_tracker_mock, mock.patch.object(
+            configuration_model.configuration_manager,
+            "get_distribution",
+            mock.Mock(return_value="default"),
+        ), mock.patch.object(
+            configuration_model.interfaces_util,
+            "run_in_bot_async_executor",
+            mock.Mock(),
+        ) as run_executor_mock:
+            configuration_model.activate_metrics(True)
+
+        initialize_tracker_mock.assert_called_once_with(current_edited_config)
+        assert activity_metrics.enabled is True
+        activity_metrics.setup_activity_tracking.assert_called_once_with("default")
+        run_executor_mock.assert_called_once_with(activity_metrics.start_community_task())
+        current_edited_config.save.assert_called_once()
+
+    def test_skips_runtime_enable_when_metrics_already_active(self):
+        current_edited_config = mock.Mock()
+        current_edited_config.config = {}
+        activity_metrics = mock.Mock()
+        activity_metrics.enabled = True
+        bot_api = mock.Mock()
+        bot_api.get_activity_metrics.return_value = activity_metrics
+
+        with mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_edited_config",
+            mock.Mock(return_value=current_edited_config),
+        ), mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_bot_api",
+            mock.Mock(return_value=bot_api),
+        ), mock.patch.object(
+            configuration_model.community.ActivityMetrics,
+            "initialize_tracker",
+            mock.Mock(),
+        ) as initialize_tracker_mock, mock.patch.object(
+            configuration_model.interfaces_util,
+            "run_in_bot_async_executor",
+            mock.Mock(),
+        ) as run_executor_mock:
+            configuration_model.activate_metrics(True)
+
+        initialize_tracker_mock.assert_not_called()
+        activity_metrics.setup_activity_tracking.assert_not_called()
+        run_executor_mock.assert_not_called()
+        current_edited_config.save.assert_called_once()

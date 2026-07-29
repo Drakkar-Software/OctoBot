@@ -40,6 +40,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.configuration
 
 import octobot.constants as octobot_constants
+import octobot.community.activity_analysis.activity_metrics as activity_metrics
 import octobot.community.supabase_backend.enums as community_enums
 import octobot_flow.entities as octobot_flow_entities
 import octobot_flow.entities.accounts.process_bot_state as process_bot_state_import
@@ -88,6 +89,16 @@ def _resolve_state_file_path(recall_state: octobot_process_state_import.OctobotP
             octobot_constants.PROCESS_BOT_STATE_FILE_NAME,
         )
     )
+
+def _report_child_octobot_first_start_if_needed(init_info: dict[str, typing.Any]) -> None:
+    try:
+        if init_info.get("already_prepared"):
+            return
+        activity_metrics.ActivityMetrics.report_child_octobot_first_start()
+    except Exception as err:
+        _get_logger().exception(
+            err, True, f"Failed to report child OctoBot first start {err}"
+        )
 
 
 # --- Liveness and routing (recall state + child dump) ---
@@ -1297,6 +1308,7 @@ def create_octobot_process_operators(
                 environment=child_env,
                 hide_console_window=True,
             )
+            _report_child_octobot_first_start_if_needed(init_info)
             spawn_pid = self.pid or 0
             scheme = str(params.get("http_scheme") or "http").rstrip(":/")
             http_base_url = f"{scheme}://{bind_host}:{web_port}"
