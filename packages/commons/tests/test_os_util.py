@@ -110,10 +110,14 @@ class TestFindFirstFreeListenPortAfterBase:
         assert listen_port == 50201
 
     def test_skips_port_with_host_wide_listener(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
-            listener.bind(("127.0.0.1", 0))
-            base_port = listener.getsockname()[1]
-            listener.listen(1)
+        base_port = 50400
+
+        def has_listener_on_host(port):
+            return port == base_port
+
+        with mock.patch.object(
+            os_util, "tcp_port_has_listener_on_host", side_effect=has_listener_on_host
+        ), mock.patch.object(os_util, "tcp_port_is_free", return_value=True):
             listen_port = os_util.find_first_free_listen_port_after_base(
                 "127.0.0.1", base_port, max_offset=5
             )

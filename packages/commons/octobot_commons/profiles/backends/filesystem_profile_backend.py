@@ -113,6 +113,38 @@ class FilesystemProfileBackend(abstract_profile_backend_module.AbstractProfileBa
             )
         json_util.safe_dump(profile.as_dict(), self.config_file_path(profile.path))
 
+    def write_profile_config_overlay(
+        self,
+        profile: profile_module.Profile,
+        overlay_profile_path: str,
+    ) -> str:
+        if profile.is_sync_backed():
+            raise errors.ProfileDataError(
+                "FilesystemProfileBackend cannot write sync-backed profile overlays"
+            )
+        os.makedirs(overlay_profile_path, exist_ok=True)
+        overlay_file_path = self.config_file_path(overlay_profile_path)
+        overlay_profile_dict = {
+            constants.PROFILE_CONFIG: profile.config,
+        }
+        json_util.safe_dump(overlay_profile_dict, overlay_file_path)
+        return overlay_file_path
+
+    def merge_child_overlay_config(
+        self,
+        profile: profile_module.Profile,
+        overlay_profile_path: str,
+    ) -> None:
+        overlay_file_path = self.config_file_path(overlay_profile_path)
+        if not os.path.isfile(overlay_file_path):
+            return
+        overlay_profile_dict = json_util.read_file(overlay_file_path)
+        overlay_config = overlay_profile_dict.get(constants.PROFILE_CONFIG, {})
+        if not isinstance(overlay_config, dict):
+            return
+        for config_key, config_value in overlay_config.items():
+            profile.config[config_key] = config_value
+
     def resolve_avatar_path(self, profile: profile_module.Profile) -> None:
         if profile.avatar and profile.path:
             avatar_path = os.path.join(profile.path, profile.avatar)

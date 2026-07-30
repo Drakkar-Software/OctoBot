@@ -170,11 +170,7 @@ class Configuration:
         )
         if save_profile is None:
             save_profile = self._profile_managed_elements_changed()
-        if (
-            save_profile
-            and self.profile is not None
-            and not self.profile_storage.is_readonly_master_overlay_profile(self.profile)
-        ):
+        if save_profile and self.profile is not None:
             self.profile.save_config(self.config)
         if sync_all_profiles:
             self._sync_other_profiles()
@@ -223,8 +219,14 @@ class Configuration:
             if profile is self.profile:
                 # do not synchronize self.profile
                 continue
+            # Master read-only overlays use child overrides for the active profile only.
+            if self.profile_storage.is_readonly_master_overlay_profile(profile):
+                continue
             try:
-                profile.remove_deleted_elements(self.config)
+                # Sync propagates exchange deletions only (PARTIALLY_MANAGED_ELEMENTS).
+                exchanges_changed = profile.remove_deleted_elements(self.config)
+                if not exchanges_changed:
+                    continue
                 profile.validate_and_save_config()
             except Exception as err:
                 self.logger.exception(
