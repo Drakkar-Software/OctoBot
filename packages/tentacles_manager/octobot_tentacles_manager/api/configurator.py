@@ -27,6 +27,7 @@ import octobot_tentacles_manager.util as util
 import octobot_tentacles_manager.managers as managers
 
 if TYPE_CHECKING:
+    import octobot_commons.profiles.profile_types.profile as profile_module
     from octobot_tentacles_manager.configuration import TentaclesSetupConfiguration
 
 
@@ -64,12 +65,15 @@ def refresh_all_tentacles_setup_configs(
 
 
 def get_tentacles_setup_config(
-    config_path: str = None
+    config_path: str = None,
+    profile: "profile_module.Profile | None" = None,
 ) -> "TentaclesSetupConfiguration":
     if config_path is None:
         config_path = user_root_folder_provider.get_user_reference_tentacle_config_file_path()
     setup_config = configuration.TentaclesSetupConfiguration(config_path=config_path)
     setup_config.read_config()
+    if profile is not None:
+        setup_config.profile = profile
     return setup_config
 
 
@@ -195,8 +199,8 @@ def get_tentacle_config(tentacles_setup_config: "TentaclesSetupConfiguration", k
     return configuration.get_config(tentacles_setup_config, klass)
 
 
-def set_tentacle_config_proxy(new_proxy) -> dict:
-    return configuration.set_get_config_proxy(new_proxy)
+def set_tentacle_config_proxy(new_proxy):
+    return configuration.local_get_config_proxy(new_proxy)
 
 
 def local_tentacle_config_proxy(new_proxy):

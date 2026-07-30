@@ -20,13 +20,13 @@ import dbos
 
 import octobot_commons.logging
 
-import octobot.community.authentication as community_authentication
 import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_trading.errors
 
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.errors
+import octobot_flow.repositories.community.community_repository as community_repository
 
 import octobot_node.enums
 import octobot_node.models
@@ -40,26 +40,7 @@ import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
-
-def _user_id_to_evm(user_id: typing.Optional[str]) -> typing.Optional[str]:
-    """Return the EVM wallet address for a Starfish *user_id*, or None if unresolvable.
-
-    The community repository (used inside OctoBotActionsJob) requires the EVM wallet
-    address for the community sync client.  We store Starfish user_id in Task.user_id
-    (the sync-core identity), so we must translate back to the EVM address at the
-    automation-job boundary.
-    """
-    if user_id is None:
-        return None
-    try:
-        return community_authentication.CommunityAuthentication.instance().get_wallet_by_user_id(
-            user_id
-        ).address
-    except Exception as err:
-        octobot_commons.logging.get_logger("AutomationWorkflow").warning(
-            f"Could not resolve EVM address for user_id={user_id!r}: {err}"
-        )
-        return None
+WORKFLOW_NAME = "execute_automation"
 
 
 @SCHEDULER.INSTANCE.dbos_class()
@@ -67,7 +48,7 @@ class AutomationWorkflow:
     # Always use dict as input to parse minimizable dataclasses and facilitate data format updates
 
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name="execute_automation")
+    @SCHEDULER.INSTANCE.workflow(name=WORKFLOW_NAME)
     async def execute_automation(inputs: dict) -> typing.Optional[str]:
         """
         Automation workflow runner: 
@@ -174,8 +155,9 @@ class AutomationWorkflow:
                 AutomationWorkflow._log_iteration_execution_intent(
                     parsed_inputs, user_actions, trading_signals
                 )
+                action_job = None
                 try:
-                    await octobot_flow_client.OctoBotActionsJob(
+                    action_job = octobot_flow_client.OctoBotActionsJob(
                         parsed_inputs.task.content,
                         user_actions,
                         trading_signals,
@@ -183,24 +165,65 @@ class AutomationWorkflow:
                         # CommunityRepository (used inside the job) needs the EVM wallet
                         # address, not the Starfish user_id — derive it from the task
                         # identity so the community sync client resolves correctly.
-                        wallet_address=_user_id_to_evm(parsed_inputs.task.user_id),
-                    ).run()
-                except octobot_flow.errors.CommunityTradingSignalError as err:
-                    execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
-                    execution_error_message = str(err)
-                except octobot_trading.errors.AuthenticationError as err:
-                    AutomationWorkflow.get_logger(parsed_inputs).error(
-                        f"Authentication error: {err} ({err.__class__.__name__})"
+                        wallet_address=community_repository.CommunityRepository.user_id_to_evm(
+                            parsed_inputs.task.user_id
+                        ),
                     )
-                    execution_error = octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR.value
-                    execution_error_message = str(err)
+                    await action_job.run()
+                except octobot_trading.errors.RetriableFailedRequest as err:
+                    # instantly retriable errors, retry immediately
+                    AutomationWorkflow.get_logger(parsed_inputs).exception(
+                        err, True, f"Retriable error while running automation job: {err}"
+                    )
+                    raise
+                except octobot_flow.errors.PendingPriorityActionsSkippedError as err:
+                    # don't retry, just skip the iteration
+                    AutomationWorkflow.get_logger(parsed_inputs).error(
+                        f"Pending priority actions were skipped: {err}"
+                    )
+                    if action_job is None:
+                        # should never happen, but just in case
+                        raise
+                    next_step_at = octobot_flow_client.OctoBotActionsJobDescription.get_next_execution_time(
+                        action_job.description.state
+                    )
                     postponed_iteration = True
-                    next_step_at = time.time() + constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
                     has_next_actions_override = True
                     next_iteration_description_override = parsed_inputs.task.content
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
+                except (
+                    octobot_trading.errors.AuthenticationError,
+                    octobot_trading.errors.PortfolioNegativeValueError,
+                    octobot_trading.errors.FailedRequest,
+                    octobot_trading.errors.MissingFunds,
+                    octobot_trading.errors.MissingMinimalExchangeTradeVolume,
+                ) as err:
+                    # postponing errors, retry after a delay
+                    AutomationWorkflow.get_logger(parsed_inputs).error(
+                        f"{err.__class__.__name__} error (postponed iteration): {err}"
+                    )
+                    execution_error_status, postpone_delay_seconds = (
+                        AutomationWorkflow._get_postponed_iteration_error_status_and_delay(err)
+                    )
+                    next_step_at = time.time() + postpone_delay_seconds
+                    execution_error = execution_error_status.value
+                    execution_error_message = str(err)
+                    postponed_iteration = True
+                    has_next_actions_override = True
+                    next_iteration_description_override = workflows_util.patch_task_content_degraded_state(
+                        parsed_inputs.task.content,
+                        execution_error,
+                        execution_error_message,
+                        since=time.time(),
+                    )
+                    next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
+                except octobot_flow.errors.CommunityTradingSignalError as err:
+                    # Stop cases: don't forward error, just stop the workflow
+                    execution_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
+                    execution_error_message = str(err)
                 except Exception as err:
-                    # log propagated errors to also associate them to the automation's error tracking
+                    # use retry policy & log propagated errors to also associate 
+                    # them to the automation's error tracking
                     AutomationWorkflow.get_logger(parsed_inputs).exception(
                         err, True, f"Error while running automation job: {err}"
                     )
@@ -224,7 +247,9 @@ class AutomationWorkflow:
                     if result.actions_dag:
                         next_actions = result.actions_dag.get_executable_actions()
                         remaining_steps = len(result.actions_dag.get_pending_actions())
-                    next_step_at = result.next_actions_description.get_next_execution_time() if result.next_actions_description else None
+                    next_step_at = octobot_flow_client.OctoBotActionsJobDescription.get_next_execution_time(
+                        result.next_actions_description.state
+                    ) if result.next_actions_description else None
                 next_step = AutomationWorkflow._get_actions_summary(next_actions, minimal=True)
                 next_actions_str = f"next immediate actions: {next_actions}" if next_actions else "all actions completed"
                 AutomationWorkflow.get_logger(parsed_inputs).info(
@@ -235,9 +260,10 @@ class AutomationWorkflow:
                     result,
                 )
             else:
+                retry_delay_seconds = max(0.0, (next_step_at or time.time()) - time.time())
                 AutomationWorkflow.get_logger(parsed_inputs).info(
-                    f"Iteration postponed after authentication error, retry scheduled in "
-                    f"{constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS:.0f} seconds"
+                    f"Iteration postponed ({execution_error}: {execution_error_message}), "
+                    f"retry scheduled in {retry_delay_seconds:.0f} seconds"
                 )
             #### End of decryped task context - no clear data after this point in encrypted context ####
 
@@ -375,14 +401,14 @@ class AutomationWorkflow:
             AutomationWorkflow.get_logger(parsed_inputs).info(
                 f"Stopping workflow, should stop: {latest_iteration_result.progress_status.should_stop}"
             )
-        else:
-            # successful iteration and a new iteration is required, schedule next iteration, don't return anything
-            await AutomationWorkflow._schedule_next_iteration(
-                parsed_inputs,
-                latest_iteration_result.next_iteration_description,  # type: ignore
-                latest_iteration_result.progress_status,
-                latest_iteration_result.next_iteration_description_metadata,
-            )
+            return False, latest_iteration_result
+        # successful iteration and a new iteration is required, schedule next iteration, don't return anything
+        await AutomationWorkflow._schedule_next_iteration(
+            parsed_inputs,
+            latest_iteration_result.next_iteration_description,  # type: ignore
+            latest_iteration_result.progress_status,
+            latest_iteration_result.next_iteration_description_metadata,
+        )
         return True, latest_iteration_result
 
     @staticmethod
@@ -413,14 +439,13 @@ class AutomationWorkflow:
     def _get_next_child_workflow_id() -> str:
         workflow_id = dbos.DBOS.workflow_id
         if workflow_id is None:
-            raise errors.WorkflowInputError("Missing current workflow ID while scheduling next iteration.")
-        parent_workflow_id = workflow_id[:constants.PARENT_WORKFLOW_ID_LENGTH]
+            raise errors.WorkflowInputError(
+                "Missing current workflow ID while scheduling next iteration."
+            )
         try:
-            current_child_id = workflows_util.parse_automation_child_workflow_index(workflow_id)
+            return workflows_util.build_next_child_automation_workflow_id(workflow_id)
         except ValueError as error:
             raise errors.WorkflowInputError(str(error)) from error
-        next_child_id = current_child_id + 1
-        return f"{parent_workflow_id}_{next_child_id}"
 
     @staticmethod
     def _create_next_iteration_inputs(
@@ -477,3 +502,16 @@ class AutomationWorkflow:
         return octobot_commons.logging.get_logger(
             parsed_inputs.task.name or AutomationWorkflow.__name__
         )
+
+    @staticmethod
+    def _get_postponed_iteration_error_status_and_delay(error: Exception) -> tuple[
+        octobot_flow.enums.ActionErrorStatus, float
+    ]:
+        if isinstance(error, octobot_trading.errors.AuthenticationError):
+            return octobot_flow.enums.ActionErrorStatus.AUTHENTICATION_ERROR, constants.INVALID_AUTHENTICATION_RETRY_DELAY_SECONDS
+        if isinstance(error, octobot_trading.errors.MissingFunds):
+            return octobot_flow.enums.ActionErrorStatus.NOT_ENOUGH_FUNDS, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS
+        if isinstance(error, octobot_trading.errors.MissingMinimalExchangeTradeVolume):
+            return octobot_flow.enums.ActionErrorStatus.INVALID_ORDER, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS
+        # other errors, like PortfolioNegativeValueError and FailedRequest
+        return octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR, constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS

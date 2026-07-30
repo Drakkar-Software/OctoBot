@@ -1,3 +1,4 @@
+# pylint: disable=C0415,R1732
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -14,10 +15,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import asyncio
 import os
 import signal
 import subprocess
 import sys
+import time
 import typing
 
 import octobot_commons.errors as commons_errors
@@ -60,7 +63,7 @@ def spawn_managed_subprocess(
     else:
         child_stdout = subprocess.DEVNULL
         child_stderr = subprocess.DEVNULL
-    return subprocess.Popen(
+    proc = subprocess.Popen(
         argv,
         cwd=working_directory,
         env=resolved_env,
@@ -68,6 +71,9 @@ def spawn_managed_subprocess(
         stdout=child_stdout,
         stderr=child_stderr,
     )
+    import octobot_commons.managed_child_process_registry as managed_child_process_registry
+    managed_child_process_registry.ManagedChildProcessRegistry.instance().register(proc.pid)
+    return proc
 
 
 def pid_is_running(pid: int) -> bool: # pylint: disable=too-many-return-statements
@@ -108,12 +114,12 @@ def request_graceful_stop_via_sigterm(
     """
     resolved_logger = logger or commons_logging.get_logger(__name__)
     if pid <= 0:
-        raise commons_errors.DSLInterpreterError(
+        raise commons_errors.ProcessError(
             "Invalid pid for graceful stop via SIGTERM."
         )
     sigterm = getattr(signal, "SIGTERM", None)
     if sigterm is None:
-        raise commons_errors.DSLInterpreterError(
+        raise commons_errors.ProcessError(
             "SIGTERM is not available on this platform."
         )
     if not pid_is_running(pid):
@@ -135,8 +141,100 @@ def request_graceful_stop_via_sigterm(
         resolved_logger.warning(
             "Graceful stop: failed to signal pid=%s: %s", pid, err
         )
-        raise commons_errors.DSLInterpreterError(
+        raise commons_errors.ProcessError(
             f"Failed to send stop signal to pid={pid}: {err}"
         ) from err
     resolved_logger.info("Sent graceful stop signal (sigterm) to pid=%s", pid)
     return {"status": "stopped", "signal": "sigterm"}
+
+
+def request_force_kill(
+    pid: int,
+    *,
+    logger: typing.Optional[typing.Any] = None,
+) -> dict[str, typing.Any]:
+    """Force-kill the process identified by ``pid`` (SIGKILL / TerminateProcess)."""
+    resolved_logger = logger or commons_logging.get_logger(__name__)
+    if pid <= 0:
+        raise commons_errors.ProcessError("Invalid pid for force kill.")
+    if not pid_is_running(pid):
+        resolved_logger.info(
+            "Force kill: pid=%s not running, treating as already stopped",
+            pid,
+        )
+        return {"status": "already_stopped", "reason": "not_running"}
+    try:
+        psutil.Process(pid).kill()
+    except psutil.NoSuchProcess:
+        resolved_logger.info(
+            "Force kill: pid=%s gone before kill",
+            pid,
+        )
+        return {"status": "already_stopped", "reason": "not_running"}
+    except Exception as err:
+        if not pid_is_running(pid):
+            resolved_logger.info(
+                "Force kill: pid=%s gone after failed kill: %s",
+                pid,
+                err,
+            )
+            return {"status": "already_stopped", "reason": str(err)}
+        resolved_logger.warning("Force kill failed for pid=%s: %s", pid, err)
+        raise commons_errors.ProcessError(
+            f"Failed to force kill pid={pid}: {err}"
+        ) from err
+    resolved_logger.info("Force killed pid=%s", pid)
+    return {"status": "force_killed"}
+
+
+async def wait_until_pid_stopped_async(
+    pid: int,
+    *,
+    logger: typing.Optional[typing.Any] = None,
+    timeout_seconds: float,
+    poll_interval: float = 0.2,
+) -> None:
+    """Poll until ``pid`` is gone or ``timeout_seconds`` elapses."""
+    resolved_logger = logger or commons_logging.get_logger(__name__)
+    if pid <= 0:
+        resolved_logger.info(
+            "wait_until_pid_stopped_async: pid=%s treated as already stopped (non-positive)",
+            pid,
+        )
+        return
+    resolved_logger.info(
+        "wait_until_pid_stopped_async: waiting for pid=%s to exit (timeout=%ss)",
+        pid,
+        timeout_seconds,
+    )
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if not pid_is_running(pid):
+            resolved_logger.info("wait_until_pid_stopped_async: pid=%s exited", pid)
+            return
+        await asyncio.sleep(poll_interval)
+    raise commons_errors.ProcessError(
+        f"Timed out after {timeout_seconds}s waiting for pid={pid} to exit."
+    )
+
+
+def rebind_managed_child_pid(spawn_pid: int, authoritative_pid: int) -> None:
+    """Replace spawn pid with authoritative app pid in the managed-child registry."""
+    import octobot_commons.managed_child_process_registry as managed_child_process_registry
+    managed_child_process_registry.ManagedChildProcessRegistry.instance().rebind_managed_child_pid(
+        spawn_pid,
+        authoritative_pid,
+    )
+
+
+async def graceful_stop_managed_children(
+    *,
+    timeout_seconds: float,
+    poll_interval: float = 0.2,
+) -> dict[int, str]:
+    """Gracefully stop all registered managed children (see ManagedChildProcessRegistry)."""
+    import octobot_commons.managed_child_process_registry as managed_child_process_registry
+    return await managed_child_process_registry.ManagedChildProcessRegistry.instance().graceful_stop_all(
+        timeout_seconds=timeout_seconds,
+        poll_interval=poll_interval,
+    )

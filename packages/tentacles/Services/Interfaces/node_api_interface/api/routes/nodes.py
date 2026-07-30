@@ -15,11 +15,13 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import os
 import threading
 import time
 import typing
 
 import pydantic
+import octobot_services.constants as services_constants
 import octobot_services.interfaces.util as interfaces_util
 from fastapi import APIRouter, status
 
@@ -39,12 +41,19 @@ try:
 except ImportError:
     context_based_file_handler = None
 
+# Service_bases is only needed at runtime, not for build (see node_api.py).
+try:
+    import tentacles.Services.Services_bases.node_api_service.node_api as node_api_service_module
+except ImportError:
+    node_api_service_module = None
+
 router = APIRouter(tags=["nodes"])
 
 
 class NodeConfigUpdate(pydantic.BaseModel):
     node_type: typing.Optional[typing.Literal["standalone", "master"]] = None
     use_dedicated_log_file_per_automation: typing.Optional[bool] = None
+    external_host: typing.Optional[str] = None
 
 
 @router.get("/me", response_model=octobot_node.models.Node)
@@ -60,6 +69,11 @@ def get_node_config(current_user: CurrentUser) -> typing.Any:
         "use_dedicated_log_file_per_automation": octobot_node.config.settings.USE_DEDICATED_LOG_FILE_PER_AUTOMATION,
         "tasks_encryption_enabled": octobot_node.config.settings.tasks_encryption_enabled,
         "server_encryption_env_vars": octobot_node.constants.TASKS_ENCRYPTION_ENV_VARS,
+        "external_host": (
+            node_api_service_module.NodeApiService.instance().get_node_external_host()
+            if node_api_service_module else None
+        ),
+        "external_host_env_override": bool(os.getenv(services_constants.ENV_NODE_EXTERNAL_HOST)),
     }
 
 
@@ -86,6 +100,8 @@ def update_node_config(config: NodeConfigUpdate, current_user: CurrentUser) -> t
             octobot_node.scheduler.scheduler.Scheduler._setup_workflow_logging()
         else:
             _remove_context_based_file_handlers()
+    if config.external_host is not None and node_api_service_module is not None:
+        node_api_service_module.NodeApiService.instance().set_node_external_host(config.external_host)
     return get_node_config(current_user)
 
 

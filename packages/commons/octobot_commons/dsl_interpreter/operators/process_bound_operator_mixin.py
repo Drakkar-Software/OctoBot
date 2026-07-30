@@ -14,10 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import asyncio
 import pathlib
 import subprocess
-import time
 import typing
 
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
@@ -52,7 +50,10 @@ class ProcessBoundOperatorMixin:
             raise commons_errors.DSLInterpreterError(
                 "No process id set; cannot request graceful stop."
             )
-        return process_util.request_graceful_stop_via_sigterm(self.pid, logger=logger)
+        try:
+            return process_util.request_graceful_stop_via_sigterm(self.pid, logger=logger)
+        except commons_errors.ProcessError as err:
+            raise commons_errors.DSLInterpreterError(str(err)) from err
 
     async def wait_until_pid_stopped(
         self,
@@ -63,27 +64,15 @@ class ProcessBoundOperatorMixin:
         poll_interval: float = 0.2,
     ) -> None:
         """Poll until ``pid`` is gone or ``timeout_seconds`` elapses (after e.g. SIGTERM)."""
-        resolved_logger = logger or commons_logging.get_logger(self.__class__.__name__)
-        if pid <= 0:
-            resolved_logger.info(
-                "wait_until_pid_stopped: pid=%s treated as already stopped (non-positive)",
+        try:
+            await process_util.wait_until_pid_stopped_async(
                 pid,
+                logger=logger or commons_logging.get_logger(self.__class__.__name__),
+                timeout_seconds=timeout_seconds,
+                poll_interval=poll_interval,
             )
-            return
-        resolved_logger.info(
-            "wait_until_pid_stopped: waiting for pid=%s to exit (timeout=%ss)",
-            pid,
-            timeout_seconds,
-        )
-        deadline = time.monotonic() + timeout_seconds
-        while time.monotonic() < deadline:
-            if not process_util.pid_is_running(pid):
-                resolved_logger.info("wait_until_pid_stopped: pid=%s exited", pid)
-                return
-            await asyncio.sleep(poll_interval)
-        raise commons_errors.DSLInterpreterError(
-            f"Timed out after {timeout_seconds}s waiting for pid={pid} to exit."
-        )
+        except commons_errors.ProcessError as err:
+            raise commons_errors.DSLInterpreterError(str(err)) from err
 
     def spawn_subprocess(
         self,
@@ -102,6 +91,19 @@ class ProcessBoundOperatorMixin:
         )
         self.pid = proc.pid
         return proc
+
+    def bind_authoritative_child_pid(
+        self,
+        authoritative_pid: int,
+        *,
+        spawn_pid: typing.Optional[int] = None,
+    ) -> None:
+        """Point this operator and the managed-child registry at the authoritative app pid."""
+        previous_pid = spawn_pid if spawn_pid is not None else (self.pid or 0)
+        if previous_pid == authoritative_pid and self.pid == authoritative_pid:
+            return
+        process_util.rebind_managed_child_pid(previous_pid, authoritative_pid)
+        self.pid = authoritative_pid
 
     @staticmethod
     def reject_user_path_segment(path_value: str) -> None:

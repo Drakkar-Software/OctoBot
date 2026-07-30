@@ -78,6 +78,34 @@ def _workflow_status_with_automation_task(
     return workflow_status
 
 
+class TestNormalizeParentAutomationId:
+    def test_parent_workflow_id_unchanged(self):
+        assert workflows_util.normalize_parent_automation_id(_PARENT_WORKFLOW_ID) == _PARENT_WORKFLOW_ID
+
+    def test_child_workflow_id_truncated_to_parent(self):
+        child_id = _child_workflow_id(5)
+        assert workflows_util.normalize_parent_automation_id(child_id) == _PARENT_WORKFLOW_ID
+
+
+class TestBuildNextChildAutomationWorkflowId:
+    def test_parent_workflow_id_maps_to_first_child(self):
+        assert (
+            workflows_util.build_next_child_automation_workflow_id(_PARENT_WORKFLOW_ID)
+            == _child_workflow_id(1)
+        )
+
+    def test_child_workflow_id_increments_suffix(self):
+        assert (
+            workflows_util.build_next_child_automation_workflow_id(_child_workflow_id(2))
+            == _child_workflow_id(3)
+        )
+
+    def test_invalid_suffix_raises_value_error(self):
+        invalid_child_id = f"{_PARENT_WORKFLOW_ID}-4-4"
+        with pytest.raises(ValueError, match="Invalid child workflow suffix format"):
+            workflows_util.build_next_child_automation_workflow_id(invalid_child_id)
+
+
 class TestParseAutomationChildWorkflowIndex:
     def test_parent_workflow_id_maps_to_zero(self):
         assert workflows_util.parse_automation_child_workflow_index(_PARENT_WORKFLOW_ID) == 0
@@ -214,3 +242,45 @@ class TestGetAutomationStateDict:
 
         assert state_dict is not None
         assert state_dict["automation"]["metadata"]["name"] == "from-output"
+
+
+class TestPatchTaskContentDegradedState:
+    def test_persists_degraded_state_in_task_content(self):
+        task_content = _automation_task_content(automation_name="copy-grid")
+
+        patched_content = workflows_util.patch_task_content_degraded_state(
+            task_content,
+            "not_enough_funds",
+            "Insufficient funds",
+            since=1234.5,
+        )
+
+        degraded_state = json.loads(patched_content)["state"]["automation"]["execution"]["degraded_state"]
+        assert degraded_state == {
+            "since": 1234.5,
+            "error": "not_enough_funds",
+            "reason": "Insufficient funds",
+        }
+
+    def test_preserves_existing_degraded_since_on_subsequent_patch(self):
+        task_content = _automation_task_content(automation_name="copy-grid")
+        task_content = workflows_util.patch_task_content_degraded_state(
+            task_content,
+            "not_enough_funds",
+            "Insufficient funds",
+            since=1000.0,
+        )
+
+        patched_content = workflows_util.patch_task_content_degraded_state(
+            task_content,
+            "invalid_order",
+            "Order volume below exchange minimum",
+            since=2000.0,
+        )
+
+        degraded_state = json.loads(patched_content)["state"]["automation"]["execution"]["degraded_state"]
+        assert degraded_state == {
+            "since": 1000.0,
+            "error": "invalid_order",
+            "reason": "Order volume below exchange minimum",
+        }

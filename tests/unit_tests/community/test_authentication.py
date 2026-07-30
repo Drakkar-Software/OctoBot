@@ -516,3 +516,124 @@ def test_is_node_wallet_configured(auth):
     auth._wallet_backend.list_wallets.return_value = [mock.Mock()]
     assert auth.is_node_wallet_configured() is True
 
+
+class TestGetWalletSyncStorageMasterConfigRead:
+    def test_reads_master_config_without_activating_profile(self):
+        auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        master_config = mock.Mock()
+        sync_storage = mock.Mock()
+        with mock.patch(
+            "octobot.community.authentication.user_root_folder_provider.get_sync_data_root",
+            mock.Mock(return_value="/master/user"),
+        ), mock.patch(
+            "octobot.community.authentication.user_root_folder_provider.get_user_root_folder",
+            mock.Mock(return_value="/child/automation"),
+        ), mock.patch(
+            "octobot.community.authentication.os.path.isfile",
+            mock.Mock(return_value=True),
+        ), mock.patch(
+            "octobot.community.authentication.commons_configuration.Configuration",
+            mock.Mock(return_value=master_config),
+        ) as configuration_cls_mock, mock.patch(
+            "octobot.community.authentication.supabase_backend.SyncConfigurationStorage",
+            mock.Mock(return_value=sync_storage),
+        ) as sync_storage_cls_mock:
+            result = auth._get_wallet_sync_storage()
+        configuration_cls_mock.assert_called_once()
+        master_config.read.assert_called_once_with(should_raise=False, activate_profile=False)
+        sync_storage_cls_mock.assert_called_once_with(master_config)
+        assert result is sync_storage
+
+
+class TestClearLocalDataIfNecessary:
+    def test_noop_on_cloud_environment(self, auth):
+        with mock.patch.object(constants, "IS_CLOUD_ENV", True), mock.patch.object(
+            auth, "_clear_bot_scoped_config", mock.Mock()
+        ) as clear_mock:
+            auth.clear_local_data_if_necessary()
+        clear_mock.assert_not_called()
+
+    def test_clears_bot_scoped_data_when_config_path_binding_is_stale(self, tmp_path):
+        config_path = tmp_path / "config.json"
+        config_path.write_text("{}", encoding="utf-8")
+        config = octobot_commons.configuration.Configuration(
+            str(config_path),
+            str(tmp_path / "profiles"),
+        )
+        config.config = {
+            constants.CONFIG_COMMUNITY: {
+                constants.CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER: "old-identifier",
+            }
+        }
+        with mock.patch.object(
+            community.CommunityAuthentication,
+            "_create_client",
+            return_value=mock.Mock(),
+        ):
+            auth = community.CommunityAuthentication(config=config, use_as_singleton=False)
+        with mock.patch.object(
+            octobot_commons.configuration.Configuration, "save", mock.Mock()
+        ), mock.patch.object(auth, "_clear_bot_scoped_config", mock.Mock()) as clear_mock:
+            auth.clear_local_data_if_necessary()
+        clear_mock.assert_called_once()
+
+    def test_keeps_bot_scoped_data_when_config_path_binding_matches(self, tmp_path):
+        config_path = tmp_path / "config.json"
+        config_path.write_text("{}", encoding="utf-8")
+        import octobot.community.activity_analysis.config_path_binding as config_path_binding
+        fingerprint = config_path_binding.fingerprint_config_path(str(config_path))
+        config = octobot_commons.configuration.Configuration(
+            str(config_path),
+            str(tmp_path / "profiles"),
+        )
+        config.config = {
+            constants.CONFIG_COMMUNITY: {
+                constants.CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER: fingerprint,
+            }
+        }
+        with mock.patch.object(
+            community.CommunityAuthentication,
+            "_create_client",
+            return_value=mock.Mock(),
+        ):
+            auth = community.CommunityAuthentication(config=config, use_as_singleton=False)
+        with mock.patch.object(auth, "_clear_bot_scoped_config", mock.Mock()) as clear_mock:
+            auth.clear_local_data_if_necessary()
+        clear_mock.assert_not_called()
+
+
+class TestClearBotScopedConfig:
+    def test_clears_activity_bot_id(self, tmp_path):
+        config_path = tmp_path / "config.json"
+        config_path.write_text("{}", encoding="utf-8")
+        config = octobot_commons.configuration.Configuration(
+            str(config_path),
+            str(tmp_path / "profiles"),
+        )
+        config.config = {
+            constants.CONFIG_COMMUNITY: {
+                constants.CONFIG_COMMUNITY_BOT_ID: "cloud-bot-id",
+            },
+            octobot_commons.constants.CONFIG_METRICS: {
+                octobot_commons.constants.CONFIG_METRICS_ACTIVITY_BOT_ID: "activity-bot-id",
+            },
+        }
+        with mock.patch.object(
+            community.CommunityAuthentication,
+            "_create_client",
+            return_value=mock.Mock(),
+        ):
+            auth = community.CommunityAuthentication(config=config, use_as_singleton=False)
+        with mock.patch.object(auth, "_save_bot_id", mock.Mock()) as save_bot_id_mock, \
+                mock.patch.object(auth, "save_tradingview_email", mock.Mock()), \
+                mock.patch.object(auth, "_save_mqtt_device_uuid", mock.Mock()), \
+                mock.patch.object(auth, "save_tradingview_email_confirmed", mock.Mock()):
+            auth._clear_bot_scoped_config()
+        save_bot_id_mock.assert_called_once_with("")
+        assert (
+            config.config[octobot_commons.constants.CONFIG_METRICS][
+                octobot_commons.constants.CONFIG_METRICS_ACTIVITY_BOT_ID
+            ]
+            == ""
+        )
+

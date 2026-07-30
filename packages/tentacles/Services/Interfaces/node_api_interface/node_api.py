@@ -29,7 +29,9 @@ import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
 import octobot_services.interfaces.util.web as web_util
 import octobot_commons.logging as octobot_commons_logging
+import octobot_commons.network as network_module
 import octobot_node.config as node_config
+import octobot_node.constants as node_constants
 import octobot_node.scheduler as scheduler # noqa: F401
 import octobot_sync.server as sync_server
 
@@ -99,10 +101,10 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             self.logger.warning(
                 "Scheduler not initialized by NodeApiService.prepare(); initializing now"
             )
-            scheduler.initialize_scheduler()
+            await scheduler.initialize_scheduler()
         host = self.host
         port = self.port
-        self.app = self.create_app()
+        self.app = self.create_app(external_host=self.node_api_service.get_node_external_host())
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()
         cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()] if cors_origins_str else []
@@ -130,8 +132,22 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         return True
 
     async def stop(self):
-        if self.server is not None:
-            self.server.should_exit = True
+        if self.server is None:
+            return
+        self.server.should_exit = True
+        serve_finished = self._serve_finished
+        if serve_finished is None:
+            return
+        try:
+            await asyncio.wait_for(
+                asyncio.to_thread(serve_finished.wait),
+                timeout=node_constants.NODE_API_STOP_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            self.logger.warning(
+                "Timed out waiting for Node API server to stop after %ss",
+                node_constants.NODE_API_STOP_TIMEOUT_SECONDS,
+            )
 
     def _should_open_node_ui_in_browser(self) -> bool:
         try:
@@ -143,7 +159,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
     def _open_node_ui_on_browser(self):
         try:
             web_util.open_in_background_browser(
-                f"http://{node_api_service.LOCAL_HOST_IP}:{self.port}/app"
+                f"http://{network_module.LOCAL_HOST_IP}:{self.port}/app"
             )
         except Exception as err:
             self.logger.warning(
@@ -151,7 +167,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             )
 
     @classmethod
-    def create_app(cls) -> FastAPI:
+    def create_app(cls, external_host: str | None = None) -> FastAPI:
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             yield
@@ -182,6 +198,7 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
                     sync_server.derive_user_id(w.private_key) == user_id
                     for w in community_auth.CommunityAuthentication.instance().list_wallet_entries()
                 ),
+                external_host=external_host,
             ),
         )
 

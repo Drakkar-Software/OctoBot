@@ -37,18 +37,48 @@ async def test_health_endpoint(app):
 
 
 async def test_create_app_returns_signed_path_middleware(app):
-    assert isinstance(app, sync_app.SignedPathMiddleware)
+    assert isinstance(app, sync_app.HostNormalizeMiddleware)
+    assert isinstance(app.app, sync_app.SignedPathMiddleware)
 
 
 async def test_create_app_with_custom_collections_path():
     store = MemoryObjectStore()
     # Should not raise even with a non-existent collections path (falls back to default)
     created_app = sync_app.create_app(store, collections_path="/nonexistent/path.json")
-    assert isinstance(created_app, sync_app.SignedPathMiddleware)
+    assert isinstance(created_app, sync_app.HostNormalizeMiddleware)
+    assert isinstance(created_app.app, sync_app.SignedPathMiddleware)
 
 
 async def test_create_app_with_allowlist():
     store = MemoryObjectStore()
     # is_allowed_user_id callable accepted without error
     created_app = sync_app.create_app(store, is_allowed_user_id=lambda uid: True)
-    assert isinstance(created_app, sync_app.SignedPathMiddleware)
+    assert isinstance(created_app, sync_app.HostNormalizeMiddleware)
+    assert isinstance(created_app.app, sync_app.SignedPathMiddleware)
+
+
+async def _echo_host_app(scope, receive, send):
+    headers = dict(scope["headers"])
+    await send({
+        "type": "http.response.start",
+        "status": 200,
+        "headers": [(b"content-type", b"text/plain")],
+    })
+    await send({
+        "type": "http.response.body",
+        "body": headers.get(b"host", b""),
+    })
+
+
+async def test_host_normalize_middleware_rewrites_host():
+    wrapped = sync_app.HostNormalizeMiddleware(_echo_host_app, "signed-host.example")
+    async with AsyncClient(transport=ASGITransport(app=wrapped), base_url="http://proxy-local:8000") as client:
+        resp = await client.get("/health")
+    assert resp.text == "signed-host.example"
+
+
+async def test_host_normalize_middleware_noop_when_unset():
+    wrapped = sync_app.HostNormalizeMiddleware(_echo_host_app, None)
+    async with AsyncClient(transport=ASGITransport(app=wrapped), base_url="http://proxy-local:8000") as client:
+        resp = await client.get("/health")
+    assert resp.text == "proxy-local:8000"

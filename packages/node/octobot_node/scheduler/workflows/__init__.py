@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-def register_workflows():
+
+def register_workflows() -> None:
     import octobot_node.scheduler.workflows.automation_workflow
     import octobot_node.scheduler.workflows.user_action_workflow
+    import octobot_node.scheduler.workflows.dbos_cleanup_workflow

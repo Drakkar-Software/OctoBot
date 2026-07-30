@@ -16,7 +16,7 @@ bollinger bands in depth analysis, reddit entries reader, ...\) and trading mode
 
 ![tentacles](https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/wiki_resources/tentacles.jpg)
 
-OctoBot is available for free with <a href="https://github.com/Drakkar-Software/OctoBot-Tentacles" rel="nofollow">basic implementations of a lot of different evaluators</a>
+OctoBot is available for free with <a href="https://github.com/Drakkar-Software/OctoBot/tree/master/packages/tentacles" rel="nofollow">basic implementations of a lot of different evaluators</a>
 . The very high modularity in OctoBot's architecture allows it to automatically
 look for the most advanced version\(s\) of all the available tentacles and
 automatically use them in its trading strategies.
@@ -47,7 +47,7 @@ Tentacle package bundles are the prefered way to share tentacles.
 
 Steps to create a tentacles package bundle from a local folder:
 
-1. Make sure it follows the <a href="https://github.com/Drakkar-Software/OctoBot-Tentacles" rel="nofollow">OctoBot-Tentacles folders architecture</a>
+1. Make sure it follows the <a href="https://github.com/Drakkar-Software/OctoBot/tree/master/packages/tentacles" rel="nofollow">tentacles folders architecture</a>
    to properly locate tentacles to be installed. There is no need to create empty folders
    but packages with content have to be at the [appropriate path](create-a-tentacle-package#the-tentacle-package-folder).\
    Example: a trading mode should be located at **Trading/Mode/name_of_your_trading_mode**

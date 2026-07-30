@@ -8,6 +8,10 @@ sidebar_position: 1
 
 # Lancer votre OctoBot
 
+:::warning
+**OctoBot beta est disponible.** La dernière version démarre par défaut en **node mode** avec la <a href="https://new.mobile.octobot.cloud/home" rel="nofollow">nouvelle interface OctoBot</a>. Commencez par le [guide de démarrage OctoBot beta](octobot-beta-getting-started). Les guides ci-dessous couvrent l'OctoBot classique.
+:::
+
 :::info
 Cette section "Robot de trading" est dédiée aux utilisateurs d'<a href="https://github.com/Drakkar-Software/OctoBot" rel="nofollow">OctoBot open source</a>.
 :::

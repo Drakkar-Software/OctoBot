@@ -271,3 +271,35 @@ class ExchangeAPIMock:
 
     def get_base_currency(self, exchange_manager, symbol):
         return symbol_util.parse_symbol(symbol).base
+
+
+@pytest.mark.usefixtures("event_loop", "install_tentacles")
+class TestCreateDslEvaluator:
+    async def test_returns_enabled_instance_without_tentacles_setup_config(
+        self, evaluators_and_matrix_channels
+    ):
+        import tentacles
+        with (
+            mock.patch.object(
+                tentacles.RSIMomentumEvaluator,
+                "initialize",
+                mock.AsyncMock(),
+            ),
+            mock.patch.object(
+                tentacles.RSIMomentumEvaluator,
+                "prepare",
+                mock.AsyncMock(),
+            ),
+        ):
+            evaluator_instance = await evaluator_factory.create_dsl_evaluator(
+                tentacles.RSIMomentumEvaluator,
+                matrix_id=evaluators_and_matrix_channels,
+                exchange_name=exchange_name,
+                evaluator_configuration={},
+                bot_id=bot_id,
+                symbol="BTC/USDT",
+                time_frame=enums.TimeFrames.ONE_HOUR.value,
+                cryptocurrency="BTC",
+            )
+        assert evaluator_instance is not None
+        assert evaluator_instance.enabled is True

@@ -2,11 +2,18 @@ import { Download, Play, RefreshCw, Upload } from "lucide-react"
 
 import type { WalletInfo } from "@/client"
 import { Button } from "@/components/ui/button"
-import { truncateAddress } from "@/lib/wallet-utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DEBUG_WALLET_SELECTOR_LAYOUT_CLASS,
+  formatWalletSelectOptionLabel,
+  getDebugWalletSelectorWidthStyle,
+} from "@/lib/wallet-utils"
+import { cn } from "@/lib/utils"
 
 type DebugToolbarProps = {
   isImportedMode: boolean
   isSuperuser: boolean
+  isWalletsLoading?: boolean
   wallets: WalletInfo[]
   walletAddress: string
   onWalletAddressChange: (address: string) => void
@@ -14,6 +21,7 @@ type DebugToolbarProps = {
   onReturnToLive: () => void
   onExport: () => void
   canExportSnapshot: boolean
+  isRefreshPending?: boolean
   onRefresh: () => void
   onExecute: () => void
 }
@@ -21,6 +29,7 @@ type DebugToolbarProps = {
 export function DebugToolbar({
   isImportedMode,
   isSuperuser,
+  isWalletsLoading = false,
   wallets,
   walletAddress,
   onWalletAddressChange,
@@ -28,6 +37,7 @@ export function DebugToolbar({
   onReturnToLive,
   onExport,
   canExportSnapshot,
+  isRefreshPending = false,
   onRefresh,
   onExecute,
 }: DebugToolbarProps) {
@@ -45,24 +55,36 @@ export function DebugToolbar({
     )
   }
 
+  const walletSelectorWidthStyle = getDebugWalletSelectorWidthStyle()
+
   return (
     <>
-      {isSuperuser && (
-        <select
-          id="debug-wallet"
-          aria-label="Wallet"
-          className="h-8 rounded-md border border-rule bg-input px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-frost max-w-xs"
-          value={walletAddress}
-          onChange={(event) => onWalletAddressChange(event.target.value)}
-        >
-          {wallets.map((wallet) => (
-            <option key={wallet.address} value={wallet.address}>
-              {wallet.name || truncateAddress(wallet.address)} (
-              {truncateAddress(wallet.address)})
-            </option>
-          ))}
-        </select>
-      )}
+      {isSuperuser &&
+        (isWalletsLoading ? (
+          <Skeleton
+            style={walletSelectorWidthStyle}
+            className={DEBUG_WALLET_SELECTOR_LAYOUT_CLASS}
+            aria-label="Loading wallets"
+          />
+        ) : (
+          <select
+            id="debug-wallet"
+            aria-label="Wallet"
+            style={walletSelectorWidthStyle}
+            className={cn(
+              DEBUG_WALLET_SELECTOR_LAYOUT_CLASS,
+              "bg-input text-foreground focus:outline-none focus:ring-1 focus:ring-frost",
+            )}
+            value={walletAddress}
+            onChange={(event) => onWalletAddressChange(event.target.value)}
+          >
+            {wallets.map((wallet) => (
+              <option key={wallet.address} value={wallet.address}>
+                {formatWalletSelectOptionLabel(wallet)}
+              </option>
+            ))}
+          </select>
+        ))}
       <Button variant="outline" size="sm" onClick={onImport}>
         <Upload className="size-4" />
         Import
@@ -76,8 +98,15 @@ export function DebugToolbar({
         <Download className="size-4" />
         Export
       </Button>
-      <Button variant="outline" size="sm" onClick={onRefresh}>
-        <RefreshCw className="size-4" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRefresh}
+        disabled={isRefreshPending}
+      >
+        <RefreshCw
+          className={cn("size-4", isRefreshPending && "animate-spin")}
+        />
         Refresh
       </Button>
       <Button size="sm" onClick={onExecute}>

@@ -1,4 +1,5 @@
 import enum
+import typing
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.profiles.profile_data
@@ -46,6 +47,71 @@ async def get_traded_pairs_and_timeframes_by_exchange(
                 ),
             }
     return traded_pairs_and_tf_by_exchange
+
+
+def _empty_pair_volume() -> dict:
+    return {}
+
+
+def _pair_volume_from_ticker(ticker: typing.Optional[dict]) -> dict:
+    ticker_columns = octobot_trading.enums.ExchangeConstantsTickersColumns
+    if ticker is None:
+        return {
+            ticker_columns.BASE_VOLUME.value: None,
+            ticker_columns.QUOTE_VOLUME.value: None,
+        }
+    return {
+        ticker_columns.BASE_VOLUME.value: ticker.get(ticker_columns.BASE_VOLUME.value),
+        ticker_columns.QUOTE_VOLUME.value: ticker.get(ticker_columns.QUOTE_VOLUME.value),
+    }
+
+
+def _ticker_symbols_for_all_tickers_fetch(
+    exchange,
+    pairs: list[str],
+) -> typing.Optional[list[str]]:
+    if exchange.get_option_value(
+        octobot_trading.enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
+    ):
+        return pairs
+    return None
+
+
+async def get_traded_pairs_by_exchange(
+    exchange_config: protocol_models.ExchangeConfig,
+    trading_type: protocol_models.TradingType = protocol_models.TradingType.SPOT,
+    with_volume: bool = False,
+) -> dict[str, dict[str, dict]]:
+    traded_pairs_by_exchange = {}
+    tentacles_setup_config = octobot_tentacles_manager.api.get_full_tentacles_setup_config()
+    profile_data = _get_exchange_profile_data(exchange_config, trading_type=trading_type)
+    for exchange in profile_data.exchanges:
+        internal_name = exchange.internal_name
+        local_exchange_type = octobot_trading.enums.ExchangeTypes(exchange.exchange_type)
+        exchange_data = octobot_trading.exchanges.exchange_data_factory(
+            internal_name,
+            exchange_type=local_exchange_type.value
+        )
+        async with octobot_trading.exchanges.exchange_manager_from_exchange_data(
+            exchange_data, profile_data, tentacles_setup_config, None
+        ) as exchange_manager:
+            pairs = list(
+                octobot_trading.api.get_all_available_symbols(exchange_manager, exchange_type=local_exchange_type)
+            )
+            if not with_volume:
+                traded_pairs_by_exchange[internal_name] = {
+                    pair: _empty_pair_volume()
+                    for pair in pairs
+                }
+                continue
+            tickers = await exchange_manager.exchange.get_all_currencies_price_ticker(
+                symbols=_ticker_symbols_for_all_tickers_fetch(exchange_manager.exchange, pairs)
+            ) or {}
+            traded_pairs_by_exchange[internal_name] = {
+                pair: _pair_volume_from_ticker(tickers.get(pair))
+                for pair in pairs
+            }
+    return traded_pairs_by_exchange
 
 
 def _dex_pair_matches_input_trading_pair(

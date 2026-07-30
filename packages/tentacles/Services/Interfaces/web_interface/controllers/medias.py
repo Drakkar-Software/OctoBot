@@ -43,6 +43,7 @@ def register(blueprint):
         if models.is_valid_profile_image_path(path):
             # reference point is the web interface directory: use OctoBot root folder as a reference
             return _send_file("../../../..", path)
+        flask.abort(404)
     
     
     @blueprint.route('/exchange_logo/<name>')

@@ -450,6 +450,44 @@ class UserInputTypes(enum.Enum):
     STRING_ARRAY = "string_array"
 
 
+class DslKeywordCategory(str, enum.Enum):
+    """Composition role of a DSL keyword (must match protocol DslKeywordCategory)."""
+
+    TRIGGER = "trigger"
+    SOURCE = "source"
+    CONDITION = "condition"
+    LOGIC = "logic"
+    ACTION = "action"
+
+
+class DslValueType(str, enum.Enum):
+    """Typed value carried by a DSL keyword parameter (must match protocol DslValueType)."""
+
+    BOOLEAN = "boolean"
+    NUMBER = "number"
+    TEXT = "text"
+    SERIES = "series"
+    SIGNAL = "signal"
+    DICT = "dict"
+    ORDER = "order"
+    TIME_FRAME = "time_frame"
+    ANY = "any"
+
+
+# Map tentacle UserInputTypes values to catalog DslValueType values.
+USER_INPUT_TYPE_TO_DSL_VALUE_TYPE = {
+    UserInputTypes.INT.value: DslValueType.NUMBER.value,
+    UserInputTypes.FLOAT.value: DslValueType.NUMBER.value,
+    UserInputTypes.BOOLEAN.value: DslValueType.BOOLEAN.value,
+    UserInputTypes.TEXT.value: DslValueType.TEXT.value,
+    UserInputTypes.OPTIONS.value: DslValueType.TEXT.value,
+    UserInputTypes.OBJECT.value: DslValueType.DICT.value,
+    UserInputTypes.OBJECT_ARRAY.value: DslValueType.ANY.value,
+    UserInputTypes.STRING_ARRAY.value: DslValueType.ANY.value,
+    UserInputTypes.MULTIPLE_OPTIONS.value: DslValueType.ANY.value,
+}
+
+
 class UserInputEditorOptionsTypes(enum.Enum):
     # source for the available options:
     # https://github.com/json-editor/json-editor#editor-options
@@ -521,6 +559,12 @@ class ProfileRisk(enum.Enum):
 class ProfileType(enum.Enum):
     LIVE = "live"
     BACKTESTING = "backtesting"
+
+
+class ProfileSource(enum.Enum):
+    FILESYSTEM = "filesystem"
+    SYNC = "sync"
+    EPHEMERAL = "ephemeral"
 
 
 class SignalHistoryTypes(enum.Enum):

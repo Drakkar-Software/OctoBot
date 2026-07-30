@@ -33,6 +33,8 @@ class OrdersSynchronizer:
         self._copy_settings = copy_settings
         self._force_immediate_orphan_cancel_next: bool = False
         self._mirrored_orphan_cancel_was_deferred_in_episode: bool = False
+        self._claimed_reference_order_ids: set[str] = set()
+        self._claimed_exchange_order_ids: set[str] = set()
 
     def _get_replicable_reference_orders_from(
         self,
@@ -497,10 +499,22 @@ class OrdersSynchronizer:
         async with self._exchange_interface.portfolio.mirror_sync_available_updates():
             return await self._synchronize_impl()
 
+    async def reconcile_open_orders_with_reference(self) -> int:
+        """Cancel open limits in the order manager that do not match reference price levels."""
+        replicable = self._get_replicable_reference_orders()
+        return await self._reconcile_open_orders_with_reference(replicable)
+
     async def _synchronize_impl(self) -> list:
         """Align copier open orders with reference_account.orders (synched mirror rows)."""
+        self._claimed_reference_order_ids = set()
+        self._claimed_exchange_order_ids = set()
         replicable = self._get_replicable_reference_orders()
+        # Compute grace skip symbols before pre-sync reconcile so grace symbols use stray_only.
         skip_symbols_for_upsert = self._reference_symbols_skipped_while_grace_orphans_uncancelled(replicable)
+        reconciled_cancelled_count = await self._reconcile_open_orders_with_reference(
+            replicable,
+            stray_only_symbols=skip_symbols_for_upsert,
+        )
         skip_symbols_for_upsert = self._maybe_bypass_grace_for_missing_mirrored_reference_orders(
             replicable, skip_symbols_for_upsert
         )
@@ -556,6 +570,11 @@ class OrdersSynchronizer:
                         order, "creation_error"
                     )
                 )
+        # Always post-sync reconcile; same grace rules as pre-sync (bypass may have cleared skip set).
+        reconciled_cancelled_count += await self._reconcile_open_orders_with_reference(
+            replicable,
+            stray_only_symbols=skip_symbols_for_upsert,
+        )
         if skipped_grace_upserts:
             skipped_summary = ", ".join(
                 mirrored_order_replication_failure_util.format_replication_failure_entry(failure)
@@ -570,11 +589,19 @@ class OrdersSynchronizer:
         completion_message = mirrored_order_replication_failure_util.format_order_mirror_completion_message(
             orphan_cancelled_count=orphan_cancelled_count,
             replaced_cancelled_count=replaced_cancelled_count,
+            reconciled_cancelled_count=reconciled_cancelled_count,
             total_created=len(created),
             already_synchronized_count=already_synchronized_count,
             replication_failures=replication_failures,
         )
         self._get_logger().info(completion_message)
+        if created and not self._exchange_interface.orders.automatically_synchronize_orders():
+            symbols = {order.symbol for order in created}
+            for symbol in symbols:
+                symbol_created = [order for order in created if order.symbol == symbol]
+                await self._exchange_interface.orders.wait_for_orders_to_open(symbol_created, symbol)
+        # After wait (or when wait is skipped): count is confirmed against local open orders.
+        self._check_open_limit_order_count_invariant(replicable)
         return created
 
     def _format_grace_deferral_order_details(
@@ -752,6 +779,212 @@ class OrdersSynchronizer:
                 )
         return cancelled_count
 
+    def _is_open_limit_order(self, order: trading_personal_data.Order) -> bool:
+        return trading_personal_data.get_trade_order_type(order.order_type) is not trading_enums.TradeOrderType.MARKET
+
+    def _reference_price_level_for_open_order(
+        self,
+        order: trading_personal_data.Order,
+        replicable: list[protocol_models.Order],
+    ) -> typing.Optional[tuple[str, trading_enums.TradeOrderSide, decimal.Decimal]]:
+        for reference_order in replicable:
+            if reference_order.symbol != order.symbol:
+                continue
+            if order.side is None:
+                continue
+            raw = trading_personal_data.exchange_columns_dict_from_protocol_order(reference_order)
+            reference_side, trader_order_type = trading_personal_data.parse_order_type(raw)
+            if reference_side is None or reference_side != order.side:
+                continue
+            if trading_personal_data.get_trade_order_type(trader_order_type) is trading_enums.TradeOrderType.MARKET:
+                continue
+            reference_price_value = reference_order.price
+            if reference_price_value in (None, ""):
+                continue
+            reference_price = decimal.Decimal(str(reference_price_value))
+            price_threshold = self._limit_order_price_match_threshold(reference_price)
+            if abs(order.origin_price - reference_price) <= price_threshold:
+                return (order.symbol, reference_side, reference_price)
+        return None
+
+    async def _cancel_reconciled_stray_order(self, order: trading_personal_data.Order) -> int:
+        try:
+            await self._exchange_interface.orders.cancel_order(order)
+            self._get_logger().info(
+                "Reconciled stray open order: symbol=%s exchange_id=%s side=%s price=%s order_id=%s",
+                order.symbol,
+                order.exchange_order_id,
+                order.side,
+                order.origin_price,
+                order.order_id,
+            )
+            return 1
+        except trading_errors.UnexpectedExchangeSideOrderStateError as err:
+            self._get_logger().exception(
+                err,
+                True,
+                f"Skipped reconciled stray cancel: {err}, order: {order}",
+            )
+            return 0
+
+    def _count_reference_orders_at_level(
+        self,
+        replicable: list[protocol_models.Order],
+        level: tuple[str, trading_enums.TradeOrderSide, decimal.Decimal],
+    ) -> int:
+        symbol, side, reference_price = level
+        price_threshold = self._limit_order_price_match_threshold(reference_price)
+        matching_count = 0
+        for reference_order in replicable:
+            if reference_order.symbol != symbol:
+                continue
+            raw = trading_personal_data.exchange_columns_dict_from_protocol_order(reference_order)
+            reference_side, trader_order_type = trading_personal_data.parse_order_type(raw)
+            if reference_side != side:
+                continue
+            if trading_personal_data.get_trade_order_type(trader_order_type) is trading_enums.TradeOrderType.MARKET:
+                continue
+            reference_price_value = reference_order.price
+            if reference_price_value in (None, ""):
+                continue
+            candidate_price = decimal.Decimal(str(reference_price_value))
+            if abs(candidate_price - reference_price) <= price_threshold:
+                matching_count += 1
+        return matching_count
+
+    def _rank_orders_at_reference_level(
+        self,
+        orders_at_level: list[trading_personal_data.Order],
+        active_reference_ids: set[str],
+    ) -> list[trading_personal_data.Order]:
+        def sort_key(open_order: trading_personal_data.Order) -> tuple:
+            has_active_reference_id = str(open_order.order_id) in active_reference_ids
+            has_mirrored_tag = open_order.tag == copy_constants.MIRRORED_ORDER_TAG
+            exchange_order_id = str(open_order.exchange_order_id or "")
+            return (
+                0 if has_active_reference_id else 1,
+                0 if has_mirrored_tag else 1,
+                exchange_order_id,
+            )
+
+        return sorted(orders_at_level, key=sort_key)
+
+    async def _reconcile_open_orders_with_reference(
+        self,
+        replicable: list[protocol_models.Order],
+        stray_only_symbols: typing.Optional[set[str]] = None,
+    ) -> int:
+        """
+        Cancel open limits that do not match reference price levels.
+
+        Wrong-price strays are cancelled except during grace (``stray_only_symbols``): mirrored
+        orphans are kept so late-fill grace can resolve them. Untagged / non-orphan wrong-price
+        opens are still cancelled during grace. Duplicate-at-price extras are cancelled unless
+        ``symbol`` is in ``stray_only_symbols`` and force-abort is not set.
+        """
+        if not replicable:
+            return 0
+        symbols = {order.symbol for order in replicable}
+        active_reference_ids = self._active_reference_order_ids(replicable)
+        grace_stray_only_symbols = stray_only_symbols or set()
+        # Force-abort clears grace: full reconcile even on previously skipped symbols.
+        if self._force_immediate_orphan_cancel_next:
+            grace_stray_only_symbols = set()
+        cancelled_count = 0
+        for symbol in symbols:
+            # Load open limits from the pre-loaded order manager (no exchange fetch here).
+            open_limit_orders = [
+                order
+                for order in self._exchange_interface.orders.get_open_orders(symbol=symbol)
+                if self._is_open_limit_order(order)
+            ]
+            # Bucket each open onto a reference (symbol, side, price) level, or mark as wrong-price.
+            orders_by_level: dict[
+                tuple[str, trading_enums.TradeOrderSide, decimal.Decimal],
+                list[trading_personal_data.Order],
+            ] = {}
+            stray_orders: list[trading_personal_data.Order] = []
+            for open_order in open_limit_orders:
+                matched_level = self._reference_price_level_for_open_order(open_order, replicable)
+                if matched_level is None:
+                    stray_orders.append(open_order)
+                    continue
+                orders_by_level.setdefault(matched_level, []).append(open_order)
+            # Cancel wrong-price strays. During grace, leave mirrored orphans for grace/late-fill.
+            for stray_order in stray_orders:
+                if symbol in grace_stray_only_symbols:
+                    if (
+                        stray_order.tag == copy_constants.MIRRORED_ORDER_TAG
+                        and str(stray_order.order_id) not in active_reference_ids
+                    ):
+                        continue
+                cancelled_count += await self._cancel_reconciled_stray_order(stray_order)
+            # During grace, skip duplicate-at-price cleanup so copier-ahead extras are not removed.
+            if symbol in grace_stray_only_symbols:
+                continue
+            # Full mode: cancel opens beyond the reference count at each price level.
+            for level, orders_at_level in orders_by_level.items():
+                expected_count = self._count_reference_orders_at_level(replicable, level)
+                if len(orders_at_level) <= expected_count:
+                    continue
+                ranked_orders = self._rank_orders_at_reference_level(
+                    orders_at_level,
+                    active_reference_ids,
+                )
+                for duplicate_order in ranked_orders[expected_count:]:
+                    cancelled_count += await self._cancel_reconciled_stray_order(duplicate_order)
+        return cancelled_count
+
+    def _check_open_limit_order_count_invariant(
+        self,
+        replicable: list[protocol_models.Order],
+    ) -> None:
+        """
+        Log when open limit count diverges from reference after adjusting for late-fill candidates.
+
+        Late fills mean the copier correctly has fewer opens than reference still lists as OPEN.
+        Called after wait_for_orders_to_open (when used) so pending creations are already open.
+        Does not call reconcile — post-sync reconcile already ran.
+        """
+        active_reference_ids = self._active_reference_order_ids(replicable)
+        orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
+        late_fill_orders = (
+            [] if self._force_immediate_orphan_cancel_next
+            else self._late_reference_fill_candidate_orders(replicable, orphan_orders, None)
+        )
+        late_fill_count_by_symbol: dict[str, int] = {}
+        for late_fill_order in late_fill_orders:
+            late_fill_count_by_symbol[late_fill_order.symbol] = (
+                late_fill_count_by_symbol.get(late_fill_order.symbol, 0) + 1
+            )
+        symbols = {order.symbol for order in replicable}
+        for symbol in symbols:
+            reference_count = sum(1 for order in replicable if order.symbol == symbol)
+            expected_count = reference_count - late_fill_count_by_symbol.get(symbol, 0)
+            open_limit_orders = [
+                order
+                for order in self._exchange_interface.orders.get_open_orders(symbol=symbol)
+                if self._is_open_limit_order(order)
+            ]
+            actual_count = len(open_limit_orders)
+            if actual_count == expected_count:
+                continue
+            exchange_order_ids = [
+                str(order.exchange_order_id)
+                for order in open_limit_orders
+                if order.exchange_order_id is not None
+            ]
+            self._get_logger().error(
+                "Open limit order count mismatch on %s: expected=%s actual=%s "
+                "reference=%s late_fills=%s exchange_ids=%s",
+                symbol,
+                expected_count,
+                actual_count,
+                reference_count,
+                late_fill_count_by_symbol.get(symbol, 0),
+                exchange_order_ids,
+            )
+
     def _scale_mirrored_order_quantity(
         self,
         order: protocol_models.Order,
@@ -778,6 +1011,155 @@ class OrdersSynchronizer:
             if str(order.order_id) == str(order_id):
                 return order
         return None
+
+    def _claim_mirrored_open_order(self, order: trading_personal_data.Order) -> None:
+        self._claimed_reference_order_ids.add(str(order.order_id))
+        if order.exchange_order_id:
+            self._claimed_exchange_order_ids.add(str(order.exchange_order_id))
+
+    def _limit_order_price_match_threshold(self, reference_price: decimal.Decimal) -> decimal.Decimal:
+        price_tolerance = reference_price * self._copy_settings.mirrored_order_price_ratio_threshold
+        return max(price_tolerance, decimal.Decimal("1e-12"))
+
+    def _open_orders_matching_symbol_side_price(
+        self,
+        symbol: str,
+        side: trading_enums.TradeOrderSide,
+        reference_price: decimal.Decimal,
+        trader_order_type: trading_enums.TraderOrderType,
+    ) -> list[trading_personal_data.Order]:
+        if trading_personal_data.get_trade_order_type(trader_order_type) is trading_enums.TradeOrderType.MARKET:
+            return []
+        price_threshold = self._limit_order_price_match_threshold(reference_price)
+        candidates: list[trading_personal_data.Order] = []
+        for open_order in self._exchange_interface.orders.get_open_orders(symbol=symbol):
+            if open_order.symbol != symbol:
+                continue
+            if open_order.side != side:
+                continue
+            if trading_personal_data.get_trade_order_type(open_order.order_type) is trading_enums.TradeOrderType.MARKET:
+                continue
+            if abs(open_order.origin_price - reference_price) > price_threshold:
+                continue
+            candidates.append(open_order)
+        return candidates
+
+    def _is_order_claimed_by_another_reference(
+        self,
+        order: trading_personal_data.Order,
+        reference_order_id: str,
+        active_reference_ids: set[str],
+    ) -> bool:
+        order_id = str(order.order_id)
+        if order_id in active_reference_ids and order_id != reference_order_id:
+            return True
+        exchange_order_id = str(order.exchange_order_id) if order.exchange_order_id else None
+        if exchange_order_id is not None and exchange_order_id in self._claimed_exchange_order_ids:
+            return True
+        return False
+
+    def _relink_open_order_to_reference(
+        self,
+        order: trading_personal_data.Order,
+        reference_order_id: str,
+    ) -> trading_personal_data.Order:
+        previous_id = order.order_id
+        order.order_id = reference_order_id
+        if order.tag != copy_constants.MIRRORED_ORDER_TAG:
+            order.tag = copy_constants.MIRRORED_ORDER_TAG
+        orders_manager = self._exchange_interface.orders._exchange_manager.exchange_personal_data.orders_manager
+        orders_manager.replace_order(previous_id, order)
+        self._get_logger().info(
+            "Mapped unmapped open order exchange_id=%s previous_bot_id=%s reference_id=%s",
+            order.exchange_order_id,
+            previous_id,
+            reference_order_id,
+        )
+        return order
+
+    def _pick_best_unmapped_open_order_candidate(
+        self,
+        candidates: list[trading_personal_data.Order],
+        scaled_reference_quantity: decimal.Decimal,
+    ) -> trading_personal_data.Order:
+        def sort_key(open_order: trading_personal_data.Order) -> tuple:
+            has_mirrored_tag = open_order.tag == copy_constants.MIRRORED_ORDER_TAG
+            quantity_distance = abs(open_order.origin_quantity - scaled_reference_quantity)
+            exchange_order_id = str(open_order.exchange_order_id or "")
+            return (
+                0 if has_mirrored_tag else 1,
+                quantity_distance,
+                exchange_order_id,
+            )
+
+        return min(candidates, key=sort_key)
+
+    async def _map_unmapped_open_order_for_reference(
+        self,
+        reference_order: protocol_models.Order,
+        reference_order_id: str,
+        side: trading_enums.TradeOrderSide,
+        trader_order_type: trading_enums.TraderOrderType,
+        order_target_price: decimal.Decimal,
+        active_reference_ids: set[str],
+        scaled_reference_quantity: decimal.Decimal,
+    ) -> typing.Optional[trading_personal_data.Order]:
+        candidates = self._open_orders_matching_symbol_side_price(
+            reference_order.symbol,
+            side,
+            order_target_price,
+            trader_order_type,
+        )
+        unclaimed_candidates = [
+            candidate
+            for candidate in candidates
+            if not self._is_order_claimed_by_another_reference(
+                candidate, reference_order_id, active_reference_ids
+            )
+        ]
+        if not unclaimed_candidates:
+            return None
+        if len(unclaimed_candidates) == 1:
+            mapped_order = self._relink_open_order_to_reference(unclaimed_candidates[0], reference_order_id)
+            self._claim_mirrored_open_order(mapped_order)
+            return mapped_order
+        chosen_candidate = self._pick_best_unmapped_open_order_candidate(
+            unclaimed_candidates,
+            scaled_reference_quantity,
+        )
+        self._get_logger().warning(
+            "Ambiguous unmapped open order match for reference_id=%s symbol=%s side=%s price=%s: "
+            "%s candidate(s) at same price; relinking exchange_id=%s and cancelling extras",
+            reference_order_id,
+            reference_order.symbol,
+            side,
+            order_target_price,
+            len(unclaimed_candidates),
+            chosen_candidate.exchange_order_id,
+        )
+        for duplicate_candidate in unclaimed_candidates:
+            if duplicate_candidate is chosen_candidate:
+                continue
+            try:
+                await self._exchange_interface.orders.cancel_order(duplicate_candidate)
+                self._get_logger().info(
+                    "Cancelled ambiguous unmapped open order duplicate: symbol=%s exchange_id=%s "
+                    "side=%s price=%s order_id=%s",
+                    duplicate_candidate.symbol,
+                    duplicate_candidate.exchange_order_id,
+                    duplicate_candidate.side,
+                    duplicate_candidate.origin_price,
+                    duplicate_candidate.order_id,
+                )
+            except trading_errors.UnexpectedExchangeSideOrderStateError as err:
+                self._get_logger().exception(
+                    err,
+                    True,
+                    f"Skipped ambiguous duplicate cancel: {err}, order: {duplicate_candidate}",
+                )
+        mapped_order = self._relink_open_order_to_reference(chosen_candidate, reference_order_id)
+        self._claim_mirrored_open_order(mapped_order)
+        return mapped_order
 
     def _count_unmirrored_reference_orders(self, replicable: list[protocol_models.Order]) -> int:
         missing_count = 0
@@ -852,10 +1234,18 @@ class OrdersSynchronizer:
             )
             return [], 0, 0, None
         reference_order_id = str(order.id)
+        current_price_val = order.price
+        order_target_price = (
+            decimal.Decimal(str(current_price_val))
+            if current_price_val not in (None, "")
+            else trading_constants.ZERO
+        )
         existing = self._find_open_order_by_bot_order_id(reference_order_id)
         replicable_orders = self._get_replicable_reference_orders()
         active_reference_ids = self._active_reference_order_ids(replicable_orders)
         orphan_orders = self._mirrored_orphan_open_orders(active_reference_ids)
+        if existing is not None:
+            self._claim_mirrored_open_order(existing)
         if existing is None and not self._force_immediate_orphan_cancel_next and self._is_late_reference_fill_for_order(order, orphan_orders):
             self._get_logger().info(
                 f"Skipping mirrored order creation (late reference fill on copier): symbol={symbol} "
@@ -878,12 +1268,16 @@ class OrdersSynchronizer:
                     self._exchange_interface,
                 ),
             )
-        current_price_val = order.price
-        order_target_price = (
-            decimal.Decimal(str(current_price_val))
-            if current_price_val not in (None, "")
-            else trading_constants.ZERO
-        )
+        if existing is None:
+            existing = await self._map_unmapped_open_order_for_reference(
+                reference_order=order,
+                reference_order_id=reference_order_id,
+                side=side,
+                trader_order_type=trader_order_type,
+                order_target_price=order_target_price,
+                active_reference_ids=active_reference_ids,
+                scaled_reference_quantity=scaled_quantity,
+            )
         compute_result = await self._compute_mirrored_quantity_type_and_price(
             symbol,
             side,
@@ -992,6 +1386,29 @@ class OrdersSynchronizer:
             )
         return out, replaced_cancelled, 0, None
 
+    def _get_locked_base_from_open_mirrored_sells(
+        self,
+        symbol: str,
+        exclude_order: typing.Optional[trading_personal_data.Order] = None,
+    ) -> decimal.Decimal:
+        parsed = symbol_util.parse_symbol(symbol)
+        base_currency = parsed.base
+        exclude_order_id = str(exclude_order.order_id) if exclude_order is not None else None
+        locked_base = trading_constants.ZERO
+        for order in self._exchange_interface.orders.get_open_orders():
+            if order.symbol != symbol:
+                continue
+            if order.tag != copy_constants.MIRRORED_ORDER_TAG:
+                continue
+            if order.side is not trading_enums.TradeOrderSide.SELL:
+                continue
+            if exclude_order_id is not None and str(order.order_id) == exclude_order_id:
+                continue
+            if order.currency != base_currency:
+                continue
+            locked_base += self._exchange_interface.orders.get_order_locked_amount(order)
+        return locked_base
+
     async def _compute_mirrored_quantity_type_and_price(
         self,
         symbol: str,
@@ -1003,8 +1420,8 @@ class OrdersSynchronizer:
     ) -> mirrored_quantity_compute_result.MirroredQuantityComputeResult:
         # Buys cap using free quote for new orders (sibling buys reserve quote). When re-checking an open
         # mirrored buy, add this order's locked quote back so ideal size matches portfolio semantics.
-        # New sells use total base (sibling sell locks still count). Open mirrored sells use available
-        # base plus this order's locked base for the same reason as buys.
+        # Sells cap using total base minus locked base from open mirrored sells (sibling locks count).
+        # When re-checking an open mirrored sell, exclude this order's lock from that sum.
         (
             total_symbol_holding,
             _total_market_holding,
@@ -1066,16 +1483,13 @@ class OrdersSynchronizer:
                 if effective_target_price
                 else scaled_quantity,
             )
-        elif (
-            open_mirrored_order is not None
-            and open_mirrored_order.side is trading_enums.TradeOrderSide.SELL
-        ):
-            base_budget = available_symbol_holding + self._exchange_interface.orders.get_order_locked_amount(
-                open_mirrored_order
+        elif side is trading_enums.TradeOrderSide.SELL:
+            locked_by_siblings = self._get_locked_base_from_open_mirrored_sells(
+                symbol,
+                exclude_order=open_mirrored_order,
             )
+            base_budget = total_symbol_holding - locked_by_siblings
             target_quantity = min(scaled_quantity, base_budget)
-        else:
-            target_quantity = min(scaled_quantity, total_symbol_holding)
         zero_short_reason: typing.Optional[str] = None
         if target_quantity <= trading_constants.ZERO:
             zero_short_reason = (

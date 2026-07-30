@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { LifeBuoy } from "lucide-react"
+import { BookOpen, Bug, ExternalLink, LifeBuoy } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -68,77 +68,117 @@ export function SupportCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <LifeBuoy className="size-4" />
-          Support
+          Help
         </CardTitle>
         <CardDescription>
-          Leave a secure, end-to-end encrypted message for the OctoBot team.
+          Get help from the OctoBot team or browse the docs.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-start gap-3">
-        {status === "loading" && (
-          <span className="text-xs text-muted-foreground">Loading…</span>
-        )}
-
-        {status === "disabled" && (
-          <span className="text-xs text-muted-foreground">
-            Support isn't available on this OctoBot.
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col items-start gap-3">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Guides
           </span>
-        )}
+          <span className="text-sm text-muted-foreground">
+            Setup walkthroughs and how-tos for running OctoBot.
+          </span>
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href="https://www.octobot.cloud/en/guides/octobot"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <BookOpen className="size-4" />
+              Browse guides
+              <ExternalLink className="size-3.5" />
+            </a>
+          </Button>
+        </div>
+        <div className="border-t" />
+        <div className="flex flex-col items-start gap-3">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Support
+          </span>
+          {status === "loading" && (
+            <span className="text-xs text-muted-foreground">Loading…</span>
+          )}
 
-        {status === "none" && (
-          <>
-            <span className="text-sm text-muted-foreground">
-              Stuck on something? Leave a message and the team will get back to
-              you. Share a debug snapshot in one click.
+          {status === "disabled" && (
+            <span className="text-xs text-muted-foreground">
+              Support isn't available on this OctoBot.
             </span>
-            <Button size="sm" onClick={() => setOpen(true)}>
-              New ticket
-            </Button>
-          </>
-        )}
+          )}
 
-        {status === "pending" && (
-          <>
-            <span className="text-sm text-muted-foreground">
-              The DRAKKAR-SOFTWARE team hasn't accepted your ticket yet. Replies
-              will appear here once they do. You can share logs after that.
-            </span>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/support">View status</Link>
-            </Button>
-          </>
-        )}
-
-        {ticket?.status === "resolved" && (
-          <>
-            <span className="text-sm text-muted-foreground">
-              Your previous ticket was resolved. Open a new one any time.
-            </span>
-            <div className="flex items-center gap-2">
+          {status === "none" && (
+            <>
+              <span className="text-sm text-muted-foreground">
+                Stuck on something? Leave a message and the team will get back to
+                you. Share a debug snapshot in one click.
+              </span>
               <Button size="sm" onClick={() => setOpen(true)}>
                 New ticket
               </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/support">View</Link>
-              </Button>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {ticket?.status === "open" && (
-          <>
-            <span className="text-sm">
-              {ticket.allTickets.length > 1
-                ? `${ticket.allTickets.length} open tickets`
-                : (ticket.title?.trim() || "Support ticket")}
-            </span>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/support">
-                {ticket.allTickets.length > 1 ? "View tickets" : "Open ticket"}
-              </Link>
-            </Button>
-          </>
-        )}
+          {status === "pending" && (
+            <>
+              <span className="text-sm text-muted-foreground">
+                The DRAKKAR-SOFTWARE team hasn't accepted your ticket yet. Replies
+                will appear here once they do. You can share logs after that.
+              </span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/support">View status</Link>
+              </Button>
+            </>
+          )}
+
+          {ticket?.status === "resolved" && (
+            <>
+              <span className="text-sm text-muted-foreground">
+                Your previous ticket was resolved. Open a new one any time.
+              </span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => setOpen(true)}>
+                  New ticket
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/support">View</Link>
+                </Button>
+              </div>
+            </>
+          )}
+
+          {ticket?.status === "open" && (
+            <>
+              <span className="text-sm">
+                {ticket.allTickets.length > 1
+                  ? `${ticket.allTickets.length} open tickets`
+                  : (ticket.title?.trim() || "Support ticket")}
+              </span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/support">
+                  {ticket.allTickets.length > 1 ? "View tickets" : "Open ticket"}
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
+        <div className="border-t" />
+        <div className="flex flex-col items-start gap-3">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Developer
+          </span>
+          <span className="text-sm text-muted-foreground">
+            Inspect runtime state, download logs, and run debug actions.
+          </span>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/debug">
+              <Bug className="size-4" />
+              Developer view
+            </Link>
+          </Button>
+        </div>
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>

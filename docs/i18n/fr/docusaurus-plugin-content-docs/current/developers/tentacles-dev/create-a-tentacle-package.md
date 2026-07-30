@@ -137,12 +137,12 @@ def init_user_inputs(self, inputs: dict) -> None:
 
 The full definition of user inputs can be found
 
-<a href="https://github.com/Drakkar-Software/OctoBot-Commons/blob/master/octobot_commons/configuration/user_inputs.py" rel="nofollow">here</a>
+<a href="https://github.com/Drakkar-Software/OctoBot/blob/master/packages/commons/octobot_commons/configuration/user_inputs.py" rel="nofollow">here</a>
 .
 
 If you are unsure how to use user inputs, have a look at
 
-<a href="https://github.com/Drakkar-Software/OctoBot-Tentacles/blob/master/Evaluator/TA/momentum_evaluator/momentum.py" rel="nofollow">the existing tentacles user inputs</a>
+<a href="https://github.com/Drakkar-Software/OctoBot/blob/master/packages/tentacles/Evaluator/TA/momentum_evaluator/momentum.py" rel="nofollow">the existing tentacles user inputs</a>
 .
 
 > Tentacles configuration are displayed using the <a href="https://github.com/json-editor/json-editor" rel="nofollow">json-editor</a>

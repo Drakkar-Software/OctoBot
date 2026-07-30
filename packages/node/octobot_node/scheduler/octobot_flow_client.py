@@ -94,8 +94,9 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
             automation_state.upsert_automation_actions(actions.actions)
         self.state = automation_state.to_dict(include_default_values=False)
 
-    def get_next_execution_time(self) -> float:
-        return self.state["automation"]["execution"]["current_execution"]["scheduled_to"]
+    @staticmethod
+    def get_next_execution_time(state: dict) -> float:
+        return state["automation"]["execution"]["current_execution"]["scheduled_to"]
 
 
 @dataclasses.dataclass
@@ -149,12 +150,10 @@ class OctoBotActionsJob:
             self.updated_trading_signals,
             self.description.auth_details,
         ) as automation_job:
-            selected_actions = (
-                self.priority_user_actions
-                or automation_job.automation_state.automation.actions_dag.get_executable_actions()
-            )
-            octobot_commons.logging.get_logger(self.__class__.__name__).info(f"Running automation actions: {selected_actions}")
             executed_actions = await automation_job.run()
+            octobot_commons.logging.get_logger(self.__class__.__name__).info(
+                f"Running automation actions: {executed_actions}"
+            )
             self.after_execution_state = automation_job.automation_state
             post_execution_state_dump = automation_job.dump()
             next_actions_description, has_next_actions = self.get_next_actions_description(post_execution_state_dump)

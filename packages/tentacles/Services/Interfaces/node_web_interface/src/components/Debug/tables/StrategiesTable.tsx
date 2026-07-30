@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 
 import type { Strategy } from "@/client"
 import { CenteredCellContent } from "@/components/Common/Tables/CenteredCellContent"
+import { TruncatedTextWithTooltip } from "@/components/Common/Tables/TruncatedTextWithTooltip"
 import { ClearTableFiltersButton } from "@/components/Common/Tables/ClearTableFiltersButton"
 import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
@@ -16,6 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  STRATEGY_DESCRIPTION_DISPLAY_LENGTH,
+  STRATEGY_NAME_DISPLAY_LENGTH,
+  STRATEGY_TABLE_DEFAULT_SORT,
+} from "@/lib/debug/constants"
 import {
   debugTableCellClass,
   getStrategyConfigurationType,
@@ -38,10 +44,9 @@ export function StrategiesTable({
   onStartAutomation,
 }: StrategiesTableProps) {
   const [detail, setDetail] = useState<Strategy | null>(null)
-  const [sort, setSort] = useState<SortState<StrategySortKey>>({
-    key: "id",
-    dir: "asc",
-  })
+  const [sort, setSort] = useState<SortState<StrategySortKey>>(
+    STRATEGY_TABLE_DEFAULT_SORT,
+  )
   const [filters, setFilters] = useState<ColumnFilters<StrategySortKey>>({})
 
   const displayRows = useMemo(
@@ -109,7 +114,7 @@ export function StrategiesTable({
               onSort={(key) => setSort((current) => toggleSort(current, key))}
             />
             <SortableTableHead
-              label="Reference market"
+              label="Ref. mark."
               sortKey="referenceMarket"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
@@ -157,7 +162,10 @@ export function StrategiesTable({
                   </CenteredCellContent>
                 </TableCell>
                 <TableCell className={debugTableCellClass("left")}>
-                  {row.name ?? "—"}
+                  <TruncatedTextWithTooltip
+                    text={row.name ?? "—"}
+                    maxLength={STRATEGY_NAME_DISPLAY_LENGTH}
+                  />
                 </TableCell>
                 <TableCell
                   className={debugTableCellClass("center", "font-mono text-xs")}
@@ -168,7 +176,10 @@ export function StrategiesTable({
                   {formatDateTime(row.updated_at)}
                 </TableCell>
                 <TableCell className={debugTableCellClass("left")}>
-                  {row.description ?? "—"}
+                  <TruncatedTextWithTooltip
+                    text={row.description ?? "—"}
+                    maxLength={STRATEGY_DESCRIPTION_DISPLAY_LENGTH}
+                  />
                 </TableCell>
                 <TableCell className={debugTableCellClass("left")}>
                   {row.reference_market}

@@ -18,6 +18,8 @@ from octobot.community.errors_upload import sentry_tracker
 from octobot.community.errors_upload.sentry_tracker import (
     init_sentry_tracker,
     flush_tracker,
+    update_tracker_bot_id,
+    track_usage_event,
 )
 
 __all__ = [

@@ -9,6 +9,7 @@ import datetime
 import json
 import time
 import typing
+import uuid
 
 import dbos
 import pytest
@@ -19,6 +20,7 @@ import octobot_trading.constants as trading_constants_module
 import octobot_trading.enums as trading_enums_module
 
 import octobot_node.constants as node_constants_module
+import octobot_node.enums as node_enums_module
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows
 import octobot_node.scheduler.api as scheduler_api_module
@@ -115,6 +117,25 @@ def build_stop_user_action(
 ) -> protocol_models_module.UserAction:
     payload = protocol_models_module.StopAutomationConfiguration(
         action_type=protocol_models_module.UserActionType.AUTOMATION_STOP,
+        id=automation_id,
+    )
+    return protocol_models_module.UserAction(
+        id=user_action_id,
+        configuration=wrap_user_action_configuration(payload),
+    )
+
+
+def unique_stop_user_action_id(prefix: str) -> str:
+    return f"{prefix}-{uuid.uuid4()}"
+
+
+def build_restart_user_action(
+    *,
+    automation_id: str,
+    user_action_id: str,
+) -> protocol_models_module.UserAction:
+    payload = protocol_models_module.RestartAutomationConfiguration(
+        action_type=protocol_models_module.UserActionType.AUTOMATION_RESTART,
         id=automation_id,
     )
     return protocol_models_module.UserAction(
@@ -221,6 +242,105 @@ async def load_protocol_automation_state_for_workflow(
     return automation_state
 
 
+def _workflow_output_row_to_json_text(workflow_row: dbos.WorkflowStatus) -> str | None:
+    # list_workflows_async populates workflow_status.output; production reads it directly
+    # instead of retrieve_workflow_async().get_result(), which can be empty while status is SUCCESS.
+    row_output = workflow_row.output
+    if isinstance(row_output, str) and row_output:
+        return row_output
+    if isinstance(row_output, dict) and row_output:
+        return json.dumps(row_output)
+    parsed_output = workflows_util_module.parse_automation_workflow_output(workflow_row)
+    if parsed_output is not None:
+        return json.dumps(parsed_output.to_dict())
+    return None
+
+
+async def _resolve_success_output_text(
+    scheduler: typing.Any,
+    workflow_row: dbos.WorkflowStatus,
+) -> str | None:
+    result_text = _workflow_output_row_to_json_text(workflow_row)
+    if result_text:
+        return result_text
+    workflow_handle = await scheduler.INSTANCE.retrieve_workflow_async(workflow_row.workflow_id)
+    handle_result = await workflow_handle.get_result()
+    if not handle_result:
+        return None
+    if isinstance(handle_result, str):
+        return handle_result
+    return json.dumps(handle_result)
+
+
+async def _list_matching_automation_workflow_rows(
+    scheduler: typing.Any,
+    automation_id: str,
+) -> list[dbos.WorkflowStatus]:
+    workflow_rows = await scheduler._list_workflows(
+        None,
+        None,
+        [node_enums_module.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value],
+        load_output=False,
+    )
+    return [
+        workflow_row
+        for workflow_row in workflow_rows
+        if workflows_util_module.get_automation_id(workflow_row) == automation_id
+    ]
+
+
+async def _stop_success_output_from_workflow_row(
+    scheduler: typing.Any,
+    workflow_row: dbos.WorkflowStatus,
+) -> str | None | typing.Literal["output_error", "missing_stop_automation"]:
+    result_text = await _resolve_success_output_text(scheduler, workflow_row)
+    if not result_text:
+        return None
+    parsed_output = parse_automation_workflow_output(result_text)
+    if parsed_output.error:
+        return "output_error"
+    job_dict = job_description_dict_from_output(parsed_output)
+    automation_payload = job_dict["state"]["automation"]
+    if automation_payload.get("post_actions", {}).get("stop_automation"):
+        return result_text
+    return "missing_stop_automation"
+
+
+def _user_id_from_matching_workflow_rows(
+    matching_rows: list[dbos.WorkflowStatus],
+) -> str | None:
+    sorted_rows = sorted(
+        matching_rows,
+        key=workflows_util_module._automation_child_workflow_sort_key,
+        reverse=True,
+    )
+    for workflow_row in sorted_rows:
+        workflow_inputs = workflows_util_module.get_automation_workflow_inputs(workflow_row)
+        if workflow_inputs is not None:
+            return workflow_inputs.task.user_id
+    return None
+
+
+async def _try_stop_output_from_terminal_workflow(
+    scheduler: typing.Any,
+    user_id: str | None,
+    parent_workflow_id: str,
+) -> str | None:
+    terminal_workflow_row = await scheduler.resolve_latest_terminal_automation_workflow_for_parent_id(
+        user_id,
+        parent_workflow_id,
+    )
+    if terminal_workflow_row is None:
+        return None
+    stop_output = await _stop_success_output_from_workflow_row(
+        scheduler,
+        terminal_workflow_row,
+    )
+    if isinstance(stop_output, str):
+        return stop_output
+    return None
+
+
 async def wait_for_stop_success_output(
     scheduler,
     automation_id: str,
@@ -229,26 +349,73 @@ async def wait_for_stop_success_output(
     poll_interval_seconds: float = DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS,
 ) -> str:
     stop_deadline = time.monotonic() + deadline_seconds
+    observed_statuses: set[str] = set()
+    success_without_stop_automation = False
+    success_with_output_error = False
+    latest_success_empty_output_checks = 0
+    latest_workflow_id: str | None = None
+    latest_workflow_status: str | None = None
+    matching_child_count = 0
     while time.monotonic() < stop_deadline:
-        workflow_rows = await scheduler.INSTANCE.list_workflows_async()
-        for workflow_row in workflow_rows:
-            if workflow_row.status != dbos.WorkflowStatusString.SUCCESS.value:
-                continue
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
-                continue
-            workflow_handle = await scheduler.INSTANCE.retrieve_workflow_async(workflow_row.workflow_id)
-            result_text = await workflow_handle.get_result()
-            if not result_text:
-                continue
-            parsed_output = parse_automation_workflow_output(result_text)
-            if parsed_output.error:
-                continue
-            job_dict = job_description_dict_from_output(parsed_output)
-            automation_payload = job_dict["state"]["automation"]
-            if automation_payload.get("post_actions", {}).get("stop_automation"):
-                return result_text
+        matching_rows = await _list_matching_automation_workflow_rows(scheduler, automation_id)
+        matching_child_count = len(matching_rows)
+        for workflow_row in matching_rows:
+            observed_statuses.add(workflow_row.status)
+        if not matching_rows:
+            await asyncio.sleep(poll_interval_seconds)
+            continue
+        latest_workflow_row = max(
+            matching_rows,
+            key=workflows_util_module._automation_child_workflow_sort_key,
+        )
+        latest_workflow_id = latest_workflow_row.workflow_id
+        latest_workflow_status = latest_workflow_row.status
+        parent_workflow_id = latest_workflow_row.workflow_id[
+            : node_constants_module.PARENT_WORKFLOW_ID_LENGTH
+        ]
+        user_id = _user_id_from_matching_workflow_rows(matching_rows)
+        if latest_workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value:
+            stop_output = await _stop_success_output_from_workflow_row(
+                scheduler,
+                latest_workflow_row,
+            )
+            if isinstance(stop_output, str):
+                return stop_output
+            if stop_output == "output_error":
+                success_with_output_error = True
+            elif stop_output == "missing_stop_automation":
+                success_without_stop_automation = True
+            else:
+                latest_success_empty_output_checks += 1
+        else:
+            terminal_stop_output = await _try_stop_output_from_terminal_workflow(
+                scheduler,
+                user_id,
+                parent_workflow_id,
+            )
+            if terminal_stop_output is not None:
+                return terminal_stop_output
         await asyncio.sleep(poll_interval_seconds)
-    pytest.fail(f"Timed out waiting for stop completion for {automation_id}")
+    diagnostic_details = [
+        f"observed workflow statuses: {sorted(observed_statuses) or ['none']}",
+        f"matching child workflows: {matching_child_count}",
+    ]
+    if latest_workflow_id is not None:
+        diagnostic_details.append(
+            f"latest workflow: {latest_workflow_id!r} status={latest_workflow_status!r}"
+        )
+    if latest_success_empty_output_checks:
+        diagnostic_details.append(
+            f"latest SUCCESS child had no retrievable output ({latest_success_empty_output_checks} checks)"
+        )
+    if success_without_stop_automation:
+        diagnostic_details.append("latest SUCCESS output without post_actions.stop_automation")
+    if success_with_output_error:
+        diagnostic_details.append("latest SUCCESS output with workflow error")
+    pytest.fail(
+        f"Timed out waiting for stop completion for {automation_id} "
+        f"within {deadline_seconds}s; {'; '.join(diagnostic_details)}"
+    )
 
 
 async def enqueue_forced_trigger_and_await(

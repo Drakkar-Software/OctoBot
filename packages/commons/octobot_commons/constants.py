@@ -76,7 +76,13 @@ DEFAULT_CURRENT_LIVE_ID = 1
 
 # profiles
 PROFILES_FOLDER = "profiles"
+PROFILES_MIGRATED_FOLDER = "profiles_migrated"
 USER_PROFILES_FOLDER = f"{USER_FOLDER}/{PROFILES_FOLDER}"
+USER_PROFILES_MIGRATED_FOLDER = f"{USER_FOLDER}/profiles_migrated"
+SYNC_PROFILE_RUNTIME_FOLDER = f"{USER_FOLDER}/sync_profile_runtime"
+ENV_OCTOBOT_SYNC_DATA_ROOT = "OCTOBOT_SYNC_DATA_ROOT"
+CONFIG_READONLY_PROFILES_PATH = "readonly_profiles_path"
+CONFIG_READONLY_REFERENCE_TENTACLES_PATH = "readonly_reference_tentacles_path"
 PROFILE_CONFIG_FILE = "profile.json"
 CONFIG_PROFILE = "profile"
 CONFIG_BACKTESTING_PROFILE = "backtesting_profile"
@@ -205,13 +211,16 @@ ALLOW_DEFAULT_CONFIG = "allow_default_config"
 # terms of service
 CONFIG_ACCEPTED_TERMS = "accepted_terms"
 
+# child-process display name (DSL-spawned OctoBot instances)
+CONFIG_OCTOBOT_NAME = "octobot_name"
+
 # distribution
 DEFAULT_DISTRIBUTION = "default"
 CONFIG_DISTRIBUTION = "distribution"
 
 # metrics
 CONFIG_METRICS = "metrics"
-CONFIG_METRICS_BOT_ID = "metrics-bot-id"
+CONFIG_METRICS_ACTIVITY_BOT_ID = "activity_bot_id"
 TIMER_BEFORE_METRICS_REGISTRATION_SECONDS = 600
 TIMER_BETWEEN_METRICS_UPTIME_UPDATE = float(
     os.getenv("TIMER_BETWEEN_METRICS_UPTIME_UPDATE", str(3600 * 4))

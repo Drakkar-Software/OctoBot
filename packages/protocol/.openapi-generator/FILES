@@ -29,6 +29,7 @@ docs/AutomationState.md
 docs/BlockchainAccount.md
 docs/CancelPolicy.md
 docs/CancelPolicyType.md
+docs/ChildOctoBotProcessState.md
 docs/CopiedAccount.md
 docs/CopiedAsset.md
 docs/CopyConfiguration.md
@@ -45,6 +46,13 @@ docs/DeleteExchangeConfigConfiguration.md
 docs/DeleteStrategyConfiguration.md
 docs/DetailedAsset.md
 docs/DetailedAssetsForTradingType.md
+docs/DslKeyword.md
+docs/DslKeywordCategory.md
+docs/DslKeywordsState.md
+docs/DslParameter.md
+docs/DslParameterDefaultValue.md
+docs/DslParameterOption.md
+docs/DslValueType.md
 docs/EditAccountAuthConfiguration.md
 docs/EditAccountConfiguration.md
 docs/EditAutomationConfiguration.md
@@ -82,6 +90,7 @@ docs/Position.md
 docs/PositionStatus.md
 docs/PositionSummary.md
 docs/RefreshAccountsConfiguration.md
+docs/RestartAutomationConfiguration.md
 docs/Side.md
 docs/SignalAutomationConfiguration.md
 docs/SignalAutomationConfigurationSignalPayload.md
@@ -96,6 +105,9 @@ docs/StrategyReference.md
 docs/TimeFrame.md
 docs/Trade.md
 docs/TradeSummary.md
+docs/TradedPairVolume.md
+docs/TradedPairsByExchange.md
+docs/TradedPairsForExchange.md
 docs/TradingTentaclesConfiguration.md
 docs/TradingType.md
 docs/TrailingProfile.md
@@ -143,6 +155,7 @@ octobot_protocol/models/automation_state.py
 octobot_protocol/models/blockchain_account.py
 octobot_protocol/models/cancel_policy.py
 octobot_protocol/models/cancel_policy_type.py
+octobot_protocol/models/child_octo_bot_process_state.py
 octobot_protocol/models/copied_account.py
 octobot_protocol/models/copied_asset.py
 octobot_protocol/models/copy_configuration.py
@@ -159,6 +172,13 @@ octobot_protocol/models/delete_exchange_config_configuration.py
 octobot_protocol/models/delete_strategy_configuration.py
 octobot_protocol/models/detailed_asset.py
 octobot_protocol/models/detailed_assets_for_trading_type.py
+octobot_protocol/models/dsl_keyword.py
+octobot_protocol/models/dsl_keyword_category.py
+octobot_protocol/models/dsl_keywords_state.py
+octobot_protocol/models/dsl_parameter.py
+octobot_protocol/models/dsl_parameter_default_value.py
+octobot_protocol/models/dsl_parameter_option.py
+octobot_protocol/models/dsl_value_type.py
 octobot_protocol/models/edit_account_auth_configuration.py
 octobot_protocol/models/edit_account_configuration.py
 octobot_protocol/models/edit_automation_configuration.py
@@ -196,6 +216,7 @@ octobot_protocol/models/position.py
 octobot_protocol/models/position_status.py
 octobot_protocol/models/position_summary.py
 octobot_protocol/models/refresh_accounts_configuration.py
+octobot_protocol/models/restart_automation_configuration.py
 octobot_protocol/models/side.py
 octobot_protocol/models/signal_automation_configuration.py
 octobot_protocol/models/signal_automation_configuration_signal_payload.py
@@ -210,6 +231,9 @@ octobot_protocol/models/strategy_reference.py
 octobot_protocol/models/time_frame.py
 octobot_protocol/models/trade.py
 octobot_protocol/models/trade_summary.py
+octobot_protocol/models/traded_pair_volume.py
+octobot_protocol/models/traded_pairs_by_exchange.py
+octobot_protocol/models/traded_pairs_for_exchange.py
 octobot_protocol/models/trading_tentacles_configuration.py
 octobot_protocol/models/trading_type.py
 octobot_protocol/models/trailing_profile.py
@@ -255,6 +279,7 @@ test/test_automation_state.py
 test/test_blockchain_account.py
 test/test_cancel_policy.py
 test/test_cancel_policy_type.py
+test/test_child_octo_bot_process_state.py
 test/test_copied_account.py
 test/test_copied_asset.py
 test/test_copy_configuration.py
@@ -271,6 +296,13 @@ test/test_delete_exchange_config_configuration.py
 test/test_delete_strategy_configuration.py
 test/test_detailed_asset.py
 test/test_detailed_assets_for_trading_type.py
+test/test_dsl_keyword.py
+test/test_dsl_keyword_category.py
+test/test_dsl_keywords_state.py
+test/test_dsl_parameter.py
+test/test_dsl_parameter_default_value.py
+test/test_dsl_parameter_option.py
+test/test_dsl_value_type.py
 test/test_edit_account_auth_configuration.py
 test/test_edit_account_configuration.py
 test/test_edit_automation_configuration.py
@@ -308,6 +340,7 @@ test/test_position.py
 test/test_position_status.py
 test/test_position_summary.py
 test/test_refresh_accounts_configuration.py
+test/test_restart_automation_configuration.py
 test/test_side.py
 test/test_signal_automation_configuration.py
 test/test_signal_automation_configuration_signal_payload.py
@@ -322,6 +355,9 @@ test/test_strategy_reference.py
 test/test_time_frame.py
 test/test_trade.py
 test/test_trade_summary.py
+test/test_traded_pair_volume.py
+test/test_traded_pairs_by_exchange.py
+test/test_traded_pairs_for_exchange.py
 test/test_trading_tentacles_configuration.py
 test/test_trading_type.py
 test/test_trailing_profile.py

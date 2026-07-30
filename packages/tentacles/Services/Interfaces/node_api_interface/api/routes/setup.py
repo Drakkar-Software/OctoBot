@@ -26,8 +26,10 @@ import octobot.community.wallet_backend as wallet_backend
 
 try:
     from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
+    from core import network
 except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
+    from tentacles.Services.Interfaces.node_api_interface.core import network
 
 router = APIRouter(tags=["setup"])
 
@@ -53,11 +55,29 @@ class WalletExport(pydantic.BaseModel):
     seed: typing.Optional[str] = None
 
 
+class LocalNetworkAddress(pydantic.BaseModel):
+    local_network_ip: typing.Optional[str] = None
+
+
+class VPNNetworkAddress(pydantic.BaseModel):
+    vpn_network_ip: typing.Optional[str] = None
+
+
 @router.get("/setup/status", response_model=SetupStatus)
 def get_setup_status() -> SetupStatus:
     auth = community_auth.CommunityAuthentication.instance()
     configured = auth is not None and auth.is_node_wallet_configured()
     return SetupStatus(configured=configured)
+
+
+@router.get("/setup/local-network-address", response_model=LocalNetworkAddress)
+def get_local_network_address() -> LocalNetworkAddress:
+    return LocalNetworkAddress(local_network_ip=network.get_local_network_ip())
+
+
+@router.get("/setup/vpn-network-address", response_model=VPNNetworkAddress)
+def get_vpn_network_address() -> VPNNetworkAddress:
+    return VPNNetworkAddress(vpn_network_ip=network.get_vpn_network_ip())
 
 
 @router.post("/setup/init", response_model=SetupResult)

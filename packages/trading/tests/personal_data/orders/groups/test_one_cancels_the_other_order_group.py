@@ -63,7 +63,8 @@ async def test_on_fill(oco_group):
         other_order.trader.cancel_order.assert_called_once_with(
             other_order, ignored_order=order, wait_for_cancelling=True,
             cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-            force_if_disabled=False
+            force_if_disabled=False,
+            skip_pending_cancel_status=False
         )
         get_order_from_group_mock.assert_called_once_with(oco_group.name)
 
@@ -138,7 +139,8 @@ async def test_on_cancel(oco_group):
         other_order.trader.cancel_order.assert_called_once_with(
             other_order, ignored_order="hi", wait_for_cancelling=True,
             cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-            force_if_disabled=False
+            force_if_disabled=False,
+            skip_pending_cancel_status=False
         )
         get_order_from_group_mock.assert_called_once_with(oco_group.name)
 

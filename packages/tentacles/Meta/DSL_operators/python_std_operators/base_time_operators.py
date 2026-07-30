@@ -16,6 +16,8 @@
 #  License along with this library.
 import time
 
+import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter as dsl_interpreter
 
 
@@ -25,10 +27,18 @@ class NowMsOperator(dsl_interpreter.CallOperator):
     NAME = "now_ms"
     DESCRIPTION = "Returns the current time in milliseconds since epoch."
     EXAMPLE = "now_ms()"
+    CATEGORY = commons_enums.DslKeywordCategory.SOURCE.value
 
     @staticmethod
     def get_name() -> str:
         return "now_ms"
+
+    @classmethod
+    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.NUMBER.value,
+            description="Current Unix time in milliseconds",
+        )
 
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
         return int(time.time() * 1000)

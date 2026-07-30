@@ -1,6 +1,6 @@
 ---
 title: "Setup your environment"
-description: "Learn how to create your OctoBot developer environment from the open source OctoBot GitHub Python repositories using VSCode or PyCharm."
+description: "Learn how to create your OctoBot developer environment from the open source OctoBot GitHub Python repository using VSCode or PyCharm."
 sidebar_position: 3
 ---
 
@@ -12,44 +12,57 @@ This environment allows you to execute a local OctoBot from the python code, mak
 
 ## Installing OctoBot requirements
 
-- Programming language: <a href="https://www.python.org/downloads/release/python-31011/" rel="nofollow">Python 3.10</a>
+- Programming language: <a href="https://www.python.org/downloads/release/python-3130/" rel="nofollow">Python 3.13</a>
 - SCM: <a href="https://git-scm.com/downloads" rel="nofollow">Git</a>
+- Build system: <a href="https://www.pantsbuild.org/" rel="nofollow">Pants</a>
 - IDE: <a href="https://code.visualstudio.com/Download" rel="nofollow">Visual Studio Code</a> (recommended) or <a href="https://www.jetbrains.com/pycharm/" rel="nofollow">PyCharm</a>
 
+OctoBot's code is a Python monorepo: each part of OctoBot (`commons`, `trading`, `evaluators`, ...) lives in its own folder under `packages` and is built with Pants.
 
-## Cloning OctoBot repositories
+Pants is not bundled with OctoBot, install the `scie-pants` launcher once and it will bootstrap the Pants version required by OctoBot's `pants.toml` on its first run. Installation instructions are on the <a href="https://www.pantsbuild.org/stable/docs/getting-started/installing-pants" rel="nofollow">Pants installation page</a>.
 
-The `OctoBot` and `OctoBot-Tentacles` repositories are required for the OctoBot developer environment.
+:::warning
+This Pants based setup is not supported on Windows yet. Pants only runs on Windows through the <a href="https://learn.microsoft.com/windows/wsl/install" rel="nofollow">Windows Subsystem for Linux (WSL 2)</a>.
 
-Open a terminal in your project folder and execute the following commands to download the repos to use the official version of the repositories. 
+If you are on Windows, install WSL 2, clone the OctoBot repository **inside** the Linux file system of your WSL distribution and follow the Linux/macOS commands of this guide. A repository kept on the Windows side and reached through `/mnt` is not supported by Pants and leads to unexpected behaviors.
+
+Both VSCode and PyCharm can open a project located in WSL, in that case your python interpreter is `venv/bin/python` and the `PYTHONPATH` paths below are separated by `:`.
+:::
+
+
+## Cloning the OctoBot repository
+
+The `OctoBot` repository is all you need for the OctoBot developer environment. It contains every package of the software as well as the tentacles.
+
+Open a terminal in your project folder and execute the following command to download the official version of the repository.
 
 
 ```bash
 git clone https://github.com/Drakkar-Software/OctoBot.git --branch dev
-git clone https://github.com/Drakkar-Software/OctoBot-Tentacles.git --branch dev
 ```
-A development environment will prefer using the `dev` branches as all pull requests to those OctoBot repositories should be created against the official `dev` branch of each repository.
+A development environment will prefer using the `dev` branch as all pull requests to the OctoBot repository should be created against its official `dev` branch.
 
-If you wish to contribute to those repositories, please create your own fork of these repositories and use them instead.
+If you wish to contribute to OctoBot, please create your own fork of this repository and use it instead.
 
-*Going further*  
-Are you an advanced developer who already understand how OctoBot works as a whole and you would like to add changes to the core modules of OctoBot?
-
-As the OctoBot code is split into different repositories, each dedicated to a different aspect of the software, cloning repositories might be necessary. More details on the [GitHub repositories page](github-repositories).
+Each part of the software lives in its own folder under `packages`. More details on the [GitHub repositories page](github-repositories).
 
 ## VSCode OctoBot environment
 
 ### Creating the project and installing dependencies
 
-1. Open Visual Studio Code and open the folder where the OctoBot repositories are.
-2. Open the terminal and create a new Python 3.10 virtual environment to contain OctoBot's dependencies. Command: `python -m venv venv`
-3. Activate your virtual environment (`.\venv\Scripts\Activate.ps1` on Windows or `source venv/bin/activate` on Linux/macOS)
+1. Open Visual Studio Code and open the cloned `OctoBot` folder.
+2. Open the terminal and create a new Python 3.13 virtual environment to contain OctoBot's dependencies. Command: `python -m venv venv`
+3. Activate your virtual environment: `source venv/bin/activate`
 <div style="text-align: center">
 
 ![vscode create octobot venv](/images/guides/dev_env/vscode-create-octobot-venv.png)
 
 </div>
-4. Install python dependencies using `python -m pip install -r OctoBot/requirements.txt -r OctoBot/dev_requirements.txt` from the integrated VSCode terminal, which is using your new virtual env.
+4. Install python dependencies from the integrated VSCode terminal, which is using your new virtual env. The `pants.toml` build configuration is at the root of the repository, run the Pants install command from there:
+```bash
+pants install-deps --full ::
+```
+This installs every third party dependency of the OctoBot packages into the currently activated virtual environment. `--full` also includes the optional dependencies listed in the `full_requirements.txt` files, which are required by some tentacles, as well as the test and development dependencies.
 <div style="text-align: center">
 
 ![vscode install python requirements](/images/guides/dev_env/vscode-install-python-requirements.png)
@@ -59,16 +72,18 @@ As the OctoBot code is split into different repositories, each dedicated to a di
 
 ### Configuring VSCode
 1. Create a `.vscode` folder at the root of your project.
-2. In the `.vscode` folder, create a `settings.json` file with the following content to make VSCode use your Virtual environment.  Note: replace the path to the python executable on Linux/MacOS.
+2. In the `.vscode` folder, create a `settings.json` file with the following content to make VSCode use your Virtual environment.
 ```json
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe"
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python"
 }
 ``` 
 3. In the `.vscode` folder, create a `launch.json` file with the following content to create your run configurations. This file will configure the run configurations you need to develop on OctoBot by making it simple to:
 - Start OctoBot
 - Run tests
 - Manage tentacles
+
+Each configuration sets a `PYTHONPATH` environment variable. OctoBot's packages are not installed into your virtual environment, they are used directly from their folder in the repository, therefore Python needs to know where each of them is. This list mirrors the `root_patterns` of OctoBot's `pants.toml`, update it when a new package is added.
 
 ```json
 {
@@ -78,8 +93,8 @@ As the OctoBot code is split into different repositories, each dedicated to a di
       "name": "Start OctoBot",
       "request": "launch",
       "console": "integratedTerminal",
-      "program": "${workspaceFolder}/OctoBot/start.py",
-      "cwd": "${workspaceFolder}/OctoBot",
+      "program": "${workspaceFolder}/start.py",
+      "cwd": "${workspaceFolder}",
       "presentation": {
         "hidden": false,
         "group": "1.Run",
@@ -87,14 +102,16 @@ As the OctoBot code is split into different repositories, each dedicated to a di
       },
       "justMyCode": false,
       "args": [],
-      "env": {}
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/packages/agents:${workspaceFolder}/packages/async_channel:${workspaceFolder}/packages/backtesting:${workspaceFolder}/packages/binary:${workspaceFolder}/packages/commons:${workspaceFolder}/packages/copy:${workspaceFolder}/packages/evaluators:${workspaceFolder}/packages/flow:${workspaceFolder}/packages/node:${workspaceFolder}/packages/protocol:${workspaceFolder}/packages/services:${workspaceFolder}/packages/sync:${workspaceFolder}/packages/tentacles_manager:${workspaceFolder}/packages/trading"
+      }
     },
     {
       "type": "debugpy",
       "name": "OctoBot tests",
       "request": "launch",
       "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/OctoBot",
+      "cwd": "${workspaceFolder}",
       "presentation": {
         "hidden": false,
         "group": "2.Test",
@@ -111,14 +128,17 @@ As the OctoBot code is split into different repositories, each dedicated to a di
         "-k",
         " "
       ],
-      "module": "pytest"
+      "module": "pytest",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/packages/agents:${workspaceFolder}/packages/async_channel:${workspaceFolder}/packages/backtesting:${workspaceFolder}/packages/binary:${workspaceFolder}/packages/commons:${workspaceFolder}/packages/copy:${workspaceFolder}/packages/evaluators:${workspaceFolder}/packages/flow:${workspaceFolder}/packages/node:${workspaceFolder}/packages/protocol:${workspaceFolder}/packages/services:${workspaceFolder}/packages/sync:${workspaceFolder}/packages/tentacles_manager:${workspaceFolder}/packages/trading"
+      }
     },
     {
       "type": "debugpy",
-      "name": "OctoBot-Tentacles tests trading modes",
+      "name": "Tentacles tests trading modes",
       "request": "launch",
       "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/OctoBot",
+      "cwd": "${workspaceFolder}",
       "presentation": {
         "hidden": false,
         "group": "2.Test",
@@ -136,40 +156,21 @@ As the OctoBot code is split into different repositories, each dedicated to a di
         "-k",
         " "
       ],
-      "module": "pytest"
-    },
-    {
-      "type": "debugpy",
-      "name": "Export tentacles to repo",
-      "request": "launch",
-      "console": "integratedTerminal",
-      "program": "${workspaceFolder}/OctoBot/start.py",
-      "cwd": "${workspaceFolder}/OctoBot",
-      "presentation": {
-        "hidden": false,
-        "group": "OctoBot-Tentacles-Manager",
-        "order": 31
-      },
-      "justMyCode": false,
-      "args": [
-        "tentacles",
-        "-e",
-        "../../OctoBot-Tentacles",
-        "OctoBot-Default-Tentacles",
-        "-d",
-        "../OctoBot/tentacles"
-      ]
+      "module": "pytest",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/packages/agents:${workspaceFolder}/packages/async_channel:${workspaceFolder}/packages/backtesting:${workspaceFolder}/packages/binary:${workspaceFolder}/packages/commons:${workspaceFolder}/packages/copy:${workspaceFolder}/packages/evaluators:${workspaceFolder}/packages/flow:${workspaceFolder}/packages/node:${workspaceFolder}/packages/protocol:${workspaceFolder}/packages/services:${workspaceFolder}/packages/sync:${workspaceFolder}/packages/tentacles_manager:${workspaceFolder}/packages/trading"
+      }
     },
     {
       "type": "debugpy",
       "name": "OctoBot repair tentacles",
       "request": "launch",
       "console": "integratedTerminal",
-      "program": "${workspaceFolder}/OctoBot/start.py",
-      "cwd": "${workspaceFolder}/OctoBot",
+      "program": "${workspaceFolder}/start.py",
+      "cwd": "${workspaceFolder}",
       "presentation": {
         "hidden": false,
-        "group": "OctoBot-Tentacles-Manager",
+        "group": "3.Tentacles",
         "order": 32
       },
       "justMyCode": false,
@@ -178,39 +179,45 @@ As the OctoBot code is split into different repositories, each dedicated to a di
         "--repair",
         "-d",
         "."
-      ]
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/packages/agents:${workspaceFolder}/packages/async_channel:${workspaceFolder}/packages/backtesting:${workspaceFolder}/packages/binary:${workspaceFolder}/packages/commons:${workspaceFolder}/packages/copy:${workspaceFolder}/packages/evaluators:${workspaceFolder}/packages/flow:${workspaceFolder}/packages/node:${workspaceFolder}/packages/protocol:${workspaceFolder}/packages/services:${workspaceFolder}/packages/sync:${workspaceFolder}/packages/tentacles_manager:${workspaceFolder}/packages/trading"
+      }
     },
     {
       "type": "debugpy",
-      "name": "Export OctoBot-Tentacles to zip",
+      "name": "Export tentacles to zip",
       "request": "launch",
       "console": "integratedTerminal",
-      "program": "${workspaceFolder}/OctoBot/start.py",
-      "cwd": "${workspaceFolder}/OctoBot",
+      "program": "${workspaceFolder}/start.py",
+      "cwd": "${workspaceFolder}",
       "presentation": {
         "hidden": false,
-        "group": "OctoBot-Tentacles-Manager",
+        "group": "3.Tentacles",
         "order": 33
       },
       "justMyCode": false,
       "args": [
         "tentacles",
         "-p",
-        "../tentacles_default_export.zip",
+        "tentacles_default_export.zip",
         "-d",
-        "../OctoBot-Tentacles"
-      ]
+        "packages/tentacles"
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/packages/agents:${workspaceFolder}/packages/async_channel:${workspaceFolder}/packages/backtesting:${workspaceFolder}/packages/binary:${workspaceFolder}/packages/commons:${workspaceFolder}/packages/copy:${workspaceFolder}/packages/evaluators:${workspaceFolder}/packages/flow:${workspaceFolder}/packages/node:${workspaceFolder}/packages/protocol:${workspaceFolder}/packages/services:${workspaceFolder}/packages/sync:${workspaceFolder}/packages/tentacles_manager:${workspaceFolder}/packages/trading"
+      }
     },
     {
       "type": "debugpy",
       "name": "Install tentacles zip",
       "request": "launch",
       "console": "integratedTerminal",
-      "program": "${workspaceFolder}/OctoBot/start.py",
-      "cwd": "${workspaceFolder}/OctoBot",
+      "program": "${workspaceFolder}/start.py",
+      "cwd": "${workspaceFolder}",
       "presentation": {
         "hidden": false,
-        "group": "OctoBot-Tentacles-Manager",
+        "group": "3.Tentacles",
         "order": 34
       },
       "justMyCode": false,
@@ -219,8 +226,12 @@ As the OctoBot code is split into different repositories, each dedicated to a di
         "-i",
         "--all",
         "--location",
-        "any_platform.zip"
-      ]
+        "output/any_platform.zip"
+      ],
+      "env": {
+        "ALLOW_UNSIGNED_TENTACLES": "true",
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/packages/agents:${workspaceFolder}/packages/async_channel:${workspaceFolder}/packages/backtesting:${workspaceFolder}/packages/binary:${workspaceFolder}/packages/commons:${workspaceFolder}/packages/copy:${workspaceFolder}/packages/evaluators:${workspaceFolder}/packages/flow:${workspaceFolder}/packages/node:${workspaceFolder}/packages/protocol:${workspaceFolder}/packages/services:${workspaceFolder}/packages/sync:${workspaceFolder}/packages/tentacles_manager:${workspaceFolder}/packages/trading"
+      }
     }
   ]
 }
@@ -238,14 +249,14 @@ Note: these files were created using VSCode `1.102.1` (from July 2025). If any v
 
 ### Executing OctoBot
 
-#### 1. Installing tentacles from a tentacles repository
+#### 1. Installing tentacles
 Now that your VSCode is configured, it is necessary to install your initial OctoBot tentacles.
 
-1. Execute the `Export OctoBot-Tentacles to zip` run configuration
+The tentacles source code is in the `packages/tentacles` folder of the repository. OctoBot can only use tentacles that are properly installed in its `tentacles` folder, which is generated from `packages/tentacles`. Never edit the generated `tentacles` folder directly, it is overriden on each install.
 
-This run configuration will automatically install all tentacles contained in a local folder into your OctoBot, so that it can use them. OctoBot can only use tentacles that are properly installed in its `tentacles` folder.
+1. Execute the `Export tentacles to zip` run configuration
 
-This step is necessary to use the previously clonned `OctoBot-Tentacles` tentacles code. Skipping it will make your OctoBot download the tentacles associated to its latest release which might be incompatible with the `dev` branch your OctoBot code is currently set to.
+This step is necessary to use the tentacles code of the repository. Skipping it will make your OctoBot download the tentacles associated to its latest release which might be incompatible with the `dev` branch your OctoBot code is currently set to.
 
 <div style="text-align: center">
 
@@ -253,7 +264,7 @@ This step is necessary to use the previously clonned `OctoBot-Tentacles` tentacl
 
 </div>
 
-This will export the OctoBot-Tentacles tentacles into a zip archive that can be installed on your OctoBot, or shared
+This will export the tentacles into a zip archive at `output/any_platform.zip` that can be installed on your OctoBot, or shared
 
 2. Execute the `Install tentacles zip` run configuration
 
@@ -265,13 +276,12 @@ This will export the OctoBot-Tentacles tentacles into a zip archive that can be 
 
 This added to your OctoBot tentacles the tentacles contained into this zip. This run configuration can be used to install any tentacles zip
 
-
-Your OctoBot local folder now contains the tentacles code you clonned from the `OctoBot-Tentacles` repository. Re-execute `Export OctoBot-Tentacles to zip` and `Install tentacles zip` when you want to update your local tentacles from the `OctoBot-Tentacles` git repository.  
-Warning: this will override any local change to the re-installed tentacles so be sure to save your local changes beforehand.
+Re-execute `Export tentacles to zip` and `Install tentacles zip` every time you change something in `packages/tentacles`, this is what applies your changes to the running OctoBot.  
+Warning: this will override any local change made to the generated `tentacles` folder so be sure to save your local changes beforehand.
 
 #### 2. Starting OctoBot
 
-This run configuration will start your local OctoBot. Make sure your `OctoBot-Tentacles` tentacles have been installed first (from the `Export OctoBot-Tentacles to zip` and `Install tentacles zip` run config executions) or OctoBot will install its default tentacles and their import will might fail. 
+This run configuration will start your local OctoBot. Make sure your tentacles have been installed first (from the `Export tentacles to zip` and `Install tentacles zip` run config executions) or OctoBot will install its default tentacles and their import will might fail. 
 
 Execute the `Start OctoBot` run configuration
 
@@ -281,28 +291,9 @@ Execute the `Start OctoBot` run configuration
 
 </div>
 
-#### 3. Exporting your tentacle changes into their git repository
+#### 3. Running tests
 
-This run configuration will export changes of your local OctoBot tentacles into the configured tentacles repository. It will take the files linked to your selected tentacle package.
-
-Execute the `Export tentacles to repo` run configuration
-
-
-This will apply your the changes from your OctoBot/tentacles folder into the git repository of this tentacles package. 
-<div style="text-align: center">
-
-![vscode executed export tentacles to repo](/images/guides/dev_env/vscode-executed-export-tentacles-to-repo.png)
-
-</div>
-
-From the `launch.json` parameters, you can change:
-- `OctoBot-Default-Tentacles` to select tentacles to export from a different package. Packages are defined in the `metadata.json` of each tentacle, under the `origin_package` key.
-- `OctoBot-Tentacles` to export tentacles to a different git reposition.
-
-
-#### 4. Running tests
-
-The `OctoBot tests` and `OctoBot-Tentacles tests trading modes` are example configurations to execute all OctoBot tests or OctoBot tentacles Trading Modes tests. Feel fee to add any other test run configurations. 
+The `OctoBot tests` and `Tentacles tests trading modes` are example configurations to execute all OctoBot tests or OctoBot tentacles Trading Modes tests. Feel fee to add any other test run configurations. 
 
 <div style="text-align: center">
 
@@ -314,14 +305,18 @@ The `OctoBot tests` and `OctoBot-Tentacles tests trading modes` are example conf
 ## PyCharm OctoBot environment
 
 ### Creating the project and installing dependencies
-1. Open Pycharm and open the folder where the OctoBot repositories are.
-2. Create a new Python 3.10 virtual environment to contain OctoBot's dependencies.
+1. Open Pycharm and open the cloned `OctoBot` folder.
+2. Create a new Python 3.13 virtual environment to contain OctoBot's dependencies.
 <div style="text-align: center">
 
 ![create pycharm interpreter](/images/guides/dev_env/create-pycharm-interpreter.png)
 
 </div>
-3. Install python dependencies from the OctoBot repo folder using `python -m pip install -r OctoBot/requirements.txt -r OctoBot/dev_requirements.txt` from the integrated PyCharm terminal, which is using your new virtual env by default.
+3. Install python dependencies from the integrated PyCharm terminal, which is using your new virtual env by default. The `pants.toml` build configuration is at the root of the repository, run the Pants install command from there:
+```bash
+pants install-deps --full ::
+```
+This installs every third party dependency of the OctoBot packages into your virtual environment. `--full` also includes the optional dependencies listed in the `full_requirements.txt` files, which are required by some tentacles, as well as the test and development dependencies.
 <div style="text-align: center">
 
 ![install octobot requirements from pycharm](/images/guides/dev_env/install-octobot-requirements-from-pycharm.png)
@@ -335,10 +330,18 @@ The following steps will create PyCharm run configurations using the previously 
 - Running tests
 - Managing tentacles
 
-#### 1. Installing tentacles from a git repository
-This run configuration will automatically install all tentacles contained in a local folder into your OctoBot, so that it can use them. OctoBot can only use tentacles that are properly installed in its `tentacles` folder.
+Each of these run configurations also requires a `PYTHONPATH` environment variable. OctoBot's packages are not installed into your virtual environment, they are used directly from their folder in the repository, therefore Python needs to know where each of them is. This list mirrors the `root_patterns` of OctoBot's `pants.toml`, update it when a new package is added.
 
-This step is necessary to use the previously clonned `OctoBot-Tentacles` tentacles code. Skipping it will make your OctoBot download the tentacles associated to its latest release which might be incompatible with the `dev` branch your OctoBot code is currently set to.
+In every run configuration below, set the **Environment variables** field to the following value, replacing `path_to_your_octobot_repository` by the absolute path to your OctoBot repository:
+
+```bash
+PYTHONPATH=path_to_your_octobot_repository:path_to_your_octobot_repository/packages/agents:path_to_your_octobot_repository/packages/async_channel:path_to_your_octobot_repository/packages/backtesting:path_to_your_octobot_repository/packages/binary:path_to_your_octobot_repository/packages/commons:path_to_your_octobot_repository/packages/copy:path_to_your_octobot_repository/packages/evaluators:path_to_your_octobot_repository/packages/flow:path_to_your_octobot_repository/packages/node:path_to_your_octobot_repository/packages/protocol:path_to_your_octobot_repository/packages/services:path_to_your_octobot_repository/packages/sync:path_to_your_octobot_repository/packages/tentacles_manager:path_to_your_octobot_repository/packages/trading
+```
+
+#### 1. Installing tentacles
+The tentacles source code is in the `packages/tentacles` folder of the repository. OctoBot can only use tentacles that are properly installed in its `tentacles` folder, which is generated from `packages/tentacles`. Never edit the generated `tentacles` folder directly, it is overriden on each install.
+
+This step is necessary to use the tentacles code of the repository. Skipping it will make your OctoBot download the tentacles associated to its latest release which might be incompatible with the `dev` branch your OctoBot code is currently set to.
 
 1. Click on `Edit Configurations`
 <div style="text-align: center">
@@ -346,25 +349,26 @@ This step is necessary to use the previously clonned `OctoBot-Tentacles` tentacl
 ![edit pycharm configurations](/images/guides/dev_env/edit-pycharm-configurations.png)
 
 </div>
-2. Create the `Export OctoBot-Tentacles to zip` run configuration:
-- Script path: `path_to_your_octobot_repositories/OctoBot/start.py`
-- Working directory: `path_to_your_octobot_repositories/OctoBot`
-- Script parameters: `tentacles -p ../tentacles_default_export.zip -d ../OctoBot-Tentacles`
+2. Create the `Export tentacles to zip` run configuration:
+- Script path: `path_to_your_octobot_repository/start.py`
+- Working directory: `path_to_your_octobot_repository`
+- Script parameters: `tentacles -p tentacles_default_export.zip -d packages/tentacles`
 <div style="text-align: center">
 
 ![create pycharm export tentacles config](/images/guides/dev_env/create-pycharm-export-tentacles-config.png)
 
 </div>
-3. Execute this run configuration. This will export the OctoBot-Tentacles tentacles into a zip archive that can be installed on your OctoBot, or shared.
+3. Execute this run configuration. This will export the tentacles into a zip archive at `output/any_platform.zip` that can be installed on your OctoBot, or shared.
 <div style="text-align: center">
 
 ![execute pycharm export tentacles](/images/guides/dev_env/execute-pycharm-export-tentacles.png)
 
 </div>
 4. Create the `Install tentacles zip` run configuration to install these zipped tentacles on your OctoBot:
-- Script path: `path_to_your_octobot_repositories/OctoBot/start.py`
-- Working directory: `path_to_your_octobot_repositories/OctoBot`
-- Script parameters: `tentacles -i --all --location any_platform.zip`
+- Script path: `path_to_your_octobot_repository/start.py`
+- Working directory: `path_to_your_octobot_repository`
+- Script parameters: `tentacles -i --all --location output/any_platform.zip`
+- Add `ALLOW_UNSIGNED_TENTACLES=true` to the **Environment variables** field, locally built tentacles have no signature file
 <div style="text-align: center">
 
 ![create pycharm install tentacles config](/images/guides/dev_env/create-pycharm-install-tentacles-config.png)
@@ -377,11 +381,11 @@ This step is necessary to use the previously clonned `OctoBot-Tentacles` tentacl
 
 </div>
 
-Your OctoBot local folder now contains the tentacles code you clonned from the `OctoBot-Tentacles` repository. Re-execute `Export OctoBot-Tentacles to zip` and `Install tentacles zip` when you want to update your local tentacles from the `OctoBot-Tentacles` git repository. 
-Warning: this will override any local change to the re-installed tentacles so be sure to save your local changes beforehand.
+Re-execute `Export tentacles to zip` and `Install tentacles zip` every time you change something in `packages/tentacles`, this is what applies your changes to the running OctoBot. 
+Warning: this will override any local change made to the generated `tentacles` folder so be sure to save your local changes beforehand.
 
 #### 2. Starting OctoBot
-This run configuration will start your local OctoBot. Make sure your `OctoBot-Tentacles` tentacles have been installed first (from the `Export OctoBot-Tentacles to zip` and `Install tentacles zip` run config executions) or OctoBot will install its default tentacles and their import will might fail. 
+This run configuration will start your local OctoBot. Make sure your tentacles have been installed first (from the `Export tentacles to zip` and `Install tentacles zip` run config executions) or OctoBot will install its default tentacles and their import will might fail. 
 
 1. Click on `Edit Configurations`
 <div style="text-align: center">
@@ -390,8 +394,8 @@ This run configuration will start your local OctoBot. Make sure your `OctoBot-Te
 
 </div>
 2. Create the `Start OctoBot` run configuration:
-- Script path: `path_to_your_octobot_repositories/OctoBot/start.py`
-- Working directory: `path_to_your_octobot_repositories/OctoBot`
+- Script path: `path_to_your_octobot_repository/start.py`
+- Working directory: `path_to_your_octobot_repository`
 <div style="text-align: center">
 
 ![create pycharm start octobot run config](/images/guides/dev_env/create-pycharm-start-octobot-run-config.png)
@@ -406,37 +410,7 @@ This run configuration will start your local OctoBot. Make sure your `OctoBot-Te
 
 You can now start your OctoBot from your development environment, make local changes and run python in debug mode. 
 
-#### 3. Exporting your tentacle changes into their git repository
-This run configuration will export changes of your local OctoBot tentacles into the configured tentacles repository. It will take the files linked to your selected tentacle package.
-
-1. Click on `Edit Configurations`
-<div style="text-align: center">
-
-![edit pycharm configurations](/images/guides/dev_env/edit-pycharm-configurations.png)
-
-</div>
-2. Create the `Export tentacles to repo` run configuration:
-- Script path: `path_to_your_octobot_repositories/OctoBot/start.py`
-- Working directory: `path_to_your_octobot_repositories/OctoBot`
-- Script parameters: `tentacles -e ../../OctoBot-Tentacles OctoBot-Default-Tentacles -d ../OctoBot/tentacles`
-<div style="text-align: center">
-
-![create pycharm export tentacles to repo config](/images/guides/dev_env/create-pycharm-export-tentacles-to-repo-config.png)
-
-</div>
-3. Execute this the run configuration to apply your the changes from your OctoBot/tentacles folder into the git repository of this tentacles package. 
-<div style="text-align: center">
-
-![execute pycharm export tentacles to repo](/images/guides/dev_env/execute-pycharm-export-tentacles-to-repo.png)
-
-</div>
-
-From the script parameters, you can change:
-- `OctoBot-Default-Tentacles` to select tentacles to export from a different package. Packages are defined in the `metadata.json` of each tentacle, under the `origin_package` key.
-- `OctoBot-Tentacles` to export tentacles to a different git reposition.
-
-
-#### 4. Running tests
+#### 3. Running tests
 
 Create `pytest` run configurations to run OctoBot tests. Feel fee to add any other test run configurations. 
 

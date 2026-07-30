@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Removes generated artifacts under octobot_protocol / octobot_protocol_ts /
- * octobot_protocol_rs / test (Python model tests)
+ * octobot_protocol_rs / test (Python model tests) / docs
  * before openapi-generator runs so stale files do not linger.
  */
 
@@ -29,13 +29,17 @@ const targets = {
     keep: new Set(),
     keepPredicate: (name) => name.endsWith(".mjs"),
   },
+  docs: {
+    dir: path.join(protocolDir, "docs"),
+    keep: new Set(),
+  },
 };
 
 function cleanTarget(key) {
   const config = targets[key];
   if (!config) {
     console.error(
-      "Usage: clean-protocol-codegen-output.mjs <python|typescript|rust|test|all>",
+      "Usage: clean-protocol-codegen-output.mjs <python|typescript|rust|test|docs|all>",
     );
     process.exit(1);
   }
@@ -57,9 +61,11 @@ if (mode === "all") {
   cleanTarget("typescript");
   cleanTarget("rust");
   cleanTarget("test");
+  cleanTarget("docs");
 } else if (mode === "python") {
   cleanTarget("python");
   cleanTarget("test");
+  cleanTarget("docs");
 } else {
   cleanTarget(mode);
 }

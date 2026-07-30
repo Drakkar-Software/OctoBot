@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [3.0.0-beta1] - 2026-07-26
+### Start of the OctoBot 3.0.0 beta
+OctoBot 3.0.0 a new system for portfolio automation from desktop and mobile.
+You run it on your computer or server in node mode (the new default OctoBot mode), which acts as the backend for the new OctoBot interface.
+
+OctoBot now stats as node by default and lets users start as many OctoBot as they want. Those bots can be started either:
+1. From the new OctoBot UI, available from the web and as a mobile app
+2. From the node directly, for expert OctoBots enabling backtesting and advanced analysis (using the classic OctoBot UI)
+
+### Added
+- [Node mode] The new OctoBot default: use the node as the orchestrator of your OctoBot, use it from the new OctoBot UI or app
+- [UI] Brand new Octobot UI. More private, flexible, easy to use and secure than ever. Available at https://new.mobile.octobot.cloud/auth/unlock
+- [Mobile apps] Start of the beta of the Android and iOS new apps with all the features of the Octobot UI, built into your phone
+- [Multi OctoBot support] Starting as many bots as you need, directly from the Octobot interface
+- [Kraken] Fully support Kraken exchange spot trading
+
+
 ## [2.1.1] - 2026-03-28
 ### Added
 - [GridTrading] Add reinvest_profits config option

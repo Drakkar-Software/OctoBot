@@ -16,11 +16,12 @@
 import asyncio
 import contextlib
 import json
+import os
 import time
 import threading
 import typing
-import hashlib
-import os
+import octobot.community.activity_analysis.config_path_binding as config_path_binding
+import octobot.community.activity_analysis.activity_metrics as activity_metrics
 import decimal
 
 import octobot.constants as constants
@@ -44,6 +45,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.profiles as commons_profiles
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_trading.enums as trading_enums
 import octobot_sync.client as sync_client
 import octobot_sync.chain as sync_chain
@@ -129,10 +131,10 @@ class CommunityAuthentication(authentication.Authenticator):
 
         self._fetch_account_task: typing.Optional[asyncio.Task] = None
         self._sync_client = None
-        self._sync_user_id: str = ""
+        self.sync_user_id: str = ""
         self._sync_client_lock = threading.Lock()
         self._wallet_backend: wallet_backend.WalletBackend = wallet_backend.WalletBackend(
-            self.configuration_storage.sync_storage, self.logger
+            self._get_wallet_sync_storage(), self.logger
         )
 
     @staticmethod
@@ -144,6 +146,25 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def update(self, configuration: commons_configuration.Configuration):
         self.configuration_storage.set_configuration(configuration)
+        self._wallet_backend = wallet_backend.WalletBackend(
+            self._get_wallet_sync_storage(), self.logger
+        )
+
+    def _get_wallet_sync_storage(self):
+        sync_data_root = os.path.normpath(user_root_folder_provider.get_sync_data_root())
+        user_root = os.path.normpath(user_root_folder_provider.get_user_root_folder())
+        if sync_data_root != user_root:
+            # This is a child octobot process using the master sync data root, 
+            # configure storage accordingly
+            master_config_path = os.path.join(sync_data_root, commons_constants.CONFIG_FILE)
+            master_config = commons_configuration.Configuration(
+                master_config_path,
+                os.path.join(sync_data_root, commons_constants.PROFILES_FOLDER),
+            )
+            if os.path.isfile(master_config_path):
+                master_config.read(should_raise=False, activate_profile=False)
+            return supabase_backend.SyncConfigurationStorage(master_config)
+        return self.configuration_storage.sync_storage
 
     def get_logged_in_email(self):
         if self.user_account.has_user_data():
@@ -557,6 +578,7 @@ class CommunityAuthentication(authentication.Authenticator):
             "and webhook url will be different on this bot."
         )
         self._save_bot_id("")
+        activity_metrics.ActivityMetrics.clear_activity_bot_id(self.config)
         self.save_tradingview_email("")
         # also reset mqtt id to force a new mqtt id creation
         self._save_mqtt_device_uuid("")
@@ -567,20 +589,11 @@ class CommunityAuthentication(authentication.Authenticator):
         if constants.IS_CLOUD_ENV:
             # disabled on cloud environments
             return
-        previous_local_identifier = self._get_saved_bot_scoped_data_identifier()
-        current_local_identifier = self._get_bot_scoped_data_identifier()
-        if not previous_local_identifier:
-            self._save_bot_scoped_data_identifier(current_local_identifier)
-            # nothing to clear
-            return
-        if current_local_identifier != previous_local_identifier:
+        community_section = self.config.config.setdefault(constants.CONFIG_COMMUNITY, {})
+        previous_local_identifier = community_section.get(constants.CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER)
+        resolution = config_path_binding.ensure_config_path_fingerprint(self.config)
+        if resolution.was_regenerated and previous_local_identifier is not None:
             self._clear_bot_scoped_config()
-            self._save_bot_scoped_data_identifier(current_local_identifier)
-
-    def _get_bot_scoped_data_identifier(self) -> str:
-        # identifier is based on the path to the local bot to ensure the same data are not re-used
-        # when copy/pasting a bot config to another bot
-        return hashlib.sha256(os.getcwd().encode()).hexdigest()
 
     async def stop(self):
         self.logger.debug("Stopping ...")
@@ -712,7 +725,7 @@ class CommunityAuthentication(authentication.Authenticator):
                     self.logger.debug("No sync server URL configured, skipping sync client init")
                     return
                 wallet = self.get_wallet(address)
-                self._sync_client, self._sync_user_id = sync_client.create_sync_client(
+                self._sync_client, self.sync_user_id = sync_client.create_sync_client(
                     private_key=wallet.private_key,
                     sync_url=sync_url,
                 )
@@ -745,7 +758,7 @@ class CommunityAuthentication(authentication.Authenticator):
                         "No sync server URL configured, skipping auto sync client init"
                     )
                     return False
-                self._sync_client, self._sync_user_id = sync_client.create_sync_client(
+                self._sync_client, self.sync_user_id = sync_client.create_sync_client(
                     private_key=wallet.private_key,
                     sync_url=sync_url,
                 )

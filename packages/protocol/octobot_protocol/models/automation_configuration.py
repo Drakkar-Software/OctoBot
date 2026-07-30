@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.account_reference import AccountReference
 from octobot_protocol.models.strategy_reference import StrategyReference
@@ -36,7 +36,7 @@ class AutomationConfiguration(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     strategy: StrategyReference
-    accounts: List[AccountReference]
+    accounts: List[AccountReference] = Field(description="May be empty only for automations whose strategy configuration is generic_process; otherwise exactly one account reference is required at runtime.")
     __properties: ClassVar[List[str]] = ["id", "name", "description", "created_at", "updated_at", "strategy", "accounts"]
 
     model_config = ConfigDict(

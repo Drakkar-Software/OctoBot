@@ -12,6 +12,7 @@
 
 import { Action } from '../models/Action';
 import { AutomationMetadata } from '../models/AutomationMetadata';
+import { ChildOctoBotProcessState } from '../models/ChildOctoBotProcessState';
 import { DetailedAssetsForTradingType } from '../models/DetailedAssetsForTradingType';
 import { OrderSummary } from '../models/OrderSummary';
 import { PositionSummary } from '../models/PositionSummary';
@@ -35,6 +36,7 @@ export class AutomationState {
     'orders'?: Array<OrderSummary>;
     'trades'?: Array<TradeSummary>;
     'positions'?: Array<PositionSummary>;
+    'child_octobot_process'?: ChildOctoBotProcessState;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -117,6 +119,12 @@ export class AutomationState {
             "name": "positions",
             "baseName": "positions",
             "type": "Array<PositionSummary>",
+            "format": ""
+        },
+        {
+            "name": "child_octobot_process",
+            "baseName": "child_octobot_process",
+            "type": "ChildOctoBotProcessState",
             "format": ""
         }    ];
 

@@ -91,6 +91,9 @@ class OctoBotAPI:
     def get_automation(self) -> automation.Automation:
         return self._octobot.automation
 
+    def get_activity_metrics(self):
+        return self._octobot.activity_metrics
+
     def get_interface(self, interface_class):
         for interface in self._octobot.interface_producer.interfaces:
             if isinstance(interface, interface_class):

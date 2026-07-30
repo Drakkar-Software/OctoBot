@@ -8,9 +8,11 @@ import { loadPassword } from "@/lib/device-key"
 import {
   buildAutomationLogsArchiveFilename,
   buildNodeLogsArchiveFilename,
+  buildRunningAutomationsLatestLogsFilename,
   downloadAutomationLogsArchive,
   downloadBytesAsFile,
   downloadNodeLogsArchive,
+  downloadRunningAutomationsLatestLogsArchive,
   fetchAutomationLogsArchive,
   fetchNodeLogsArchive,
 } from "@/lib/logs-export"
@@ -51,6 +53,14 @@ describe("buildAutomationLogsArchiveFilename", () => {
   })
 })
 
+describe("buildRunningAutomationsLatestLogsFilename", () => {
+  it("produces a timestamped .zip name", () => {
+    expect(buildRunningAutomationsLatestLogsFilename()).toMatch(
+      /^running-automations-latest-logs-.*\.zip$/,
+    )
+  })
+})
+
 describe("fetchAutomationLogsArchive", () => {
   it("POSTs task_ids with auth and returns the zip file", async () => {
     fetchMock.mockResolvedValue(zipResponse(new Uint8Array([7, 8])))
@@ -76,6 +86,22 @@ describe("fetchAutomationLogsArchive", () => {
     await expect(
       fetchAutomationLogsArchive(["task-abc"], "automation-logs-test.zip"),
     ).rejects.toThrow("No logs found for the selected OctoBots")
+  })
+
+  it("POSTs latest_only when requested", async () => {
+    fetchMock.mockResolvedValue(zipResponse(new Uint8Array([1])))
+
+    await fetchAutomationLogsArchive(
+      ["task-a", "task-b"],
+      "running-automations-latest-logs-test.zip",
+      { latestOnly: true },
+    )
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({
+      task_ids: ["task-a", "task-b"],
+      latest_only: true,
+    })
   })
 })
 
@@ -166,6 +192,30 @@ describe("downloadAutomationLogsArchive", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [, init] = fetchMock.mock.calls[0]
     expect(JSON.parse(init.body)).toEqual({ task_ids: ["task-abc"] })
+    expect(click).toHaveBeenCalled()
+  })
+})
+
+describe("downloadRunningAutomationsLatestLogsArchive", () => {
+  it("fetches latest logs for running automations and downloads them", async () => {
+    fetchMock.mockResolvedValue(zipResponse(new Uint8Array([8, 9])))
+    const createObjectURL = vi.fn(() => "blob:running")
+    const revokeObjectURL = vi.fn()
+    const click = vi.fn()
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL })
+    vi.stubGlobal("document", {
+      createElement: () => ({ click, download: "" }),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() },
+    })
+
+    await downloadRunningAutomationsLatestLogsArchive(["task-a", "task-b"])
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({
+      task_ids: ["task-a", "task-b"],
+      latest_only: true,
+    })
     expect(click).toHaveBeenCalled()
   })
 })

@@ -26,15 +26,21 @@ import octobot_commons.constants as constants
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.errors as commons_errors
 import octobot_commons.profiles as profiles
+import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_sharing as profile_sharing
+import octobot_commons.profiles.profile_storage as profile_storage_module
 from octobot_commons.profiles.profile_sharing import _get_unique_profile_folder, _ensure_unique_profile_id, \
     _get_profile_name
 import octobot_commons.tests.test_config as test_config
 
 import tests.profiles.conftest as profiles_conftest
-from tests.profiles import profile, get_profile_path, invalid_profile
+from tests.profiles import get_profile_path
 
 pytestmark = pytest.mark.xdist_group(name=profiles_conftest.PROFILES_FS_XDIST_GROUP)
+
+
+def _profile_config_file(profile):
+    return profile_backends_module.FilesystemProfileBackend.config_file_path(profile.path)
 
 
 def test_export_profile(profile):
@@ -49,10 +55,10 @@ def test_export_profile(profile):
                             dir1=spec_tentacles_config,
                             dir2=other_profile):
         # create fake tentacles config
-        shutil.copy(profile.config_file(), tentacles_config)
+        shutil.copy(_profile_config_file(profile), tentacles_config)
         os.mkdir(spec_tentacles_config)
-        shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t1.json"))
-        shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t2.json"))
+        shutil.copy(_profile_config_file(profile), os.path.join(spec_tentacles_config, "t1.json"))
+        shutil.copy(_profile_config_file(profile), os.path.join(spec_tentacles_config, "t2.json"))
         with mock.patch.object(os, "remove", mock.Mock()) as remove_mock:
             profiles.export_profile(profile, export_path)
             remove_mock.assert_not_called()
@@ -81,11 +87,11 @@ def test_export_profile_with_existing_file(profile):
                             dir1=spec_tentacles_config,
                             dir2=other_profile):
         # create fake tentacles config
-        shutil.copy(profile.config_file(), tentacles_config)
+        shutil.copy(_profile_config_file(profile), tentacles_config)
         os.mkdir(spec_tentacles_config)
-        shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t1.json"))
-        shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t2.json"))
-        shutil.copy(profile.config_file(), f"{export_path}.{constants.PROFILE_EXPORT_FORMAT}")
+        shutil.copy(_profile_config_file(profile), os.path.join(spec_tentacles_config, "t1.json"))
+        shutil.copy(_profile_config_file(profile), os.path.join(spec_tentacles_config, "t2.json"))
+        shutil.copy(_profile_config_file(profile), f"{export_path}.{constants.PROFILE_EXPORT_FORMAT}")
         with mock.patch.object(os, "remove", mock.Mock()) as remove_mock:
             profiles.export_profile(profile, export_path)
             remove_mock.assert_called_once_with(f"{export_path}.{constants.PROFILE_EXPORT_FORMAT}")
@@ -115,35 +121,35 @@ def test_import_install_profile(profile, invalid_profile):
                             dir2=user_root_folder_provider.get_user_root_folder(),
                             dir3=spec_tentacles_config):
         # create fake tentacles config
-        shutil.copy(profile.config_file(), tentacles_config)
+        shutil.copy(_profile_config_file(profile), tentacles_config)
         os.mkdir(spec_tentacles_config)
-        shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t1.json"))
-        shutil.copy(profile.config_file(), os.path.join(spec_tentacles_config, "t2.json"))
+        shutil.copy(_profile_config_file(profile), os.path.join(spec_tentacles_config, "t1.json"))
+        shutil.copy(_profile_config_file(profile), os.path.join(spec_tentacles_config, "t2.json"))
         profiles.export_profile(profile, export_path)
-        imported_profile_path = os.path.join(user_root_folder_provider.get_user_profiles_folder(), "default")
         with mock.patch.object(profile_sharing, "_ensure_unique_profile_id", mock.Mock()) \
                 as _ensure_unique_profile_id_mock:
             imported_profile = profiles.import_profile(exported_file, profile_schema, origin_url="plop.wow")
             assert isinstance(imported_profile, profiles.Profile)
-            profile.read_config()
             assert profile.name == imported_profile.name
             assert profile.path != imported_profile.path
             assert profile.imported is False
             assert imported_profile.imported is True
             assert imported_profile.origin_url == "plop.wow"
             _ensure_unique_profile_id_mock.assert_called_once()
+        imported_profile_path = imported_profile.path
         assert os.path.isdir(imported_profile_path)
         # ensure all files got imported
         for root, dirs, files in os.walk(profile.path):
-            dir_path = os.path.join(other_profile, "specific_config") if "specific_config" in root else other_profile
+            dir_path = os.path.join(imported_profile_path, "specific_config") if "specific_config" in root else imported_profile_path
             assert all(
                 os.path.isfile(os.path.join(dir_path, f))
                 for f in files
             )
-        assert isinstance(profiles.import_profile(exported_file, profile_schema), profiles.Profile)
-        assert os.path.isdir(f"{imported_profile_path}_2")
+        second_imported_profile = profiles.import_profile(exported_file, profile_schema)
+        assert isinstance(second_imported_profile, profiles.Profile)
+        assert os.path.isdir(second_imported_profile.path)
+        assert second_imported_profile.path != imported_profile_path
         assert os.path.isdir(imported_profile_path)
-        assert not os.path.isdir(f"{imported_profile_path}_3")
 
         # now with invalid profile
         profiles.export_profile(invalid_profile, export_path)
@@ -152,17 +158,17 @@ def test_import_install_profile(profile, invalid_profile):
 
 
 def test_get_unique_profile_folder(profile):
-    assert _get_unique_profile_folder(profile.config_file()) == f"{profile.config_file()}_2"
-    other_file = f"{profile.config_file()}_2"
-    other_file_2 = f"{profile.config_file()}_3"
-    other_file_3 = f"{profile.config_file()}_5"
+    assert _get_unique_profile_folder(_profile_config_file(profile)) == f"{_profile_config_file(profile)}_2"
+    other_file = f"{_profile_config_file(profile)}_2"
+    other_file_2 = f"{_profile_config_file(profile)}_3"
+    other_file_3 = f"{_profile_config_file(profile)}_5"
     with _cleaned_tentacles(other_file, other_file_2, other_file_3):
-        shutil.copy(profile.config_file(), other_file)
-        assert _get_unique_profile_folder(profile.config_file()) == f"{profile.config_file()}_3"
-        shutil.copy(profile.config_file(), other_file_2)
-        assert _get_unique_profile_folder(profile.config_file()) == f"{profile.config_file()}_4"
-        shutil.copy(profile.config_file(), other_file_3)
-        assert _get_unique_profile_folder(profile.config_file()) == f"{profile.config_file()}_4"
+        shutil.copy(_profile_config_file(profile), other_file)
+        assert _get_unique_profile_folder(_profile_config_file(profile)) == f"{_profile_config_file(profile)}_3"
+        shutil.copy(_profile_config_file(profile), other_file_2)
+        assert _get_unique_profile_folder(_profile_config_file(profile)) == f"{_profile_config_file(profile)}_4"
+        shutil.copy(_profile_config_file(profile), other_file_3)
+        assert _get_unique_profile_folder(_profile_config_file(profile)) == f"{_profile_config_file(profile)}_4"
 
 
 def test_ensure_unique_profile_id(profile):
@@ -171,10 +177,13 @@ def test_ensure_unique_profile_id(profile):
     other_profile_path = profiles_path.joinpath(other_profile)
     with _cleaned_tentacles(dir1=other_profile_path):
         shutil.copytree(profile.path, other_profile_path)
-        other_profile = profiles.Profile(other_profile_path).read_config()
+        filesystem_backend = profile_backends_module.FilesystemProfileBackend()
+        other_profile = filesystem_backend.read_profile_from_path(str(other_profile_path))
+        other_profile.bind_profile_storage(profile.get_profile_storage())
         _ensure_unique_profile_id(other_profile)
-        other_profile.save()
-        ids = profiles.Profile.get_all_profiles_ids(profiles_path)
+        filesystem_backend.write_profile_config(other_profile)
+        profile_storage = profile_storage_module.ProfileStorage(str(profiles_path))
+        ids = profile_storage.list_profile_ids()
         assert len(ids) == 2
         # changed new profile id
         assert ids[0] != ids[1]

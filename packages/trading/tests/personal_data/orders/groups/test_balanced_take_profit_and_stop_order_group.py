@@ -174,7 +174,8 @@ async def test_balance_orders(btps_group):
         order_1.trader.cancel_order.assert_called_once_with(
             order_1, ignored_order=order_4, wait_for_cancelling=True,
             cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-            force_if_disabled=False
+            force_if_disabled=False,
+            skip_pending_cancel_status=False
         )
         order_2.trader.edit_order.assert_called_once_with(
             order_2,
@@ -214,7 +215,8 @@ async def test_balance_orders(btps_group):
             order_1.trader.cancel_order.assert_called_once_with(
                 order_1, ignored_order=order_4, wait_for_cancelling=True,
                 cancelling_timeout=constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT,
-                force_if_disabled=False
+                force_if_disabled=False,
+                skip_pending_cancel_status=False
             )
             order_2.trader.edit_order.assert_called_once_with(
                 order_2,

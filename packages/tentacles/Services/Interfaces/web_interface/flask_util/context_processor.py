@@ -150,6 +150,7 @@ def register_context_processor(web_interface_instance):
             OCTOBOT_COMMUNITY_URL=identifiers_provider.IdentifiersProvider.COMMUNITY_URL,
             OCTOBOT_COMMUNITY_RECOVER_PASSWORD_URL=identifiers_provider.IdentifiersProvider.FRONTEND_PASSWORD_RECOVER_URL,
             OCTOBOT_MARKET_MAKING_URL=constants.OCTOBOT_MARKET_MAKING_URL,
+            OCTOBOT_DISPLAY_NAME=models.get_octobot_display_name(),
             CURRENT_BOT_VERSION=interfaces.AbstractInterface.project_version,
             LOCALE=constants.DEFAULT_LOCALE,
             IS_DEMO=constants.IS_DEMO,

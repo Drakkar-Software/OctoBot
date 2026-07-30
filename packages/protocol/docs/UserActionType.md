@@ -10,6 +10,8 @@ UserActionType
 
 * `AUTOMATION_STOP` (value: `'automation_stop'`)
 
+* `AUTOMATION_RESTART` (value: `'automation_restart'`)
+
 * `AUTOMATION_SIGNAL` (value: `'automation_signal'`)
 
 * `ACCOUNT_CREATE` (value: `'account_create'`)

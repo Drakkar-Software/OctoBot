@@ -28,6 +28,7 @@ import octobot_commons.profiles as profiles
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
+import octobot_commons.os_util as os_util
 import octobot_commons.aiohttp_util as aiohttp_util
 
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -333,7 +334,7 @@ async def start_bot(bot, logger, catch=False):
 
 
 def stop_bot(bot, force=False):
-    bot.task_manager.stop_tasks()
+    bot.task_manager.stop_tasks(stop_managed_child_processes=True, force=force)
     if force:
         os._exit(0)
 
@@ -343,7 +344,7 @@ def get_bot_file():
 
 
 def restart_bot():
-    argv = (f'{a}' for a in sys.argv if a not in IGNORED_COMMAND_WHEN_RESTART)
+    argv = [f'{argument}' for argument in sys.argv if argument not in IGNORED_COMMAND_WHEN_RESTART]
     if get_bot_file().endswith(".py"):
         os.execl(sys.executable, f'{sys.executable}', *argv)
     elif get_bot_file().endswith(constants.PROJECT_NAME):
@@ -353,7 +354,7 @@ def restart_bot():
         # restart from binary
         # from https://pyinstaller.org/en/stable/common-issues-and-pitfalls.html#using-sys-executable-to-spawn-subprocesses-that-outlive-the-application-process-implementing-application-restart
         # Restart the application
-        subprocess.Popen([sys.executable], env={**os.environ, "PYINSTALLER_RESET_ENVIRONMENT": "1"})
+        subprocess.Popen(argv, env={**os.environ, **os_util.PYINSTALLER_RESET_ENVIRONMENT_VARS})
         # force stop and restart
         os._exit(0)
 

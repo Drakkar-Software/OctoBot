@@ -115,7 +115,7 @@ def config_health_check(config: configuration.Configuration, in_backtesting: boo
 
 
 def init_config(
-    config_file=configuration.get_user_config(),
+    config_file=None,
     from_config_file=constants.DEFAULT_CONFIG_FILE
 ):
     """
@@ -123,6 +123,8 @@ def init_config(
     :param config_file: the config file path
     :param from_config_file: the default config file path
     """
+    if config_file is None:
+        config_file = configuration.get_user_config()
     try:
         user_root = user_root_folder_provider.get_user_root_folder()
         if not os.path.exists(user_root):

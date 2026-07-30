@@ -14,14 +14,19 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import collections.abc
 import functools
 import typing
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.str_util as str_util
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
+
+
+_SIMPLE_SCALAR_TYPES = (bool, int, float, str)
 
 
 def normalize_tentacle_name(tentacle_name: str) -> str:
@@ -131,23 +136,11 @@ def _non_strategy_evaluator_operators_by_tentacle_name() -> dict[str, type]:
     return evaluator_operators_by_name
 
 
-def _is_value_castable_to_parameter_type(value: typing.Any, param_type: type) -> bool:
-    if isinstance(value, param_type):
-        return True
-    if param_type is int:
+def _is_value_castable_to_parameter_type(value: typing.Any, param_type: str) -> bool:
+    if param_type == commons_enums.DslValueType.NUMBER.value:
         if isinstance(value, bool):
             return False
-        if isinstance(value, float) and value.is_integer():
-            return True
-        if isinstance(value, str):
-            try:
-                int(value)
-            except ValueError:
-                return False
-            return True
-        return False
-    if param_type is float:
-        if isinstance(value, int):
+        if isinstance(value, (int, float)):
             return True
         if isinstance(value, str):
             try:
@@ -156,18 +149,34 @@ def _is_value_castable_to_parameter_type(value: typing.Any, param_type: type) ->
                 return False
             return True
         return False
-    if param_type is bool:
+    if param_type == commons_enums.DslValueType.BOOLEAN.value:
         return isinstance(value, bool)
-    if param_type is str:
+    if param_type in (
+        commons_enums.DslValueType.TEXT.value,
+        commons_enums.DslValueType.TIME_FRAME.value,
+    ):
         return isinstance(value, str)
-    if param_type is list:
-        return isinstance(value, list)
-    if param_type is dict:
+    if param_type == commons_enums.DslValueType.DICT.value:
         return isinstance(value, dict)
+    if param_type == commons_enums.DslValueType.ANY.value:
+        return True
+    if param_type == commons_enums.DslValueType.SERIES.value:
+        if isinstance(value, (str, bytes, dict)):
+            return False
+        return isinstance(value, collections.abc.Iterable)
+    if param_type in (
+        commons_enums.DslValueType.SIGNAL.value,
+        commons_enums.DslValueType.ORDER.value,
+    ):
+        if value is None or isinstance(value, dict):
+            return True
+        if isinstance(value, (list, tuple)) or isinstance(value, _SIMPLE_SCALAR_TYPES):
+            return False
+        return True
     return False
 
 
-def _parameter_names_by_operator(operator_class: type) -> dict[str, type]:
+def _parameter_names_by_operator(operator_class: type) -> dict[str, str]:
     return {
         operator_parameter.name: operator_parameter.type
         for operator_parameter in operator_class.get_parameters()
@@ -198,7 +207,7 @@ def _collect_config_validation_issues(
         if not _is_value_castable_to_parameter_type(config_value, expected_type):
             configuration_issues.append(
                 f"{parameter_json_path}: value {config_value!r} is not castable to "
-                f"{expected_type.__name__}; expected type: {expected_type.__name__}"
+                f"{expected_type}; expected type: {expected_type}"
             )
     return configuration_issues
 

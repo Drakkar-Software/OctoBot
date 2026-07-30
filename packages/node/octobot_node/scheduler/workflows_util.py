@@ -201,6 +201,16 @@ def filter_by_wallet(
     raise ValueError(f"Unsupported scheduler queue for wallet filter: {queue!r}")
 
 
+def normalize_parent_automation_id(workflow_id: str) -> str:
+    return workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+
+
+def build_next_child_automation_workflow_id(current_workflow_id: str) -> str:
+    parent_id = normalize_parent_automation_id(current_workflow_id)
+    child_index = parse_automation_child_workflow_index(current_workflow_id)
+    return f"{parent_id}_{child_index + 1}"
+
+
 def parse_automation_child_workflow_index(workflow_id: str) -> int:
     """
     Return the child iteration index encoded in a workflow ID.
@@ -282,7 +292,12 @@ def parse_automation_workflow_output(
     if not workflow_status.output:
         return None
     try:
-        return params.AutomationWorkflowOutput.from_dict(json.loads(workflow_status.output))
+        raw_output = workflow_status.output
+        if isinstance(raw_output, str):
+            raw_output = json.loads(raw_output)
+        if not isinstance(raw_output, dict):
+            raise TypeError(f"Unexpected workflow output type: {type(raw_output).__name__}")
+        return params.AutomationWorkflowOutput.from_dict(raw_output)
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         logger.warning(
             "Failed to parse automation workflow output for %s: %s",
@@ -361,6 +376,32 @@ def get_automation_dict(description: typing.Union[str, dict]) -> dict:
     if isinstance(description, dict) and (state := description.get(STATE_KEY)) and isinstance(state, dict):
         return description
     raise ValueError("No automation state found in description")
+
+
+def patch_task_content_degraded_state(
+    task_content: str,
+    error_status: str,
+    error_message: str,
+    *,
+    since: float,
+) -> str:
+    if octobot_flow is None:
+        raise RuntimeError("octobot_flow is required to patch automation degraded state")
+    description = get_automation_dict(task_content)
+    automation_state = octobot_flow.entities.AutomationState.from_dict(description[STATE_KEY])
+    existing_degraded_state = automation_state.automation.execution.degraded_state
+    degraded_since = (
+        existing_degraded_state.since
+        if existing_degraded_state.since > 0
+        else since
+    )
+    automation_state.automation.execution.degraded_state = octobot_flow.entities.DegradedStateDetails(
+        since=degraded_since,
+        error=error_status,
+        reason=error_message,
+    )
+    description[STATE_KEY] = automation_state.to_dict(include_default_values=False)
+    return json.dumps(description)
 
 
 async def get_automation_workflow_status(automation_id: str) -> dbos_lib.WorkflowStatus:

@@ -15,10 +15,18 @@
 #  License along with this library
 import enum
 
+import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
+
 
 class TradeOrderSide(enum.Enum):
     BUY = "buy"
     SELL = "sell"
+
+
+TRADE_ORDER_SIDE_OPERATOR_PARAMETER_OPTIONS = [
+    operator_parameter.OperatorParameterOption(value=side.value, label=side.value)
+    for side in TradeOrderSide
+]
 
 
 class HistoricalPortfolioValue(enum.Enum):
@@ -696,6 +704,7 @@ class ExchangeFeatureKeys(enum.Enum):
 class ExchangeClientOptions(enum.StrEnum):
     FIX_MARKET_STATUS = "fixMarketStatus"
     REMOVE_MARKET_STATUS_PRICE_LIMITS = "removeMarketStatusPriceLimits"
+    COMPUTE_MARKET_STATUS_COST_LIMITS = "computeMarketStatusCostLimits"
     ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE = "adaptMarketStatusForContractSize"
     SUPPORTS_MARKETS_CACHE = "supportsMarketsCache"
     SUPPORTS_ALL_SYMBOLS_LISTING = "supportsAllSymbolsListing"
@@ -753,6 +762,8 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.FIX_MARKET_STATUS: False,
     # set True when ccxt should remove price limits (when limits are invalid)
     ExchangeClientOptions.REMOVE_MARKET_STATUS_PRICE_LIMITS: False,
+    # set True when ccxt should compute cost limits for market status using amount and price
+    ExchangeClientOptions.COMPUTE_MARKET_STATUS_COST_LIMITS: False,
     # set True when ccxt should adapt amounts for contract size
     # (amounts are in not kept as contract size with OctoBot)
     ExchangeClientOptions.ADAPT_MARKET_STATUS_FOR_CONTRACT_SIZE: False,

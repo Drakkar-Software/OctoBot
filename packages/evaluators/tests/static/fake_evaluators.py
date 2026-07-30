@@ -58,9 +58,6 @@ class FakeOHLCVEvaluator(evaluators.TAEvaluator):
 
     @classmethod
     def create_local_instance(cls, config, tentacles_setup_config, loaded_config):
-        if tentacles_setup_config is None:
-            import octobot_evaluators.evaluators.evaluator_dsl_factory as evaluator_dsl_factory
-            tentacles_setup_config = evaluator_dsl_factory._get_local_tentacles_setup_config()
         return evaluator_factory.create_temporary_evaluator_with_local_config(
             cls, tentacles_setup_config, loaded_config, False
         )
@@ -105,9 +102,6 @@ class FakeStrategyEvaluator(evaluators.StrategyEvaluator):
 
     @classmethod
     def create_local_instance(cls, config, tentacles_setup_config, loaded_config):
-        if tentacles_setup_config is None:
-            import octobot_evaluators.evaluators.evaluator_dsl_factory as evaluator_dsl_factory
-            tentacles_setup_config = evaluator_dsl_factory._get_local_tentacles_setup_config()
         return evaluator_factory.create_temporary_evaluator_with_local_config(
             cls, tentacles_setup_config, loaded_config, False
         )
@@ -130,9 +124,6 @@ class FakeMatrixReadingStrategyEvaluator(evaluators.StrategyEvaluator):
 
     @classmethod
     def create_local_instance(cls, config, tentacles_setup_config, loaded_config):
-        if tentacles_setup_config is None:
-            import octobot_evaluators.evaluators.evaluator_dsl_factory as evaluator_dsl_factory
-            tentacles_setup_config = evaluator_dsl_factory._get_local_tentacles_setup_config()
         return evaluator_factory.create_temporary_evaluator_with_local_config(
             cls, tentacles_setup_config, loaded_config, False
         )

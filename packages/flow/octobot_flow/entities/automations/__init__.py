@@ -23,6 +23,13 @@ from octobot_flow.entities.automations.post_iteration_actions_details import (
     NextIterationDetails,
     PostIterationActionsDetails,
 )
+from octobot_flow.entities.automations.octobot_process_state import (
+    OctobotProcessState,
+    is_run_octobot_process_dsl_action,
+    parse_octobot_process_state,
+    recall_inner_from_action_result,
+)
+
 __all__ = [
     "FetchedExchangeAccountElements",
     "FetchedExchangePublicData",
@@ -39,4 +46,8 @@ __all__ = [
     "RefreshExchangeBotsAuthenticatedDataDetails",
     "NextIterationDetails",
     "PostIterationActionsDetails",
+    "OctobotProcessState",
+    "is_run_octobot_process_dsl_action",
+    "parse_octobot_process_state",
+    "recall_inner_from_action_result",
 ]

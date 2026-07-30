@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
 import { NewBotCards } from "@/components/Common/NewBotCards"
 
@@ -10,6 +10,8 @@ export const Route = createFileRoute("/_layout/octobots/new")({
 })
 
 function NewOctobot() {
+  const navigate = useNavigate()
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -23,7 +25,7 @@ function NewOctobot() {
           experience and customization needs.
         </p>
       </div>
-      <NewBotCards />
+      <NewBotCards onSkip={() => navigate({ to: "/octobots" })} />
     </div>
   )
 }

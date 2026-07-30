@@ -1,8 +1,13 @@
-import { Check, Clock, Layers, Lock, TriangleAlert } from "lucide-react"
+import { ArrowUpRight, Check, Clock, Layers, Lock, TriangleAlert } from "lucide-react"
 import { memo } from "react"
 
-import type { Task_Output as Task, TaskStatus } from "@/client"
+import type {
+  ChildOctoBotProcessState,
+  Task_Output as Task,
+  TaskStatus,
+} from "@/client"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Tooltip,
@@ -15,6 +20,7 @@ import {
   getStatusGroup,
   hasStartedExecution,
 } from "@/utils/executions"
+import { formatProcessAddress } from "@/utils/process-address"
 import { resolveTaskError, type TaskErrorInfo } from "@/utils/task-errors"
 import {
   formatDate,
@@ -83,6 +89,85 @@ function ErrorPanel({ status, message }: TaskErrorInfo) {
   )
 }
 
+function ProcessAddressRow({
+  childProcess,
+}: {
+  childProcess: ChildOctoBotProcessState
+}) {
+  const processAddress = formatProcessAddress(childProcess)
+
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      <a
+        href={childProcess.http_base_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="min-w-0 truncate font-mono text-xs text-primary hover:underline"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {processAddress}
+      </a>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-7 shrink-0 text-primary"
+        asChild
+      >
+        <a
+          href={childProcess.http_base_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open child OctoBot at ${processAddress}`}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ArrowUpRight className="size-4" />
+        </a>
+      </Button>
+    </div>
+  )
+}
+
+function RunsCounterRow({
+  task,
+  isRunning,
+}: {
+  task: Task
+  isRunning: boolean
+}) {
+  const activeExec = getActiveExecution(task.executions)
+  const runCount = task.executions?.length ?? 0
+  const completedSteps =
+    task.executions?.filter(
+      (execution) =>
+        execution.status === "completed" || execution.status === "failed",
+    ).length ?? 0
+  const runningExec = task.executions?.find(
+    (execution) => execution.status === "running",
+  )
+  const elapsedFrom = runningExec?.scheduled_at ?? activeExec?.scheduled_at
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {runCount > 0 && (
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Layers className="size-3.5" />
+          {runCount} run{runCount !== 1 ? "s" : ""}
+        </span>
+      )}
+      {completedSteps > 0 && (
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          {completedSteps} done
+        </span>
+      )}
+      {isRunning && elapsedFrom && (
+        <span className="text-xs text-muted-foreground">
+          Running {formatElapsed(elapsedFrom)}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function BotCardBody({
   task,
   isRunning,
@@ -97,12 +182,8 @@ function BotCardBody({
   const activeExec = getActiveExecution(task.executions)
   const group = getStatusGroup(activeExec?.status)
   const date = getDisplayDate(task)
-  const runCount = task.executions?.length ?? 0
-  const completedSteps =
-    task.executions?.filter(
-      (e) => e.status === "completed" || e.status === "failed",
-    ).length ?? 0
   const actionCount = parseActionCount(activeExec?.actions)
+  const childProcess = task.metadata?.child_octobot_process ?? null
 
   const errorPanel =
     errorInfo && (errorInfo.status || errorInfo.message) ? (
@@ -111,29 +192,14 @@ function BotCardBody({
 
   if (group === "active") {
     if (isRunning) {
-      const runningExec = task.executions?.find((e) => e.status === "running")
-      const elapsedFrom = runningExec?.scheduled_at ?? activeExec?.scheduled_at
       return (
         <CardContent className="flex flex-col gap-2 pt-0 -mt-4">
           {errorPanel}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {runCount > 0 && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Layers className="size-3.5" />
-                {runCount} run{runCount !== 1 ? "s" : ""}
-              </span>
-            )}
-            {completedSteps > 0 && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                {completedSteps} done
-              </span>
-            )}
-            {elapsedFrom && (
-              <span className="text-xs text-muted-foreground">
-                Running {formatElapsed(elapsedFrom)}
-              </span>
-            )}
-          </div>
+          {childProcess ? (
+            <ProcessAddressRow childProcess={childProcess} />
+          ) : (
+            <RunsCounterRow task={task} isRunning={isRunning} />
+          )}
           <DateRow date={date} />
         </CardContent>
       )
@@ -142,13 +208,17 @@ function BotCardBody({
     return (
       <CardContent className="flex flex-col gap-2 pt-0 -mt-4">
         {errorPanel}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {actionCount != null && (
-            <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {actionCount} action{actionCount !== 1 ? "s" : ""} queued
-            </span>
-          )}
-        </div>
+        {childProcess ? (
+          <ProcessAddressRow childProcess={childProcess} />
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {actionCount != null && (
+              <span className="rounded bg-surface-mid px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {actionCount} action{actionCount !== 1 ? "s" : ""} queued
+              </span>
+            )}
+          </div>
+        )}
         {isScheduled && activeExec?.scheduled_at ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -173,15 +243,21 @@ function BotCardBody({
   return (
     <CardContent className="flex flex-col gap-2 pt-0 -mt-4">
       {errorPanel}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {runCount > 0 && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Layers className="size-3.5" />
-            {runCount} run{runCount !== 1 ? "s" : ""}
-          </span>
-        )}
-        <DateRow date={date} />
-      </div>
+      {childProcess ? (
+        <ProcessAddressRow childProcess={childProcess} />
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {(task.executions?.length ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Layers className="size-3.5" />
+              {task.executions?.length} run
+              {(task.executions?.length ?? 0) !== 1 ? "s" : ""}
+            </span>
+          )}
+          <DateRow date={date} />
+        </div>
+      )}
+      {childProcess && <DateRow date={date} />}
     </CardContent>
   )
 }
@@ -198,7 +274,9 @@ function areTaskPropsEqual(
     prev.task.error_message === next.task.error_message &&
     prev.task.executions?.length === next.task.executions?.length &&
     JSON.stringify(prev.task.executions) ===
-      JSON.stringify(next.task.executions)
+      JSON.stringify(next.task.executions) &&
+    JSON.stringify(prev.task.metadata?.child_octobot_process) ===
+      JSON.stringify(next.task.metadata?.child_octobot_process)
   )
 }
 
@@ -245,7 +323,6 @@ export const BotCard = memo(function BotCard({
 
   const isRunning = displayLabel === "Running"
   const isScheduled = displayLabel === "Scheduled"
-
   return (
     <Card
       className={cn(
@@ -285,7 +362,7 @@ export const BotCard = memo(function BotCard({
             </div>
             <div className="mt-0.5 min-w-0">
               <span className="font-mono text-xs text-muted-foreground">
-                ID: {task.id?.slice(0, 12) || "—"}
+                ID: {task.id?.slice(0, 12) || "-"}
               </span>
             </div>
           </div>

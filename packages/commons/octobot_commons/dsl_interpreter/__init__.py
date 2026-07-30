@@ -26,7 +26,10 @@ from octobot_commons.dsl_interpreter.dictionnaries import (
 )
 from octobot_commons.dsl_interpreter.operator_parameter import (
     OperatorParameter,
+    OperatorParameterOption,
+    TIME_FRAME_OPERATOR_PARAMETER_OPTIONS,
     UNINITIALIZED_VALUE,
+    dsl_value_type_for_user_input,
 )
 from octobot_commons.dsl_interpreter.operator_docs import OperatorDocs
 from octobot_commons.dsl_interpreter.operators import (
@@ -71,7 +74,10 @@ __all__ = [
     "Interpreter",
     "Operator",
     "OperatorParameter",
+    "OperatorParameterOption",
+    "TIME_FRAME_OPERATOR_PARAMETER_OPTIONS",
     "UNINITIALIZED_VALUE",
+    "dsl_value_type_for_user_input",
     "OperatorDocs",
     "BinaryOperator",
     "UnaryOperator",

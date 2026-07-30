@@ -5,6 +5,7 @@ import {
   buildAccountEditUserActionJson,
   buildAutomationCreateUserActionJsonForAccount,
   buildAutomationCreateUserActionJsonForStrategy,
+  buildAutomationRestartUserActionJson,
   buildAutomationSignalUserActionJson,
   buildAutomationStopUserActionJson,
   buildExchangeConfigEditUserActionJson,
@@ -12,6 +13,9 @@ import {
   buildUserActionTemplate,
   buildUserActionTemplateJson,
   defaultSignalPayloadText,
+  TEMPLATE_ACCOUNT_ID,
+  TEMPLATE_AUTOMATION_ID,
+  TEMPLATE_MASTER_STRATEGY_ID,
   userActionTemplateKeyFromActionType,
 } from "@/lib/debug/user-action-templates"
 
@@ -27,12 +31,26 @@ describe("defaultSignalPayloadText", () => {
 })
 
 describe("buildUserActionTemplate", () => {
-  it("builds an automation stop template", () => {
-    const action = buildUserActionTemplate("automation_stop")
-    expect(action.id).toContain("automation_stop")
+  it("builds an automation stop template with a unique user-action id", () => {
+    const firstAction = buildUserActionTemplate("automation_stop")
+    const secondAction = buildUserActionTemplate("automation_stop")
+    expect(firstAction.id).toMatch(
+      /^ua-manual-automation_stop-[0-9a-f-]{36}$/,
+    )
+    expect(secondAction.id).not.toBe(firstAction.id)
+    const action = firstAction
     expect(action.configuration).toMatchObject({
       action_type: "automation_stop",
-      id: "<automation-id>",
+      id: TEMPLATE_AUTOMATION_ID,
+    })
+  })
+
+  it("builds an automation restart template", () => {
+    const action = buildUserActionTemplate("automation_restart")
+    expect(action.id).toContain("automation_restart")
+    expect(action.configuration).toMatchObject({
+      action_type: "automation_restart",
+      id: TEMPLATE_AUTOMATION_ID,
     })
   })
 
@@ -56,7 +74,7 @@ describe("buildUserActionTemplate", () => {
     const action = buildUserActionTemplate("automation_edit")
     expect(action.configuration).toMatchObject({
       action_type: "automation_edit",
-      id: "<automation-id>",
+      id: TEMPLATE_AUTOMATION_ID,
     })
 
     const automationConfiguration = (
@@ -86,7 +104,7 @@ describe("buildUserActionTemplate", () => {
     const action = buildUserActionTemplate("account_edit")
     expect(action.configuration).toMatchObject({
       action_type: "account_edit",
-      id: "<account-id>",
+      id: TEMPLATE_ACCOUNT_ID,
     })
 
     const accountConfiguration = (
@@ -113,7 +131,7 @@ describe("buildUserActionTemplate", () => {
 
     const config = tradingConfiguration.config as Record<string, unknown>
     const pairSettings = config.pair_settings as Array<Record<string, unknown>>
-    expect(pairSettings[0].pair).toBe("BTC/USDT")
+    expect(pairSettings[0].pair).toBe("BTC/USDC")
     expect(tradingConfiguration).not.toHaveProperty("symbols")
   })
 
@@ -147,11 +165,11 @@ describe("buildUserActionTemplate", () => {
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    expect(strategy.reference_market).toBe("USDT")
+    expect(strategy.reference_market).toBe("USDC")
 
     const copyConfiguration = strategy.configuration as Record<string, unknown>
     expect(copyConfiguration.configuration_type).toBe("copy")
-    expect(copyConfiguration.strategy_id).toBe("<master-strategy-id>")
+    expect(copyConfiguration.strategy_id).toBe(TEMPLATE_MASTER_STRATEGY_ID)
   })
 
   it("builds a DCA strategy create template with two evaluators", () => {
@@ -224,6 +242,29 @@ describe("buildUserActionTemplate", () => {
     expect(dcaConfig.time_frames).toEqual(["1h"])
   })
 
+  it("builds a DCA time-based daily strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_dca_time_based")
+    expect(action.id).toBe("ua-manual-strategy_create_dca_time_based")
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    const tradingConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
+    expect(tradingConfiguration.name).toBe("DCATradingMode")
+    expect(tradingConfiguration).not.toHaveProperty("evaluators")
+    expect(tradingConfiguration).not.toHaveProperty("strategies")
+
+    const dcaConfig = tradingConfiguration.config as Record<string, unknown>
+    expect(dcaConfig.trigger_mode).toBe("Time based")
+    expect(dcaConfig.minutes_before_next_buy).toBe(1440)
+    expect(dcaConfig.trading_pairs).toEqual(["BTC/USDC", "ETH/USDC"])
+    expect(dcaConfig.use_init_entry_orders).toBe(false)
+    expect(dcaConfig.time_frames).toEqual([])
+  })
+
   it("builds a market making strategy create template", () => {
     const action = buildUserActionTemplate("strategy_create_market_making")
     expect(action.id).toBe("ua-manual-strategy_create_market_making")
@@ -231,7 +272,7 @@ describe("buildUserActionTemplate", () => {
     const strategy = (
       action.configuration as { configuration: Record<string, unknown> }
     ).configuration
-    expect(strategy.reference_market).toBe("USDT")
+    expect(strategy.reference_market).toBe("USDC")
 
     const marketMakingConfiguration = strategy.configuration as Record<
       string,
@@ -243,7 +284,7 @@ describe("buildUserActionTemplate", () => {
       Record<string, unknown>
     >
     expect(pairSettings).toHaveLength(1)
-    expect(pairSettings[0].trading_pair).toBe("BTC/USDT")
+    expect(pairSettings[0].trading_pair).toBe("BTC/USDC")
     expect(pairSettings[0].exchange).toBe("binance")
     expect(pairSettings[0].min_spread).toBe(5)
     expect(pairSettings[0].max_spread).toBe(20)
@@ -331,10 +372,23 @@ describe("buildStrategyEditUserActionJson", () => {
 })
 
 describe("buildAutomationStopUserActionJson", () => {
-  it("targets the automation id", () => {
-    const json = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
-    expect(json.configuration).toEqual({
+  it("targets the automation id with a unique user-action id", () => {
+    const firstJson = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
+    const secondJson = JSON.parse(buildAutomationStopUserActionJson("auto-1"))
+    expect(firstJson.id).toMatch(/^ua-stop-auto-1-[0-9a-f-]{36}$/)
+    expect(secondJson.id).not.toBe(firstJson.id)
+    expect(firstJson.configuration).toEqual({
       action_type: "automation_stop",
+      id: "auto-1",
+    })
+  })
+})
+
+describe("buildAutomationRestartUserActionJson", () => {
+  it("targets the automation id", () => {
+    const json = JSON.parse(buildAutomationRestartUserActionJson("auto-1"))
+    expect(json.configuration).toEqual({
+      action_type: "automation_restart",
       id: "auto-1",
     })
   })

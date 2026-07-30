@@ -95,6 +95,22 @@ def get_octobot_type():
         return enums.OctoBotTypes.BINARY.value
 
 
+# PyInstaller 6.9+: environment entries for spawning an independent frozen child process.
+# Required when re-execing or subprocess-spawning the same frozen executable so each child
+# unpacks and runs as its own instance (see PyInstaller common issues and pitfalls).
+PYINSTALLER_RESET_ENVIRONMENT_VARS = {"PYINSTALLER_RESET_ENVIRONMENT": "1"}
+
+
+def is_frozen_binary_octobot() -> bool:
+    """
+    Return whether OctoBot is running as a PyInstaller frozen binary.
+
+    Uses PyInstaller's ``sys.frozen`` flag (not ``get_octobot_type()``), so ``python -m pytest``
+    and other interpreter invocations are not misclassified as frozen binaries.
+    """
+    return bool(getattr(sys, "frozen", False))
+
+
 def get_os():
     """
     Return the OS name
@@ -194,7 +210,7 @@ def tcp_port_is_free(bind_host: str, port: int) -> bool:
     return True
 
 
-_HOST_WIDE_LISTENER_PROBE_HOSTS = ("0.0.0.0", "127.0.0.1")
+_HOST_WIDE_LISTENER_PROBE_HOSTS = ("0.0.0.0", "127.0.0.1")  # bind probes when psutil is unavailable
 
 
 def tcp_port_has_listener_on_host(port: int) -> bool:

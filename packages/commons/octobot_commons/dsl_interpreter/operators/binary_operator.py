@@ -15,7 +15,9 @@
 #  License along with this library.
 import typing
 
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
+import octobot_commons.dsl_interpreter.operator_parameter as dsl_interpreter_operator_parameter
 
 
 class BinaryOperator(
@@ -25,6 +27,8 @@ class BinaryOperator(
     Base class for binary operators.
     Binary operators have two operands.
     """
+
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     def __init__(
         self,
@@ -36,6 +40,15 @@ class BinaryOperator(
         Initialize the binary operator with its left and right operands.
         """
         super().__init__(left, right, **kwargs)
+
+    @classmethod
+    def get_return_values(
+        cls,
+    ) -> list[dsl_interpreter_operator_parameter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="Binary operation result",
+        )
 
     def get_computed_left_and_right_parameters(
         self,

@@ -30,6 +30,14 @@ def _run_octobot_process_recall_kwarg_segments() -> list[str]:
     ]
 
 
+def _run_octobot_process_octobot_name_kwarg_segment(octobot_name: str | None) -> str | None:
+    if octobot_name and str(octobot_name).strip():
+        return (
+            f"octobot_name={dsl_interpreter.format_parameter_value(str(octobot_name).strip())}"
+        )
+    return None
+
+
 def _protocol_account_updated_at_unix_seconds(protocol_account: protocol_models.Account) -> float:
     moment = protocol_account.updated_at
     if moment.tzinfo is None:
@@ -190,6 +198,32 @@ def init_action_factory(
         **base_exchange_config,
     }
 
+    return flow_entities.ConfiguredActionDetails(
+        id=_ACTION_ID_INIT,
+        action=flow_enums.ActionType.APPLY_CONFIGURATION.value,
+        config=init_config,
+    )
+
+
+def generic_process_metadata_init_action_factory(
+    *,
+    automation_id: str,
+    strategy_reference: protocol_models.StrategyReference,
+) -> flow_entities.AbstractActionDetails:
+    """
+    Build a minimal APPLY_CONFIGURATION action for account-less generic-process automations:
+    automation metadata only (no exchange_account_details or portfolio seeding).
+    """
+    automation_metadata = flow_entities.AutomationMetadata(
+        automation_id=automation_id,
+        strategy_id=strategy_reference.id,
+        emit_signals=bool(strategy_reference.emit_signals),
+        strategy_version=strategy_reference.version,
+    )
+    automation_details = flow_entities.AutomationDetails(metadata=automation_metadata)
+    init_config = {
+        "automation": automation_details.to_dict(include_default_values=False),
+    }
     return flow_entities.ConfiguredActionDetails(
         id=_ACTION_ID_INIT,
         action=flow_enums.ActionType.APPLY_CONFIGURATION.value,
@@ -415,6 +449,7 @@ def market_making_action_factory(
     stored_strategy: protocol_models.Strategy,
     *,
     automation_id: str,
+    octobot_name: str | None = None,
 ) -> flow_entities.AbstractActionDetails:
     profile_data = market_making_profile_data_factory(
         protocol_account=protocol_account,
@@ -430,12 +465,15 @@ def market_making_action_factory(
         user_id,
     )
     exchange_auth_segment = dsl_interpreter.format_parameter_value(exchange_auth_data)
-    run_dsl = (
-        "run_octobot_process("
-        f"{automation_id!r}, {dsl_interpreter.format_parameter_value(profile_data_dict)}, "
-        f"{exchange_auth_segment}, "
-        f"{', '.join(_run_octobot_process_recall_kwarg_segments())})"
-    )
+    dsl_arguments = [
+        f"{automation_id!r}",
+        f"profile_data={dsl_interpreter.format_parameter_value(profile_data_dict)}",
+        f"exchange_auth_data={exchange_auth_segment}",
+    ]
+    if octobot_name_segment := _run_octobot_process_octobot_name_kwarg_segment(octobot_name):
+        dsl_arguments.append(octobot_name_segment)
+    dsl_arguments.extend(_run_octobot_process_recall_kwarg_segments())
+    run_dsl = "run_octobot_process(" + ", ".join(dsl_arguments) + ")"
     return flow_entities.DSLScriptActionDetails(
         id=_action_id_from_configuration(market_making_configuration),
         dsl_script=run_dsl,
@@ -446,24 +484,33 @@ def market_making_action_factory(
 def generic_process_action_factory(
     init_action: flow_entities.AbstractActionDetails,
     generic_process_configuration: protocol_models.GenericProcessConfiguration,
-    protocol_account: protocol_models.Account,
+    protocol_account: protocol_models.Account | None,
     user_id: str,
     *,
     automation_id: str,
+    strategy_id: str | None = None,
+    octobot_name: str | None = None,
 ) -> flow_entities.AbstractActionDetails:
-    exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
-        protocol_account,
-        user_id,
-    )
-    dsl_arguments = [f"{automation_id!r}"]
-    if generic_process_configuration.profile_data is not None:
+    exchange_auth_data = None
+    if protocol_account is not None:
+        exchange_auth_data = _exchange_auth_data_list_from_protocol_account(
+            protocol_account,
+            user_id,
+        )
+    dsl_arguments = [f"{automation_id!r}", f"user_id={user_id!r}"]
+    if strategy_id is not None:
+        dsl_arguments.append(f"sync_profile_id={strategy_id!r}")
+    elif generic_process_configuration.profile_data is not None:
         dsl_arguments.append(
-            dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)
+            f"profile_data={dsl_interpreter.format_parameter_value(generic_process_configuration.profile_data)}"
         )
     if exchange_auth_data is not None:
         dsl_arguments.append(
             f"exchange_auth_data={dsl_interpreter.format_parameter_value(exchange_auth_data)}"
         )
+    octobot_name_segment = _run_octobot_process_octobot_name_kwarg_segment(octobot_name)
+    if octobot_name_segment is not None:
+        dsl_arguments.append(octobot_name_segment)
     dsl_arguments.extend(_run_octobot_process_recall_kwarg_segments())
     run_dsl = "run_octobot_process(" + ", ".join(dsl_arguments) + ")"
     return flow_entities.DSLScriptActionDetails(

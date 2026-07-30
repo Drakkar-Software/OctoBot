@@ -1,4 +1,6 @@
 import type { Action, AutomationSignalType, AutomationState } from "@/client"
+import type { DebugStatusDisplay } from "@/lib/debug/display-utils"
+import { getDebugStatusDisplay } from "@/lib/debug/display-utils"
 import { parseSortTime } from "@/lib/table"
 
 export function signalTypeRequiresPayload(
@@ -9,6 +11,30 @@ export function signalTypeRequiresPayload(
 
 export function isRunningAutomation(automation: AutomationState): boolean {
   return automation.status === "running"
+}
+
+export function isRunningAutomationWithDegradedError(
+  automation: AutomationState,
+): boolean {
+  return (
+    isRunningAutomation(automation) &&
+    Boolean(automation.error?.trim() || automation.error_message?.trim())
+  )
+}
+
+export function getAutomationDebugStatusDisplay(
+  automation: AutomationState,
+): DebugStatusDisplay {
+  if (isRunningAutomationWithDegradedError(automation)) {
+    return { emoji: "🟠", label: "Running (error)" }
+  }
+  return getDebugStatusDisplay(automation.status)
+}
+
+export function isRestartableAutomation(automation: AutomationState): boolean {
+  return (
+    automation.status === "completed" || automation.status === "failed"
+  )
 }
 
 export function getAutomationErrorTooltipLines(

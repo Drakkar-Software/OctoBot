@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Bug, ScrollText } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { Bug, Code, ScrollText } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { type ApiError, type DebugState, WalletsService } from "@/client"
@@ -61,7 +62,7 @@ export function DebugView() {
     return walletAddress
   }, [isSuperuser, walletAddress, currentAddress])
 
-  const { data: wallets = [] } = useQuery({
+  const { data: wallets = [], isPending: isWalletsLoading } = useQuery({
     queryKey: ["wallets"],
     queryFn: () => WalletsService.listWallets(),
     enabled: isSuperuser,
@@ -160,6 +161,7 @@ export function DebugView() {
             <DebugToolbar
               isImportedMode={isImportedMode}
               isSuperuser={isSuperuser}
+              isWalletsLoading={isWalletsLoading}
               wallets={wallets}
               walletAddress={walletAddress}
               onWalletAddressChange={setWalletAddress}
@@ -167,20 +169,29 @@ export function DebugView() {
               onReturnToLive={returnToLiveView}
               onExport={handleExportSnapshot}
               canExportSnapshot={canExportSnapshot}
+              isRefreshPending={!isImportedMode && debugQuery.isFetching}
               onRefresh={refresh}
               onExecute={() => openExecuteAction()}
             />
           </div>
         </div>
-        <p className="text-muted-foreground text-sm">
-          Snapshot of current and historical activity. Contains no API secret or
-          private keys.
-          {activeDebugState?.version && (
-            <span className="ml-2 font-mono text-xs">
-              state v{activeDebugState.version}
-            </span>
-          )}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-muted-foreground text-sm">
+            Snapshot of current and historical activity. Contains no API secret
+            or private keys.
+            {activeDebugState?.version && (
+              <span className="ml-2 font-mono text-xs">
+                state v{activeDebugState.version}
+              </span>
+            )}
+          </p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/dsl-keywords">
+              <Code className="size-4" />
+              DSL keywords
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {importedSummary && (

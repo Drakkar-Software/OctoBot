@@ -109,6 +109,10 @@ EXTRA_CONFIGURABLE_TENTACLES_TYPES = [
 ]
 _TENTACLE_CONFIG_CACHE = {}
 
+
+def clear_tentacle_config_cache():
+    _TENTACLE_CONFIG_CACHE.clear()
+
 DEFAULT_EXCHANGE = "binance"
 MERGED_CCXT_EXCHANGES = {
     result.__name__: [merged_exchange.__name__ for merged_exchange in merged]
@@ -484,6 +488,24 @@ def get_tentacles_activation_desc_by_group(media_url, missing_tentacles: set):
             if len(tentacles) > 1}
 
 
+def _persist_profile_tentacles_changes(tentacles_setup_config):
+    config = interfaces_util.get_edited_config(dict_only=False)
+    profile = config.profile
+    if profile is None:
+        tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
+        return
+    if profile.is_profile_data_tentacle_backed():
+        edited_profile = tentacles_setup_config.profile
+        if edited_profile is not None:
+            profile.get_profile_data().tentacles = list(
+                edited_profile.get_profile_data().tentacles
+            )
+        profile.bind_tentacles_setup_config(tentacles_setup_config)
+        config.save(save_profile=True)
+        return
+    tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
+
+
 def update_tentacle_config(tentacle_name, config_update, tentacle_class=None, tentacles_setup_config=None):
     try:
         tentacle_class = tentacle_class or get_tentacle_from_string(tentacle_name, None, with_info=False)[0]
@@ -493,6 +515,9 @@ def update_tentacle_config(tentacle_name, config_update, tentacle_class=None, te
             tentacles_setup_config or interfaces_util.get_edited_tentacles_config(),
             tentacle_class,
             config_update
+        )
+        _persist_profile_tentacles_changes(
+            tentacles_setup_config or interfaces_util.get_edited_tentacles_config()
         )
         return True, f"{tentacle_name} updated"
     except errors.InvalidAutomationConfigError:
@@ -518,6 +543,9 @@ def reset_config_to_default(tentacle_name, tentacle_class=None, tentacles_setup_
         tentacles_manager_api.factory_tentacle_reset_config(
             tentacles_setup_config or interfaces_util.get_edited_tentacles_config(),
             tentacle_class
+        )
+        _persist_profile_tentacles_changes(
+            tentacles_setup_config or interfaces_util.get_edited_tentacles_config()
         )
         return True, f"{tentacle_name} configuration reset to default values"
     except FileNotFoundError as e:
@@ -717,7 +745,7 @@ def update_tentacles_activation_config(new_config, deactivate_others=False, tent
         if tentacles_manager_api.update_activation_configuration(
                 tentacles_setup_configuration, updated_config, deactivate_others
         ):
-            tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_configuration)
+            _persist_profile_tentacles_changes(tentacles_setup_configuration)
         return True
     except Exception as e:
         _get_logger().exception(e, True, f"Error when updating tentacles activation {e}")
@@ -821,8 +849,15 @@ def activate_metrics(enable_metrics):
     else:
         current_edited_config.config[commons_constants.CONFIG_METRICS][
             commons_constants.CONFIG_ENABLED_OPTION] = enable_metrics
-    if enable_metrics and community.CommunityManager.should_register_bot(current_edited_config):
-        community.CommunityManager.background_get_id_and_register_bot(interfaces_util.get_bot_api())
+    if enable_metrics:
+        bot_api = interfaces_util.get_bot_api()
+        activity_metrics = bot_api.get_activity_metrics()
+        if activity_metrics is not None and not activity_metrics.enabled:
+            activity_metrics.enabled = True
+            community.ActivityMetrics.initialize_tracker(current_edited_config)
+            distribution = configuration_manager.get_distribution(current_edited_config.config)
+            activity_metrics.setup_activity_tracking(distribution)
+            interfaces_util.run_in_bot_async_executor(activity_metrics.start_community_task())
     current_edited_config.save()
 
 
@@ -906,6 +941,12 @@ async def _load_market(exchange, results):
             ) as client:
                 await client.load_markets()
                 symbols = client.symbols
+        elif not hasattr(ccxt.async_support, exchange):
+            _get_logger().warning(
+                "Skipping symbol list load for unknown exchange %r: not available in ccxt",
+                exchange,
+            )
+            return
         else:
             async with getattr(ccxt.async_support, exchange)({'verbose': False}) as client:
                 client.logger.setLevel(logging.INFO)    # prevent log of each request (huge on market statuses)
@@ -1436,6 +1477,11 @@ def get_sandbox_exchanges() -> list:
 
 def get_distribution() -> octobot_enums.OctoBotDistribution:
     return configuration_manager.get_distribution(interfaces_util.get_edited_config())
+
+
+def get_octobot_display_name() -> str:
+    name = interfaces_util.get_edited_config(dict_only=False).octobot_name()
+    return name if name else "OctoBot"
 
 
 def change_reference_market_on_config_currencies(old_base_currency: str, new_quote_currency: str) -> bool:

@@ -248,3 +248,37 @@ class TestBaseLocalCollectionStorageInit:
 
         assert storage_a.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, TestStateModel) == state
         assert storage_b.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, TestStateModel) == TestStateModel(version="1.0.0", items=[TestItemModel(id="b1")])
+
+
+class TestBaseLocalCollectionStorageGetFileChecksum:
+    def test_returns_empty_string_when_file_absent(self, tmp_path):
+        storage = _make_storage(tmp_path)
+
+        checksum = storage.get_file_checksum(_TEST_ADDRESS)
+
+        assert checksum == ""
+
+    def test_returns_stable_checksum_for_same_file_bytes(self, tmp_path):
+        storage = _make_storage(tmp_path)
+        storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
+
+        first_checksum = storage.get_file_checksum(_TEST_ADDRESS)
+        second_checksum = storage.get_file_checksum(_TEST_ADDRESS)
+
+        assert first_checksum == second_checksum
+        assert len(first_checksum) == 64
+
+    def test_returns_different_checksum_after_file_rewrite(self, tmp_path):
+        storage = _make_storage(tmp_path)
+        storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _SAMPLE_STATE)
+        first_checksum = storage.get_file_checksum(_TEST_ADDRESS)
+
+        storage.save_state(
+            _TEST_ADDRESS,
+            _TEST_PRIVATE_KEY,
+            TestStateModel(version="1.0.0", items=[TestItemModel(id="item-3")]),
+        )
+        second_checksum = storage.get_file_checksum(_TEST_ADDRESS)
+
+        assert first_checksum != second_checksum
+

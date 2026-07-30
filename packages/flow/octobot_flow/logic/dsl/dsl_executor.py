@@ -5,6 +5,7 @@ import octobot_commons.dsl_interpreter
 import octobot_commons.signals
 import octobot_commons.errors
 import octobot_commons.profiles
+import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
 import octobot_commons.logging
 import octobot_trading.exchanges
 import octobot_trading.dsl
@@ -20,6 +21,7 @@ import octobot_flow.logic.dsl.action_error_util
 # avoid circular import
 from octobot_flow.logic.dsl.dsl_action_execution_context import dsl_action_execution
 from octobot_flow.logic.actions.abstract_action_executor import AbstractActionExecutor
+from octobot_flow.logic.dsl.dsl_actions_util import is_recallable_dsl_action
 
 import tentacles.Meta.DSL_operators as dsl_operators
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
@@ -37,7 +39,9 @@ class DSLExecutor(AbstractActionExecutor):
         super().__init__()
         self._exchange_manager = exchange_manager
         self._dependencies = dependencies
-        self._dependencies_config: dict = profile_data.to_profile("").config
+        self._dependencies_config: dict = ephemeral_profile_module.EphemeralProfile.from_profile_data(
+            profile_data
+        ).config
         self._interpreter_signals: octobot_commons.dsl_interpreter.OperatorSignals = None # type: ignore (reset when interpreter is created)
         self._interpreter: octobot_commons.dsl_interpreter.Interpreter = self._create_interpreter(
             None, executor_id
@@ -110,6 +114,11 @@ class DSLExecutor(AbstractActionExecutor):
         octobot_commons.dsl_interpreter.ComputedOperatorParameterType,
     ]:
         return self._interpreter.get_top_operator()
+
+    def is_action_recallable(
+        self, action: octobot_flow.entities.DSLScriptActionDetails
+    ) -> bool:
+        return is_recallable_dsl_action(self, action)
 
     @dsl_action_execution
     async def execute_action(

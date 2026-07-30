@@ -22,6 +22,8 @@ import aiohttp
 import pytest
 from os import path
 
+import packaging.version as packaging_version
+
 import octobot_tentacles_manager.configuration as configuration
 import octobot_tentacles_manager.api as api
 from octobot_tentacles_manager.configuration.tentacle_configuration import get_config, update_config, \
@@ -278,6 +280,97 @@ async def test_get_config_schema_path():
     _cleanup()
 
 
+class TestAreTentaclesUpToDateWithOctobotVersion:
+    pytestmark = []
+
+    BETA_BOT_VERSION = "3.0.0-beta1"
+    BETA2_BOT_VERSION = "3.0.0-beta2"
+
+    def test_returns_true_when_installation_context_matches_bot_version(self):
+        import octobot.constants as octobot_constants
+
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: octobot_constants.LONG_VERSION
+        }
+        assert api.are_tentacles_up_to_date(setup_config, octobot_constants.LONG_VERSION)
+
+    def test_returns_false_when_bot_is_newer_release_than_prerelease_installation(self):
+        import octobot.constants as octobot_constants
+
+        current_bot_version = packaging_version.parse(octobot_constants.LONG_VERSION)
+        if not current_bot_version.is_prerelease:
+            return
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: octobot_constants.LONG_VERSION
+        }
+        newer_release = f"{current_bot_version.major}.0.0"
+        assert not api.are_tentacles_up_to_date(setup_config, newer_release)
+
+    def test_returns_false_when_installation_context_is_older_than_bot_version(self):
+        import octobot.constants as octobot_constants
+
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: "2.0.0"
+        }
+        assert not api.are_tentacles_up_to_date(setup_config, octobot_constants.LONG_VERSION)
+
+    def test_returns_true_when_beta_installation_matches_hardcoded_beta_bot(self):
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: self.BETA_BOT_VERSION
+        }
+        assert api.are_tentacles_up_to_date(setup_config, self.BETA_BOT_VERSION)
+
+    def test_returns_false_when_release_bot_is_newer_than_hardcoded_beta_installation(self):
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: self.BETA_BOT_VERSION
+        }
+        assert not api.are_tentacles_up_to_date(setup_config, "3.0.0")
+
+    def test_returns_false_when_installation_is_older_than_hardcoded_beta_bot(self):
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: "2.0.0"
+        }
+        assert not api.are_tentacles_up_to_date(setup_config, self.BETA_BOT_VERSION)
+
+    def test_returns_true_when_release_installation_is_newer_than_hardcoded_beta_bot(self):
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: "3.0.0"
+        }
+        assert api.are_tentacles_up_to_date(setup_config, self.BETA_BOT_VERSION)
+
+    def test_returns_true_when_beta2_installation_is_newer_than_beta1_bot(self):
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: self.BETA2_BOT_VERSION
+        }
+        assert api.are_tentacles_up_to_date(setup_config, self.BETA_BOT_VERSION)
+
+    def test_returns_false_when_beta1_installation_is_older_than_beta2_bot(self):
+        setup_config = configuration.TentaclesSetupConfiguration()
+        setup_config.installation_context = {
+            constants.TENTACLE_INSTALLATION_CONTEXT_OCTOBOT_VERSION: self.BETA_BOT_VERSION
+        }
+        assert not api.are_tentacles_up_to_date(setup_config, self.BETA2_BOT_VERSION)
+
+
+class TestGetInstallationContextBotVersion:
+    pytestmark = []
+
+    @pytest.mark.real_bot_version
+    def test_returns_octobot_long_version_when_available(self):
+        import octobot.constants as octobot_constants
+
+        assert configuration.TentaclesSetupConfiguration._get_installation_context_bot_version() == \
+            octobot_constants.LONG_VERSION
+
+
 def _tentacles_local_path():
     return path.join("tests", "static", "tentacles.zip")
 
@@ -290,3 +383,4 @@ def _cleanup():
     ref_tent = user_root_folder_provider.get_user_reference_tentacle_config_path()
     if path.exists(ref_tent):
         rmtree(ref_tent)
+

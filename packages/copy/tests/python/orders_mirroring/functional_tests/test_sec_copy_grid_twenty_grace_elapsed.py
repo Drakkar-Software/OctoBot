@@ -350,7 +350,9 @@ class _SecCopyGridPostRebalanceExchangeState:
         )
         exchange_if.market.get_market_status = mock.Mock(return_value=self.symbol_market)
         exchange_if.market.is_market_open_for_order_type = mock.Mock(return_value=True)
-        exchange_if.orders.get_open_orders = mock.Mock(side_effect=lambda: list(self.open_orders))
+        exchange_if.orders.get_open_orders = mock.Mock(
+            side_effect=lambda symbol=None: list(self.open_orders)
+        )
         exchange_if.orders.get_pre_order_data = mock.AsyncMock(side_effect=self._get_pre_order_data)
         exchange_if.orders.get_order_locked_amount = order_util.get_order_locked_amount
         exchange_if.orders.adapt_order_quantity_and_target_price_for_order_creation = mock.Mock(

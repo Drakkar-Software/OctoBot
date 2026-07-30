@@ -15,6 +15,7 @@
 #  License along with this library.
 import mock
 import socket
+import sys
 import pytest
 
 import octobot_commons.os_util as os_util
@@ -28,6 +29,28 @@ def test_get_cpu_and_ram_usage():
     assert process_ram > 0
     assert virtual_ram > 0
     assert unique_ram > 0
+
+
+class TestIsFrozenBinaryOctobot:
+    def test_returns_true_when_sys_frozen_is_set(self):
+        with mock.patch.object(sys, "frozen", True, create=True):
+            assert os_util.is_frozen_binary_octobot() is True
+
+    def test_returns_false_for_interpreter_argv_without_sys_frozen(self):
+        with mock.patch.object(sys, "argv", [sys.executable]), mock.patch.object(
+            sys, "frozen", False, create=True
+        ):
+            assert os_util.is_frozen_binary_octobot() is False
+
+    def test_returns_false_when_sys_frozen_absent(self):
+        original_frozen = getattr(sys, "frozen", None)
+        if hasattr(sys, "frozen"):
+            delattr(sys, "frozen")
+        try:
+            assert os_util.is_frozen_binary_octobot() is False
+        finally:
+            if original_frozen is not None:
+                sys.frozen = original_frozen
 
 
 class TestTcpPortIsFree:

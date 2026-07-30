@@ -166,6 +166,20 @@ def _exchange_trade_dict(trade_id: str) -> dict:
     }
 
 
+def _process_bot_trade_dict(local_trade_id: str, exchange_order_id: str) -> dict:
+    return {
+        _ORDER_COLUMNS.ID.value: local_trade_id,
+        _ORDER_COLUMNS.EXCHANGE_ID.value: exchange_order_id,
+        _ORDER_COLUMNS.SYMBOL.value: "BTC/USDT",
+        _ORDER_COLUMNS.TYPE.value: trading_enums.TradeOrderType.LIMIT.value,
+        _ORDER_COLUMNS.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
+        _ORDER_COLUMNS.AMOUNT.value: 1.0,
+        _ORDER_COLUMNS.PRICE.value: 1.0,
+        _ORDER_COLUMNS.STATUS.value: trading_enums.OrderStatus.FILLED.value,
+        _ORDER_COLUMNS.TIMESTAMP.value: 1735689600.0,
+    }
+
+
 def _exchange_position_dict(position_id: str) -> dict:
     return {
         _POSITION_COLUMNS.ID.value: position_id,
@@ -242,3 +256,35 @@ class TestUpdateAccountTrading:
         assert saved_state.account_trading.trades is not None
         trade_ids = {trade.trade_id for trade in saved_state.account_trading.trades}
         assert trade_ids == {"trade-existing", "trade-new"}
+
+    def test_repeated_update_dedupes_process_bot_trade_without_exchange_trade_id(self):
+        process_trade = _process_bot_trade_dict("local-trade-1", "exchange-order-9")
+        provider_stub = mock.Mock()
+        provider_stub.load_state = mock.Mock(
+            side_effect=collection_errors.CollectionNoDataError("missing trading state"),
+        )
+        with mock.patch.object(
+            accounts_trading_module.trading_provider.AccountTradingProvider,
+            "instance",
+            return_value=provider_stub,
+        ):
+            accounts_trading_module.update_account_trading(
+                _TEST_WALLET_ADDRESS,
+                _TEST_ACCOUNT_ID,
+                [],
+                [process_trade],
+                [],
+            )
+            first_saved_state = provider_stub.save_state.call_args[0][2]
+            provider_stub.load_state = mock.Mock(return_value=first_saved_state)
+            accounts_trading_module.update_account_trading(
+                _TEST_WALLET_ADDRESS,
+                _TEST_ACCOUNT_ID,
+                [],
+                [process_trade],
+                [],
+            )
+        saved_state = provider_stub.save_state.call_args[0][2]
+        assert saved_state.account_trading.trades is not None
+        assert len(saved_state.account_trading.trades) == 1
+        assert saved_state.account_trading.trades[0].trade_id == "local-trade-1"

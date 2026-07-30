@@ -40,6 +40,7 @@ import {
   getTradingSummariesForAutomation,
   matchesDebugStatusColumnFilter,
 } from "@/lib/debug/display-utils"
+import { TRADING_TOOLTIP_MAX_ITEMS } from "@/lib/debug/constants"
 import { matchesColumnFilter } from "@/lib/table"
 
 function makeAssets(
@@ -299,6 +300,31 @@ const sampleTrade: Trade = {
   executed_at: "2026-01-02T12:00:00Z",
 }
 
+function makeOrdersForTooltipCap(count: number): Order[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...sampleOrder,
+    id: `order-${index}`,
+    created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString(),
+  }))
+}
+
+function makeTradesForTooltipCap(count: number): Trade[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...sampleTrade,
+    id: `trade-${index}`,
+    trade_id: `ex-trade-${index}`,
+    executed_at: new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString(),
+  }))
+}
+
+function countOrderTooltipLines(text: string): number {
+  return text.split("\n").filter((line) => line.includes("created:")).length
+}
+
+function countTradeTooltipLines(text: string): number {
+  return text.split("\n").filter((line) => line.includes("executed:")).length
+}
+
 function formatTradingTooltipDateTimeForTest(iso: string): string {
   return new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -448,6 +474,57 @@ describe("formatOrdersTradingTooltip", () => {
     expect(text).toContain("acc-b:")
     expect(text).toContain("ETH/USDT")
   })
+
+  it("caps at 100 orders and hides the rest", () => {
+    const orders = makeOrdersForTooltipCap(101)
+    const text = formatOrdersTradingTooltip(orders)!
+    expect(countOrderTooltipLines(text)).toBe(100)
+    expect(text).toContain("… 1 older hidden")
+    expect(text).not.toContain(
+      formatTradingTooltipDateTimeForTest(orders[0]!.created_at),
+    )
+  })
+
+  it("caps multi-account order blocks at 100 content lines", () => {
+    const accAOrders = makeOrdersForTooltipCap(60)
+    const accBOrders = makeOrdersForTooltipCap(60).map((order, index) => ({
+      ...order,
+      id: `acc-b-order-${index}`,
+    }))
+    const summaries: AccountTradingWithAccountId[] = [
+      {
+        account_id: "acc-a",
+        account_trading: {
+          updated_at: "2026-01-01T00:00:00Z",
+          orders: accAOrders,
+        },
+      },
+      {
+        account_id: "acc-b",
+        account_trading: {
+          updated_at: "2026-01-01T00:00:00Z",
+          orders: accBOrders,
+        },
+      },
+    ]
+    const text = formatOrdersTradingTooltip(
+      [...accAOrders, ...accBOrders],
+      summaries,
+    )!
+    expect(countOrderTooltipLines(text)).toBe(100)
+    expect(text).toContain("… 20 older hidden")
+    expect(text).toContain("acc-a:")
+    expect(text).toContain("acc-b:")
+  })
+
+  it("formats at most TRADING_TOOLTIP_MAX_ITEMS order lines from large lists", () => {
+    const orders = makeOrdersForTooltipCap(250)
+    const text = formatOrdersTradingTooltip(orders)!
+    expect(countOrderTooltipLines(text)).toBe(TRADING_TOOLTIP_MAX_ITEMS)
+    expect(text).toContain(
+      `… ${250 - TRADING_TOOLTIP_MAX_ITEMS} older hidden`,
+    )
+  })
 })
 
 describe("formatTradesTradingTooltip", () => {
@@ -480,6 +557,25 @@ describe("formatTradesTradingTooltip", () => {
       formatTradingTooltipDateTimeForTest(sampleTrade.executed_at),
     )
     expect(text).not.toContain("2026-01-02T12:00:00Z")
+  })
+
+  it("caps at 100 trades and hides the rest", () => {
+    const trades = makeTradesForTooltipCap(101)
+    const text = formatTradesTradingTooltip(trades)!
+    expect(countTradeTooltipLines(text)).toBe(100)
+    expect(text).toContain("… 1 older hidden")
+    expect(text).not.toContain(
+      formatTradingTooltipDateTimeForTest(trades[0]!.executed_at),
+    )
+  })
+
+  it("formats at most TRADING_TOOLTIP_MAX_ITEMS trade lines from large lists", () => {
+    const trades = makeTradesForTooltipCap(250)
+    const text = formatTradesTradingTooltip(trades)!
+    expect(countTradeTooltipLines(text)).toBe(TRADING_TOOLTIP_MAX_ITEMS)
+    expect(text).toContain(
+      `… ${250 - TRADING_TOOLTIP_MAX_ITEMS} older hidden`,
+    )
   })
 })
 
@@ -541,6 +637,22 @@ describe("getAutomationOrdersTooltipContent", () => {
       [],
     )
     expect(text).toBe("sum-1 SOL/USDT")
+  })
+
+  it("caps summary fallback at 100 orders", () => {
+    const orders = Array.from({ length: 101 }, (_, index) => ({
+      id: `sum-${index}`,
+      symbol: `SYM${String(index).padStart(3, "0")}/USDT`,
+    }))
+    const text = getAutomationOrdersTooltipContent(
+      makeAutomation({ orders }),
+      [],
+    )!
+    expect(text.split("\n").filter((line) => line.includes("USDT")).length).toBe(
+      100,
+    )
+    expect(text).toContain("… 1 older hidden")
+    expect(text).not.toContain("sum-100 SYM100/USDT")
   })
 })
 
@@ -611,6 +723,31 @@ describe("getAutomationTradesTooltipContent", () => {
     expect(
       text?.split("\n").filter((line) => line.includes("executed:")).length,
     ).toBe(1)
+  })
+
+  it("resolves automation trades from summary ids against a large account trade list", () => {
+    const manyTrades = makeTradesForTooltipCap(500)
+    const picked = [manyTrades[10]!, manyTrades[20]!, manyTrades[30]!]
+    const text = getAutomationTradesTooltipContent(
+      makeAutomation({
+        exchange_account_ids: ["acc-a"],
+        trades: picked.map((trade) => ({
+          id: trade.trade_id,
+          symbol: trade.symbol,
+        })),
+      }),
+      [
+        {
+          account_id: "acc-a",
+          account_trading: {
+            updated_at: "2026-01-01T00:00:00Z",
+            trades: manyTrades,
+          },
+        },
+      ],
+    )
+    expect(countTradeTooltipLines(text!)).toBe(3)
+    expect(text).toContain("ETH/USDT")
   })
 })
 

@@ -17,6 +17,8 @@
 import json
 import pytest
 import mock
+import dbos
+import octobot_protocol.models as protocol_models
 from octobot_node.models import Execution, Task, TaskStatus
 from octobot_node.scheduler.api import (
     get_node_status,
@@ -24,6 +26,8 @@ from octobot_node.scheduler.api import (
     get_all_tasks,
     get_task_result,
     get_tasks_export_results,
+    await_workflow_result_from_id,
+    retrieve_workflow_handle,
 )
 
 from tests.scheduler import temp_dbos_scheduler
@@ -488,6 +492,73 @@ class TestGetAllTasks:
         assert completed_exec.result_metadata == ""
 
 
+class TestGetAllTasksChildOctobotProcessEnrichment:
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_fetches_automation_states_only_for_active_tasks(self) -> None:
+        parent_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        pending_executions = [
+            Execution(id=parent_id, status=TaskStatus.PENDING, name="active-task"),
+        ]
+        completed_parent_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        completed_executions = [
+            Execution(id=completed_parent_id, status=TaskStatus.COMPLETED, name="done-task"),
+        ]
+        child_state = protocol_models.ChildOctoBotProcessState(
+            http_base_url="http://127.0.0.1:5002",
+            web_port=5002,
+            init_state_ok=True,
+        )
+        automation_state = protocol_models.AutomationState(
+            id=parent_id,
+            status=protocol_models.WorkflowStatus.RUNNING,
+            metadata=protocol_models.AutomationMetadata(name="active-task", description=""),
+            child_octobot_process=child_state,
+        )
+
+        mock_scheduler = mock.Mock()
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=pending_executions)
+        mock_scheduler.get_scheduled_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_results = mock.AsyncMock(return_value=completed_executions)
+        mock_scheduler.get_automation_states = mock.AsyncMock(return_value=[automation_state])
+
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            tasks = await get_all_tasks()
+
+        mock_scheduler.get_automation_states.assert_awaited_once()
+        call_args = mock_scheduler.get_automation_states.await_args
+        assert call_args.args[0] is None
+        assert call_args.kwargs["statuses"] == [
+            dbos.WorkflowStatusString.ENQUEUED,
+            dbos.WorkflowStatusString.PENDING,
+        ]
+        active_task = next(task for task in tasks if task.id == parent_id)
+        completed_task = next(task for task in tasks if task.id == completed_parent_id)
+        assert active_task.metadata is not None
+        assert active_task.metadata.child_octobot_process == child_state
+        assert completed_task.metadata is None
+
+    @pytest.mark.asyncio
+    async def test_get_all_tasks_skips_automation_states_when_all_tasks_completed(self) -> None:
+        completed_parent_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        completed_executions = [
+            Execution(id=completed_parent_id, status=TaskStatus.COMPLETED, name="done-task"),
+        ]
+
+        mock_scheduler = mock.Mock()
+        mock_scheduler.get_periodic_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_pending_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_scheduled_tasks = mock.AsyncMock(return_value=[])
+        mock_scheduler.get_results = mock.AsyncMock(return_value=completed_executions)
+        mock_scheduler.get_automation_states = mock.AsyncMock()
+
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            tasks = await get_all_tasks()
+
+        mock_scheduler.get_automation_states.assert_not_awaited()
+        assert tasks[0].metadata is None
+
+
 class TestGetTasksExportResults:
     """Tests for get_tasks_export_results function (batch decrypt-on-demand)."""
 
@@ -673,3 +744,37 @@ class TestGetTaskResult:
             result = await get_task_result(task_id)
 
             assert result["status"] == "pending or running"
+
+
+class TestAwaitWorkflowResultFromId:
+    @pytest.mark.asyncio
+    async def test_await_workflow_result_from_id(self, temp_dbos_scheduler) -> None:
+        workflow_result = {"updated_user_action": {"id": "ua-1", "status": "completed"}}
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_result = mock.AsyncMock(return_value=workflow_result)
+
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "retrieve_workflow_async",
+            mock.AsyncMock(return_value=mock_handle),
+        ) as mock_retrieve:
+            result = await await_workflow_result_from_id("workflow-1")
+
+        assert result == workflow_result
+        mock_retrieve.assert_awaited_once_with("workflow-1")
+        mock_handle.get_result.assert_awaited_once()
+
+
+class TestRetrieveWorkflowHandle:
+    @pytest.mark.asyncio
+    async def test_retrieve_workflow_handle(self, temp_dbos_scheduler) -> None:
+        mock_handle = mock.AsyncMock()
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "retrieve_workflow_async",
+            mock.AsyncMock(return_value=mock_handle),
+        ) as mock_retrieve:
+            handle = await retrieve_workflow_handle("workflow-2")
+
+        assert handle is mock_handle
+        mock_retrieve.assert_awaited_once_with("workflow-2")

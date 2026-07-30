@@ -28,20 +28,24 @@ _LOSING_ORDER_TYPES = [
 ]
 
 
-def trade_identity_key(trade: dict) -> typing.Optional[tuple[str, typing.Hashable]]:
+def trade_identity_key(trade: dict) -> typing.Optional[tuple[str, str]]:
     order_columns = trading_enums.ExchangeConstantsOrderColumns
     exchange_trade_id = trade.get(order_columns.EXCHANGE_TRADE_ID.value)
     if exchange_trade_id is not None:
-        return order_columns.EXCHANGE_TRADE_ID.value, exchange_trade_id
+        return order_columns.EXCHANGE_TRADE_ID.value, str(exchange_trade_id)
+    local_id = trade.get(order_columns.ID.value)
+    if local_id is not None:
+        # Align with to_protocol_trade, which maps missing exchange_trade_id onto trade_id.
+        return order_columns.EXCHANGE_TRADE_ID.value, str(local_id)
     exchange_order_exchange_id = trade.get(order_columns.EXCHANGE_ID.value)
     if exchange_order_exchange_id is not None:
-        return order_columns.EXCHANGE_ID.value, exchange_order_exchange_id
+        return order_columns.EXCHANGE_ID.value, str(exchange_order_exchange_id)
     return None
 
 
 def merge_trades_deduped(existing_trades: list[dict], new_trades: list[dict]) -> list[dict]:
     merged_trades = [dict(trade) for trade in existing_trades]
-    known_trade_keys: set[tuple[str, typing.Hashable]] = set()
+    known_trade_keys: set[tuple[str, str]] = set()
     for trade in merged_trades:
         identity_key = trade_identity_key(trade)
         if identity_key is not None:

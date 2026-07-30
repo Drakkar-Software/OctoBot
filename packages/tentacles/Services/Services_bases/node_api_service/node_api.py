@@ -18,15 +18,13 @@ import os
 import socket
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.network as network_module
 import octobot.configuration_manager as configuration_manager
 import octobot.enums as octobot_enums
 import octobot_services.constants as services_constants
 import octobot_services.services as services
 import octobot_node.scheduler
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
-
-
-LOCAL_HOST_IP = "127.0.0.1"
 
 
 class NodeApiService(services.AbstractService):
@@ -39,6 +37,7 @@ class NodeApiService(services.AbstractService):
         self.node_sqlite_file = None
         self.node_redis_url = None
         self.backend_cors_origins = None
+        self.node_external_host = None
 
     def get_fields_description(self):
         return {
@@ -47,6 +46,12 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_SQLITE_FILE: "SQLite database file path for the Node scheduler.",
             services_constants.NODE_REDIS_URL: "Redis URI for the Node scheduler (optional).",
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: "Allowed CORS origins for the Node API backend.",
+            services_constants.NODE_EXTERNAL_HOST: "External host (and port, if non-default) the sync/mobile "
+                                                    "client dials to reach this node. Required when this node "
+                                                    "sits behind a reverse proxy that presents a different Host "
+                                                    "header to the server than the one the client signed "
+                                                    "(e.g. tailscale serve), otherwise sync requests fail "
+                                                    "signature verification.",
             services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER: "When enabled, OctoBot will open the Node web UI "
                                                                 "in your browser upon startup.",
             commons_constants.CONFIG_ENABLED_OPTION: "Enable the Node API interface.",
@@ -59,6 +64,7 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_SQLITE_FILE: "tasks.db",
             services_constants.NODE_REDIS_URL: None,
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: services_constants.DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS,
+            services_constants.NODE_EXTERNAL_HOST: None,
             services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER: True,
             commons_constants.CONFIG_ENABLED_OPTION: False,
         }
@@ -109,14 +115,16 @@ class NodeApiService(services.AbstractService):
             self.node_sqlite_file = node_config.get(services_constants.NODE_SQLITE_FILE)
             self.node_redis_url = node_config.get(services_constants.NODE_REDIS_URL)
             self.backend_cors_origins = node_config.get(services_constants.BACKEND_CORS_ALLOWED_ORIGINS)
+            self.node_external_host = node_config.get(services_constants.NODE_EXTERNAL_HOST)
         except KeyError:
             self.node_api_url = None
             self.node_sqlite_file = None
             self.node_redis_url = None
             self.backend_cors_origins = None
+            self.node_external_host = None
         self._sync_config()
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
-            octobot_node.scheduler.initialize_scheduler()
+            await octobot_node.scheduler.initialize_scheduler()
             await internal_trading_signals.subscribe_internal_trading_signal_consumer()
 
     def _sync_config(self):
@@ -140,7 +148,7 @@ class NodeApiService(services.AbstractService):
 
     def _get_default_node_api_url(self):
         port = self._get_node_api_server_port()
-        return f"http://{LOCAL_HOST_IP}:{port}"
+        return f"http://{network_module.LOCAL_HOST_IP}:{port}"
 
     def _get_node_api_server_port(self) -> str:
         try:
@@ -161,7 +169,7 @@ class NodeApiService(services.AbstractService):
             self.logger.warning(
                 f"Impossible to find local node web interface url, using default instead: {err} ({err.__class__.__name__})"
             )
-        return f"{LOCAL_HOST_IP}:{port}"
+        return f"{network_module.LOCAL_HOST_IP}:{port}"
 
     def get_successful_startup_message(self):
         return f"Node API interface successfully initialized and accessible at: http://{self._get_node_api_server_url()}.", True
@@ -186,3 +194,14 @@ class NodeApiService(services.AbstractService):
 
     def get_backend_cors_origin_regex(self):
         return os.getenv(services_constants.ENV_BACKEND_CORS_ORIGIN_REGEX, "")
+
+    def get_node_external_host(self):
+        return os.getenv(services_constants.ENV_NODE_EXTERNAL_HOST, self.node_external_host)
+
+    def set_node_external_host(self, value):
+        self.node_external_host = value or None
+        self.save_service_config(
+            services_constants.CONFIG_NODE_API,
+            {services_constants.NODE_EXTERNAL_HOST: self.node_external_host},
+            update=True,
+        )

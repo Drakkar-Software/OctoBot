@@ -26,13 +26,13 @@ import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.scheduler
 import octobot_protocol.models as protocol_models
-import octobot_sync.server as _sync_server
-import octobot.community.authentication as _community_auth
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]
+    from tentacles.Services.Interfaces.node_api_interface.api.user_id import evm_to_user_id  # type: ignore[no-redef]
 except ImportError:
     from api.deps import CurrentUser  # type: ignore[no-redef]
+    from api.user_id import evm_to_user_id  # type: ignore[no-redef]
 
 router = APIRouter(tags=["debug"])
 
@@ -94,8 +94,69 @@ def _resolve_user_id(
     internal protocol and scheduler calls use the Starfish user_id.
     """
     evm_address = _resolve_wallet_address(current_user, wallet_address)
-    wallet = _community_auth.CommunityAuthentication.instance().get_wallet(evm_address)
-    return _sync_server.derive_user_id(wallet.private_key)
+    return evm_to_user_id(evm_address)
+
+
+def _extract_automation_parent_id(
+    user_action: protocol_models.UserAction,
+) -> typing.Optional[str]:
+    wrapper = user_action.configuration
+    if wrapper is None or wrapper.actual_instance is None:
+        return None
+    payload = wrapper.actual_instance
+    if isinstance(payload, protocol_models.StopAutomationConfiguration):
+        return payload.id
+    if isinstance(payload, protocol_models.RestartAutomationConfiguration):
+        return payload.id
+    if isinstance(payload, protocol_models.SignalAutomationConfiguration):
+        return payload.automation_id
+    return None
+
+
+async def _resolve_execution_user_id(
+    current_user: octobot_node.models.User,
+    wallet_address: typing.Optional[str],
+    user_action: protocol_models.UserAction,
+) -> str:
+    """Pick the Starfish user_id passed to the scheduler for this user action.
+
+    For stop/signal/restart, the executor resolves the active DBOS workflow using a
+    wallet-scoped lookup. Admins may act on another wallet's automation without passing
+    ``wallet_address``, but only after API-side authorization and owner resolution here.
+    """
+    # Explicit wallet override: admin-gated in _resolve_wallet_address.
+    if wallet_address is not None:
+        return _resolve_user_id(current_user, wallet_address)
+
+    caller_user_id = _resolve_user_id(current_user, None)
+    parent_automation_id = _extract_automation_parent_id(user_action)
+    if parent_automation_id is None:
+        return caller_user_id
+
+    scheduler = octobot_node.scheduler.SCHEDULER
+    # Caller-owned automation: keep the authenticated wallet's user_id.
+    active_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
+        caller_user_id,
+        parent_automation_id,
+    )
+    if active_workflow_ids:
+        return caller_user_id
+
+    # Cross-wallet: only superusers may resolve the automation owner without wallet filter.
+    if current_user.is_superuser:
+        owner_user_id = await scheduler.resolve_automation_owner_user_id(parent_automation_id)
+        if owner_user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Automation not found",
+            )
+        return owner_user_id
+
+    # Non-superuser and automation not under caller's wallet.
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Automation not found",
+    )
 
 
 def _ensure_debug_routes_enabled() -> None:
@@ -145,7 +206,7 @@ async def execute_user_action(
     _ensure_debug_routes_enabled()
     _ensure_scheduler_initialized()
     user_action = _parse_user_action_payload(payload)
-    resolved_user_id = _resolve_user_id(current_user, wallet_address)
+    resolved_user_id = await _resolve_execution_user_id(current_user, wallet_address, user_action)
     try:
         await user_actions_protocol.execute_user_action(user_action, resolved_user_id)
     except RuntimeError as error:

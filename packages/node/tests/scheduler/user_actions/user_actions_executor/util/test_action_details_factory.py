@@ -290,3 +290,61 @@ class TestCopyActionFactory:
             'copy_exchange_account(strategy_id="copied-strategy", '
             'reference_market="USDC", reference_account=\'\', account_copy_settings=\'{}\')'
         )
+
+
+class TestGenericProcessMetadataInitActionFactory:
+    def test_builds_metadata_only_apply_configuration(self):
+        strategy_reference = protocol_models.StrategyReference(
+            id="strategy-1",
+            version="1.0.0",
+            emit_signals=True,
+        )
+        init_action = action_details_factory_module.generic_process_metadata_init_action_factory(
+            automation_id="automation-1",
+            strategy_reference=strategy_reference,
+        )
+        assert init_action.id == "action_init"
+        assert init_action.action == flow_enums.ActionType.APPLY_CONFIGURATION.value
+        metadata = init_action.config["automation"]["metadata"]
+        assert metadata["automation_id"] == "automation-1"
+        assert metadata["strategy_id"] == "strategy-1"
+        assert metadata["strategy_version"] == "1.0.0"
+        assert metadata["emit_signals"] is True
+        assert "exchange_account_details" not in init_action.config
+
+
+class TestGenericProcessActionFactoryWithoutAccount:
+    def test_omits_exchange_auth_data_when_protocol_account_is_none(self):
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+        )
+        process_action = action_details_factory_module.generic_process_action_factory(
+            _init_action(),
+            generic_process_configuration,
+            None,
+            _WALLET_ADDRESS,
+            automation_id="automation-1",
+            strategy_id="strategy-1",
+        )
+        assert "exchange_auth_data" not in process_action.dsl_script
+        assert "user_id=" in process_action.dsl_script
+        assert "sync_profile_id=" in process_action.dsl_script
+
+
+class TestGenericProcessActionFactoryWithEmbeddedProfileData:
+    def test_uses_profile_data_keyword_when_strategy_id_is_omitted(self):
+        embedded_profile_data = {"profile_details": {"id": "embedded-profile"}}
+        generic_process_configuration = protocol_models.GenericProcessConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
+            profile_data=embedded_profile_data,
+        )
+        process_action = action_details_factory_module.generic_process_action_factory(
+            _init_action(),
+            generic_process_configuration,
+            None,
+            _WALLET_ADDRESS,
+            automation_id="automation-1",
+        )
+        assert "profile_data=" in process_action.dsl_script
+        assert "sync_profile_id=" not in process_action.dsl_script
+        assert process_action.dsl_script.startswith("run_octobot_process('automation-1', user_id=")

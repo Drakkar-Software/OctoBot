@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import os
 import threading
 import concurrent.futures as thread
 import traceback
@@ -22,6 +23,7 @@ import sys
 import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.logging as logging
 import octobot_commons.constants as commons_constants
+import octobot_commons.managed_child_process_registry as managed_child_process_registry
 
 import octobot.constants as constants
 import octobot.storage.process_bot_state_dumper as process_bot_state_dumper
@@ -59,8 +61,8 @@ class TaskManager:
     async def start_tools_tasks(self):
         task_list = []
 
-        if self.octobot.community_handler:
-            task_list.append(self.octobot.community_handler.start_community_task())
+        if self.octobot.activity_metrics:
+            task_list.append(self.octobot.activity_metrics.start_community_task())
 
         self.octobot.async_loop = self.async_loop
         self.ready = True
@@ -93,7 +95,7 @@ class TaskManager:
             while self.loop_forever_thread.is_alive():
                 self.loop_forever_thread.join(timeout=1)
 
-    def stop_tasks(self, stop_octobot=True):
+    def stop_tasks(self, stop_octobot=True, stop_managed_child_processes=False, force=False):
         self.logger.info("Stopping tasks...")
 
         async def stop_timeout(timeout):
@@ -101,7 +103,9 @@ class TaskManager:
 
         stop_coroutines = []
         if stop_octobot:
-            allowed_seconds_to_stop = 10
+            allowed_seconds_to_stop = constants.OCTOBOT_STOP_TIMEOUT_SECONDS
+            if stop_managed_child_processes:
+                stop_coroutines.append(self._graceful_stop_managed_child_processes())
             stop_coroutines.append(self.octobot.stop())
             stop_coroutines.append(stop_timeout(allowed_seconds_to_stop))
 
@@ -113,23 +117,26 @@ class TaskManager:
         self._process_bot_state_dump_task = None
 
         # close community session
-        if self.octobot.community_handler:
-            stop_coroutines.append(self.octobot.community_handler.stop_task())
+        if self.octobot.activity_metrics:
+            stop_coroutines.append(self.octobot.activity_metrics.stop_task())
 
         async def _await_timeouted_gather(tasks):
             # await this gather to be sure to complete each stop call or timeout
             try:
                 await asyncio.gather(*tasks)
-            except asyncio.exceptions.TimeoutError:
+            except TimeoutError:
                 self.logger.warning(f"Timeout while stopping tasks, forcing stop.")
                 raise
 
         if stop_coroutines:
             try:
                 asyncio_tools.run_coroutine_in_asyncio_loop(_await_timeouted_gather(stop_coroutines), self.async_loop)
-            except asyncio.exceptions.TimeoutError:
+            except TimeoutError:
                 self.logger.info(f"Remaining threads: {self._get_remaining_threads()}")
-                sys.exit(-1)
+                if force:
+                    os._exit(1)
+                else:
+                    sys.exit(-1)
         self.async_loop.stop()
         # ensure there is at least one element in the event loop tasks
         # not to block on base_event.py#self._selector.select(timeout) which prevents run_forever() from completing
@@ -137,6 +144,11 @@ class TaskManager:
 
         self.logger.debug(f"Remaining threads: {self._get_remaining_threads()}")
         self.logger.info("Tasks stopped.")
+
+    async def _graceful_stop_managed_child_processes(self):
+        await managed_child_process_registry.ManagedChildProcessRegistry.instance().graceful_stop_all(
+            timeout_seconds=constants.MANAGED_CHILD_GRACEFUL_STOP_TIMEOUT_SECONDS,
+        )
 
     def _get_remaining_threads(self):
         return [

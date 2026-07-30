@@ -34,6 +34,7 @@ class UserRootFolderProvider(singleton_class.Singleton):
     def __init__(self) -> None:
         """Initialize with no explicit root (``get_root`` falls back to ``USER_FOLDER``)."""
         self._root: typing.Optional[str] = None
+        self._readonly_reference_tentacles_path: typing.Optional[str] = None
 
     def get_root(self) -> str:
         """Return the configured user data root, or ``commons_constants.USER_FOLDER`` if unset."""
@@ -49,8 +50,17 @@ class UserRootFolderProvider(singleton_class.Singleton):
         """Return the profiles folder path under the user root."""
         return os.path.join(self.get_root(), commons_constants.PROFILES_FOLDER)
 
+    def configure_readonly_reference_tentacles_path(self, path: str) -> None:
+        """Use a shared reference tentacles config directory (e.g. master user root)."""
+        if not path or not str(path).strip():
+            self._readonly_reference_tentacles_path = None
+            return
+        self._readonly_reference_tentacles_path = os.path.normpath(path)
+
     def get_user_reference_tentacle_config_path(self) -> str:
         """Return the reference tentacles config directory under the user root."""
+        if self._readonly_reference_tentacles_path:
+            return self._readonly_reference_tentacles_path
         return os.path.join(self.get_root(), _REFERENCE_TENTACLES_CONFIG_DIR)
 
     def get_user_reference_tentacle_config_file_path(self) -> str:
@@ -76,6 +86,17 @@ def instance() -> UserRootFolderProvider:
 def get_user_root_folder() -> str:
     """Return the effective user data root from the singleton provider."""
     return UserRootFolderProvider.instance().get_root()
+
+
+def get_sync_data_root() -> str:
+    """
+    Master sync data root (StrategyProvider storage, sync profile runtime, master wallets).
+    Child automation processes set ENV_OCTOBOT_SYNC_DATA_ROOT to the master user/ path.
+    """
+    sync_data_root = os.getenv(commons_constants.ENV_OCTOBOT_SYNC_DATA_ROOT)
+    if sync_data_root:
+        return sync_data_root
+    return get_user_root_folder()
 
 
 def get_user_profiles_folder() -> str:

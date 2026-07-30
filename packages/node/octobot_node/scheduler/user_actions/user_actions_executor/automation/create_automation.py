@@ -155,26 +155,42 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         )
         inner_configuration = _get_strategy_configuration_instance(stored_strategy)
 
-        account_id = _get_single_account_id(automation_configuration)
-
-        try:
-            protocol_account = collection_providers.AccountProvider.instance().get_item(
-                self._user_id,
-                account_id,
-            )
-        except collection_errors.ItemNotFoundError as err:
-            raise node_errors.AccountNotFoundError(
-                f"Failed to load account {account_id!r} for address {self._user_id!r}: {err}"
-            ) from err
-
-        init_action = action_details_factory.init_action_factory(
-            automation_id=automation_id,
-            protocol_account=protocol_account,
-            strategy_reference=automation_configuration.strategy,
-            stored_strategy=stored_strategy,
-            user_id=self._user_id,
-            reference_market=stored_strategy.reference_market,
+        account_id = _resolve_automation_account_id(
+            automation_configuration,
+            inner_configuration,
         )
+
+        protocol_account = None
+        if account_id is not None:
+            try:
+                protocol_account = collection_providers.AccountProvider.instance().get_item(
+                    self._user_id,
+                    account_id,
+                )
+            except collection_errors.ItemNotFoundError as err:
+                raise node_errors.AccountNotFoundError(
+                    f"Failed to load account {account_id!r} for address {self._user_id!r}: {err}"
+                ) from err
+
+        if protocol_account is not None:
+            init_action = action_details_factory.init_action_factory(
+                automation_id=automation_id,
+                protocol_account=protocol_account,
+                strategy_reference=automation_configuration.strategy,
+                stored_strategy=stored_strategy,
+                user_id=self._user_id,
+                reference_market=stored_strategy.reference_market,
+            )
+        elif not _requires_account(inner_configuration):
+            # unlike others, generic process configuration does not require an account
+            init_action = action_details_factory.generic_process_metadata_init_action_factory(
+                automation_id=automation_id,
+                strategy_reference=automation_configuration.strategy,
+            )
+        else:
+            raise node_errors.InvalidAutomationConfigurationError(
+                "Create automation requires AutomationConfiguration.accounts to contain exactly one account reference."
+            )
 
         match inner_configuration:
             case protocol_models.TradingTentaclesConfiguration() as trading_configuration:
@@ -202,6 +218,8 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         protocol_account,
                         self._user_id,
                         automation_id=automation_id,
+                        strategy_id=stored_strategy.id,
+                        octobot_name=automation_configuration.name,
                     ),
                 ]
             case protocol_models.CopyConfiguration() as copy_configuration:
@@ -230,6 +248,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         stored_strategy.reference_market,
                         stored_strategy,
                         automation_id=automation_id,
+                        octobot_name=automation_configuration.name,
                     ),
                 ]
             case _:
@@ -254,8 +273,24 @@ def _get_create_automation_payload(
     return payload
 
 
-def _get_single_account_id(automation_configuration: protocol_models.AutomationConfiguration) -> str:
+def _requires_account(inner_configuration: typing.Any) -> bool:
+    return not isinstance(inner_configuration, protocol_models.GenericProcessConfiguration)
+
+
+def _resolve_automation_account_id(
+    automation_configuration: protocol_models.AutomationConfiguration,
+    inner_configuration: typing.Any,
+) -> str | None:
     accounts_list = list(automation_configuration.accounts or [])
+    if not _requires_account(inner_configuration):
+        if not accounts_list:
+            return None
+        if len(accounts_list) > 1:
+            raise node_errors.InvalidAutomationConfigurationError(
+                f"Create automation currently supports at most one account reference for "
+                f"generic_process strategies, got {len(accounts_list)}"
+            )
+        return accounts_list[0].id
     if not accounts_list:
         raise node_errors.InvalidAutomationConfigurationError(
             "Create automation requires AutomationConfiguration.accounts to contain exactly one account reference."

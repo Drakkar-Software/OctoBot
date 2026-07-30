@@ -88,6 +88,7 @@ def dump(
         )
         raise global_exception
 
+    logging.get_logger(LOGGER_NAME).info(f"Saving config to {config_file}")
     json_util.safe_dump(config, config_file)
 
 

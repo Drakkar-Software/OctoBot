@@ -188,6 +188,7 @@ from tentacles.Services.Interfaces.web_interface.models.configuration import (
     get_config_required_candles_count,
     get_sandbox_exchanges,
     get_distribution,
+    get_octobot_display_name,
 )
 from tentacles.Services.Interfaces.web_interface.models.dashboard import (
     parse_get_symbol,
@@ -231,6 +232,7 @@ from tentacles.Services.Interfaces.web_interface.models.profiles import (
     convert_to_live_profile,
     select_profile,
     get_profiles,
+    refresh_sync_profiles_for_display,
     get_profiles_tentacles_details,
     update_profile,
     remove_profile,
@@ -448,6 +450,7 @@ __all__ = [
     "convert_to_live_profile",
     "select_profile",
     "get_profiles",
+    "refresh_sync_profiles_for_display",
     "get_profiles_tentacles_details",
     "update_profile",
     "remove_profile",
@@ -512,6 +515,7 @@ __all__ = [
     "get_config_required_candles_count",
     "get_sandbox_exchanges",
     "get_distribution",
+    "get_octobot_display_name",
     "WebInterfaceTab",
     "save_market_making_configuration",
     "get_market_making_services",

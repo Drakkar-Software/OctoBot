@@ -104,3 +104,7 @@ class UnknownTradingTypeError(UserActionError):
 
 class AmbiguousTradingTypeError(UserActionError):
     """Raised when multiple trading types are found for an account."""
+
+
+class UnrestartableAutomationError(UserActionError):
+    """Raised when an automation cannot be restarted."""

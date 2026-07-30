@@ -43,6 +43,8 @@ def user_action_executor_factory(
             return user_actions_executor_package.EditAutomationActionExecutor
         case protocol_models.StopAutomationConfiguration:
             return user_actions_executor_package.StopAutomationActionExecutor
+        case protocol_models.RestartAutomationConfiguration:
+            return user_actions_executor_package.RestartAutomationActionExecutor
         case protocol_models.SignalAutomationConfiguration:
             return user_actions_executor_package.SignalAutomationActionExecutor
         case protocol_models.CreateAccountConfiguration:

@@ -25,29 +25,18 @@ import octobot_node.models
 import octobot_node.scheduler
 import octobot_node.scheduler.api
 import octobot_node.scheduler.tasks
-import octobot_sync.server as _sync_server
-import octobot.community.authentication as _community_auth
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]
+    from tentacles.Services.Interfaces.node_api_interface.api.user_id import evm_to_user_id  # type: ignore[no-redef]
 except ImportError:
     from api.deps import CurrentUser  # type: ignore[no-redef]
+    from api.user_id import evm_to_user_id  # type: ignore[no-redef]
 
 router = APIRouter(tags=["tasks"])
 logger = logging.get_logger(__name__)
 
 _MAX_PAGE_LIMIT = 500
-
-
-def _evm_to_user_id(evm_address: str) -> str:
-    """Translate an EVM wallet address (HTTP Basic login username) to the Starfish
-    user_id used throughout the sync-core and scheduler.
-
-    The HTTP API front uses EVM addresses for login; every internal scheduler API
-    uses the Starfish user_id.  This helper bridges the boundary.
-    """
-    wallet = _community_auth.CommunityAuthentication.instance().get_wallet(evm_address)
-    return _sync_server.derive_user_id(wallet.private_key)
 
 
 @router.post("/", response_model=tuple[int, int])
@@ -60,7 +49,7 @@ async def create_tasks(
     success_count = 0
     error_count = 0
     for task in tasks:
-        task.user_id = _evm_to_user_id(current_user.email)
+        task.user_id = evm_to_user_id(current_user.email)
         is_scheduled = await octobot_node.scheduler.tasks.trigger_task(task)
         if is_scheduled:
             success_count += 1
@@ -84,7 +73,7 @@ def get_server_public_keys(current_user: CurrentUser) -> dict:
 
 @router.get("/metrics")
 async def get_metrics(current_user: CurrentUser) -> typing.Any:
-    user_id_filter = None if current_user.is_superuser else _evm_to_user_id(current_user.email)
+    user_id_filter = None if current_user.is_superuser else evm_to_user_id(current_user.email)
     return await octobot_node.scheduler.api.get_task_metrics(user_id=user_id_filter)
 
 
@@ -95,7 +84,7 @@ async def get_tasks(
     limit: int = 100,
 ) -> typing.Any:
     limit = max(1, min(limit, _MAX_PAGE_LIMIT))
-    user_id_filter = None if current_user.is_superuser else _evm_to_user_id(current_user.email)
+    user_id_filter = None if current_user.is_superuser else evm_to_user_id(current_user.email)
     tasks_data = await octobot_node.scheduler.api.get_all_tasks(user_id=user_id_filter)
 
     start_idx = (page - 1) * limit
@@ -116,7 +105,7 @@ class ExportResultsBody(BaseModel):
 @router.post("/export-results", response_model=dict[str, dict[str, str]])
 async def export_results(body: ExportResultsBody, current_user: CurrentUser) -> dict[str, dict[str, str]]:
     """Batch-decrypt completed task results for export. One round-trip for all selected tasks."""
-    user_id_filter = None if current_user.is_superuser else _evm_to_user_id(current_user.email)
+    user_id_filter = None if current_user.is_superuser else evm_to_user_id(current_user.email)
     return await octobot_node.scheduler.api.get_tasks_export_results(
         body.task_ids, user_id_filter, user_rsa_public_key=body.user_rsa_public_key
     )
@@ -130,7 +119,7 @@ async def delete_tasks(
     requested_ids = [str(t) for t in taskIds]
     if not current_user.is_superuser:
         # Ownership check: only allow deleting own tasks
-        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(user_id=_evm_to_user_id(current_user.email))
+        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(user_id=evm_to_user_id(current_user.email))
         owned_ids = {t.id for t in owned_tasks if t.id is not None}
         unauthorized = [tid for tid in requested_ids if tid not in owned_ids]
         if unauthorized:
@@ -155,7 +144,7 @@ async def cancel_tasks(
     current_user: CurrentUser,
 ) -> list[str]:
     if not current_user.is_superuser:
-        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(user_id=_evm_to_user_id(current_user.email))
+        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(user_id=evm_to_user_id(current_user.email))
         owned_ids = {t.id for t in owned_tasks if t.id is not None}
         unauthorized = [tid for tid in body.task_ids if tid not in owned_ids]
         if unauthorized:

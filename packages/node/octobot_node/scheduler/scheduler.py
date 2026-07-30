@@ -16,13 +16,13 @@
 
 import contextlib
 import datetime
+import asyncio
 import dbos
 import json
 import logging
 import typing
 import decimal
 import enum
-import sqlalchemy
 
 import octobot_commons.logging
 import octobot_commons.timestamp_util as timestamp_util
@@ -32,23 +32,19 @@ import octobot_node.enums
 import octobot_node.models
 import octobot_node.constants
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.workflows_retention as workflows_retention
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.user_actions.user_action_util as user_action_util
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.protocol.automations as automations_protocol
 
-try:
-    from octobot import VERSION
-except ImportError:
-    VERSION = "unknown"
-
 DEFAULT_NAME = "octobot_node"
 
 _BASE_CONFIG = dbos.DBOSConfig(
     name=DEFAULT_NAME,
     max_executor_threads=octobot_node.config.settings.SCHEDULER_MAX_EXECUTOR_THREADS,
-    application_version=VERSION, # octobot version
+    application_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
     # executor_id=..., # a constant executor_id is required for DBOS workflow recovery: leave its init to DBOS
 )
 
@@ -69,6 +65,7 @@ class Scheduler:
     INSTANCE: dbos.DBOS = None # type: ignore
     AUTOMATION_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
     USER_ACTION_QUEUE: dbos.Queue = None # type: ignore
+    DBOS_CLEANUP_QUEUE: dbos.Queue = None # type: ignore
 
     @staticmethod
     def _wallet_filter_queue(queue_names: typing.Optional[list[str]]) -> octobot_node.enums.SchedulerQueues:
@@ -122,7 +119,7 @@ class Scheduler:
         if workflow_id := getattr(dbos.DBOS, "workflow_id", None):
             # group children workflows and parent workflows together
             # (a child workflow has the parent's workflow ID as a prefix)
-            return workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+            return workflows_util.normalize_parent_automation_id(workflow_id)
         return None
 
     def is_enabled(self) -> bool:
@@ -145,15 +142,23 @@ class Scheduler:
             self.logger.warning("Scheduler not initialized")
 
     def stop(self) -> None:
-        if self.INSTANCE:
-            self.INSTANCE.destroy()
-            self.logger.info("Scheduler stopped")
-        else:
-            self.logger.warning("Scheduler not initialized")
+        if not self.INSTANCE:
+            return
+        self.INSTANCE.destroy()
+        self.logger.info("Scheduler stopped")
+        Scheduler.INSTANCE = None
+        Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
+        Scheduler.USER_ACTION_QUEUE = None
+        Scheduler.DBOS_CLEANUP_QUEUE = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
         self.USER_ACTION_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value)
+        self.DBOS_CLEANUP_QUEUE = dbos.Queue(
+            name=octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
+            # only one cleanup workflow can run at a time
+            concurrency=1,
+        )
 
     async def get_periodic_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""
@@ -222,16 +227,16 @@ class Scheduler:
             user_id, statuses, [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output
         )
         parent_workflow_ids = set(
-            workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+            workflows_util.normalize_parent_automation_id(workflow_id)
             for workflow_id in workflow_ids
         )
         return [
             workflow
             for workflow in all_workflows
-            if workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH] in parent_workflow_ids
+            if workflows_util.normalize_parent_automation_id(workflow.workflow_id) in parent_workflow_ids
         ]
 
-    async def _get_parent_and_children_automation_workflow_ids(
+    async def get_parent_and_children_automation_workflow_ids(
         self,
         wallet_address: typing.Optional[str],
         workflow_ids: list[str],
@@ -290,6 +295,64 @@ class Scheduler:
         latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
         return [latest_workflow.workflow_id]
 
+    async def resolve_automation_owner_user_id(
+        self,
+        parent_id: str,
+    ) -> typing.Optional[str]:
+        """
+        Return the Starfish ``user_id`` that owns the active automation for ``parent_id``.
+
+        Unlike :meth:`resolve_active_automation_workflow_ids_for_parent_id`, this lookup is not
+        wallet-scoped so callers can resolve cross-wallet ownership after API-side authorization.
+        """
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
+            None,
+            [parent_id],
+            [
+                dbos.WorkflowStatusString.ENQUEUED,
+                dbos.WorkflowStatusString.PENDING,
+            ],
+            load_output=False,
+        )
+        if not matching_workflows:
+            return None
+        latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
+        task = workflows_util.get_automation_input_task(latest_workflow)
+        if task is None:
+            return None
+        return task.user_id
+
+    async def resolve_latest_terminal_automation_workflow_for_parent_id(
+        self,
+        user_id: typing.Optional[str],
+        parent_id: str,
+    ) -> typing.Optional[dbos.WorkflowStatus]:
+        """
+        Return the latest terminal (SUCCESS/ERROR) child workflow for ``parent_id`` that has
+        parseable automation output state, or None when no prior execution exists.
+        """
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
+            user_id,
+            [parent_id],
+            [
+                dbos.WorkflowStatusString.SUCCESS,
+                dbos.WorkflowStatusString.ERROR,
+            ],
+            load_output=True,
+        )
+        if not matching_workflows:
+            return None
+        sorted_workflows = sorted(
+            matching_workflows,
+            key=workflows_util._automation_child_workflow_sort_key,
+            reverse=True,
+        )
+        for workflow_status in sorted_workflows:
+            workflow_output = workflows_util.parse_automation_workflow_output(workflow_status)
+            if workflow_output is not None and workflow_output.state:
+                return workflow_status
+        return None
+
     async def _get_latest_workflow_for_each_automation(
         self,
         user_id: typing.Optional[str],
@@ -307,7 +370,7 @@ class Scheduler:
 
     async def cancel_workflows(self, workflow_ids: list[str]) -> list[str]:
         try:
-            to_cancel = await self._get_parent_and_children_automation_workflow_ids(
+            to_cancel = await self.get_parent_and_children_automation_workflow_ids(
                 None,
                 workflow_ids,
                 [
@@ -322,37 +385,18 @@ class Scheduler:
             self.logger.exception(e, True, f"Failed to cancel workflows {workflow_ids}: {e}")
             return []
     
-    async def _get_workflows_to_delete(self, workflow_ids: list[str]) -> list[str]:
-        automation_workflows = await self._get_parent_and_children_automation_workflow_ids(
-            None,
-            workflow_ids,
-            [
-                dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR,
-                dbos.WorkflowStatusString.CANCELLED, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED
-            ]
-        )
-        user_action_workflows = await self._get_user_action_workflow_ids(
-            None,
-            workflow_ids,
-            [
-                dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR,
-                dbos.WorkflowStatusString.CANCELLED, dbos.WorkflowStatusString.MAX_RECOVERY_ATTEMPTS_EXCEEDED
-            ],
-            load_output=True,
-        )
-        return automation_workflows + user_action_workflows
-
     async def delete_workflows(self, to_delete_workflow_ids: list[str]):
-        self.logger.info(f"Deleting {len(to_delete_workflow_ids)} workflows")
-        merged_to_delete_workflow_ids = await self._get_workflows_to_delete(to_delete_workflow_ids)
+        merged_to_delete_workflow_ids = await workflows_retention.get_workflows_to_delete(
+            self,
+            to_delete_workflow_ids,
+        )
         self.logger.info(
             f"Including {len(merged_to_delete_workflow_ids) - len(to_delete_workflow_ids)} associated children workflows to delete"
         )
-        await self.INSTANCE.delete_workflows_async(merged_to_delete_workflow_ids, delete_children=False)
-        self.logger.info(f"Vacuuming database")
-        with self.INSTANCE._sys_db.engine.begin() as conn:
-            conn.execute(sqlalchemy.text("VACUUM"))
-        self.logger.info(f"Database vacuum completed")
+        await workflows_retention.delete_workflows_and_vacuum(
+            self.INSTANCE,
+            merged_to_delete_workflow_ids,
+        )
 
     async def get_scheduled_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""
@@ -553,16 +597,20 @@ class Scheduler:
         else:
             return default_value
 
-    async def get_automation_states(self, user_id: typing.Optional[str]) -> list[protocol_models.AutomationState]:
+    async def get_automation_states(
+        self,
+        user_id: typing.Optional[str],
+        statuses: typing.Optional[list[dbos.WorkflowStatusString]] = None,
+    ) -> list[protocol_models.AutomationState]:
         workflows = await self._get_latest_workflow_for_each_automation(
-            user_id, None, load_output=True
+            user_id, statuses, load_output=True
         )
         sources: list[automations_protocol.AutomationStateSource] = []
         for workflow in workflows:
             workflow_output = workflows_util.parse_automation_workflow_output(workflow)
             task = workflows_util.get_resolved_automation_task(workflow)
             if task:
-                task.id = workflow.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
+                task.id = workflows_util.normalize_parent_automation_id(workflow.workflow_id)
                 sources.append(automations_protocol.AutomationStateSource(
                     task=task,
                     workflow_status=workflow.status,

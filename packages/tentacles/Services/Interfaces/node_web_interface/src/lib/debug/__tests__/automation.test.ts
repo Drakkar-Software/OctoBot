@@ -5,13 +5,16 @@ import {
   formatActionProgress,
   getActionExecutionStats,
   getAutomationActions,
+  getAutomationDebugStatusDisplay,
   getAutomationErrorTooltipLines,
   getAutomationUpdatedAt,
   getLatestExecutedAction,
   getNextPendingAction,
   getRunningAction,
   isActionExecuted,
+  isRestartableAutomation,
   isRunningAutomation,
+  isRunningAutomationWithDegradedError,
   signalTypeRequiresPayload,
   validateAutomationCanReceiveSignal,
 } from "@/lib/debug/automation"
@@ -41,6 +44,26 @@ describe("isRunningAutomation", () => {
       true,
     )
     expect(isRunningAutomation(makeAutomation({ status: "completed" }))).toBe(
+      false,
+    )
+  })
+})
+
+describe("isRestartableAutomation", () => {
+  it("returns true for completed and failed statuses", () => {
+    expect(isRestartableAutomation(makeAutomation({ status: "completed" }))).toBe(
+      true,
+    )
+    expect(isRestartableAutomation(makeAutomation({ status: "failed" }))).toBe(
+      true,
+    )
+  })
+
+  it("returns false for running and pending statuses", () => {
+    expect(isRestartableAutomation(makeAutomation({ status: "running" }))).toBe(
+      false,
+    )
+    expect(isRestartableAutomation(makeAutomation({ status: "pending" }))).toBe(
       false,
     )
   })
@@ -176,6 +199,43 @@ describe("getAutomationErrorTooltipLines", () => {
         }),
       ),
     ).toEqual(["error: timeout", "error_message: deadline exceeded"])
+  })
+})
+
+describe("isRunningAutomationWithDegradedError", () => {
+  it("returns true for running automations with error fields", () => {
+    expect(
+      isRunningAutomationWithDegradedError(
+        makeAutomation({
+          error: "not_enough_funds",
+          error_message: "Insufficient funds",
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it("returns false for running automations without errors", () => {
+    expect(isRunningAutomationWithDegradedError(makeAutomation())).toBe(false)
+  })
+})
+
+describe("getAutomationDebugStatusDisplay", () => {
+  it("returns orange running-with-error display", () => {
+    expect(
+      getAutomationDebugStatusDisplay(
+        makeAutomation({
+          error: "not_enough_funds",
+          error_message: "Insufficient funds",
+        }),
+      ),
+    ).toEqual({ emoji: "🟠", label: "Running (error)" })
+  })
+
+  it("returns green display for healthy running automations", () => {
+    expect(getAutomationDebugStatusDisplay(makeAutomation())).toEqual({
+      emoji: "🟢",
+      label: "Running",
+    })
   })
 })
 

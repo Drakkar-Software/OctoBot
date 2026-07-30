@@ -1,0 +1,595 @@
+#  Drakkar-Software OctoBot-Node
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+
+import datetime
+import json
+import mock
+import pytest
+import dbos
+
+import octobot_protocol.models as protocol_models
+import octobot_node.enums
+import octobot_node.models
+import octobot_node.scheduler.scheduler as scheduler_module
+import octobot_node.scheduler.workflows.params as params
+import octobot_node.scheduler.workflows_retention as workflows_retention
+
+from tests.scheduler import temp_dbos_scheduler
+
+_AUTOMATION_WORKFLOW_NAME = "execute_automation"
+_DBOS_CLEANUP_WORKFLOW_NAME = "dbos_cleanup"
+
+_PARENT_WORKFLOW_ID_A = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
+_PARENT_WORKFLOW_ID_B = "852df282-edb0-51cf-94ed-c554d1fbf1f3"
+_PARENT_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+
+
+def _child_workflow_id(parent_id: str, child_index: int) -> str:
+    if child_index == 0:
+        return parent_id
+    return f"{parent_id}_{child_index}"
+
+
+def _workflow_status_row(
+    *,
+    workflow_id: str,
+    updated_at: int = 0,
+    status: str = dbos.WorkflowStatusString.SUCCESS.value,
+    name: str = _AUTOMATION_WORKFLOW_NAME,
+) -> mock.Mock:
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = workflow_id
+    workflow_status.updated_at = updated_at
+    workflow_status.status = status
+    workflow_status.name = name
+    return workflow_status
+
+
+def _build_mock_workflow_status(
+    task: octobot_node.models.Task,
+    encrypted_state: str,
+    state_metadata: str,
+    workflow_id: str = _PARENT_ID,
+) -> mock.Mock:
+    output = params.AutomationWorkflowOutput(state=encrypted_state, state_metadata=state_metadata)
+    inputs = params.AutomationWorkflowInputs(task=task, execution_time=0)
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = workflow_id
+    workflow_status.name = "test-task"
+    workflow_status.status = dbos.WorkflowStatusString.SUCCESS.value
+    workflow_status.output = json.dumps(output.to_dict())
+    workflow_status.input = {"args": [inputs.to_dict()], "kwargs": {}}
+    workflow_status.created_at = None
+    workflow_status.updated_at = None
+    return workflow_status
+
+
+def _build_user_action_workflow_with_output(
+    user_action_id: str,
+    workflow_id: str,
+    user_id: str = "0xw1",
+) -> mock.Mock:
+    user_action = protocol_models.UserAction(
+        id=user_action_id,
+        status=protocol_models.UserActionStatus.COMPLETED,
+        configuration=None,
+    )
+    output_payload = params.UserActionWorkflowOutput(
+        user_id=user_id,
+        updated_user_action=user_action,
+    ).to_dict(include_default_values=False)
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = workflow_id
+    workflow_status.input = {"args": [], "kwargs": {}}
+    workflow_status.output = output_payload
+    return workflow_status
+
+
+def _make_scheduler_with_mock_instance() -> tuple[scheduler_module.Scheduler, mock.AsyncMock]:
+    sched = scheduler_module.Scheduler()
+    sched.INSTANCE = mock.AsyncMock()
+    return sched, sched.INSTANCE
+
+
+class TestIsTerminalWorkflow:
+    def test_returns_true_for_terminal_status(self):
+        workflow_status = _workflow_status_row(
+            workflow_id="wf-terminal",
+            status=dbos.WorkflowStatusString.SUCCESS.value,
+        )
+        assert workflows_retention.is_terminal_workflow(workflow_status) is True
+
+    def test_returns_false_for_non_terminal_status(self):
+        workflow_status = _workflow_status_row(
+            workflow_id="wf-pending",
+            status=dbos.WorkflowStatusString.PENDING.value,
+        )
+        assert workflows_retention.is_terminal_workflow(workflow_status) is False
+
+
+class TestGetOutdatedAutomationExecutionDeletions:
+    def test_keeps_latest_two_and_deletes_older_terminal_executions(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        cutoff_ms = now_ms - int(retention_seconds * 1000)
+        workflows = [
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+                updated_at=cutoff_ms - 2,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 1),
+                updated_at=cutoff_ms - 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 2),
+                updated_at=cutoff_ms + 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 3),
+                updated_at=cutoff_ms + 2,
+            ),
+        ]
+
+        deletions = workflows_retention.get_outdated_automation_execution_deletions(
+            workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deletions == {
+            _PARENT_WORKFLOW_ID_A: [
+                _child_workflow_id(_PARENT_WORKFLOW_ID_A, 1),
+                _child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+            ],
+        }
+
+    def test_skips_non_terminal_executions(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        old_updated_at = now_ms - int(retention_seconds * 1000) - 1
+        workflows = [
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+                updated_at=old_updated_at,
+                status=dbos.WorkflowStatusString.PENDING.value,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 1),
+                updated_at=old_updated_at,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 2),
+                updated_at=old_updated_at,
+            ),
+        ]
+
+        deletions = workflows_retention.get_outdated_automation_execution_deletions(
+            workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deletions == {}
+
+    def test_does_not_delete_recent_terminal_executions_beyond_keep_count(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        recent_updated_at = now_ms - 1
+        workflows = [
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+                updated_at=recent_updated_at,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 1),
+                updated_at=recent_updated_at + 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 2),
+                updated_at=recent_updated_at + 2,
+            ),
+        ]
+
+        deletions = workflows_retention.get_outdated_automation_execution_deletions(
+            workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deletions == {}
+
+    def test_isolates_deletions_per_parent(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        old_updated_at = now_ms - int(retention_seconds * 1000) - 1
+        workflows = [
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+                updated_at=old_updated_at,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 1),
+                updated_at=old_updated_at + 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 2),
+                updated_at=old_updated_at + 2,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_B, 0),
+                updated_at=old_updated_at,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_B, 1),
+                updated_at=old_updated_at + 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_B, 2),
+                updated_at=old_updated_at + 2,
+            ),
+        ]
+
+        deletions = workflows_retention.get_outdated_automation_execution_deletions(
+            workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert set(deletions.keys()) == {_PARENT_WORKFLOW_ID_A, _PARENT_WORKFLOW_ID_B}
+        assert len(deletions[_PARENT_WORKFLOW_ID_A]) == 1
+        assert len(deletions[_PARENT_WORKFLOW_ID_B]) == 1
+
+
+class TestGetOutdatedDbosCleanupExecutionWorkflowIds:
+    def test_deletes_old_terminal_cleanup_runs(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        old_updated_at = now_ms - int(retention_seconds * 1000) - 1
+        cleanup_workflows = [
+            _workflow_status_row(
+                workflow_id="cleanup-run-1",
+                updated_at=old_updated_at,
+                name=_DBOS_CLEANUP_WORKFLOW_NAME,
+            ),
+            _workflow_status_row(
+                workflow_id="cleanup-run-2",
+                updated_at=now_ms - 1,
+                name=_DBOS_CLEANUP_WORKFLOW_NAME,
+            ),
+        ]
+
+        deleted_ids = workflows_retention.get_outdated_dbos_cleanup_execution_workflow_ids(
+            cleanup_workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deleted_ids == ["cleanup-run-1"]
+
+    def test_skips_non_terminal_cleanup_runs(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        old_updated_at = now_ms - int(retention_seconds * 1000) - 1
+        cleanup_workflows = [
+            _workflow_status_row(
+                workflow_id="cleanup-run-pending",
+                updated_at=old_updated_at,
+                status=dbos.WorkflowStatusString.PENDING.value,
+                name=_DBOS_CLEANUP_WORKFLOW_NAME,
+            ),
+        ]
+
+        deleted_ids = workflows_retention.get_outdated_dbos_cleanup_execution_workflow_ids(
+            cleanup_workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deleted_ids == []
+
+
+class TestGetWorkflowsToDelete:
+    @pytest.mark.asyncio
+    async def test_merges_automation_and_user_action_ids(self):
+        automation_task = octobot_node.models.Task(
+            id=_PARENT_ID,
+            name="automation-task",
+            content="encrypted_content",
+            content_metadata="meta",
+            type="execute_actions",
+        )
+        automation_workflow = _build_mock_workflow_status(
+            automation_task,
+            "encrypted_state",
+            None,
+            workflow_id=_PARENT_ID,
+        )
+        user_action_workflow = _build_user_action_workflow_with_output("ua-delete", "wf-ua-delete")
+
+        async def list_workflows_side_effect(**kwargs):
+            queue_name = kwargs.get("queue_name")
+            if queue_name == [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value]:
+                return [automation_workflow]
+            if queue_name == [octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value]:
+                return [user_action_workflow]
+            return []
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=list_workflows_side_effect)
+        result = await workflows_retention.get_workflows_to_delete(sched, [_PARENT_ID, "ua-delete"])
+        assert result == [_PARENT_ID, "wf-ua-delete"]
+
+
+class TestVacuumDbosSystemDatabase:
+    def test_executes_vacuum_on_system_database(self):
+        mock_instance = mock.Mock()
+        mock_connection = mock.Mock()
+        mock_engine = mock.Mock()
+        mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
+        mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
+        mock_instance._sys_db.engine = mock_engine
+        mock_logger = mock.Mock()
+
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            workflows_retention.vacuum_dbos_system_database(mock_instance)
+
+        mock_connection.execute.assert_called_once()
+        assert mock_connection.execute.call_args[0][0].text == "VACUUM"
+        mock_logger.info.assert_any_call("Vacuuming database")
+        mock_logger.info.assert_any_call("Database vacuum completed")
+
+
+class TestDeleteWorkflowsAndVacuum:
+    @pytest.mark.asyncio
+    async def test_deletes_workflows_then_vacuums(self):
+        mock_instance = mock.Mock()
+        mock_instance.delete_workflows_async = mock.AsyncMock()
+        mock_connection = mock.Mock()
+        mock_engine = mock.Mock()
+        mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
+        mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
+        mock_instance._sys_db.engine = mock_engine
+        mock_logger = mock.Mock()
+        workflow_ids = ["wf-a", "wf-b"]
+
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            await workflows_retention.delete_workflows_and_vacuum(
+                mock_instance,
+                workflow_ids,
+            )
+
+        mock_instance.delete_workflows_async.assert_awaited_once_with(
+            workflow_ids,
+            delete_children=False,
+        )
+        mock_connection.execute.assert_called_once()
+        assert mock_connection.execute.call_args[0][0].text == "VACUUM"
+        mock_logger.info.assert_any_call("Deleting %s workflows", len(workflow_ids))
+        mock_logger.info.assert_any_call("Vacuuming database")
+        mock_logger.info.assert_any_call("Database vacuum completed")
+
+
+class TestCleanupOutdatedAutomationExecutions:
+    @pytest.mark.asyncio
+    async def test_returns_per_automation_summary_and_deletes_once(self, temp_dbos_scheduler):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        cutoff_ms = now_ms - int(retention_seconds * 1000)
+        automation_workflows = [
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+                updated_at=cutoff_ms - 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 1),
+                updated_at=cutoff_ms + 1,
+            ),
+            _workflow_status_row(
+                workflow_id=_child_workflow_id(_PARENT_WORKFLOW_ID_A, 2),
+                updated_at=cutoff_ms + 2,
+            ),
+        ]
+        cleanup_workflows = [
+            _workflow_status_row(
+                workflow_id="cleanup-run-old",
+                updated_at=cutoff_ms - 1,
+                name=_DBOS_CLEANUP_WORKFLOW_NAME,
+            ),
+        ]
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            side_effect=[automation_workflows, cleanup_workflows]
+        )
+        mock_instance.delete_workflows_async = mock.AsyncMock()
+        mock_engine = mock.Mock()
+        mock_connection = mock.Mock()
+        mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
+        mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
+        mock_instance._sys_db.engine = mock_engine
+        sched.INSTANCE = mock_instance
+        mock_logger = mock.Mock()
+
+        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch.object(
+            workflows_retention,
+            "AUTOMATION_EXECUTION_RETENTION_SECONDS",
+            retention_seconds,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
+
+        assert summary == {
+            "deleted_by_automation": {_PARENT_WORKFLOW_ID_A: 1},
+            "deleted_cleanup_executions": 1,
+            "total_deleted": 2,
+        }
+        mock_instance.delete_workflows_async.assert_awaited_once_with(
+            [
+                _child_workflow_id(_PARENT_WORKFLOW_ID_A, 0),
+                "cleanup-run-old",
+            ],
+            delete_children=False,
+        )
+        mock_connection.execute.assert_called_once()
+        mock_logger.info.assert_any_call(
+            "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs",
+            2,
+            1,
+            1,
+        )
+        mock_logger.info.assert_any_call("DBOS cleanup summary: %s", summary)
+
+    @pytest.mark.asyncio
+    async def test_skips_delete_and_vacuum_when_nothing_to_delete(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], []])
+        mock_instance.delete_workflows_async = mock.AsyncMock()
+        mock_instance._sys_db.engine = mock.Mock()
+        sched.INSTANCE = mock_instance
+        mock_logger = mock.Mock()
+
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
+
+        assert summary == {
+            "deleted_by_automation": {},
+            "deleted_cleanup_executions": 0,
+            "total_deleted": 0,
+        }
+        mock_instance.delete_workflows_async.assert_not_called()
+        mock_instance._sys_db.engine.begin.assert_not_called()
+        mock_logger.info.assert_called_once_with("DBOS cleanup summary: %s", summary)
+
+
+class TestShouldSkipRetentionCleanupForScheduledTime:
+    @pytest.mark.asyncio
+    async def test_returns_true_when_scheduler_not_initialized(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        sched.INSTANCE = None
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc),
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_cleanup_never_ran(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc),
+        )
+
+        assert result is False
+        mock_instance.list_workflows_async.assert_awaited_once_with(
+            name="dbos_cleanup",
+            status=[dbos.WorkflowStatusString.SUCCESS.value],
+            sort_desc=True,
+            limit=1,
+            load_input=False,
+            load_output=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_true_when_latest_cleanup_is_newer_than_scheduled_time(self, temp_dbos_scheduler):
+        scheduled_time = datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc)
+        latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.status = dbos.WorkflowStatusString.SUCCESS.value
+        latest_cleanup.updated_at = int(datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        latest_cleanup.created_at = 0
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[latest_cleanup])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_latest_cleanup_is_older_than_scheduled_time(self, temp_dbos_scheduler):
+        scheduled_time = datetime.datetime(2025, 1, 2, tzinfo=datetime.timezone.utc)
+        latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.status = dbos.WorkflowStatusString.SUCCESS.value
+        latest_cleanup.updated_at = int(datetime.datetime(2025, 1, 1, tzinfo=datetime.timezone.utc).timestamp() * 1000)
+        latest_cleanup.created_at = 0
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[latest_cleanup])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_latest_non_terminal_cleanup_is_newer_than_scheduled_time(
+        self,
+        temp_dbos_scheduler,
+    ):
+        scheduled_time = datetime.datetime(2026, 7, 15, 0, 0, 0, tzinfo=datetime.timezone.utc)
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_latest_terminal_cleanup_is_older_than_backfilled_slot(
+        self,
+        temp_dbos_scheduler,
+    ):
+        scheduled_time = datetime.datetime(2026, 7, 15, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        latest_cleanup = mock.Mock(spec=dbos.WorkflowStatus)
+        latest_cleanup.status = dbos.WorkflowStatusString.SUCCESS.value
+        latest_cleanup.updated_at = int(
+            datetime.datetime(2026, 7, 7, 20, 16, 40, tzinfo=datetime.timezone.utc).timestamp() * 1000,
+        )
+        latest_cleanup.created_at = 0
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[latest_cleanup])
+        sched.INSTANCE = mock_instance
+
+        result = await workflows_retention.should_skip_retention_cleanup_for_scheduled_time(
+            sched,
+            scheduled_time,
+        )
+
+        assert result is False

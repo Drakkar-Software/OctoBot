@@ -638,6 +638,29 @@ class DCATradingModeProducer(trading_modes.AbstractTradingModeProducer):
                         # unexpected error, raise
                         raise
 
+    async def manual_trigger(
+        self,
+        matrix_id: str,
+        cryptocurrency: str,
+        symbol: str,
+        time_frame,
+        trigger_source: str,
+    ):
+        if self.trading_mode.trigger_mode is TriggerMode.TIME_BASED:
+            await self.trigger_dca(
+                cryptocurrency=cryptocurrency,
+                symbol=symbol or self.trading_mode.symbol,
+                state=trading_enums.EvaluatorStates.VERY_LONG,
+            )
+            return
+        await super().manual_trigger(
+            matrix_id=matrix_id,
+            cryptocurrency=cryptocurrency,
+            symbol=symbol,
+            time_frame=time_frame,
+            trigger_source=trigger_source,
+        )
+
     def _should_trigger_init_entry(self):
         if self.trading_mode.enable_initialization_entry:
             return self.trading_mode.are_initialization_orders_pending
@@ -1058,12 +1081,14 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
             DCATradingMode.TRADING_PAIRS, commons_enums.UserInputTypes.MULTIPLE_OPTIONS,
             default_config[DCATradingMode.TRADING_PAIRS], inputs,
             options=[],
+            other_schema_values={"minItems": 0},
             title="Traded pairs: symbols to apply DCA on.",
         )
         self.UI.user_input(
             DCATradingMode.TIME_FRAMES, commons_enums.UserInputTypes.MULTIPLE_OPTIONS,
             default_config[DCATradingMode.TIME_FRAMES], inputs,
             options=[time_frame.value for time_frame in commons_enums.TimeFrames],
+            other_schema_values={"minItems": 0},
             title="Required time frames: time frames to apply DCA on.",
         )
 
@@ -1128,6 +1153,8 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
         return list_util.deduplicate([symbol for symbol in trading_pairs if symbol])
 
     def get_time_before_next_execution(self) -> float:
+        if self.trigger_mode is TriggerMode.TIME_BASED:
+            return self.minutes_before_next_buy * commons_constants.MINUTE_TO_SECONDS
         configured_time_frames = self.trading_config.get(self.TIME_FRAMES) or []
         if configured_time_frames:
             sorted_time_frames = time_frame_manager.sort_time_frames(configured_time_frames)

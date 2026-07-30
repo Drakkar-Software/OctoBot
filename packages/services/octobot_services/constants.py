@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
 
 # Config
 CONFIG_CATEGORY_SERVICES = "services"
@@ -86,8 +87,10 @@ NODE_API_URL = "node-api-url"
 NODE_SQLITE_FILE = "node-sqlite-file"
 NODE_REDIS_URL = "node-redis-url"
 BACKEND_CORS_ALLOWED_ORIGINS = "backend-cors-allowed-origins"
+NODE_EXTERNAL_HOST = "node-external-host"
 ENV_NODE_SQLITE_FILE = "ENV_NODE_SQLITE_FILE"
 ENV_NODE_POSTGRES_URL = "ENV_NODE_POSTGRES_URL"
+ENV_NODE_EXTERNAL_HOST = "NODE_EXTERNAL_HOST"
 
 # Webhook
 CONFIG_WEBHOOK = "webhook"
@@ -253,3 +256,5 @@ PAID_FEES_STR = "Paid fees"
 # external resources
 EXTERNAL_RESOURCE_CURRENT_USER_FORM = "current-user-feedback-form"
 EXTERNAL_RESOURCE_PUBLIC_ANNOUNCEMENTS = "public-announcements"
+
+SERVICE_STOP_TIMEOUT_SECONDS = float(os.getenv("OCTOBOT_SERVICE_STOP_TIMEOUT_SECONDS", "5.0"))

@@ -35,7 +35,7 @@ def minimal_strategy(
 ) -> protocol_models.Strategy:
     configuration = protocol_models.GenericProcessConfiguration(
         configuration_type=protocol_models.ActionConfigurationType.GENERIC_PROCESS,
-        profile_data={},
+        profile_data={"profile_details": {"id": strategy_id}},
     )
     return protocol_models.Strategy(
         id=strategy_id,

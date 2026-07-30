@@ -129,3 +129,23 @@ def test_wallet_export_success(admin_client, mock_auth):
     data = resp.json()
     assert data["address"] == ADMIN_ADDRESS
     assert data["private_key"] == "0xdeadbeef"
+
+
+def test_setup_local_network_address(client):
+    with mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.network.get_local_network_ip",
+        return_value="192.168.0.10",
+    ):
+        resp = client.get("/api/v1/setup/local-network-address")
+    assert resp.status_code == 200
+    assert resp.json() == {"local_network_ip": "192.168.0.10"}
+
+
+def test_setup_vpn_network_address(client):
+    with mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.network.get_vpn_network_ip",
+        return_value="100.64.0.1",
+    ):
+        resp = client.get("/api/v1/setup/vpn-network-address")
+    assert resp.status_code == 200
+    assert resp.json() == {"vpn_network_ip": "100.64.0.1"}

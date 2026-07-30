@@ -90,3 +90,11 @@ class ActionDependencyNotFoundError(ActionDependencyError):
 
 class MissingDSLExecutorDependencyError(DSLExecutorError):
     """raise when a DSL executor dependency is missing"""
+
+
+class PriorityActionError(AutomationActionError):
+    """raise when a priority action error occurs"""
+
+
+class PendingPriorityActionsSkippedError(PriorityActionError):
+    """raise when supplied priority actions were not executed and DAG actions would run instead"""

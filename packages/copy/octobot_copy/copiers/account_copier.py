@@ -120,6 +120,12 @@ class AccountCopier:
             self._orders_synchronizer.abort_mirrored_orphan_grace()
             await self._orders_synchronizer.cancel_orders_pending_synchronization(None)
             await self._copier_exchange_interface.portfolio.refresh_portfolio()
+            reconciled_count = await self._orders_synchronizer.reconcile_open_orders_with_reference()
+            if reconciled_count:
+                self._get_logger().info(
+                    f"Reconciled {reconciled_count} stray open order(s) after grace-abort portfolio refresh "
+                    f"on [{self._copier_exchange_interface.exchange_name}]"
+                )
 
     async def _synchronize_reference_open_orders(self) -> list[trading_personal_data.Order]:
         return await self._orders_synchronizer.synchronize()

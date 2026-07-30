@@ -13,6 +13,9 @@
     "accepted_terms": {
       "type": "boolean"
     },
+    "octobot_name": {
+      "type": "string"
+    },
     "distribution": {
       "type": "string"
     },
@@ -31,6 +34,9 @@
       "type": "object",
       "properties": {
         "bot_id": {
+          "type": "string"
+        },
+        "local_data_identifier": {
           "type": "string"
         },
         "supabase.auth.token": {
@@ -74,7 +80,7 @@
         "enabled": {
           "type": "boolean"
         },
-        "metrics-bot-id": {
+        "activity_bot_id": {
           "type": "string"
         }
       }

@@ -15,7 +15,9 @@
 #  License along with this library.
 import typing
 
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operator as dsl_interpreter_operator
+import octobot_commons.dsl_interpreter.operator_parameter as dsl_interpreter_operator_parameter
 
 
 class UnaryOperator(
@@ -25,6 +27,8 @@ class UnaryOperator(
     Base class for unary operators.
     Unary operators have one operand.
     """
+
+    CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value
 
     def __init__(
         self,
@@ -36,11 +40,19 @@ class UnaryOperator(
         """
         super().__init__(operand, **kwargs)
 
+    @classmethod
+    def get_return_values(
+        cls,
+    ) -> list[dsl_interpreter_operator_parameter.OperatorParameter]:
+        return cls.result_return_value(
+            commons_enums.DslValueType.ANY.value,
+            description="Unary operation result",
+        )
+
     def get_computed_operand(
         self,
     ) -> dsl_interpreter_operator.ComputedOperatorParameterType:
         """
         Get the computed operand of the unary operator.
         """
-        computed_parameters = self.get_computed_parameters()
-        return computed_parameters[0]
+        return self.get_computed_parameters()[0]

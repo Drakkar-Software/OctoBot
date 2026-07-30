@@ -17,6 +17,7 @@ import mock
 import time
 
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as re_callable_operator_mixin
 
@@ -113,13 +114,13 @@ class _ReCreateScriptTestOperator(dsl_interpreter.Operator, dsl_interpreter.ReCa
                 name="seconds",
                 description="wait duration",
                 required=True,
-                type=float,
+                type=commons_enums.DslValueType.NUMBER.value,
             ),
             operator_parameter.OperatorParameter(
                 name="label",
                 description="optional label",
                 required=False,
-                type=str,
+                type=commons_enums.DslValueType.TEXT.value,
             ),
         ]
 

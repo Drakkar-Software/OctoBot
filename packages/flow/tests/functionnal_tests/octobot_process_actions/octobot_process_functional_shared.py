@@ -2,9 +2,11 @@
 #  Shared helpers/constants for octobot process functional tests (run_octobot_process, GridTradingMode).
 
 import asyncio
+import contextlib
 import copy
 import decimal
 import json
+import mock
 import os
 import pathlib
 import time
@@ -19,13 +21,15 @@ import octobot_trading.enums as trading_enums
 import pytest
 
 import octobot_flow.jobs
+import octobot_flow.jobs.automation_runner_job as automation_runner_job_module
 import octobot_flow.entities
-import octobot_flow.environment
 import octobot_flow.enums
 import tests.functionnal_tests as functionnal_tests
 import tests.functionnal_tests.tentacle_test_configs as tentacle_test_configs
 
 pytestmark = pytest.mark.asyncio
+
+OCTOBOT_PROCESS_TEST_GROUP = "octobot_process_xdist_group"
 
 # --- Timeouts and grid geometry (must match pair_settings spread / increment below) ---
 GLOBAL_START_TIMEOUT_SEC = 30.0
@@ -50,14 +54,61 @@ EXPECTED_PROCESS_BOT_DUMP_INTERVAL_SEC = 5.0
 WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC = 2
 RECALL_SCHEDULE_TOLERANCE_SEC = 1.5
 
+
+class ExchangeManagerContextTracker:
+    def __init__(self) -> None:
+        self.entered_count = 0
+
+
+@contextlib.contextmanager
+def track_exchange_manager_context() -> typing.Iterator[ExchangeManagerContextTracker]:
+    tracker = ExchangeManagerContextTracker()
+
+    @contextlib.asynccontextmanager
+    async def counting_exchange_manager_context(self):
+        tracker.entered_count += 1
+        self._exchange_manager = mock.Mock()
+        yield self._exchange_manager
+
+    with mock.patch.object(
+        automation_runner_job_module.AutomationRunnerJob,
+        "exchange_manager_context",
+        counting_exchange_manager_context,
+    ):
+        yield tracker
+
+
+def assert_exchange_manager_not_initialized(tracker: ExchangeManagerContextTracker) -> None:
+    assert tracker.entered_count == 0, (
+        "expected exchange_manager_context to be skipped for process-bound actions, "
+        f"but it was entered {tracker.entered_count} time(s)"
+    )
+
+
+async def run_automation_job_without_exchange_manager(
+    automation_state: dict,
+    priority_actions: list,
+    updated_trading_signals: list,
+    auth_details: dict,
+) -> octobot_flow.jobs.AutomationJob:
+    with track_exchange_manager_context() as tracker:
+        async with octobot_flow.jobs.AutomationJob(
+            automation_state, priority_actions, updated_trading_signals, auth_details
+        ) as automation_job:
+            await automation_job.run()
+        assert_exchange_manager_not_initialized(tracker)
+    return automation_job
+
+
 EXCHANGE_BINANCEUS = "binanceus"
+FUNCTIONAL_TEST_USER_ID = "wallet-user"
 
 # --- DSL / DAG action ids (fixtures, dependencies, _get_action_by_id) ---
 ACTION_ID_INIT = "action_init"
 ACTION_ID_RUN_OCTOBOT = "action_run_octobot"
 ACTION_ID_STOP_AUTOMATION = "action_stop_automation"
 
-# --- Child profile for run_octobot_process: simulator (trader.enabled False) + GridTradingMode BTC/USDT 2×2 ---
+# --- Child profile for run_octobot_process: simulator (trader.enabled False) + GridTradingMode BTC/USDT 2×2 --- Use profile_data= keyword (2nd positional is octobot_name).
 GRID_BINANCEUS_PROFILE_DATA = {
     "profile_details": {"name": "func_test_grid_octoprocess", "id": "func_test_grid_octoprocess"},
     "crypto_currencies": [
@@ -314,12 +365,6 @@ def _make_tracked_spawn_managed_with_forward_terminal_output(
         return real_spawn_managed(*args, **merged_kwargs)
 
     return _tracked
-
-
-@pytest.fixture(autouse=True)
-def register_functional_executor_id():
-    octobot_flow.environment.register_executor_id("func-test-executor")
-    yield
 
 
 @pytest.fixture

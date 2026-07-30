@@ -63,6 +63,19 @@ def binanceus_dca_maximum_evaluators_config(**overrides: typing.Any) -> dict[str
     return _dsl_compatible_tentacle_config(config)
 
 
+def binanceus_dca_time_based_config(**overrides: typing.Any) -> dict[str, typing.Any]:
+    config = binanceus_dca_tentacle_config(
+        **{
+            dca_trading.DCATradingModeProducer.TRIGGER_MODE: (
+                dca_trading.TriggerMode.TIME_BASED.value
+            ),
+            dca_trading.DCATradingModeProducer.MINUTES_BEFORE_NEXT_BUY: 1,
+        }
+    )
+    config.update(overrides)
+    return _dsl_compatible_tentacle_config(config)
+
+
 def dma_evaluator_config(
     *,
     long_period_length: int = 10,

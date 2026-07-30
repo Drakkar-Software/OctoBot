@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_commons.constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.errors
 import octobot_commons.dsl_interpreter as dsl_interpreter
 
@@ -45,7 +46,7 @@ def create_ticker_operators(
             return [
                 dsl_interpreter.OperatorParameter(
                     name="symbol", description="The symbol to get the ticker value for",
-                    required=True, type=str,
+                    required=True, type=commons_enums.DslValueType.TEXT.value,
                 ),
             ]
 

@@ -16,12 +16,16 @@
 
 import logging
 
+import octobot_node.constants
 import octobot_node.scheduler.scheduler as scheduler_lib
 import octobot_node.scheduler.workflows
+import octobot_node.scheduler.workflows_version_migration as workflows_version_migration
 
 scheduler_logger = logging.getLogger(__name__)
 
 SCHEDULER: scheduler_lib.Scheduler = scheduler_lib.Scheduler()
+
+_shutdown_done = False
 
 
 def is_enabled() -> bool:
@@ -32,17 +36,30 @@ def is_initialized() -> bool:
     return SCHEDULER.is_initialized()
 
 
-def initialize_scheduler():
+async def initialize_scheduler():
+    global _shutdown_done
+    _shutdown_done = False
     scheduler_logger.info("Initializing scheduler")
     SCHEDULER.create()
     octobot_node.scheduler.workflows.register_workflows()
+    if octobot_node.constants.ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION:
+        workflows_version_migration.migrate_stranded_workflow_versions(
+            target_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
+        )
+    import octobot_node.scheduler.schedules as schedules
     SCHEDULER.start()
+    # apply_schedules requires DBOS launch (sys_db); must run after start().
+    await schedules.register_schedules(SCHEDULER)
 
 
 async def shutdown_scheduler_and_trading_signal_channel() -> None:
+    global _shutdown_done
+    if _shutdown_done or not is_initialized():
+        return
     try:
         import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
         await trading_signals_channel.shutdown_internal_trading_signal_channel()
     except ImportError:
         pass
     SCHEDULER.stop()
+    _shutdown_done = True

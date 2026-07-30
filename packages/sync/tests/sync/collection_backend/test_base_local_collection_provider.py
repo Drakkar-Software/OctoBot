@@ -385,3 +385,25 @@ class TestBaseLocalCollectionProviderGetItemIdForKey:
         with pytest.raises(collection_errors.UnsupportedItemsKeyError):
             provider._get_item_id_for_key("unknown_key", _item("item-1"))
 
+
+class TestBaseLocalCollectionProviderCacheInvalidation:
+    def test_reloads_from_disk_when_file_changed_externally(self, tmp_path):
+        provider = _make_provider(tmp_path)
+        with _patch_wallet():
+            provider.create_item(_TEST_ADDRESS, _item("item-1", label="Cached"))
+            provider.list_items(_TEST_ADDRESS)
+
+        external_state = _TestState(
+            version="1.0.0",
+            items=[_TestItem(id="external", label="From disk")],
+        )
+        provider._storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, external_state)
+
+        with _patch_wallet():
+            listed = provider.list_items(_TEST_ADDRESS)
+
+        assert len(listed) == 1
+        assert listed[0].id == "external"
+        assert listed[0].label == "From disk"
+
+

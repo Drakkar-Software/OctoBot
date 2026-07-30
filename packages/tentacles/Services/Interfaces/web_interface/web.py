@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import os
-import socket
 import time
 import flask
 import flask_cors
@@ -24,6 +23,7 @@ from flask_compress import Compress
 from flask_caching import Cache
 
 import octobot_commons.logging as bot_logging
+import octobot_commons.network as network_module
 import octobot_commons.os_util as os_util
 import octobot_services.constants as services_constants
 import octobot_services.interfaces as services_interfaces
@@ -273,7 +273,7 @@ class WebInterface(services_interfaces.AbstractWebInterface):
     def _open_web_interface_on_browser(self):
         try:
             web_util.open_in_background_browser(
-                f"http://{socket.gethostbyname(socket.gethostname())}:{self.port}"
+                f"http://{network_module.LOCAL_HOST_IP}:{self.port}"
             )
         except Exception as err:
             self.logger.warning(f"Impossible to open automatically web interface: {err} ({err.__class__.__name__})")

@@ -186,8 +186,12 @@ class TestCreateEvaluatorOperator:
         }
         assert evaluator_dsl_factory.SYMBOLS_PARAM in parameters_by_name
         assert evaluator_dsl_factory.TIME_FRAMES_PARAM in parameters_by_name
-        assert parameters_by_name[evaluator_dsl_factory.SYMBOLS_PARAM].type is list
-        assert parameters_by_name[evaluator_dsl_factory.TIME_FRAMES_PARAM].type is list
+        assert parameters_by_name[evaluator_dsl_factory.SYMBOLS_PARAM].type == (
+            common_enums.DslValueType.ANY.value
+        )
+        assert parameters_by_name[evaluator_dsl_factory.TIME_FRAMES_PARAM].type == (
+            common_enums.DslValueType.ANY.value
+        )
         assert evaluator_dsl_factory.INCLUDE_IN_CONSTRUCTION_CANDLE_PARAM in parameter_names
 
     def test_strategy_operator_meta_parameters_only_time_frames(self):
@@ -202,7 +206,9 @@ class TestCreateEvaluatorOperator:
             for parameter in OpCls.get_evaluator_meta_parameters()
         }
         assert set(meta_parameters_by_name) == {evaluator_dsl_factory.TIME_FRAMES_PARAM}
-        assert meta_parameters_by_name[evaluator_dsl_factory.TIME_FRAMES_PARAM].type is list
+        assert meta_parameters_by_name[evaluator_dsl_factory.TIME_FRAMES_PARAM].type == (
+            common_enums.DslValueType.ANY.value
+        )
 
 
 class TestGetDependencies:
@@ -571,7 +577,7 @@ class TestExecuteStrategyEvaluator:
             )
             operator = OpCls()
             strategy_instance = fake_evaluators.FakeMatrixReadingStrategyEvaluator(
-                evaluator_dsl_factory._get_local_tentacles_setup_config()
+                None
             )
             strategy_instance.matrix_id = matrix_id
             strategy_instance.matrix_callback = mock.AsyncMock(
@@ -626,7 +632,7 @@ class TestPreComputeStrategySymbolsFromDynamicDependencies:
 
         async def _create_strategy_instance(*_args, **_kwargs):
             strategy_instance = fake_evaluators.FakeMatrixReadingStrategyEvaluator(
-                evaluator_dsl_factory._get_local_tentacles_setup_config()
+                None
             )
             strategy_instance.matrix_id = matrix_id
             strategy_instance.evaluator_type = evaluators_enums.EvaluatorMatrixTypes.STRATEGIES

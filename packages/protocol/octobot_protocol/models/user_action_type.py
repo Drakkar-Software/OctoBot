@@ -29,6 +29,7 @@ class UserActionType(str, Enum):
     AUTOMATION_CREATE = 'automation_create'
     AUTOMATION_EDIT = 'automation_edit'
     AUTOMATION_STOP = 'automation_stop'
+    AUTOMATION_RESTART = 'automation_restart'
     AUTOMATION_SIGNAL = 'automation_signal'
     ACCOUNT_CREATE = 'account_create'
     ACCOUNT_EDIT = 'account_edit'
