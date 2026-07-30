@@ -16,6 +16,7 @@
 import threading
 import asyncio
 import time
+import typing
 import mock
 import contextlib
 import socket
@@ -57,7 +58,11 @@ def get_new_port() -> int:
         return sock.getsockname()[1]
 
 
-async def _init_bot(distribution: octobot.enums.OctoBotDistribution):
+async def _init_bot(
+    distribution: octobot.enums.OctoBotDistribution,
+    configure_profile_storage: typing.Callable | None = None,
+    configure_tentacles_setup: typing.Callable | None = None,
+):
     # import here to prevent web interface import issues
     import octobot.octobot as octobot
     import octobot.constants as octobot_constants
@@ -70,24 +75,28 @@ async def _init_bot(distribution: octobot.enums.OctoBotDistribution):
     community.IdentifiersProvider.use_production()
     singleton.Singleton._instances.pop(authentication.Authenticator, None)
     singleton.Singleton._instances.pop(community.CommunityAuthentication, None)
-    test_config = test_config.load_test_config(dict_only=False)
-    test_config.config[octobot_commons.constants.CONFIG_DISTRIBUTION] = distribution.value
-    octobot = octobot.OctoBot(test_config)
-    octobot.initialized = True
+    loaded_config = test_config.load_test_config(dict_only=False)
+    if configure_profile_storage is not None:
+        configure_profile_storage(loaded_config.profile_storage)
+    loaded_config.config[octobot_commons.constants.CONFIG_DISTRIBUTION] = distribution.value
+    bot = octobot.OctoBot(loaded_config)
+    bot.initialized = True
     tentacles_config = config.load_test_tentacles_config()
+    if configure_tentacles_setup is not None:
+        configure_tentacles_setup(tentacles_config)
     loaders.reload_tentacle_by_tentacle_class()
-    octobot.task_manager.async_loop = asyncio.get_event_loop()
-    octobot.task_manager.create_pool_executor()
-    octobot.tentacles_setup_config = tentacles_config
-    octobot.configuration_manager.add_element(octobot_constants.TENTACLES_SETUP_CONFIG_KEY, tentacles_config)
-    octobot.exchange_producer = producers.ExchangeProducer(None, octobot, None, False)
-    octobot.evaluator_producer = producers.EvaluatorProducer(None, octobot)
-    await evaluators_api.initialize_evaluators(octobot.config, tentacles_config)
-    octobot.evaluator_producer.matrix_id = evaluators_api.create_matrix()
+    bot.task_manager.async_loop = asyncio.get_event_loop()
+    bot.task_manager.create_pool_executor()
+    bot.tentacles_setup_config = tentacles_config
+    bot.configuration_manager.add_element(octobot_constants.TENTACLES_SETUP_CONFIG_KEY, tentacles_config)
+    bot.exchange_producer = producers.ExchangeProducer(None, bot, None, False)
+    bot.evaluator_producer = producers.EvaluatorProducer(None, bot)
+    await evaluators_api.initialize_evaluators(bot.config, tentacles_config)
+    bot.evaluator_producer.matrix_id = evaluators_api.create_matrix()
     # Do not edit config file
-    octobot.community_auth.edited_config = None
-    octobot.automation = automation.Automation(octobot.bot_id, tentacles_config)
-    return octobot
+    bot.community_auth.edited_config = None
+    bot.automation = automation.Automation(bot.bot_id, tentacles_config)
+    return bot
 
 
 def _start_web_interface(interface):
@@ -97,12 +106,20 @@ def _start_web_interface(interface):
 # use context manager instead of fixture to prevent pytest threads issues
 @contextlib.asynccontextmanager
 async def get_web_interface(
-    require_password: bool, distribution: octobot.enums.OctoBotDistribution
+    require_password: bool,
+    distribution: octobot.enums.OctoBotDistribution,
+    configure_profile_storage: typing.Callable | None = None,
+    configure_tentacles_setup: typing.Callable | None = None,
+    cleanup_tentacles_setup: typing.Callable | None = None,
 ):
     web_interface_instance = None
     try:
         with mock.patch.object(configuration_storage.SyncConfigurationStorage, "_save_value_in_config", mock.Mock()):
-            bot = await _init_bot(distribution)
+            bot = await _init_bot(
+                distribution,
+                configure_profile_storage=configure_profile_storage,
+                configure_tentacles_setup=configure_tentacles_setup,
+            )
             interfaces.AbstractInterface.bot_id = bot.bot_id
             web_interface_instance = web_interface.WebInterface({})
             web_interface_instance.port = get_new_port()
@@ -123,6 +140,8 @@ async def get_web_interface(
     finally:
         if web_interface_instance is not None:
             await web_interface_instance.stop()
+        if cleanup_tentacles_setup is not None:
+            cleanup_tentacles_setup()
 
 
 async def check_page_no_login_redirect(url, session):
