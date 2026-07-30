@@ -24,6 +24,9 @@ import octobot_commons.json_util
 import octobot_commons.configuration as configuration
 import octobot_commons.profiles as profiles
 import octobot_commons.profiles.backends as profile_backends_module
+import octobot_commons.profiles.profile_data as profile_data_module
+import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.constants as constants
 import octobot_commons.tests.test_config as test_config
 from ..profiles import get_profiles_path
@@ -256,6 +259,32 @@ class TestConfigurationSaveSkipUnchangedProfile:
             config.save(save_profile=True)
         save_profile_config_mock.assert_called_once_with(config.config)
 
+    def test_saves_profile_after_prior_save_when_crypto_mutated(self, config):
+        config.profile = _load_test_profile(config)
+        with open(DEFAULT_CONFIG) as config_file:
+            config._read_config = json.load(config_file)
+        _align_config_with_profile(config)
+        config.profile.save_config(config.config)
+        config.config[constants.CONFIG_CRYPTO_CURRENCIES]["Ethereum"] = {
+            constants.CONFIG_CRYPTO_PAIRS: ["ETH/USDT"],
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        assert config._profile_managed_elements_changed() is True
+        with mock.patch(
+            "octobot_commons.configuration.configuration.config_file_manager.dump",
+            mock.Mock(),
+        ), mock.patch.object(
+            config,
+            "_get_config_without_profile_elements",
+            mock.Mock(return_value={}),
+        ), mock.patch.object(
+            config.profile,
+            "save_config",
+            mock.Mock(),
+        ) as save_profile_config_mock:
+            config.save()
+        save_profile_config_mock.assert_called_once_with(config.config)
+
     def test_sync_all_profiles_still_runs_when_active_profile_unchanged(self, config):
         config.profile = _load_test_profile(config)
         with open(DEFAULT_CONFIG) as config_file:
@@ -334,9 +363,6 @@ def test_get_tentacles_config_path(config):
 
 class TestGetActiveTentaclesSetupConfigProfileDataBacked:
     def test_returns_in_memory_setup_without_filesystem_path(self, config):
-        import octobot_commons.profiles.profile_data as profile_data_module
-        import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
-
         profile_data = profile_data_module.ProfileData()
         profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
         profile.init_tentacles_setup_config()
@@ -346,9 +372,6 @@ class TestGetActiveTentaclesSetupConfigProfileDataBacked:
         assert setup_config.profile is profile
 
     def test_init_setup_when_missing(self, config):
-        import octobot_commons.profiles.profile_data as profile_data_module
-        import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
-
         profile_data = profile_data_module.ProfileData()
         profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
         config.profile = profile
@@ -710,8 +733,6 @@ class TestConfigurationReadonlyProfileOverlay:
         *,
         read_only: bool,
     ) -> None:
-        import octobot_commons.json_util as json_util_module
-
         os.makedirs(profile_folder_path, exist_ok=True)
         profile_file = {
             constants.CONFIG_PROFILE: {
@@ -735,7 +756,7 @@ class TestConfigurationReadonlyProfileOverlay:
                 constants.CONFIG_DISTRIBUTION: constants.DEFAULT_DISTRIBUTION,
             },
         }
-        json_util_module.safe_dump(
+        octobot_commons.json_util.safe_dump(
             profile_file,
             os.path.join(profile_folder_path, constants.PROFILE_CONFIG_FILE),
         )
@@ -805,16 +826,62 @@ class TestConfigurationReadonlyProfileOverlay:
         assert bot_config.profile.profile_id == constants.DEFAULT_PROFILE
         assert bot_config.config[constants.CONFIG_PROFILE] == constants.DEFAULT_PROFILE
 
-    def test_save_skips_master_overlay_profile_persist(self, tmp_path):
+    def test_save_persists_readonly_master_overlay_profile_to_child_path(self, tmp_path):
+        bot_config, master_profiles_path = self._child_config_with_readonly_overlay(tmp_path)
+        bot_config.read(should_raise=False, fill_missing_fields=True)
+        bot_config.config[constants.CONFIG_TRADER] = {
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        bot_config.save(save_profile=True)
+        child_overlay_file = octobot_commons.json_util.read_file(
+            os.path.join(
+                bot_config.profiles_path,
+                constants.DEFAULT_PROFILE,
+                constants.PROFILE_CONFIG_FILE,
+            )
+        )
+        master_profile_file = octobot_commons.json_util.read_file(
+            os.path.join(
+                master_profiles_path,
+                "non-trading",
+                constants.PROFILE_CONFIG_FILE,
+            )
+        )
+        assert (
+            child_overlay_file[constants.PROFILE_CONFIG][constants.CONFIG_TRADER][
+                constants.CONFIG_ENABLED_OPTION
+            ]
+            is True
+        )
+        assert (
+            master_profile_file[constants.PROFILE_CONFIG][constants.CONFIG_TRADER][
+                constants.CONFIG_ENABLED_OPTION
+            ]
+            is False
+        )
+
+    def test_save_persists_crypto_after_prior_profile_save(self, tmp_path):
         bot_config, _master_profiles_path = self._child_config_with_readonly_overlay(tmp_path)
         bot_config.read(should_raise=False, fill_missing_fields=True)
-        with mock.patch.object(
-            bot_config.profile_storage,
-            "save_active_profile",
-            mock.Mock(),
-        ) as save_active_profile_mock:
-            bot_config.save()
-        save_active_profile_mock.assert_not_called()
+        bot_config.save()
+        bot_config.config[constants.CONFIG_CRYPTO_CURRENCIES]["Ethereum"] = {
+            constants.CONFIG_CRYPTO_PAIRS: ["ETH/USDT"],
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        bot_config.save()
+        child_overlay_file = octobot_commons.json_util.read_file(
+            os.path.join(
+                bot_config.profiles_path,
+                constants.DEFAULT_PROFILE,
+                constants.PROFILE_CONFIG_FILE,
+            )
+        )
+        assert (
+            child_overlay_file[constants.PROFILE_CONFIG][constants.CONFIG_CRYPTO_CURRENCIES][
+                "Ethereum"
+            ][constants.CONFIG_CRYPTO_PAIRS]
+            == ["ETH/USDT"]
+        )
 
     def test_save_persists_editable_master_overlay_profile(self, tmp_path):
         bot_config, _master_profiles_path = self._child_config_with_editable_overlay(tmp_path)
@@ -828,8 +895,6 @@ class TestConfigurationReadonlyProfileOverlay:
         save_active_profile_mock.assert_called_once()
 
     def test_read_configures_readonly_reference_tentacles_path(self, tmp_path):
-        import octobot_commons.user_root_folder_provider as user_root_folder_provider
-
         child_user_root = tmp_path / "child" / "user"
         child_profiles_path = child_user_root / constants.PROFILES_FOLDER
         master_reference_path = tmp_path / "master" / "reference_tentacles_config"
@@ -852,3 +917,183 @@ class TestConfigurationReadonlyProfileOverlay:
         )
         bot_config.read(should_raise=False, fill_missing_fields=True)
         assert provider.get_user_reference_tentacle_config_path() == str(master_reference_path)
+
+
+class TestSyncOtherProfiles:
+    def _profile_map(self, config, active_profile, *other_profiles):
+        profile_by_id = {active_profile.profile_id: active_profile}
+        for other_profile in other_profiles:
+            profile_by_id[other_profile.profile_id] = other_profile
+        config.profile = active_profile
+        config.profile_by_id = profile_by_id
+        return profile_by_id
+
+    def test_skips_active_profile(self, config):
+        active_profile = _load_test_profile(config)
+        other_profile = _load_test_profile(config)
+        self._profile_map(config, active_profile, other_profile)
+        with mock.patch.object(
+            active_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=False),
+        ) as active_remove_deleted_elements_mock, mock.patch.object(
+            active_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as active_validate_and_save_config_mock, mock.patch.object(
+            other_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            mock.Mock(return_value=False),
+        ):
+            config._sync_other_profiles()
+        active_remove_deleted_elements_mock.assert_not_called()
+        active_validate_and_save_config_mock.assert_not_called()
+
+    def test_skips_readonly_master_overlay_profile(self, config):
+        active_profile = _load_test_profile(config)
+        readonly_overlay_profile = _load_test_profile(config)
+        writable_other_profile = _load_test_profile(config)
+        self._profile_map(
+            config,
+            active_profile,
+            readonly_overlay_profile,
+            writable_other_profile,
+        )
+        with mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            side_effect=lambda profile: profile is readonly_overlay_profile,
+        ), mock.patch.object(
+            readonly_overlay_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=True),
+        ) as readonly_remove_deleted_elements_mock, mock.patch.object(
+            readonly_overlay_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as readonly_validate_and_save_config_mock, mock.patch.object(
+            writable_other_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=False),
+        ) as writable_remove_deleted_elements_mock, mock.patch.object(
+            writable_other_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as writable_validate_and_save_config_mock:
+            config._sync_other_profiles()
+        readonly_remove_deleted_elements_mock.assert_not_called()
+        readonly_validate_and_save_config_mock.assert_not_called()
+        writable_remove_deleted_elements_mock.assert_called_once_with(config.config)
+        writable_validate_and_save_config_mock.assert_not_called()
+
+    def test_skips_other_profile_when_exchanges_unchanged(self, config):
+        active_profile = _load_test_profile(config)
+        other_profile = _load_test_profile(config)
+        self._profile_map(config, active_profile, other_profile)
+        with mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            other_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=False),
+        ) as remove_deleted_elements_mock, mock.patch.object(
+            other_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as validate_and_save_config_mock:
+            config._sync_other_profiles()
+        remove_deleted_elements_mock.assert_called_once_with(config.config)
+        validate_and_save_config_mock.assert_not_called()
+
+    def test_saves_other_profile_when_exchange_removed(self, config):
+        active_profile = _load_test_profile(config)
+        other_profile = _load_test_profile(config)
+        self._profile_map(config, active_profile, other_profile)
+        with mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            other_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            other_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as validate_and_save_config_mock:
+            config._sync_other_profiles()
+        validate_and_save_config_mock.assert_called_once()
+
+    def test_does_not_save_on_second_sync_when_exchanges_still_unchanged(self, config):
+        active_profile = _load_test_profile(config)
+        other_profile = _load_test_profile(config)
+        self._profile_map(config, active_profile, other_profile)
+        with mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            other_profile,
+            "remove_deleted_elements",
+            mock.Mock(side_effect=[False, False]),
+        ), mock.patch.object(
+            other_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as validate_and_save_config_mock:
+            config._sync_other_profiles()
+            config._sync_other_profiles()
+        validate_and_save_config_mock.assert_not_called()
+
+    def test_saves_only_on_second_sync_when_exchange_removed_on_second_call(self, config):
+        active_profile = _load_test_profile(config)
+        other_profile = _load_test_profile(config)
+        self._profile_map(config, active_profile, other_profile)
+        with mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            other_profile,
+            "remove_deleted_elements",
+            mock.Mock(side_effect=[False, True]),
+        ), mock.patch.object(
+            other_profile,
+            "validate_and_save_config",
+            mock.Mock(),
+        ) as validate_and_save_config_mock:
+            config._sync_other_profiles()
+            config._sync_other_profiles()
+        validate_and_save_config_mock.assert_called_once()
+
+    def test_logs_exception_when_validate_and_save_raises(self, config):
+        active_profile = _load_test_profile(config)
+        other_profile = _load_test_profile(config)
+        self._profile_map(config, active_profile, other_profile)
+        with mock.patch.object(
+            config.profile_storage,
+            "is_readonly_master_overlay_profile",
+            mock.Mock(return_value=False),
+        ), mock.patch.object(
+            other_profile,
+            "remove_deleted_elements",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            other_profile,
+            "validate_and_save_config",
+            mock.Mock(side_effect=errors.ProfileDataError("sync failed")),
+        ), mock.patch.object(
+            config.logger,
+            "exception",
+            mock.Mock(),
+        ) as logger_exception_mock:
+            config._sync_other_profiles()
+        logger_exception_mock.assert_called_once()
+

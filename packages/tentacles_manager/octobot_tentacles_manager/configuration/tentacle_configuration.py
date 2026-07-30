@@ -23,6 +23,8 @@ import shutil
 import typing
 
 import octobot_commons.profiles.profile_data as profile_data_module
+import octobot_commons.profiles.profile_edit_gate as profile_edit_gate_module
+import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.configuration as configuration
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.loaders as loaders
@@ -44,6 +46,16 @@ def _get_config_from_file_system(tentacles_setup_config, klass):
 
 
 def _update_config_from_file_system(tentacles_setup_config, klass, config_update, keep_existing=True) -> None:
+    profile = tentacles_setup_config.profile
+    edit_gate = None
+    if profile is not None:
+        profile_storage = profile.get_profile_storage()
+        if profile_storage is not None:
+            edit_gate = profile_storage.edit_gate
+            edit_gate.assert_edit_allowed(
+                profile,
+                profile_edit_gate_module.ProfileEditType.TENTACLE_CONFIG,
+            )
     config_file = _get_config_file_path(tentacles_setup_config, klass)
     current_config = configuration.read_config(config_file)
     # only update values in config update not to erase values in root config (might not be editable)
@@ -54,6 +66,13 @@ def _update_config_from_file_system(tentacles_setup_config, klass, config_update
         current_config.update(config_update)
     config_file = _get_config_file_path(tentacles_setup_config, klass, updated_config=True)
     configuration.write_config(config_file, current_config)
+    if edit_gate is not None and profile is not None:
+        edit_gate.log_edit_saved(
+            profile,
+            profile_edit_gate_module.ProfileEditType.TENTACLE_CONFIG,
+            config_file,
+            tentacle=klass.get_name(),
+        )
 
 
 def _recursive_config_update(current_config: dict, config_update: dict)-> dict:
@@ -104,8 +123,6 @@ def _update_config_for_profile(
             name=tentacle_name, config={}
         )
         profile_data.tentacles.append(updated_tentacle)
-    import octobot_tentacles_manager.api as tentacles_manager_api
-
     updated_tentacle.activated = tentacles_manager_api.is_tentacle_activated_in_tentacles_setup_config(
         tentacles_setup_config,
         tentacle_name,
@@ -183,7 +200,16 @@ def get_config_schema_path(klass) -> str:
 
 
 def get_user_tentacles_config_folder(tentacles_setup_config) -> str:
-    return path.join(tentacles_setup_config.get_config_folder(), constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
+    profile = tentacles_setup_config.profile
+    config_folder = tentacles_setup_config.get_config_folder()
+    if profile is not None:
+        profile_storage = profile.get_profile_storage()
+        if profile_storage is not None:
+            config_folder = profile_storage.edit_gate.resolve_writable_path(
+                profile,
+                profile_edit_gate_module.ProfileEditType.TENTACLE_CONFIG,
+            )
+    return path.join(config_folder, constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
 
 
 def get_profile_config_specific_file_path(tentacles_setup_config, klass) -> str:
