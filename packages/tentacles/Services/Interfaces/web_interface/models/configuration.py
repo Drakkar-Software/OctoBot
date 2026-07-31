@@ -494,8 +494,20 @@ def _persist_profile_tentacles_changes(tentacles_setup_config):
     if profile is None:
         tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
         return
+    edited_profile = tentacles_setup_config.profile
+    if edited_profile is not None and edited_profile is not profile:
+        if edited_profile.is_profile_data_tentacle_backed():
+            edited_profile.bind_tentacles_setup_config(tentacles_setup_config)
+            tentacles_data = edited_profile.get_tentacles_data()
+            if tentacles_data is not None:
+                edited_profile.get_profile_data().tentacles = tentacles_data
+            edited_profile._require_profile_storage().save_active_profile(
+                edited_profile, config.config
+            )
+        else:
+            tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
+        return
     if profile.is_profile_data_tentacle_backed():
-        edited_profile = tentacles_setup_config.profile
         if edited_profile is not None:
             profile.get_profile_data().tentacles = list(
                 edited_profile.get_profile_data().tentacles

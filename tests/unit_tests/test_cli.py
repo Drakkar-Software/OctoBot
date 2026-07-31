@@ -354,10 +354,12 @@ class TestLoadOrCreateTentacles:
     def test_process_child_with_readonly_reference_skips_repair(self):
         config = mock.Mock()
         setup_config = mock.Mock()
+        package_ops_setup_config = mock.Mock()
         config.config = {
             octobot_cli.common_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH: "/master/reference",
         }
         config.get_active_tentacles_setup_config.return_value = setup_config
+        config.get_tentacles_setup_config_for_package_operations.return_value = package_ops_setup_config
         community_auth = mock.Mock()
         logger = mock.Mock()
         with mock.patch.object(
@@ -383,7 +385,8 @@ class TestLoadOrCreateTentacles:
                 logger,
                 is_process_child=True,
             )
-        install_only_mock.assert_called_once_with(community_auth, config, setup_config)
+        config.get_tentacles_setup_config_for_package_operations.assert_called_once_with()
+        install_only_mock.assert_called_once_with(community_auth, config, package_ops_setup_config)
         save_mock.assert_called_once()
         repair_mock.assert_not_called()
 

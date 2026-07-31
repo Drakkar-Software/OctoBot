@@ -643,6 +643,7 @@ class TestFetchPrivateData:
     async def test_process_child_sets_pending_flag_with_install_only(self):
         config = mock.Mock()
         config.uses_shared_reference_tentacles.return_value = True
+        config.get_tentacles_setup_config_for_package_operations.return_value = mock.Mock()
         auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
         auth.logger = mock.Mock()
         auth.config = config
@@ -671,6 +672,41 @@ class TestFetchPrivateData:
             await auth.fetch_private_data()
         has_tentacles_mock.assert_awaited_once_with(auth, install_only=True)
         assert auth.user_account.has_pending_packages_to_install is True
+
+    async def test_sync_profile_fetch_private_data_does_not_use_profile_tentacles_path(self):
+        config = mock.Mock()
+        config.uses_shared_reference_tentacles.return_value = False
+        config.profile = mock.Mock()
+        config.profile.is_profile_data_tentacle_backed.return_value = True
+        setup_config = mock.Mock()
+        config.get_tentacles_setup_config_for_package_operations.return_value = setup_config
+        auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        auth.logger = mock.Mock()
+        auth.config = config
+        auth.user_account = community_user_account.CommunityUserAccount()
+        auth.user_account.community_package_urls = []
+        auth.is_logged_in = mock.Mock(return_value=True)
+        auth.get_saved_mqtt_device_uuid = mock.Mock(return_value="mqtt-uuid")
+        auth._fetch_extensions_details = mock.AsyncMock(
+            return_value=(["premium"], ["https://premium.example/pkg.zip"], "mqtt-uuid", "tv@example.com")
+        )
+        auth.save_installed_package_urls = mock.Mock()
+        auth.save_tradingview_email = mock.Mock()
+        auth._save_mqtt_device_uuid = mock.Mock()
+        auth.has_open_source_package = mock.Mock(return_value=False)
+        auth._refresh_products = mock.AsyncMock()
+        auth._fetched_private_data = None
+        with mock.patch.object(
+            constants,
+            "DISABLE_COMMUNITY_EXTENSIONS_CHECK",
+            False,
+        ), mock.patch(
+            "octobot.community.tentacles_packages.get_to_install_and_remove_tentacles",
+            return_value=([], [], False),
+        ):
+            await auth.fetch_private_data()
+        config.get_tentacles_config_path.assert_not_called()
+        config.get_tentacles_setup_config_for_package_operations.assert_called()
 
     async def test_non_process_child_sets_pending_flag_only(self):
         config = mock.Mock()

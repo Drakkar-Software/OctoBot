@@ -397,6 +397,56 @@ class TestGetActiveTentaclesSetupConfigFilesystemBacked:
         assert setup_config is expected_setup
 
 
+class TestGetTentaclesSetupConfigForPackageOperations:
+    def test_profile_data_backed_uses_reference_config_file(self, config, tmp_path):
+        profile_data = profile_data_module.ProfileData()
+        profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
+        config.profile = profile
+        reference_config_file = str(
+            tmp_path / constants.REFERENCE_TENTACLES_CONFIG_DIR / constants.CONFIG_TENTACLES_FILE
+        )
+        expected_setup = mock.Mock()
+        with mock.patch.object(
+            config,
+            "_get_master_reference_tentacles_config_file_path",
+            mock.Mock(return_value=reference_config_file),
+        ), mock.patch(
+            "octobot_tentacles_manager.api.get_tentacles_setup_config",
+            mock.Mock(return_value=expected_setup),
+        ) as get_setup_mock:
+            setup_config = config.get_tentacles_setup_config_for_package_operations()
+        get_setup_mock.assert_called_once_with(reference_config_file)
+        assert setup_config is expected_setup
+
+    def test_filesystem_profile_uses_active_setup_config(self, config):
+        config.profile = profiles.Profile(get_profile_path(), config.profile_schema_path)
+        expected_setup = mock.Mock()
+        with mock.patch.object(
+            config,
+            "get_active_tentacles_setup_config",
+            mock.Mock(return_value=expected_setup),
+        ) as active_setup_mock:
+            setup_config = config.get_tentacles_setup_config_for_package_operations()
+        active_setup_mock.assert_called_once_with()
+        assert setup_config is expected_setup
+
+    def test_master_reference_path_uses_sync_data_root_for_child_process(self, config, tmp_path, monkeypatch):
+        master_user_root = tmp_path / "master" / "user"
+        child_user_root = tmp_path / "child" / "user"
+        master_user_root.mkdir(parents=True)
+        child_user_root.mkdir(parents=True)
+        monkeypatch.setenv(constants.ENV_OCTOBOT_SYNC_DATA_ROOT, str(master_user_root))
+        provider = user_root_folder_provider.UserRootFolderProvider.instance()
+        provider.set_root(str(child_user_root))
+        config.config = {}
+        expected_path = os.path.join(
+            str(master_user_root),
+            constants.REFERENCE_TENTACLES_CONFIG_DIR,
+            constants.CONFIG_TENTACLES_FILE,
+        )
+        assert config._get_master_reference_tentacles_config_file_path() == expected_path
+
+
 def test_get_metrics_enabled(config):
     config.config = {}
     assert config.get_metrics_enabled() is True
@@ -897,7 +947,7 @@ class TestConfigurationReadonlyProfileOverlay:
     def test_read_configures_readonly_reference_tentacles_path(self, tmp_path):
         child_user_root = tmp_path / "child" / "user"
         child_profiles_path = child_user_root / constants.PROFILES_FOLDER
-        master_reference_path = tmp_path / "master" / "reference_tentacles_config"
+        master_reference_path = tmp_path / "master" / constants.REFERENCE_TENTACLES_CONFIG_DIR
         master_reference_path.mkdir(parents=True)
         (master_reference_path / constants.CONFIG_TENTACLES_FILE).write_text("{}", encoding="utf-8")
         child_user_root.mkdir(parents=True)

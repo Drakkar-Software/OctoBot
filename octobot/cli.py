@@ -337,17 +337,18 @@ def _load_or_create_tentacles(community_auth, config, logger, *, is_process_chil
     ):
         # when tentacles folder already exists
         config.load_profiles_if_possible_and_necessary()
-        tentacles_setup_config = config.get_active_tentacles_setup_config()
         if (
             is_process_child
             and config.config.get(common_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH)
         ):
             # Process children share the master reference tree; install missing additional packages only.
+            tentacles_setup_config = config.get_tentacles_setup_config_for_package_operations()
             commands.run_install_missing_additional_tentacles_only(
                 community_auth, config, tentacles_setup_config
             )
             config.save(schema_file=config.config_schema_path)
         else:
+            tentacles_setup_config = config.get_active_tentacles_setup_config()
             commands.run_update_or_repair_tentacles_if_necessary(
                 community_auth, config, tentacles_setup_config
             )

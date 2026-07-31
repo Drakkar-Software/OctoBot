@@ -312,8 +312,79 @@ class TestUpdateConfigFromFileSystemReadOnlyOverlay:
             os.path.join(child_profiles_path, profile_id, "specific_config")
         )
 
+    def test_creates_specific_config_directory_on_first_write(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / commons_constants.PROFILES_FOLDER
+        master_profiles_path = tmp_path / "master" / commons_constants.PROFILES_FOLDER
+        profile_id = "default"
+        master_profile_path = os.path.join(master_profiles_path, profile_id)
+        os.makedirs(master_profile_path, exist_ok=True)
+        profile_file = {
+            commons_constants.CONFIG_PROFILE: {
+                commons_constants.CONFIG_ID: profile_id,
+                commons_constants.CONFIG_NAME: profile_id,
+                commons_constants.CONFIG_READ_ONLY: True,
+            },
+            commons_constants.PROFILE_CONFIG: {
+                commons_constants.CONFIG_CRYPTO_CURRENCIES: {},
+                commons_constants.CONFIG_EXCHANGES: {},
+                commons_constants.CONFIG_TRADER: {commons_constants.CONFIG_ENABLED_OPTION: False},
+                commons_constants.CONFIG_SIMULATOR: {
+                    commons_constants.CONFIG_ENABLED_OPTION: True,
+                    commons_constants.CONFIG_STARTING_PORTFOLIO: {},
+                    commons_constants.CONFIG_SIMULATOR_FEES: {},
+                },
+                commons_constants.CONFIG_TRADING: {
+                    commons_constants.CONFIG_TRADER_REFERENCE_MARKET: commons_constants.DEFAULT_REFERENCE_MARKET,
+                    commons_constants.CONFIG_TRADER_RISK: 1,
+                },
+                commons_constants.CONFIG_DISTRIBUTION: commons_constants.DEFAULT_DISTRIBUTION,
+            },
+        }
+        json_util.safe_dump(
+            profile_file,
+            os.path.join(master_profile_path, commons_constants.PROFILE_CONFIG_FILE),
+        )
+        child_profiles_path.mkdir(parents=True)
+        child_overlay_profile_path = os.path.join(child_profiles_path, profile_id)
+        os.makedirs(child_overlay_profile_path, exist_ok=True)
+        json_util.safe_dump(
+            profile_file,
+            os.path.join(child_overlay_profile_path, commons_constants.PROFILE_CONFIG_FILE),
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        profile = profile_storage.get_profile(profile_id)
+        setup = tentacles_setup_configuration.TentaclesSetupConfiguration()
+        setup.profile = profile
+        setup.config_path = os.path.join(
+            master_profile_path, commons_constants.CONFIG_TENTACLES_FILE
+        )
+        tentacle_klass = mock.Mock()
+        tentacle_klass.get_name.return_value = "StrategyDesignerPlugin"
+        child_specific_config_path = tentacle_configuration.get_profile_config_specific_file_path(
+            setup, tentacle_klass
+        )
+        assert not os.path.isdir(os.path.dirname(child_specific_config_path))
+        with mock.patch.object(
+            tentacle_configuration,
+            "_get_config_file_path",
+            side_effect=lambda setup_config, klass, updated_config=False: (
+                child_specific_config_path
+                if updated_config
+                else os.path.join(tmp_path, "factory", "StrategyDesignerPlugin.json")
+            ),
+        ), mock.patch.object(
+            tentacle_configuration.configuration,
+            "read_config",
+            mock.Mock(return_value={}),
+        ):
+            tentacle_configuration.update_config(
+                setup, tentacle_klass, {"backtesting-profile": "new-profile-id"}, keep_existing=False
+            )
+        assert os.path.isfile(child_specific_config_path)
+        saved_config = json_util.read_file(child_specific_config_path)
+        assert saved_config == {"backtesting-profile": "new-profile-id"}
 
-class TestTentaclesSetupConfigurationSaveConfigReadOnly:
     def test_blocks_activation_save_on_read_only_profile(self, tmp_path):
         child_profiles_path = tmp_path / "child" / commons_constants.PROFILES_FOLDER
         master_profiles_path = tmp_path / "master" / commons_constants.PROFILES_FOLDER

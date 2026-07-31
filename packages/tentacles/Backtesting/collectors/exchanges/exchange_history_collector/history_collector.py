@@ -74,7 +74,7 @@ class ExchangeHistoryDataCollector(collector.AbstractExchangeHistoryCollector):
 
             self.logger.info(f"Start collecting history on {self.exchange_name}")
             for symbol_index, symbol in enumerate(self.symbols):
-                self.logger.info(f"Collecting history for {symbol}...")
+                self.logger.info(f"Collecting history for {symbol} {self.time_frames}...")
                 await self.get_ticker_history(self.exchange_name, symbol)
                 await self.get_order_book_history(self.exchange_name, symbol)
                 await self.get_recent_trades_history(self.exchange_name, symbol)

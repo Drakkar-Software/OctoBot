@@ -316,7 +316,11 @@ class SyncProfileBackend(abstract_profile_backend_module.AbstractProfileBackend)
     ) -> profile_data_module.ProfileData:
         profile_data = profile_data_module.ProfileData.from_profile(profile)
         profile_data.profile_details.id = profile.profile_id
-        profile_data.profile_details.name = profile.name
+        profile_data.profile_details.name = (
+            profile.name or profile_data.profile_details.name
+        )
+        if profile.profile_type:
+            profile_data.profile_details.profile_type = profile.profile_type.value
         tentacles_data = profile.get_tentacles_data()
         if tentacles_data is not None:
             profile_data.tentacles = tentacles_data
