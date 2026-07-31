@@ -87,6 +87,11 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         return self.threaded_start()
 
     async def _async_run(self) -> bool:
+        if not self.REQUIRED_SERVICES:
+            self.logger.error(
+                "REQUIRED_SERVICES is empty: NodeApiService was not registered as a required service, "
+                "it will run uninitialized (missing config, host, port, ...)."
+            )
         if self.node_api_service is None:
             self.node_api_service = Service_bases.NodeApiService.instance()
         self.host = self.node_api_service.get_bind_host()

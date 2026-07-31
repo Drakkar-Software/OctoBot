@@ -37,3 +37,9 @@ class RateLimitError(Exception):
     """
     Raised when an the rate limit has been reached for the given request
     """
+
+
+class ServiceConfigurationError(Exception):
+    """
+    Raised when a service's edited configuration can't be resolved to save its config
+    """
