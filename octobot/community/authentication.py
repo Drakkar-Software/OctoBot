@@ -829,12 +829,12 @@ class CommunityAuthentication(authentication.Authenticator):
                 self.user_account.owned_packages = packages
                 self.logger.debug(f"Account extension packages: {', '.join(packages) if packages else packages}")
                 self.save_installed_package_urls(package_urls)
+                install_only = self.config is not None and self.config.uses_shared_reference_tentacles()
                 has_tentacles_to_install = \
                     await community_tentacles_packages.has_tentacles_to_install_and_uninstall_tentacles_if_necessary(
-                        self
+                        self, install_only=install_only
                     )
                 if has_tentacles_to_install:
-                    # tentacles are not installed, save the fact that some are pending
                     self.logger.info(f"New tentacles are available for installation")
                     self.user_account.has_pending_packages_to_install = True
                 if fetched_mqtt_uuid and fetched_mqtt_uuid != mqtt_uuid:

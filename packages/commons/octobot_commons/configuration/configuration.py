@@ -403,6 +403,12 @@ class Configuration:
             return commons_constants.DEFAULT_PROFILE
         raise errors.NoProfileError
 
+    def uses_shared_reference_tentacles(self) -> bool:
+        """True when this config reads/writes the executor's shared reference tentacles tree."""
+        if not isinstance(self.config, dict):
+            return False
+        return bool(self.config.get(commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH))
+
     def apply_readonly_reference_tentacles_override(self) -> None:
         """
         Point ``UserRootFolderProvider`` at the master ``reference_tentacles_config`` tree

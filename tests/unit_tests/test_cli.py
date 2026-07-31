@@ -365,14 +365,14 @@ class TestLoadOrCreateTentacles:
             "get_user_reference_tentacle_config_file_path",
             mock.Mock(return_value="/master/reference/tentacles_config.json"),
         ), mock.patch("octobot.cli.os.path.isfile", mock.Mock(return_value=True)), mock.patch.object(
-            octobot_cli.tentacles_manager_api,
-            "load_tentacles",
-            mock.Mock(return_value=True),
-        ) as load_tentacles_mock, mock.patch.object(
             config,
             "save",
             mock.Mock(),
         ) as save_mock, mock.patch.object(
+            octobot_cli.commands,
+            "run_install_missing_additional_tentacles_only",
+            mock.Mock(),
+        ) as install_only_mock, mock.patch.object(
             octobot_cli.commands,
             "run_update_or_repair_tentacles_if_necessary",
             mock.Mock(),
@@ -383,7 +383,7 @@ class TestLoadOrCreateTentacles:
                 logger,
                 is_process_child=True,
             )
-        load_tentacles_mock.assert_called_once_with(verbose=True)
+        install_only_mock.assert_called_once_with(community_auth, config, setup_config)
         save_mock.assert_called_once()
         repair_mock.assert_not_called()
 

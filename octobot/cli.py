@@ -342,9 +342,10 @@ def _load_or_create_tentacles(community_auth, config, logger, *, is_process_chil
             is_process_child
             and config.config.get(common_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH)
         ):
-            # Process children share the master reference tree; skip repair that would write to it.
-            if not tentacles_manager_api.load_tentacles(verbose=True):
-                logger.error("OctoBot tentacles failed to load for process child.")
+            # Process children share the master reference tree; install missing additional packages only.
+            commands.run_install_missing_additional_tentacles_only(
+                community_auth, config, tentacles_setup_config
+            )
             config.save(schema_file=config.config_schema_path)
         else:
             commands.run_update_or_repair_tentacles_if_necessary(
