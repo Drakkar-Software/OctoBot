@@ -34,9 +34,12 @@ const useAuth = () => {
   })
 
   const login = async (data: LoginCredentials) => {
-    localStorage.setItem("auth_username", data.username)
-    await savePassword(data.password)
     try {
+      // Persist the password before marking the session as logged in — if
+      // this throws (e.g. IndexedDB blocked), auth_username must not be set,
+      // so isLoggedIn() stays false instead of leaving a passwordless session.
+      await savePassword(data.password)
+      localStorage.setItem("auth_username", data.username)
       const loggedInUser = await LoginService.testAuth()
       if (!loggedInUser) throw new Error("Authentication failed")
       // Store the real node address returned by the server

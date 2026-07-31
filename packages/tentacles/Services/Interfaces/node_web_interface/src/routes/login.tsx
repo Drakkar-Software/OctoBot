@@ -75,8 +75,13 @@ function Login() {
     } else if (wallets.length === 1) {
       username = wallets[0].address
     } else {
-      // No wallets configured — server will return 503; setup flow should handle this
-      username = "node"
+      // No wallets configured — nothing to authenticate against. The root route
+      // guard should have already redirected to /setup/welcome before this can
+      // render; bail out rather than sending a fabricated address.
+      form.setError("passphrase", {
+        message: "Service unavailable, please try again",
+      })
+      return
     }
 
     loginMutation.mutate(

@@ -1,8 +1,11 @@
 import { loadPassword } from "@/lib/device-key"
 
 export async function buildAuthHeader() {
-  const username = localStorage.getItem("auth_username") || "node"
-  const password = (await loadPassword()) ?? ""
+  const username = localStorage.getItem("auth_username")
+  const password = await loadPassword()
+  if (!username || !password) {
+    throw new Error("No active wallet session")
+  }
   return `Basic ${btoa(`${username}:${password}`)}`
 }
 
