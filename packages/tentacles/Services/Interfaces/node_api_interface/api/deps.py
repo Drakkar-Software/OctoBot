@@ -48,7 +48,6 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Wallet address required as username",
-            headers={"WWW-Authenticate": "Basic"},
         )
 
     # Normalize to lowercase so wallet_address == task.wallet_address always
@@ -58,7 +57,6 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Passphrase required",
-            headers={"WWW-Authenticate": "Basic"},
         )
 
     try:
@@ -67,7 +65,6 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect address or passphrase",
-            headers={"WWW-Authenticate": "Basic"},
         )
 
     auth.init_sync_client_for_wallet(wallet_address)
