@@ -151,11 +151,6 @@ class TestExportLogsRequireAuth:
         )
         _assert_invalid_auth_response(response)
 
-    def test_missing_credentials_returns_www_authenticate(self, client, mock_auth):
-        response = client.post("/api/v1/logs/export", json={"task_ids": ["task-a"]})
-        assert response.status_code == 401
-        assert response.headers.get("www-authenticate", "").lower().startswith("basic")
-
 
 class TestExportLogs:
     def test_empty_body_exports_main_logs(self, admin_client, tmp_path):

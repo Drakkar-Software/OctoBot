@@ -123,21 +123,21 @@ class TestDeleteTaskErrorDisclosure:
         assert body.get("detail") == "Task not found"
 
 
-# All 401 responses must carry WWW-Authenticate: Basic
-class TestWWWAuthenticateHeader:
-    def test_missing_credentials_returns_www_authenticate(self, client, mock_auth):
+# 401 responses must not carry WWW-Authenticate — the SPA handles auth via /app/login
+class TestNoWWWAuthenticateHeader:
+    def test_missing_credentials_omits_www_authenticate(self, client, mock_auth):
         resp = client.get("/api/v1/tasks/")
         assert resp.status_code == 401
-        assert resp.headers.get("www-authenticate", "").lower().startswith("basic")
+        assert "www-authenticate" not in resp.headers
 
-    def test_wrong_passphrase_returns_www_authenticate(self, client, mock_auth):
+    def test_wrong_passphrase_omits_www_authenticate(self, client, mock_auth):
         bad_header = _auth_header(ADMIN_ADDRESS, "wrongpassword")
         resp = client.get("/api/v1/tasks/", headers=bad_header)
         assert resp.status_code == 401
-        assert resp.headers.get("www-authenticate", "").lower().startswith("basic")
+        assert "www-authenticate" not in resp.headers
 
-    def test_unknown_wallet_returns_www_authenticate(self, client, mock_auth):
+    def test_unknown_wallet_omits_www_authenticate(self, client, mock_auth):
         bad_header = _auth_header("0xdeadbeef", ADMIN_PASSPHRASE)
         resp = client.get("/api/v1/tasks/", headers=bad_header)
         assert resp.status_code == 401
-        assert resp.headers.get("www-authenticate", "").lower().startswith("basic")
+        assert "www-authenticate" not in resp.headers
