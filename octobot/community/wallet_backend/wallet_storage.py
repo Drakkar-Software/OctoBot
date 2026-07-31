@@ -23,6 +23,7 @@ import threading
 import typing
 
 import octobot_commons.cryptography.encryption as commons_encryption
+import octobot_commons.logging as commons_logging
 
 import octobot.constants as constants
 import octobot.enums as enums
@@ -86,6 +87,21 @@ def _is_encrypted_blob(value: dict) -> bool:
     return _WALLET_BLOB_IV_KEY in value and _WALLET_BLOB_DATA_KEY in value
 
 
+def _coerce_wallet_list(result: typing.Any) -> list:
+    """Guard against unexpected (non-list) wallet storage content.
+
+    Never raise on it: log and treat as no wallets stored under the current
+    schema.
+    """
+    if isinstance(result, list):
+        return result
+    commons_logging.get_logger(__name__).warning(
+        f"Ignoring wallet storage value with unexpected type {type(result).__name__} "
+        f"(expected a list)."
+    )
+    return []
+
+
 class WalletStorage:
     """Abstract base for wallet list persistence. Subclasses implement load/save."""
 
@@ -104,10 +120,31 @@ class ConfigJsonWalletStorage(WalletStorage):
 
     def load(self) -> list:
         wallets = self._sync_storage.get_item(constants.CONFIG_COMMUNITY_WALLETS) or {}
-        result = wallets.get(constants.CHAIN_TYPE, {}).get(constants.CHAIN_NETWORK, [])
+        chain_wallets = wallets.get(constants.CHAIN_TYPE, {})
+        result = chain_wallets.get(constants.CHAIN_NETWORK, [])
         if isinstance(result, dict) and _is_encrypted_blob(result):
             result = _decrypt_wallets(result)
-        return result
+        if isinstance(result, list):
+            return result
+        self._cleanup_legacy_value(wallets, chain_wallets)
+        return []
+
+    def _cleanup_legacy_value(self, wallets: dict, chain_wallets: dict) -> None:
+        """A pre-multi-wallet OctoBot version stored a single private key string at
+        this exact config path (see git history of community/authentication.py).
+        Remove it so it stops being read as (invalid) wallet storage content.
+        """
+        if constants.CHAIN_NETWORK not in chain_wallets:
+            return
+        del chain_wallets[constants.CHAIN_NETWORK]
+        wallets[constants.CHAIN_TYPE] = chain_wallets
+        self._sync_storage.set_item(constants.CONFIG_COMMUNITY_WALLETS, wallets)
+        commons_logging.get_logger(__name__).warning(
+            "Removed a pre-multi-wallet private key found at this node's wallet "
+            "config path - it predates the multi-wallet format and could not be "
+            "read as one. Set up a new wallet, or re-import the old private key "
+            "from your config.json backup if you kept one."
+        )
 
     def save(self, wallets: list) -> None:
         blob = self._sync_storage.get_item(constants.CONFIG_COMMUNITY_WALLETS) or {}
@@ -138,7 +175,7 @@ class DedicatedFileWalletStorage(WalletStorage):
         result = data.get(constants.CHAIN_TYPE, {}).get(constants.CHAIN_NETWORK, [])
         if isinstance(result, dict) and _is_encrypted_blob(result):
             result = _decrypt_wallets(result)
-        return result
+        return _coerce_wallet_list(result)
 
     def save(self, wallets: list) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)

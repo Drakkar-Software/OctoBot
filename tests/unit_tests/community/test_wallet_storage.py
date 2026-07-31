@@ -69,6 +69,35 @@ class TestConfigJsonWalletStorage:
         storage.save(_SAMPLE_WALLETS)
         assert storage.load() == _SAMPLE_WALLETS
 
+    def test_load_ignores_legacy_pre_multi_wallet_string(self):
+        # Regression test for https://github.com/Drakkar-Software/OctoBot/issues/3591:
+        # pre-multi-wallet OctoBot stored a single private key string at this exact
+        # config path. Loading it must not crash; it's treated as no wallets stored.
+        blob = {constants.CHAIN_TYPE: {constants.CHAIN_NETWORK: "e10b34a36a"}}
+        s, _ = self._make_sync_storage({constants.CONFIG_COMMUNITY_WALLETS: blob})
+        assert ConfigJsonWalletStorage(s).load() == []
+
+    def test_load_removes_legacy_value_from_config(self):
+        blob = {constants.CHAIN_TYPE: {constants.CHAIN_NETWORK: "e10b34a36a"}}
+        s, store = self._make_sync_storage({constants.CONFIG_COMMUNITY_WALLETS: blob})
+        storage = ConfigJsonWalletStorage(s)
+
+        assert storage.load() == []
+        written = store[constants.CONFIG_COMMUNITY_WALLETS][constants.CHAIN_TYPE]
+        assert constants.CHAIN_NETWORK not in written
+
+        # A subsequent setup (create_wallet -> save) writes normally at the now-clean path.
+        storage.save(_SAMPLE_WALLETS)
+        assert storage.load() == _SAMPLE_WALLETS
+
+    def test_load_is_idempotent_once_legacy_value_is_removed(self):
+        blob = {constants.CHAIN_TYPE: {}}
+        s, _ = self._make_sync_storage({constants.CONFIG_COMMUNITY_WALLETS: blob})
+        storage = ConfigJsonWalletStorage(s)
+
+        assert storage.load() == []
+        assert s.set_item.call_count == 0
+
 
 class TestDedicatedFileWalletStorage:
     def test_load_returns_empty_when_file_absent(self, tmp_path):
@@ -80,6 +109,15 @@ class TestDedicatedFileWalletStorage:
         storage = DedicatedFileWalletStorage(str(path))
         storage.save(_SAMPLE_WALLETS)
         assert storage.load() == _SAMPLE_WALLETS
+
+    def test_load_ignores_legacy_pre_multi_wallet_string(self, tmp_path):
+        # Regression test for https://github.com/Drakkar-Software/OctoBot/issues/3591
+        path = tmp_path / "wallets.json"
+        path.write_text(
+            json.dumps({constants.CHAIN_TYPE: {constants.CHAIN_NETWORK: "e10b34a36a"}}),
+            encoding="utf-8",
+        )
+        assert DedicatedFileWalletStorage(str(path)).load() == []
 
     def test_save_is_atomic_no_tmp_remains(self, tmp_path):
         path = tmp_path / "wallets.json"
