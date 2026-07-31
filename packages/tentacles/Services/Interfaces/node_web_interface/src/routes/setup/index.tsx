@@ -107,11 +107,21 @@ function SetupWallet() {
         },
       }),
     onSuccess: async (result, { passphrase, name }) => {
+      // Persist the password before marking the session as logged in — if this
+      // throws (e.g. IndexedDB blocked), auth_username must not be set, so
+      // isLoggedIn() stays false instead of leaving a passwordless session.
+      try {
+        await savePassword(passphrase)
+      } catch {
+        showErrorToast(
+          "Could not save your passphrase on this device. Check your browser's privacy settings and try again.",
+        )
+        return
+      }
       localStorage.setItem("auth_username", result.address)
       if (name?.trim()) {
         localStorage.setItem("auth_wallet_name", name.trim())
       }
-      await savePassword(passphrase)
       sessionStorage.setItem("setup_in_progress", "true")
       navigate({ to: "/setup/connect" })
     },

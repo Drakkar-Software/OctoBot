@@ -133,6 +133,24 @@ describe("fetchNodeLogsArchive", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500 } as Response)
     await expect(fetchNodeLogsArchive()).rejects.toThrow(/500/)
   })
+
+  it("throws instead of authenticating as a fabricated 'node' user when no session exists", async () => {
+    // Regression test for https://github.com/Drakkar-Software/OctoBot/issues/3593
+    vi.stubGlobal("localStorage", { getItem: vi.fn(() => null) })
+    await expect(fetchNodeLogsArchive()).rejects.toThrow(
+      "No active wallet session",
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("throws instead of sending an empty password when the device-stored password is missing", async () => {
+    vi.stubGlobal("localStorage", { getItem: vi.fn(() => "0xwallet") })
+    mockedLoadPassword.mockResolvedValue(null)
+    await expect(fetchNodeLogsArchive()).rejects.toThrow(
+      "No active wallet session",
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })
 
 describe("downloadBytesAsFile", () => {
