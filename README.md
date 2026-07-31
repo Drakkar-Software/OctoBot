@@ -1,16 +1,21 @@
 # OctoBot - Free Open Source Crypto Trading Bot
 
-[PyPI](https://pypi.org/project/OctoBot)
-[Downloads](https://pepy.tech/project/octobot)
-[Dockerhub](https://hub.docker.com/r/drakkarsoftware/octobot)
-[OctoBot-CI](https://github.com/Drakkar-Software/OctoBot/actions)
-[Ask DeepWiki](https://deepwiki.com/Drakkar-Software/OctoBot)
+[![PyPI](https://img.shields.io/pypi/v/OctoBot.svg?logo=pypi)](https://pypi.org/project/OctoBot)
+[![Downloads](https://pepy.tech/badge/octobot/month)](https://pepy.tech/project/octobot)
+[![Dockerhub](https://img.shields.io/docker/pulls/drakkarsoftware/octobot.svg?logo=docker)](https://hub.docker.com/r/drakkarsoftware/octobot)
+[![OctoBot-CI](https://github.com/Drakkar-Software/OctoBot/workflows/OctoBot-CI/badge.svg)](https://github.com/Drakkar-Software/OctoBot/actions)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Drakkar-Software/OctoBot)
 
-[Telegram Chat](https://t.me/octobot_trading)
-[Discord](https://discord.com/invite/vHkcb8W)
-[Telegram News](https://t.me/OctoBot_Project)
-[Twitter](https://x.com/DrakkarsOctoBot)
-[YouTube](https://www.youtube.com/@octobot1134)
+<p align="center">
+  <img src="../assets/octobot-free-open-source-trading-bot-web-user-interface-showcase.gif" alt="OctoBot free open source trading bot web user interface showcase" width="630px"/>
+</p>
+
+[![OctoBot](https://img.shields.io/badge/dynamic/json.svg?&url=https://octobot.cloud/api/community/stats&query=$.total_bots&color=blue&label=Installed%20OctoBots)]()
+[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg?logo=telegram&label=Telegram)](https://t.me/octobot_trading)
+[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord&label=Discord)](https://discord.com/invite/vHkcb8W)
+[![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg?logo=telegram&label=Telegram)](https://t.me/OctoBot_Project)
+[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://x.com/DrakkarsOctoBot)
+[![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://www.youtube.com/@octobot1134)
 
 ## The new OctoBot beta is live
 
@@ -32,6 +37,10 @@ Please note that the new OctoBot beta is a work in progress. You may hit bugs or
 - Social indicators to analyze social data such as [Google trends](https://trends.google.com/trends/explore?date=today%205-y&q=%2Fm%2F05p0rrx&hl=en) or [Reddit](https://reddit.com)
 - Technical analysis indicators such as RSI, Moving Averages or MACD
 - [15+ exchange integrations](#your-trading-bot-for-binance-coinbase-hyperliquid-and-15-other-exchanges) including Binance, Coinbase, MEXC and Hyperliquid
+
+<p align="middle">
+  <a href='https://www.youtube.com/watch?v=TJUU62e1jR8'  target="_blank" rel="noopener"><img alt='OctoBot - Open Source Crypto Trading Bot Introduction Video from the official OctoBot YouTube Channel' src='../assets/meet_octobot_preview.png' width="630px"/></a>
+</p>
 
 The trading bot is written in Python and built as a free open source software since 2018. It can be [installed on your system or executed on a cloud provider](#installing-octobot-open-source-crypto-trading-bot).
 
@@ -67,17 +76,36 @@ You can also follow your trading bot from the OctoBot mobile app, which is desig
 
 The public (non-beta) OctoBot mobile app is designed for [octobot.cloud](https://www.octobot.cloud/trading-bot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=octobot_app_section) strategies. To manage your open source OctoBot in beta, use the new OctoBot interface or mobile beta app instead.
 
+<p align="middle">
+  <img src="../assets/mobile/octobot-mobile-app-deashboard-with-portfolio-value-and-two-live-bots-with-news.png" height="414" alt="octobot mobile app dashboard with portfolio value and two live bots with news">
+  &nbsp;&nbsp;&nbsp;&nbsp;    
+  <img src="../assets/mobile/octobot-mobile-app-bot-view-with-portfolio-content-recent-activities-and-historical-profits.png" height="414" alt="octobot mobile app bot view with portfolio content recent activities and historical profits">
+</p>
+
+<p align="middle">
+    <a href='https://apps.apple.com/us/app/octobot-crypto-investment/id6502774175?utm_source=octobot-github&utm_media=readme&utm_content=mobile-app-img'><img alt='Get it on the Apple Play Store' src='../assets/apple_store.png' height="50px"/></a>
+    <a href='https://play.google.com/store/apps/details?id=com.drakkarsoftware.octobotapp&utm_source=octobot-github&utm_media=readme&utm_content=mobile-app-img'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' height="50px"/></a>
+</p>
+
 ### Live and backtesting trading strategies automation
 
 OctoBot is more than just a strategy execution engine, it can also simulate investments using [risk-free paper trading](https://www.octobot.cloud/en/guides/octobot-usage/simulator?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=risk-free_paper_trading).
 
 Even better, the trading robot comes with its [built-in backtesting engine](https://www.octobot.cloud/en/guides/octobot-usage/backtesting?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting_engine) to help you test and optimize your strategy over a long period of time with a simulated portfolio and historical exchange data.
 
+<p align="middle">
+  <img alt='Backtesting report using grid trading on eth btc with 8 percent profit' src='../assets/backtesting_report.jpg' width="630px"/>
+</p>
+
 Backtesting your trading strategy and portfolio will give you accurate insights on the past performance and behavior of your trading strategy starting from its initial portfolio. This analysis tool gives you all the metrics to create the best version of your strategy before automating it with your real funds, on your exchange account.
 
 ### Your trading bot for Binance, Coinbase, Hyperliquid and 15+ other exchanges
 
 OctoBot supports the vast majority of crypto exchanges thanks to the great [CCXT library](https://github.com/ccxt/ccxt).
+
+<p align="middle">
+  <img alt='list of octobot supported exchanges including binance coinbase hyperliquid mexc and more' src='../assets/list-of-octobot-supported-exchanges-including-binance-coinbase-hyperliquid-mexc-and-more.png' width="630px"/>
+</p>
 
 This wide range of supported exchanges makes it easy to create investment strategies on any crypto, from Bitcoin, Ethereum or Solana to altcoins from the darkest depths of the altcoin forest.
 
@@ -124,6 +152,10 @@ OctoBot can be used as a [crypto basket trading bot](https://www.octobot.cloud/e
 
 OctoBot can also [automate market making strategies](https://github.com/Drakkar-Software/OctoBot-market-making) to help token creators provide liquidity to their markets.
 
+<p align="middle">
+  <img alt='octobot market making dashboard with buy and sell orders' src='https://raw.githubusercontent.com/Drakkar-Software/OctoBot-Market-Making/master/docs/octobot-market-making-dashboard-with-buy-and-sell-orders.png' width="630px"/>
+</p>
+
 Advanced market making strategies can be automated on [market-making.octobot.cloud](https://market-making.octobot.cloud?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=market-making), the self-service market making platform based on OctoBot. Feel free to contact us if you have any questions about it.
 
 ### Institutional custom strategies
@@ -131,6 +163,10 @@ Advanced market making strategies can be automated on [market-making.octobot.clo
 If you represent an institution that is interested in a commercial license or custom development to suit your specific needs or strategy, please contact us at [contact@drakkar.software](mailto:contact@drakkar.software).
 
 ## Installing OctoBot, open source crypto trading bot
+
+<p align="center">
+  <img src="../assets/a-man-relaxing-in-his-couch-while-octobot-the-free-open-source-crypto-trading-bot-is-making-money-by-automating-cryptocurrency-strategies.png" alt="A man relaxing in his couch while octobot the free open source crypto trading bot is making money by automating cryptocurrency strategies" width="630px">
+</p>
 
 Starting the [latest release](https://github.com/Drakkar-Software/OctoBot/releases/latest) runs OctoBot in **node mode**. See the [getting-started guide](https://www.octobot.cloud/en/guides/octobot-beta-getting-started?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_install_beta) to connect the new OctoBot interface to your node.
 
@@ -140,7 +176,7 @@ OctoBot can be deployed on the cloud or for free on your computer, server or [Ra
 
 OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](https://digitalocean.pxf.io/octobot-app).
 
-[Deploy on DigitalOcean](https://digitalocean.pxf.io/start-octobot)
+[![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://digitalocean.pxf.io/start-octobot)
 
 ### Using the OctoBot Executable
 
@@ -183,7 +219,7 @@ As the OctoBot code is split into different repositories, we created a [develope
 
 Make changes and contribute to OctoBot in a single click with an **already set up and ready to code developer environment** using Ona.
 
-[Contribute from Ona](https://gitpod.io/#https://github.com/Drakkar-Software/OctoBot)
+[![Contribute from Ona](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/Drakkar-Software/OctoBot)
 
 ## Disclaimer
 
@@ -195,14 +231,20 @@ before you understand how it works and what profit/loss you should expect.
 Please feel free to read the source code and understand the mechanism of this bot.
 
 ## Sponsors
-
-
-|                                                                                                                                     |     |
-| ----------------------------------------------------------------------------------------------------------------------------------- | --- |
-| Special thanks to [Chatwoot](https://www.chatwoot.com/) for helping us assist the users of OctoBot.                                 |     |
-| Huge thank you to [Scaleway](https://www.scaleway.com) for hosting OctoBot's cloud services.                                        |     |
-| A big thank you to [Sentry](https://sentry.io/welcome/) for helping us identify and understand errors in OctoBot to make it better. |     |
-
+<table>
+<tr>
+<td>Special thanks to <a href="https://www.chatwoot.com/" target="_blank">Chatwoot</a> for helping us assist the users of OctoBot.</td>
+<td><a href="https://github.com/chatwoot/chatwoot" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/chatwoot/chatwoot/develop/public/brand-assets/logo.svg" width="500px"></p></a></td>
+</tr>
+<tr>
+<td>Huge thank you to <a href="https://www.scaleway.com" target="_blank">Scaleway</a> for hosting OctoBot's cloud services.</td>
+<td><a href="https://www.scaleway.com" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/scaleway.svg" width="500px"></p></a></td>
+</tr>
+<tr>
+<td>A big thank you to <a href="https://sentry.io/welcome/" target="_blank">Sentry</a> for helping us identify and understand errors in OctoBot to make it better.</td>
+<td><a href="https://sentry.io/welcome/" target="_blank"><p align="center"><img src="https://raw.githubusercontent.com/Drakkar-Software/OctoBot/assets/sentry.png" width="500px"></p></a></td>
+</tr>
+</table>
 
 ## License
 
@@ -216,8 +258,8 @@ Do you like what we are building with OctoBot? Consider giving us a star ⭐ to 
 
 And join us on the OctoBot channels.
 
-[Telegram Chat](https://t.me/octobot_trading)
-[Discord](https://discord.com/invite/vHkcb8W)
-[Telegram News](https://t.me/OctoBot_Project)
-[Twitter](https://x.com/DrakkarsOctoBot)
-[YouTube](https://www.youtube.com/@octobot1134)
+[![Telegram Chat](https://img.shields.io/badge/telegram-chat-green.svg?logo=telegram&label=Telegram)](https://t.me/octobot_trading)
+[![Discord](https://img.shields.io/discord/530629985661222912.svg?logo=discord&label=Discord)](https://discord.com/invite/vHkcb8W)
+[![Telegram News](https://img.shields.io/badge/telegram-news-blue.svg?logo=telegram&label=Telegram)](https://t.me/OctoBot_Project)
+[![Twitter](https://img.shields.io/twitter/follow/DrakkarsOctobot.svg?label=twitter&style=social)](https://x.com/DrakkarsOctoBot)
+[![YouTube](https://img.shields.io/youtube/channel/views/UC2YAaBeWY8y_Olqs79b_X8A?label=youtube&style=social)](https://www.youtube.com/@octobot1134)
