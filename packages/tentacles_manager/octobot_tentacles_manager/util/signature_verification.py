@@ -122,15 +122,16 @@ async def verify_package(compressed_file, tentacles_path_or_url, aiohttp_session
 
     async with aiofiles.open(compressed_file, "rb") as f:
         package_data = await f.read()
+    identifier = f"{tentacles_path_or_url[:10]}...{tentacles_path_or_url[-30:]}"
 
     if verify_package_signature(package_data, signature):
         logger.info(
-            f"Tentacles package signature verified successfully for {tentacles_path_or_url}"
+            f"Tentacles package signature verified successfully for {identifier}"
         )
         return package_data
 
     raise SignatureVerificationError(
-        f"Tentacles package at {tentacles_path_or_url} has an INVALID signature. "
+        f"Tentacles package at {identifier} has an INVALID signature. "
         f"The package may have been tampered with. Refusing to install."
     )
 

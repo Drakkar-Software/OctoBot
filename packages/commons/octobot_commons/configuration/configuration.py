@@ -303,6 +303,33 @@ class Configuration:
             profile=self.profile,
         )
 
+    def _get_master_reference_tentacles_config_file_path(self) -> str:
+        if self.uses_shared_reference_tentacles():
+            return user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+        sync_data_root = os.path.normpath(user_root_folder_provider.get_sync_data_root())
+        user_root = os.path.normpath(user_root_folder_provider.get_user_root_folder())
+        if sync_data_root != user_root:
+            return os.path.join(
+                sync_data_root,
+                commons_constants.REFERENCE_TENTACLES_CONFIG_DIR,
+                commons_constants.CONFIG_TENTACLES_FILE,
+            )
+        return user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+
+    def get_tentacles_setup_config_for_package_operations(self):
+        """
+        Tentacles setup config used to compare installed vs saved community package URLs.
+        Sync/automation profiles read the master reference tentacles tree, not profile_data.
+        """
+        self.apply_readonly_reference_tentacles_override()
+        if self.uses_shared_reference_tentacles() or self.profile.is_profile_data_tentacle_backed():
+            import octobot_tentacles_manager.api as tentacles_manager_api
+
+            return tentacles_manager_api.get_tentacles_setup_config(
+                self._get_master_reference_tentacles_config_file_path()
+            )
+        return self.get_active_tentacles_setup_config()
+
     def get_metrics_enabled(self) -> bool:
         """
         Check if metrics are enabled

@@ -609,6 +609,49 @@ class TestSyncProfileBackendSaveProfile:
         assert saved_profile_data.exchanges[0].exchange_type == "spot"
         strategy_provider.update_item.assert_called_once()
 
+    def test_save_profile_persists_backtesting_profile_type(self, tmp_path):
+        sync_backend = profile_backends_module.SyncProfileBackend(
+            sync_user_id="wallet-user"
+        )
+        initial_profile_data = profile_data_module.ProfileData.from_dict(
+            {
+                "profile_details": {
+                    "id": "backtest-profile",
+                    "name": "Backtesting profile",
+                    "profile_type": enums.ProfileType.BACKTESTING.value,
+                },
+                "trading": {"reference_market": constants.DEFAULT_REFERENCE_MARKET},
+                "trader_simulator": {
+                    "enabled": True,
+                    "starting_portfolio": {"USDT": 100},
+                },
+            }
+        )
+        profile = sync_profile_module.SyncProfile(
+            initial_profile_data,
+            str(tmp_path / "runtime"),
+        )
+        profile.profile_id = "backtest-profile"
+        profile.name = "Backtesting profile"
+        profile.profile_type = enums.ProfileType.BACKTESTING
+        profile_storage = profile_storage_module.ProfileStorage(
+            str(tmp_path / constants.PROFILES_FOLDER),
+            None,
+            sync_backend=sync_backend,
+        )
+        profile.bind_profile_storage(profile_storage)
+        strategy_provider = mock.Mock()
+        strategy_provider.update_item = mock.Mock()
+        with mock.patch.object(
+            sync_backend,
+            "_get_strategy_provider",
+            mock.Mock(return_value=strategy_provider),
+        ):
+            profile.validate_and_save_config()
+        saved_profile_data = profile.get_profile_data()
+        assert saved_profile_data.profile_details.profile_type == enums.ProfileType.BACKTESTING.value
+        assert saved_profile_data.profile_details.name == "Backtesting profile"
+
 
 def _profile_schema_path() -> str:
     return os.path.join(

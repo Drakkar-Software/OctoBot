@@ -245,6 +245,16 @@ def test_from_profile_data(profile):
     assert profile_dict == created_profile.as_dict()
 
 
+def test_from_profile_preserves_profile_type(profile):
+    profile.profile_type = enums.ProfileType.BACKTESTING
+    profile_data = profiles.ProfileData.from_profile(profile)
+    assert profile_data.profile_details.profile_type == enums.ProfileType.BACKTESTING.value
+    profile_dict = profile_data._to_profile_dict()
+    assert profile_dict[constants.CONFIG_PROFILE][constants.CONFIG_TYPE] == enums.ProfileType.BACKTESTING.value
+    recreated_profile = profiles.Profile.from_profile_data(profile_data, "roundtrip_path")
+    assert recreated_profile.profile_type == enums.ProfileType.BACKTESTING
+
+
 def test_from_dict(profile_data_dict):
     # use second MinimalFund syntax
     profile_data_dict = copy.deepcopy(profile_data_dict)

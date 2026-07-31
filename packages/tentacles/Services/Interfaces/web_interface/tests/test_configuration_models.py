@@ -12,12 +12,15 @@ pytestmark = pytest.mark.asyncio
 
 
 class TestPersistProfileTentaclesChanges:
-    def test_sync_profile_calls_config_save(self):
+    def test_non_active_sync_profile_saved_directly(self):
         edited_tentacles = [mock.Mock(name="edited-tentacle")]
         edited_profile_data = mock.Mock()
-        edited_profile_data.tentacles = edited_tentacles
         edited_profile = mock.Mock()
+        edited_profile.is_profile_data_tentacle_backed.return_value = True
         edited_profile.get_profile_data.return_value = edited_profile_data
+        edited_profile.get_tentacles_data.return_value = edited_tentacles
+        profile_storage = mock.Mock()
+        edited_profile._require_profile_storage.return_value = profile_storage
 
         active_profile_data = mock.Mock()
         active_profile_data.tentacles = []
@@ -42,7 +45,39 @@ class TestPersistProfileTentaclesChanges:
         ) as save_setup_mock:
             configuration_model._persist_profile_tentacles_changes(tentacles_setup_config)
 
-        assert active_profile_data.tentacles == edited_tentacles
+        assert edited_profile_data.tentacles == edited_tentacles
+        edited_profile.bind_tentacles_setup_config.assert_called_once_with(tentacles_setup_config)
+        profile_storage.save_active_profile.assert_called_once_with(edited_profile, config.config)
+        active_profile.bind_tentacles_setup_config.assert_not_called()
+        config.save.assert_not_called()
+        save_setup_mock.assert_not_called()
+
+    def test_sync_active_profile_calls_config_save(self):
+        edited_tentacles = [mock.Mock(name="edited-tentacle")]
+        edited_profile_data = mock.Mock()
+        edited_profile_data.tentacles = edited_tentacles
+        active_profile = mock.Mock()
+        active_profile.is_profile_data_tentacle_backed.return_value = True
+        active_profile.get_profile_data.return_value = edited_profile_data
+
+        tentacles_setup_config = mock.Mock()
+        tentacles_setup_config.profile = active_profile
+
+        config = mock.Mock()
+        config.profile = active_profile
+
+        with mock.patch.object(
+            configuration_model.interfaces_util,
+            "get_edited_config",
+            mock.Mock(return_value=config),
+        ), mock.patch.object(
+            configuration_model.tentacles_manager_api,
+            "save_tentacles_setup_configuration",
+            mock.Mock(),
+        ) as save_setup_mock:
+            configuration_model._persist_profile_tentacles_changes(tentacles_setup_config)
+
+        assert edited_profile_data.tentacles == edited_tentacles
         active_profile.bind_tentacles_setup_config.assert_called_once_with(tentacles_setup_config)
         config.save.assert_called_once_with(save_profile=True)
         save_setup_mock.assert_not_called()
@@ -53,6 +88,7 @@ class TestPersistProfileTentaclesChanges:
         config = mock.Mock()
         config.profile = profile
         tentacles_setup_config = mock.Mock()
+        tentacles_setup_config.profile = profile
 
         with mock.patch.object(
             configuration_model.interfaces_util,
@@ -75,9 +111,12 @@ class TestPersistProfileTentaclesChanges:
 
         edited_tentacles = [mock.Mock(name="edited-tentacle")]
         edited_profile_data = mock.Mock()
-        edited_profile_data.tentacles = edited_tentacles
         edited_profile = mock.Mock()
+        edited_profile.is_profile_data_tentacle_backed.return_value = True
         edited_profile.get_profile_data.return_value = edited_profile_data
+        edited_profile.get_tentacles_data.return_value = edited_tentacles
+        profile_storage = mock.Mock()
+        edited_profile._require_profile_storage.return_value = profile_storage
 
         active_profile_data = mock.Mock()
         active_profile_data.tentacles = []
@@ -98,7 +137,8 @@ class TestPersistProfileTentaclesChanges:
         ):
             configuration_model._persist_profile_tentacles_changes(tentacles_setup_config)
 
-        active_profile.bind_tentacles_setup_config.assert_called_once_with(tentacles_setup_config)
+        profile_storage.save_active_profile.assert_called_once_with(edited_profile, config.config)
+        active_profile.bind_tentacles_setup_config.assert_not_called()
         assert startup_setup.profile is original_startup_profile
         assert tentacles_setup_config is not startup_setup
 

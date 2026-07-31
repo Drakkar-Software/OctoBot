@@ -28,9 +28,9 @@ def get_urls_to_install(community_auth, selected_profile_tentacles_setup_config,
 async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(
     community_auth, install_only: bool = False
 ):
-    tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
-        community_auth.config.get_tentacles_config_path()
-    )
+    if community_auth.config is None:
+        return False
+    tentacles_setup_config = community_auth.config.get_tentacles_setup_config_for_package_operations()
     to_install, to_remove_tentacles, force_refresh_tentacles_setup_config = get_to_install_and_remove_tentacles(
         community_auth, tentacles_setup_config, constants.LONG_VERSION
     )
