@@ -44,6 +44,7 @@ WORKDIR /octobot
 
 COPY --from=base /opt/venv /opt/venv
 COPY octobot/config /octobot/octobot/config
+COPY start.py /octobot/
 COPY docker/* /octobot/
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]

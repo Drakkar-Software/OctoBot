@@ -186,6 +186,11 @@ files(
 )
 
 files(
+    name="start_script",
+    sources=["start.py"],
+)
+
+files(
     name="wheel_files",
     sources=["dist/"],
     dependencies=[":OctoBot"],
@@ -200,6 +205,7 @@ docker_image(
         ":octobot_config",
         ":octobot_strategy_optimizer_data",
         ":docker_files",
+        ":start_script",
     ],
     repository="drakkarsoftware/octobot",
     image_tags=["local"],
