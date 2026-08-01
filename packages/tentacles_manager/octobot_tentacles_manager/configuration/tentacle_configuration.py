@@ -24,6 +24,7 @@ import typing
 
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_edit_gate as profile_edit_gate_module
+import octobot_commons.constants as commons_constants
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.configuration as configuration
 import octobot_tentacles_manager.constants as constants
@@ -209,7 +210,7 @@ def get_user_tentacles_config_folder(tentacles_setup_config) -> str:
                 profile,
                 profile_edit_gate_module.ProfileEditType.TENTACLE_CONFIG,
             )
-    return path.join(config_folder, constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
+    return path.join(config_folder, commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
 
 
 def get_profile_config_specific_file_path(tentacles_setup_config, klass) -> str:

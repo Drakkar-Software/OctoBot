@@ -25,7 +25,7 @@ import octobot_tentacles_manager.constants as tm_constants
 from octobot_commons.logging.logging_util import set_logging_level
 from octobot_tentacles_manager.constants import \
     TENTACLES_REQUIREMENTS_INSTALL_TEMP_DIR, TENTACLES_PATH, DEFAULT_BOT_PATH, \
-    UNKNOWN_TENTACLES_PACKAGE_LOCATION, TENTACLES_SPECIFIC_CONFIG_FOLDER
+    UNKNOWN_TENTACLES_PACKAGE_LOCATION
 from octobot_tentacles_manager.workers.install_worker import InstallWorker
 from octobot_tentacles_manager.models.tentacle import Tentacle
 from octobot_tentacles_manager.util.tentacle_fetching import fetch_and_extract_tentacles
@@ -180,7 +180,7 @@ async def test_install_all_tentacles_with_profile(clean):
     # test installed files to ensure tentacles installation got well
     trading_mode_files_count = sum(1 for _ in os.walk(os.path.join(TENTACLES_PATH, "Trading", "Mode")))
     assert trading_mode_files_count == 5
-    config_files = [f for f in os.walk(os.path.join(profile_path, TENTACLES_SPECIFIC_CONFIG_FOLDER))]
+    config_files = [f for f in os.walk(os.path.join(profile_path, commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER))]
     config_files_count = len(config_files)
     assert config_files_count == 1
     assert "DailyTradingMode.json" in config_files[0][2]
@@ -190,8 +190,8 @@ async def test_install_all_tentacles_with_profile(clean):
     assert os.path.isfile(os.path.join(profile_path, commons_constants.PROFILE_CONFIG_FILE))
     assert os.path.isfile(os.path.join(profile_path, "default_profile.png"))
     assert os.path.isfile(os.path.join(profile_path, commons_constants.CONFIG_TENTACLES_FILE))
-    assert os.path.isfile(os.path.join(profile_path, TENTACLES_SPECIFIC_CONFIG_FOLDER, "DailyTradingMode.json"))
-    assert os.path.isfile(os.path.join(profile_path, TENTACLES_SPECIFIC_CONFIG_FOLDER, "TwitterNewsEvaluator.json"))
+    assert os.path.isfile(os.path.join(profile_path, commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER, "DailyTradingMode.json"))
+    assert os.path.isfile(os.path.join(profile_path, commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER, "TwitterNewsEvaluator.json"))
 
 
 async def test_profiles_update(clean, fake_profiles):
@@ -222,13 +222,13 @@ async def test_profiles_update(clean, fake_profiles):
     # test specific tentacles config
     default_profile_tentacles_config = os.path.join(user_profiles,
                                                     commons_constants.DEFAULT_PROFILE,
-                                                    TENTACLES_SPECIFIC_CONFIG_FOLDER)
+                                                    commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
     other_profile_tentacles_config = os.path.join(user_profiles,
                                                   OTHER_PROFILE,
-                                                  TENTACLES_SPECIFIC_CONFIG_FOLDER)
+                                                  commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
     for tentacle_config in os.scandir(os.path.join(os.path.dirname(
             user_root_folder_provider.get_user_reference_tentacle_config_file_path()),
-            TENTACLES_SPECIFIC_CONFIG_FOLDER)):
+            commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)):
         with open(tentacle_config) as ref_config_file:
             ref_config = json.load(ref_config_file)
         with open(os.path.join(default_profile_tentacles_config, tentacle_config.name)) as default_profile_config_file:

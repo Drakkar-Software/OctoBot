@@ -94,7 +94,7 @@ def _minimal_tentacle_klass(tentacle_name: str):
 def _seed_empty_specific_config(writable_profile_path: str, tentacle_name: str) -> str:
     specific_config_dir = os.path.join(
         writable_profile_path,
-        tentacles_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+        constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
     )
     os.makedirs(specific_config_dir, exist_ok=True)
     specific_config_path = os.path.join(
@@ -165,13 +165,13 @@ class TestMasterOverlayReadonlyProfileEditFlow:
         )
         child_specific_config_path = os.path.join(
             writable_path,
-            tentacles_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+            constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
             f"{TENTACLE_NAME}{tentacles_constants.CONFIG_EXT}",
         )
         assert os.path.isfile(child_specific_config_path)
         assert _read_json(child_specific_config_path) == {"amount": 1}
         assert not os.path.isdir(
-            os.path.join(master_profile_path, tentacles_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
+            os.path.join(master_profile_path, constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
         )
 
         # Tentacle activation: blocked; master tentacles_config.json unchanged.
@@ -212,7 +212,7 @@ class TestLocalReadonlyProfileEditFlow:
         )
         specific_config_path = os.path.join(
             profile_path,
-            tentacles_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+            constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
             f"{TENTACLE_NAME}{tentacles_constants.CONFIG_EXT}",
         )
         assert _read_json(specific_config_path) == {"amount": 1}
@@ -248,7 +248,7 @@ class TestEditableLocalProfileEditFlow:
         )
         specific_config_path = os.path.join(
             profile_path,
-            tentacles_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+            constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
             f"{TENTACLE_NAME}{tentacles_constants.CONFIG_EXT}",
         )
         assert _read_json(specific_config_path) == {"amount": 1}
@@ -286,7 +286,7 @@ class TestEditableMasterOverlayProfileEditFlow:
         )
         master_specific_config_path = os.path.join(
             master_profile_path,
-            tentacles_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+            constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
             f"{TENTACLE_NAME}{tentacles_constants.CONFIG_EXT}",
         )
         assert _read_json(master_specific_config_path) == {"amount": 1}

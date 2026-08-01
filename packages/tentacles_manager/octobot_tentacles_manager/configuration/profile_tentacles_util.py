@@ -74,7 +74,7 @@ def write_specific_configs_to_profile_folder(
     changed = False
     specific_config_dir = os.path.join(
         output_path,
-        tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+        commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
     )
     if not os.path.exists(specific_config_dir):
         os.mkdir(specific_config_dir)
@@ -102,7 +102,7 @@ def load_setup_config_from_profile_path(tentacles_config_path: str):
 def read_specific_configs_by_tentacle_name(profile_folder_path: str) -> dict[str, dict]:
     specific_config_dir = os.path.join(
         profile_folder_path,
-        tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+        commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
     )
     config_by_tentacle = {}
     if not os.path.isdir(specific_config_dir):

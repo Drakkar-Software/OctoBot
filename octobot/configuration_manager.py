@@ -193,7 +193,7 @@ def load_default_tentacles_config(profile_folder):
         )
         shutil.copytree(
             ref_spec,
-            os.path.join(profile_folder, tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER),
+            os.path.join(profile_folder, common_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER),
         )
 
 
