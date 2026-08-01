@@ -52,16 +52,8 @@ import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 
-NON_OVERWRITTEN_PROFILE_FOLDERS = []
+NON_OVERWRITTEN_PROFILE_FOLDERS = [constants.TENTACLES_SPECIFIC_CONFIG_FOLDER]
 NON_OVERWRITTEN_PROFILE_FILES = [constants.PROFILE_CONFIG_FILE]
-try:
-    import octobot_tentacles_manager.constants as tentacles_manager_constants
-
-    NON_OVERWRITTEN_PROFILE_FOLDERS.append(
-        tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
-    )
-except ImportError:
-    pass
 
 
 def export_profile(profile, export_path: str) -> str:

@@ -163,7 +163,7 @@ class TestWriteSpecificConfigsToProfileFolder:
             profile_data_module.TentaclesData(name="MyEvaluator", config={"a": 1}),
         ]
         specific_config_dir = os.path.join(
-            tmp_path, tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
+            tmp_path, commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
         )
         os.makedirs(specific_config_dir)
         file_path = os.path.join(
@@ -194,7 +194,7 @@ class TestWriteSpecificConfigsToProfileFolder:
         assert changed is True
         file_path = os.path.join(
             tmp_path,
-            tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+            commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
             f"MyEvaluator{tentacles_manager_constants.CONFIG_EXT}",
         )
         assert os.path.isfile(file_path)
@@ -227,7 +227,7 @@ class TestReadSpecificConfigsByTentacleName:
         import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
 
         specific_config_dir = os.path.join(
-            tmp_path, tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
+            tmp_path, commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
         )
         os.makedirs(specific_config_dir)
         file_path = os.path.join(

@@ -193,15 +193,10 @@ class RunDatabasesIdentifier:
         :return: the name of the only exchange the backtesting happened on if it only ran on a single exchange,
         None otherwise
         """
-        ignored_folders = [enums.RunDatabases.LIVE.value]
-        try:
-            import octobot_tentacles_manager.constants as tentacles_manager_constants
-
-            ignored_folders.append(
-                tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
-            )
-        except ImportError:
-            pass
+        ignored_folders = [
+            enums.RunDatabases.LIVE.value,
+            constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+        ]
         return await self.database_adaptor.get_single_sub_identifier(
             self._base_folder(), ignored_folders
         )

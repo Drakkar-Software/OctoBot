@@ -67,11 +67,9 @@ class UserRootFolderProvider(singleton_class.Singleton):
 
     def get_user_reference_tentacle_specific_config_path(self) -> str:
         """Return the tentacles-specific config directory under reference config."""
-        import octobot_tentacles_manager.constants as tentacles_manager_constants
-
         return os.path.join(
             self.get_user_reference_tentacle_config_path(),
-            tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
+            commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
         )
 
 

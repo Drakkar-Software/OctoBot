@@ -5,7 +5,6 @@ import os
 
 import octobot_commons.constants as constants
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
-import octobot_tentacles_manager.constants as tentacles_manager_constants
 
 
 class TestUserRootFolderProviderReadonlyReferenceTentaclesPath:
@@ -35,7 +34,7 @@ class TestUserRootFolderProviderReadonlyReferenceTentaclesPath:
             master_reference_path / constants.CONFIG_TENTACLES_FILE
         )
         assert provider.get_user_reference_tentacle_specific_config_path() == str(
-            master_reference_path / tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
+            master_reference_path / constants.TENTACLES_SPECIFIC_CONFIG_FOLDER
         )
 
     def test_falls_back_to_user_root_when_override_unset(self):
