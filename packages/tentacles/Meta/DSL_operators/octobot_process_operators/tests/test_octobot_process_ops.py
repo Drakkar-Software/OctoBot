@@ -1444,7 +1444,7 @@ class TestConvertProfileDataToProfileDirectorySimpleMarketMakingFunctional:
         assert traded_pair in profile_config[commons_constants.CONFIG_CRYPTO_CURRENCIES]
         assert exchange_internal_name in profile_config[commons_constants.CONFIG_EXCHANGES]
 
-        mm_specific = output_dir / tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER / (
+        mm_specific = output_dir / commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER / (
             f"{_SMM.get_name()}{tentacles_manager_constants.CONFIG_EXT}"
         )
         assert mm_specific.is_file()
