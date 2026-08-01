@@ -157,3 +157,71 @@ class TestCreateGenericProcessBotUsesProvidedAutomationId:
             assert automation_id == provided_automation_id
         finally:
             user_root_provider.set_root(previous_user_root)
+
+
+class TestCreateGenericProcessBotDecouplesUserActionAndAutomationIds:
+    @pytest.mark.asyncio
+    async def test_create_generic_process_bot_user_action_id_differs_from_automation_id(
+        self,
+        tmp_path,
+        temp_dbos_scheduler,
+    ) -> None:
+        import octobot_commons.user_root_folder_provider as user_root_folder_provider_module
+        import octobot_node.constants as octobot_node_constants_module
+        import octobot_node.scheduler as scheduler_module
+        import octobot_protocol.models as protocol_models_module
+        import octobot.community.authentication as community_authentication_module
+        from tests.functional_tests.util import authenticator_mocks as authenticator_mocks_module
+        from tests.functional_tests.util import workflow_common as workflow_common_module
+
+        user_root_provider = user_root_folder_provider_module.instance()
+        previous_user_root = user_root_provider.get_root()
+        test_user_root = tmp_path / "create_generic_process_bot_decoupled_ids_user_root"
+        user_root_provider.set_root(str(test_user_root))
+        user_id = workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID
+        authentication_instance = authenticator_mocks_module.build_community_authentication(
+            workflow_common_module.SIMULATOR_GRID_TEST_PRIVATE_KEY,
+            workflow_common_module.SIMULATOR_GRID_TEST_WALLET_PASSPHRASE,
+        )
+
+        try:
+            with mock.patch.object(
+                community_authentication_module.CommunityAuthentication,
+                "instance",
+                return_value=authentication_instance,
+            ):
+                automation_id = await create_generic_process_bot(user_id, "Decoupled ids OctoBot")
+
+            assert len(automation_id) == octobot_node_constants_module.PARENT_WORKFLOW_ID_LENGTH
+
+            listed_user_actions = await scheduler_module.SCHEDULER.list_user_actions(
+                user_id,
+                active_only=False,
+            )
+            create_user_actions = []
+            for user_action in listed_user_actions:
+                configuration = (
+                    user_action.configuration.actual_instance
+                    if user_action.configuration is not None
+                    else None
+                )
+                if not isinstance(configuration, protocol_models_module.CreateAutomationConfiguration):
+                    continue
+                result = (
+                    user_action.result.actual_instance
+                    if user_action.result is not None
+                    else None
+                )
+                if not isinstance(result, protocol_models_module.AutomationActionResult):
+                    continue
+                if result.created_automation_id != automation_id:
+                    continue
+                create_user_actions.append(user_action)
+
+            assert len(create_user_actions) >= 1
+            create_user_action = create_user_actions[-1]
+            assert create_user_action.id.startswith("ua-create-generic-process-")
+            assert create_user_action.id != automation_id
+            assert create_user_action.status == protocol_models_module.UserActionStatus.COMPLETED
+        finally:
+            user_root_provider.set_root(previous_user_root)

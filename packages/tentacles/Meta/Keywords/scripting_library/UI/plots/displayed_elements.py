@@ -51,10 +51,21 @@ class DisplayedElements(display.DisplayTranslator):
             run_db = meta_db.get_run_db()
             metadata_rows = await run_db.all(commons_enums.DBTables.METADATA.value)
             metadata = metadata_rows[0] if metadata_rows else None
-            if symbols is not None:
-                symbols.extend(metadata[commons_enums.BacktestingMetadata.SYMBOLS.value])
-            if time_frames is not None:
-                time_frames.extend(metadata[commons_enums.BacktestingMetadata.TIME_FRAMES.value])
+            if symbols is not None or time_frames is not None:
+                if metadata is not None:
+                    if symbols is not None:
+                        symbols.extend(metadata[commons_enums.BacktestingMetadata.SYMBOLS.value])
+                    if time_frames is not None:
+                        time_frames.extend(metadata[commons_enums.BacktestingMetadata.TIME_FRAMES.value])
+                elif not database_manager.is_backtesting():
+                    exchange_manager = trading_api.get_exchange_manager_from_exchange_id(exchange_id)
+                    if symbols is not None:
+                        symbols.extend(trading_api.get_trading_pairs(exchange_manager))
+                    if time_frames is not None:
+                        time_frames.extend(
+                            relevant_time_frame.value
+                            for relevant_time_frame in trading_api.get_relevant_time_frames(exchange_manager)
+                        )
             account_type = trading_api.get_account_type_from_run_metadata(metadata) \
                 if database_manager.is_backtesting() \
                 else trading_api.get_account_type_from_exchange_manager(
