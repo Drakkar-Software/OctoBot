@@ -4,6 +4,7 @@
 import asyncio
 import os
 import copy
+import pathlib
 
 import mock
 import pytest
@@ -19,6 +20,10 @@ import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.profiles.profile_types.sync_profile as sync_profile_module
 import octobot_commons.profiles.profile_data_import as profile_data_import_module
 import octobot_sync.sync.collection_backend.errors as collection_errors
+
+import tests.profiles.conftest as profiles_conftest
+
+pytestmark = pytest.mark.xdist_group(name=profiles_conftest.PROFILES_FS_XDIST_GROUP)
 
 
 class TestProfileStorageListProfiles:
@@ -684,7 +689,9 @@ def _cloud_like_fetched_profile_data() -> profile_data_module.ProfileData:
 
 
 class TestProfileStorageImportProfileDataFunctional:
-    def test_import_profile_data_round_trips_full_profile_shape(self, tmp_path, monkeypatch):
+    def test_import_profile_data_round_trips_full_profile_shape(
+        self, tmp_path, monkeypatch, reset_user_root_folder_provider
+    ):
         profile_name = "proud-bear_fetched_config"
         original_slug = profile_name
         bot_install_path = str(tmp_path)
@@ -715,12 +722,13 @@ class TestProfileStorageImportProfileDataFunctional:
                 )
             )
 
-        profile_folder = profiles_path / profile_name
+        profile_folder = pathlib.Path(imported_profile.path)
         profile_config_path = profile_backends_module.FilesystemProfileBackend.config_file_path(
             str(profile_folder)
         )
 
         assert profile_folder.is_dir()
+        assert profile_folder == profiles_path / profile_name
         assert os.path.isfile(profile_config_path)
         assert not os.path.isfile(
             os.path.join(profile_folder, constants.CONFIG_TENTACLES_FILE)
