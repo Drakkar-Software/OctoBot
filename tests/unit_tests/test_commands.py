@@ -15,11 +15,8 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 import mock
-import contextlib
 
 import octobot.commands as commands
-import octobot.constants as constants
-import octobot_commons.multiprocessing_util as multiprocessing_util
 
 
 # All test coroutines will be treated as marked.
@@ -340,18 +337,7 @@ class TestInstallMissingAdditionalTentaclesOnly:
         config = mock.Mock()
         to_install_urls = ["https://premium.example/pkg.zip"]
 
-        @contextlib.asynccontextmanager
-        async def mock_lock(_lock_file_path):
-            yield
-
         with mock.patch(
-            "octobot_commons.user_root_folder_provider.get_user_reference_tentacle_config_path",
-            return_value="/master/reference",
-        ), mock.patch.object(
-            multiprocessing_util,
-            "async_filesystem_based_lock",
-            mock_lock,
-        ), mock.patch(
             "octobot.commands.install_or_update_tentacles", new_callable=mock.AsyncMock
         ) as install_mock, mock.patch(
             "octobot_tentacles_manager.api.load_tentacles", return_value=True

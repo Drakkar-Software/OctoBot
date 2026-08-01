@@ -30,9 +30,6 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 import octobot_commons.os_util as os_util
 import octobot_commons.aiohttp_util as aiohttp_util
-import octobot_commons.multiprocessing_util as multiprocessing_util
-import octobot_commons.user_root_folder_provider as user_root_folder_provider
-
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
 
@@ -44,8 +41,6 @@ import octobot.configuration_manager as configuration_manager
 
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
-TENTACLES_INSTALL_LOCK_FILE_NAME = ".tentacles_install.lock"
-
 GLOBAL_BOT_INSTANCE = None
 _signal_interrupt_count = 0
 _signal_interrupt_lock = threading.Lock()
@@ -121,13 +116,7 @@ async def _install_missing_additional_tentacles_only(config, to_install_urls):
     logger.info(
         f"Installing {len(to_install_urls)} additional tentacle package(s) for process child."
     )
-    reference_config_path = user_root_folder_provider.get_user_reference_tentacle_config_path()
-    lock_file_path = os.path.join(reference_config_path, TENTACLES_INSTALL_LOCK_FILE_NAME)
-    try:
-        async with multiprocessing_util.async_filesystem_based_lock(lock_file_path):
-            await install_or_update_tentacles(config, to_install_urls, only_additional=True)
-    except multiprocessing_util.FilesystemBasedLockTimeoutError:
-        logger.error("Could not acquire tentacles install lock")
+    await install_or_update_tentacles(config, to_install_urls, only_additional=True)
 
     tentacles_loaded = tentacles_manager_api.load_tentacles(verbose=True)
     if not tentacles_loaded:
