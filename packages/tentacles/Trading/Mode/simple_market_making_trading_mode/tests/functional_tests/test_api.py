@@ -1,10 +1,12 @@
 #  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
-#  Functional integration tests for predicted_order_book and market_making_volume (live BingX + Dexscreener + DefiLlama).
+#  Functional integration tests for predicted_order_book and market_making_volume (live BingX + Dexscreener + DefiLlama + Alchemy).
 
+import os
 import typing
 
+import dotenv
 import pytest
 
 import octobot_commons
@@ -13,10 +15,18 @@ import octobot_commons.symbols.symbol_util as commons_symbols
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.api_handlers as api_handlers
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.constants as api_constants
 
+dotenv.load_dotenv(verbose=False)
+
+skip_without_alchemy_api_key = pytest.mark.skipif(
+    not os.getenv("ALCHEMY_API_KEY"),
+    reason="ALCHEMY_API_KEY not set",
+)
+
 
 BINGX_EXCHANGE_NAME = "bingx"
 DEXSCREENER_EXCHANGE_NAME = "dexscreener"
 DEFILLAMA_EXCHANGE_NAME = "defillama"
+ALCHEMY_EXCHANGE_NAME = "alchemy"
 BINGX_TRADING_PAIR = "BTC/USDT"
 DEX_TRADING_PAIR = "BTCB/USDT"
 
@@ -61,6 +71,16 @@ DIRECT_WBTC_USDT_ADDRESS_FORMULA = (
     f'price("{WBTC_TOKEN_ADDRESS}/{USDT_TOKEN_ADDRESS}{BSC_DEX_SYMBOL_SUFFIX}")'
 )
 
+WETH_BASE = "0x4200000000000000000000000000000000000006"
+USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+BASE_UNISWAPV3_SUFFIX = (
+    f"{octobot_commons.NETWORK_SEPARATOR}BASE"
+    f"{octobot_commons.DEX_SEPARATOR}UNISWAPV3"
+)
+ALCHEMY_WETH_USDC_TRADING_PAIR = f"{WETH_BASE}/{USDC_BASE}{BASE_UNISWAPV3_SUFFIX}"
+ALCHEMY_WETH_USDC_ADDRESS_FORMULA = f'price("{ALCHEMY_WETH_USDC_TRADING_PAIR}")'
+
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -80,6 +100,19 @@ def _defillama_exchange() -> dict:
         "exchange": DEFILLAMA_EXCHANGE_NAME,
         "sandboxed": False,
     }
+
+
+def _alchemy_exchange() -> dict:
+    return {
+        "id": "alchemy-config",
+        "name": ALCHEMY_EXCHANGE_NAME,
+        "exchange": ALCHEMY_EXCHANGE_NAME,
+        "sandboxed": False,
+    }
+
+
+def _bingx_and_alchemy_exchanges() -> list[dict]:
+    return [_bingx_exchange(), _alchemy_exchange()]
 
 
 def _base_pair_settings(
@@ -385,6 +418,52 @@ class TestDispatchMarketMakingRequestPredictedOrderBook:
         assert status == 200
         _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
 
+    @skip_without_alchemy_api_key
+    async def test_bingx_with_alchemy_direct_weth_usdc(self):
+        request_data = _predicted_order_book_request(
+            exchanges=_bingx_and_alchemy_exchanges(),
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": ALCHEMY_EXCHANGE_NAME,
+                            "pair": ALCHEMY_WETH_USDC_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": "",
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
+    @skip_without_alchemy_api_key
+    async def test_bingx_with_alchemy_weth_usdc_address_formula(self):
+        request_data = _predicted_order_book_request(
+            exchanges=_bingx_and_alchemy_exchanges(),
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": ALCHEMY_EXCHANGE_NAME,
+                            "pair": ALCHEMY_WETH_USDC_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": ALCHEMY_WETH_USDC_ADDRESS_FORMULA,
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_predicted_order_book(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
     @pytest.mark.parametrize(
         "defillama_pair,reference_formula",
         [
@@ -494,6 +573,52 @@ class TestDispatchMarketMakingRequestMarketMakingVolume:
                             "pair": BINGX_TRADING_PAIR,
                             "weight": 1,
                             "formula": DIRECT_WBTC_USDT_ADDRESS_FORMULA,
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_market_making_volume(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
+    @skip_without_alchemy_api_key
+    async def test_bingx_with_alchemy_direct_weth_usdc(self):
+        request_data = _market_making_volume_request(
+            exchanges=_bingx_and_alchemy_exchanges(),
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": ALCHEMY_EXCHANGE_NAME,
+                            "pair": ALCHEMY_WETH_USDC_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": "",
+                        }
+                    ],
+                )
+            ],
+        )
+        body, status = await api_handlers.dispatch_market_making_request(request_data)
+        assert status == 200
+        _assert_successful_market_making_volume(body, BINGX_EXCHANGE_NAME, BINGX_TRADING_PAIR)
+
+    @skip_without_alchemy_api_key
+    async def test_bingx_with_alchemy_weth_usdc_address_formula(self):
+        request_data = _market_making_volume_request(
+            exchanges=_bingx_and_alchemy_exchanges(),
+            pair_settings=[
+                _base_pair_settings(
+                    BINGX_TRADING_PAIR,
+                    BINGX_EXCHANGE_NAME,
+                    [
+                        {
+                            "exchange": ALCHEMY_EXCHANGE_NAME,
+                            "pair": ALCHEMY_WETH_USDC_TRADING_PAIR,
+                            "weight": 1,
+                            "formula": ALCHEMY_WETH_USDC_ADDRESS_FORMULA,
                         }
                     ],
                 )
