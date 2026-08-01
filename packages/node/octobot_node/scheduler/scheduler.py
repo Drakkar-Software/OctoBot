@@ -322,6 +322,27 @@ class Scheduler:
             return None
         return task.user_id
 
+    async def resolve_terminal_automation_owner_user_id(
+        self,
+        parent_id: str,
+    ) -> typing.Optional[str]:
+        """
+        Return the Starfish ``user_id`` that owns the latest terminal automation for ``parent_id``.
+
+        Unlike :meth:`resolve_automation_owner_user_id`, this lookup uses SUCCESS/ERROR workflows
+        so restart actions can resolve ownership after the automation has completed or failed.
+        """
+        terminal_workflow = await self.resolve_latest_terminal_automation_workflow_for_parent_id(
+            None,
+            parent_id,
+        )
+        if terminal_workflow is None:
+            return None
+        task = workflows_util.get_automation_input_task(terminal_workflow)
+        if task is None:
+            return None
+        return task.user_id
+
     async def resolve_latest_terminal_automation_workflow_for_parent_id(
         self,
         user_id: typing.Optional[str],

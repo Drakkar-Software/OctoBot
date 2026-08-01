@@ -116,6 +116,11 @@ def _automation_not_owned_by_caller(*, owner_user_id: str):
         return_value=[],
     ), mock.patch.object(
         octobot_node.scheduler.SCHEDULER,
+        "resolve_latest_terminal_automation_workflow_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=None,
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
         "resolve_automation_owner_user_id",
         new_callable=mock.AsyncMock,
         return_value=owner_user_id,
@@ -135,6 +140,58 @@ def _automation_not_found():
         "resolve_automation_owner_user_id",
         new_callable=mock.AsyncMock,
         return_value=None,
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_latest_terminal_automation_workflow_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=None,
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_terminal_automation_owner_user_id",
+        new_callable=mock.AsyncMock,
+        return_value=None,
+    ):
+        yield
+
+
+@contextlib.contextmanager
+def _terminal_automation_owned_by_caller():
+    with mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_active_automation_workflow_ids_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=[],
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_latest_terminal_automation_workflow_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=mock.Mock(),
+    ):
+        yield
+
+
+@contextlib.contextmanager
+def _terminal_automation_not_owned_by_caller(*, owner_user_id: str):
+    with mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_active_automation_workflow_ids_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=[],
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_latest_terminal_automation_workflow_for_parent_id",
+        new_callable=mock.AsyncMock,
+        return_value=None,
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_automation_owner_user_id",
+        new_callable=mock.AsyncMock,
+        return_value=None,
+    ), mock.patch.object(
+        octobot_node.scheduler.SCHEDULER,
+        "resolve_terminal_automation_owner_user_id",
+        new_callable=mock.AsyncMock,
+        return_value=owner_user_id,
     ):
         yield
 
@@ -459,3 +516,41 @@ class TestExecuteUserActionCrossWalletAutomation:
                     )
         assert response.status_code == 204
         assert mock_execute_user_action.await_args[0][1] == ADMIN_USER_ID
+
+    def test_tenant_can_restart_own_terminal_automation(
+        self,
+        tenant_client,
+        mock_auth,
+    ):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        with mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _terminal_automation_owned_by_caller():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=_restart_automation_user_action_payload(),
+                    )
+        assert response.status_code == 204
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
+
+    def test_admin_without_wallet_address_uses_terminal_owner_user_id_for_restart(
+        self,
+        admin_client,
+        mock_auth,
+    ):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        with mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _terminal_automation_not_owned_by_caller(owner_user_id=TENANT_USER_ID):
+                    response = admin_client.post(
+                        "/api/v1/debug/",
+                        json=_restart_automation_user_action_payload(),
+                    )
+        assert response.status_code == 204
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID

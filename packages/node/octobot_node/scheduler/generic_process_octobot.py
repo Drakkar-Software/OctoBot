@@ -65,7 +65,8 @@ def _build_create_strategy_user_action(
 
 def _build_create_automation_user_action(
     *,
-    automation_user_action_id: str,
+    user_action_id: str,
+    automation_id: str,
     name: str,
     strategy: protocol_models.Strategy,
 ) -> protocol_models.UserAction:
@@ -75,7 +76,7 @@ def _build_create_automation_user_action(
         emit_signals=False,
     )
     automation_configuration = protocol_models.AutomationConfiguration(
-        id=automation_user_action_id,
+        id=automation_id,
         name=name,
         created_at=datetime.datetime.now(datetime.UTC),
         strategy=strategy_reference,
@@ -86,7 +87,7 @@ def _build_create_automation_user_action(
         configuration=automation_configuration,
     )
     return protocol_models.UserAction(
-        id=automation_user_action_id,
+        id=user_action_id,
         configuration=_wrap_user_action_configuration(automation_payload),
     )
 
@@ -177,8 +178,10 @@ async def create_generic_process_bot(
 ) -> str:
     stored_strategy = await _ensure_non_trading_generic_process_octobot_strategy(user_id)
     resolved_automation_id = automation_id or str(uuid.uuid4())
+    user_action_id = f"ua-create-generic-process-{uuid.uuid4()}"
     create_automation_user_action = _build_create_automation_user_action(
-        automation_user_action_id=resolved_automation_id,
+        user_action_id=user_action_id,
+        automation_id=resolved_automation_id,
         name=name,
         strategy=stored_strategy,
     )

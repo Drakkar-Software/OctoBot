@@ -113,6 +113,15 @@ def _extract_automation_parent_id(
     return None
 
 
+def _is_restart_automation_user_action(
+    user_action: protocol_models.UserAction,
+) -> bool:
+    wrapper = user_action.configuration
+    if wrapper is None or wrapper.actual_instance is None:
+        return False
+    return isinstance(wrapper.actual_instance, protocol_models.RestartAutomationConfiguration)
+
+
 async def _resolve_execution_user_id(
     current_user: octobot_node.models.User,
     wallet_address: typing.Optional[str],
@@ -134,6 +143,7 @@ async def _resolve_execution_user_id(
         return caller_user_id
 
     scheduler = octobot_node.scheduler.SCHEDULER
+    is_restart = _is_restart_automation_user_action(user_action)
     # Caller-owned automation: keep the authenticated wallet's user_id.
     active_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
         caller_user_id,
@@ -142,9 +152,21 @@ async def _resolve_execution_user_id(
     if active_workflow_ids:
         return caller_user_id
 
+    if is_restart:
+        terminal_workflow = await scheduler.resolve_latest_terminal_automation_workflow_for_parent_id(
+            caller_user_id,
+            parent_automation_id,
+        )
+        if terminal_workflow is not None:
+            return caller_user_id
+
     # Cross-wallet: only superusers may resolve the automation owner without wallet filter.
     if current_user.is_superuser:
         owner_user_id = await scheduler.resolve_automation_owner_user_id(parent_automation_id)
+        if owner_user_id is None and is_restart:
+            owner_user_id = await scheduler.resolve_terminal_automation_owner_user_id(
+                parent_automation_id
+            )
         if owner_user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
