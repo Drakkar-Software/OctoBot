@@ -259,6 +259,8 @@ DRAKKAR_OFFICIAL_PUBLIC_KEY_PEM = (
     b"-----END PUBLIC KEY-----\n"
 )
 
+TENTACLES_INSTALL_LOCK_FILE_NAME = ".tentacles_install.lock"
+
 # compiled tentacles paths
 PLATFORM_TO_DOWNLOAD_PATH = {
     enums.PlatformsName.WINDOWS: "windows",
