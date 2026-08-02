@@ -16,17 +16,19 @@
 import pytest
 
 import octobot_commons.enums as commons_enums
+import octobot_trading.enums as trading_enums
+import octobot_trading.errors as errors
 import tests_additional.real_exchanges.real_exchange_tester as real_exchange_tester
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
 
 
-class TestAscendExRealExchangeTester(real_exchange_tester.RealExchangeTester):
-    EXCHANGE_NAME = "ascendex"
+class TestGateRealExchangeTester(real_exchange_tester.RealExchangeTester):
+    EXCHANGE_NAME = "gate"
     SYMBOL = "BTC/USDT"
     SYMBOL_2 = "ETH/BTC"
-    SYMBOL_3 = "DOGE/USDT"
+    SYMBOL_3 = "XRP/BTC"
 
     async def test_time_frames(self):
         await self.assert_time_frames([
@@ -35,37 +37,27 @@ class TestAscendExRealExchangeTester(real_exchange_tester.RealExchangeTester):
             commons_enums.TimeFrames.FIFTEEN_MINUTES,
             commons_enums.TimeFrames.THIRTY_MINUTES,
             commons_enums.TimeFrames.ONE_HOUR,
-            commons_enums.TimeFrames.TWO_HOURS,
             commons_enums.TimeFrames.FOUR_HOURS,
-            commons_enums.TimeFrames.SIX_HOURS,
-            commons_enums.TimeFrames.TWELVE_HOURS,
+            commons_enums.TimeFrames.HEIGHT_HOURS,
             commons_enums.TimeFrames.ONE_DAY,
-            commons_enums.TimeFrames.ONE_WEEK,
-            commons_enums.TimeFrames.ONE_MONTH,
         ])
 
     async def test_supports_order_type(self):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(800, 1100)
+        await self.inner_test_active_symbols(5500, 5500)
 
     async def test_get_market_status(self):
-        await self.assert_get_market_status(
-            low_cost_max=5,
-            low_price_min=1e-12,
-            low_price_max=0.01,
-        )
+        await self.assert_get_market_status(has_price_limits=False)
 
     async def test_get_symbol_prices(self):
-        # AscendEX default candle batch size varies slightly; still enforce limit on second fetch.
-        await self.assert_get_symbol_prices(
-            tested_limit=5,
-            default_allowed_lengths=(10, 11),
-        )
+        await self.assert_get_symbol_prices(default_limit=1000, tested_limit=200)
 
     async def test_get_historical_symbol_prices(self):
-        await self.assert_get_historical_ohlcv()
+        for limit in (50, None):
+            with pytest.raises(errors.FailedRequest):
+                await self.get_symbol_prices(since=self.CANDLE_SINCE, limit=limit)
 
     async def test_get_historical_ohlcv(self):
         await super().test_get_historical_ohlcv()
@@ -74,18 +66,17 @@ class TestAscendExRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_get_kline_price()
 
     async def test_get_order_book(self):
-        # No fixed per-side depth without an explicit limit; require more than five levels each side.
-        await self.assert_get_order_book(
-            limit=None,
-            depth_mode="strictly_greater_than",
-            strictly_greater_than=5,
-        )
+        await self.assert_get_order_book(limit=5)
 
     async def test_get_order_books(self):
         await self.inner_test_unsupported_get_order_books()
 
     async def test_get_recent_trades(self):
-        await self.assert_get_recent_trades(limit=50)
+        recent_trades = await self.get_recent_trades(limit=50)
+        assert len(recent_trades) > 20
+        self.ensure_elements_order(
+            recent_trades, trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value
+        )
 
     async def test_get_price_ticker(self):
         def extra_checks(ticker):
@@ -94,8 +85,8 @@ class TestAscendExRealExchangeTester(real_exchange_tester.RealExchangeTester):
         def _price_ticker_expectations() -> real_exchange_tester.TickerRequiredExpectations:
             Te = real_exchange_tester.TickerExpect
             return real_exchange_tester.TickerRequiredExpectations(
-                bid_volume=Te.TRUTHY,
-                ask_volume=Te.TRUTHY,
+                bid_volume=Te.NONE,
+                ask_volume=Te.NONE,
             )
 
         await self.assert_get_price_ticker(

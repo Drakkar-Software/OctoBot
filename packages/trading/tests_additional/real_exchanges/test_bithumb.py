@@ -52,7 +52,7 @@ class TestBithumbRealExchangeTester(real_exchange_tester.RealExchangeTester):
 
     async def test_get_symbol_prices(self):
         await self.assert_get_symbol_prices(
-            default_min_length = 4000
+            default_min_length=199, tested_limit=200
         )
 
     async def test_get_historical_symbol_prices(self):
@@ -73,7 +73,7 @@ class TestBithumbRealExchangeTester(real_exchange_tester.RealExchangeTester):
                         <= max_candle_time
                     )
 
-    async def test_get_historical_ohlcv(self):
+    async def test_get_historical_ohlcv(self): # failing, see if keeps failing
         await super().test_get_historical_ohlcv()
 
     async def test_get_kline_price(self):

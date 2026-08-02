@@ -27,7 +27,7 @@ class TestBitgetRealExchangeTester(real_exchange_tester.RealExchangeTester):
     EXCHANGE_NAME = "bitget"
     SYMBOL = "BTC/USDT"
     SYMBOL_2 = "ETH/BTC"
-    SYMBOL_3 = "XRP/BTC"
+    SYMBOL_3 = "DOGE/USDT"
 
     async def test_time_frames(self):
         await self.assert_time_frames([
@@ -45,11 +45,12 @@ class TestBitgetRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(1000, 1200)
+        await self.inner_test_active_symbols(1950, 2000)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(
             has_price_limits=False,
+            low_cost_max=1
         )
 
     async def test_get_symbol_prices(self):

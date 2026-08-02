@@ -29,7 +29,7 @@ class TestKrakenAuthenticatedExchange(
     ORDER_CURRENCY = "ALGO"
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 70  # % of portfolio to include in test orders
+    ORDER_SIZE = 40  # % of portfolio to include in test orders
     VALID_ORDER_ID = "OD5FUF-4DRAS-BW5YFI"
     EXPECTED_GENERATED_ACCOUNT_ID = True
     IS_BROKER_ENABLED_ACCOUNT = False # set False when this test account can't generate broker fees

@@ -805,7 +805,8 @@ class AbstractAuthenticatedExchangeTester:
                 with pytest.raises(trading_errors.NotSupported):
                     await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL)
             else:
-                assert await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL) == []
+                cancelled_orders = await self.exchange_manager.exchange.connector.get_cancelled_orders(self.SYMBOL)
+                assert cancelled_orders == [], f"{cancelled_orders} != []"
             with pytest.raises(trading_errors.NotSupported):
                 await self.get_cancelled_orders(force_fetch=True)
             return
@@ -1201,7 +1202,7 @@ class AbstractAuthenticatedExchangeTester:
             if "USD" in trade.market:
                 assert self.MIN_TRADE_USD_VALUE * decimal.Decimal("0.9") < trade.total_cost < self.MAX_TRADE_USD_VALUE, (
                     f"{self.MIN_TRADE_USD_VALUE * decimal.Decimal('0.9')} < {trade.total_cost} < {self.MAX_TRADE_USD_VALUE} "
-                    f"is FALSE"
+                    f"is FALSE: Trade: {trade.to_dict()}"
                 )
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):

@@ -218,24 +218,29 @@ class RealExchangeTester:
     async def test_get_all_currencies_price_ticker(self):
         pass
 
-    def ensure_required_market_status_values(self, market_status, expected_symbols=None):
-        assert market_status, f"market_status must be a non-empty dict from the exchange, got {market_status!r}"
+    def ensure_required_market_status_values(self, market_status, expected_symbols=None, symbol=None):
+        resolved_symbol = symbol or (market_status.get(Ecmsc.SYMBOL.value) if market_status else None)
+        symbol_context = f" for {resolved_symbol=!r}" if resolved_symbol is not None else ""
+
+        assert market_status, (
+            f"market_status must be a non-empty dict from the exchange{symbol_context}, got {market_status!r}"
+        )
         if Ecmsc.TYPE.value in market_status:
             assert market_status[Ecmsc.TYPE.value] == self.MARKET_STATUS_TYPE, (
-                f"market type mismatch: expected {self.MARKET_STATUS_TYPE=!r}, "
-                f"got {market_status.get(Ecmsc.TYPE.value)!r} for "
-                f"{market_status.get(Ecmsc.SYMBOL.value)!r}"
+                f"market type mismatch for {resolved_symbol=!r}: expected {self.MARKET_STATUS_TYPE=!r}, "
+                f"got {market_status.get(Ecmsc.TYPE.value)!r}"
             )
-        symbol = market_status.get(Ecmsc.SYMBOL.value)
+        symbol = market_status.get(Ecmsc.SYMBOL.value) or resolved_symbol
         assert symbol is not None, (
-            f"market_status missing {Ecmsc.SYMBOL.value!r} (keys: {list(market_status.keys())})"
+            f"market_status missing {Ecmsc.SYMBOL.value!r} for {resolved_symbol=!r} "
+            f"(keys: {list(market_status.keys())})"
         )
         allowed_symbols = (
             expected_symbols if expected_symbols is not None
             else (self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3)
         )
         assert symbol in allowed_symbols, (
-            f"unexpected market symbol {symbol=!r}: expected one of {allowed_symbols}"
+            f"unexpected market symbol {symbol=!r} for {resolved_symbol=!r}: expected one of {allowed_symbols}"
         )
         active_raw = market_status.get(Ecmsc.ACTIVE.value)
         if active_raw is not None:
@@ -641,8 +646,12 @@ class RealExchangeTester:
         market_statuses: typing.Optional[dict[str, dict]] = None,
         expected_symbols: list[str] | None = None,
     ):
-        for market_status in (market_statuses or await self.get_market_statuses()):
-            self.ensure_required_market_status_values(market_status, expected_symbols=expected_symbols)
+        statuses = market_statuses or await self.get_market_statuses()
+        requested_symbols = expected_symbols or (self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3)
+        for market_status, requested_symbol in zip(statuses, requested_symbols):
+            self.ensure_required_market_status_values(
+                market_status, expected_symbols=expected_symbols, symbol=requested_symbol
+            )
             # market statuses should always be valid: fixer is automatically applied when ob_exchange requires it
             symbol = market_status[Ecmsc.SYMBOL.value]
             precision = market_status[Ecmsc.PRECISION.value]
@@ -676,8 +685,10 @@ class RealExchangeTester:
                 extra_checks(market_status)
 
     async def assert_market_status(self):
-        for market_status in await self.get_market_statuses():
-            self.ensure_required_market_status_values(market_status)
+        for requested_symbol, market_status in zip(
+            (self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3), await self.get_market_statuses()
+        ):
+            self.ensure_required_market_status_values(market_status, symbol=requested_symbol)
             # market statuses should always be valid: fixer is automatically applied when
             # ob_exchange requires it
             symbol = market_status[Ecmsc.SYMBOL.value]

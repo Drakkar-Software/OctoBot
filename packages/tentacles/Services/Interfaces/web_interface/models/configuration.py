@@ -119,7 +119,6 @@ MERGED_CCXT_EXCHANGES = {
     for result, merged in (
         (ccxt.async_support.kucoin, (ccxt.async_support.kucoinfutures, )),
         (ccxt.async_support.binance, (ccxt.async_support.binanceusdm, ccxt.async_support.binancecoinm)),
-        (ccxt.async_support.htx, (ccxt.async_support.huobi, )),
     )
 }
 REMOVED_CCXT_EXCHANGES = set().union(*(set(v) for v in MERGED_CCXT_EXCHANGES.values()))

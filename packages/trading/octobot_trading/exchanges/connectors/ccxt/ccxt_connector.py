@@ -18,7 +18,6 @@ import contextlib
 import decimal
 import aiohttp
 import ccxt.async_support
-import ccxt.static_dependencies.ecdsa.der
 from ccxt.base.types import (
     # usual "import ccxt.base.types" is not working here from ... import ... is required
     Market as CCXTMarket,
@@ -288,7 +287,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             except (
                 ccxt.async_support.AuthenticationError,
                 ccxt.async_support.ArgumentsRequired,
-                ccxt.static_dependencies.ecdsa.der.UnexpectedDER,
+                ValueError,
                 binascii.Error, AssertionError, IndexError
             ) as err:
                 self.set_first_consecutive_authentication_error_at_if_unset()
@@ -436,7 +435,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             octobot_trading.errors.AuthenticationError, 
             octobot_trading.errors.ExchangeProxyError, 
             # ccxt signature related errors
-            ccxt.async_support.ArgumentsRequired, ccxt.static_dependencies.ecdsa.der.UnexpectedDER,
+            ccxt.async_support.ArgumentsRequired, ValueError,
             binascii.Error, AssertionError, IndexError,
         ) as e:
             self.set_first_consecutive_authentication_error_at_if_unset()
