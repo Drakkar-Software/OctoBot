@@ -111,4 +111,4 @@ class TestOkxFuturesRealExchangeTester(RealFuturesExchangeTester):
         await self.assert_get_all_currencies_price_ticker()
 
     async def test_get_funding_rate(self):
-        await self.assert_get_funding_rate(has_last_time=False, funding_info_in_ticker=False)
+        await self.assert_get_funding_rate(has_last_time_in_the_future=True, funding_info_in_ticker=False)

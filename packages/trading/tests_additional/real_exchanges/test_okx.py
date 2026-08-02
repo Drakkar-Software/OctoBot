@@ -49,7 +49,7 @@ class TestOkxRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(2400, 2400)
+        await self.inner_test_active_symbols(4100, 4100)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(

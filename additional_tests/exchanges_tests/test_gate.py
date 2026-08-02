@@ -21,12 +21,12 @@ from additional_tests.exchanges_tests import abstract_authenticated_exchange_tes
 pytestmark = pytest.mark.asyncio
 
 
-class TestGateIOAuthenticatedExchange(
+class TestGateAuthenticatedExchange(
     abstract_authenticated_exchange_tester.AbstractAuthenticatedExchangeTester
 ):
     # enter exchange name as a class variable here
-    EXCHANGE_NAME = "gateio"
-    EXCHANGE_TENTACLE_NAME = "GateIO"
+    EXCHANGE_NAME = "gate"
+    EXCHANGE_TENTACLE_NAME = "Gate"
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"

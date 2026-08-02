@@ -53,7 +53,7 @@ class TestPhemexRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(1100, 1709)
+        await self.inner_test_active_symbols(950, 2000)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(

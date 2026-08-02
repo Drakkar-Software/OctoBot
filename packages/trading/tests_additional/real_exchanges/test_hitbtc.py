@@ -79,7 +79,7 @@ class TestHitBtcRealExchangeTester(real_exchange_tester.RealExchangeTester):
             0,
             True,
             10,
-            140,
+            250,
             True,
         )
 

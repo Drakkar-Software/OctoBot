@@ -52,7 +52,7 @@ class TestKucoinRealExchangeTester(real_exchange_tester.RealExchangeTester):
         )
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(1100, 1100)
+        await self.inner_test_active_symbols(1650, 1650)
 
     async def test_get_market_status(self):
 

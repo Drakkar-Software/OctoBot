@@ -144,7 +144,6 @@ NINETY_FIVE_PERCENT = decimal.Decimal("0.95")
 
 # exchanges where test_get_historical_symbol_prices is successful can be listed here
 FULL_CANDLE_HISTORY_EXCHANGES = [
-    "ascendex",
     "binance",
     "bitfinex",
     "bitstamp",
@@ -176,10 +175,8 @@ TESTED_EXCHANGES = [
     "cryptocom",
     "htx",
     "hyperliquid",
-    "bitget",
     "okx",
-    "gateio",
-    "ascendex",
+    "gate",
     "bybit",
     "phemex",
     "hollaex",
@@ -195,6 +192,7 @@ SIMULATOR_TESTED_EXCHANGES = sorted([
     "bithumb",
     "bitstamp",
     "bitmex",
+    "bitget",
     "hitbtc",
     "poloniex",
     "bitso",

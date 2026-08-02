@@ -28,4 +28,4 @@ class TestOkxUsRealExchangeTester(test_okx.TestOkxRealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(2400, 2400)
+        await self.inner_test_active_symbols(4100, 4100)

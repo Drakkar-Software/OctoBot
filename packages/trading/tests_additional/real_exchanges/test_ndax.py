@@ -28,7 +28,7 @@ class TestNdaxRealExchangeTester(real_exchange_tester.RealExchangeTester):
     SYMBOL = "BTC/USDT"
     SYMBOL_2 = "ETH/CAD"
     SYMBOL_3 = "XRP/CAD"
-    INACTIVE_MARKETS = [SYMBOL]
+    # INACTIVE_MARKETS = [SYMBOL]
     TIME_FRAME = commons_enums.TimeFrames.ONE_DAY
 
     async def test_time_frames(self):
@@ -101,7 +101,6 @@ class TestNdaxRealExchangeTester(real_exchange_tester.RealExchangeTester):
                 ticker,
                 check_high=False,
                 check_low=False,
-                check_open=False,
             )
 
         def _price_ticker_expectations() -> real_exchange_tester.TickerRequiredExpectations:
@@ -110,7 +109,7 @@ class TestNdaxRealExchangeTester(real_exchange_tester.RealExchangeTester):
                 high=Te.NONE,
                 low=Te.NONE,
                 ask=Te.NONE,
-                open=Te.NONE,
+                open=Te.TRUTHY,
                 base_volume=Te.NOT_NONE,
             )
 
@@ -120,5 +119,4 @@ class TestNdaxRealExchangeTester(real_exchange_tester.RealExchangeTester):
         )
 
     async def test_get_all_currencies_price_ticker(self):
-        with pytest.raises(errors.NotSupported):
-            await self.get_all_currencies_price_ticker()
+        await self.get_all_currencies_price_ticker()

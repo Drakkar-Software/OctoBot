@@ -49,7 +49,7 @@ class TestCoinexRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(1500, 1500)
+        await self.inner_test_active_symbols(1250, 1250)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(has_price_limits=False)

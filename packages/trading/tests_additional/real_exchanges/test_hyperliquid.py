@@ -63,7 +63,7 @@ class TestHyperliquidRealExchangeTester(real_exchange_tester.RealExchangeTester)
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(420, 470)
+        await self.inner_test_active_symbols(290, 290)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(

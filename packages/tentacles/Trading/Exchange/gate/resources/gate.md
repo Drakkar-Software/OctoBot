@@ -1,6 +1,6 @@
-GateIO is a basic RestExchange adaptation for GateIO exchange. 
+Gate is a basic RestExchange adaptation for Gate exchange. 
 
-# GateIO account setup
+# Gate account setup
 
 ## Create an account on Gate.io
 

@@ -13,14 +13,19 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-
 import octobot_trading.exchanges as exchanges
-import octobot_trading.enums as trading_enums
+from octobot_trading.enums import WebsocketFeeds as Feeds
+import tentacles.Trading.Exchange.gate.gate_exchange as gate_exchange
 
-import typing
 
+class GateCCXTWebsocketConnector(exchanges.CCXTWebsocketConnector):
+    EXCHANGE_FEEDS = {
+        Feeds.TRADES: True,
+        Feeds.KLINE: True,
+        Feeds.TICKER: True,
+        Feeds.CANDLE: True,
+    }
 
-class GateIO(exchanges.RestExchange):
     @classmethod
     def get_name(cls):
-        return 'gateio'
+        return gate_exchange.Gate.get_name()
