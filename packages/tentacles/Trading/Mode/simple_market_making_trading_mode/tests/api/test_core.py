@@ -1088,6 +1088,9 @@ async def _call_fill_market_making_data_by_symbol(
     profile_data = _profile_data_for_market_making_fill()
     mm_data_by_symbol_by_exchange = {}
     exchange_manager = mock.Mock()
+    exchange_manager.get_exchange_symbol = mock.Mock(
+        side_effect=lambda symbol, **kwargs: symbol
+    )
     exchange_manager.exchange.get_all_available_symbols = mock.Mock(
         return_value=available_symbols
     )
@@ -1229,6 +1232,96 @@ class TestFillMarketMakingDataBySymbol:
         assert "BTC/ETH" in fetched_symbols
         assert "ETH/USDT" in fetched_symbols
         assert set(mm_data_by_symbol_by_exchange["binance"]) == {"BTC/USDT", "BTC/ETH", "ETH/USDT"}
+
+    async def test_fetch_list_has_no_duplicate_formula_dependencies(self):
+        price_sources = [
+            advanced_reference_price_import.AdvancedPriceSource(
+                exchange="binance",
+                pair="BTC/USDT",
+                time_frame=advanced_reference_price_import.DEFAULT_TIME_FRAME,
+                weight=decimal.Decimal("1.0"),
+                formula="price('BTC/ETH')*price('ETH/USDT')",
+            )
+        ]
+        exchange_manager = mock.Mock()
+        exchange_manager.get_exchange_symbol = mock.Mock(
+            side_effect=lambda symbol, **kwargs: symbol
+        )
+        formula_init_patches = [
+            mock.patch.object(
+                trading_api,
+                "get_watched_timeframes",
+                return_value=[commons_enums.TimeFrames.ONE_HOUR.value],
+            ),
+            mock.patch.object(
+                exchange_operators,
+                "create_ohlcv_operators",
+                return_value=exchange_operators.create_ohlcv_operators(
+                    exchange_manager, "BTC/USDT", commons_enums.TimeFrames.ONE_HOUR.value
+                ),
+            ),
+            mock.patch.object(
+                exchange_operators,
+                "create_price_operators",
+                return_value=exchange_operators.create_price_operators(exchange_manager, "BTC/USDT"),
+            ),
+        ]
+        _, fetch_mocks = await _call_fill_market_making_data_by_symbol(
+            price_sources,
+            available_symbols={"BTC/ETH", "ETH/USDT"},
+            formula_init_patches=formula_init_patches,
+        )
+
+        fetch_all_tickers_mock = fetch_mocks["fetch_all_tickers"]
+        assert fetch_all_tickers_mock.call_count == 1
+        fetched_symbols = fetch_all_tickers_mock.call_args.args[0]
+        assert len(fetched_symbols) == len(set(fetched_symbols))
+        assert set(fetched_symbols) == {"BTC/ETH", "ETH/USDT"}
+
+    async def test_fetches_output_pair_when_it_is_the_only_formula_dependency(self):
+        price_sources = [
+            advanced_reference_price_import.AdvancedPriceSource(
+                exchange="binance",
+                pair="BTC/USDT",
+                time_frame=advanced_reference_price_import.DEFAULT_TIME_FRAME,
+                weight=decimal.Decimal("1.0"),
+                formula="price('BTC/USDT')",
+            )
+        ]
+        exchange_manager = mock.Mock()
+        exchange_manager.get_exchange_symbol = mock.Mock(
+            side_effect=lambda symbol, **kwargs: symbol
+        )
+        formula_init_patches = [
+            mock.patch.object(
+                trading_api,
+                "get_watched_timeframes",
+                return_value=[commons_enums.TimeFrames.ONE_HOUR.value],
+            ),
+            mock.patch.object(
+                exchange_operators,
+                "create_ohlcv_operators",
+                return_value=exchange_operators.create_ohlcv_operators(
+                    exchange_manager, "BTC/USDT", commons_enums.TimeFrames.ONE_HOUR.value
+                ),
+            ),
+            mock.patch.object(
+                exchange_operators,
+                "create_price_operators",
+                return_value=exchange_operators.create_price_operators(exchange_manager, "BTC/USDT"),
+            ),
+        ]
+        _, fetch_mocks = await _call_fill_market_making_data_by_symbol(
+            price_sources,
+            available_symbols=set(),
+            formula_init_patches=formula_init_patches,
+            lazy_load_markets=True,
+        )
+
+        fetch_all_tickers_mock = fetch_mocks["fetch_all_tickers"]
+        assert fetch_all_tickers_mock.call_count == 1
+        fetched_symbols = fetch_all_tickers_mock.call_args.args[0]
+        assert "BTC/USDT" in fetched_symbols
 
     async def test_fetches_ticker_for_unsupported_symbol_without_formula(self):
         """Lazy-load exchanges still fetch direct pairs not listed in available_symbols."""

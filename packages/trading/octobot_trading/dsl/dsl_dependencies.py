@@ -34,7 +34,7 @@ class SymbolDependency(dsl_interpreter.InterpreterDependency):
     ):
         if exchange_manager is not None:
             unified_symbol = exchange_manager.get_exchange_symbol(self.symbol, error_on_missing=False)
-            if unified_symbol != self.symbol:
+            if unified_symbol and unified_symbol != self.symbol:
                 self.alias = self.symbol
                 self.symbol = unified_symbol
 
