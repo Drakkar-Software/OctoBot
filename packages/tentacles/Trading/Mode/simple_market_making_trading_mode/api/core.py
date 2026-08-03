@@ -106,6 +106,9 @@ async def _fill_market_making_data_by_symbol(
                     dependency_symbol_alias_by_symbol[dependency.symbol] = dependency.alias
                 elif dependency.symbol not in dependency_symbol_alias_by_symbol:
                     dependency_symbol_alias_by_symbol[dependency.symbol] = None
+            formula_dependency_symbols = {
+                dependency.symbol for dependency in dependencies if dependency.symbol
+            }
             available_symbols = set(exchange_manager.exchange.get_all_available_symbols(active_only=True))
             lazy_load_markets = exchange_manager.exchange.get_option_value(
                 octobot_trading.enums.ExchangeClientOptions.LAZY_LOAD_MARKETS
@@ -115,6 +118,7 @@ async def _fill_market_making_data_by_symbol(
                     source.pair
                     for source in price_sources
                     if source.formula and source.pair not in available_symbols
+                    and source.pair not in formula_dependency_symbols
                 }
             else:
                 symbols_to_skip_ticker_fetch = {

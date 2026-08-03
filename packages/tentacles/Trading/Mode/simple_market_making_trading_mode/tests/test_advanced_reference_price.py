@@ -196,13 +196,7 @@ async def test_get_dependencies_with_formula(price_source_with_formula, exchange
     dependencies = price_source_with_formula.get_dependencies(exchange_manager_mock)
     
     # Simple numeric formula should have no dependencies
-    assert dependencies == [
-        exchange_operators.ExchangeDataDependency(
-            symbol="BTC/USDT",
-            time_frame=None,
-            data_source=trading_constants.MARK_PRICE_CHANNEL
-        )
-    ]
+    assert dependencies == []
 
 
 async def test_initialize_no_formula(price_source_no_formula, exchange_manager_mock):
@@ -316,7 +310,13 @@ def test_advanced_price_source_attributes(price_source_no_formula):
     ),
     pytest.param(
         "price",
-        [],
+        [
+            exchange_operators.ExchangeDataDependency(
+                symbol="BTC/USDT",
+                time_frame=None,
+                data_source=trading_constants.MARK_PRICE_CHANNEL,
+            ),
+        ],
         id="price",
     ),
 ])
@@ -344,13 +344,64 @@ async def test_get_dependencies_with_formula_dependencies(
     ):
         await price_source_with_formula.initialize_if_required(exchange_manager_mock)
 
-    mark_price_dependency = exchange_operators.ExchangeDataDependency(
-        symbol="BTC/USDT",
-        time_frame=None,
-        data_source=trading_constants.MARK_PRICE_CHANNEL,
-    )
     dependencies = price_source_with_formula.get_dependencies(exchange_manager_mock)
-    assert dependencies == [mark_price_dependency] + expected_formula_dependencies
+    assert dependencies == expected_formula_dependencies
+
+
+async def test_get_dependencies_deduplicates_repeated_formula_legs(exchange_manager_mock):
+    price_source = advanced_reference_price.AdvancedPriceSource(
+        exchange="binance",
+        pair="BTC/USDT",
+        time_frame=commons_enums.TimeFrames.ONE_HOUR.value,
+        weight=decimal.Decimal("1.0"),
+        formula="price('ETH/USDT')*price('ETH/USDT')",
+    )
+    with mock.patch.object(
+        trading_api, 'get_watched_timeframes', return_value=[commons_enums.TimeFrames.ONE_HOUR]
+    ), mock.patch.object(
+        exchange_operators, 'create_ohlcv_operators', return_value=[]
+    ):
+        await price_source.initialize_if_required(exchange_manager_mock)
+
+    dependencies = price_source.get_dependencies(exchange_manager_mock)
+    assert dependencies == [
+        exchange_operators.ExchangeDataDependency(
+            symbol="ETH/USDT",
+            time_frame=None,
+            data_source=trading_constants.MARK_PRICE_CHANNEL,
+        ),
+    ]
+
+
+async def test_get_dependencies_with_formula_price_legs_only(exchange_manager_mock):
+    """Formula legs should not include the output pair as a watched symbol."""
+    price_source = advanced_reference_price.AdvancedPriceSource(
+        exchange="binance",
+        pair="BTC/USDT",
+        time_frame=commons_enums.TimeFrames.ONE_HOUR.value,
+        weight=decimal.Decimal("1.0"),
+        formula="price('ETH/USDT')*price('BNB/USDT')",
+    )
+    with mock.patch.object(
+        trading_api, 'get_watched_timeframes', return_value=[commons_enums.TimeFrames.ONE_HOUR]
+    ), mock.patch.object(
+        exchange_operators, 'create_ohlcv_operators', return_value=[]
+    ):
+        await price_source.initialize_if_required(exchange_manager_mock)
+
+    dependencies = price_source.get_dependencies(exchange_manager_mock)
+    assert dependencies == [
+        exchange_operators.ExchangeDataDependency(
+            symbol="ETH/USDT",
+            time_frame=None,
+            data_source=trading_constants.MARK_PRICE_CHANNEL,
+        ),
+        exchange_operators.ExchangeDataDependency(
+            symbol="BNB/USDT",
+            time_frame=None,
+            data_source=trading_constants.MARK_PRICE_CHANNEL,
+        ),
+    ]
 
 
 class TestComputeReferencePrice:

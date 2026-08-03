@@ -112,16 +112,17 @@ def create_price_operators(
             return "price"
 
         def get_dependencies(self) -> typing.List[dsl_interpreter.InterpreterDependency]:
-            local_dependencies = _static_get_dependencies()
             param_by_name = self.get_input_value_by_parameter()
             if param_symbol := param_by_name.get("symbol"):
-                symbol_dep = ohlcv_operators.ExchangeDataDependency(
-                    symbol=param_symbol,
-                    time_frame=None,
-                    data_source=octobot_trading.constants.MARK_PRICE_CHANNEL,
-                )
-                if symbol_dep not in local_dependencies:
-                    local_dependencies.append(symbol_dep)
+                local_dependencies = [
+                    ohlcv_operators.ExchangeDataDependency(
+                        symbol=param_symbol,
+                        time_frame=None,
+                        data_source=octobot_trading.constants.MARK_PRICE_CHANNEL,
+                    )
+                ]
+            else:
+                local_dependencies = _static_get_dependencies()
             for dependency in local_dependencies:
                 dependency.resolve_symbol(exchange_manager)
             return super().get_dependencies() + local_dependencies

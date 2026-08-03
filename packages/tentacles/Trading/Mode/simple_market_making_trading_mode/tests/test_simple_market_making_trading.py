@@ -1640,6 +1640,39 @@ async def test_get_reference_price():
             assert reference_price_no_data == trading_constants.ZERO
 
 
+async def test_get_reference_price_skips_output_pair_lookup_when_formula_configured():
+    symbol = "BTC/USDT"
+    async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+        producer.read_config()
+        formula_source = advanced_reference_price_import.AdvancedPriceSource(
+            exchange="binance",
+            pair="ETH/USDT",
+            time_frame=None,
+            weight=decimal.Decimal("1"),
+            formula="1500",
+        )
+        producer.reference_prices_by_exchange = {"binance": [formula_source]}
+        await producer._validate_reference_prices()
+        await formula_source.initialize_if_required(exchange_manager)
+
+        with mock.patch.object(
+            producer, "_register_on_reference_exchanges_if_required", mock.AsyncMock(return_value=True)
+        ), mock.patch.object(
+            trading_api, "get_all_exchange_ids_with_same_matrix_id",
+            mock.Mock(return_value=[exchange_manager.id])
+        ), mock.patch.object(
+            trading_api, "get_exchange_manager_from_exchange_id",
+            mock.Mock(return_value=exchange_manager)
+        ), mock.patch.object(
+            trading_personal_data, "get_potentially_outdated_price",
+            mock.Mock(side_effect=KeyError("output pair is not watched"))
+        ) as get_price_mock:
+            reference_price = await producer._get_reference_price()
+
+        get_price_mock.assert_not_called()
+        assert reference_price == decimal.Decimal("1500")
+
+
 async def test_register_pair_requirement_on_reference_exchange():
     symbol = "BTC/USDT"
     async with _get_tools(symbol) as (producer, consumer, exchange_manager):
@@ -2018,6 +2051,62 @@ async def test_register_pair_requirement_on_reference_exchange():
                 exchange_manager, [mock_ref_price_9b]
             )
             load_markets_mock.assert_not_called()
+
+
+async def test_register_pair_requirement_deduplicates_watched_symbols():
+    symbol = "BTC/USDT"
+    async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+        duplicate_dependency = exchange_operators.ExchangeDataDependency(
+            symbol="ETH/USDT",
+            time_frame=None,
+            data_source=trading_constants.MARK_PRICE_CHANNEL,
+        )
+        mock_ref_price = mock.Mock(spec=advanced_reference_price_import.AdvancedPriceSource)
+        mock_ref_price.pair = symbol
+        mock_ref_price.initialize_if_required = mock.AsyncMock()
+        mock_ref_price.get_dependencies = mock.Mock(return_value=[
+            duplicate_dependency,
+            exchange_operators.ExchangeDataDependency(
+                symbol="ETH/USDT",
+                time_frame=None,
+                data_source=trading_constants.MARK_PRICE_CHANNEL,
+            ),
+        ])
+        producer._hedging_engine = None
+        with mock.patch.object(
+            trading_api, "register_new_pairs_on_exchange_manager", mock.AsyncMock()
+        ) as register_mock:
+            await producer._register_pair_requirement_on_reference_exchange(
+                exchange_manager, [mock_ref_price]
+            )
+            register_mock.assert_awaited_once()
+            assert register_mock.await_args.args[1] == ["ETH/USDT"]
+            assert register_mock.await_args.kwargs == {"watch_only": True}
+
+
+async def test_register_pair_requirement_formula_legs_only():
+    symbol = "BTC/USDT"
+    async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+        reference_price = advanced_reference_price_import.AdvancedPriceSource(
+            exchange=exchange_manager.exchange_name,
+            pair=symbol,
+            time_frame=commons_enums.TimeFrames.ONE_HOUR.value,
+            weight=decimal.Decimal("1"),
+            formula="price('ETH/USDT')*price('BNB/USDT')",
+        )
+        producer._hedging_engine = None
+        with mock.patch.object(
+            exchange_manager, "get_exchange_symbol", side_effect=lambda symbol, **kwargs: symbol
+        ), mock.patch.object(
+            trading_api, "register_new_pairs_on_exchange_manager", mock.AsyncMock()
+        ) as register_mock:
+            await producer._register_pair_requirement_on_reference_exchange(
+                exchange_manager, [reference_price]
+            )
+            register_mock.assert_awaited_once()
+            assert register_mock.await_args.args[0] == exchange_manager
+            assert set(register_mock.await_args.args[1]) == {"ETH/USDT", "BNB/USDT"}
+            assert register_mock.await_args.kwargs == {"watch_only": True}
 
 
 async def test_ensure_dependencies():
