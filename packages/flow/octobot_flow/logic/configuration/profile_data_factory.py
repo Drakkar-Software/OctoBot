@@ -9,6 +9,24 @@ import octobot_flow.entities
 import tentacles.Meta.Keywords.scripting_library as scripting_library
 
 
+def _tentacles_for_exchange_account_details(
+    exchange_account_details: typing.Optional[octobot_flow.entities.ExchangeAccountDetails],
+) -> list[profile_data_import.TentaclesData]:
+    if exchange_account_details is None:
+        return []
+    exchange_details = exchange_account_details.exchange_details
+    if exchange_details.url:
+        from tentacles.Trading.Exchange.hollaex import hollaex as hollaex_exchange_class
+        if exchange_details.internal_name == hollaex_exchange_class.get_name():
+            return [
+                hollaex_exchange_class.get_tentacles_data_exchange_config(
+                    exchange_details.internal_name,
+                    exchange_details.url,
+                )
+            ]
+    return []
+
+
 def create_profile_data(
     exchange_account_details: typing.Optional[octobot_flow.entities.ExchangeAccountDetails],
     automation_id: str,
@@ -30,7 +48,7 @@ def create_profile_data(
                 exchange_account_details.is_simulated() if exchange_account_details else True
             )
         ),
-        tentacles=[], # no tentacles: only the generic dsl executor will be used
+        tentacles=_tentacles_for_exchange_account_details(exchange_account_details),
     )
 
 def infer_reference_market(

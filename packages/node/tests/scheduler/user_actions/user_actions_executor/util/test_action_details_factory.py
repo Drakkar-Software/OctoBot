@@ -142,6 +142,32 @@ class TestExchangeProtocolAccountToApplyConfigurationDictEncryptsCredentials:
         assert auth_details.api_password == "enc:plain-pass"
 
 
+class TestExchangeProtocolAccountToApplyConfigurationDictExchangeUrl:
+    def test_maps_exchange_config_url_to_exchange_details(self):
+        account = account_executor_test_utils.minimal_exchange_account(
+            account_id="acc-hollaex-earncurve",
+            is_simulated=True,
+        )
+        earn_curve_api_url = "https://www.earncurve.com.au/api"
+        with mock.patch.object(
+            action_details_factory_module.exchange_account_resolver,
+            "get_exchange_config",
+            return_value=protocol_models.ExchangeConfig(
+                id="functional-hollaex-exchange-config-id",
+                name="earncurve-main",
+                exchange="hollaex",
+                sandboxed=False,
+                url=earn_curve_api_url,
+            ),
+        ):
+            result = action_details_factory_module.exchange_protocol_account_to_apply_configuration_dict(
+                account,
+                user_id=_WALLET_ADDRESS,
+            )
+        exchange_details = result["exchange_account_details"]["exchange_details"]
+        assert exchange_details["url"] == earn_curve_api_url
+
+
 def _init_action() -> flow_entities.ConfiguredActionDetails:
     return flow_entities.ConfiguredActionDetails(
         id="action_init",

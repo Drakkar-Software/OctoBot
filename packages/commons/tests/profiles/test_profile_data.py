@@ -56,6 +56,7 @@ def profile_data_dict():
                 'exchange_type': 'spot',
                 'internal_name': 'cryptocom',
                 'sandboxed': True,
+                'url': None,
             }
         ], 'future_exchange_data': {
             'default_leverage': 10,
