@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
@@ -211,6 +211,11 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             if assets_dir.exists():
                 # Mount assets under /app/assets to match the SPA base path
                 app.mount("/app/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+            # Redirect root to the SPA
+            @app.get("/", include_in_schema=False)
+            async def redirect_to_spa():
+                return RedirectResponse(url="/app")
 
             # Serve SPA root for /app
             @app.get("/app")
