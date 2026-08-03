@@ -66,6 +66,7 @@ class ExchangeData(
     exchange_id: typing.Union[str, None] = None
     exchange_account_id: typing.Union[str, None] = None
     sandboxed: bool = False
+    url: typing.Union[str, None] = None
 
 
 @dataclasses.dataclass
