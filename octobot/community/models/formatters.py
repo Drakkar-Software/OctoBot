@@ -338,20 +338,12 @@ def get_adapted_portfolio(usd_like_asset, portfolio):
 def get_tentacles_data_exchange_config(
     exchange_internal_name: str, exchange_url: str, config: typing.Optional[dict] = None
 ) -> commons_profiles.profile_data.TentaclesData:
-    try:
-        import tentacles.Trading.Exchange as tentacles_exchanges
-        return commons_profiles.profile_data.TentaclesData(
-            tentacles_exchanges.HollaexAutofilled.get_name(),
-            {
-                tentacles_exchanges.HollaexAutofilled.AUTO_FILLED_KEY: {
-                    exchange_internal_name: {
-                        tentacles_exchanges.HollaexAutofilled.URL_KEY: exchange_url
-                    }
-                }
-            } if config is None else config
-        )
-    except ImportError as err:
-        raise ImportError(f"Import tentacles_exchanges failed: {err}")
+    from tentacles.Trading.Exchange.hollaex import hollaex as hollaex_exchange_class
+    return hollaex_exchange_class.get_tentacles_data_exchange_config(
+        exchange_internal_name,
+        exchange_url,
+        config,
+    )
 
 
 def get_deployment_error_status_from_stop_reason(
