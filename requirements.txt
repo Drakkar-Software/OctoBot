@@ -1,5 +1,5 @@
 ## Others
-requests==2.32.5
+requests==2.34.2 # sync with ccxt
 urllib3 # required by requests, used in imports: make sure it's always available
 packaging==26.0
 python-dotenv==1.2.1
@@ -22,7 +22,7 @@ postgrest  # Supabase posgres calls (required by supabase and enforced to allow 
 websockets==15.0.1 # used by supabase, a recent version is required, see https://github.com/supabase/realtime-py/blob/main/pyproject.toml
 
 # async http requests
-aiohttp==3.13.3
+aiohttp==3.14.1 # sync with ccxt
 aiofiles==25.1.0
 # updating to aiodns==3.2.0 is incompatible (and failing CI)
 # raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
