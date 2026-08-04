@@ -186,6 +186,7 @@ TESTED_EXCHANGES = [
     "coinex",
     "bitmart",
     "lbank",
+    "weex",
 ])
 DEFAULT_FUTURE_EXCHANGES = sorted(["bybit"])
 SIMULATOR_TESTED_EXCHANGES = sorted([
