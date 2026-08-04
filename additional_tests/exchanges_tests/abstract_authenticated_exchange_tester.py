@@ -627,13 +627,31 @@ class AbstractAuthenticatedExchangeTester:
         #     decimal.Decimal("5.1")
         # )
         # # end debug tools
-        open_orders = await self.get_open_orders(exchange_data)
-        cancelled_orders = await self.get_cancelled_orders(exchange_data)
         if self.CHECK_EMPTY_ACCOUNT:
             assert size >= trading_constants.ZERO if enable_min_size_check else size == trading_constants.ZERO
+            open_orders = await self.get_open_orders(exchange_data)
+            cancelled_orders = await self.get_cancelled_orders(exchange_data)
             assert open_orders == []
             assert cancelled_orders == []
             return
+        if not self.exchange_manager.exchange.supports_order_type(trading_enums.TradeOrderType.LIMIT):
+            order_type = (
+                trading_enums.TraderOrderType.BUY_LIMIT
+                if side is trading_enums.TradeOrderSide.BUY
+                else trading_enums.TraderOrderType.SELL_LIMIT
+            )
+            with pytest.raises(trading_errors.NotSupported):
+                await self.exchange_manager.exchange.create_order(
+                    order_type=order_type,
+                    symbol=symbol,
+                    quantity=size,
+                    price=price,
+                    side=side,
+                    current_price=price,
+                )
+            return
+        open_orders = await self.get_open_orders(exchange_data)
+        cancelled_orders = await self.get_cancelled_orders(exchange_data)
         try:
             limit_order = await self.create_limit_order(price, size, side, symbol=symbol)
         except trading_errors.AuthenticationError as err:
@@ -1504,7 +1522,10 @@ class AbstractAuthenticatedExchangeTester:
         symbol = symbols.parse_symbol(symbol or self.SYMBOL)
         if symbol.is_inverse():
             order_quantity = currency_quantity * price
-        elif settlement_currency == symbol.quote:
+        elif settlement_currency == symbol.quote or (
+            symbols.parse_symbol(settlement_currency).is_network_qualified_asset()
+            and symbols.parse_symbol(settlement_currency).base == symbol.quote
+        ):
             order_quantity = currency_quantity / price
         else:
             order_quantity = currency_quantity

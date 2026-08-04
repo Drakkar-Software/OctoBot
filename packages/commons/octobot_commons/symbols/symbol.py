@@ -53,6 +53,9 @@ class Symbol:
     # 'WETH/USDT:USDT-211225-40000-C@ETH!UNISWAP'  // call option on ethereum network and uniswap dex
     # 'WETH/USDT:USDT-211225-40000-C@ETH!*'  // call option on ethereum network and any (most liquid) dex
     # Note: network and dex names cannot contain '!', which separates network from dex after '@'.
+    # Ticker-wise per-leg network:
+    # 'USDT@ETH'  // USDT on the ETH network (portfolio asset key)
+    # 'ETH@ETH/USDT@BNB'  // spot pair with per-leg networks
 
     def __init__(
         self,
@@ -71,6 +74,8 @@ class Symbol:
         self.strike_price: typing.Optional[str] = None
         self.option_type: typing.Optional[str] = None
         self.network: typing.Optional[str] = None
+        self.base_network: typing.Optional[str] = None
+        self.quote_network: typing.Optional[str] = None
         self.dex: typing.Optional[str] = None
         self.market_separator: str = market_separator
         self.settlement_separator: str = settlement_separator
@@ -84,9 +89,40 @@ class Symbol:
         Parse the specified symbol
         :param symbol_str: the symbol to parse
         """
+        if is_network_qualified_asset(symbol_str, self.market_separator, self.network_separator):
+            trading_symbol, self.network, self.dex = extract_network_and_dex(
+                symbol_str, self.network_separator, self.dex_separator
+            )
+            self.base = trading_symbol
+            self.quote = None
+            self.base_network = None
+            self.quote_network = None
+            self.settlement_asset = self.identifier = self.strike_price = ""
+            self.option_type = None
+            return
+        if is_ticker_wise_network_symbol(
+            symbol_str,
+            self.market_separator,
+            self.settlement_separator,
+            self.network_separator,
+        ):
+            base_leg, quote_leg = symbol_str.split(self.market_separator, 1)
+            self.base, self.base_network = parse_currency_network_leg(
+                base_leg, self.network_separator, self.dex_separator
+            )
+            self.quote, self.quote_network = parse_currency_network_leg(
+                quote_leg, self.network_separator, self.dex_separator
+            )
+            self.network = None
+            self.dex = None
+            self.settlement_asset = self.identifier = self.strike_price = ""
+            self.option_type = None
+            return
         trading_symbol, self.network, self.dex = extract_network_and_dex(
             symbol_str, self.network_separator, self.dex_separator
         )
+        self.base_network = None
+        self.quote_network = None
         if self.settlement_separator in trading_symbol:
             (
                 self.base,
@@ -122,6 +158,13 @@ class Symbol:
         """
         return the base/quote representation of this symbol. includes settlement asset if set
         """
+        if self.base_network and self.quote_network:
+            return (
+                f"{self.base}{network_separator}{self.base_network}"
+                f"{market_separator}{self.quote}{network_separator}{self.quote_network}"
+            )
+        if self.quote is None and self.network:
+            return f"{self.base}{network_separator}{self.network}"
         merged_symbol = f"{self.base}{market_separator}{self.quote}"
         if self.settlement_asset:
             merged_symbol = (
@@ -155,6 +198,24 @@ class Symbol:
         return True when this symbol specifies a network
         """
         return bool(self.network)
+
+    def has_ticker_wise_networks(self) -> bool:
+        """
+        return True when this symbol uses per-leg network qualifiers
+        """
+        return bool(self.base_network and self.quote_network)
+
+    def is_network_qualified_asset(self) -> bool:
+        """
+        return True when this symbol is a single currency on a network (e.g. USDT@ETH)
+        """
+        return bool(
+            self.base
+            and self.quote is None
+            and self.network
+            and not self.base_network
+            and not self.quote_network
+        )
 
     def has_dex(self) -> bool:
         """
@@ -248,6 +309,8 @@ class Symbol:
             and self.strike_price == other.strike_price
             and self.option_type == other.option_type
             and self.network == other.network
+            and self.base_network == other.base_network
+            and self.quote_network == other.quote_network
             and self.dex == other.dex
         )
 
@@ -297,3 +360,61 @@ def _parse_spot_symbol(separator, symbol_str):
 
 def _parse_option_type(option_type_str: typing.Optional[str]) -> typing.Optional[str]:
     return option_type_str.upper() if option_type_str else None
+
+
+def is_network_qualified_asset(
+    symbol_str: str,
+    market_separator: str = octobot_commons.MARKET_SEPARATOR,
+    network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+) -> bool:
+    """
+    Return True when symbol_str is a single currency on a network (e.g. USDT@ETH).
+    """
+    return (
+        market_separator not in symbol_str
+        and network_separator in symbol_str
+    )
+
+
+def is_ticker_wise_network_symbol(
+    symbol_str: str,
+    market_separator: str = octobot_commons.MARKET_SEPARATOR,
+    settlement_separator: str = octobot_commons.SETTLEMENT_ASSET_SEPARATOR,
+    network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+) -> bool:
+    """
+    Return True when symbol_str is a spot pair with per-leg network qualifiers.
+    """
+    if market_separator not in symbol_str:
+        return False
+    base_leg, quote_leg = symbol_str.split(market_separator, 1)
+    if settlement_separator in base_leg or settlement_separator in quote_leg:
+        return False
+    return (
+        network_separator in base_leg
+        and network_separator in quote_leg
+    )
+
+
+def parse_currency_network_leg(
+    leg: str,
+    network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+    dex_separator: str = octobot_commons.DEX_SEPARATOR,
+) -> typing.Tuple[str, str]:
+    """
+    Parse a ticker-wise leg such as ETH@ETH into currency and network.
+    """
+    if network_separator not in leg:
+        raise ValueError(
+            f"Invalid ticker-wise leg {leg!r}: expected currency{network_separator}network."
+        )
+    currency, network_and_dex = leg.split(network_separator, 1)
+    if not currency or not network_and_dex:
+        raise ValueError(
+            f"Invalid ticker-wise leg {leg!r}: currency and network must be non-empty."
+        )
+    if dex_separator in network_and_dex:
+        raise ValueError(
+            f"Invalid ticker-wise leg {leg!r}: dex suffix is not supported per leg."
+        )
+    return currency, network_and_dex

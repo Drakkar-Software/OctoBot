@@ -296,6 +296,8 @@ class RestExchange(abstract_exchange.AbstractExchange):
             raise errors.MarketClosedError(f"{symbol} {html_util.get_html_summary_if_relevant(err)}") from err
         except (ccxt.NotSupported, NotImplementedError) as err:
             raise errors.NotSupported(err) from err
+        except errors.NotSupported:
+            raise
         except ccxt.PermissionDenied as err:
             # invalid api key or missing trading rights
             self.connector.set_first_consecutive_authentication_error_at_if_unset()
