@@ -38,6 +38,7 @@ import octobot_node.scheduler.user_actions.user_action_util as user_action_util
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.protocol.automations as automations_protocol
+import octobot_node.protocol.util.privacy_filter as privacy_filter
 
 DEFAULT_NAME = "octobot_node"
 
@@ -784,4 +785,7 @@ class Scheduler:
             sort_key = self._user_action_list_sort_key(user_action_row, workflow_status)
             loaded.append((sort_key, user_action_row))
         loaded.sort(key=lambda row: row[0])
-        return [pair[1] for pair in loaded]
+        return [
+            privacy_filter.to_protocol_user_action(user_action)
+            for _, user_action in loaded
+        ]

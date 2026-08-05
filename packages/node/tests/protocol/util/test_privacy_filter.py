@@ -5,71 +5,72 @@
 #  modify it under the terms of the GNU Lesser General Public
 #  License version 3.0 of the License, or (at your option) any later version.
 
-import octobot_commons.constants as commons_constants
 import octobot_protocol.models as protocol_models
 
 import octobot_node.protocol.util.privacy_filter as privacy_filter
 
 
-class TestPrivatizeDagActions:
-    """Checks :func:`octobot_node.protocol.util.privacy_filter.privatize_dag_actions`."""
+class TestProtocolActionConfiguration:
+    """Checks :func:`octobot_node.protocol.util.privacy_filter.protocol_action_configuration`."""
 
-    def test_redacts_auth_details_in_apply_configuration_action(self):
-        action = protocol_models.Action(
-            id="action-1",
-            action_type="apply_configuration",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            configuration={
-                "exchange_account_details": {
-                    "auth_details": {
-                        "api_key": "secret-key",
-                        "api_secret": "secret-secret",
-                        "api_password": "secret-pass",
-                    },
+    def test_omits_auth_details_credentials_in_apply_configuration(self):
+        configuration = {
+            "exchange_account_details": {
+                "auth_details": {
+                    "api_key": "secret-key",
+                    "api_secret": "secret-secret",
+                    "api_password": "secret-pass",
+                    "access_token": "secret-token",
+                    "encrypted": "secret-encrypted",
+                    "exchange_type": "spot",
+                    "sandboxed": True,
                 },
             },
+        }
+        stripped_configuration = privacy_filter.protocol_action_configuration(
+            configuration,
+            action_type="apply_configuration",
         )
-        privatized_actions = privacy_filter.privatize_dag_actions([action])
-        auth_details = privatized_actions[0].configuration[
-            "exchange_account_details"
-        ]["auth_details"]
-        assert auth_details["api_key"] == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert auth_details["api_secret"] == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert auth_details["api_password"] == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
+        auth_details = stripped_configuration["exchange_account_details"]["auth_details"]
+        assert "api_key" not in auth_details
+        assert "api_secret" not in auth_details
+        assert "api_password" not in auth_details
+        assert "access_token" not in auth_details
+        assert "encrypted" not in auth_details
+        assert auth_details["exchange_type"] == "spot"
+        assert auth_details["sandboxed"] is True
 
-    def test_leaves_non_config_actions_unchanged(self):
-        dsl_action = protocol_models.Action(
-            id="dsl-1",
+    def test_leaves_non_apply_configuration_configuration_unchanged(self):
+        configuration = {
+            "exchange_account_details": {
+                "auth_details": {
+                    "api_key": "secret-key",
+                },
+            },
+        }
+        stripped_configuration = privacy_filter.protocol_action_configuration(
+            configuration,
             action_type="dsl_script",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            dsl='run_octobot_process("acc", profile_data={}, exchange_auth_data=[{"api_key": "leak"}])',
         )
-        privatized_actions = privacy_filter.privatize_dag_actions([dsl_action])
-        returned_action = privatized_actions[0]
-        assert returned_action is dsl_action
-        assert returned_action.dsl == dsl_action.dsl
+        assert stripped_configuration is configuration
 
-    def test_leaves_apply_configuration_without_auth_unchanged(self):
-        config_action = protocol_models.Action(
-            id="action-1",
-            action_type="apply_configuration",
-            status=protocol_models.WorkflowStatus.COMPLETED,
-            configuration={
-                "exchange_account_details": {
-                    "auth_details": {},
-                },
+    def test_leaves_apply_configuration_without_auth_details_unchanged(self):
+        configuration = {
+            "exchange_account_details": {
+                "auth_details": {},
             },
+        }
+        stripped_configuration = privacy_filter.protocol_action_configuration(
+            configuration,
+            action_type="apply_configuration",
         )
-        privatized_actions = privacy_filter.privatize_dag_actions([config_action])
-        returned_action = privatized_actions[0]
-        assert returned_action is config_action
-        assert returned_action.configuration == config_action.configuration
+        assert stripped_configuration is configuration
 
 
-class TestPrivatizeUserAction:
-    """Checks :func:`octobot_node.protocol.util.privacy_filter.privatize_user_action`."""
+class TestToProtocolUserAction:
+    """Checks :func:`octobot_node.protocol.util.privacy_filter.to_protocol_user_action`."""
 
-    def test_redacts_create_account_auth_configuration(self):
+    def test_omits_credentials_from_create_account_auth_configuration(self):
         user_action = protocol_models.UserAction(
             id="ua-create-auth",
             configuration=protocol_models.UserActionConfiguration(
@@ -87,19 +88,19 @@ class TestPrivatizeUserAction:
                 ),
             ),
         )
-        privatized_user_action = privacy_filter.privatize_user_action(user_action)
+        protocol_user_action = privacy_filter.to_protocol_user_action(user_action)
         authentication = (
-            privatized_user_action.configuration.actual_instance.configuration
+            protocol_user_action.configuration.actual_instance.configuration
         )
-        assert authentication.api_key == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert authentication.api_secret == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert authentication.api_passphrase == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert authentication.public_key == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert authentication.private_key == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert authentication.seed_phrase == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
         assert authentication.id == "auth-1"
+        assert authentication.api_key is None
+        assert authentication.api_secret is None
+        assert authentication.api_passphrase is None
+        assert authentication.public_key is None
+        assert authentication.private_key is None
+        assert authentication.seed_phrase is None
 
-    def test_redacts_edit_account_auth_configuration(self):
+    def test_omits_credentials_from_edit_account_auth_configuration(self):
         user_action = protocol_models.UserAction(
             id="ua-edit-auth",
             configuration=protocol_models.UserActionConfiguration(
@@ -114,13 +115,13 @@ class TestPrivatizeUserAction:
                 ),
             ),
         )
-        privatized_user_action = privacy_filter.privatize_user_action(user_action)
+        protocol_user_action = privacy_filter.to_protocol_user_action(user_action)
         authentication = (
-            privatized_user_action.configuration.actual_instance.configuration
+            protocol_user_action.configuration.actual_instance.configuration
         )
-        assert authentication.api_key == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
-        assert authentication.api_secret == commons_constants.PRIVATE_MESSAGE_PLACEHOLDER
         assert authentication.id == "auth-1"
+        assert authentication.api_key is None
+        assert authentication.api_secret is None
 
     def test_leaves_non_account_auth_user_actions_unchanged(self):
         stop_user_action = protocol_models.UserAction(
@@ -132,5 +133,5 @@ class TestPrivatizeUserAction:
                 ),
             ),
         )
-        privatized_user_action = privacy_filter.privatize_user_action(stop_user_action)
-        assert privatized_user_action is stop_user_action
+        protocol_user_action = privacy_filter.to_protocol_user_action(stop_user_action)
+        assert protocol_user_action is stop_user_action
