@@ -422,10 +422,9 @@ class Configuration:
             and commons_constants.DEFAULT_PROFILE in self.profile_by_id
         ):
             self.logger.warning(
-                "Profile %r from config.json is not available yet; falling back to %r. "
-                "This can happen when sync profiles are not loaded.",
-                selected_profile_id,
-                commons_constants.DEFAULT_PROFILE,
+                f"Profile {selected_profile_id} from config.json is not available yet; "
+                f"falling back to {commons_constants.DEFAULT_PROFILE}. "
+                f"This can happen when sync profiles are not loaded."
             )
             return commons_constants.DEFAULT_PROFILE
         raise errors.NoProfileError
