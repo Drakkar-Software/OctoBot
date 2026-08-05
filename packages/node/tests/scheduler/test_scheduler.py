@@ -773,6 +773,43 @@ class TestSchedulerListUserActions:
         assert [user_action_row.id for user_action_row in listed] == ["ua-done", "ua-p"]
 
     @pytest.mark.asyncio
+    async def test_omits_account_auth_credentials_from_listed_configuration(self):
+        wallet_segment = "0xw_auth"
+        account_auth_user_action = protocol_models.UserAction(
+            id="ua-auth",
+            configuration=protocol_models.UserActionConfiguration(
+                protocol_models.CreateAccountAuthConfiguration(
+                    action_type=protocol_models.UserActionType.ACCOUNT_AUTH_CREATE,
+                    configuration=protocol_models.AccountAuthentication(
+                        id="auth-1",
+                        api_key="secret-key",
+                        api_secret="secret-secret",
+                    ),
+                ),
+            ),
+        )
+        inputs_payload = params.UserActionWorkflowInputs(
+            user_id=wallet_segment,
+            user_action=account_auth_user_action,
+        ).to_dict(include_default_values=False)
+        workflow_pending = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_pending.workflow_id = "wf-auth-1"
+        workflow_pending.input = {"args": [inputs_payload], "kwargs": {}}
+        workflow_pending.output = None
+        workflow_pending.created_at = None
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            side_effect=[[workflow_pending], []],
+        )
+        listed = await sched.list_user_actions(wallet_segment)
+        assert len(listed) == 1
+        authentication = listed[0].configuration.actual_instance.configuration
+        assert authentication.id == "auth-1"
+        assert authentication.api_key is None
+        assert authentication.api_secret is None
+
+    @pytest.mark.asyncio
     async def test_wallet_filter_excludes_other_wallet_pending_rows(self):
         wallet_a = "0xw_a"
         wallet_b = "0xw_b"

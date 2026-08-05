@@ -29,6 +29,16 @@ class IncompatibleAssetDetails(
     updated_at: float = 0
 
 
+_NON_CREDENTIAL_EXCHANGE_AUTH_DETAILS_FIELDS = (
+    "exchange_type",
+    "sandboxed",
+    "broker_enabled",
+    "exchange_account_id",
+    "exchange_credential_id",
+    "incompatible_assets",
+)
+
+
 @dataclasses.dataclass
 class ExchangeAuthDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
     api_key: str = ""
@@ -42,6 +52,14 @@ class ExchangeAuthDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot
     exchange_account_id: typing.Union[str, None] = None # deprecated, will be deleted
     exchange_credential_id: typing.Union[str, None] = None
     incompatible_assets: typing.Union[list[IncompatibleAssetDetails], None] = dataclasses.field(default_factory=list)
+
+    @classmethod
+    def non_credential_dict(cls, auth_details: dict) -> dict:
+        return {
+            field_name: auth_details[field_name]
+            for field_name in _NON_CREDENTIAL_EXCHANGE_AUTH_DETAILS_FIELDS
+            if field_name in auth_details
+        }
 
     # pylint: disable=E1134
     def __post_init__(self):

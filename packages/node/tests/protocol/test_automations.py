@@ -560,6 +560,33 @@ class TestFillProtocolAutomationStateDagActions:
         assert by_id["c1"].action_type == "apply_configuration"
         assert by_id["c1"].configuration is not None
 
+    def test_apply_configuration_action_omits_auth_credentials(self):
+        configured_action = flow_entities.ConfiguredActionDetails(
+            id="c1",
+            action="apply_configuration",
+            config={
+                "exchange_account_details": {
+                    "auth_details": {
+                        "api_key": "secret-key",
+                        "api_secret": "secret-secret",
+                        "api_password": "secret-pass",
+                    },
+                },
+            },
+        )
+        flow_state = flow_entities.AutomationState(
+            automation=flow_entities.AutomationDetails(
+                metadata=flow_entities.AutomationMetadata(automation_id="automation_1"),
+                actions_dag=flow_entities.ActionsDAG(actions=[configured_action]),
+            ),
+        )
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.actions is not None
+        auth_details = filled.actions[0].configuration["exchange_account_details"]["auth_details"]
+        assert "api_key" not in auth_details
+        assert "api_secret" not in auth_details
+        assert "api_password" not in auth_details
+
 
 class TestProtocolActionFromFlowResult:
     def _protocol_action_from_priority_lane_dsl_action(
