@@ -32,7 +32,7 @@ class TestWeexAuthenticatedExchange(
     ORDER_SIZE = 50  # % of portfolio to include in test orders
     VALID_ORDER_ID = "1777764898965454848"
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = True
-
+    IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -44,8 +44,7 @@ class TestWeexAuthenticatedExchange(
         await super().test_get_max_open_orders_count()
 
     async def test_get_account_id(self):
-        # pass if not implemented
-        pass
+        await super().test_get_account_id()
 
     async def test_is_authenticated_request(self):
         await super().test_is_authenticated_request()
@@ -54,8 +53,7 @@ class TestWeexAuthenticatedExchange(
         await super().test_invalid_api_key_error()
 
     async def test_get_api_key_permissions(self):
-        # pass if not implemented
-        pass
+        await super().test_get_api_key_permissions()
 
     async def test_missing_trading_api_key_permissions(self):
         pass
