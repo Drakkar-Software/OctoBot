@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [3.0.0-beta2] - 2026-08-06
+### Added
+- [Weex] Support Weex exchange
+### Updated
+- [Node Interface] / page now redirects to /app
+### Fixed
+- [Configuration] fix profile saving issues
+- [Node Interface] avoid displaying auth form in browser
+
 ## [3.0.0-beta1] - 2026-07-26
 ### Start of the OctoBot 3.0.0 beta
 OctoBot 3.0.0 a new system for portfolio automation from desktop and mobile.
