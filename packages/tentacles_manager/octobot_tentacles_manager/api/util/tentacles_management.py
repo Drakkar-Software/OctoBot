@@ -14,13 +14,29 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import octobot_commons.logging as logging
+import octobot_commons.multiprocessing_util as multiprocessing_util
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.loaders as loaders
 import octobot_tentacles_manager.util as util
+import octobot_tentacles_manager.util.tentacles_filesystem_lock as tentacles_filesystem_lock
 
 
 async def manage_tentacles(worker, tentacle_names, tentacles_path_or_url=None, aiohttp_session=None,
                            authenticator=None) -> int:
+    logger = logging.get_logger(__name__)
+    lock_file_path = tentacles_filesystem_lock.get_tentacles_install_lock_file_path()
+    try:
+        async with multiprocessing_util.async_filesystem_based_lock(lock_file_path):
+            return await _manage_tentacles_unlocked(
+                worker, tentacle_names, tentacles_path_or_url, aiohttp_session, authenticator
+            )
+    except multiprocessing_util.FilesystemBasedLockTimeoutError:
+        logger.error("Could not acquire tentacles install lock")
+        return 1
+
+
+async def _manage_tentacles_unlocked(worker, tentacle_names, tentacles_path_or_url=None, aiohttp_session=None,
+                                     authenticator=None) -> int:
     errors_count = 0
     logger = logging.get_logger(__name__)
     try:

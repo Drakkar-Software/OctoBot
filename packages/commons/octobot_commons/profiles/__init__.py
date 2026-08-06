@@ -45,6 +45,12 @@ from octobot_commons.profiles.profile_storage import (
     ProfileStorage,
 )
 
+from octobot_commons.profiles.profile_edit_gate import (
+    ProfileEditGate,
+    ProfileEditType,
+    ProfilePersistenceTarget,
+)
+
 from octobot_commons.profiles import profile_synchronizer
 
 from octobot_commons.profiles.profile_synchronizer import (
@@ -75,6 +81,9 @@ __all__ = [
     "Profile",
     "EphemeralProfile",
     "ProfileStorage",
+    "ProfileEditGate",
+    "ProfileEditType",
+    "ProfilePersistenceTarget",
     "export_profile",
     "install_profile",
     "import_profile",

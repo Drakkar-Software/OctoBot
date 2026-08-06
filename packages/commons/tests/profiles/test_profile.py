@@ -75,6 +75,27 @@ def test_save_config(profile):
                                                            ])
 
 
+class TestSaveConfigDoesNotAliasGlobalConfig:
+    def test_fully_managed_elements_are_deep_copied(self, profile):
+        with mock.patch.object(profile, "_save_through_profile_storage", mock.Mock()), \
+                mock.patch.object(profile, "sync_partially_managed_elements", mock.Mock()):
+            profile.config = {}
+            global_config = {
+                constants.CONFIG_CRYPTO_CURRENCIES: {
+                    "Bitcoin": {
+                        constants.CONFIG_CRYPTO_PAIRS: ["BTC/USDT"],
+                        constants.CONFIG_ENABLED_OPTION: True,
+                    }
+                }
+            }
+            profile.save_config(global_config)
+            global_config[constants.CONFIG_CRYPTO_CURRENCIES]["Ethereum"] = {
+                constants.CONFIG_CRYPTO_PAIRS: ["ETH/USDT"],
+                constants.CONFIG_ENABLED_OPTION: True,
+            }
+            assert "Ethereum" not in profile.config[constants.CONFIG_CRYPTO_CURRENCIES]
+
+
 def test_validate(profile):
     with mock.patch.object(octobot_commons.json_util, "validate", mock.Mock()) as validate_mock:
         profile.validate()
@@ -269,25 +290,41 @@ def test_merge_partially_managed_element(profile):
     }
 
 
-def test_remove_deleted_elements(profile):
-    element = next(iter(profile.PARTIALLY_MANAGED_ELEMENTS))
-    config = {
-        constants.CONFIG_EXCHANGES: {
-            "binance": {
-                constants.CONFIG_EXCHANGE_KEY: constants.DEFAULT_API_KEY,
-                constants.CONFIG_EXCHANGE_SECRET: constants.DEFAULT_API_SECRET,
-                constants.CONFIG_ENABLED_OPTION: True,
+class TestRemoveDeletedElements:
+    def _global_config_with_binance(self):
+        return {
+            constants.CONFIG_EXCHANGES: {
+                "binance": {
+                    constants.CONFIG_EXCHANGE_KEY: constants.DEFAULT_API_KEY,
+                    constants.CONFIG_EXCHANGE_SECRET: constants.DEFAULT_API_SECRET,
+                    constants.CONFIG_ENABLED_OPTION: True,
+                }
             }
         }
-    }
-    before_sync_elements_count = len(profile.config[element])
-    profile.remove_deleted_elements(config)
-    assert before_sync_elements_count == len(profile.config[element])
-    profile.config[element]["plop"] = config[constants.CONFIG_EXCHANGES]["binance"]
-    assert len(profile.config[element]) == before_sync_elements_count + 1
-    profile.remove_deleted_elements(config)
-    assert before_sync_elements_count == len(profile.config[element])
-    assert list(profile.config[element]) == ["binance"]
+
+    def test_returns_false_when_profile_exchanges_match_global_config(self, profile):
+        element = next(iter(profile.PARTIALLY_MANAGED_ELEMENTS))
+        global_config = self._global_config_with_binance()
+        before_sync_elements_count = len(profile.config[element])
+        assert profile.remove_deleted_elements(global_config) is False
+        assert before_sync_elements_count == len(profile.config[element])
+
+    def test_returns_true_and_removes_exchange_missing_from_global_config(self, profile):
+        element = next(iter(profile.PARTIALLY_MANAGED_ELEMENTS))
+        global_config = self._global_config_with_binance()
+        before_sync_elements_count = len(profile.config[element])
+        assert profile.remove_deleted_elements(global_config) is False
+        profile.config[element]["plop"] = global_config[constants.CONFIG_EXCHANGES]["binance"]
+        assert len(profile.config[element]) == before_sync_elements_count + 1
+        assert profile.remove_deleted_elements(global_config) is True
+        assert before_sync_elements_count == len(profile.config[element])
+        assert list(profile.config[element]) == ["binance"]
+
+    def test_returns_false_when_global_config_has_no_exchanges_key(self, profile):
+        element = next(iter(profile.PARTIALLY_MANAGED_ELEMENTS))
+        before_sync_elements_count = len(profile.config[element])
+        assert profile.remove_deleted_elements({}) is False
+        assert before_sync_elements_count == len(profile.config[element])
 
 
 def test_get_element_from_template(profile):

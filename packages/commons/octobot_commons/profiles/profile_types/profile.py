@@ -25,6 +25,7 @@ import octobot_commons.enums as enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.json_util as json_util
 import octobot_commons.errors as errors
+import octobot_commons.profiles.profile_edit_gate as profile_edit_gate_module
 
 
 class Profile:
@@ -89,6 +90,24 @@ class Profile:
 
     def get_profile_storage(self):
         return self._profile_storage
+
+    def is_strategy_locked(self) -> bool:
+        profile_storage = self._profile_storage
+        if profile_storage is None:
+            return self.read_only
+        return profile_storage.edit_gate.is_strategy_locked(self)
+
+    def get_writable_profile_path(self) -> str:
+        profile_storage = self._require_profile_storage()
+        return profile_storage.edit_gate.resolve_writable_path(
+            self, profile_edit_gate_module.ProfileEditType.TENTACLE_CONFIG
+        )
+
+    def get_tentacles_config_read_path(self) -> str:
+        profile_storage = self._profile_storage
+        if profile_storage is None:
+            return self.get_tentacles_config_path()
+        return profile_storage.edit_gate.resolve_activation_read_path(self)
 
     def _require_profile_storage(self):
         profile_storage = self._profile_storage
@@ -157,15 +176,17 @@ class Profile:
         """
         for element in self.FULLY_MANAGED_ELEMENTS:
             if element in global_config:
-                self.config[element] = global_config[element]
+                self.config[element] = copy.deepcopy(global_config[element])
         self.sync_partially_managed_elements(global_config)
         self._save_through_profile_storage(global_config)
 
-    def remove_deleted_elements(self, global_config):
+    def remove_deleted_elements(self, global_config) -> bool:
         """
         Removes elements from self.PARTIALLY_MANAGED_ELEMENTS
         that are in profile but not in global config
+        :return: True when any partially managed element key was removed
         """
+        exchanges_changed = False
         for element in self.PARTIALLY_MANAGED_ELEMENTS:
             if element in global_config and element in self.config:
                 current_elements = list(self.config[element])
@@ -173,6 +194,8 @@ class Profile:
                 for key in current_elements:
                     if key not in to_keep_elements:
                         self.config[element].pop(key)
+                        exchanges_changed = True
+        return exchanges_changed
 
     def sync_partially_managed_elements(self, global_config):
         """
@@ -276,18 +299,21 @@ class Profile:
         import octobot_commons.profiles.profile_data as profile_data_module
         import octobot_tentacles_manager.configuration.profile_tentacles_util as profile_tentacles_util
 
-        os.makedirs(self.path, exist_ok=True)
-        tentacles_config_path = self.get_tentacles_config_path()
+        writable_profile_path = self.get_writable_profile_path() if self._profile_storage else self.path
+        os.makedirs(writable_profile_path, exist_ok=True)
+        tentacles_config_path = self.get_tentacles_config_read_path()
         if os.path.isfile(tentacles_config_path):
-            return profile_tentacles_util.load_setup_config_from_profile_path(
+            tentacles_setup_config = profile_tentacles_util.load_setup_config_from_profile_path(
                 tentacles_config_path
             )
+            tentacles_setup_config.config_path = tentacles_config_path
+            return tentacles_setup_config
         try:
             profile_data = profile_data_module.ProfileData.from_filesystem_profile(self)
         except (KeyError, OSError, TypeError):
             profile_data = profile_data_module.ProfileData()
         return profile_tentacles_util.build_setup_config_from_profile_data(
-            profile_data, self.path, import_registered_tentacles=True
+            profile_data, writable_profile_path, import_registered_tentacles=True
         )
 
     def as_dict(self) -> dict:

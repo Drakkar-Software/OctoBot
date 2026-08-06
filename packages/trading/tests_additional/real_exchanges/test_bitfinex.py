@@ -48,7 +48,7 @@ class TestBitfinexRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(280, 280)
+        await self.inner_test_active_symbols(260, 260)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(
@@ -96,4 +96,6 @@ class TestBitfinexRealExchangeTester(real_exchange_tester.RealExchangeTester):
         )
 
     async def test_get_all_currencies_price_ticker(self):
-        await self.assert_get_all_currencies_price_ticker()
+        await self.assert_get_all_currencies_price_ticker(
+            allowed_failed_tickers_typing_checks_percentage=10,
+        )

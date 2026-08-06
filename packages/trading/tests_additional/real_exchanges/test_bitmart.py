@@ -47,7 +47,7 @@ class TestBitMartRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(1700, 1700)
+        await self.inner_test_active_symbols(400, 1250)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status(

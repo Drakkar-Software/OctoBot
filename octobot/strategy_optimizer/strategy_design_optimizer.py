@@ -44,7 +44,6 @@ import octobot_commons.databases as databases
 import octobot_commons.dict_util as dict_util
 import octobot_backtesting.errors as backtesting_errors
 import octobot_tentacles_manager.api as tentacles_manager_api
-import octobot_tentacles_manager.constants as tentacles_manager_constants
 import octobot_services.api as services_api
 import octobot_services.enums as services_enums
 
@@ -719,7 +718,7 @@ class StrategyDesignOptimizer:
         if not os.path.exists(run_folder):
             os.makedirs(run_folder)
         tentacles_specific_config_folder = os.path.join(run_folder,
-                                                        tentacles_manager_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
+                                                        commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER)
         if not os.path.exists(tentacles_specific_config_folder):
             os.mkdir(tentacles_specific_config_folder)
 

@@ -10,8 +10,11 @@ const AUTOMATION_LOGS_NOT_FOUND_MESSAGE =
   "No logs found for the selected OctoBots"
 
 async function buildAuthHeader(): Promise<string> {
-  const username = localStorage.getItem("auth_username") || "node"
-  const password = (await loadPassword()) ?? ""
+  const username = localStorage.getItem("auth_username")
+  const password = await loadPassword()
+  if (!username || !password) {
+    throw new Error("No active wallet session")
+  }
   return `Basic ${btoa(`${username}:${password}`)}`
 }
 

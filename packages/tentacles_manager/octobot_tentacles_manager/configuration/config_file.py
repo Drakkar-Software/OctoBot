@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
 import os.path as path
 
 import octobot_commons.json_util as json_util
@@ -25,6 +26,9 @@ def read_config(config_file: str, raise_errors: bool = True) -> dict:
 
 
 def write_config(config_file: str, content: dict) -> None:
+    config_directory = path.dirname(config_file)
+    if config_directory:
+        os.makedirs(config_directory, exist_ok=True)
     json_util.safe_dump(content, config_file)
 
 

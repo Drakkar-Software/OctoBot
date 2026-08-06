@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import decimal
 
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
@@ -39,6 +40,7 @@ class TestHollaexAuthenticatedExchange(
     IGNORE_EXCHANGE_TRADE_ID = True
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     IS_BROKER_ENABLED_ACCOUNT = False
+    MIN_TRADE_USD_VALUE = decimal.Decimal("0.01")
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()

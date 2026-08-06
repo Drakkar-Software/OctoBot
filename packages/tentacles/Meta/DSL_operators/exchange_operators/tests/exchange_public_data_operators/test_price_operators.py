@@ -131,6 +131,17 @@ class TestGetDependencies:
         ]
 
     @pytest.mark.asyncio
+    async def test_price_dependencies_with_only_param_symbol(self, interpreter):
+        interpreter.prepare(f"price('{SYMBOL2}')")
+        assert interpreter.get_dependencies() == [
+            exchange_operators.ExchangeDataDependency(
+                symbol=SYMBOL2,
+                time_frame=None,
+                data_source=octobot_trading.constants.MARK_PRICE_CHANNEL,
+            ),
+        ]
+
+    @pytest.mark.asyncio
     async def test_price_dependencies_with_param_symbol(self, interpreter):
         interpreter.prepare(f"price + price('{SYMBOL2}')")
         assert interpreter.get_dependencies() == [
@@ -139,6 +150,17 @@ class TestGetDependencies:
                 time_frame=None,
                 data_source=octobot_trading.constants.MARK_PRICE_CHANNEL,
             ),
+            exchange_operators.ExchangeDataDependency(
+                symbol=SYMBOL2,
+                time_frame=None,
+                data_source=octobot_trading.constants.MARK_PRICE_CHANNEL,
+            ),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_price_dependencies_deduplicates_repeated_param_symbol(self, interpreter):
+        interpreter.prepare(f"price('{SYMBOL2}')*price('{SYMBOL2}')")
+        assert interpreter.get_dependencies() == [
             exchange_operators.ExchangeDataDependency(
                 symbol=SYMBOL2,
                 time_frame=None,

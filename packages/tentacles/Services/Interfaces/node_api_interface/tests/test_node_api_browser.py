@@ -18,9 +18,11 @@ import pathlib
 
 import mock
 import pytest
+from fastapi.testclient import TestClient
 
 import octobot_services.constants as services_constants
 import tentacles.Services.Interfaces.node_api_interface.node_api as node_api_module
+import tentacles.Services.Interfaces.node_api_interface.utils as node_api_utils
 
 
 class TestShouldOpenNodeUiInBrowser:
@@ -49,6 +51,16 @@ class TestOpenNodeUiOnBrowser:
         ) as open_browser_mock:
             interface._open_node_ui_on_browser()
         open_browser_mock.assert_called_once_with("http://127.0.0.1:8000/app")
+
+
+class TestRootRedirectsToApp:
+    def test_root_redirects_to_app(self):
+        if node_api_utils.get_dist_directory() is None:
+            pytest.skip("no frontend build available")
+        client = TestClient(node_api_module.NodeApiInterface.create_app())
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "/app"
 
 
 @pytest.mark.asyncio

@@ -70,10 +70,7 @@ class AdvancedPriceSource:
             )
         ]
         if self.formula:
-            all_dependencies = (
-                base_dependencies
-                + self._formula_interpreter.get_dependencies() # type: ignore
-            )
+            all_dependencies = self._formula_interpreter.get_dependencies() # type: ignore
             deduplicated_dependencies = []
             for dependency in all_dependencies:
                 if dependency not in deduplicated_dependencies:

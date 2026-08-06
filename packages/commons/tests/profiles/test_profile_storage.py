@@ -4,6 +4,7 @@
 import asyncio
 import os
 import copy
+import pathlib
 
 import mock
 import pytest
@@ -18,6 +19,11 @@ import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.profiles.profile_types.sync_profile as sync_profile_module
 import octobot_commons.profiles.profile_data_import as profile_data_import_module
+import octobot_sync.sync.collection_backend.errors as collection_errors
+
+import tests.profiles.conftest as profiles_conftest
+
+pytestmark = pytest.mark.xdist_group(name=profiles_conftest.PROFILES_FS_XDIST_GROUP)
 
 
 class TestProfileStorageListProfiles:
@@ -47,8 +53,6 @@ class TestProfileStorageListProfiles:
                 constants.CONFIG_DISTRIBUTION: constants.DEFAULT_DISTRIBUTION,
             },
         }
-        import octobot_commons.json_util as json_util
-
         json_util.safe_dump(profile_file, os.path.join(default_profile_path, constants.PROFILE_CONFIG_FILE))
 
         sync_profile_data = profile_data_module.ProfileData.from_dict(
@@ -153,8 +157,6 @@ class TestSyncProfileBackendImportProfileData:
             created_profile = strategy
             return strategy
 
-        import octobot_sync.sync.collection_backend.errors as collection_errors
-
         strategy_provider = mock.Mock()
         strategy_provider.update_item.side_effect = collection_errors.ItemNotFoundError(
             "missing"
@@ -207,8 +209,6 @@ class TestSyncProfileBackendDuplicateProfile:
             assert user_id == "wallet-user"
             created_strategy_id = strategy.id
             return strategy
-
-        import octobot_sync.sync.collection_backend.errors as collection_errors
 
         strategy_provider = mock.Mock()
         strategy_provider.update_item.side_effect = collection_errors.ItemNotFoundError(
@@ -290,8 +290,6 @@ class TestProfileStorageDuplicateProfile:
 
 class TestProfileStorageMasterOverlay:
     def _write_profile_file(self, profile_path: str, profile_id: str, *, read_only: bool) -> None:
-        import octobot_commons.json_util as json_util
-
         os.makedirs(profile_path, exist_ok=True)
         profile_file = {
             constants.CONFIG_PROFILE: {
@@ -370,7 +368,75 @@ class TestProfileStorageMasterOverlay:
         assert profiles[profile_id].name == profile_id
         assert profiles[profile_id].path == os.path.join(child_profiles_path, profile_id)
 
-    def test_save_active_profile_blocks_master_overlay_profile(self, tmp_path):
+    def test_save_active_profile_persists_readonly_master_overlay_to_child_path(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        readonly_profile_id = "non-trading"
+        master_profile_path = os.path.join(master_profiles_path, readonly_profile_id)
+        self._write_profile_file(
+            master_profile_path,
+            readonly_profile_id,
+            read_only=True,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        overlay_profile = profile_storage.get_profile(readonly_profile_id)
+        overlay_profile.config[constants.CONFIG_TRADER] = {
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        profile_storage.save_active_profile(overlay_profile, {})
+        child_overlay_file = json_util.read_file(
+            os.path.join(child_profiles_path, readonly_profile_id, constants.PROFILE_CONFIG_FILE)
+        )
+        master_profile_file = json_util.read_file(
+            os.path.join(master_profile_path, constants.PROFILE_CONFIG_FILE)
+        )
+        assert (
+            child_overlay_file[constants.PROFILE_CONFIG][constants.CONFIG_TRADER][
+                constants.CONFIG_ENABLED_OPTION
+            ]
+            is True
+        )
+        assert (
+            master_profile_file[constants.PROFILE_CONFIG][constants.CONFIG_TRADER][
+                constants.CONFIG_ENABLED_OPTION
+            ]
+            is False
+        )
+
+    def test_load_all_profiles_excludes_child_overlay_only_entry(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        child_profiles_path.mkdir(parents=True)
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        readonly_profile_id = "non-trading"
+        master_profile_path = os.path.join(master_profiles_path, readonly_profile_id)
+        self._write_profile_file(
+            master_profile_path,
+            readonly_profile_id,
+            read_only=True,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        profiles_before_save = profile_storage.load_all_profiles()
+        assert set(profiles_before_save) == {readonly_profile_id}
+        overlay_profile = profile_storage.get_profile(readonly_profile_id)
+        overlay_profile.config[constants.CONFIG_TRADER] = {
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        profile_storage.save_active_profile(overlay_profile, {})
+        filesystem_profiles = profile_storage._filesystem_backend.list_profiles()
+        assert len(filesystem_profiles) == 1
+        profiles_after_save = profile_storage.load_all_profiles()
+        assert set(profiles_after_save) == {readonly_profile_id}
+        assert (
+            profiles_after_save[readonly_profile_id].config[constants.CONFIG_TRADER][
+                constants.CONFIG_ENABLED_OPTION
+            ]
+            is True
+        )
+
+    def test_is_child_profile_config_overlay(self, tmp_path):
         child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
         child_profiles_path.mkdir(parents=True)
         master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
@@ -383,15 +449,38 @@ class TestProfileStorageMasterOverlay:
         profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
         profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
         overlay_profile = profile_storage.get_profile(readonly_profile_id)
-        with pytest.raises(
-            errors_module.ProfileDataError,
-            match="shared from the master",
-        ):
-            profile_storage.save_active_profile(overlay_profile, {})
+        overlay_profile.config[constants.CONFIG_TRADER] = {
+            constants.CONFIG_ENABLED_OPTION: True,
+        }
+        profile_storage.save_active_profile(overlay_profile, {})
+        child_overlay_profile = next(
+            iter(profile_storage._filesystem_backend.list_profiles().values())
+        )
+        master_profile = profile_storage.get_profile(readonly_profile_id)
+        assert profile_storage.is_child_profile_config_overlay(child_overlay_profile) is True
+        assert profile_storage.is_child_profile_config_overlay(master_profile) is False
+
+    def test_is_child_profile_config_overlay_false_for_full_local_profile(self, tmp_path):
+        child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
+        master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
+        profile_id = "shared-id"
+        child_profiles_path.mkdir(parents=True, exist_ok=True)
+        self._write_profile_file(
+            os.path.join(master_profiles_path, profile_id),
+            profile_id,
+            read_only=True,
+        )
+        self._write_profile_file(
+            os.path.join(child_profiles_path, profile_id),
+            profile_id,
+            read_only=False,
+        )
+        profile_storage = profile_storage_module.ProfileStorage(str(child_profiles_path), None)
+        profile_storage.configure_readonly_profiles_path(str(master_profiles_path))
+        profiles = profile_storage.load_all_profiles()
+        assert profile_storage.is_child_profile_config_overlay(profiles[profile_id]) is False
 
     def test_save_active_profile_persists_editable_master_overlay_on_master_path(self, tmp_path):
-        import octobot_commons.json_util as json_util
-
         child_profiles_path = tmp_path / "child" / constants.PROFILES_FOLDER
         child_profiles_path.mkdir(parents=True)
         master_profiles_path = tmp_path / "master" / constants.PROFILES_FOLDER
@@ -525,6 +614,49 @@ class TestSyncProfileBackendSaveProfile:
         assert saved_profile_data.exchanges[0].exchange_type == "spot"
         strategy_provider.update_item.assert_called_once()
 
+    def test_save_profile_persists_backtesting_profile_type(self, tmp_path):
+        sync_backend = profile_backends_module.SyncProfileBackend(
+            sync_user_id="wallet-user"
+        )
+        initial_profile_data = profile_data_module.ProfileData.from_dict(
+            {
+                "profile_details": {
+                    "id": "backtest-profile",
+                    "name": "Backtesting profile",
+                    "profile_type": enums.ProfileType.BACKTESTING.value,
+                },
+                "trading": {"reference_market": constants.DEFAULT_REFERENCE_MARKET},
+                "trader_simulator": {
+                    "enabled": True,
+                    "starting_portfolio": {"USDT": 100},
+                },
+            }
+        )
+        profile = sync_profile_module.SyncProfile(
+            initial_profile_data,
+            str(tmp_path / "runtime"),
+        )
+        profile.profile_id = "backtest-profile"
+        profile.name = "Backtesting profile"
+        profile.profile_type = enums.ProfileType.BACKTESTING
+        profile_storage = profile_storage_module.ProfileStorage(
+            str(tmp_path / constants.PROFILES_FOLDER),
+            None,
+            sync_backend=sync_backend,
+        )
+        profile.bind_profile_storage(profile_storage)
+        strategy_provider = mock.Mock()
+        strategy_provider.update_item = mock.Mock()
+        with mock.patch.object(
+            sync_backend,
+            "_get_strategy_provider",
+            mock.Mock(return_value=strategy_provider),
+        ):
+            profile.validate_and_save_config()
+        saved_profile_data = profile.get_profile_data()
+        assert saved_profile_data.profile_details.profile_type == enums.ProfileType.BACKTESTING.value
+        assert saved_profile_data.profile_details.name == "Backtesting profile"
+
 
 def _profile_schema_path() -> str:
     return os.path.join(
@@ -557,7 +689,9 @@ def _cloud_like_fetched_profile_data() -> profile_data_module.ProfileData:
 
 
 class TestProfileStorageImportProfileDataFunctional:
-    def test_import_profile_data_round_trips_full_profile_shape(self, tmp_path, monkeypatch):
+    def test_import_profile_data_round_trips_full_profile_shape(
+        self, tmp_path, monkeypatch, reset_user_root_folder_provider
+    ):
         profile_name = "proud-bear_fetched_config"
         original_slug = profile_name
         bot_install_path = str(tmp_path)
@@ -588,12 +722,13 @@ class TestProfileStorageImportProfileDataFunctional:
                 )
             )
 
-        profile_folder = profiles_path / profile_name
+        profile_folder = pathlib.Path(imported_profile.path)
         profile_config_path = profile_backends_module.FilesystemProfileBackend.config_file_path(
             str(profile_folder)
         )
 
         assert profile_folder.is_dir()
+        assert profile_folder == profiles_path / profile_name
         assert os.path.isfile(profile_config_path)
         assert not os.path.isfile(
             os.path.join(profile_folder, constants.CONFIG_TENTACLES_FILE)

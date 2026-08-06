@@ -69,9 +69,6 @@ DEFAULT_ARTIFACT_METADATA_AUTHOR = "DrakkarSoftware"
 # Requirements
 TENTACLE_REQUIREMENT_VERSION_EQUALS = "=="
 
-# Tentacle user config files and folders
-TENTACLES_SPECIFIC_CONFIG_FOLDER = "specific_config"
-
 # Current minimum default tentacles version
 TENTACLE_CURRENT_MINIMUM_DEFAULT_TENTACLES_VERSION = "1.2.0"
 DEFAULT_TENTACLES_PACKAGE = "OctoBot-Default-Tentacles"
@@ -258,6 +255,8 @@ DRAKKAR_OFFICIAL_PUBLIC_KEY_PEM = (
     b"PAK1019sqNRbRKENK6Whsfo0YKvAP8XksXGZVWgwYv9CM3/DFWbnWDfrVg==\n"
     b"-----END PUBLIC KEY-----\n"
 )
+
+TENTACLES_INSTALL_LOCK_FILE_NAME = ".tentacles_install.lock"
 
 # compiled tentacles paths
 PLATFORM_TO_DOWNLOAD_PATH = {

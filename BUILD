@@ -161,7 +161,7 @@ python_distribution(
     ] + PACKAGE_SOURCES + PACKAGE_REQS + PACKAGE_FULL_REQS,
     provides=python_artifact(
         name="octobot",
-        version="3.0.0-beta1",
+        version="3.0.0-beta2",
         url='https://github.com/Drakkar-Software/OctoBot',
         license='GPL-3.0',
         author="Drakkar-Software",
@@ -186,6 +186,11 @@ files(
 )
 
 files(
+    name="start_script",
+    sources=["start.py"],
+)
+
+files(
     name="wheel_files",
     sources=["dist/"],
     dependencies=[":OctoBot"],
@@ -200,6 +205,7 @@ docker_image(
         ":octobot_config",
         ":octobot_strategy_optimizer_data",
         ":docker_files",
+        ":start_script",
     ],
     repository="drakkarsoftware/octobot",
     image_tags=["local"],

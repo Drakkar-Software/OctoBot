@@ -30,7 +30,6 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 import octobot_commons.os_util as os_util
 import octobot_commons.aiohttp_util as aiohttp_util
-
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_tentacles_manager.cli as tentacles_manager_cli
 
@@ -42,7 +41,6 @@ import octobot.configuration_manager as configuration_manager
 
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
-
 GLOBAL_BOT_INSTANCE = None
 _signal_interrupt_count = 0
 _signal_interrupt_lock = threading.Lock()
@@ -96,6 +94,34 @@ async def _install_or_update_tentacles(community_auth, config):
 
 def run_update_or_repair_tentacles_if_necessary(community_auth, config, tentacles_setup_config):
     asyncio.run(update_or_repair_tentacles_if_necessary(community_auth, tentacles_setup_config, config))
+
+
+def run_install_missing_additional_tentacles_only(community_auth, config, tentacles_setup_config):
+    logger = logging.get_logger(COMMANDS_LOGGER_NAME)
+    if community_auth is None:
+        tentacles_manager_api.load_tentacles(verbose=True)
+        return
+    to_install_urls = community_tentacles_packages.get_urls_to_install(
+        community_auth, tentacles_setup_config, constants.LONG_VERSION
+    )
+    if not to_install_urls:
+        if not tentacles_manager_api.load_tentacles(verbose=True):
+            logger.error("OctoBot tentacles failed to load for process child.")
+        return
+    asyncio.run(_install_missing_additional_tentacles_only(config, to_install_urls))
+
+
+async def _install_missing_additional_tentacles_only(config, to_install_urls):
+    logger = logging.get_logger(COMMANDS_LOGGER_NAME)
+    logger.info(
+        f"Installing {len(to_install_urls)} additional tentacle package(s) for process child."
+    )
+    await install_or_update_tentacles(config, to_install_urls, only_additional=True)
+
+    tentacles_loaded = tentacles_manager_api.load_tentacles(verbose=True)
+    if not tentacles_loaded:
+        logger.error("OctoBot tentacles failed to load for process child.")
+    return tentacles_loaded
 
 
 def _check_tentacles_install_exit():

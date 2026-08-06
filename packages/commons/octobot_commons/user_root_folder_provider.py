@@ -19,11 +19,6 @@ import typing
 import octobot_commons.constants as commons_constants
 import octobot_commons.singleton.singleton_class as singleton_class
 
-# Matches historical layout under the user root; "specific_config" matches
-# octobot_tentacles_manager.constants.TENTACLES_SPECIFIC_CONFIG_FOLDER (commons cannot import tentacles_manager).
-_REFERENCE_TENTACLES_CONFIG_DIR = "reference_tentacles_config"
-_TENTACLES_SPECIFIC_CONFIG_DIR = "specific_config"
-
 
 class UserRootFolderProvider(singleton_class.Singleton):
     """
@@ -61,7 +56,7 @@ class UserRootFolderProvider(singleton_class.Singleton):
         """Return the reference tentacles config directory under the user root."""
         if self._readonly_reference_tentacles_path:
             return self._readonly_reference_tentacles_path
-        return os.path.join(self.get_root(), _REFERENCE_TENTACLES_CONFIG_DIR)
+        return os.path.join(self.get_root(), commons_constants.REFERENCE_TENTACLES_CONFIG_DIR)
 
     def get_user_reference_tentacle_config_file_path(self) -> str:
         """Return the path to the main tentacles config file under reference config."""
@@ -74,7 +69,7 @@ class UserRootFolderProvider(singleton_class.Singleton):
         """Return the tentacles-specific config directory under reference config."""
         return os.path.join(
             self.get_user_reference_tentacle_config_path(),
-            _TENTACLES_SPECIFIC_CONFIG_DIR,
+            commons_constants.TENTACLES_SPECIFIC_CONFIG_FOLDER,
         )
 
 

@@ -444,3 +444,30 @@ class TestUpdateProfile:
         assert message == "Profile updated"
         assert profile.name == "new-name"
         profile.validate_and_save_config.assert_called_once_with()
+
+    def test_empty_name_preserves_existing_profile_name(self):
+        profile = mock.Mock()
+        profile.profile_id = "profile-id"
+        profile.name = "existing-name"
+        profile.description = "desc"
+        profile.avatar = "avatar.png"
+        profile.complexity = profiles_model.commons_enums.ProfileComplexity.MEDIUM
+        profile.risk = profiles_model.commons_enums.ProfileRisk.MODERATE
+
+        current_profile = mock.Mock()
+        current_profile.profile_id = "other-profile-id"
+
+        with mock.patch.object(profiles_model, "get_profile", mock.Mock(return_value=profile)), mock.patch.object(
+            profiles_model,
+            "get_current_profile",
+            mock.Mock(return_value=current_profile),
+        ):
+            success, message = profiles_model.update_profile(
+                "profile-id",
+                {"name": ""},
+            )
+
+        assert success is True
+        assert message == "Profile updated"
+        assert profile.name == "existing-name"
+        profile.validate_and_save_config.assert_called_once_with()

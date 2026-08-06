@@ -20,29 +20,6 @@ import octobot_node.scheduler.api as scheduler_api
 import octobot_node.protocol.accounts as accounts_protocol
 import octobot_node.protocol.strategies as strategies_protocol
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
-import octobot_node.protocol.util.privacy_filter as privacy_filter
-
-
-def _redact_user_actions_for_debug(
-    user_actions: list[protocol_models.UserAction],
-) -> list[protocol_models.UserAction]:
-    return [
-        privacy_filter.privatize_user_action(user_action)
-        for user_action in user_actions
-    ]
-
-
-def _automation_state_for_debug(
-    automation: protocol_models.AutomationState,
-) -> protocol_models.AutomationState:
-    return automation.model_copy(
-        update={
-            "actions": privacy_filter.privatize_dag_actions(automation.actions),
-            "priority_actions": privacy_filter.privatize_dag_actions(
-                automation.priority_actions,
-            ),
-        }
-    )
 
 
 def _account_ids_bound_to_running_automations(
@@ -64,13 +41,8 @@ def _account_ids_bound_to_running_automations(
 
 
 async def get_debug_state(user_id: str) -> protocol_models.DebugState:
-    automations = [
-        _automation_state_for_debug(automation)
-        for automation in await scheduler_api.get_automation_states(user_id)
-    ]
-    user_actions = _redact_user_actions_for_debug(
-        await scheduler_api.list_user_actions(user_id, active_only=False),
-    )
+    automations = await scheduler_api.get_automation_states(user_id)
+    user_actions = await scheduler_api.list_user_actions(user_id, active_only=False)
     account_state = accounts_protocol.get_accounts_state(user_id)
     strategies_state = strategies_protocol.get_strategies_state(user_id)
     bound_account_ids = _account_ids_bound_to_running_automations(automations)

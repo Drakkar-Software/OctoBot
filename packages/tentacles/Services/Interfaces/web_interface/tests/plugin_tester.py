@@ -26,8 +26,29 @@ class AbstractPluginTester:
     PLUGIN = None
     URL_BLACK_LIST = []
 
+    @classmethod
+    def configure_test_profile_storage(cls, profile_storage) -> None:
+        pass
+
+    @classmethod
+    def configure_test_tentacles_setup(cls, tentacles_setup_config) -> None:
+        pass
+
+    @classmethod
+    def cleanup_test_tentacles_setup(cls) -> None:
+        pass
+
+    def _get_web_interface_context(self, require_password: bool):
+        return web_interface_tests.get_web_interface(
+            require_password,
+            self.DISTRIBUTION,
+            configure_profile_storage=self.configure_test_profile_storage,
+            configure_tentacles_setup=self.configure_test_tentacles_setup,
+            cleanup_tentacles_setup=self.cleanup_test_tentacles_setup,
+        )
+
     async def test_browse_all_pages_no_required_password(self):
-        async with web_interface_tests.get_web_interface(False, self.DISTRIBUTION) as web_interface_instance:
+        async with self._get_web_interface_context(False) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(
                     *[web_interface_tests.check_page_no_login_redirect(
@@ -36,7 +57,7 @@ class AbstractPluginTester:
                         for rule in self._get_rules(web_interface_instance)])
 
     async def test_browse_all_pages_required_password_without_login(self):
-        async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION) as web_interface_instance:
+        async with self._get_web_interface_context(True) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
                 await asyncio.gather(
                     *[web_interface_tests.check_page_login_redirect(
@@ -45,7 +66,7 @@ class AbstractPluginTester:
                         for rule in self._get_rules(web_interface_instance)])
 
     async def test_browse_all_pages_required_password_with_login(self):
-        async with web_interface_tests.get_web_interface(True, self.DISTRIBUTION) as web_interface_instance:
+        async with self._get_web_interface_context(True) as web_interface_instance:
             async with aiohttp.ClientSession() as session:
                 await web_interface_tests.login_user_on_session(session, web_interface_instance.port)
                 # correctly display pages: session is logged in

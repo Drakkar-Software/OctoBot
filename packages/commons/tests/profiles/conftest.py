@@ -11,6 +11,7 @@ import octobot_commons.profiles as profiles
 import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_storage as profile_storage_module
 import octobot_commons.tests.test_config as test_config
+import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 PROFILES_FS_XDIST_GROUP = "profiles_fs"
 
@@ -47,3 +48,15 @@ def profile(profile_storage_for_tests):
 @pytest.fixture
 def invalid_profile():
     return profiles.Profile(os.path.join(get_profile_path(), "invalid_profile"))
+
+
+@pytest.fixture
+def reset_user_root_folder_provider():
+    provider = user_root_folder_provider.UserRootFolderProvider.instance()
+    previous_root = provider._root
+    previous_readonly_reference = provider._readonly_reference_tentacles_path
+    provider.set_root(None)
+    provider.configure_readonly_reference_tentacles_path("")
+    yield
+    provider.set_root(previous_root)
+    provider.configure_readonly_reference_tentacles_path(previous_readonly_reference or "")

@@ -25,15 +25,22 @@ import octobot_commons.constants as constants
 
 @dataclasses.dataclass
 class ProfileDetailsData(
-    octobot_commons.dataclasses.FlexibleDataclass,
+    octobot_commons.dataclasses.MinimizableDataclass,
     octobot_commons.dataclasses.UpdatableDataclass,
 ):
     name: str = ""
     id: typing.Union[str, None] = None
+    profile_type: typing.Union[str, None] = None
     bot_id: typing.Union[str, None] = None
     version: typing.Union[str, None] = None
     user_id: typing.Union[str, None] = None
     nested_strategy_config_id: typing.Union[str, None] = None
+
+    def to_dict(self, include_default_values: bool = True) -> dict:
+        profile_details_dict = super().to_dict(include_default_values=include_default_values)
+        if profile_details_dict.get("profile_type") is None:
+            profile_details_dict.pop("profile_type", None)
+        return profile_details_dict
 
 
 @dataclasses.dataclass
@@ -59,6 +66,7 @@ class ExchangeData(
     exchange_id: typing.Union[str, None] = None
     exchange_account_id: typing.Union[str, None] = None
     sandboxed: bool = False
+    url: typing.Union[str, None] = None
 
 
 @dataclasses.dataclass
@@ -255,6 +263,9 @@ class ProfileData(
                     "name": profile_dict[constants.CONFIG_PROFILE][
                         constants.CONFIG_NAME
                     ],
+                    "profile_type": profile_dict[constants.CONFIG_PROFILE].get(
+                        constants.CONFIG_TYPE
+                    ),
                 },
                 "crypto_currencies": [
                     {
@@ -386,5 +397,11 @@ class ProfileData(
                 },
                 constants.CONFIG_DISTRIBUTION: self.distribution,
             },
-            constants.CONFIG_PROFILE: dataclasses.asdict(self.profile_details),
+            constants.CONFIG_PROFILE: self._profile_config_dict(),
         }
+
+    def _profile_config_dict(self) -> dict:
+        profile_config = dataclasses.asdict(self.profile_details)
+        if self.profile_details.profile_type:
+            profile_config[constants.CONFIG_TYPE] = self.profile_details.profile_type
+        return profile_config

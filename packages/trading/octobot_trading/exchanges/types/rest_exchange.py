@@ -134,7 +134,10 @@ class RestExchange(abstract_exchange.AbstractExchange):
             elif ccxt_rest_exchange_id is not None:
                 ccxt_rest = ccxt_rest_exchange_id
             else:
-                ccxt_rest = cls.get_connector_id()
+                try:
+                    ccxt_rest = cls.get_connector_id()
+                except NotImplementedError:
+                    return False
             always_requires_authentication = bool(ccxt_client_util.get_option_value_from_new_ccxt_client(
                 ccxt_rest, enums.ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION
             ))

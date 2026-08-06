@@ -1,4 +1,4 @@
-# pylint: disable=C0116,W0212,R0904,R0913,R0401
+# pylint: disable=C0116,W0212,R0902,R0904,R0913,R0401
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -19,13 +19,15 @@ import os
 import typing
 
 import octobot_commons.authentication as authentication_module
+import octobot_commons.constants as constants
 import octobot_commons.enums as enums
 import octobot_commons.errors as errors
-import octobot_commons.logging as logging
+import octobot_commons.json_util as json_util
 import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_types.profile as profile_module
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_migration as profile_migration
+import octobot_commons.profiles.profile_edit_gate as profile_edit_gate_module
 import octobot_commons.profiles.profile_sharing as profile_sharing
 
 
@@ -53,6 +55,13 @@ class ProfileStorage:
         self._sync_backend = sync_backend or profile_backends_module.SyncProfileBackend(
             profiles_path, profile_schema_path, sync_user_id=None
         )
+        self._edit_gate: typing.Optional[profile_edit_gate_module.ProfileEditGate] = None
+
+    @property
+    def edit_gate(self) -> profile_edit_gate_module.ProfileEditGate:
+        if self._edit_gate is None:
+            self._edit_gate = profile_edit_gate_module.ProfileEditGate(self)
+        return self._edit_gate
 
     @property
     def profiles_path(self) -> str:
@@ -92,6 +101,23 @@ class ProfileStorage:
     def is_readonly_master_overlay_profile(self, profile: profile_module.Profile) -> bool:
         return self.is_master_overlay_profile(profile) and profile.read_only
 
+    def is_child_profile_config_overlay(self, profile: profile_module.Profile) -> bool:
+        if profile.path is None or self._profiles_path is None:
+            return False
+        if self.is_master_overlay_profile(profile):
+            return False
+        normalized_profile_path = os.path.normpath(profile.path)
+        normalized_profiles_path = os.path.normpath(self._profiles_path)
+        profiles_path_prefix = normalized_profiles_path
+        if not profiles_path_prefix.endswith(os.sep):
+            profiles_path_prefix = f"{profiles_path_prefix}{os.sep}"
+        if (
+            normalized_profile_path != normalized_profiles_path
+            and not normalized_profile_path.startswith(profiles_path_prefix)
+        ):
+            return False
+        return self._is_overlay_only_profile_file(profile.path)
+
     def configure_readonly_profiles_path(self, path: str) -> None:
         normalized_path = os.path.normpath(path)
         self._readonly_profiles_path = normalized_path
@@ -124,6 +150,7 @@ class ProfileStorage:
         loaded_profiles = self._list_profiles()
         for profile in loaded_profiles.values():
             profile.bind_profile_storage(self)
+            self._apply_child_overlay_config(profile)
         return loaded_profiles
 
     def list_sync_profiles(self) -> dict[str, profile_module.Profile]:
@@ -145,6 +172,7 @@ class ProfileStorage:
         profile = self.find_profile(profile_id)
         if profile is not None:
             profile.bind_profile_storage(self)
+            self._apply_child_overlay_config(profile)
         return profile
 
     def load_profile_by_id(self, profile_id: str) -> profile_module.Profile:
@@ -182,6 +210,7 @@ class ProfileStorage:
 
     def activate_profile(self, profile: profile_module.Profile) -> None:
         profile.bind_profile_storage(self)
+        self._apply_child_overlay_config(profile)
         profile.init_tentacles_setup_config()
 
     def save_active_profile(
@@ -189,16 +218,37 @@ class ProfileStorage:
         profile: profile_module.Profile,
         global_config: dict,
     ) -> None:
-        if self.is_readonly_master_overlay_profile(profile):
-            raise errors.ProfileDataError(
-                f"{profile.name} profile is shared from the master and can't be saved"
-            )
-        backend = self._get_backend_for_profile(profile)
-        logging.get_logger(self.__class__.__name__).info(
-            f"Saving {profile.name} {profile.__class__.__name__} with "
-            f"{backend.__class__.__name__}"
+        edit_gate = self.edit_gate
+        edit_gate.assert_edit_allowed(
+            profile, profile_edit_gate_module.ProfileEditType.PROFILE_CONFIG
         )
-        backend.save_profile(profile, global_config)
+        self._ensure_profile_persistable(profile)
+        if self.is_readonly_master_overlay_profile(profile):
+            writable_path = edit_gate.resolve_writable_path(
+                profile, profile_edit_gate_module.ProfileEditType.PROFILE_CONFIG
+            )
+            overlay_file_path = self._filesystem_backend.write_profile_config_overlay(
+                profile, writable_path
+            )
+            edit_gate.log_edit_saved(
+                profile,
+                profile_edit_gate_module.ProfileEditType.PROFILE_CONFIG,
+                overlay_file_path,
+            )
+        else:
+            backend = self._get_backend_for_profile(profile)
+            backend.save_profile(profile, global_config)
+            if profile.is_sync_backed():
+                target_path = f"sync:{profile.profile_id}"
+            else:
+                target_path = profile_backends_module.FilesystemProfileBackend.config_file_path(
+                    profile.path
+                )
+            edit_gate.log_edit_saved(
+                profile,
+                profile_edit_gate_module.ProfileEditType.PROFILE_CONFIG,
+                target_path,
+            )
         if profile.get_storage_source() == enums.ProfileSource.FILESYSTEM:
             tentacles_setup_config = profile.tentacles_setup_config
             if tentacles_setup_config is not None:
@@ -291,8 +341,24 @@ class ProfileStorage:
         for profile_id, profile in self._master_overlay_profiles().items():
             if profile_id not in profiles:
                 profiles[profile_id] = profile
-        profiles.update(self._filesystem_backend.list_profiles())
+        for profile_id, profile in self._filesystem_backend.list_profiles().items():
+            if self.is_child_profile_config_overlay(profile):
+                continue
+            profiles[profile_id] = profile
         return profiles
+
+    @staticmethod
+    def _is_overlay_only_profile_file(profile_path: str) -> bool:
+        config_path = profile_backends_module.FilesystemProfileBackend.config_file_path(
+            profile_path
+        )
+        if not os.path.isfile(config_path):
+            return False
+        profile_dict = json_util.read_file(config_path)
+        return (
+            constants.PROFILE_CONFIG in profile_dict
+            and constants.CONFIG_PROFILE not in profile_dict
+        )
 
     def _resolve_profile(
         self,
@@ -324,3 +390,11 @@ class ProfileStorage:
 
     def _has_any_profiles(self) -> bool:
         return bool(self._list_profiles())
+
+    def _apply_child_overlay_config(self, profile: profile_module.Profile) -> None:
+        if not self.is_readonly_master_overlay_profile(profile):
+            return
+        overlay_path = self.edit_gate.resolve_writable_path(
+            profile, profile_edit_gate_module.ProfileEditType.PROFILE_CONFIG
+        )
+        self._filesystem_backend.merge_child_overlay_config(profile, overlay_path)

@@ -30,7 +30,7 @@ class TestBitMartAuthenticatedExchange(
     ORDER_CURRENCY = "BTC"
     SETTLEMENT_CURRENCY = "USDT"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
-    ORDER_SIZE = 3  # % of portfolio to include in test orders
+    ORDER_SIZE = 80  # % of portfolio to include in test orders
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "1777764898965454848"
     EXPECTED_GENERATED_ACCOUNT_ID = True

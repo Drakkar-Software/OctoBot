@@ -21,6 +21,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_commons.profiles.backends as profile_backends_module
+import octobot_commons.profiles.profile_edit_gate as profile_edit_gate_module
 
 import octobot_tentacles_manager.constants as constants
 import octobot_tentacles_manager.configuration as configuration
@@ -124,6 +125,14 @@ class TentaclesSetupConfiguration:
 
     def update_activation_configuration(self, new_config, deactivate_other_evaluators,
                                         add_missing_elements, tentacles_path=constants.TENTACLES_PATH):
+        profile = self.profile
+        if profile is not None:
+            profile_storage = profile.get_profile_storage()
+            if profile_storage is not None:
+                profile_storage.edit_gate.assert_edit_allowed(
+                    profile,
+                    profile_edit_gate_module.ProfileEditType.TENTACLE_ACTIVATION,
+                )
         something_changed = False
         loaders.ensure_tentacles_metadata(tentacles_path)
         for element_name, activated in new_config.items():
@@ -251,6 +260,18 @@ class TentaclesSetupConfiguration:
             self.save_config()
 
     def save_config(self, is_config_update: bool = False) -> bool:
+        profile = self.profile
+        if profile is not None:
+            profile_storage = profile.get_profile_storage()
+            if profile_storage is not None:
+                edit_gate = profile_storage.edit_gate
+                if not is_config_update:
+                    edit_gate.assert_edit_allowed(
+                        profile,
+                        profile_edit_gate_module.ProfileEditType.TENTACLE_ACTIVATION,
+                    )
+                if edit_gate.should_skip_tentacles_setup_config_write(profile):
+                    return False
         changed = False
         parent_dir, _ = path.split(self.config_path)
         if not path.exists(parent_dir):

@@ -21,6 +21,7 @@ import octobot_commons.singleton as singleton
 import octobot_commons.logging as logging
 
 import octobot_services.constants as constants
+import octobot_services.errors as errors
 import octobot_services.services.read_only_info as read_only_info
 
 
@@ -175,8 +176,18 @@ class AbstractService(singleton.Singleton):
         be replaced otherwise
         :return: None
         """
-        if update and service_key in self.edited_config.config[constants.CONFIG_CATEGORY_SERVICES]:
-            self.edited_config.config[constants.CONFIG_CATEGORY_SERVICES][service_key].update(service_config)
+        # edited_config is set by ServiceFactory._create_service(); it is missing when this service
+        # singleton is used without going through the factory (eg its owning interface's initialize()
+        # failed to create it).
+        if self.edited_config is None:
+            raise errors.ServiceConfigurationError(
+                f"Can't save {self.get_name()} config: service has no edited configuration, "
+                f"it was never created through ServiceFactory."
+            )
+        edited_config = self.edited_config
+        services_config = edited_config.config.setdefault(constants.CONFIG_CATEGORY_SERVICES, {})
+        if update and service_key in services_config:
+            services_config[service_key].update(service_config)
         else:
-            self.edited_config.config[constants.CONFIG_CATEGORY_SERVICES][service_key] = service_config
-        self.edited_config.save()
+            services_config[service_key] = service_config
+        edited_config.save()

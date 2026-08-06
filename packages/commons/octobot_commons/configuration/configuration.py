@@ -170,11 +170,7 @@ class Configuration:
         )
         if save_profile is None:
             save_profile = self._profile_managed_elements_changed()
-        if (
-            save_profile
-            and self.profile is not None
-            and not self.profile_storage.is_readonly_master_overlay_profile(self.profile)
-        ):
+        if save_profile and self.profile is not None:
             self.profile.save_config(self.config)
         if sync_all_profiles:
             self._sync_other_profiles()
@@ -223,8 +219,14 @@ class Configuration:
             if profile is self.profile:
                 # do not synchronize self.profile
                 continue
+            # Master read-only overlays use child overrides for the active profile only.
+            if self.profile_storage.is_readonly_master_overlay_profile(profile):
+                continue
             try:
-                profile.remove_deleted_elements(self.config)
+                # Sync propagates exchange deletions only (PARTIALLY_MANAGED_ELEMENTS).
+                exchanges_changed = profile.remove_deleted_elements(self.config)
+                if not exchanges_changed:
+                    continue
                 profile.validate_and_save_config()
             except Exception as err:
                 self.logger.exception(
@@ -300,6 +302,33 @@ class Configuration:
             self.get_tentacles_config_path(),
             profile=self.profile,
         )
+
+    def _get_master_reference_tentacles_config_file_path(self) -> str:
+        if self.uses_shared_reference_tentacles():
+            return user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+        sync_data_root = os.path.normpath(user_root_folder_provider.get_sync_data_root())
+        user_root = os.path.normpath(user_root_folder_provider.get_user_root_folder())
+        if sync_data_root != user_root:
+            return os.path.join(
+                sync_data_root,
+                commons_constants.REFERENCE_TENTACLES_CONFIG_DIR,
+                commons_constants.CONFIG_TENTACLES_FILE,
+            )
+        return user_root_folder_provider.get_user_reference_tentacle_config_file_path()
+
+    def get_tentacles_setup_config_for_package_operations(self):
+        """
+        Tentacles setup config used to compare installed vs saved community package URLs.
+        Sync/automation profiles read the master reference tentacles tree, not profile_data.
+        """
+        self.apply_readonly_reference_tentacles_override()
+        if self.uses_shared_reference_tentacles() or self.profile.is_profile_data_tentacle_backed():
+            import octobot_tentacles_manager.api as tentacles_manager_api
+
+            return tentacles_manager_api.get_tentacles_setup_config(
+                self._get_master_reference_tentacles_config_file_path()
+            )
+        return self.get_active_tentacles_setup_config()
 
     def get_metrics_enabled(self) -> bool:
         """
@@ -393,13 +422,18 @@ class Configuration:
             and commons_constants.DEFAULT_PROFILE in self.profile_by_id
         ):
             self.logger.warning(
-                "Profile %r from config.json is not available yet; falling back to %r. "
-                "This can happen when sync profiles are not loaded.",
-                selected_profile_id,
-                commons_constants.DEFAULT_PROFILE,
+                f"Profile {selected_profile_id} from config.json is not available yet; "
+                f"falling back to {commons_constants.DEFAULT_PROFILE}. "
+                f"This can happen when sync profiles are not loaded."
             )
             return commons_constants.DEFAULT_PROFILE
         raise errors.NoProfileError
+
+    def uses_shared_reference_tentacles(self) -> bool:
+        """True when this config reads/writes the executor's shared reference tentacles tree."""
+        if not isinstance(self.config, dict):
+            return False
+        return bool(self.config.get(commons_constants.CONFIG_READONLY_REFERENCE_TENTACLES_PATH))
 
     def apply_readonly_reference_tentacles_override(self) -> None:
         """

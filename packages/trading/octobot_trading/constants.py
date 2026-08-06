@@ -125,6 +125,7 @@ MAX_ALLOWED_CONSECUTIVE_CREDENTIALS_ERROR_MINUTES = float(os.getenv(
 ))
 
 TICKER_CACHE_TTL = int(os.getenv("TICKER_CACHE_TTL", "300"))
+TICKERS_AS_SINGLE_PRICE_SOURCE_REFRESH_TIME = float(os.getenv("TICKERS_AS_SINGLE_PRICE_SOURCE_REFRESH_TIME", "15"))
 OHLCV_CACHE_TTL = int(os.getenv("OHLCV_CACHE_TTL", "60"))
 
 ALLOW_EMPTY_TICKERS = os_util.parse_boolean_environment_var("ALLOW_EMPTY_TICKERS", "False")
@@ -144,7 +145,6 @@ NINETY_FIVE_PERCENT = decimal.Decimal("0.95")
 
 # exchanges where test_get_historical_symbol_prices is successful can be listed here
 FULL_CANDLE_HISTORY_EXCHANGES = [
-    "ascendex",
     "binance",
     "bitfinex",
     "bitstamp",
@@ -176,10 +176,8 @@ TESTED_EXCHANGES = [
     "cryptocom",
     "htx",
     "hyperliquid",
-    "bitget",
     "okx",
-    "gateio",
-    "ascendex",
+    "gate",
     "bybit",
     "phemex",
     "hollaex",
@@ -188,6 +186,7 @@ TESTED_EXCHANGES = [
     "coinex",
     "bitmart",
     "lbank",
+    "weex",
 ])
 DEFAULT_FUTURE_EXCHANGES = sorted(["bybit"])
 SIMULATOR_TESTED_EXCHANGES = sorted([
@@ -195,6 +194,7 @@ SIMULATOR_TESTED_EXCHANGES = sorted([
     "bithumb",
     "bitstamp",
     "bitmex",
+    "bitget",
     "hitbtc",
     "poloniex",
     "bitso",

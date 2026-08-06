@@ -23,6 +23,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.symbols as symbols_utils
 import octobot_commons.logging as logging
+import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_trading.enums as trading_enums
 import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as exchanges
@@ -431,6 +432,33 @@ class hollaex(exchanges.RestExchange):
         }
         urls.update(custom_urls)
         return urls
+
+    @classmethod
+    def get_tentacles_data_exchange_config(
+        cls,
+        exchange_internal_name: str,
+        exchange_url: str,
+        config: typing.Optional[dict] = None,
+    ) -> profile_data_module.TentaclesData:
+        if exchange_internal_name == cls.get_name():
+            return profile_data_module.TentaclesData(
+                cls.get_name(),
+                {
+                    cls.REST_KEY: exchange_url,
+                    cls.HAS_WEBSOCKETS_KEY: False,
+                } if config is None else config,
+            )
+        from tentacles.Trading.Exchange.hollaex_autofilled.hollaex_autofilled_exchange import HollaexAutofilled
+        return profile_data_module.TentaclesData(
+            HollaexAutofilled.get_name(),
+            {
+                HollaexAutofilled.AUTO_FILLED_KEY: {
+                    exchange_internal_name: {
+                        HollaexAutofilled.URL_KEY: exchange_url
+                    }
+                }
+            } if config is None else config,
+        )
 
     @classmethod
     def get_name(cls):

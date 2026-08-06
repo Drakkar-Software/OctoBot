@@ -119,7 +119,6 @@ MERGED_CCXT_EXCHANGES = {
     for result, merged in (
         (ccxt.async_support.kucoin, (ccxt.async_support.kucoinfutures, )),
         (ccxt.async_support.binance, (ccxt.async_support.binanceusdm, ccxt.async_support.binancecoinm)),
-        (ccxt.async_support.htx, (ccxt.async_support.huobi, )),
     )
 }
 REMOVED_CCXT_EXCHANGES = set().union(*(set(v) for v in MERGED_CCXT_EXCHANGES.values()))
@@ -494,8 +493,20 @@ def _persist_profile_tentacles_changes(tentacles_setup_config):
     if profile is None:
         tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
         return
+    edited_profile = tentacles_setup_config.profile
+    if edited_profile is not None and edited_profile is not profile:
+        if edited_profile.is_profile_data_tentacle_backed():
+            edited_profile.bind_tentacles_setup_config(tentacles_setup_config)
+            tentacles_data = edited_profile.get_tentacles_data()
+            if tentacles_data is not None:
+                edited_profile.get_profile_data().tentacles = tentacles_data
+            edited_profile._require_profile_storage().save_active_profile(
+                edited_profile, config.config
+            )
+        else:
+            tentacles_manager_api.save_tentacles_setup_configuration(tentacles_setup_config)
+        return
     if profile.is_profile_data_tentacle_backed():
-        edited_profile = tentacles_setup_config.profile
         if edited_profile is not None:
             profile.get_profile_data().tentacles = list(
                 edited_profile.get_profile_data().tentacles

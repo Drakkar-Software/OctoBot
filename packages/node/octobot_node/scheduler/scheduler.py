@@ -38,6 +38,7 @@ import octobot_node.scheduler.user_actions.user_action_util as user_action_util
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.protocol.automations as automations_protocol
+import octobot_node.protocol.util.privacy_filter as privacy_filter
 
 DEFAULT_NAME = "octobot_node"
 
@@ -318,6 +319,27 @@ class Scheduler:
             return None
         latest_workflow = workflows_util.get_latest_child_workflow(matching_workflows)
         task = workflows_util.get_automation_input_task(latest_workflow)
+        if task is None:
+            return None
+        return task.user_id
+
+    async def resolve_terminal_automation_owner_user_id(
+        self,
+        parent_id: str,
+    ) -> typing.Optional[str]:
+        """
+        Return the Starfish ``user_id`` that owns the latest terminal automation for ``parent_id``.
+
+        Unlike :meth:`resolve_automation_owner_user_id`, this lookup uses SUCCESS/ERROR workflows
+        so restart actions can resolve ownership after the automation has completed or failed.
+        """
+        terminal_workflow = await self.resolve_latest_terminal_automation_workflow_for_parent_id(
+            None,
+            parent_id,
+        )
+        if terminal_workflow is None:
+            return None
+        task = workflows_util.get_automation_input_task(terminal_workflow)
         if task is None:
             return None
         return task.user_id
@@ -763,4 +785,7 @@ class Scheduler:
             sort_key = self._user_action_list_sort_key(user_action_row, workflow_status)
             loaded.append((sort_key, user_action_row))
         loaded.sort(key=lambda row: row[0])
-        return [pair[1] for pair in loaded]
+        return [
+            privacy_filter.to_protocol_user_action(user_action)
+            for _, user_action in loaded
+        ]

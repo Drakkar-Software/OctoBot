@@ -192,7 +192,7 @@ def get_profiles_tentacles_details(profiles_list):
 
 def update_profile(profile_id, json_profile_desc, json_profile_content=None):
     profile = get_profile(profile_id)
-    new_name = json_profile_desc.get("name", profile.name)
+    new_name = json_profile_desc.get("name") or profile.name
     renamed = profile.name != new_name
     if renamed and get_current_profile().profile_id == profile_id:
         return False, "Can't rename the active profile"

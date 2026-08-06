@@ -18,13 +18,24 @@ import octobot_commons.logging as logging
 import octobot_tentacles_manager.api as tentacles_manager_api
 
 
-async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(community_auth):
-    tentacles_setup_config = tentacles_manager_api.get_tentacles_setup_config(
-        community_auth.config.get_tentacles_config_path()
+def get_urls_to_install(community_auth, selected_profile_tentacles_setup_config, bot_version: str) -> list[str]:
+    to_install_urls, _, _ = get_to_install_and_remove_tentacles(
+        community_auth, selected_profile_tentacles_setup_config, bot_version
     )
+    return to_install_urls
+
+
+async def has_tentacles_to_install_and_uninstall_tentacles_if_necessary(
+    community_auth, install_only: bool = False
+):
+    if community_auth.config is None:
+        return False
+    tentacles_setup_config = community_auth.config.get_tentacles_setup_config_for_package_operations()
     to_install, to_remove_tentacles, force_refresh_tentacles_setup_config = get_to_install_and_remove_tentacles(
         community_auth, tentacles_setup_config, constants.LONG_VERSION
     )
+    if install_only:
+        return bool(to_install)
     if to_remove_tentacles:
         logging.get_logger(__name__).debug(
             f"Uninstalling {len(to_remove_tentacles)} tentacles: those are not available to the current OctoBot. "

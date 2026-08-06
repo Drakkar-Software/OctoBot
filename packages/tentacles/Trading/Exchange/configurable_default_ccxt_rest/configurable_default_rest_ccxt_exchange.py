@@ -22,3 +22,7 @@ class ConfigurableDefaultCCXTRestExchange(exchanges.DefaultRestExchange):
     def load_user_inputs_from_class(cls, tentacles_setup_config, tentacle_config):
         # bypass parent to use the real load_user_inputs and enable user inputs configuration
         return exchanges.RestExchange.load_user_inputs_from_class(tentacles_setup_config, tentacle_config)
+
+    @classmethod
+    def get_connector_id(cls) -> str:
+        raise NotImplementedError("get_connector_id is not implemented")

@@ -17,7 +17,6 @@ import pytest
 import mock
 
 import octobot.commands as commands
-import octobot.constants as constants
 
 
 # All test coroutines will be treated as marked.
@@ -279,6 +278,78 @@ class TestInstallDefaultTentacles:
                 community_auth, tentacles_setup_config, config
             )
             mock_install.assert_awaited_once_with(config, [], False)
+
+
+class TestInstallMissingAdditionalTentaclesOnly:
+    """Tests for process-child install-only tentacle path."""
+
+    pytestmark = []
+
+    def test_run_skips_asyncio_when_no_missing_urls(self):
+        community_auth = mock.Mock()
+        tentacles_setup_config = mock.Mock()
+        config = mock.Mock()
+        with mock.patch(
+            "octobot.community.tentacles_packages.get_urls_to_install",
+            return_value=[],
+        ), mock.patch(
+            "octobot.commands.asyncio.run",
+        ) as asyncio_run_mock, mock.patch(
+            "octobot_tentacles_manager.api.load_tentacles", return_value=True
+        ) as load_mock:
+            commands.run_install_missing_additional_tentacles_only(
+                community_auth, config, tentacles_setup_config
+            )
+            asyncio_run_mock.assert_not_called()
+            load_mock.assert_called_once_with(verbose=True)
+
+    def test_run_calls_asyncio_when_urls_missing(self):
+        community_auth = mock.Mock()
+        tentacles_setup_config = mock.Mock()
+        config = mock.Mock()
+        with mock.patch(
+            "octobot.community.tentacles_packages.get_urls_to_install",
+            return_value=["https://premium.example/pkg.zip"],
+        ), mock.patch(
+            "octobot.commands.asyncio.run",
+        ) as asyncio_run_mock:
+            commands.run_install_missing_additional_tentacles_only(
+                community_auth, config, tentacles_setup_config
+            )
+            asyncio_run_mock.assert_called_once()
+
+    def test_run_without_community_auth_only_loads_tentacles(self):
+        config = mock.Mock()
+        tentacles_setup_config = mock.Mock()
+        with mock.patch(
+            "octobot.commands.asyncio.run",
+        ) as asyncio_run_mock, mock.patch(
+            "octobot_tentacles_manager.api.load_tentacles", return_value=True
+        ) as load_mock:
+            commands.run_install_missing_additional_tentacles_only(
+                None, config, tentacles_setup_config
+            )
+            asyncio_run_mock.assert_not_called()
+            load_mock.assert_called_once_with(verbose=True)
+
+    @pytest.mark.asyncio
+    async def test_installs_missing_urls_with_only_additional(self):
+        config = mock.Mock()
+        to_install_urls = ["https://premium.example/pkg.zip"]
+
+        with mock.patch(
+            "octobot.commands.install_or_update_tentacles", new_callable=mock.AsyncMock
+        ) as install_mock, mock.patch(
+            "octobot_tentacles_manager.api.load_tentacles", return_value=True
+        ) as load_mock:
+            result = await commands._install_missing_additional_tentacles_only(
+                config, to_install_urls
+            )
+            install_mock.assert_awaited_once_with(
+                config, to_install_urls, only_additional=True
+            )
+            load_mock.assert_called_once_with(verbose=True)
+            assert result is True
 
 
 class TestRestartBot:

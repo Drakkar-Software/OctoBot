@@ -551,6 +551,8 @@ def exchange_protocol_account_to_apply_configuration_dict(
     exchange_details.exchange_account_id = (
         exchange_payload.remote_account_id or account_identifier
     )
+    if exchange_config.url:
+        exchange_details.url = exchange_config.url
     if protocol_account.is_simulated:
         auth_details = exchange_data_module.ExchangeAuthDetails()
     else:

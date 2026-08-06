@@ -25,7 +25,7 @@ import octobot_commons.user_root_folder_provider as user_root_folder_provider
 from octobot_commons.logging.logging_util import set_logging_level
 import octobot_tentacles_manager.constants as tm_constants
 from octobot_tentacles_manager.constants import TENTACLES_PATH, DEFAULT_BOT_PATH, UNKNOWN_TENTACLES_PACKAGE_LOCATION, \
-    TENTACLE_CONFIG, TENTACLES_SPECIFIC_CONFIG_FOLDER
+    TENTACLE_CONFIG
 from octobot_tentacles_manager.workers.install_worker import InstallWorker
 from octobot_tentacles_manager.models.tentacle_factory import TentacleFactory
 from octobot_tentacles_manager.workers.update_worker import UpdateWorker

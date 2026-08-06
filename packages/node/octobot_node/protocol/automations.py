@@ -32,6 +32,7 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.constants as octobot_trading_constants
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.personal_data.portfolios.protocol as octobot_trading_portfolios_protocol
+import octobot_node.protocol.util.privacy_filter as privacy_filter
 
 
 logger = octobot_commons_logging.get_logger("AutomationsProtocol")
@@ -320,7 +321,10 @@ def _protocol_action_from_flow(
     elif isinstance(flow_action, flow_entities.ConfiguredActionDetails):
         action_type = flow_action.action
         dsl_value = None
-        configuration = flow_action.config
+        configuration = privacy_filter.protocol_action_configuration(
+            flow_action.config,
+            action_type=flow_action.action,
+        )
     else:
         raise TypeError(f"Unsupported flow action type: {type(flow_action).__name__}")
     completed_at = None

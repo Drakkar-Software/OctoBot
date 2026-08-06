@@ -1093,6 +1093,9 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
         if not await self._register_on_reference_exchanges_if_required():
             return trading_constants.ZERO
         local_exchange_name = self.exchange_manager.exchange_name
+        # Direct mark prices per exchange, keyed by reference source pair.
+        # Formula-based sources are evaluated later from their formula dependencies
+        # (e.g. leg tickers on Alchemy) and do not need an entry for source.pair here.
         price_by_pair_by_exchange = {}
         for exchange_id in trading_api.get_all_exchange_ids_with_same_matrix_id(
             local_exchange_name, self.exchange_manager.id
@@ -1105,8 +1108,15 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
             if other_exchange_key not in self.reference_prices_by_exchange:
                 continue
             exchange_reference_prices = self.reference_prices_by_exchange[other_exchange_key]
+            # Keep the exchange key even when every source uses a formula: compute_reference_price
+            # iterates price_by_pair_by_exchange and evaluate_formula ignores price_by_pair.get(pair).
             price_by_pair_by_exchange[other_exchange_key] = {}
             for reference_price_spec in exchange_reference_prices:
+                if reference_price_spec.formula:
+                    # Do not lookup or store source.pair: evaluate_formula runs the interpreter
+                    # instead of reading this mark price. Skipping also avoids overwriting a
+                    # direct mark price when another source on the same pair has no formula.
+                    continue
                 try:
                     price, updated = trading_personal_data.get_potentially_outdated_price(
                         exchange_manager, reference_price_spec.pair
@@ -1223,19 +1233,21 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
         if self._hedging_engine and self._hedging_engine.hedging_exchange_name == exchange_manager.exchange_name:
             traded_symbols.append(self.symbol)
         if exchange_manager.exchange.lazy_load_markets():
-            if symbols_to_load := list(dict.fromkeys(watched_symbols + traded_symbols)):
+            watched_symbols = list(watched_symbols)
+            traded_symbols = list(traded_symbols)
+            if symbols_to_load := list(set(watched_symbols + traded_symbols)):
                 await exchange_manager.load_markets_for_symbols_and_refresh_client_symbols(symbols_to_load)
         if traded_symbols:
             await trading_api.register_new_pairs_on_exchange_manager(
                 exchange_manager,
-                traded_symbols,
+                list(set(traded_symbols)),
                 watch_only=False,
                 time_frames=required_time_frames
             )
         if watched_symbols:
             await trading_api.register_new_pairs_on_exchange_manager(
                 exchange_manager,
-                watched_symbols,
+                list(set(watched_symbols)),
                 watch_only=True,
             )
 

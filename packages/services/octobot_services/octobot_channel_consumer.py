@@ -97,7 +97,11 @@ async def _handle_creation(bot_id, action, data):
 
 async def _create_and_start_interface(interface_factory, to_create_class, edited_config, backtesting_enabled):
     interface_instance = await interface_factory.create_interface(to_create_class)
-    await interface_instance.initialize(backtesting_enabled, edited_config)
+    if not await interface_instance.initialize(backtesting_enabled, edited_config):
+        logging.get_logger(OCTOBOT_CHANNEL_SERVICE_CONSUMER_LOGGER_TAG).error(
+            f"{interface_instance.get_name()} failed to initialize: its required service(s) might not be "
+            f"available. Starting it anyway, some features might not work properly."
+        )
     return interface_instance if await managers.start_interface(interface_instance) else None
 
 

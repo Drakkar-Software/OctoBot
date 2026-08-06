@@ -15,8 +15,10 @@
 #  License along with this library.
 
 import mock
+import pytest
 
 import octobot_services.constants as services_constants
+import octobot_services.errors as services_errors
 import tentacles.Services.Services_bases.node_api_service.node_api as node_api_service_module
 
 
@@ -62,3 +64,12 @@ class TestNodeApiServiceExternalHost:
             update=True,
         )
         assert service.get_node_external_host() is None
+
+    def test_set_node_external_host_without_edited_config_raises(self, monkeypatch):
+        # reproduces the reported crash: edited_config was never injected by ServiceFactory (eg because
+        # the owning interface's initialize() failed). Now raises a typed error instead of AttributeError.
+        monkeypatch.delenv(services_constants.ENV_NODE_EXTERNAL_HOST, raising=False)
+        service = node_api_service_module.NodeApiService()
+        assert service.edited_config is None
+        with pytest.raises(services_errors.ServiceConfigurationError):
+            service.set_node_external_host("new-host.example.com:8000")
