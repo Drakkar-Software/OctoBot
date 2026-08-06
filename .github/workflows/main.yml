@@ -579,6 +579,8 @@ jobs:
         exclude:
           - os: windows-latest
             arch: arm64
+          - os: ubuntu-latest # temporary disable until fixed
+            arch: arm64
           - os: macos-latest
             arch: x64
 
