@@ -62,6 +62,17 @@ class SupervisorError(DeepAgentError):
     """Raised when the supervisor agent encounters an error."""
 
 
+class MissingThreadIdError(DeepAgentError):
+    """
+    Raised when a HITL resume call omits thread_id.
+
+    The producer never infers a resume thread_id from shared instance state:
+    under concurrent invocations that state can belong to a different
+    caller's run by the time the resume happens, which would resume the
+    wrong invocation's interrupted checkpoint.
+    """
+
+
 class DebateError(AgentError):
     """Raised when there's an error in the debate workflow."""
 
