@@ -38,6 +38,8 @@ class NodeApiService(services.AbstractService):
         self.node_redis_url = None
         self.backend_cors_origins = None
         self.node_external_host = None
+        self.cloud_sync_enabled = False
+        self.cloud_sync_collections = None
 
     def get_fields_description(self):
         return {
@@ -52,6 +54,13 @@ class NodeApiService(services.AbstractService):
                                                     "header to the server than the one the client signed "
                                                     "(e.g. tailscale serve), otherwise sync requests fail "
                                                     "signature verification.",
+            services_constants.CLOUD_SYNC_ENABLED: "Enable E2E-encrypted mirroring of this node's data to the "
+                                                    "shared cloud sync server. Off by default; required for any "
+                                                    "third-party (website-pairing) integration to read anything.",
+            services_constants.CLOUD_SYNC_COLLECTIONS: "Which node collections are mirrored to the cloud sync "
+                                                        "server when cloud sync is enabled. Never includes "
+                                                        "user-accounts-auth (exchange credentials) — that "
+                                                        "collection is not a configurable option.",
             services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER: "When enabled, OctoBot will open the Node web UI "
                                                                 "in your browser upon startup.",
             commons_constants.CONFIG_ENABLED_OPTION: "Enable the Node API interface.",
@@ -65,6 +74,8 @@ class NodeApiService(services.AbstractService):
             services_constants.NODE_REDIS_URL: None,
             services_constants.BACKEND_CORS_ALLOWED_ORIGINS: services_constants.DEFAULT_BACKEND_CORS_ALLOWED_ORIGINS,
             services_constants.NODE_EXTERNAL_HOST: None,
+            services_constants.CLOUD_SYNC_ENABLED: False,
+            services_constants.CLOUD_SYNC_COLLECTIONS: list(services_constants.DEFAULT_CLOUD_SYNC_COLLECTIONS),
             services_constants.CONFIG_AUTO_OPEN_IN_WEB_BROWSER: True,
             commons_constants.CONFIG_ENABLED_OPTION: False,
         }
@@ -116,12 +127,16 @@ class NodeApiService(services.AbstractService):
             self.node_redis_url = node_config.get(services_constants.NODE_REDIS_URL)
             self.backend_cors_origins = node_config.get(services_constants.BACKEND_CORS_ALLOWED_ORIGINS)
             self.node_external_host = node_config.get(services_constants.NODE_EXTERNAL_HOST)
+            self.cloud_sync_enabled = node_config.get(services_constants.CLOUD_SYNC_ENABLED, False)
+            self.cloud_sync_collections = node_config.get(services_constants.CLOUD_SYNC_COLLECTIONS)
         except KeyError:
             self.node_api_url = None
             self.node_sqlite_file = None
             self.node_redis_url = None
             self.backend_cors_origins = None
             self.node_external_host = None
+            self.cloud_sync_enabled = False
+            self.cloud_sync_collections = None
         self._sync_config()
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
             await octobot_node.scheduler.initialize_scheduler()
@@ -203,5 +218,48 @@ class NodeApiService(services.AbstractService):
         self.save_service_config(
             services_constants.CONFIG_NODE_API,
             {services_constants.NODE_EXTERNAL_HOST: self.node_external_host},
+            update=True,
+        )
+
+    def get_cloud_sync_enabled(self):
+        return bool(self.cloud_sync_enabled)
+
+    def set_cloud_sync_enabled(self, value):
+        enabled = bool(value)
+        self.cloud_sync_enabled = enabled
+        update = {services_constants.CLOUD_SYNC_ENABLED: enabled}
+        # Mirrors the mobile app's setCloudSyncEnabled(true) behavior: turning cloud
+        # sync ON always re-seeds the collection selection to the default set, rather
+        # than restoring whatever was last selected, so re-enabling after a disable
+        # gives a predictable, reviewable starting point instead of silently
+        # resurrecting an old configuration. Turning it OFF leaves the collection
+        # selection untouched.
+        if enabled:
+            self.cloud_sync_collections = list(services_constants.DEFAULT_CLOUD_SYNC_COLLECTIONS)
+            update[services_constants.CLOUD_SYNC_COLLECTIONS] = self.cloud_sync_collections
+        self.save_service_config(services_constants.CONFIG_NODE_API, update, update=True)
+
+    def get_cloud_sync_collections(self):
+        # `is None` on purpose, not a truthy `or`: an explicitly-set empty list (the
+        # user disabled every collection) must stay empty, not silently revive the
+        # default set just because `[]` is falsy.
+        if self.cloud_sync_collections is None:
+            return list(services_constants.DEFAULT_CLOUD_SYNC_COLLECTIONS)
+        return list(self.cloud_sync_collections)
+
+    def set_cloud_sync_collections(self, collections):
+        # Defense in depth: user-accounts-auth (exchange credentials) is never a
+        # configurable mirror collection, at any layer — the web UI's "Configure"
+        # modal never offers it as an option, and this is the second, independent
+        # check that rejects it even if a client were modified to send it anyway.
+        if services_constants.CLOUD_SYNC_FORBIDDEN_COLLECTION in collections:
+            raise ValueError(
+                f"{services_constants.CLOUD_SYNC_FORBIDDEN_COLLECTION} can never be a "
+                f"cloud-sync collection"
+            )
+        self.cloud_sync_collections = list(dict.fromkeys(collections))  # de-duplicate, preserve order
+        self.save_service_config(
+            services_constants.CONFIG_NODE_API,
+            {services_constants.CLOUD_SYNC_COLLECTIONS: self.cloud_sync_collections},
             update=True,
         )

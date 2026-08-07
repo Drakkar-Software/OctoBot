@@ -73,6 +73,7 @@ docs/_build/
 docs/node_modules/
 docs/build/
 docs/.docusaurus/
+docs/tsconfig.tsbuildinfo
 # Auto-generated tentacle docs (from collect-tentacles.mjs)
 docs/content/creators/
 docs/content/guides/exchanges.md

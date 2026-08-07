@@ -1,0 +1,52 @@
+{
+  "name": "@drakkar.software/octobot-client",
+  "version": "0.4.0",
+  "description": "TypeScript client for the OctoBot node protocol: wallet auth, accounts, automations, strategies, and user actions over the Starfish sync transport.",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/OctoBot.git",
+    "directory": "packages/client/octobot_client_ts"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./identity": "./dist/identity/index.js",
+    "./protocol": "./dist/protocol/index.js",
+    "./transport": "./dist/transport/index.js",
+    "./crypto": "./dist/crypto/index.js",
+    "./collections": "./dist/collections/index.js",
+    "./node-api": "./dist/node-api/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@drakkar.software/octobot-protocol": "^0.6.0",
+    "@drakkar.software/starfish-client": "3.0.0-alpha.71",
+    "@drakkar.software/starfish-identities": "3.0.0-alpha.71",
+    "@drakkar.software/starfish-keyring": "3.0.0-alpha.71",
+    "@drakkar.software/starfish-protocol": "3.0.0-alpha.71",
+    "@drakkar.software/starfish-replica": "3.0.0-alpha.71",
+    "@drakkar.software/starfish-spaces": "3.0.0-alpha.71",
+    "@noble/curves": "2.2.0",
+    "@noble/hashes": "2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "~5.9.2",
+    "vitest": "^2.1.9"
+  }
+}
