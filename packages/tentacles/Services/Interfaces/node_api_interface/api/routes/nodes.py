@@ -23,7 +23,7 @@ import typing
 import pydantic
 import octobot_services.constants as services_constants
 import octobot_services.interfaces.util as interfaces_util
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 
 import octobot_node.config
 import octobot_node.constants
@@ -54,6 +54,8 @@ class NodeConfigUpdate(pydantic.BaseModel):
     node_type: typing.Optional[typing.Literal["standalone", "master"]] = None
     use_dedicated_log_file_per_automation: typing.Optional[bool] = None
     external_host: typing.Optional[str] = None
+    cloud_sync_enabled: typing.Optional[bool] = None
+    cloud_sync_collections: typing.Optional[typing.List[str]] = None
 
 
 @router.get("/me", response_model=octobot_node.models.Node)
@@ -74,6 +76,14 @@ def get_node_config(current_user: CurrentUser) -> typing.Any:
             if node_api_service_module else None
         ),
         "external_host_env_override": bool(os.getenv(services_constants.ENV_NODE_EXTERNAL_HOST)),
+        "cloud_sync_enabled": (
+            node_api_service_module.NodeApiService.instance().get_cloud_sync_enabled()
+            if node_api_service_module else False
+        ),
+        "cloud_sync_collections": (
+            node_api_service_module.NodeApiService.instance().get_cloud_sync_collections()
+            if node_api_service_module else []
+        ),
     }
 
 
@@ -102,6 +112,15 @@ def update_node_config(config: NodeConfigUpdate, current_user: CurrentUser) -> t
             _remove_context_based_file_handlers()
     if config.external_host is not None and node_api_service_module is not None:
         node_api_service_module.NodeApiService.instance().set_node_external_host(config.external_host)
+    if config.cloud_sync_enabled is not None and node_api_service_module is not None:
+        node_api_service_module.NodeApiService.instance().set_cloud_sync_enabled(config.cloud_sync_enabled)
+    if config.cloud_sync_collections is not None and node_api_service_module is not None:
+        try:
+            node_api_service_module.NodeApiService.instance().set_cloud_sync_collections(
+                config.cloud_sync_collections
+            )
+        except ValueError as err:
+            raise HTTPException(status_code=400, detail=str(err))
     return get_node_config(current_user)
 
 

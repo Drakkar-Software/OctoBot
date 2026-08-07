@@ -96,6 +96,8 @@ class TestNodeConfigExternalHost:
     def test_get_config_reflects_stored_and_env_override(self, admin_client, monkeypatch):
         node_api_service = mock.Mock()
         node_api_service.get_node_external_host.return_value = "node.example.com"
+        node_api_service.get_cloud_sync_enabled.return_value = False
+        node_api_service.get_cloud_sync_collections.return_value = []
         monkeypatch.setenv("NODE_EXTERNAL_HOST", "node.example.com")
         with mock.patch(
             "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
@@ -111,6 +113,8 @@ class TestNodeConfigExternalHost:
     def test_get_config_without_env_override(self, admin_client, monkeypatch):
         node_api_service = mock.Mock()
         node_api_service.get_node_external_host.return_value = "stored.example.com"
+        node_api_service.get_cloud_sync_enabled.return_value = False
+        node_api_service.get_cloud_sync_collections.return_value = []
         monkeypatch.delenv("NODE_EXTERNAL_HOST", raising=False)
         with mock.patch(
             "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
@@ -126,6 +130,8 @@ class TestNodeConfigExternalHost:
     def test_patch_config_persists_external_host(self, admin_client, monkeypatch):
         node_api_service = mock.Mock()
         node_api_service.get_node_external_host.return_value = "new-host.example.com"
+        node_api_service.get_cloud_sync_enabled.return_value = False
+        node_api_service.get_cloud_sync_collections.return_value = []
         monkeypatch.delenv("NODE_EXTERNAL_HOST", raising=False)
         with mock.patch(
             "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
@@ -142,6 +148,8 @@ class TestNodeConfigExternalHost:
     def test_patch_config_without_external_host_does_not_set(self, admin_client, monkeypatch):
         node_api_service = mock.Mock()
         node_api_service.get_node_external_host.return_value = None
+        node_api_service.get_cloud_sync_enabled.return_value = False
+        node_api_service.get_cloud_sync_collections.return_value = []
         monkeypatch.delenv("NODE_EXTERNAL_HOST", raising=False)
         with mock.patch(
             "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
@@ -151,3 +159,105 @@ class TestNodeConfigExternalHost:
             response = admin_client.patch("/api/v1/nodes/config", json={"node_type": "standalone"})
         assert response.status_code == 200
         node_api_service.set_node_external_host.assert_not_called()
+
+
+class TestNodeConfigCloudSync:
+    @pytest.fixture(autouse=True)
+    def _configured_node_settings(self, admin_client, monkeypatch):
+        monkeypatch.setattr(octobot_node_config.settings, "IS_MASTER_MODE", False)
+        monkeypatch.setattr(octobot_node_config.settings, "USE_DEDICATED_LOG_FILE_PER_AUTOMATION", False)
+        monkeypatch.setattr(octobot_node_config.settings, "tasks_encryption_enabled", False)
+
+    def test_get_config_reflects_cloud_sync_state(self, admin_client):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = None
+        node_api_service.get_cloud_sync_enabled.return_value = True
+        node_api_service.get_cloud_sync_collections.return_value = ["user-accounts", "user-data"]
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.get("/api/v1/nodes/config")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["cloud_sync_enabled"] is True
+        assert body["cloud_sync_collections"] == ["user-accounts", "user-data"]
+
+    def test_get_config_without_node_api_service_defaults_disabled_and_empty(self, admin_client):
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module",
+            None,
+        ):
+            response = admin_client.get("/api/v1/nodes/config")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["cloud_sync_enabled"] is False
+        assert body["cloud_sync_collections"] == []
+
+    def test_patch_config_sets_cloud_sync_enabled(self, admin_client):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = None
+        node_api_service.get_cloud_sync_enabled.return_value = True
+        node_api_service.get_cloud_sync_collections.return_value = [
+            "user-accounts", "user-data", "user-strategies",
+        ]
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.patch("/api/v1/nodes/config", json={"cloud_sync_enabled": True})
+        assert response.status_code == 200
+        node_api_service.set_cloud_sync_enabled.assert_called_once_with(True)
+        assert response.json()["cloud_sync_enabled"] is True
+
+    def test_patch_config_sets_cloud_sync_collections(self, admin_client):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = None
+        node_api_service.get_cloud_sync_enabled.return_value = True
+        node_api_service.get_cloud_sync_collections.return_value = ["user-accounts"]
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.patch(
+                "/api/v1/nodes/config", json={"cloud_sync_collections": ["user-accounts"]}
+            )
+        assert response.status_code == 200
+        node_api_service.set_cloud_sync_collections.assert_called_once_with(["user-accounts"])
+        assert response.json()["cloud_sync_collections"] == ["user-accounts"]
+
+    def test_patch_config_rejects_accounts_auth_collection_with_400(self, admin_client):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = None
+        node_api_service.set_cloud_sync_collections.side_effect = ValueError(
+            "user-accounts-auth can never be a cloud-sync collection"
+        )
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.patch(
+                "/api/v1/nodes/config",
+                json={"cloud_sync_collections": ["user-accounts", "user-accounts-auth"]},
+            )
+        assert response.status_code == 400
+        assert "user-accounts-auth" in response.json()["detail"]
+
+    def test_patch_config_without_cloud_sync_fields_does_not_set_anything(self, admin_client):
+        node_api_service = mock.Mock()
+        node_api_service.get_node_external_host.return_value = None
+        node_api_service.get_cloud_sync_enabled.return_value = False
+        node_api_service.get_cloud_sync_collections.return_value = []
+        with mock.patch(
+            "tentacles.Services.Interfaces.node_api_interface.api.routes.nodes.node_api_service_module"
+            ".NodeApiService.instance",
+            return_value=node_api_service,
+        ):
+            response = admin_client.patch("/api/v1/nodes/config", json={"node_type": "standalone"})
+        assert response.status_code == 200
+        node_api_service.set_cloud_sync_enabled.assert_not_called()
+        node_api_service.set_cloud_sync_collections.assert_not_called()

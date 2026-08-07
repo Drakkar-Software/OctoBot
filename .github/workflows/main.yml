@@ -482,6 +482,9 @@ jobs:
       - name: Install dependencies
         run: cd docs && npm ci
 
+      - name: Test docs
+        run: cd docs && npm test
+
       - name: Build docs
         run: cd docs && npm run build
 
@@ -527,6 +530,21 @@ jobs:
       - name: Publish octobot-protocol if version not already on npm
         working-directory: packages/protocol/octobot_protocol_ts
         run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published — nothing to do."
+          else
+            echo "Publishing $NAME@$VERSION..."
+            npm publish --access public
+          fi
+
+      - name: Publish octobot-client if version not already on npm
+        working-directory: packages/client/octobot_client_ts
+        run: |
+          npm ci
+          npm run build
+          npm test
           NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
           if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
