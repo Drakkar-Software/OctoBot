@@ -1,0 +1,33 @@
+# https://developers.home-assistant.io/docs/apps/configuration#app-configuration
+name: OctoBot DEV
+# Manually maintained, unlike homeassistant/octobot/config.yaml's version (which
+# ha-publish auto-bumps on every tag push). The DEV image itself is still rebuilt and
+# republished automatically on every push to dev (see the ha-build/ha-publish jobs) and
+# always stays digest-pinned to the exact core :latest image that triggered it — only
+# Supervisor's "update available" signal for already-installed users requires this field
+# to change. Bump it by hand when you want existing DEV installs to see an update.
+version: "1.1.5"
+slug: octobot-latest
+description: OctoBot crypto trading bot (DEV/latest) with Node web interface
+url: "https://github.com/drakkar-software/OctoBot/tree/master/homeassistant/octobot-latest"
+arch:
+  - aarch64
+  - amd64
+init: false
+ports:
+  8000/tcp: 8000
+  # 5001/tcp: 5001   # fallback: classic web dashboard, uncomment if node /app 404s
+ports_description:
+  8000/tcp: "OctoBot Node web interface"
+webui: "http://[HOST]:[PORT:8000]/app"
+options:
+  enable_node_api: true
+schema:
+  enable_node_api: bool
+  node_external_host: str?
+image: "ghcr.io/drakkar-software/addon-octobot-latest"
+#   ^ No {arch} placeholder: both the CI builder and the Supervisor prepend the
+#     arch prefix themselves (e.g. amd64-addon-octobot-latest); a literal {arch}
+#     token in this name breaks the CI build (invalid tag: double arch prefix).
+#     Required for CI to know where to publish; comment out only for local
+#     Supervisor builds from the Dockerfile — keep it set on main.

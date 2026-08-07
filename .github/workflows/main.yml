@@ -212,6 +212,9 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
+      digest: ${{ steps.push_dev.outputs.digest || steps.push_tag.outputs.digest }}
 
     steps:
       - uses: actions/checkout@v6
@@ -220,9 +223,12 @@ jobs:
         uses: reviewdog/action-hadolint@v1
         with:
           github_token: ${{ secrets.github_token }}
-          hadolint_ignore: DL3013 DL3008
+          # DL3006: homeassistant/Dockerfile.HA's ARG BUILD_FROM is intentionally
+          # unpinned — CI always supplies an exact digest, see the ha-build job.
+          hadolint_ignore: DL3013 DL3008 DL3006
 
       - name: Set Environment Variables
+        id: vars
         run: |
           OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | tr -d '-')"
           IMG=octobot
@@ -236,6 +242,7 @@ jobs:
           echo "CONTAINER_NAME=octobot" >> $GITHUB_ENV
           echo "CHECK_TENTACLE_CONTAINER_TIME=10" >> $GITHUB_ENV
           echo "WAIT_CONTAINER_TIME=80" >> $GITHUB_ENV
+          echo "image=${OWNER}/${IMG}" >> $GITHUB_OUTPUT
 
       - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v6
@@ -327,7 +334,12 @@ jobs:
           docker logs ${{ env.CONTAINER_NAME }}
           docker inspect ${{ env.CONTAINER_NAME }} | jq '.[].State.Health.Status' | grep "healthy"
 
+      - name: Smoke test HA add-on
+        if: github.event_name != 'push'
+        run: homeassistant/tests/smoke.sh "${{ env.IMAGE }}:${{ env.SHA }}"
+
       - name: Build and push latest
+        id: push_dev
         if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags') && github.ref == 'refs/heads/dev'
         uses: docker/build-push-action@v6
         with:
@@ -356,6 +368,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
 
       - name: Build and push on tag
+        id: push_tag
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: docker/build-push-action@v6
         with:
@@ -370,7 +383,167 @@ jobs:
             ${{ env.IMAGE }}:${{ env.VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-  
+
+  ha-lint:
+    name: HA add-on lint - ${{ matrix.addon }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        addon: [ octobot, octobot-latest ]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Lint add-on
+        uses: frenck/action-addon-linter@v2.21
+        with:
+          path: "./homeassistant/${{ matrix.addon }}"
+
+      - name: Shellcheck entrypoint
+        run: shellcheck homeassistant/rootfs/entrypoint.sh
+
+  ha-prepare:
+    name: HA add-on - prepare
+    needs: [ docker ]
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      addon: ${{ steps.meta.outputs.addon }}
+      version: ${{ steps.meta.outputs.version }}
+      image_name: ${{ steps.meta.outputs.image_name }}
+      registry_prefix: ${{ steps.meta.outputs.registry_prefix }}
+      architectures: ${{ steps.meta.outputs.architectures }}
+      name: ${{ steps.meta.outputs.name }}
+      description: ${{ steps.meta.outputs.description }}
+      build_matrix: ${{ steps.matrix.outputs.matrix }}
+      build_from: ${{ needs.docker.outputs.image }}@${{ needs.docker.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Guard - core digest must exist
+        env:
+          DIGEST: ${{ needs.docker.outputs.digest }}
+        run: |
+          [[ "$DIGEST" == sha256:* ]] || { echo "::error::docker job produced no digest"; exit 1; }
+
+      - name: Compute add-on metadata
+        id: meta
+        env:
+          REF: ${{ github.ref }}
+        run: homeassistant/ci/addon-meta.sh
+
+      - name: Prepare multi-arch matrix
+        id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@2026.06.0
+        with:
+          architectures: ${{ steps.meta.outputs.architectures }}
+          image-name: ${{ steps.meta.outputs.image_name }}
+          registry-prefix: ${{ steps.meta.outputs.registry_prefix }}
+
+  ha-build:
+    name: HA add-on - build ${{ matrix.arch }}
+    needs: [ ha-prepare ]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.ha-prepare.outputs.build_matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # BUILD_FROM is on Docker Hub and build-image sets pull:true, so every arch of
+      # every run pulls it anonymously. build-image's own ghcr.io login merges into
+      # ~/.docker/config.json, it does not replace this one.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build add-on image
+        uses: home-assistant/builder/actions/build-image@2026.06.0
+        with:
+          arch: ${{ matrix.arch }}
+          image: ${{ matrix.image }}
+          version: ${{ needs.ha-prepare.outputs.version }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          context: ./homeassistant
+          file: ./homeassistant/Dockerfile.HA
+          build-args: |
+            BUILD_FROM=${{ needs.ha-prepare.outputs.build_from }}
+          cache-gha-scope: ${{ needs.ha-prepare.outputs.addon }}
+          image-tags: |
+            ${{ needs.ha-prepare.outputs.version }}
+            latest
+          labels: |
+            io.hass.type=app
+            io.hass.name=${{ needs.ha-prepare.outputs.name }}
+            io.hass.description=${{ needs.ha-prepare.outputs.description }}
+            org.opencontainers.image.title=Home Assistant Add-on: ${{ needs.ha-prepare.outputs.name }}
+          push: true
+
+  ha-publish:
+    name: HA add-on - publish manifest & bump version
+    needs: [ ha-prepare, ha-build ]
+    runs-on: ubuntu-latest
+    # Only octobot (tag builds) auto-bumps config.yaml - see the step below. This group
+    # still matters: it serializes those (infrequent) tag-triggered bumps against each
+    # other so bump-version.sh's fetch/reset/push can't race itself; the script's own
+    # retry loop still guards against an unrelated human push landing on master in between.
+    concurrency:
+      group: ha-addon-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    steps:
+      # Runs for both channels: the image itself always stays fresh and digest-pinned
+      # to the exact base image, regardless of whether Supervisor's version bumps.
+      - name: Publish multi-arch manifest
+        uses: home-assistant/builder/actions/publish-multi-arch-manifest@2026.06.0
+        with:
+          architectures: ${{ needs.ha-prepare.outputs.architectures }}
+          image-name: ${{ needs.ha-prepare.outputs.image_name }}
+          registry-prefix: ${{ needs.ha-prepare.outputs.registry_prefix }}
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          image-tags: |
+            ${{ needs.ha-prepare.outputs.version }}
+            latest
+
+      # octobot-latest (DEV) is a deliberate manual bump, not automated: see
+      # homeassistant/octobot-latest/config.yaml. Only octobot (a tag push, i.e. a real
+      # OctoBot release) auto-advances the version Supervisor offers as an update.
+      #
+      # Supervisor clones the default branch (master) regardless of which branch or tag
+      # triggered this run - see supervisor/store/git.py::_clone - so the bump always
+      # targets master explicitly, not github.ref (which is detached for a tag build).
+      - uses: actions/checkout@v6
+        if: needs.ha-prepare.outputs.addon == 'octobot'
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Bump add-on version on master
+        if: needs.ha-prepare.outputs.addon == 'octobot'
+        env:
+          ADDON: ${{ needs.ha-prepare.outputs.addon }}
+          NEW_VERSION: ${{ needs.ha-prepare.outputs.version }}
+        run: homeassistant/ci/bump-version.sh
+
   tentacles:
     needs: [ build, tests ]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
@@ -792,6 +965,10 @@ jobs:
       - version
       - docs
       - publish-npm
+      - ha-lint
+      - ha-prepare
+      - ha-build
+      - ha-publish
     uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
     secrets:
       DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
