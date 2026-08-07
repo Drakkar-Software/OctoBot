@@ -109,17 +109,20 @@ class AbstractDeepAgentsTeamChannelProducer(agents_team.AbstractAgentsTeamChanne
         self.team_name = team_name or self.__class__.__dict__.get('TEAM_NAME', self.__class__.__name__)
         self.team_id = team_id
         
-        self._store = store
+        # An explicitly-provided store is an intentional caller override
+        # (e.g. tests, single-tenant usage) and is shared as-is. Otherwise
+        # each thread_id gets its own store so that concurrent invocations
+        # (different tenants/users) never share /memories/ (see #3515).
+        self._explicit_store = store
+        self._stores: dict[str, typing.Any] = {}
         self._checkpointer = checkpointer
-        self._deep_agent = None
+        self._deep_agents: dict[str, typing.Any] = {}
         self._workers: list[dict[str, typing.Any]] = []
-        
+
         self._interrupt_on = interrupt_on or self.HITL_INTERRUPT_TOOLS
         self._skills = skills or self.SKILLS_DIRS
         self._enable_streaming = enable_streaming if enable_streaming is not None else self.ENABLE_STREAMING
-        
-        self._current_thread_id: str | None = None
-        
+
         self.logger = logging.getLogger(f"{self.__class__.__name__}")
         
         # Initialize analysis storage
@@ -253,17 +256,19 @@ class AbstractDeepAgentsTeamChannelProducer(agents_team.AbstractAgentsTeamChanne
             )
         return make_backend
     
-    def _get_or_create_store(self) -> typing.Any:
-        if self._store is None and deep_agent.DEEP_AGENTS_AVAILABLE:
-            self._store = InMemoryStore()
-        return self._store
-    
+    def _get_or_create_store(self, thread_id: str) -> typing.Any:
+        if self._explicit_store is not None:
+            return self._explicit_store
+        if thread_id not in self._stores and deep_agent.DEEP_AGENTS_AVAILABLE:
+            self._stores[thread_id] = InMemoryStore()
+        return self._stores.get(thread_id)
+
     def _get_or_create_checkpointer(self) -> typing.Any:
         if self._checkpointer is None and deep_agent.DEEP_AGENTS_AVAILABLE:
             self._checkpointer = MemorySaver()
         return self._checkpointer
-    
-    def _build_deep_agent(self) -> typing.Any:
+
+    def _build_deep_agent(self, thread_id: str) -> typing.Any:
         if not deep_agent.DEEP_AGENTS_AVAILABLE:
             raise errors.DeepAgentNotAvailableError("deep_agents package is required")
         
@@ -354,7 +359,7 @@ Save important insights to /memories/ for future reference.
             "model": model,
             "system_prompt": team_instructions,
             "tools": self.get_manager_tools() or [],
-            "store": self._get_or_create_store(),
+            "store": self._get_or_create_store(thread_id),
             "backend": self._create_memory_backend(),
             "name": f"{self.team_name}_manager",
         }
@@ -388,11 +393,19 @@ Save important insights to /memories/ for future reference.
         self.logger.debug(f"[{self.team_name}] Deep agent team built successfully")
         return create_deep_agent(**agent_kwargs)
     
-    def get_deep_agent(self, force_rebuild: bool = False) -> typing.Any:
-        if self._deep_agent is None or force_rebuild:
-            self._deep_agent = self._build_deep_agent()
-        return self._deep_agent
-    
+    def get_deep_agent(self, thread_id: str, force_rebuild: bool = False) -> typing.Any:
+        """
+        Get (or build) the compiled deep agent team scoped to `thread_id`.
+
+        Each thread_id owns its own store, so that /memories/ writes made
+        by one invocation are never visible to another invocation's
+        thread_id (see issue #3515). The checkpointer is shared: LangGraph
+        already keys checkpoints by thread_id, so sharing it is safe.
+        """
+        if thread_id not in self._deep_agents or force_rebuild:
+            self._deep_agents[thread_id] = self._build_deep_agent(thread_id)
+        return self._deep_agents[thread_id]
+
     async def run(
         self,
         initial_data: typing.Dict[str, typing.Any],
@@ -401,17 +414,16 @@ Save important insights to /memories/ for future reference.
     ) -> typing.Dict[str, typing.Any]:
         if not deep_agent.DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
-        
-        agent = self.get_deep_agent()
-        if agent is None:
-            return {"error": "Failed to create Deep Agent"}
-        
-        message = self._build_input_message(initial_data)
-        
+
         if thread_id is None:
             thread_id = str(uuid.uuid4())
-        self._current_thread_id = thread_id
-        
+
+        agent = self.get_deep_agent(thread_id)
+        if agent is None:
+            return {"error": "Failed to create Deep Agent"}
+
+        message = self._build_input_message(initial_data)
+
         config = {"configurable": {"thread_id": thread_id}}
         
         invoke_input: dict[str, typing.Any] = {
@@ -512,17 +524,23 @@ Save important insights to /memories/ for future reference.
     ) -> dict:
         if not deep_agent.DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
-        
-        agent = self.get_deep_agent()
+
+        if thread_id is None:
+            # Never infer the resume thread_id from shared instance state:
+            # under concurrent invocations that state may belong to a
+            # different caller's run by the time this resumes, which would
+            # resume the wrong invocation's interrupted checkpoint (#3516).
+            raise errors.MissingThreadIdError(
+                "resume_with_decisions() requires an explicit thread_id; the producer "
+                "cannot safely infer it under concurrent invocations."
+            )
+
+        agent = self.get_deep_agent(thread_id)
         if agent is None:
             return {"error": "Deep Agent not available"}
-        
-        thread_id = thread_id or self._current_thread_id
-        if thread_id is None:
-            return {"error": "No thread_id for resume"}
-        
+
         config = {"configurable": {"thread_id": thread_id}}
-        
+
         self.logger.debug(f"[{self.team_name}] Resuming with {len(decisions)} decisions")
         
         try:
