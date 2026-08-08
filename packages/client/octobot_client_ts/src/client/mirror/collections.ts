@@ -130,7 +130,7 @@ export function mirrorTierFor(collectionId: string): MirrorStorageTier {
 /**
  * The node's content path. The collection id comes FIRST because that is the
  * shape `starfish-replica/space` widened both `SpaceMirrorChannel.docPath` and
- * `readSpaceMirror.docPath` to — one function literal shared by the writer and
+ * `readIsolatedSpaceMirror.docPath` to — one function literal shared by the writer and
  * the website-side reader, so a tier can never be written to one path and read
  * from another.
  *

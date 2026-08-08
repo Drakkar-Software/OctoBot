@@ -311,8 +311,9 @@ describe('TS/Python collection-config parity', () => {
     expect(py).toContain('objects/n/')
   })
 
-  it('derives is_third_party_eligible from visibility rather than storing it', () => {
-    expect(py).not.toContain('third_party_eligible: bool')
-    expect(py).toMatch(/mirror_visibility_for\(collection_id\) != "private"/)
+  it('keeps third-party eligibility derived from visibility rather than storing it', () => {
+    // Eligibility is read off `visibility` on both sides. The Python registry
+    // growing a stored field of its own is exactly how the two would drift.
+    expect(py).not.toContain('third_party_eligible')
   })
 })

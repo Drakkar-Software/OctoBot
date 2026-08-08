@@ -105,7 +105,7 @@ export async function readMirrorCollections(
 /** Returns the SAME `{cap, devEdPrivHex}` on every call — a paired website
  *  holds one grant for one ephemeral device, never rotates it, so there is
  *  nothing to refresh. Shared shape between the write attempt below and
- *  `readSpaceMirror`'s own private cap provider (that one lives inside
+ *  `readIsolatedSpaceMirror`'s own private cap provider (that one lives inside
  *  `starfish-replica` and isn't exported, so this is a narrow duplicate, not
  *  a reused import). */
 class StaticMirrorCapProvider implements StarfishCapProvider {

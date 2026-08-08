@@ -79,6 +79,9 @@ export interface MintedPairingGrant {
    *  not a snapshot that can silently widen: a collection enabled later gets
    *  no grant until the user pairs again. */
   coveredCollections: MirrorCollectionId[]
+  /** The granted node ids, in the same order — what `revokePairingGrant`
+   *  takes, so a caller never has to re-parse `bundle`. */
+  grantedNodeIds: string[]
 }
 
 /**
@@ -139,6 +142,7 @@ export async function mintPairingGrant(
     memberUserId: await defaultUserIdFromEdPub(request.devEdPub),
     memberKemPub: request.devKemPub,
     coveredCollections: nodes.map((n) => n.collectionId),
+    grantedNodeIds: nodes.map((n) => n.nodeId),
   }
 }
 

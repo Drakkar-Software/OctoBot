@@ -16,6 +16,7 @@
 
 
 import abc
+import asyncio
 import typing
 
 import octobot.community.authentication as community_authentication
@@ -62,3 +63,17 @@ class AbstractLocalCollectionProvider(typing.Generic[S], abc.ABC):
     def _get_wallet_private_key(self, user_id: str) -> str:
         wallet = community_authentication.CommunityAuthentication.instance().get_wallet_by_user_id(user_id)
         return wallet.private_key
+
+    def _notify_mirror_changed(self, user_id: str) -> None:
+        """Re-mirror THIS collection after a local write. Fire-and-forget and
+        never raising: a cloud-mirror failure must not fail the local write.
+        Imported lazily — the mirror needs starfish-replica, a full-install
+        dependency this module must not require."""
+        try:
+            import octobot_sync.mirror.service as mirror_service
+
+            asyncio.get_running_loop().create_task(
+                mirror_service.MirrorService.instance().sync_now(self.COLLECTION, user_id)
+            )
+        except Exception:  # pylint: disable=broad-except
+            pass

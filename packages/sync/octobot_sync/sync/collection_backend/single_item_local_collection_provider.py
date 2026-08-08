@@ -86,6 +86,7 @@ class SingleItemLocalCollectionProvider(abstract_provider.AbstractLocalCollectio
         wallet_private_key = self._get_wallet_private_key(user_id)
         self._storage.save_state(identifier, wallet_private_key, state)
         self._set_cached_state(user_id, account_id, state)
+        self._notify_mirror_changed(user_id)
 
     def load_state_encrypted(self, user_id: str, account_id: str) -> dict[str, str]:
         identifier = self._build_identifier(user_id, account_id)
