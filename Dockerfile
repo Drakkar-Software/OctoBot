@@ -71,7 +71,10 @@ VOLUME /octobot/logs
 VOLUME /octobot/tentacles
 VOLUME /octobot/user
 
-EXPOSE 5001
+# Node API (OctoBot node mode)
+EXPOSE 8000
+# Standalone web UI (5001) + up to 10 spawned process-bot web interfaces (5001-5010)
+EXPOSE 5001-5010
 
 HEALTHCHECK --interval=15s --timeout=10s --retries=5 \
     CMD curl -sS http://127.0.0.1:5001 || exit 1
