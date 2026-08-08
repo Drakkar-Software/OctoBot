@@ -24,8 +24,8 @@ class Metadata(octobot_commons.dataclasses.MinimizableDataclass):
 class ProcessBotState(octobot_commons.dataclasses.MinimizableDataclass):
     """
     Serialized JSON next to the user config when --dump-state is enabled. Liveness is driven by
-    metadata.updated_at / metadata.next_updated_at only. exchange_account_elements is a single
-    snapshot for the dumped trading exchange (see process_bot_state_dumper).
+    metadata.updated_at / metadata.next_updated_at only. exchange_account_elements is an
+    aggregated snapshot across all trading exchanges on the child (see process_bot_state_dumper).
     """
 
     metadata: Metadata = dataclasses.field(default_factory=Metadata)
