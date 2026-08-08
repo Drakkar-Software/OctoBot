@@ -27,6 +27,7 @@ from unittest import mock
 import pytest
 
 import octobot_sync.mirror.node_collections as node_collections
+import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
 import octobot_sync.sync.collection_providers.user_account_trading_provider as trading_provider_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as strategy_provider_module
@@ -53,15 +54,52 @@ async def test_reads_user_accounts_from_the_account_provider():
 
 
 @pytest.mark.asyncio
-async def test_reads_user_accounts_trading_from_the_trading_provider():
-    provider = mock.Mock()
-    provider.list_items.return_value = [_model(id="trade-1")]
+async def test_reads_trading_state_for_every_account():
+    accounts = mock.Mock()
+    accounts.list_accounts.return_value = [mock.Mock(id="acc-1"), mock.Mock(id="acc-2")]
+    trading = mock.Mock()
+    trading.load_state.side_effect = [
+        mock.Mock(account_trading=_model(state="s1")),
+        mock.Mock(account_trading=_model(state="s2")),
+    ]
     with mock.patch.object(
-        trading_provider_module.AccountTradingProvider, "instance", return_value=provider
+        account_provider_module.AccountProvider, "instance", return_value=accounts
+    ), mock.patch.object(
+        trading_provider_module.AccountTradingProvider, "instance", return_value=trading
     ):
         result = await node_collections.read_node_collection("user-accounts-trading", _USER_ID)
-    provider.list_items.assert_called_once_with(_USER_ID)
-    assert result == {"items": [{"id": "trade-1"}]}
+    assert trading.load_state.call_args_list == [
+        mock.call(_USER_ID, "acc-1"),
+        mock.call(_USER_ID, "acc-2"),
+    ]
+    # Same wire shape the mobile writer produces — both feed one mirror, so a
+    # reader must never see two shapes.
+    assert result == {
+        "account_tradings": [
+            {"account_id": "acc-1", "account_trading": {"state": "s1"}},
+            {"account_id": "acc-2", "account_trading": {"state": "s2"}},
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_accounts_that_never_traded_are_skipped_not_fatal():
+    accounts = mock.Mock()
+    accounts.list_accounts.return_value = [mock.Mock(id="acc-1"), mock.Mock(id="acc-2")]
+    trading = mock.Mock()
+    trading.load_state.side_effect = [
+        collection_errors.CollectionNoDataError(),
+        mock.Mock(account_trading=_model(state="s2")),
+    ]
+    with mock.patch.object(
+        account_provider_module.AccountProvider, "instance", return_value=accounts
+    ), mock.patch.object(
+        trading_provider_module.AccountTradingProvider, "instance", return_value=trading
+    ):
+        result = await node_collections.read_node_collection("user-accounts-trading", _USER_ID)
+    assert result == {
+        "account_tradings": [{"account_id": "acc-2", "account_trading": {"state": "s2"}}]
+    }
 
 
 @pytest.mark.asyncio

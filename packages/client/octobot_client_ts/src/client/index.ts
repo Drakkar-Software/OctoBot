@@ -41,6 +41,7 @@ export {
   readMirrorCollections,
   attemptDirectMirrorWrite,
   type MirrorGrantBundle,
+  type MirrorGrantNodeRef,
   type ReadMirrorCollectionsOptions,
   type AttemptDirectMirrorWriteOptions,
 } from './pairing/mirrorReader.js'

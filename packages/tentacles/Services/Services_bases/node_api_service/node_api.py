@@ -138,6 +138,7 @@ class NodeApiService(services.AbstractService):
             self.cloud_sync_enabled = False
             self.cloud_sync_collections = None
         self._sync_config()
+        self._register_mirror_context_provider()
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
             await octobot_node.scheduler.initialize_scheduler()
             await internal_trading_signals.subscribe_internal_trading_signal_consumer()
@@ -221,6 +222,37 @@ class NodeApiService(services.AbstractService):
             update=True,
         )
 
+    def _register_mirror_context_provider(self):
+        """Tell the mirror how to resolve a wallet's key, sync URL and enabled
+        collections. Returning None is what keeps a node that cannot (or must
+        not) mirror from ever writing."""
+        try:
+            import octobot.community.authentication as community_authentication
+            import octobot.community.identifiers_provider as identifiers_provider
+            import octobot_sync.mirror.service as mirror_service
+
+            def resolve(user_id):
+                if not self.get_cloud_sync_enabled():
+                    return None
+                wallet = community_authentication.CommunityAuthentication.instance(
+                ).get_wallet_by_user_id(user_id)
+                if wallet is None or not wallet.private_key:
+                    return None
+                sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
+                if not sync_url:
+                    return None
+                return mirror_service.MirrorContext(
+                    private_key=wallet.private_key,
+                    sync_url=sync_url,
+                    enabled_collection_ids=self.get_cloud_sync_collections(),
+                )
+
+            mirror_service.MirrorService.instance().set_context_provider(resolve)
+        except ImportError:
+            # starfish-replica is a full-install dependency; a slim install
+            # simply does not mirror.
+            pass
+
     def get_cloud_sync_enabled(self):
         return bool(self.cloud_sync_enabled)
 
@@ -238,6 +270,7 @@ class NodeApiService(services.AbstractService):
             self.cloud_sync_collections = list(services_constants.DEFAULT_CLOUD_SYNC_COLLECTIONS)
             update[services_constants.CLOUD_SYNC_COLLECTIONS] = self.cloud_sync_collections
         self.save_service_config(services_constants.CONFIG_NODE_API, update, update=True)
+        self._reconcile_mirror()
 
     def get_cloud_sync_collections(self):
         # `is None` on purpose, not a truthy `or`: an explicitly-set empty list (the
@@ -263,3 +296,20 @@ class NodeApiService(services.AbstractService):
             {services_constants.CLOUD_SYNC_COLLECTIONS: self.cloud_sync_collections},
             update=True,
         )
+        self._reconcile_mirror()
+
+    def _reconcile_mirror(self):
+        """Re-mirror after a cloud-sync settings change, for every wallet with
+        a live scheduler. Fire-and-forget: a settings write must not fail
+        because the mirror did."""
+        try:
+            import asyncio
+
+            import octobot_sync.mirror.service as mirror_service
+
+            service = mirror_service.MirrorService.instance()
+            loop = asyncio.get_running_loop()
+            for user_id in service.mirroring_user_ids():
+                loop.create_task(service.reconcile(user_id))
+        except Exception:  # pylint: disable=broad-except
+            pass

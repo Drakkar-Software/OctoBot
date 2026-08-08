@@ -128,6 +128,7 @@ class BaseLocalCollectionProvider(
         wallet_private_key = self._get_wallet_private_key(user_id)
         self._storage.save_state(user_id, wallet_private_key, state)
         self._set_cached_state(user_id, state)
+        self._notify_mirror_changed(user_id)
 
     def _list_items_for_key(self, user_id: str, items_key: str) -> list:
         state = self._load_state(user_id)

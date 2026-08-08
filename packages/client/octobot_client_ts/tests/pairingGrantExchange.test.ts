@@ -14,7 +14,7 @@ import type { MintedPairingGrant } from '../src/client/pairing/mirrorGrant.js'
 // shape, phase discrimination, baseHash CAS, polling/timeout) — NOT the
 // space-mirror read itself, which is a separate package's concern
 // (`readMirrorCollections` thinly wraps `starfish-replica/space`'s
-// `readSpaceMirror`). Stubbing it here keeps this suite scoped to what this
+// `readIsolatedSpaceMirror`). Stubbing it here keeps this suite scoped to what this
 // file actually owns, matching how `mirrorReader.ts`/`writer.ts` are tested
 // (or rather, not yet tested) elsewhere in this package.
 vi.mock('../src/client/pairing/mirrorReader.js', async (importOriginal) => {

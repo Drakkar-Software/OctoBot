@@ -1,2 +1,6 @@
+# Only the `starfish_replica.space` subpackage is used (the mirror channel), but
+# importing it evaluates starfish_replica/__init__, which pulls starfish-server
+# — so this belongs here, not in requirements.txt.
+starfish-replica[space]==3.0.0a72
 starfish-server==3.0.0a25
 cachetools
