@@ -1,16 +1,17 @@
 import {
-  inviteToSpace,
+  inviteToNode,
   readObjectTree,
-  removeSpaceMember,
+  removeNodeKeyringRecipient,
   type Session,
 } from '@drakkar.software/starfish-spaces'
 import { defaultUserIdFromEdPub } from '@drakkar.software/starfish-spaces'
+import type { CapCert } from '@drakkar.software/starfish-protocol'
 import type { PairingRequestPayload } from '../../identity/pairingRequest.js'
 import {
   findOrCreateMirrorSpace,
+  isIsolatedMirrorCollection,
   isKnownMirrorCollection,
-  isThirdPartyEligible,
-  MIRROR_SPACE_SHARED_NAME,
+  MIRROR_SPACE_NAME,
   type MirrorCollectionId,
 } from '../mirror/index.js'
 
@@ -42,83 +43,129 @@ export class NothingToShareError extends Error {
   }
 }
 
+/** One granted collection, as the website needs it to read that node: the two
+ *  caps `inviteToNode(..., {isolated: true})` mints — `contentCap` (`objinv`)
+ *  to fetch the document, `keyringCap` (`nodekeyring`) to open it. */
+export interface MirrorGrantNode {
+  collectionId: MirrorCollectionId
+  nodeId: string
+  contentCap: CapCert
+  keyringCap: CapCert
+}
+
+/** The grant document, published sealed through the pairing rendezvous. `v`
+ *  is a wire version: a website built against the old space-member grant sees
+ *  a shape it cannot parse and must say so, rather than silently reading
+ *  nothing. */
+export interface MirrorGrantDoc {
+  v: 1
+  spaceId: string
+  nodes: MirrorGrantNode[]
+}
+
 export interface MintedPairingGrant {
-  /** The JSON-stringified space-invite bundle `inviteToSpace` returns —
-   *  `{spaceId, spaceName, cap}`. `cap` is a real `space:member` cap: it
-   *  grants read access to EVERY currently-enabled collection in the SHARED
-   *  mirror space (never the private one, and never `user-accounts-auth`,
-   *  which the mirror doesn't write to any space at all — see
-   *  `mirror/collections.ts`), because that's what a space-member grant
-   *  means. `mintPairingGrant` uses `inviteToSpace`, not the per-node
-   *  `inviteToNode`: `getNodeAccess` resolves `access:'invite'` nodes
-   *  through an isolated PER-NODE keyring nothing here seeds, while
-   *  `access:'space'` nodes (what `mirror/writer.ts` actually creates) are
-   *  gated by space membership and encrypted under the one space-wide
-   *  keyring — confirmed against the installed SDK source after hitting a
-   *  real "no keyring yet" failure with the per-node approach. */
+  /** JSON-stringified `MirrorGrantDoc`. One grant per collection, each
+   *  reaching exactly one node — never the whole space. */
   bundle: string
   spaceId: string
-  /** `defaultUserIdFromEdPub(request.devEdPub)` — the space-member identity
-   *  `inviteToSpace` just registered in the space's `_access.members` list.
-   *  Callers keep this so `unpairWebsite`-style revocation can call
-   *  `removeSpaceMember(client, spaceId, memberUserId, session)` later
-   *  without re-deriving it (or needing the original `request` again). */
+  /** `defaultUserIdFromEdPub(request.devEdPub)`. The website is NOT added to
+   *  the space roster (that is the point of the isolated tier), so this is an
+   *  identifier for bookkeeping, not a membership record. */
   memberUserId: string
-  /** Every third-party-eligible collection the shared mirror space actually
-   *  had a node for at mint time — i.e. what this grant, being space-wide,
-   *  really covers right now. Purely informational (e.g. "this site can
-   *  read: accounts, automations" on a paired-sites screen); a caller that
-   *  needs a live answer later should re-derive it, this is a snapshot. */
+  /** The website's ephemeral KEM pubkey — the recipient entry
+   *  `revokePairingGrant` removes from each node's keyring. */
+  memberKemPub: string
+  /** Exactly what this grant covers. Unlike the old space-wide grant this is
+   *  not a snapshot that can silently widen: a collection enabled later gets
+   *  no grant until the user pairs again. */
   coveredCollections: MirrorCollectionId[]
 }
 
 /**
- * Phone side: mint a read-only grant for a paired website. Invites the
- * website's own ephemeral device (from its pairing request) into the SHARED
- * mirror space as a read-only member — never the private one, and never
- * `user-accounts-auth` (which the mirror doesn't write to any space at all,
- * see `mirror/collections.ts`).
+ * Phone side: mint a read-only grant for a paired website — one per-node
+ * invite for each currently-mirrored, third-party-eligible collection.
  *
- * Requires at least one third-party-eligible collection to already have a
- * mirror node (i.e. `syncCloudMirror` must have run at least once with that
- * collection enabled) — there is nothing worth inviting the website to read
- * otherwise. Throws `NothingToShareError` in that case rather than minting
- * a grant into an empty space (the invite itself would still be a real,
- * working space-member grant even with zero nodes — this check exists for
- * UX, not because `inviteToSpace` requires it).
+ * The website joins no space roster. Each invite carries a cap for that one
+ * node's content plus a recipient slot in that one node's keyring, so the
+ * grant reaches exactly the collections shown in the pairing UI and nothing
+ * else — `user-settings` (`visibility: "private"`, space keyring) and
+ * `user-accounts-auth` (never mirrored at all) are unreachable by
+ * construction rather than by policy.
+ *
+ * Throws `NothingToShareError` when no eligible collection has a mirror node
+ * yet (i.e. `syncCloudMirror` has not run with one enabled).
  */
 export async function mintPairingGrant(
   session: Session,
   request: PairingRequestPayload,
 ): Promise<MintedPairingGrant> {
   const joinRequestJson = await buildJoinRequestJson(request)
-  const space = await findOrCreateMirrorSpace(session, MIRROR_SPACE_SHARED_NAME)
+  const space = await findOrCreateMirrorSpace(session, MIRROR_SPACE_NAME)
   const tree = await readObjectTree(session, space.id)
-  const hasShareableCollection = tree.some(
-    (node) => isKnownMirrorCollection(node.type) && isThirdPartyEligible(node.type),
+  const grantable = tree.filter(
+    (node) => isKnownMirrorCollection(node.type) && isIsolatedMirrorCollection(node.type),
   )
-  if (!hasShareableCollection) throw new NothingToShareError()
-  const bundle = await inviteToSpace(session, space.id, joinRequestJson, false)
-  const memberUserId = await defaultUserIdFromEdPub(request.devEdPub)
-  const coveredCollections = tree
-    .filter((node) => isKnownMirrorCollection(node.type) && isThirdPartyEligible(node.type))
-    .map((node) => node.type as MirrorCollectionId)
-  return { bundle, spaceId: space.id, memberUserId, coveredCollections }
+  if (grantable.length === 0) throw new NothingToShareError()
+
+  const nodes: MirrorGrantNode[] = []
+  for (const node of grantable) {
+    // `isolated: true` is what keeps this off the space roster and off the
+    // space keyring; `write: false` is what makes it read-only.
+    const bundleJson = await inviteToNode(
+      session,
+      space.id,
+      node.id,
+      joinRequestJson,
+      { enc: true },
+      node.type,
+      { isolated: true, write: false },
+    )
+    const bundle = JSON.parse(bundleJson) as { nodeCap?: CapCert; keyringCap?: CapCert }
+    if (!bundle.nodeCap || !bundle.keyringCap) {
+      throw new Error(`pairing grant: incomplete invite bundle for ${node.type}`)
+    }
+    nodes.push({
+      collectionId: node.type as MirrorCollectionId,
+      nodeId: node.id,
+      contentCap: bundle.nodeCap,
+      keyringCap: bundle.keyringCap,
+    })
+  }
+
+  const doc: MirrorGrantDoc = { v: 1, spaceId: space.id, nodes }
+  return {
+    bundle: JSON.stringify(doc),
+    spaceId: space.id,
+    memberUserId: await defaultUserIdFromEdPub(request.devEdPub),
+    memberKemPub: request.devKemPub,
+    coveredCollections: nodes.map((n) => n.collectionId),
+  }
 }
 
 /**
- * Phone side: revoke a previously-minted grant by removing the paired
- * website's ephemeral device from the shared mirror space's member roster
- * (`_access.members`) — the live, TOFU-checked list `space:member`-gated
- * reads (objdoc's `read_roles`) actually consult on every request. This
- * is real, immediate revocation: the next read the site attempts 403s, it
- * does not depend on the (confirmed-unreachable-on-the-deployed-server, see
- * the space-mirror design's Infra findings) cap-revocation-list plumbing.
+ * Phone side: revoke a previously-minted grant by removing the website's
+ * ephemeral KEM key from each granted node's keyring, which also rotates that
+ * keyring to a new epoch. Everything written afterwards is sealed to an epoch
+ * the site is not a recipient of.
  *
- * The one honest residual: this cannot erase what the site already fetched
- * and decrypted before this call — same caveat every revocation design in
- * this package documents.
+ * Two honest caveats, both inherent to the model rather than to this code.
+ * The site keeps a valid `objinv` cap, so it can still FETCH those nodes'
+ * bytes — it simply cannot decrypt anything written after this call; making
+ * the fetch itself fail needs the cap-revocation-list plumbing, which is not
+ * reachable on the deployed server (same finding the space-member design
+ * recorded). And this cannot erase what the site already fetched and
+ * decrypted — the caveat every revocation design in this package documents.
+ *
+ * Per-node, unlike the space-member grant it replaces: revoking one
+ * collection leaves the others working.
  */
-export async function revokePairingGrant(session: Session, spaceId: string, memberUserId: string): Promise<void> {
-  await removeSpaceMember(session.spacesRegistryClient, spaceId, memberUserId, session)
+export async function revokePairingGrant(
+  session: Session,
+  spaceId: string,
+  nodeIds: readonly string[],
+  memberKemPub: string,
+): Promise<void> {
+  for (const nodeId of nodeIds) {
+    await removeNodeKeyringRecipient(session, spaceId, nodeId, [memberKemPub])
+  }
 }

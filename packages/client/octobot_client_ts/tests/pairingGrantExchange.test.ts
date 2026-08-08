@@ -71,10 +71,24 @@ function fakeSealer() {
 }
 
 function fakeGrant(spaceId = 'space-1'): MintedPairingGrant {
+  // The per-node shape `mintPairingGrant` really publishes: one entry per
+  // granted collection, each carrying the two caps that reach that ONE node.
   return {
-    bundle: JSON.stringify({ spaceId, spaceName: 'test space', cap: { ops: ['read', 'list'] } }),
+    bundle: JSON.stringify({
+      v: 1,
+      spaceId,
+      nodes: [
+        {
+          collectionId: 'user-accounts',
+          nodeId: 'node-1',
+          contentCap: { ops: ['read', 'list'] },
+          keyringCap: { ops: ['read'] },
+        },
+      ],
+    }),
     spaceId,
     memberUserId: 'member-1',
+    memberKemPub: 'kem-pub-1',
     coveredCollections: ['user-accounts'],
   }
 }

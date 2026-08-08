@@ -40,13 +40,13 @@ maximum away from the **real wall clock at verification time** — not from the 
 keep the *declared* window narrow while placing both timestamps arbitrarily far in the future (making
 an old, indefinitely-reusable code look freshly issued no matter when it's actually redeemed).
 
-**A live space-member grant, not a data snapshot.** The website never receives a node credential, and
-it never receives a one-time export either. Approving a request invites the website's ephemeral device
-into the user's **cloud mirror** — a dedicated Starfish space the wallet (or its node, when one is
-configured) keeps continuously synced with a read-only projection of the user's own data — as a
-`space:member`. That membership is what the website actually reads through: every poll is a live pull
-against the mirror, decrypted client-side with the space's own keyring, never a value handed over once
-and then stale. Populating the mirror itself (which collections sync, how often, from which side —
+**A live per-node grant, not a data snapshot.** The website never receives a node credential, and it
+never receives a one-time export either. Approving a request mints one read-only invite per shared
+collection into the user's **cloud mirror** — a dedicated Starfish space the wallet (or its node, when
+one is configured) keeps continuously synced with a read-only projection of the user's own data. Each
+invite reaches exactly one node, through that node's own keyring. Those invites are what the website
+reads through: every poll is a live pull against the mirror, decrypted client-side, never a value
+handed over once and then stale. Populating the mirror itself (which collections sync, how often, from which side —
 wallet or node) is a separate concern from pairing a website to read it; this page only covers the
 latter. `syncCloudMirror()` (exported from this package) and `MIRROR_COLLECTIONS` are the entry points
 if you need to look at how the mirror gets written.
@@ -111,12 +111,27 @@ that calls `mintPairingGrant()` directly does not get this retry for free — ru
 
 ## What a grant covers, and what it deliberately does not
 
-A grant is a real `space:member` cap on the wallet's **shared** mirror space — never the private one,
-and never `user-accounts-auth` (exchange credentials), which the mirror never writes to any space at
-all, at any layer. It covers every collection that is both third-party eligible — `visibility` other
-than `"private"`, i.e. `isThirdPartyEligible(id)` (see
+A grant is a set of per-node invites, one per granted collection, each carrying two caps: one for that
+node's content (`objinv`) and one for that node's own keyring. It covers every collection that is both
+third-party eligible — `visibility` other than `"private"`, i.e. `isThirdPartyEligible(id)` (see
 `MIRROR_COLLECTIONS`) — and **actually has a mirror node at mint time**: a collection the user has
-enabled for cloud sync but that hasn't synced yet simply isn't there to invite into.
+enabled for cloud sync but that hasn't synced yet simply isn't there to invite into. It never covers
+`user-accounts-auth` (exchange credentials), which the mirror never writes anywhere, at any layer.
+
+**The website is never added to the space roster.** That is what bounds the grant. A `space:member`
+cap's scope covers `spaces/{spaceId}/**`, so the earlier design had to keep `user-settings`
+(`visibility: "private"`) in a *separate space* or any grant would have decrypted it too. Now each
+shared collection's node carries its own keyring, so a grant reaches exactly the nodes it names — and
+because the holder is not on the roster, they also cannot read `objindex`, so they cannot even
+enumerate what other collections exist. `user-settings` stays on the space keyring and is unreachable
+by construction rather than by policy.
+
+**Revocation is per collection.** `revokePairingGrant` removes the website's KEM key from each named
+node's keyring and rotates that keyring's epoch, so everything written afterwards is sealed to an epoch
+the site is not a recipient of. Revoking one collection leaves the others working — something the old
+space-wide grant could not express. Two honest limits: the site keeps a valid `objinv` cap, so it can
+still *fetch* those nodes' bytes (it just cannot decrypt anything written after revocation); and no
+revocation can erase what it already fetched and decrypted.
 
 **Mirrored data is the raw synced document, not a curated field allowlist.** Unlike the old
 sealed-snapshot design this replaces, the mirror does not project through
