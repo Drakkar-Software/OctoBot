@@ -158,11 +158,11 @@ class TestRejectUserPathSegment:
 
 
 class TestBindAddressForEnvAndProbeHosts:
-    def test_defaults_bind_and_probe_to_loopback(self):
+    def test_unset_bind_leaves_probe_on_loopback(self):
         resolved_bind, probe_bind = (
             process_bound_operator_mixin.ProcessBoundOperatorMixin.bind_address_for_env_and_probe_hosts({})
         )
-        assert resolved_bind == "127.0.0.1"
+        assert resolved_bind is None
         assert probe_bind == "127.0.0.1"
 
     def test_any_bind_uses_loopback_probe(self):

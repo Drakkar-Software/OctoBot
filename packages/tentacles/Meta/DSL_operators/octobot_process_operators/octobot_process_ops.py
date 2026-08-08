@@ -763,16 +763,17 @@ def _ensure_log_folder_path(working_directory: str, user_folder: str) -> str:
 def _ensure_child_environ(
     web_port: int,
     node_port: int,
-    bind_host: str,
+    bind_host: str | None,
     sync_user_id: str,
     working_directory: str,
 ) -> dict:
     """Environment passed to the OctoBot child (ports, bind addresses, sync user id)."""
     child_env = os.environ.copy()
     child_env[services_constants.ENV_WEB_PORT] = str(web_port)
-    child_env[services_constants.ENV_WEB_ADDRESS] = bind_host
     child_env[services_constants.ENV_NODE_API_PORT] = str(node_port)
-    child_env[services_constants.ENV_NODE_API_ADDRESS] = bind_host
+    if bind_host:
+        child_env[services_constants.ENV_WEB_ADDRESS] = bind_host
+        child_env[services_constants.ENV_NODE_API_ADDRESS] = bind_host
     child_env[commons_constants.ENV_USE_MINIMAL_LIBS] = "false"
     child_env["DISTRIBUTION"] = commons_constants.DEFAULT_DISTRIBUTION
     child_env[services_constants.ENV_ENABLE_NODE_API] = "false"
@@ -1021,10 +1022,15 @@ def create_octobot_process_operators(
                     default=services_constants.DEFAULT_NODE_API_PORT),
                 dsl_interpreter.OperatorParameter(
                     name="bind_host",
-                    description="Host used for free-port checks and WEB_ADDRESS / NODE_API_ADDRESS for the child.",
+                    description=(
+                        "Optional override for WEB_ADDRESS / NODE_API_ADDRESS on the child. "
+                        "When omitted, the child inherits WEB_ADDRESS from the executor environment "
+                        "and otherwise uses services.web.ip / the default bind address (0.0.0.0). "
+                        "Port availability checks always probe via loopback when unset or 0.0.0.0."
+                    ),
                     required=False,
                     type=commons_enums.DslValueType.TEXT.value,
-                    default="127.0.0.1"),
+                    default=None),
                 dsl_interpreter.OperatorParameter(
                     name="http_scheme",
                     description="Scheme for http_base_url (default http).",
@@ -1311,7 +1317,8 @@ def create_octobot_process_operators(
             _report_child_octobot_first_start_if_needed(init_info)
             spawn_pid = self.pid or 0
             scheme = str(params.get("http_scheme") or "http").rstrip(":/")
-            http_base_url = f"{scheme}://{bind_host}:{web_port}"
+            http_base_url_host = bind_host or "127.0.0.1"
+            http_base_url = f"{scheme}://{http_base_url_host}:{web_port}"
             state = octobot_process_state_import.OctobotProcessState(
                 http_base_url=http_base_url,
                 web_port=web_port,

@@ -117,13 +117,17 @@ class ProcessBoundOperatorMixin:
     def bind_address_for_env_and_probe_hosts(
         params: dict,
         bind_listen_key: str = "bind_host",
-    ) -> tuple[str, str]:
+    ) -> tuple[str | None, str]:
         """
         Effective bind/listen address from ``params``, and the host to use for local
-        port checks (``0.0.0.0`` is probed via loopback).
+        port checks (``0.0.0.0`` and unset bind are probed via loopback).
         """
-        resolved_bind = params.get(bind_listen_key) or "127.0.0.1"
-        probe_bind = "127.0.0.1" if resolved_bind == "0.0.0.0" else resolved_bind
+        bind_value = params.get(bind_listen_key)
+        resolved_bind = bind_value if bind_value else None
+        if not resolved_bind or resolved_bind == "0.0.0.0":
+            probe_bind = "127.0.0.1"
+        else:
+            probe_bind = resolved_bind
         return resolved_bind, probe_bind
 
     @staticmethod

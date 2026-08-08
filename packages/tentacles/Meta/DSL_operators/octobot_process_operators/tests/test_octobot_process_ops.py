@@ -2375,6 +2375,8 @@ class TestEnsureOctobotProcessDslIntegration:
         """
         # Minimal OctoBot project: `getcwd` must resolve `start.py` where `pre_compute` expects it.
         monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv(services_constants.ENV_WEB_ADDRESS, raising=False)
+        monkeypatch.delenv(services_constants.ENV_NODE_API_ADDRESS, raising=False)
         (tmp_path / "start.py").write_text("#", encoding="utf-8")
         _seed_executor_reference_tentacles_config(tmp_path)
         user_folder = "integration_dsl_bot"
@@ -2461,9 +2463,9 @@ class TestEnsureOctobotProcessDslIntegration:
             ]
             child_env = spawn_kwargs["environment"]
             assert child_env[services_constants.ENV_WEB_PORT] == str(last_execution["web_port"])
-            assert child_env[services_constants.ENV_WEB_ADDRESS] == "127.0.0.1"
+            assert services_constants.ENV_WEB_ADDRESS not in child_env
             assert child_env[services_constants.ENV_NODE_API_PORT] == str(last_execution["node_port"])
-            assert child_env[services_constants.ENV_NODE_API_ADDRESS] == "127.0.0.1"
+            assert services_constants.ENV_NODE_API_ADDRESS not in child_env
             assert child_env["DISTRIBUTION"] == commons_constants.DEFAULT_DISTRIBUTION
             assert child_env[services_constants.ENV_ENABLE_NODE_API] == "false"
             assert child_env[octobot_constants.ENV_PROCESS_BOT_SYNC_USER_ID] == _PROCESS_TEST_USER_ID
@@ -2473,6 +2475,84 @@ class TestEnsureOctobotProcessDslIntegration:
             shutil.rmtree(tmp_path / commons_constants.USER_FOLDER, ignore_errors=True)
             if (tmp_path / "logs").exists():
                 shutil.rmtree(tmp_path / "logs", ignore_errors=True)
+
+    async def test_run_octobot_process_inherits_parent_web_address(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv(services_constants.ENV_WEB_ADDRESS, "0.0.0.0")
+        monkeypatch.delenv(services_constants.ENV_NODE_API_ADDRESS, raising=False)
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        _seed_executor_reference_tentacles_config(tmp_path)
+        user_folder = "integration_dsl_inherit_web_address"
+        expression = (
+            f"run_octobot_process({user_folder!r}, profile_data={repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
+            f"user_id={_PROCESS_TEST_USER_ID!r})"
+        )
+        interpreter = dsl_interpreter.Interpreter(
+            dsl_interpreter.get_all_operators()
+            + [EnsureOctobotProcessOperator],
+        )
+        try:
+            with mock.patch.object(
+                octobot_process_ops.os_util,
+                "is_frozen_binary_octobot",
+                return_value=False,
+            ), mock.patch.object(
+                octobot_process_ops,
+                "_load_process_bot_state",
+                new=mock.AsyncMock(side_effect=_async_return_none_mock),
+            ), mock.patch.object(
+                process_util,
+                "spawn_managed_subprocess",
+            ) as spawn_mock:
+                spawn_mock.return_value = mock.Mock(spec=["pid"], pid=12345)
+                await interpreter.interprete(expression)
+            child_env = spawn_mock.call_args.kwargs["environment"]
+            assert child_env[services_constants.ENV_WEB_ADDRESS] == "0.0.0.0"
+            assert services_constants.ENV_NODE_API_ADDRESS not in child_env
+        finally:
+            shutil.rmtree(tmp_path / commons_constants.USER_FOLDER, ignore_errors=True)
+
+    async def test_run_octobot_process_explicit_bind_host_injects_web_address(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv(services_constants.ENV_WEB_ADDRESS, raising=False)
+        monkeypatch.delenv(services_constants.ENV_NODE_API_ADDRESS, raising=False)
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        _seed_executor_reference_tentacles_config(tmp_path)
+        user_folder = "integration_dsl_explicit_bind_host"
+        expression = (
+            f"run_octobot_process({user_folder!r}, profile_data={repr(_MINIMAL_PROFILE_DATA_DSL_LITERAL)}, "
+            f"user_id={_PROCESS_TEST_USER_ID!r}, bind_host='127.0.0.1')"
+        )
+        interpreter = dsl_interpreter.Interpreter(
+            dsl_interpreter.get_all_operators()
+            + [EnsureOctobotProcessOperator],
+        )
+        try:
+            with mock.patch.object(
+                octobot_process_ops.os_util,
+                "is_frozen_binary_octobot",
+                return_value=False,
+            ), mock.patch.object(
+                octobot_process_ops,
+                "_load_process_bot_state",
+                new=mock.AsyncMock(side_effect=_async_return_none_mock),
+            ), mock.patch.object(
+                process_util,
+                "spawn_managed_subprocess",
+            ) as spawn_mock:
+                spawn_mock.return_value = mock.Mock(spec=["pid"], pid=12345)
+                result = await interpreter.interprete(expression)
+            child_env = spawn_mock.call_args.kwargs["environment"]
+            assert child_env[services_constants.ENV_WEB_ADDRESS] == "127.0.0.1"
+            assert child_env[services_constants.ENV_NODE_API_ADDRESS] == "127.0.0.1"
+            last_execution = result[dsl_interpreter.ReCallingOperatorResult.__name__][
+                "last_execution_result"
+            ]
+            assert last_execution["http_base_url"].startswith("http://127.0.0.1:")
+        finally:
+            shutil.rmtree(tmp_path / commons_constants.USER_FOLDER, ignore_errors=True)
 
     async def test_run_octobot_process_via_dsl_writes_exchange_auth_into_user_config(
         self, tmp_path, monkeypatch
