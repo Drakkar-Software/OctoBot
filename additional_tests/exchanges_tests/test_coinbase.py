@@ -17,6 +17,7 @@ import pytest
 import decimal
 
 import octobot_trading.enums
+import octobot_trading.errors as trading_errors
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
 # All test coroutines will be treated as marked.
@@ -85,6 +86,17 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_invalid_api_key_error(self):
         await super().test_invalid_api_key_error()
+
+    async def test_invalid_pem_secret_raises_authentication_error(self):
+        invalid_pem_secret = (
+            "-----BEGIN EC PRIVATE KEY-----\n"
+            "NOT_VALID_PEM_CONTENT\n"
+            "-----END EC PRIVATE KEY-----"
+        )
+        async with self.local_exchange_manager():
+            self.exchange_manager.exchange.connector.client.secret = invalid_pem_secret
+            with pytest.raises(trading_errors.AuthenticationError, match="invalid key format"):
+                await self.get_portfolio()
 
     async def test_get_api_key_permissions(self):
         await super().test_get_api_key_permissions()
