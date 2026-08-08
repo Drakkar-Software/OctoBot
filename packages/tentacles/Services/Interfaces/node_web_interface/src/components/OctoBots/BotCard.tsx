@@ -20,7 +20,7 @@ import {
   getStatusGroup,
   hasStartedExecution,
 } from "@/utils/executions"
-import { formatProcessAddress } from "@/utils/process-address"
+import { buildProcessBotUrl, formatProcessAddress } from "@/utils/process-address"
 import { resolveTaskError, type TaskErrorInfo } from "@/utils/task-errors"
 import {
   formatDate,
@@ -94,12 +94,13 @@ function ProcessAddressRow({
 }: {
   childProcess: ChildOctoBotProcessState
 }) {
+  const processBotUrl = buildProcessBotUrl(childProcess.web_port)
   const processAddress = formatProcessAddress(childProcess)
 
   return (
     <div className="flex min-w-0 items-center gap-1">
       <a
-        href={childProcess.http_base_url}
+        href={processBotUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="min-w-0 truncate font-mono text-xs text-primary hover:underline"
@@ -114,7 +115,7 @@ function ProcessAddressRow({
         asChild
       >
         <a
-          href={childProcess.http_base_url}
+          href={processBotUrl}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open child OctoBot at ${processAddress}`}
