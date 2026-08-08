@@ -9,6 +9,9 @@
     "directory": "packages/client/octobot_client_ts"
   },
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
