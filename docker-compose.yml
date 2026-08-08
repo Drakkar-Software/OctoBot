@@ -9,7 +9,9 @@ services:
        - ./tentacles:/octobot/tentacles
        - ./user:/octobot/user
     ports:
+       - ${NODE_PORT:-8000}:8000
        - ${PORT:-80}:${PORT:-5001}
+       - ${CHILD_WEB_PORTS:-5001-5010}:5001-5010
     restart: always
   
   watchtower:
