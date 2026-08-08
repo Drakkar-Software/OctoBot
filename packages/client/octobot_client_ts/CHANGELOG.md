@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- **Cloud mirror: one space per wallet, per-node pairing grants.** The mirror used to spread a
+  wallet's collections over three spaces (`octobot-mirror`, `-private`, `-public`) because a space
+  keyring is space-wide and a `space:member` grant reaches every encrypted node in the space — so the
+  only way to keep `user-settings` out of a website grant was to put it in a different space.
+  Per-node keyrings (`starfish-replica`'s new `tier: "isolated"`) remove that constraint: every
+  collection now lives in ONE `octobot-mirror` space, and `visibility` decides its tier instead of
+  its space — `"shared"` → isolated (own keyring, stored in `objinv`), `"private"` → the space
+  keyring (`objdoc`), `"public"` → plaintext (`objpub`).
+
+  `mintPairingGrant` mints one `inviteToNode(..., {isolated: true, write: false})` per granted
+  collection instead of a single `inviteToSpace`. The website is never added to the space roster, so
+  it cannot read `objindex` and cannot enumerate what other collections exist; `user-settings` is
+  unreachable by construction rather than by policy. `revokePairingGrant` now takes the granted node
+  ids plus the member's KEM pubkey and rotates each node's keyring, so revoking one collection leaves
+  the others working.
+
+  **Breaking, on both halves of the wire.** The grant bundle is now
+  `{v: 1, spaceId, nodes: [{collectionId, nodeId, contentCap, keyringCap}]}`; an old space-wide
+  bundle is rejected loudly by `parseMirrorGrantBundle` rather than read as empty.
+  `readMirrorCollections` takes `nodes` instead of `cap`, `fetchPairingGrant` returns `nodes`
+  instead of `cap`, `SyncCloudMirrorResult` collapses its three space ids to one `spaceId`, and
+  `MIRROR_SPACE_{SHARED,PRIVATE,PUBLIC}_NAME`/`mirrorSpaceNameFor` are replaced by
+  `MIRROR_SPACE_NAME`. Requires `starfish-replica` ≥ 3.0.0-alpha.72.
+
+
 Initial version. `@drakkar.software/octobot-client` is the extraction of `@drakkar.software/octobot-sdk`'s
 wallet identity, sync transport, payload encryption, collection registry, node REST client,
 strategy/account/automation protocol builders and parsers, user-action orchestration, and the

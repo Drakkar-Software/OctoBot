@@ -15,10 +15,8 @@ import {
   mirrorDocPushPath,
   mirrorNodeTitleFor,
   mirrorNodeTitleForVisibility,
-  MIRROR_SPACE_PRIVATE_NAME,
-  MIRROR_SPACE_PUBLIC_NAME,
-  MIRROR_SPACE_SHARED_NAME,
-  mirrorSpaceNameFor,
+  MIRROR_SPACE_NAME,
+  isIsolatedMirrorCollection,
   mirrorTierFor,
   mirrorVisibilityFor,
   THIRD_PARTY_ELIGIBLE_MIRROR_COLLECTIONS,
@@ -105,27 +103,27 @@ describe('visibility: the per-collection assignments', () => {
 })
 
 describe('MIRROR_ROUTING_BY_VISIBILITY — one row per visibility', () => {
-  it('routes each visibility to its own dedicated space', () => {
-    expect(MIRROR_ROUTING_BY_VISIBILITY.private.spaceName).toBe(MIRROR_SPACE_PRIVATE_NAME)
-    expect(MIRROR_ROUTING_BY_VISIBILITY.shared.spaceName).toBe(MIRROR_SPACE_SHARED_NAME)
-    expect(MIRROR_ROUTING_BY_VISIBILITY.public.spaceName).toBe(MIRROR_SPACE_PUBLIC_NAME)
-  })
-
-  it('gives each visibility the right storage tier — only public is stored world-readable', () => {
+  it('gives each visibility the tier that matches its audience', () => {
+    // The space keyring is space-wide, so anything grantable must NOT be on
+    // it — "shared" maps to the isolated tier (its own per-node keyring),
+    // which is what makes a grant reach one node instead of the whole space.
     expect(MIRROR_ROUTING_BY_VISIBILITY.private.tier).toBe('private')
-    // "shared" is deliberately NOT its own tier: still E2EE + member-gated,
-    // it just lives in a space a read-only grant can be minted against.
-    expect(MIRROR_ROUTING_BY_VISIBILITY.shared.tier).toBe('private')
+    expect(MIRROR_ROUTING_BY_VISIBILITY.shared.tier).toBe('isolated')
     expect(MIRROR_ROUTING_BY_VISIBILITY.public.tier).toBe('public')
   })
 
-  it('sends only public content to the plaintext objpub storage collection', () => {
+  it('sends each tier to the storage collection whose read roles match it', () => {
+    // objdoc: space:member only, no cap fallback — unreachable by a per-node
+    // grant, which is exactly why "shared" cannot live there.
     expect(MIRROR_ROUTING_BY_VISIBILITY.private.storage).toBe('docs')
-    expect(MIRROR_ROUTING_BY_VISIBILITY.shared.storage).toBe('docs')
+    // objinv: space:member OR cap:read:objinv — the cap fallback is the point.
+    expect(MIRROR_ROUTING_BY_VISIBILITY.shared.storage).toBe('invite')
     expect(MIRROR_ROUTING_BY_VISIBILITY.public.storage).toBe('pub')
   })
 
   it('demands an opaque node title for public content only', () => {
+    // private and isolated titles live in objindex, which is space:member and
+    // unreachable by a per-node grant holder.
     expect(MIRROR_ROUTING_BY_VISIBILITY.private.opaqueTitle).toBe(false)
     expect(MIRROR_ROUTING_BY_VISIBILITY.shared.opaqueTitle).toBe(false)
     expect(MIRROR_ROUTING_BY_VISIBILITY.public.opaqueTitle).toBe(true)
@@ -138,85 +136,62 @@ describe('MIRROR_ROUTING_BY_VISIBILITY — one row per visibility', () => {
   })
 })
 
-describe('mirrorSpaceNameFor — the private/shared/public split', () => {
-  it('routes every third-party-eligible collection to the SHARED space', () => {
+describe('one space, per-node grants', () => {
+  it('every collection lives in the ONE mirror space', () => {
+    expect(MIRROR_SPACE_NAME).toBe('octobot-mirror')
+  })
+
+  it('every third-party-eligible collection is on the isolated tier', () => {
+    // The property the old three-space split existed to guarantee, now
+    // enforced per node rather than per space: a grant is minted over one
+    // node's own keyring, so it cannot reach any other collection.
     for (const id of THIRD_PARTY_ELIGIBLE_MIRROR_COLLECTIONS) {
-      expect(mirrorSpaceNameFor(id)).toBe(MIRROR_SPACE_SHARED_NAME)
+      expect(isIsolatedMirrorCollection(id)).toBe(true)
+      expect(mirrorTierFor(id)).toBe('isolated')
     }
   })
 
-  it('routes user-settings (never third-party eligible) to the PRIVATE space', () => {
-    expect(mirrorSpaceNameFor('user-settings')).toBe(MIRROR_SPACE_PRIVATE_NAME)
+  it('user-settings stays on the space keyring and is never grantable', () => {
+    expect(isIsolatedMirrorCollection('user-settings')).toBe(false)
+    expect(isThirdPartyEligible('user-settings')).toBe(false)
+    expect(mirrorTierFor('user-settings')).toBe('private')
   })
 
-  // `_project_objindex_public` keys the world-readable object projection BY
-  // SPACE ID, so a public node parked in the shared space would hand every
-  // anonymous reader the id of the space a read-only grant is minted against.
-  it('routes public content to a THIRD space, never the shared or private one', () => {
-    expect(MIRROR_ROUTING_BY_VISIBILITY.public.spaceName).toBe(MIRROR_SPACE_PUBLIC_NAME)
-    expect(MIRROR_SPACE_PUBLIC_NAME).not.toBe(MIRROR_SPACE_SHARED_NAME)
-    expect(MIRROR_SPACE_PUBLIC_NAME).not.toBe(MIRROR_SPACE_PRIVATE_NAME)
-  })
-
-  it('the three space names are pairwise distinct', () => {
-    const names = [MIRROR_SPACE_SHARED_NAME, MIRROR_SPACE_PRIVATE_NAME, MIRROR_SPACE_PUBLIC_NAME]
-    expect(new Set(names).size).toBe(names.length)
-  })
-
-  it('a read-only grant scoped to the shared space can never structurally reach user-settings', () => {
-    // This is the property the space split exists to guarantee: since a
-    // space-member cap's scope covers spaces/{spaceId}/** for exactly ONE
-    // space, no collection routed to the private space can ever share a
-    // space (and therefore a keyring, and therefore a grant) with any
-    // third-party-eligible collection.
-    const sharedSpaceCollections = MIRROR_COLLECTIONS.filter(
-      (c) => mirrorSpaceNameFor(c.id) === MIRROR_SPACE_SHARED_NAME,
-    )
-    expect(sharedSpaceCollections.some((c) => c.id === 'user-settings')).toBe(false)
-  })
-})
-
-describe('mirrorTierFor — what the writer hands createSpaceMirrorChannel', () => {
-  it('creates every collection that exists today at the private (E2EE, space-gated) tier', () => {
-    for (const c of MIRROR_COLLECTIONS) {
-      expect(mirrorTierFor(c.id)).toBe('private')
-    }
-  })
-
-  it('an unknown id gets the private tier, never the world-readable one', () => {
+  it('an unknown id is not grantable and gets the private tier', () => {
+    expect(isIsolatedMirrorCollection('not-a-real-collection')).toBe(false)
     expect(mirrorTierFor('not-a-real-collection')).toBe('private')
   })
 })
 
 describe('mirror doc path helpers', () => {
-  // Mirror content lives in `objdoc`, the canonical content location for a node
-  // created access:"space", enc:true. It used to have its own `mirrordoc`
-  // collection purely for a bigger body limit; objdoc is now 10 MiB and that
-  // clone is gone. This assertion is the guard against it drifting back.
-  it('resolves to objdoc, the canonical node-content collection', () => {
-    expect(mirrorDocPath('user-accounts', 'sp-1', 'obj-1')).toBe('spaces/sp-1/objects/docs/obj-1')
-    expect(mirrorDocPath('user-accounts', 'sp-1', 'obj-1')).not.toContain('objects/mirror/')
+  it('routes an isolated (grantable) collection to objinv, not objdoc', () => {
+    // objdoc's read roles are space:member with NO cap fallback, so a
+    // per-node grant holder could never fetch it. objinv is the one that
+    // accepts cap:read:objinv.
+    expect(mirrorDocPath('user-accounts', 'sp-1', 'obj-1')).toBe(
+      'spaces/sp-1/objects/n/obj-1/content',
+    )
+    for (const id of THIRD_PARTY_ELIGIBLE_MIRROR_COLLECTIONS) {
+      expect(mirrorDocPath(id, 'sp-1', 'obj-1')).toBe('spaces/sp-1/objects/n/obj-1/content')
+    }
+  })
+
+  it('keeps space-private content on objdoc', () => {
+    expect(mirrorDocPath('user-settings', 'sp-1', 'obj-1')).toBe('spaces/sp-1/objects/docs/obj-1')
   })
 
   it('pull/push paths carry the right action prefix', () => {
     expect(mirrorDocPullPath('user-accounts', 'sp-1', 'obj-1')).toBe(
-      '/pull/spaces/sp-1/objects/docs/obj-1',
+      '/pull/spaces/sp-1/objects/n/obj-1/content',
     )
     expect(mirrorDocPushPath('user-accounts', 'sp-1', 'obj-1')).toBe(
-      '/push/spaces/sp-1/objects/docs/obj-1',
+      '/push/spaces/sp-1/objects/n/obj-1/content',
     )
   })
 
-  it('keeps every private/shared collection on the objdoc path', () => {
-    for (const c of MIRROR_COLLECTIONS) {
-      expect(mirrorDocPath(c.id, 'sp-1', 'obj-1')).toBe('spaces/sp-1/objects/docs/obj-1')
-    }
-  })
-
-  // A `tier:"public"` node is stored access:"public", enc:false. Writing it to
-  // objdoc would put world-readable content on the private merge-doc path,
-  // where the server does not expect plaintext.
-  it('routes PUBLIC content to objpub (objects/pub/), not objdoc', () => {
+  // A tier:"public" node is stored access:"public", enc:false. Writing it to
+  // objdoc would put world-readable content on the private merge-doc path.
+  it('routes PUBLIC content to objpub (objects/pub/)', () => {
     expect(mirrorDocPathForVisibility('public', 'sp-1', 'obj-1')).toBe(
       'spaces/sp-1/objects/pub/obj-1',
     )
@@ -224,7 +199,7 @@ describe('mirror doc path helpers', () => {
       'spaces/sp-1/objects/docs/obj-1',
     )
     expect(mirrorDocPathForVisibility('shared', 'sp-1', 'obj-1')).toBe(
-      'spaces/sp-1/objects/docs/obj-1',
+      'spaces/sp-1/objects/n/obj-1/content',
     )
   })
 
@@ -235,20 +210,8 @@ describe('mirror doc path helpers', () => {
       )
     }
   })
-
-  // The mirror gets its own spaces, so sharing objdoc with ordinary user
-  // documents cannot collide: different space entirely, and node ids are minted
-  // by createNode rather than derived from a collection id.
-  it('keeps mirror content in dedicated spaces, not a user content space', () => {
-    expect(MIRROR_SPACE_SHARED_NAME).toBe('octobot-mirror')
-    expect(MIRROR_SPACE_PRIVATE_NAME).toBe('octobot-mirror-private')
-    expect(MIRROR_SPACE_PUBLIC_NAME).toBe('octobot-mirror-public')
-  })
 })
 
-// Infra's `_project_objindex_public` republishes a public node's title into the
-// world-readable `_index/objects/public` projection. A descriptive title there
-// tells any anonymous reader exactly which collections a given wallet mirrors.
 describe('mirrorNodeTitleFor — a public node must not advertise what it holds', () => {
   it('gives a public node an opaque title that is not the collection id', () => {
     for (const c of MIRROR_COLLECTIONS) {
@@ -319,27 +282,33 @@ describe('TS/Python collection-config parity', () => {
     )
   })
 
-  it('carries the same three mirror space names', () => {
-    expect(pyConstant('MIRROR_SPACE_SHARED_NAME')).toBe(MIRROR_SPACE_SHARED_NAME)
-    expect(pyConstant('MIRROR_SPACE_PRIVATE_NAME')).toBe(MIRROR_SPACE_PRIVATE_NAME)
-    expect(pyConstant('MIRROR_SPACE_PUBLIC_NAME')).toBe(MIRROR_SPACE_PUBLIC_NAME)
+  it('carries the same single mirror space name', () => {
+    expect(pyConstant('MIRROR_SPACE_NAME')).toBe(MIRROR_SPACE_NAME)
   })
 
-  it('routes each visibility to the same space name on both sides', () => {
-    // Python's `mirror_space_name_for`, restated as the mapping it implements —
-    // the ids above already proved which visibility each collection carries, so
-    // this pins the visibility -> space edge itself.
-    const pySpaceFor: Record<string, string> = {
-      public: pyConstant('MIRROR_SPACE_PUBLIC_NAME'),
-      shared: pyConstant('MIRROR_SPACE_SHARED_NAME'),
-      private: pyConstant('MIRROR_SPACE_PRIVATE_NAME'),
+  it('routes each visibility to the same storage tier on both sides', () => {
+    // The visibility -> tier edge is now what decides who can reach a
+    // collection (one space, per-node keyrings), so this is the parity edge
+    // that matters — the ids above already pinned each collection's
+    // visibility.
+    const pyTierFor: Record<string, string> = {
+      public: 'public',
+      shared: 'isolated',
+      private: 'private',
     }
     for (const visibility of ALL_VISIBILITIES) {
-      expect(pySpaceFor[visibility]).toBe(MIRROR_ROUTING_BY_VISIBILITY[visibility].spaceName)
+      expect(pyTierFor[visibility]).toBe(MIRROR_ROUTING_BY_VISIBILITY[visibility].tier)
     }
     // And that Python really branches on all three, not just two.
     expect(py).toMatch(/if visibility == "public":/)
     expect(py).toMatch(/if visibility == "shared":/)
+  })
+
+  it('routes the isolated tier to objinv on both sides', () => {
+    // objdoc has no cap fallback in its read roles, so a grantable collection
+    // stored there would be unreadable by the grant holder. Both sides must
+    // agree, or the writer and the website-side reader disagree on the path.
+    expect(py).toContain('objects/n/')
   })
 
   it('derives is_third_party_eligible from visibility rather than storing it', () => {

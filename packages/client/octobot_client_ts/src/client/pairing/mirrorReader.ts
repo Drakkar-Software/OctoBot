@@ -1,18 +1,24 @@
 import type { CapCert, PushSuccess } from '@drakkar.software/starfish-protocol'
-import { readSpaceMirror } from '@drakkar.software/starfish-replica/space'
+import { readIsolatedSpaceMirror } from '@drakkar.software/starfish-replica/space'
 import { StarfishClient, type StarfishCapProvider } from '@drakkar.software/starfish-client'
 import { createTimeoutFetch } from '../../transport/syncClient.js'
 import { SYNC_FETCH_TIMEOUT_MS } from '../../crypto/wireConstants.js'
 import { isKnownMirrorCollection, mirrorDocPushPath, mirrorDocPath, type MirrorCollectionId } from '../mirror/index.js'
 
-/** The `NodeInviteBundle` JSON `mintPairingGrant` publishes (sealed) and this
- *  module unpacks — the fields this reader actually needs, kept narrow
- *  rather than importing `starfish-spaces`' full type (which also has
- *  fields — `nodeCap`, `streamCap`, `keyringCap` — this flow never sets,
- *  see `mintPairingGrant`'s doc comment on why it's always `kind:'space-enc'`). */
+/** The grant document `mintPairingGrant` publishes (sealed) and this module
+ *  unpacks: one entry per granted collection, each naming the node and the
+ *  two caps that reach it. The node list is carried IN the grant because a
+ *  per-node grant holder cannot read `objindex` to discover it. */
 export interface MirrorGrantBundle {
   spaceId: string
-  cap: CapCert
+  nodes: MirrorGrantNodeRef[]
+}
+
+export interface MirrorGrantNodeRef {
+  collectionId: MirrorCollectionId
+  nodeId: string
+  contentCap: CapCert
+  keyringCap: CapCert
 }
 
 export function parseMirrorGrantBundle(bundleJson: string): MirrorGrantBundle {
@@ -25,54 +31,72 @@ export function parseMirrorGrantBundle(bundleJson: string): MirrorGrantBundle {
   if (typeof parsed !== 'object' || parsed === null) throw new Error('pairing grant: malformed bundle')
   const b = parsed as Record<string, unknown>
   if (typeof b.spaceId !== 'string' || !b.spaceId) throw new Error('pairing grant: missing spaceId')
-  if (typeof b.cap !== 'object' || b.cap === null) throw new Error('pairing grant: missing cap')
-  return { spaceId: b.spaceId, cap: b.cap as CapCert }
+  // A pre-per-node grant (one space-wide `cap`, no `nodes`) is not something
+  // this reader can silently treat as "nothing shared" — say so instead.
+  if (!Array.isArray(b.nodes)) {
+    throw new Error('pairing grant: missing nodes — this grant was issued by an older, incompatible version')
+  }
+  const nodes = b.nodes.map((raw, i) => {
+    const n = raw as Record<string, unknown>
+    if (typeof n?.collectionId !== 'string' || typeof n?.nodeId !== 'string') {
+      throw new Error(`pairing grant: malformed node at index ${i}`)
+    }
+    if (typeof n.contentCap !== 'object' || n.contentCap === null) {
+      throw new Error(`pairing grant: node ${n.collectionId} is missing its content cap`)
+    }
+    if (typeof n.keyringCap !== 'object' || n.keyringCap === null) {
+      throw new Error(`pairing grant: node ${n.collectionId} is missing its keyring cap`)
+    }
+    return {
+      collectionId: n.collectionId as MirrorCollectionId,
+      nodeId: n.nodeId,
+      contentCap: n.contentCap as CapCert,
+      keyringCap: n.keyringCap as CapCert,
+    }
+  })
+  return { spaceId: b.spaceId, nodes }
 }
 
 export interface ReadMirrorCollectionsOptions {
   rendezvous: { baseUrl: string; namespace: string }
   spaceId: string
-  cap: CapCert
+  /** From `parseMirrorGrantBundle` — exactly the nodes this grant covers. */
+  nodes: readonly MirrorGrantNodeRef[]
   /** The website's own ephemeral Ed25519 private key (hex) — from the same
-   *  `device` the site generated in `startPairingRequest`; the cap was
+   *  `device` the site generated in `startPairingRequest`; every cap was
    *  minted for exactly this device's pubkey. */
   devEdPrivHex: string
-  /** The website's own ephemeral X25519 KEM private key (hex) — same
-   *  `device` as `devEdPrivHex`. `inviteToSpace` added this device's KEM
-   *  pubkey (`request.devKemPub`) as a recipient of the space's ONE
-   *  keyring; this is what lets THIS reader open that keyring itself
-   *  (mirrordoc content is sealed under it, not under the cap). */
+  /** The website's own ephemeral X25519 KEM private key (hex) — same `device`
+   *  as `devEdPrivHex`. Each `inviteToNode` added this device's KEM pubkey as
+   *  a recipient of THAT node's own keyring; content is sealed under those,
+   *  not under the caps. */
   devKemPrivHex: string
   fetch?: typeof fetch
   timeoutMs?: number
 }
 
 /**
- * Website side, session-less: pull every currently-enabled mirror
- * collection the grant covers. A REAL live read, not a point-in-time
- * export — call this again any time to see the latest write, bounded only
- * by how often the wallet's writer refreshes (itself gated by the
- * `cloudSyncEnabled` setting). Returns only collections the space actually
- * has a node for; a collection disabled since the grant was minted simply
- * won't appear (its node was cleared, not deleted — see the writer's
- * clear-on-disable — so this reflects the CURRENT state honestly, not a
- * stale snapshot of what existed at grant time).
+ * Website side, session-less: pull every collection the grant covers. A REAL
+ * live read, not a point-in-time export — call it again any time to see the
+ * latest write, bounded only by how often the wallet's writer refreshes.
  *
- * A thin adapter over `@drakkar.software/starfish-replica/space`'s
- * `readSpaceMirror` — this module owns only the OctoBot-specific
- * `isKnownMirrorCollection` filter, `mirrorDocPath` template, and the
- * timeout-wrapped fetch; the actual pull/decrypt mechanics live upstream.
+ * A collection whose node was cleared (the user disabled it) or whose keyring
+ * recipient was removed (the user revoked it) simply won't appear, so this
+ * reflects CURRENT state rather than a snapshot of grant time.
+ *
+ * A thin adapter over `starfish-replica/space`'s `readIsolatedSpaceMirror`;
+ * this module owns only the `mirrorDocPath` template and the timeout-wrapped
+ * fetch.
  */
 export async function readMirrorCollections(
   opts: ReadMirrorCollectionsOptions,
 ): Promise<Partial<Record<MirrorCollectionId, unknown>>> {
-  return readSpaceMirror({
+  return readIsolatedSpaceMirror({
     rendezvous: opts.rendezvous,
     spaceId: opts.spaceId,
-    cap: opts.cap,
+    nodes: opts.nodes.filter((n) => isKnownMirrorCollection(n.collectionId)),
     devEdPrivHex: opts.devEdPrivHex,
     devKemPrivHex: opts.devKemPrivHex,
-    isKnownCollection: isKnownMirrorCollection,
     docPath: mirrorDocPath,
     fetch: createTimeoutFetch(opts.timeoutMs ?? SYNC_FETCH_TIMEOUT_MS, opts.fetch ?? globalThis.fetch),
   })

@@ -13,7 +13,11 @@ import {
 import { pollDelay } from '../../protocol/poll.js'
 import { abortableSleep } from './pairingRequest.js'
 import { OctoBotConnectionError, OctoBotConflictError, rethrowAsOctoBotError } from '../core/errors.js'
-import { readMirrorCollections, parseMirrorGrantBundle } from './mirrorReader.js'
+import {
+  readMirrorCollections,
+  parseMirrorGrantBundle,
+  type MirrorGrantNodeRef,
+} from './mirrorReader.js'
 import type { MintedPairingGrant } from './mirrorGrant.js'
 import type { MirrorCollectionId } from '../mirror/index.js'
 
@@ -170,13 +174,13 @@ export interface UnsealedPairingGrant {
    *  only the party that actually read the live, unclaimed request could
    *  have supplied. */
   sealedBy: string
-  /** The raw `space:member` cap this grant unwrapped to — the SAME cap
+  /** The per-node grants this bundle unwrapped to — the SAME ones
    *  `readMirrorCollections` above just used to pull `collections`. Exposed
-   *  so a caller can make its own authenticated calls against the space
-   *  (e.g. `attemptDirectMirrorWrite`) without re-fetching and re-unsealing
-   *  the grant. Always read-only in practice: `mintPairingGrant` mints with
-   *  `canWrite: false`, so this cap's `ops` never includes `'write'`. */
-  cap: CapCert
+   *  so a caller can make its own authenticated calls (e.g.
+   *  `attemptDirectMirrorWrite`) without re-fetching and re-unsealing the
+   *  grant. Always read-only in practice: `mintPairingGrant` mints with
+   *  `write: false`, so no cap here carries `'write'`. */
+  nodes: MirrorGrantNodeRef[]
 }
 
 /** Website side: read whatever is currently published at this session's
@@ -224,18 +228,18 @@ export async function fetchPairingGrant(
   ) {
     throw new Error('pairing grant: malformed grant envelope')
   }
-  const { spaceId, cap } = parseMirrorGrantBundle((envelopeRaw as GrantEnvelope).bundle)
+  const { spaceId, nodes } = parseMirrorGrantBundle((envelopeRaw as GrantEnvelope).bundle)
   const sealedBy = sealed.entry.addedBy
   const collections = await readMirrorCollections({
     rendezvous: session.rendezvous,
     spaceId,
-    cap,
+    nodes,
     devEdPrivHex: session.device.edPriv,
     devKemPrivHex: session.device.kemPriv,
     fetch: opts.fetch,
     timeoutMs: opts.timeoutMs,
   })
-  return { spaceId, collections, sealedBy, cap }
+  return { spaceId, collections, sealedBy, nodes }
 }
 
 /** Website side: poll until the phone's FIRST approval publishes a grant,

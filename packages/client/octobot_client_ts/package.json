@@ -35,12 +35,12 @@
   ],
   "dependencies": {
     "@drakkar.software/octobot-protocol": "^0.6.0",
-    "@drakkar.software/starfish-client": "3.0.0-alpha.71",
-    "@drakkar.software/starfish-identities": "3.0.0-alpha.71",
-    "@drakkar.software/starfish-keyring": "3.0.0-alpha.71",
-    "@drakkar.software/starfish-protocol": "3.0.0-alpha.71",
-    "@drakkar.software/starfish-replica": "3.0.0-alpha.71",
-    "@drakkar.software/starfish-spaces": "3.0.0-alpha.71",
+    "@drakkar.software/starfish-client": "3.0.0-alpha.72",
+    "@drakkar.software/starfish-identities": "3.0.0-alpha.72",
+    "@drakkar.software/starfish-keyring": "3.0.0-alpha.72",
+    "@drakkar.software/starfish-protocol": "3.0.0-alpha.72",
+    "@drakkar.software/starfish-replica": "3.0.0-alpha.72",
+    "@drakkar.software/starfish-spaces": "3.0.0-alpha.72",
     "@noble/curves": "2.2.0",
     "@noble/hashes": "2.2.0"
   },
