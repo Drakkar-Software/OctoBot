@@ -1,0 +1,33 @@
+export {
+  MIRROR_COLLECTIONS,
+  DEFAULT_MIRROR_COLLECTIONS,
+  THIRD_PARTY_ELIGIBLE_MIRROR_COLLECTIONS,
+  MIRROR_SPACE_NAME,
+  MIRROR_PUBLIC_NODE_TITLE,
+  MIRROR_ROUTING_BY_VISIBILITY,
+  isIsolatedMirrorCollection,
+  isKnownMirrorCollection,
+  isPublicMirrorCollection,
+  isThirdPartyEligible,
+  mirrorDocPath,
+  mirrorDocPathForVisibility,
+  mirrorDocPullPath,
+  mirrorDocPushPath,
+  mirrorNodeTitleFor,
+  mirrorNodeTitleForVisibility,
+  mirrorRoutingFor,
+  mirrorTierFor,
+  mirrorVisibilityFor,
+  type MirrorCollection,
+  type MirrorCollectionId,
+  type MirrorNodeType,
+  type MirrorStorageTier,
+  type MirrorVisibility,
+  type MirrorVisibilityRouting,
+} from './collections.js'
+export { findOrCreateSpace as findOrCreateMirrorSpace } from '@drakkar.software/starfish-replica/space'
+export {
+  syncCloudMirror,
+  type SyncCloudMirrorOptions,
+  type SyncCloudMirrorResult,
+} from './writer.js'

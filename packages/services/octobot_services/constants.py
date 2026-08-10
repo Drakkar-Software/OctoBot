@@ -92,6 +92,28 @@ ENV_NODE_SQLITE_FILE = "ENV_NODE_SQLITE_FILE"
 ENV_NODE_POSTGRES_URL = "ENV_NODE_POSTGRES_URL"
 ENV_NODE_EXTERNAL_HOST = "NODE_EXTERNAL_HOST"
 
+# Space-mirror cloud E2E-encrypted sync: off by default, opt-in, required for any
+# third-party (website-pairing) integration. See node_api.py's get/set pair for the
+# persisted-config pattern this follows (same as NODE_EXTERNAL_HOST above).
+CLOUD_SYNC_ENABLED = "cloud-sync-enabled"
+CLOUD_SYNC_COLLECTIONS = "cloud-sync-collections"
+# Node sync collections (see octobot_sync.enums.Collections/TemporaryCollections) the
+# space-mirror can offer by default when cloud sync is first enabled. Deliberately
+# excludes CLOUD_SYNC_FORBIDDEN_COLLECTION (credentials) — that collection is never a
+# configurable option at any layer, not even off-by-default. Also excludes "user-data":
+# octobot_sync.mirror.node_collections.read_node_collection has no wired local reader
+# for it yet (raises NotImplementedError) — see that module's docstring. Add it back
+# once a reader exists; until then defaulting it on breaks the whole sync cycle for
+# every node that just accepts the defaults.
+DEFAULT_CLOUD_SYNC_COLLECTIONS = ["user-accounts", "user-strategies"]
+# octobot_sync.enums.Collections.USER_ACCOUNTS_AUTH's wire value, duplicated here as a
+# literal rather than imported: this module (octobot_services) has no existing
+# dependency on octobot_sync, and every other cloud-sync collection id above is
+# already a bare wire-format string, not an enum reference, for the same reason.
+# tests/wireContract-style pinning belongs in octobot_sync's own test suite if this
+# ever needs cross-checking against the enum.
+CLOUD_SYNC_FORBIDDEN_COLLECTION = "user-accounts-auth"
+
 # Webhook
 CONFIG_WEBHOOK = "webhook"
 CONFIG_ENABLE_NGROK = "enable-ngrok"

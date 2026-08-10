@@ -33,12 +33,11 @@ if typing.TYPE_CHECKING:
     import octobot.octobot
 
 
-def _synced_exchange_account_elements_for_first_trading_exchange(
+def _synced_aggregated_exchange_account_elements(
     octobot: "octobot.octobot.OctoBot",
 ) -> exchange_account_elements_import.ExchangeAccountElements:
     """
-    Build one snapshot for the first trading exchange only. If several are trading, log an error
-    for each additional one (only the first is included in the dump).
+    Build one aggregated snapshot across every trading exchange on this OctoBot process.
     """
     empty = exchange_account_elements_import.ExchangeAccountElements()
     if octobot is None or octobot.exchange_producer is None:
@@ -50,20 +49,20 @@ def _synced_exchange_account_elements_for_first_trading_exchange(
     trading_managers = trading_api.get_trading_exchanges(managers)
     if not trading_managers:
         return empty
-    first_exchange_manager = trading_managers[0]
-    elements = exchange_account_elements_import.ExchangeAccountElements()
-    elements.name = trading_api.get_exchange_name(first_exchange_manager)
-    elements.sync_from_exchange_manager(first_exchange_manager, [])
-    for skipped_exchange_manager in trading_managers[1:]:
-        _get_logger().error(
-            f"process bot state dump includes only the first trading exchange; dumping "
-            f"{trading_api.get_exchange_name(first_exchange_manager)} "
-            f"({trading_api.get_exchange_manager_id(first_exchange_manager)}). "
-            f"Skipping additional trading exchange "
-            f"{trading_api.get_exchange_name(skipped_exchange_manager)} "
-            f"({trading_api.get_exchange_manager_id(skipped_exchange_manager)})."
+    snapshots: list[exchange_account_elements_import.ExchangeAccountElements] = []
+    for exchange_manager in trading_managers:
+        per_exchange_elements = exchange_account_elements_import.ExchangeAccountElements()
+        per_exchange_elements.name = trading_api.get_exchange_name(exchange_manager)
+        per_exchange_elements.sync_from_exchange_manager(exchange_manager, [])
+        snapshots.append(per_exchange_elements)
+    if len(trading_managers) > 1:
+        exchange_names = [trading_api.get_exchange_name(manager) for manager in trading_managers]
+        _get_logger().info(
+            "process bot state dump aggregating %s trading exchanges: %s",
+            len(trading_managers),
+            ", ".join(exchange_names),
         )
-    return elements
+    return exchange_account_elements_import.ExchangeAccountElements.aggregate_snapshots(snapshots)
 
 
 async def _write_state_file_async(
@@ -78,7 +77,7 @@ async def _write_state_file_async(
             next_updated_at=now + interval,
             pid=os.getpid(),
         ),
-        exchange_account_elements=_synced_exchange_account_elements_for_first_trading_exchange(
+        exchange_account_elements=_synced_aggregated_exchange_account_elements(
             bot,
         ),
     )

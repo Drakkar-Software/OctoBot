@@ -482,6 +482,9 @@ jobs:
       - name: Install dependencies
         run: cd docs && npm ci
 
+      - name: Test docs
+        run: cd docs && npm test
+
       - name: Build docs
         run: cd docs && npm run build
 
@@ -536,6 +539,21 @@ jobs:
             npm publish --access public
           fi
 
+      - name: Publish octobot-client if version not already on npm
+        working-directory: packages/client/octobot_client_ts
+        run: |
+          npm ci
+          npm run build
+          npm test
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published — nothing to do."
+          else
+            echo "Publishing $NAME@$VERSION..."
+            npm publish --access public
+          fi
+
   version:
     needs: [ build, tests ]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
@@ -578,6 +596,8 @@ jobs:
         arch: [ x64, arm64 ]
         exclude:
           - os: windows-latest
+            arch: arm64
+          - os: ubuntu-latest # temporary disable until fixed
             arch: arm64
           - os: macos-latest
             arch: x64

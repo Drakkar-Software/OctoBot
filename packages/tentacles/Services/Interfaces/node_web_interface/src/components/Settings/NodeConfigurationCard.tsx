@@ -1,9 +1,10 @@
 import { useMutation } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Check, Network, Power, Server, Sliders } from "lucide-react"
+import { Check, Power, Sliders } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NodesService } from "@/client"
 import { CardCornerButton } from "@/components/Settings/CardCornerButton"
+import { CloudSyncSection } from "@/components/Settings/CloudSyncCard"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -32,7 +33,9 @@ export function NodeConfigurationCard() {
   const { user } = useAuth()
   const { showErrorToast, showSuccessToast } = useCustomToast()
   const [stopDialogOpen, setStopDialogOpen] = useState(false)
-  const [nodeType, setNodeType] = useState<NodeType | null>(null)
+  // Node type is currently a hidden section (see CardContent below) — kept
+  // only so re-enabling it doesn't need the fetch re-wired.
+  const [, setNodeType] = useState<NodeType | null>(null)
   const [externalHost, setExternalHost] = useState("")
   const [envOverride, setEnvOverride] = useState(false)
   const [hostStatus, setHostStatus] = useState<
@@ -117,6 +120,10 @@ export function NodeConfigurationCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {/* Node type — hidden, not removed. Only "standalone" is
+              selectable today (master/replica is "Coming soon"), so this
+              section currently offers nothing to act on. Re-add the
+              `Network, Server` lucide-react imports if this is restored.
           <div className="flex flex-col gap-3">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Node type
@@ -146,6 +153,7 @@ export function NodeConfigurationCard() {
             </span>
           </div>
           <div className="border-t" />
+          */}
           <div className="flex flex-col gap-3">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Host
@@ -206,14 +214,16 @@ export function NodeConfigurationCard() {
             </span>
             <div className="flex flex-col items-start gap-2">
               <p className="text-sm text-muted-foreground">
-                Connect to your node, manage your OctoBots, and link your exchange
-                accounts.
+                Connect to your node, manage your OctoBots, and link your
+                exchange accounts.
               </p>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/settings/connect">Open connect guide</Link>
               </Button>
             </div>
           </div>
+          <div className="border-t" />
+          <CloudSyncSection />
         </CardContent>
       </Card>
 

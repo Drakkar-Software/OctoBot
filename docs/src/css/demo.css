@@ -1,0 +1,112 @@
+/*
+ * Styling for the embedded octobot-client demo (docs/src/components/demo/).
+ * Only ever imported from the demo's own root components (Embed.tsx,
+ * pages/demo.tsx) — a docs page without a demo on it never loads this file.
+ *
+ * Deliberately NOT `@import "tailwindcss"` (the all-in-one entrypoint pulls
+ * in Preflight, which resets margins/borders/typography site-wide and would
+ * fight Infima, the docs theme, everywhere else on the page). Import only
+ * the theme and utilities layers, and scope everything the demo needs from
+ * a reset under `.octobot-demo` below instead of a global Preflight.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "../components/demo";
+
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/700.css";
+@import "@fontsource/dm-mono/400.css";
+@import "@fontsource/dm-mono/500.css";
+
+/*
+ * Design tokens, lifted verbatim from @drakkar.software/octobot-ui's
+ * theme.ts (the real shipping product palette), not invented. Two zones,
+ * not a light/dark toggle: `wire` is the default surface everything lives
+ * on; `paper` exists ONLY as a scoped inversion around the propose/QR
+ * panel, because a QR needs high contrast to scan — never as a page-wide
+ * split. Semantic rule for the two accent colors below: turquoise
+ * (`--color-live`) = live-from-socket only, amber (`--color-node-required`)
+ * = this panel needs a running node.
+ */
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --color-wire-bg: #070a22;
+  --color-wire-surface: #0a0d2c;
+  --color-wire-surface-raised: #0f1237;
+  --color-wire-ink: #f3f6f8;
+  --color-wire-muted: #a3aed0;
+  --color-wire-rule: #232a4d;
+
+  --color-paper-bg: #ffffff;
+  --color-paper-ink: #0a0d2c;
+  --color-paper-muted: #5b6483;
+  --color-paper-rule: #d5d9e6;
+
+  /* Live-from-socket accent. Never a background wash, never a glow — only
+     ever applied to a value the instant it arrives, and to the "0" in a
+     commands-sent counter to show it is, in fact, live. */
+  --color-live: #65e7cf;
+  --color-live-dim: #85d6d7;
+
+  /* This panel/action requires a reachable node. One job, no other use. */
+  --color-node-required: #f5a623;
+
+  --color-danger: #e56b6f;
+  --color-ok: #6cb596;
+}
+
+/*
+ * A hand-scoped equivalent of Tailwind Preflight, applied only under
+ * `.octobot-demo` — the box-sizing/border resets the demo's bare `border` /
+ * `border-b` utilities assume, plus the same dark surface, font, selection,
+ * and focus-ring rules the demo shipped with as a standalone app.
+ */
+@layer base {
+  .octobot-demo,
+  .octobot-demo *,
+  .octobot-demo ::before,
+  .octobot-demo ::after {
+    box-sizing: border-box;
+    border: 0 solid var(--color-wire-rule);
+  }
+
+  .octobot-demo {
+    background: var(--color-wire-bg);
+    color: var(--color-wire-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .octobot-demo code,
+  .octobot-demo pre,
+  .octobot-demo kbd,
+  .octobot-demo .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .octobot-demo ::selection {
+    background: var(--color-live);
+    color: var(--color-wire-bg);
+  }
+
+  .octobot-demo :focus-visible {
+    outline: 2px solid var(--color-live);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .octobot-demo,
+  .octobot-demo *,
+  .octobot-demo *::before,
+  .octobot-demo *::after {
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.001ms;
+    scroll-behavior: auto;
+  }
+}

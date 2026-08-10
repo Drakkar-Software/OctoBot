@@ -136,17 +136,20 @@ class AbstractDeepAgentChannelProducer(ai_agent_channels.AbstractAIAgentChannelP
         )
         
         self.ai_service = ai_service
-        
-        self._store = store
+
+        # An explicitly-provided store/checkpointer is an intentional caller
+        # override (e.g. tests, single-tenant usage) and is shared as-is.
+        # Otherwise each thread_id gets its own store so that concurrent
+        # invocations (different tenants/users) never share /memories/.
+        self._explicit_store = store
+        self._stores: dict[str, typing.Any] = {}
         self._checkpointer = checkpointer
-        self._deep_agent = None
+        self._deep_agents: dict[str, typing.Any] = {}
         self._subagents: list[dict[str, typing.Any]] = []
-        
+
         self._interrupt_on = interrupt_on or self.HITL_INTERRUPT_TOOLS
         self._skills = skills or self.SKILLS_DIRS
         self._enable_streaming = enable_streaming if enable_streaming is not None else self.ENABLE_STREAMING
-        
-        self._current_thread_id: str | None = None
     
     def get_subagents(self) -> list[dict[str, typing.Any]]:
         return []
@@ -277,26 +280,29 @@ class AbstractDeepAgentChannelProducer(ai_agent_channels.AbstractAIAgentChannelP
             )
         return make_backend
     
-    def _get_or_create_store(self) -> typing.Any:
-        if self._store is None and DEEP_AGENTS_AVAILABLE:
-            self._store = InMemoryStore()
-        return self._store
-    
+    def _get_or_create_store(self, thread_id: str) -> typing.Any:
+        if self._explicit_store is not None:
+            return self._explicit_store
+        if thread_id not in self._stores and DEEP_AGENTS_AVAILABLE:
+            self._stores[thread_id] = InMemoryStore()
+        return self._stores.get(thread_id)
+
     def _get_or_create_checkpointer(self) -> typing.Any:
         if self._checkpointer is None and DEEP_AGENTS_AVAILABLE:
             self._checkpointer = MemorySaver()
         return self._checkpointer
-    
+
     def _build_deep_agent(
         self,
+        thread_id: str,
         additional_tools: list[typing.Callable] | None = None,
     ) -> typing.Any:
         if not DEEP_AGENTS_AVAILABLE:
             raise errors.DeepAgentNotAvailableError("deep_agents package is required")
-        
+
         logger.debug(f"[{self.name}] Building deep agent...")
-        
-        store = self._get_or_create_store()
+
+        store = self._get_or_create_store(thread_id)
         
         model = None
         if self.ai_service:
@@ -344,27 +350,35 @@ class AbstractDeepAgentChannelProducer(ai_agent_channels.AbstractAIAgentChannelP
     
     def get_deep_agent(
         self,
+        thread_id: str,
         additional_tools: list[typing.Callable] | None = None,
         force_rebuild: bool = False,
     ) -> typing.Any:
-        if self._deep_agent is None or force_rebuild:
-            self._deep_agent = self._build_deep_agent(additional_tools)
-        return self._deep_agent
-    
+        """
+        Get (or build) the compiled deep agent scoped to `thread_id`.
+
+        Each thread_id owns its own store, so that /memories/ writes made
+        by one invocation are never visible to another invocation's
+        thread_id (see issue #3515). The checkpointer is shared: LangGraph
+        already keys checkpoints by thread_id, so sharing it is safe.
+        """
+        if thread_id not in self._deep_agents or force_rebuild:
+            self._deep_agents[thread_id] = self._build_deep_agent(thread_id, additional_tools)
+        return self._deep_agents[thread_id]
+
     async def invoke_deep_agent(
         self,
         message: str,
         additional_tools: list[typing.Callable] | None = None,
         thread_id: str | None = None,
     ) -> dict:
-        agent = self.get_deep_agent(additional_tools)
-        if agent is None:
-            return {"error": "Deep Agent not available"}
-        
         if thread_id is None:
             thread_id = str(uuid.uuid4())
-        self._current_thread_id = thread_id
-        
+
+        agent = self.get_deep_agent(thread_id, additional_tools)
+        if agent is None:
+            return {"error": "Deep Agent not available"}
+
         config = {"configurable": {"thread_id": thread_id}}
         
         logger.debug(f"[{self.name}] Invoking deep agent with message: {message[:100]}...")
@@ -444,17 +458,23 @@ class AbstractDeepAgentChannelProducer(ai_agent_channels.AbstractAIAgentChannelP
     ) -> dict:
         if not DEEP_AGENTS_AVAILABLE:
             return {"error": "Deep Agents not available"}
-        
-        agent = self.get_deep_agent()
+
+        if thread_id is None:
+            # Never infer the resume thread_id from shared instance state:
+            # under concurrent invocations that state may belong to a
+            # different caller's run by the time this resumes, which would
+            # resume the wrong invocation's interrupted checkpoint (#3516).
+            raise errors.MissingThreadIdError(
+                "resume_with_decisions() requires an explicit thread_id; the producer "
+                "cannot safely infer it under concurrent invocations."
+            )
+
+        agent = self.get_deep_agent(thread_id)
         if agent is None:
             return {"error": "Deep Agent not available"}
-        
-        thread_id = thread_id or self._current_thread_id
-        if thread_id is None:
-            return {"error": "No thread_id for resume"}
-        
+
         config = {"configurable": {"thread_id": thread_id}}
-        
+
         logger.debug(f"[{self.name}] Resuming with {len(decisions)} decisions")
         
         try:

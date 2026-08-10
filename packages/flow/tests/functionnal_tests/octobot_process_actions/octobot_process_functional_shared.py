@@ -101,6 +101,7 @@ async def run_automation_job_without_exchange_manager(
 
 
 EXCHANGE_BINANCEUS = "binanceus"
+EXCHANGE_OKX = "okx"
 FUNCTIONAL_TEST_USER_ID = "wallet-user"
 
 # --- DSL / DAG action ids (fixtures, dependencies, _get_action_by_id) ---
@@ -139,6 +140,40 @@ GRID_BINANCEUS_PROFILE_DATA = {
 }
 
 
+DUAL_EXCHANGE_GRID_PROFILE_DATA = {
+    "profile_details": {
+        "name": "func_test_dual_exchange_octoprocess",
+        "id": "func_test_dual_exchange_octoprocess",
+    },
+    "crypto_currencies": [
+        {"trading_pairs": ["BTC/USDT"], "name": "BTC", "enabled": True},
+    ],
+    "exchanges": [
+        {"internal_name": EXCHANGE_BINANCEUS, "exchange_type": "spot"},
+        {"internal_name": EXCHANGE_OKX, "exchange_type": "spot"},
+    ],
+    "trader": {"enabled": False, "load_trade_history": True},
+    "trader_simulator": {
+        "enabled": True,
+        "starting_portfolio": {"USDT": 1000.0, "BTC": 0.01},
+        "maker_fees": 0.0,
+        "taker_fees": 0.0,
+    },
+    "trading": {"reference_market": "USDT", "risk": 1.0, "paused": False},
+    "tentacles": [
+        tentacle_test_configs.grid_trading_mode_profile_tentacle(
+            symbol="BTC/USDT",
+            spread=float(GRID_SPREAD),
+            increment=float(GRID_INCREMENT),
+            buy_count=2,
+            sell_count=2,
+        ),
+    ],
+    "options": {},
+    "distribution": "default",
+}
+
+
 # --- Helpers: order ladder checks and ReCallingOperatorResult payload access ---
 
 def _open_orders_origins(open_orders: list[dict]) -> list[dict]:
@@ -146,6 +181,24 @@ def _open_orders_origins(open_orders: list[dict]) -> list[dict]:
         order[trading_constants.STORAGE_ORIGIN_VALUE]
         for order in open_orders
     ]
+
+
+def _open_order_symbols(open_orders: list[dict]) -> set[str]:
+    symbol_column = trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value
+    symbols: set[str] = set()
+    for order in open_orders:
+        origin = order.get(trading_constants.STORAGE_ORIGIN_VALUE, order)
+        order_symbol = origin.get(symbol_column)
+        if order_symbol:
+            symbols.add(order_symbol)
+    return symbols
+
+
+def _assert_orders_include_symbols(open_orders: list[dict], expected_symbols: set[str]) -> None:
+    found_symbols = _open_order_symbols(open_orders)
+    assert expected_symbols.issubset(found_symbols), (
+        f"expected open orders on {expected_symbols}, found {found_symbols}"
+    )
 
 
 def _assert_two_by_two_grid_ladder_orders(orders_wrapped: list[dict]) -> None:

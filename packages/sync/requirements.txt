@@ -1,8 +1,13 @@
-starfish-sdk==3.0.0a29
-starfish-identities==3.0.0a29
+starfish-sdk==3.0.0a72
+starfish-identities==3.0.0a72
 # Transitive starfish deps must be pinned explicitly: they are pre-releases, so
 # pip/pants would otherwise resolve the bare names to the latest *stable* (2.x).
-starfish-protocol==3.0.0a29
-starfish-keyring==3.0.0a29
+starfish-protocol==3.0.0a72
+starfish-keyring==3.0.0a72
+# starfish-spaces replaces the vendored packages/dkspaces/dk_spaces_sdk fork
+# (see octobot_sync/mirror/writer.py) — starfish-sharing is its own hard dep
+# (spaces.members / spaces.nodes).
+starfish-spaces==3.0.0a72
+starfish-sharing==3.0.0a72
 python-multipart
 web3

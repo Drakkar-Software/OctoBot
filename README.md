@@ -21,7 +21,7 @@ OctoBot is a **free open-source crypto trading bot** with a **visual user interf
 
 ## The new OctoBot beta is live
 
-The latest release runs in **node mode** by default. Your node acts as the backend for the [new OctoBot interface](https://new.mobile.octobot.cloud/home?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_new_interface) and mobile app, where you manage wallets, automations, and multiple strategies from a unified and secure dashboard.
+The latest release runs in [**node mode**](https://www.octobot.cloud/en/guides/octobot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=node_mode) by default. Your node acts as the backend for the [new OctoBot interface](https://new.mobile.octobot.cloud/home?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_new_interface) and mobile app, where you manage wallets, automations, and multiple strategies from a unified and secure dashboard.
 
 From the node interface, you can also start a **manual OctoBot** instance for backtesting, Telegram, TradingView, and other classic OctoBot workflows.
 
@@ -61,7 +61,7 @@ The [new OctoBot's philosophy](https://www.octobot.cloud/en/blog/next-octobot-on
 2. Self custody: your keys never leave your devices
 3. Zero knowledge privacy: all your data is end-to-end encrypted, no one can read them except you
 
-#### Classic OctoBot: web interface and Telegram
+#### Web interface and Telegram
 
 OctoBot is designed for crypto investors who want to automate their trading strategies in a simple way, using a graphic interface to:
 
@@ -93,7 +93,7 @@ The public (non-beta) OctoBot mobile app is designed for [octobot.cloud](https:/
 
 OctoBot is more than just a strategy execution engine, it can also simulate investments using [risk-free paper trading](https://www.octobot.cloud/en/guides/octobot-usage/simulator?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=risk-free_paper_trading).
 
-Even better, the trading robot comes with its [built-in backtesting engine](https://www.octobot.cloud/en/guides/octobot-usage/backtesting?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting_engine) to help you test and optimize your strategy over a long period of time with a simulated portfolio and historical exchange data.
+Even better, the trading robot comes with its [built-in backtesting engine](https://www.octobot.cloud/en/guides/octobot-usage/backtesting?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=backtesting_engine) to help you test and optimize your strategy over a long period of time with a simulated portfolio and historical exchange data (only available in [manual OctoBots](https://www.octobot.cloud/en/guides/octobot?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=manual_octobots)).
 
 <p align="middle">
   <img alt='Backtesting report using grid trading on eth btc with 8 percent profit' src='../assets/backtesting_report.jpg' width="630px"/>
@@ -176,9 +176,9 @@ OctoBot can be deployed on the cloud or for free on your computer, server or [Ra
 
 ### Deploying OctoBot with one click on DigitalOcean
 
-OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](https://digitalocean.pxf.io/octobot-app).
+OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](https://marketplace.digitalocean.com/apps/octobot).
 
-[![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://digitalocean.pxf.io/start-octobot)
+[![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://marketplace.digitalocean.com/apps/octobot)
 
 ### Using the OctoBot Executable
 
