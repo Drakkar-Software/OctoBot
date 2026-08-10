@@ -19,3 +19,4 @@ def register_workflows() -> None:
     import octobot_node.scheduler.workflows.automation_workflow
     import octobot_node.scheduler.workflows.user_action_workflow
     import octobot_node.scheduler.workflows.dbos_cleanup_workflow
+    import octobot_node.scheduler.workflows.global_view_workflow

@@ -25,6 +25,7 @@ import octobot_commons.logging as logging
 import octobot_node.constants as constants
 import octobot_node.scheduler.scheduler as scheduler_module
 import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
+import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow
 import octobot_node.scheduler.workflows_retention as workflows_retention
 
 
@@ -271,6 +272,7 @@ async def _ensure_schedule(
 async def register_schedules(scheduler: scheduler_module.Scheduler) -> None:
     schedule_inputs: list[dbos.ScheduleInput] = [
         dbos_cleanup_workflow.get_schedule_input(),
+        global_view_workflow.get_schedule_input(),
     ]
     for schedule_input in schedule_inputs:
         await _ensure_schedule(scheduler, schedule_input)
