@@ -98,3 +98,7 @@ class PriorityActionError(AutomationActionError):
 
 class PendingPriorityActionsSkippedError(PriorityActionError):
     """raise when supplied priority actions were not executed and DAG actions would run instead"""
+
+
+class GlobalViewUnsupportedAccountError(ConfigurationError):
+    """raise when global view refresh cannot run for an account type"""

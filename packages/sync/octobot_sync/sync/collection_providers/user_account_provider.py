@@ -127,3 +127,6 @@ class AccountProvider(
 
     def delete_exchange_config(self, address: str, config_id: str) -> None:
         self._delete_item_for_key(address, self.EXCHANGE_CONFIGS_KEY, config_id)
+
+    def list_registered_wallet_ids(self) -> list[str]:
+        return self._storage.list_wallet_storage_keys()

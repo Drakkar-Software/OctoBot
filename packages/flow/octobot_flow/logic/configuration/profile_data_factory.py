@@ -2,11 +2,47 @@ import typing
 
 import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_commons.constants
+import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
 
 import octobot_flow.entities
 
 import tentacles.Meta.Keywords.scripting_library as scripting_library
+
+
+_TRADING_TYPE_TO_EXCHANGE_TYPE: dict[protocol_models.TradingType, trading_enums.ExchangeTypes] = {
+    protocol_models.TradingType.SPOT: trading_enums.ExchangeTypes.SPOT,
+    protocol_models.TradingType.FUTURES: trading_enums.ExchangeTypes.FUTURE,
+    protocol_models.TradingType.OPTIONS: trading_enums.ExchangeTypes.OPTION,
+    protocol_models.TradingType.MARGIN: trading_enums.ExchangeTypes.MARGIN,
+}
+
+
+def exchange_type_from_trading_type(trading_type: protocol_models.TradingType) -> str:
+    return _TRADING_TYPE_TO_EXCHANGE_TYPE[trading_type].value
+
+
+def profile_data_for_account(
+    account: protocol_models.Account,
+    exchange_account: protocol_models.ExchangeAccount,
+    exchange_config: protocol_models.ExchangeConfig,
+    trading_type: protocol_models.TradingType,
+    *,
+    is_simulated: bool,
+) -> profile_data_import.ProfileData:
+    profile_data = profile_data_import.ProfileData(
+        exchanges=[
+            profile_data_import.ExchangeData(
+                internal_name=exchange_config.exchange,
+                exchange_type=exchange_type_from_trading_type(trading_type),
+                exchange_account_id=exchange_account.remote_account_id or account.id,
+                sandboxed=exchange_config.sandboxed,
+            )
+        ]
+    )
+    profile_data.trader.enabled = not is_simulated
+    profile_data.trader_simulator.enabled = is_simulated
+    return profile_data
 
 
 def _tentacles_for_exchange_account_details(

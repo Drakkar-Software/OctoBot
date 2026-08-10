@@ -17,6 +17,7 @@
 
 import octobot_sync.sync.collection_providers.user_account_authentication_provider as user_account_authentication_provider_module
 import octobot_sync.sync.collection_providers.user_account_provider as user_account_provider_module
+import octobot_sync.sync.collection_providers.user_account_history_provider as user_account_history_provider_module
 import octobot_sync.sync.collection_providers.user_account_trading_provider as user_account_trading_provider_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as user_strategy_provider_module
 
@@ -25,11 +26,13 @@ AccountAuthenticationProvider = (
     user_account_authentication_provider_module.AccountAuthenticationProvider
 )
 AccountTradingProvider = user_account_trading_provider_module.AccountTradingProvider
+AccountHistoryProvider = user_account_history_provider_module.AccountHistoryProvider
 StrategyProvider = user_strategy_provider_module.StrategyProvider
 
 __all__ = [
     "AccountProvider",
     "AccountAuthenticationProvider",
     "AccountTradingProvider",
+    "AccountHistoryProvider",
     "StrategyProvider",
 ]

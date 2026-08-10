@@ -14,3 +14,5 @@ DEFAULT_EXTERNAL_TRIGGER_ONLY_NO_ORDER_TIMEFRAME = commons_enums.TimeFrames.ONE_
 # Copy-trading mirrored open-order grace (aligned with octobot_copy fill timeout by default)
 DEFAULT_COPY_TRADING_ORPHAN_CANCEL_GRACE_SECONDS = float(copy_constants.FILL_ORDER_TIMEOUT)
 DEFAULT_COPY_TRADING_ORPHAN_GRACE_ABORT_THRESHOLD = 2
+
+PORTFOLIO_HISTORY_SNAPSHOT_INTERVAL_SECONDS = 12 * 60 * 60
