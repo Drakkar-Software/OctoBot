@@ -14,8 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import copy
+import mock
 import pytest
 
+import octobot_commons.profiles as commons_profiles
+import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_trading.util as util
 import octobot_trading.constants as trading_constants
 import octobot_commons.symbols as symbol_util
@@ -205,3 +208,43 @@ def _replace_value_by_key(pairs_by_cypto, filtered_key, replaced_value):
 
 def _select_by_base_or_quote(pairs, base_or_quote):
     return [s for s in pairs if base_or_quote in symbol_util.parse_symbol(s).base_and_quote()]
+
+
+class TestGetConfig:
+    def test_skips_tentacles_setup_rebuild_without_binding_shared_setup(self):
+        profile_data = profile_data_module.ProfileData()
+        profile_data.trader_simulator.enabled = True
+        exchange_data = mock.Mock()
+        exchange_data.exchange_details.name = "binance"
+        exchange_data.portfolio_details.content = {}
+        market = mock.Mock()
+        market.time_frame = "1h"
+        exchange_data.markets = [market]
+        exchange_data.auth_details.sandboxed = False
+        exchange_data.auth_details.api_key = None
+        exchange_data.auth_details.api_secret = None
+        exchange_data.auth_details.api_password = None
+        exchange_data.auth_details.access_token = None
+        exchange_data.auth_details.exchange_type = commons_constants.CONFIG_EXCHANGE_SPOT
+        tentacles_setup_config = mock.Mock()
+        tentacles_setup_config.profile = None
+        with (
+            mock.patch(
+                "octobot_tentacles_manager.configuration.profile_tentacles_util.build_setup_config_from_profile_data",
+            ) as build_setup_mock,
+            mock.patch(
+                "octobot_trading.util.config_util.get_exchange_config",
+                return_value={},
+            ),
+        ):
+            configuration = util.get_config(
+                profile_data,
+                exchange_data,
+                tentacles_setup_config,
+                auth=False,
+                ignore_symbols_in_exchange_init=False,
+                use_exchange_data_portfolio=True,
+            )
+        build_setup_mock.assert_not_called()
+        assert tentacles_setup_config.profile is None
+        assert configuration.profile.tentacles_setup_config is None

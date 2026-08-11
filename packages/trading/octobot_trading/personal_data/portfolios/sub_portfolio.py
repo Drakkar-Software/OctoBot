@@ -29,8 +29,10 @@ class SubPortfolio(portfolio_class.Portfolio):
         super().__init__(config, trader)
 
     # overwrite parent update_portfolio_balance
-    def update_portfolio_from_balance(self, balance, force_replace=True):
-        modified = self.parent_portfolio.update_portfolio_from_balance(balance, force_replace=force_replace)
+    def update_portfolio_from_balance(self, balance, force_replace=True, should_log_update=True):
+        modified = self.parent_portfolio.update_portfolio_from_balance(
+            balance, force_replace=force_replace, should_log_update=should_log_update,
+        )
         self.update_from_parent()
         return modified
 

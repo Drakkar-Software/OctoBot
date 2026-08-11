@@ -9,47 +9,18 @@ import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
+import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
 import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
 
 
-_TRADING_TYPE_TO_EXCHANGE_TYPE: dict[protocol_models.TradingType, trading_enums.ExchangeTypes] = {
-    protocol_models.TradingType.SPOT: trading_enums.ExchangeTypes.SPOT,
-    protocol_models.TradingType.FUTURES: trading_enums.ExchangeTypes.FUTURE,
-    protocol_models.TradingType.OPTIONS: trading_enums.ExchangeTypes.OPTION,
-    protocol_models.TradingType.MARGIN: trading_enums.ExchangeTypes.MARGIN,
-}
-
-_API_KEY_RIGHT_TO_ACCOUNT_PERMISSION: dict[
-    trading_enums.APIKeyRights,
-    protocol_models.AccountPermission,
-] = {
-    trading_enums.APIKeyRights.READING: protocol_models.AccountPermission.READ,
-    trading_enums.APIKeyRights.SPOT_TRADING: protocol_models.AccountPermission.SPOT_TRADING,
-    trading_enums.APIKeyRights.FUTURES_TRADING: protocol_models.AccountPermission.FUTURES_TRADING,
-    trading_enums.APIKeyRights.WITHDRAWALS: protocol_models.AccountPermission.WITHDRAW,
-}
-
-_OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED: list[trading_enums.APIKeyRights] = [
-    trading_enums.APIKeyRights.READING,
-    trading_enums.APIKeyRights.SPOT_TRADING,
-    trading_enums.APIKeyRights.FUTURES_TRADING,
-]
-
-
-def _exchange_type_from_trading_type(
-    trading_type: protocol_models.TradingType,
-) -> str:
-    return _TRADING_TYPE_TO_EXCHANGE_TYPE[trading_type].value
-
-
 async def _fetch_api_key_rights(exchange) -> list[trading_enums.APIKeyRights]:
     try:
         return await exchange.get_permissions()
     except trading_errors.NotSupported:
-        return list(_OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED)
+        return list(protocol_trading_mapping.OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED)
 
 
 def _account_permissions_from_api_key_rights(
@@ -58,7 +29,9 @@ def _account_permissions_from_api_key_rights(
     return [
         account_permission
         for api_key_right in api_key_rights
-        if (account_permission := _API_KEY_RIGHT_TO_ACCOUNT_PERMISSION.get(api_key_right)) is not None
+        if (
+            account_permission := protocol_trading_mapping.API_KEY_RIGHT_TO_ACCOUNT_PERMISSION.get(api_key_right)
+        ) is not None
     ]
 
 
@@ -115,7 +88,7 @@ def _encrypted_exchange_auth_details(
 ) -> exchange_data_module.ExchangeAuthDetails:
     if authentication is None:
         return exchange_data_module.ExchangeAuthDetails(
-            exchange_type=_exchange_type_from_trading_type(trading_type),
+            exchange_type=protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(trading_type).value,
             sandboxed=sandboxed,
             exchange_account_id=exchange_account.remote_account_id,
         )
@@ -127,7 +100,7 @@ def _encrypted_exchange_auth_details(
         api_key=fields_utils.encrypt(authentication.api_key).decode(),
         api_secret=fields_utils.encrypt(authentication.api_secret).decode(),
         api_password=api_password,
-        exchange_type=_exchange_type_from_trading_type(trading_type),
+        exchange_type=protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(trading_type).value,
         sandboxed=sandboxed,
         exchange_account_id=exchange_account.remote_account_id,
     )
@@ -177,7 +150,7 @@ async def _check_exchange_account_state(
         exchanges=[
             commons_profile_data.ExchangeData(
                 internal_name=exchange_config.exchange,
-                exchange_type=_exchange_type_from_trading_type(trading_type),
+                exchange_type=protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(trading_type).value,
                 exchange_account_id=exchange_account.remote_account_id,
                 sandboxed=exchange_config.sandboxed,
             )
@@ -186,7 +159,7 @@ async def _check_exchange_account_state(
     profile_data.trader.enabled = True
     exchange_data = exchange_data_module.exchange_data_factory(
         exchange_internal_name=exchange_config.exchange,
-        exchange_type=_exchange_type_from_trading_type(trading_type),
+        exchange_type=protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(trading_type).value,
         sandboxed=exchange_config.sandboxed,
         auth_details=_encrypted_exchange_auth_details(
             exchange_account,

@@ -17,6 +17,7 @@ import octobot_commons.profiles.profile_types.profile as profile_module
 import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_commons.profiles.profile_storage as profile_storage_module
+import octobot_commons.profiles.profile_types.ephemeral_profile as ephemeral_profile_module
 import octobot_commons.profiles.profile_types.sync_profile as sync_profile_module
 import octobot_commons.profiles.profile_data_import as profile_data_import_module
 import octobot_sync.sync.collection_backend.errors as collection_errors
@@ -802,3 +803,26 @@ class TestProfileStorageImportProfileDataFunctional:
             profile_data_import_module.IMPORTED_PROFILES_DEFAULT_EXTRA_BACKTESTING_TIMEFRAME
         ]
         assert profile.profile_id
+
+
+class TestProfileStorageActivateProfileInitTentaclesSetup:
+    def test_init_tentacles_setup_runs_when_flag_true_even_if_setup_pre_bound(self):
+        profile_data = profile_data_module.ProfileData()
+        profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
+        pre_bound_setup = mock.Mock()
+        profile.bind_tentacles_setup_config(pre_bound_setup)
+        profile_storage = profile_storage_module.ProfileStorage(None, None)
+        with mock.patch.object(profile, "init_tentacles_setup_config") as init_mock:
+            profile_storage.activate_profile(profile, init_tentacles_setup=True)
+        init_mock.assert_called_once()
+
+    def test_init_tentacles_setup_skipped_when_flag_false(self):
+        profile_data = profile_data_module.ProfileData()
+        profile = ephemeral_profile_module.EphemeralProfile.from_profile_data(profile_data)
+        pre_bound_setup = mock.Mock()
+        profile.bind_tentacles_setup_config(pre_bound_setup)
+        profile_storage = profile_storage_module.ProfileStorage(None, None)
+        with mock.patch.object(profile, "init_tentacles_setup_config") as init_mock:
+            profile_storage.activate_profile(profile, init_tentacles_setup=False)
+        init_mock.assert_not_called()
+        assert profile.tentacles_setup_config is pre_bound_setup

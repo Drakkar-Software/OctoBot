@@ -378,6 +378,9 @@ class ExchangeManager(util.Initializable):
         config_exchange = self.config[common_constants.CONFIG_EXCHANGES][exchange_name]
         return config_exchange.get(common_constants.CONFIG_EXCHANGE_SUB_ACCOUNT, None)
 
+    def should_log_exchange_lifecycle_debug(self) -> bool:
+        return not self.exchange_only
+
     def is_storage_enabled(self):
         return self.enable_storage and not self.exchange_only and self.bot_id is not None
 

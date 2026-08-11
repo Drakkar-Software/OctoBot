@@ -18,11 +18,13 @@ import tentacles.Trading.Mode.dca_trading_mode.dca_trading as dca_trading
 
 from .util import dag_assertions as dag_assertions_module
 from .util import dca_workflow as dca_sim_util
+from .util import authenticator_mocks as authenticator_mocks_module
 from .util import price_mocks as price_mocks_module
 from .util import protocol_assertions as protocol_assertions_module
 from .util import user_action_assertions as user_action_assertions_module
 from .util import workflow_common as workflow_common_module
 
+import octobot.community.authentication as community_authentication_module
 import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_trading.enums as trading_enums_module
@@ -109,8 +111,18 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             strategy_id=dca_sim_util.SIMULATOR_DCA_DEFAULT_STRATEGY_ID,
         )
 
+        authentication_instance = authenticator_mocks_module.build_community_authentication(
+            workflow_common_module.SIMULATOR_GRID_TEST_PRIVATE_KEY,
+            workflow_common_module.SIMULATOR_GRID_TEST_WALLET_PASSPHRASE,
+        )
+
         # Patch market data and providers, then create the maximum-evaluators DCA automation.
         with (
+            mock.patch.object(
+                community_authentication_module.CommunityAuthentication,
+                "instance",
+                return_value=authentication_instance,
+            ),
             mock.patch.object(
                 octobot_flow_repositories_exchange_module.TickersRepository,
                 "fetch_tickers",
@@ -141,6 +153,8 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 ),
             ),
         ):
+            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+            workflow_common_module.seed_empty_account_trading_state(user_id, _DCA_ACCOUNT_ID)
             try:
                 await asyncio.wait_for(
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(

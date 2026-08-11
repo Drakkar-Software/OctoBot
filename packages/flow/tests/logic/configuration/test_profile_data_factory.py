@@ -49,13 +49,6 @@ class TestCreateProfileDataHollaexUrl:
         assert profile_data.get_config_by_tentacle() == {}
 
 
-class TestExchangeTypeFromTradingType:
-    def test_maps_spot_trading_type(self):
-        assert profile_data_factory_module.exchange_type_from_trading_type(
-            protocol_models.TradingType.SPOT,
-        ) == trading_enums.ExchangeTypes.SPOT.value
-
-
 class TestProfileDataForAccount:
     def test_enables_trader_for_real_account(self):
         exchange_account = protocol_models.ExchangeAccount(

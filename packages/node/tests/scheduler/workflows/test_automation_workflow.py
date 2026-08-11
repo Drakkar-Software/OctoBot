@@ -242,6 +242,13 @@ def _trading_signal_update_envelope(signal_dicts: list[dict]) -> dict[str, typin
     ).to_dict(include_default_values=False)
 
 
+def _forced_trigger_update_envelope() -> dict[str, typing.Any]:
+    return params.AutomationWorkflowActionUpdate(
+        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
+        actions_details=[],
+    ).to_dict(include_default_values=False)
+
+
 @pytest.fixture
 def parsed_inputs():
     task = octobot_node.models.Task(
@@ -772,14 +779,14 @@ class TestExecuteIteration:
             "octobot_node.scheduler.workflows.automation_workflow.time.time",
             return_value=fixed_now,
         ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.accounts_trading_protocol,
-            "update_account_trading",
-        ) as update_account_trading_mock:
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ) as persist_account_trading_mock:
             result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
                 inputs, None
             )
 
-        update_account_trading_mock.assert_not_called()
+        persist_account_trading_mock.assert_not_called()
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
         assert parsed_progress_status.error == expected_error_status
         assert parsed_progress_status.error_message == str(run_side_effect)
@@ -893,19 +900,16 @@ class TestExecuteIteration:
             "OctoBotActionsJob",
             mock_octobot_actions_job_class,
         ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.accounts_trading_protocol,
-            "update_account_trading",
-        ) as update_account_trading_mock:
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ) as persist_account_trading_mock:
             await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
                 inputs, None
             )
 
-        update_account_trading_mock.assert_called_once_with(
+        persist_account_trading_mock.assert_called_once_with(
             task.user_id,
-            "acc-sync-1",
-            [open_order],
-            [],
-            [],
+            automation_state.to_dict(include_default_values=False),
         )
 
     @pytest.mark.asyncio
@@ -957,8 +961,8 @@ class TestExecuteIteration:
             "OctoBotActionsJob",
             mock_octobot_actions_job_class,
         ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.accounts_trading_protocol,
-            "update_account_trading",
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading",
             side_effect=wallet_backend_errors_module.WalletNotFoundError("Wallet not found"),
         ):
             result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
@@ -997,14 +1001,14 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
             "octobot_node.scheduler.workflows.automation_workflow.time.time",
             return_value=fixed_now,
         ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.accounts_trading_protocol,
-            "update_account_trading",
-        ) as update_account_trading_mock:
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ) as persist_account_trading_mock:
             result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
                 inputs, None
             )
 
-        update_account_trading_mock.assert_not_called()
+        persist_account_trading_mock.assert_not_called()
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
         assert parsed_progress_status.postponed_iteration is True
         assert parsed_progress_status.next_step_at == scheduled_to
@@ -1274,6 +1278,93 @@ class TestProcessPendingPriorityActionsAndReschedule:
             )
         assert should_continue is True
         mock_wait.assert_awaited_once_with(parsed_inputs, 0)
+        mock_schedule.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_pending_ignores_forced_trigger_after_iteration(
+        self, import_automation_workflow, parsed_inputs, iteration_result
+    ):
+        mock_wait = mock.AsyncMock(
+            side_effect=[
+                _forced_trigger_update_envelope(),
+                None,
+            ]
+        )
+        mock_schedule = mock.AsyncMock()
+        mock_iteration = mock.AsyncMock()
+
+        with mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_wait_and_trigger_on_actions_update",
+            mock_wait,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "execute_iteration",
+            mock_iteration,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_schedule_next_iteration",
+            mock_schedule,
+        ):
+            should_continue, _ = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._process_pending_priority_actions_and_reschedule(
+                parsed_inputs, iteration_result
+            )
+        assert should_continue is True
+        assert mock_wait.await_count == 2
+        mock_iteration.assert_not_awaited()
+        mock_schedule.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_pending_still_processes_user_actions_after_ignoring_forced_trigger(
+        self, import_automation_workflow, parsed_inputs, iteration_result
+    ):
+        result_with_next = params.AutomationWorkflowIterationResult(
+            progress_status=params.ProgressStatus(
+                latest_step="step_1",
+                next_step="step_2",
+                next_step_at=0.0,
+                remaining_steps=1,
+                error=None,
+                should_stop=False,
+            ),
+            next_iteration_description='{"state": {"automation": {}}}',
+            has_next_actions=True,
+        )
+        mock_wait = mock.AsyncMock(
+            side_effect=[
+                _forced_trigger_update_envelope(),
+                _user_actions_update_envelope([{"action": "stop"}]),
+                None,
+            ]
+        )
+        mock_iteration = mock.AsyncMock(
+            return_value=result_with_next.to_dict(include_default_values=False)
+        )
+        mock_schedule = mock.AsyncMock()
+
+        with mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_wait_and_trigger_on_actions_update",
+            mock_wait,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "execute_iteration",
+            mock_iteration,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_should_continue_workflow",
+            mock.Mock(return_value=True),
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_schedule_next_iteration",
+            mock_schedule,
+        ):
+            should_continue, _ = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._process_pending_priority_actions_and_reschedule(
+                parsed_inputs, iteration_result
+            )
+        assert should_continue is True
+        assert mock_wait.await_count == 3
+        mock_iteration.assert_awaited_once()
         mock_schedule.assert_called_once()
 
     @pytest.mark.asyncio

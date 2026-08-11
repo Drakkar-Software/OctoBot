@@ -114,6 +114,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def __init__(self, config=None, backend_url=None, backend_key=None, use_as_singleton=True):
         super().__init__(use_as_singleton=use_as_singleton)
+        self._use_as_singleton = use_as_singleton
         self.config: typing.Optional[commons_configuration.Configuration] = config
         self.backend_url: str = backend_url or identifiers_provider.IdentifiersProvider.BACKEND_URL
         self.backend_key: str = backend_key or identifiers_provider.IdentifiersProvider.BACKEND_KEY
@@ -600,7 +601,8 @@ class CommunityAuthentication(authentication.Authenticator):
             self._clear_bot_scoped_config()
 
     async def stop(self):
-        self.logger.debug("Stopping ...")
+        if self._use_as_singleton:
+            self.logger.debug("Stopping ...")
         if self._fetch_account_task is not None and not self._fetch_account_task.done():
             self._fetch_account_task.cancel()
         await self.supabase_client.aclose()
@@ -615,7 +617,8 @@ class CommunityAuthentication(authentication.Authenticator):
             await session.content_client.close()
             await session.account_client.close()
         self._dk_sessions.clear()
-        self.logger.debug("Stopped")
+        if self._use_as_singleton:
+            self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
         if resp_status == 200:

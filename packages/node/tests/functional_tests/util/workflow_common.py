@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
+import os
 import time
 import typing
 import uuid
@@ -15,7 +16,9 @@ import dbos
 import pytest
 
 import octobot_sync.chain.evm as sync_evm_module
+import octobot_sync.constants as sync_constants_module
 import octobot_sync.server as sync_server_module
+import octobot_sync.sync.collection_providers as collection_providers_module
 import octobot_trading.constants as trading_constants_module
 import octobot_trading.enums as trading_enums_module
 
@@ -43,6 +46,34 @@ SIMULATOR_GRID_TEST_COMMUNITY_USER_ID = sync_server_module.derive_user_id(
 
 DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS = 0.5
 DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS = DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS
+
+_XDIST_FUNCTIONAL_TIMEOUT_SCALE = 2.25
+
+
+def functional_timeout_seconds(base_seconds: float) -> float:
+    """Scale tight poll budgets when pytest-xdist runs concurrent heavy workers."""
+    if os.getenv("PYTEST_XDIST_WORKER"):
+        return base_seconds * _XDIST_FUNCTIONAL_TIMEOUT_SCALE
+    return base_seconds
+
+
+def seed_empty_account_trading_state(user_id: str, account_id: str) -> None:
+    """
+    Mirror CreateAccountActionExecutor: AccountTradingState must exist before
+    automation iterations call persist_account_trading.
+    Call inside auth mock context so encrypted storage can resolve wallet keys.
+    """
+    collection_providers_module.AccountTradingProvider.instance().save_state(
+        user_id,
+        account_id,
+        protocol_models_module.AccountTradingState(
+            version=sync_constants_module.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=protocol_models_module.AccountTrading(
+                updated_at=datetime.datetime.now(datetime.UTC),
+            ),
+        ),
+    )
+
 
 _FUNCTIONAL_PROTOCOL_ACCOUNT_TS = datetime.datetime(2026, 4, 1, 12, 0, 0, tzinfo=datetime.UTC)
 SIMULATOR_FUNCTIONAL_STRATEGY_VERSION = "1.0.0"

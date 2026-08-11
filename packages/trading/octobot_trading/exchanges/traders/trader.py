@@ -115,9 +115,10 @@ class Trader(util.Initializable):
             await self.exchange_manager.register_trader(self)
             if self.__class__.is_paused(self.config):
                 self.logger.warning(f"Trading on {self.exchange_manager.exchange_name} is paused, it won't be trading")
-        self.logger.debug(
-            f"{'Enabled' if self.is_enabled else 'Disabled'} on {self.exchange_manager.exchange_name}"
-        )
+        if self.exchange_manager.should_log_exchange_lifecycle_debug():
+            self.logger.debug(
+                f"{'Enabled' if self.is_enabled else 'Disabled'} on {self.exchange_manager.exchange_name}"
+            )
 
     def set_is_enabled(self, enabled: bool):
         self.logger.info(

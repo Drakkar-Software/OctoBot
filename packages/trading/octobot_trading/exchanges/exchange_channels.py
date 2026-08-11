@@ -146,9 +146,10 @@ async def _create_producer(
     producer_instance = producer(exchange_channel.get_chan(producer.CHANNEL_NAME, exchange_manager.id))
     if exchanges.is_channel_managed_by_websocket(exchange_manager, producer.CHANNEL_NAME):
         # websocket is handling this channel: initialize data if required
-        exchange_manager.logger.debug(
-            f"{exchange_manager.exchange_name} {producer.CHANNEL_NAME} channel is updated by websocket feed"
-        )
+        if exchange_manager.should_log_exchange_lifecycle_debug():
+            exchange_manager.logger.debug(
+                f"{exchange_manager.exchange_name} {producer.CHANNEL_NAME} channel is updated by websocket feed"
+            )
         start_producers = \
             not exchanges.is_channel_fully_managed_by_websocket(exchange_manager, producer.CHANNEL_NAME)
         if exchanges.is_websocket_feed_requiring_init(exchange_manager, producer.CHANNEL_NAME):
@@ -161,18 +162,20 @@ async def _create_producer(
                 )
     if start_producers:
         # no websocket for this channel (or channel is not fully managed by ws): start a producer
-        exchange_manager.logger.debug(
-            f"{exchange_manager.exchange_name} {producer.CHANNEL_NAME} channel "
-            f"is updated by {producer_instance.__class__.__name__}"
-        )
+        if exchange_manager.should_log_exchange_lifecycle_debug():
+            exchange_manager.logger.debug(
+                f"{exchange_manager.exchange_name} {producer.CHANNEL_NAME} channel "
+                f"is updated by {producer_instance.__class__.__name__}"
+            )
         await producer_instance.run()
     elif (
         subscribe_indirect_producers_if_not_started
         and isinstance(producer_instance, exchange_channel.IndirectExchangeChannelProducer)
     ):
-        exchange_manager.logger.debug(
-            f"{exchange_manager.exchange_name} {producer.CHANNEL_NAME} channel subscribing as indirect producer"
-        )
+        if exchange_manager.should_log_exchange_lifecycle_debug():
+            exchange_manager.logger.debug(
+                f"{exchange_manager.exchange_name} {producer.CHANNEL_NAME} channel subscribing as indirect producer"
+            )
         await producer_instance.subscribe()
     else:
         # register producer to be able to reach it later on in modify() if needed

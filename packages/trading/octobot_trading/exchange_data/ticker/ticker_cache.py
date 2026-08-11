@@ -65,20 +65,31 @@ class TickerCache:
             f"Refreshed {len(tickers)} ({len(tickers)}/{len(merged_tickers)}) tickers cache for {exchange_name} {exchange_type}{sandbox}"
         )
         self._ALL_TICKERS_BY_EXCHANGE_KEY[key] = merged_tickers
-        self._ALL_PARSED_SYMBOLS_BY_MERGED_SYMBOLS_BY_EXCHANGE_KEY[key] = {
-            octobot_commons.symbols.parse_symbol(symbol).merged_str_symbol(market_separator=""):
-                octobot_commons.symbols.parse_symbol(symbol)
-            for symbol in merged_tickers
-        }
+        parsed_symbols_by_merged_symbol = {}
+        for symbol in merged_tickers:
+            try:
+                parsed_symbol = octobot_commons.symbols.parse_symbol(symbol)
+                parsed_symbols_by_merged_symbol[
+                    parsed_symbol.merged_str_symbol(market_separator="")
+                ] = parsed_symbol
+            except (AttributeError, ValueError):
+                continue
+        self._ALL_PARSED_SYMBOLS_BY_MERGED_SYMBOLS_BY_EXCHANGE_KEY[key] = parsed_symbols_by_merged_symbol
         if exchange_type == octobot_commons.constants.CONFIG_EXCHANGE_FUTURE:
-            self._ALL_PARSED_SYMBOLS_BY_FUTURE_MERGED_SYMBOLS_BY_EXCHANGE_KEY[key] = {
-                **self._ALL_PARSED_SYMBOLS_BY_MERGED_SYMBOLS_BY_EXCHANGE_KEY[key],
-                **{
-                    octobot_commons.symbols.parse_symbol(symbol).merged_str_base_and_quote_only_symbol(market_separator=""):
-                        octobot_commons.symbols.parse_symbol(symbol)
-                    for symbol in merged_tickers
-                }
+            parsed_future_symbols_by_merged_symbol = {
+                **parsed_symbols_by_merged_symbol,
             }
+            for symbol in merged_tickers:
+                try:
+                    parsed_symbol = octobot_commons.symbols.parse_symbol(symbol)
+                    parsed_future_symbols_by_merged_symbol[
+                        parsed_symbol.merged_str_base_and_quote_only_symbol(market_separator="")
+                    ] = parsed_symbol
+                except (AttributeError, ValueError):
+                    continue
+            self._ALL_PARSED_SYMBOLS_BY_FUTURE_MERGED_SYMBOLS_BY_EXCHANGE_KEY[key] = (
+                parsed_future_symbols_by_merged_symbol
+            )
 
     def reset_all_tickers_cache(self):
         self._ALL_TICKERS_BY_EXCHANGE_KEY.clear()

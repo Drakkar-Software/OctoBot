@@ -584,6 +584,48 @@ class TestCcxtConnectorGetAllCurrenciesPriceTicker:
         persist_markets_cache_mock.assert_not_called()
 
 
+class TestLoadSymbolMarketsLock:
+    async def test_concurrent_load_symbol_markets_fetches_once(self, exchange_manager):
+        ccxt_connector = exchange_connectors.CCXTConnector(exchange_manager.config, exchange_manager)
+        ccxt_connector.client = mock.Mock()
+        ccxt_connector.client.__class__.__name__ = "binance"
+        ccxt_connector.client.urls = {"api": {"public": "https://api.binance.com"}}
+        ccxt_connector.client.apiKey = "test-key"
+        ccxt_connector.exchange_manager.exchange.requires_authentication_for_this_configuration_only = (
+            mock.Mock(return_value=True)
+        )
+        ccxt_connector._persist_markets_cache = mock.Mock()
+        markets_loaded = False
+
+        def load_from_cache(*_args, **_kwargs):
+            if not markets_loaded:
+                raise KeyError()
+
+        load_count = 0
+
+        async def delayed_load(*_args, **_kwargs):
+            nonlocal load_count, markets_loaded
+            load_count += 1
+            markets_loaded = True
+            import asyncio
+            await asyncio.sleep(0.05)
+
+        ccxt_connector._load_markets = delayed_load
+
+        with mock.patch.object(
+            ccxt_client_util,
+            "load_markets_from_cache",
+            side_effect=load_from_cache,
+        ):
+            import asyncio
+            await asyncio.gather(
+                ccxt_connector.load_symbol_markets(reload=False),
+                ccxt_connector.load_symbol_markets(reload=False),
+            )
+
+        assert load_count == 1
+
+
 def _get_fees(type, currency, rate, cost):
     return {
         enums.FeePropertyColumns.TYPE.value: type,

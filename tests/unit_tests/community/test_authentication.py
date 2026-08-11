@@ -510,6 +510,39 @@ async def test_stop(auth):
     auth._fetch_account_task.cancel.assert_called_once()
 
 
+class TestCommunityAuthenticationStopLogging:
+    async def test_non_singleton_stop_does_not_log_lifecycle(self):
+        auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        auth._use_as_singleton = False
+        auth.logger = mock.Mock()
+        auth._fetch_account_task = None
+        auth.supabase_client = mock.Mock(aclose=mock.AsyncMock())
+        auth._community_feed = None
+        auth.community_bot = mock.Mock(clear=mock.Mock())
+        auth._sync_client = None
+
+        await auth.stop()
+
+        logged_messages = [call.args[0] for call in auth.logger.debug.call_args_list]
+        assert "Stopping ..." not in logged_messages
+        assert "Stopped" not in logged_messages
+
+    async def test_singleton_stop_logs_lifecycle(self):
+        auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        auth._use_as_singleton = True
+        auth.logger = mock.Mock()
+        auth._fetch_account_task = None
+        auth.supabase_client = mock.Mock(aclose=mock.AsyncMock())
+        auth._community_feed = None
+        auth.community_bot = mock.Mock(clear=mock.Mock())
+        auth._sync_client = None
+
+        await auth.stop()
+
+        auth.logger.debug.assert_any_call("Stopping ...")
+        auth.logger.debug.assert_any_call("Stopped")
+
+
 def test_is_node_wallet_configured(auth):
     auth._wallet_backend = mock.Mock()
     auth._wallet_backend.list_wallets.return_value = []

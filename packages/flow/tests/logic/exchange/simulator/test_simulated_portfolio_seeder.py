@@ -6,7 +6,6 @@ import mock
 
 import octobot_commons.constants as commons_constants
 import octobot_protocol.models as protocol_models
-import octobot_trading.api as trading_api
 
 import octobot_flow.logic.exchange.simulator.simulated_portfolio_seeder as simulated_portfolio_seeder_module
 
@@ -42,20 +41,18 @@ class TestSeedSimulatedPortfolio:
                 ),
             ),
         )
+        portfolio_manager = mock.Mock()
         exchange_manager = mock.Mock()
-        with mock.patch.object(
-            trading_api,
-            "set_simulated_portfolio_initial_config",
-        ) as set_portfolio_mock:
-            simulated_portfolio_seeder_module.seed_simulated_portfolio(exchange_manager, account)
-        set_portfolio_mock.assert_called_once_with(
-            exchange_manager,
+        exchange_manager.exchange_personal_data.portfolio_manager = portfolio_manager
+        simulated_portfolio_seeder_module.seed_simulated_portfolio(exchange_manager, account)
+        portfolio_manager.apply_forced_portfolio.assert_called_once_with(
             {
                 "USDT": {
                     commons_constants.PORTFOLIO_AVAILABLE: 900.0,
                     commons_constants.PORTFOLIO_TOTAL: 1000.0,
                 },
             },
+            update_available_funds_from_open_orders=True,
         )
 
     def test_skips_when_account_has_no_assets(self):
@@ -71,10 +68,8 @@ class TestSeedSimulatedPortfolio:
                 ),
             ),
         )
+        portfolio_manager = mock.Mock()
         exchange_manager = mock.Mock()
-        with mock.patch.object(
-            trading_api,
-            "set_simulated_portfolio_initial_config",
-        ) as set_portfolio_mock:
-            simulated_portfolio_seeder_module.seed_simulated_portfolio(exchange_manager, account)
-        set_portfolio_mock.assert_not_called()
+        exchange_manager.exchange_personal_data.portfolio_manager = portfolio_manager
+        simulated_portfolio_seeder_module.seed_simulated_portfolio(exchange_manager, account)
+        portfolio_manager.apply_forced_portfolio.assert_not_called()

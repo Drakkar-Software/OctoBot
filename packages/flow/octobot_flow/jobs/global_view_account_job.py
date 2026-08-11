@@ -5,11 +5,13 @@ import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
+import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
 import octobot_flow.entities
 import octobot_flow.errors
 import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
 import octobot_flow.logic.configuration.profile_data_factory as profile_data_factory_module
+import octobot_flow.logic.exchange.simulator.simulated_order_fill_detector as simulated_order_fill_detector_module
 import octobot_flow.logic.exchange.simulator.simulated_portfolio_seeder as simulated_portfolio_seeder_module
 import octobot_flow.logic.global_view.account_refresh_builder as account_refresh_builder_module
 import octobot_flow.logic.global_view.exchange_account_refresh as exchange_account_refresh_module
@@ -47,6 +49,14 @@ class GlobalViewAccountJob:
             self.user_id,
             account.id,
         )
+        previous_open_orders = account_state_persistence_module.load_previous_open_orders(
+            self.user_id,
+            account.id,
+        )
+        persist_open_orders = (
+            not self.context.has_bound_automation
+            and bool(previous_open_orders)
+        )
         profile_data = profile_data_factory_module.profile_data_for_account(
             account,
             self.context.exchange_account,
@@ -56,7 +66,7 @@ class GlobalViewAccountJob:
         )
         exchange_data = exchange_data_module.exchange_data_factory(
             exchange_internal_name=self.context.exchange_config.exchange,
-            exchange_type=profile_data_factory_module.exchange_type_from_trading_type(self.context.trading_type),
+            exchange_type=protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(self.context.trading_type).value,
             sandboxed=self.context.exchange_config.sandboxed,
             auth_details=self.context.auth_details,
         )
@@ -69,11 +79,24 @@ class GlobalViewAccountJob:
         ) as exchange_manager:
             if account.is_simulated:
                 simulated_portfolio_seeder_module.seed_simulated_portfolio(exchange_manager, account)
-            exchange_refresh_result = await exchange_account_refresh_module.refresh_exchange_account(
-                exchange_manager,
-                self.context.trading_type,
-                previous_open_order_exchange_ids,
-            )
+                exchange_refresh_result = await exchange_account_refresh_module.refresh_exchange_account(
+                    exchange_manager,
+                    self.context.trading_type,
+                    previous_open_order_exchange_ids,
+                    is_simulated=True,
+                    previous_open_orders=previous_open_orders,
+                )
+            else:
+                open_order_symbols = simulated_order_fill_detector_module.symbols_from_open_orders(
+                    previous_open_orders,
+                )
+                exchange_refresh_result = await exchange_account_refresh_module.refresh_exchange_account(
+                    exchange_manager,
+                    self.context.trading_type,
+                    previous_open_order_exchange_ids,
+                    fetch_open_orders=bool(open_order_symbols),
+                    open_order_symbols=open_order_symbols,
+                )
 
         refresh_result = account_refresh_builder_module.build_global_view_account_refresh_result(
             self.user_id,
@@ -84,5 +107,6 @@ class GlobalViewAccountJob:
             self.user_id,
             account.id,
             refresh_result,
+            persist_open_orders=persist_open_orders,
         )
         return refresh_result

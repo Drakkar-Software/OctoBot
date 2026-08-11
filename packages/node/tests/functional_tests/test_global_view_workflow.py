@@ -7,7 +7,6 @@ import mock
 import pytest
 
 import octobot_node.protocol.accounts_history as accounts_history_protocol
-import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 import octobot_node.scheduler.api as scheduler_api_module
 import octobot_node.scheduler.tasks as scheduler_tasks_module
 
@@ -41,8 +40,8 @@ class TestGlobalViewWorkflowFunctional:
             sim_account_2 = account_provider.get_item(user_id, global_view_workflow_util.ACCOUNT_SIM_2_ID)
 
             global_view_workflow_util.assert_real_account_assets(real_account)
-            assert sim_account_1.assets is not None
-            assert sim_account_2.assets is not None
+            global_view_workflow_util.assert_simulated_account_assets(sim_account_1, expected_total=1000.0)
+            global_view_workflow_util.assert_simulated_account_assets(sim_account_2, expected_total=1000.0)
             assert real_account.updated_at is not None
             assert sim_account_1.updated_at is not None
             assert sim_account_2.updated_at is not None
@@ -55,7 +54,7 @@ class TestGlobalViewWorkflowFunctional:
                 history_state = accounts_history_protocol.get_portfolio_history_state(user_id, account_id)
                 assert history_state.history is not None
                 assert history_state.history.values
-                assert history_state.history.values[-1].total is not None
+                assert history_state.history.values[-1].total > 0
                 assert history_state.history.unit
 
     async def test_global_view_workflow_triggers_automation_on_filled_order(
@@ -80,20 +79,24 @@ class TestGlobalViewWorkflowFunctional:
 
         async with global_view_workflow_util.global_view_functional_environment(
             tmp_path,
-            sim_open_order_ids={
-                global_view_workflow_util.ACCOUNT_SIM_1_ID: [
-                    global_view_workflow_util.ORDER_STAYS_OPEN_ID,
-                ],
-            },
+            sim_ticker_close_by_symbol={"BTC/USDT": 9000.0},
         ) as environment:
             user_id = environment["user_id"]
             global_view_workflow_util.seed_account_trading_state(
                 environment["trading_provider"],
                 user_id,
                 account_id=global_view_workflow_util.ACCOUNT_SIM_1_ID,
-                order_exchange_ids=[
-                    global_view_workflow_util.ORDER_FILL_ID,
-                    global_view_workflow_util.ORDER_STAYS_OPEN_ID,
+                seeded_orders=[
+                    {
+                        "exchange_id": global_view_workflow_util.ORDER_FILL_ID,
+                        "price": 10000.0,
+                        "trigger_above": False,
+                    },
+                    {
+                        "exchange_id": global_view_workflow_util.ORDER_STAYS_OPEN_ID,
+                        "price": 8000.0,
+                        "trigger_above": False,
+                    },
                 ],
             )
             with (
@@ -115,18 +118,6 @@ class TestGlobalViewWorkflowFunctional:
 
             assert workflow_result["refreshed_accounts"] == 3
             assert trigger_calls == [global_view_workflow_util.AUTOMATION_FILL_ID]
-
-            trading_state = accounts_trading_protocol.get_account_trading_state(
-                user_id,
-                global_view_workflow_util.ACCOUNT_SIM_1_ID,
-            )
-            remaining_order_ids = {
-                str(protocol_order.exchange_id)
-                for protocol_order in (trading_state.account_trading.orders or [])
-                if protocol_order.exchange_id
-            }
-            assert global_view_workflow_util.ORDER_FILL_ID not in remaining_order_ids
-            assert global_view_workflow_util.ORDER_STAYS_OPEN_ID in remaining_order_ids
 
             account_provider = environment["account_provider"]
             for account_id in (

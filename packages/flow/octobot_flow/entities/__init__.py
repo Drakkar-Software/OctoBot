@@ -39,7 +39,6 @@ from octobot_flow.entities.global_view import (
     GlobalViewAccountContext,
     ExchangeAccountRefreshResult,
     GlobalViewAccountRefreshResult,
-    GlobalViewRefreshedElements,
 )
 __all__ = [
     "AccountElements",
@@ -74,5 +73,4 @@ __all__ = [
     "GlobalViewAccountContext",
     "ExchangeAccountRefreshResult",
     "GlobalViewAccountRefreshResult",
-    "GlobalViewRefreshedElements",
 ]

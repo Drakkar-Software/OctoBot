@@ -2,16 +2,22 @@
 #  Copyright (c) Drakkar-Software, All rights reserved.
 
 import datetime
+import typing
 
+import octobot_commons.logging as octobot_commons_logging
+import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_protocol.models as protocol_models
 import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers as collection_providers
+import octobot_trading.constants as trading_constants
+import octobot_trading.enums as trading_enums
 import octobot_trading.personal_data.orders.protocol as orders_protocol
 import octobot_trading.personal_data.positions.protocol as positions_protocol
 import octobot_trading.personal_data.trades.protocol as trades_protocol
 import octobot_trading.personal_data.trades.trades_util as trades_util
 
+import octobot_flow.entities
 import octobot_flow.logic.accounts.portfolio_history as portfolio_history_module
 import octobot_flow.logic.exchange.orders.order_change_detection as order_change_detection_module
 
@@ -24,14 +30,33 @@ def load_previous_open_order_exchange_ids(user_id: str, account_id: str) -> set[
         )
     except collection_errors.CollectionNoDataError:
         return set()
-    except Exception:
-        return set()
     account_trading = trading_state.account_trading
     if account_trading is None or account_trading.orders is None:
         return set()
     return order_change_detection_module.open_order_exchange_ids_from_protocol_orders(
         account_trading.orders
     )
+
+
+def load_previous_open_orders(user_id: str, account_id: str) -> list[dict]:
+    try:
+        trading_state = collection_providers.AccountTradingProvider.instance().load_state(
+            user_id,
+            account_id,
+        )
+    except collection_errors.CollectionNoDataError:
+        return []
+    account_trading = trading_state.account_trading
+    if account_trading is None or account_trading.orders is None:
+        return []
+    return [
+        {
+            trading_constants.STORAGE_ORIGIN_VALUE: orders_protocol.exchange_columns_dict_from_protocol_order(
+                protocol_order
+            ),
+        }
+        for protocol_order in account_trading.orders
+    ]
 
 
 def load_portfolio_history_state(
@@ -75,6 +100,20 @@ def build_portfolio_history_state(
     )
 
 
+def _normalize_order_for_protocol(order: dict) -> dict:
+    order_details = order.get(trading_constants.STORAGE_ORIGIN_VALUE, order)
+    order_id = order_details.get(trading_enums.ExchangeConstantsOrderColumns.ID.value)
+    exchange_id = order_details.get(trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value)
+    if not order_id:
+        if exchange_id:
+            order_details[trading_enums.ExchangeConstantsOrderColumns.ID.value] = exchange_id
+        else:
+            raise ValueError(
+                f"Order is missing both id and exchange_id: {sorted(order_details.keys())}"
+            )
+    return order
+
+
 def persist_account_trading(
     user_id: str,
     account_id: str,
@@ -88,14 +127,13 @@ def persist_account_trading(
             account_id,
         )
     except collection_errors.CollectionNoDataError:
-        trading_state = protocol_models.AccountTradingState(
-            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
-            account_trading=protocol_models.AccountTrading(
-                updated_at=datetime.datetime.now(datetime.UTC),
-            ),
-        )
+        # Abnormal: AccountTradingState must be created with the account, not invent here.
+        raise
     account_trading = trading_state.account_trading
-    account_trading.orders = [orders_protocol.to_protocol_order(order) for order in orders] or None
+    account_trading.orders = [
+        orders_protocol.to_protocol_order(_normalize_order_for_protocol(order))
+        for order in orders
+    ] or None
     account_trading.positions = [
         positions_protocol.to_protocol_position(position) for position in positions
     ] or None
@@ -113,3 +151,62 @@ def persist_account_trading(
         account_id,
         trading_state,
     )
+
+
+def persist_account_trading_orders(
+    user_id: str,
+    account_id: str,
+    orders: list[dict],
+) -> None:
+    try:
+        trading_state = collection_providers.AccountTradingProvider.instance().load_state(
+            user_id,
+            account_id,
+        )
+    except collection_errors.CollectionNoDataError:
+        # Abnormal: AccountTradingState must be created with the account, not invent here.
+        raise
+    account_trading = trading_state.account_trading
+    account_trading.orders = [
+        orders_protocol.to_protocol_order(_normalize_order_for_protocol(order))
+        for order in orders
+    ] or None
+    account_trading.updated_at = datetime.datetime.now(datetime.UTC)
+    collection_providers.AccountTradingProvider.instance().save_state(
+        user_id,
+        account_id,
+        trading_state,
+    )
+
+
+def persist_account_trading_from_iteration_state(
+    user_id: typing.Optional[str],
+    iteration_state: typing.Optional[dict],
+) -> None:
+    if user_id is None or iteration_state is None:
+        return
+    automation_state = octobot_flow.entities.AutomationState.from_dict(iteration_state)
+    exchange_account_elements = automation_state.automation.exchange_account_elements
+    exchange_account_details = automation_state.exchange_account_details
+    if exchange_account_elements is None or exchange_account_details is None:
+        return
+    exchange_account_id = exchange_account_details.exchange_details.exchange_account_id
+    if not exchange_account_id:
+        return
+    try:
+        persist_account_trading(
+            user_id,
+            exchange_account_id,
+            list(exchange_account_elements.orders.open_orders),
+            list(exchange_account_elements.trades),
+            [
+                position_details.position
+                for position_details in exchange_account_elements.positions
+            ],
+        )
+    except wallet_backend_errors.WalletNotFoundError:
+        # Trading collections are wallet-scoped; skip until the wallet is registered locally.
+        octobot_commons_logging.get_logger(__name__).warning(
+            "Skipping account trading persistence for wallet %s: wallet not registered",
+            user_id,
+        )

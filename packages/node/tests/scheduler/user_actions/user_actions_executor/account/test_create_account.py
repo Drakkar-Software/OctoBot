@@ -17,6 +17,7 @@
 import mock
 import pytest
 
+import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_protocol.models as protocol_models
 
@@ -38,10 +39,15 @@ class TestCreateAccountActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-create", configuration=account_executor_test_utils.wrap_configuration(inner))
         provider_mock = mock.Mock()
+        trading_provider_mock = mock.Mock()
         with (
             mock.patch(
                 "octobot_sync.sync.collection_providers.AccountProvider.instance",
                 return_value=provider_mock,
+            ),
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountTradingProvider.instance",
+                return_value=trading_provider_mock,
             ),
             mock.patch.object(
                 account_state_updater_module,
@@ -52,6 +58,14 @@ class TestCreateAccountActionExecutorExecute:
             executor = create_account_executor.CreateAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
         provider_mock.create_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, account_model)
+        trading_provider_mock.save_state.assert_called_once()
+        saved_user_id, saved_account_id, saved_trading_state = trading_provider_mock.save_state.call_args.args
+        assert saved_user_id == account_executor_test_utils.WALLET_ADDRESS
+        assert saved_account_id == "new-acc"
+        assert saved_trading_state.version == sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION
+        assert saved_trading_state.account_trading.orders is None
+        assert saved_trading_state.account_trading.trades is None
+        assert saved_trading_state.account_trading.positions is None
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,
             expected_status=protocol_models.UserActionStatus.COMPLETED,

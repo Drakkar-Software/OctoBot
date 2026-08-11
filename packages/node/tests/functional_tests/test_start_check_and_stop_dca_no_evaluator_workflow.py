@@ -113,6 +113,8 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                 ),
             ),
         ):
+            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+            workflow_common_module.seed_empty_account_trading_state(user_id, _DCA_ACCOUNT_ID)
             # Step 1 — Enqueue AUTOMATION_CREATE; expect a completed create result and a running workflow.
             try:
                 await asyncio.wait_for(

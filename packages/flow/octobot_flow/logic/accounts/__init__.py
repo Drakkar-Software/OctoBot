@@ -4,6 +4,7 @@ from octobot_flow.logic.accounts.account_state_persistence import (
     load_portfolio_history_state,
     load_previous_open_order_exchange_ids,
     persist_account_trading,
+    persist_account_trading_orders,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "load_portfolio_history_state",
     "load_previous_open_order_exchange_ids",
     "persist_account_trading",
+    "persist_account_trading_orders",
 ]
