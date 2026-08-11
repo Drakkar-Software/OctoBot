@@ -33,6 +33,13 @@ _TICKER_CACHE = ticker_cache.TickerCache(
     ttl=constants.TICKER_CACHE_TTL,
     maxsize=50
 )
+_TICKER_FETCH_LOCKS: dict[str, asyncio.Lock] = {}
+
+
+def _get_ticker_fetch_lock(exchange_key: str) -> asyncio.Lock:
+    if exchange_key not in _TICKER_FETCH_LOCKS:
+        _TICKER_FETCH_LOCKS[exchange_key] = asyncio.Lock()
+    return _TICKER_FETCH_LOCKS[exchange_key]
 
 
 class TickerUpdater(ticker_channel.TickerProducer):
@@ -125,6 +132,7 @@ class TickerUpdater(ticker_channel.TickerProducer):
         exchange_name = self.channel.exchange_manager.exchange_name
         exchange_type = exchange_util.get_exchange_type(self.channel.exchange_manager).value
         sandboxed = self.channel.exchange_manager.is_sandboxed
+        exchange_key = ticker_cache.TickerCache.get_exchange_key(exchange_name, exchange_type, sandboxed)
         cached_tickers = _TICKER_CACHE.get_all_tickers(exchange_name, exchange_type, sandboxed) or {}
         if isinstance(symbols, list) and len(symbols) == 1:
             symbol = symbols[0]
@@ -136,16 +144,20 @@ class TickerUpdater(ticker_channel.TickerProducer):
         if symbols is None:
             if cached_tickers:
                 return cached_tickers
-            symbols_filter = None
-            if self.channel.exchange_manager.exchange.get_option_value(
-                enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
-            ):
-                symbols_filter = symbols
-            tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker(
-                symbols=symbols_filter
-            )
-            self.set_cache(exchange_name, exchange_type, sandboxed, tickers)
-            return tickers
+            async with _get_ticker_fetch_lock(exchange_key):
+                cached_tickers = _TICKER_CACHE.get_all_tickers(exchange_name, exchange_type, sandboxed) or {}
+                if cached_tickers:
+                    return cached_tickers
+                symbols_filter = None
+                if self.channel.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
+                ):
+                    symbols_filter = symbols
+                tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker(
+                    symbols=symbols_filter
+                )
+                self.set_cache(exchange_name, exchange_type, sandboxed, tickers)
+                return tickers
         tickers_from_cache = {
             symbol: cached_tickers[symbol]
             for symbol in symbols
@@ -154,9 +166,26 @@ class TickerUpdater(ticker_channel.TickerProducer):
         missing_symbols = [symbol for symbol in symbols if symbol not in cached_tickers]
         if not missing_symbols:
             return tickers_from_cache
-        fetched_tickers = await self._fetch_missing_tickers(missing_symbols)
-        self.set_cache(exchange_name, exchange_type, sandboxed, fetched_tickers)
-        return {**tickers_from_cache, **fetched_tickers}
+        async with _get_ticker_fetch_lock(exchange_key):
+            cached_tickers = _TICKER_CACHE.get_all_tickers(exchange_name, exchange_type, sandboxed) or {}
+            tickers_from_cache = {
+                symbol: cached_tickers[symbol]
+                for symbol in symbols
+                if symbol in cached_tickers
+            }
+            missing_symbols = [symbol for symbol in symbols if symbol not in cached_tickers]
+            if not missing_symbols:
+                return tickers_from_cache
+            fetched_tickers = await self._fetch_missing_tickers(missing_symbols)
+            self.set_cache(exchange_name, exchange_type, sandboxed, fetched_tickers)
+            return {
+                **tickers_from_cache,
+                **{
+                    symbol: fetched_tickers[symbol]
+                    for symbol in symbols
+                    if symbol in fetched_tickers
+                },
+            }
 
     async def _fetch_missing_tickers(self, missing_symbols: list[str]) -> dict[str, dict]:
         exchange = self.channel.exchange_manager.exchange

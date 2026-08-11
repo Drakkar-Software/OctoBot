@@ -85,7 +85,11 @@ class PortfolioManager(util.Initializable):
         """
         changed = False
         if self.trader.can_trade_if_not_paused() and balance is not None:
-            changed = self.portfolio.update_portfolio_from_balance(balance, force_replace=not is_diff_update)
+            changed = self.portfolio.update_portfolio_from_balance(
+                balance,
+                force_replace=not is_diff_update,
+                should_log_update=self.exchange_manager.should_log_exchange_lifecycle_debug(),
+            )
         if not self._is_initialized_event_set:
             self._set_initialized_event()
             self._is_initialized_event_set = True
@@ -381,9 +385,10 @@ class PortfolioManager(util.Initializable):
                     self.apply_forced_portfolio()
                 else:
                     self._load_simulated_portfolio_from_history()
-            self.logger.debug(
-                f"{constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self.portfolio.portfolio)}"
-            )
+            if self.exchange_manager.should_log_exchange_lifecycle_debug():
+                self.logger.debug(
+                    f"{constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self.portfolio.portfolio)}"
+                )
 
     def _load_simulated_portfolio_from_history(self):
         portfolio_amount_dict = personal_data.parse_decimal_config_portfolio(

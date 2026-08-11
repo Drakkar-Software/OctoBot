@@ -177,3 +177,48 @@ async def _exchange_with_proxy_config(proxy_config: exchanges.ExchangeProxyConfi
         if exchange:
             exchange.timeout_on_exit = 0    # avoid waiting for the exchange to close
             await exchange.close()
+
+
+class TestSetSandboxMode:
+    def _exchange_connector(self, *, raise_type_error: bool):
+        client = mock.Mock()
+        client.options = {}
+        if raise_type_error:
+            client.set_sandbox_mode.side_effect = TypeError("'NoneType' object is not iterable")
+        else:
+            client.set_sandbox_mode = mock.Mock()
+        exchange_connector = mock.Mock()
+        exchange_connector.client = client
+        exchange_connector.name = "test-exchange"
+        exchange_connector.logger = mock.Mock()
+        exchange_connector.exchange_manager.exchange.uses_demo_trading_instead_of_sandbox.return_value = False
+        return exchange_connector
+
+    def test_type_error_when_sandboxed_raises_not_supported(self):
+        exchange_connector = self._exchange_connector(raise_type_error=True)
+        try:
+            ccxt_client_util.set_sandbox_mode(exchange_connector, True)
+            raise AssertionError("Expected ccxt.NotSupported")
+        except ccxt.NotSupported as error:
+            assert "test-exchange" in str(error)
+            assert "sandbox/test URLs are unavailable" in str(error)
+        exchange_connector.logger.warning.assert_called_once()
+        warning_message = exchange_connector.logger.warning.call_args.args[0]
+        assert "sandbox/test URLs are unavailable" in warning_message
+
+    def test_type_error_when_not_sandboxed_is_ignored(self):
+        exchange_connector = self._exchange_connector(raise_type_error=True)
+        result = ccxt_client_util.set_sandbox_mode(exchange_connector, False)
+        assert result is None
+        exchange_connector.logger.warning.assert_not_called()
+
+    def test_not_supported_is_re_raised_with_clear_message(self):
+        exchange_connector = self._exchange_connector(raise_type_error=False)
+        exchange_connector.client.set_sandbox_mode.side_effect = ccxt.NotSupported("sandbox mode")
+        try:
+            ccxt_client_util.set_sandbox_mode(exchange_connector, True)
+            raise AssertionError("Expected ccxt.NotSupported")
+        except ccxt.NotSupported as error:
+            assert "test-exchange" in str(error)
+            assert "sandbox/test URLs are unavailable" in str(error)
+        exchange_connector.logger.warning.assert_called_once()

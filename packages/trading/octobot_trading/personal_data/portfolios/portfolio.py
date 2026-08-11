@@ -74,24 +74,27 @@ class Portfolio:
         """
         self.portfolio = {}
 
-    def update_portfolio_from_balance(self, balance, force_replace=True):
+    def update_portfolio_from_balance(self, balance, force_replace=True, should_log_update=True):
         """
         Update portfolio from a balance dict
         :param balance: the portfolio dict
         :param force_replace: force to update portfolio. Should be False when using deltas
+        :param should_log_update: when False, skip portfolio update debug logs (temporary exchanges)
         :return: True if the portfolio has been updated
         """
         if force_replace:
             self.portfolio = {
                 currency: self._parse_raw_currency_asset(currency=currency, raw_currency_balance=balance[currency])
                 for currency in balance}
-            self.logger.debug(f"Portfolio updated | {constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self)}")
+            if should_log_update:
+                self.logger.debug(f"Portfolio updated | {constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self)}")
             return True
         if any(
                 self._update_raw_currency_asset(currency=currency, raw_currency_balance=balance[currency])
                 for currency in balance
         ):
-            self.logger.debug(f"Portfolio partially updated | {constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self)}")
+            if should_log_update:
+                self.logger.debug(f"Portfolio partially updated | {constants.CURRENT_PORTFOLIO_STRING} {logging.get_private_placeholder_if_necessary(self)}")
             return True
         return False
 

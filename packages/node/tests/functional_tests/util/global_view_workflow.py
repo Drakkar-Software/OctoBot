@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import decimal
 import typing
 
 import mock
@@ -16,10 +17,9 @@ import octobot_commons.user_root_folder_provider as user_root_folder_provider_mo
 import octobot_protocol.models as protocol_models
 import octobot_sync.server as sync_server_module
 import octobot_sync.sync.collection_providers as collection_providers_module
-import octobot_trading.constants as trading_constants
-import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.connectors.ccxt.ccxt_connector as ccxt_connector_module
 import octobot_trading.exchanges.types.rest_exchange as rest_exchange_module
+import octobot_trading.enums as trading_enums
 
 import octobot_node.scheduler.workflows_retention as workflows_retention_module
 
@@ -30,7 +30,6 @@ from tests.functional_tests.test_accounts_CRUD_operations import (
     _FUNCTIONAL_SOL_HOLDINGS,
     _FUNCTIONAL_USDT_HOLDINGS,
     _stub_get_balance_no_network,
-    _stub_load_symbol_markets_no_network,
 )
 
 _TEST_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -49,9 +48,25 @@ ORDER_STAYS_OPEN_ID = "gv-order-stays-open"
 
 WORKFLOW_RESULT_TIMEOUT_SECONDS = 120.0
 
+_FUNCTIONAL_VALUATION_TICKER_CLOSE_BY_SYMBOL = {
+    "BTC/USDT": 50000.0,
+    "ETH/USDT": 3000.0,
+    "SOL/USDT": 100.0,
+}
+
 
 async def _stub_get_open_orders_no_network(self, symbol=None, since=None, limit=None, **kwargs):
     return []
+
+
+async def _stub_load_symbol_markets_for_global_view(self, reload=False, market_filter=None):
+    self.client.markets = {
+        "BTC/USDT": {"symbol": "BTC/USDT", "active": True, "spot": True, "id": "BTCUSDT"},
+        "ETH/USDT": {"symbol": "ETH/USDT", "active": True, "spot": True, "id": "ETHUSDT"},
+        "SOL/USDT": {"symbol": "SOL/USDT", "active": True, "spot": True, "id": "SOLUSDT"},
+        "SOL/BTC": {"symbol": "SOL/BTC", "active": True, "spot": True, "id": "SOLBTC"},
+    }
+    self.client.symbols = list(self.client.markets.keys())
 
 
 def derive_user_id() -> str:
@@ -127,11 +142,16 @@ def build_functional_authentication() -> protocol_models.AccountAuthentication:
     )
 
 
-def _protocol_order(exchange_id: str) -> protocol_models.Order:
+def _protocol_order(
+    exchange_id: str,
+    *,
+    price: float = 10000.0,
+    trigger_above: bool = False,
+) -> protocol_models.Order:
     return protocol_models.Order(
         id=exchange_id,
         symbol="BTC/USDT",
-        price=10000.0,
+        price=price,
         quantity=0.01,
         filled=0.0,
         exchange_id=exchange_id,
@@ -139,28 +159,8 @@ def _protocol_order(exchange_id: str) -> protocol_models.Order:
         type=protocol_models.OrderType.LIMIT,
         status=protocol_models.OrderStatus.OPEN,
         created_at=_FUNCTIONAL_TIMESTAMP,
+        trigger_above=trigger_above,
     )
-
-
-def _open_order_storage_dict(exchange_id: str) -> dict:
-    order_columns = trading_enums.ExchangeConstantsOrderColumns
-    return {
-        trading_constants.STORAGE_ORIGIN_VALUE: {
-            order_columns.EXCHANGE_ID.value: exchange_id,
-            order_columns.ID.value: exchange_id,
-            order_columns.SYMBOL.value: "BTC/USDT",
-            order_columns.PRICE.value: 10000.0,
-            order_columns.AMOUNT.value: 0.01,
-            order_columns.FILLED.value: 0,
-            order_columns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
-            order_columns.TYPE.value: trading_enums.TradeOrderType.LIMIT.value,
-            order_columns.TRIGGER_ABOVE.value: False,
-            order_columns.REDUCE_ONLY.value: False,
-            order_columns.IS_ACTIVE.value: True,
-            order_columns.STATUS.value: trading_enums.OrderStatus.OPEN.value,
-            order_columns.TIMESTAMP.value: _FUNCTIONAL_TIMESTAMP.timestamp(),
-        }
-    }
 
 
 def seed_account_trading_state(
@@ -168,8 +168,16 @@ def seed_account_trading_state(
     user_id: str,
     *,
     account_id: str,
-    order_exchange_ids: list[str],
+    seeded_orders: list[dict[str, typing.Any]],
 ) -> None:
+    protocol_orders = [
+        _protocol_order(
+            seeded_order["exchange_id"],
+            price=float(seeded_order.get("price", 10000.0)),
+            trigger_above=bool(seeded_order.get("trigger_above", False)),
+        )
+        for seeded_order in seeded_orders
+    ]
     trading_provider.save_state(
         user_id,
         account_id,
@@ -177,7 +185,7 @@ def seed_account_trading_state(
             version=collection_providers_module.AccountTradingProvider.STATE_VERSION,
             account_trading=protocol_models.AccountTrading(
                 updated_at=_FUNCTIONAL_TIMESTAMP,
-                orders=[_protocol_order(order_id) for order_id in order_exchange_ids],
+                orders=protocol_orders,
                 trades=[],
                 positions=[],
             ),
@@ -223,7 +231,7 @@ async def enqueue_and_await_global_view_refresh() -> dict[str, typing.Any]:
 async def global_view_functional_environment(
     tmp_path,
     *,
-    sim_open_order_ids: dict[str, list[str]] | None = None,
+    sim_ticker_close_by_symbol: dict[str, float] | None = None,
 ):
     user_root_provider = user_root_folder_provider_module.instance()
     previous_user_root = user_root_provider.get_root()
@@ -243,53 +251,31 @@ async def global_view_functional_environment(
     trading_provider = collection_providers_module.AccountTradingProvider(base_folder=str(test_user_root))
     history_provider = collection_providers_module.AccountHistoryProvider(base_folder=str(test_user_root))
 
-    configured_sim_open_order_ids = sim_open_order_ids or {}
+    configured_sim_ticker_close_by_symbol = sim_ticker_close_by_symbol or {}
 
-    import octobot_flow.jobs.global_view_account_job as global_view_account_job_module
+    import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
     import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater_module
-    import octobot_trading.exchanges as trading_exchanges_module
 
-    real_exchange_manager_from_exchange_data = trading_exchanges_module.exchange_manager_from_exchange_data
+    async def patched_fetch_ticker_close_by_symbol(_exchange_manager, symbols):
+        return {
+            symbol: configured_sim_ticker_close_by_symbol[symbol]
+            for symbol in symbols
+            if symbol in configured_sim_ticker_close_by_symbol
+        }
 
-    @contextlib.asynccontextmanager
-    async def exchange_manager_with_simulated_open_orders(
-        exchange_data,
-        profile_data,
-        tentacles_setup_config,
-        price_fallback=None,
-    ):
-        async with real_exchange_manager_from_exchange_data(
-            exchange_data,
-            profile_data,
-            tentacles_setup_config,
-            price_fallback=price_fallback,
-        ) as exchange_manager:
-            exchange_account_id = profile_data.exchanges[0].exchange_account_id
-            open_order_ids_after_refresh = configured_sim_open_order_ids.get(exchange_account_id, [])
-
-            async def patched_get_open_orders(**open_orders_kwargs):
-                return [
-                    _open_order_storage_dict(order_id)
-                    for order_id in open_order_ids_after_refresh
-                ]
-
-            exchange_manager.exchange.get_open_orders = patched_get_open_orders
-
-            real_get_balance = exchange_manager.exchange.get_balance
-
-            async def patched_get_balance(**balance_kwargs):
-                balance = await real_get_balance(**balance_kwargs)
-                portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
-                if portfolio_manager is not None and balance is not None:
-                    portfolio_manager.handle_balance_update(balance)
-                return balance
-
-            exchange_manager.exchange.get_balance = patched_get_balance
-
-            portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
-            if portfolio_manager is not None:
-                portfolio_manager.handle_mark_price_update = mock.AsyncMock(return_value=None)
-            yield exchange_manager
+    async def patched_fetch_tickers(_self, symbols):
+        if not symbols:
+            return {}
+        close_column = trading_enums.ExchangeConstantsTickersColumns.CLOSE.value
+        ticker_close_by_symbol = {
+            **_FUNCTIONAL_VALUATION_TICKER_CLOSE_BY_SYMBOL,
+            **configured_sim_ticker_close_by_symbol,
+        }
+        return {
+            symbol: {close_column: decimal.Decimal(str(ticker_close_by_symbol[symbol]))}
+            for symbol in symbols
+            if symbol in ticker_close_by_symbol
+        }
 
     with (
         mock.patch.object(
@@ -330,7 +316,7 @@ async def global_view_functional_environment(
         mock.patch.object(
             ccxt_connector_module.CCXTConnector,
             "load_symbol_markets",
-            _stub_load_symbol_markets_no_network,
+            _stub_load_symbol_markets_for_global_view,
         ),
         mock.patch.object(
             ccxt_connector_module.CCXTConnector,
@@ -343,9 +329,14 @@ async def global_view_functional_environment(
             _stub_get_open_orders_no_network,
         ),
         mock.patch.object(
-            trading_exchanges_module,
-            "exchange_manager_from_exchange_data",
-            exchange_manager_with_simulated_open_orders,
+            tickers_repository_module.TickersRepository,
+            "fetch_ticker_close_by_symbol",
+            patched_fetch_ticker_close_by_symbol,
+        ),
+        mock.patch.object(
+            tickers_repository_module.TickersRepository,
+            "fetch_tickers",
+            patched_fetch_tickers,
         ),
     ):
         account_provider.create_exchange_config(user_id, build_exchange_config())
@@ -353,13 +344,6 @@ async def global_view_functional_environment(
         account_provider.create_item(user_id, build_real_account())
         account_provider.create_item(user_id, build_simulated_account(account_id=ACCOUNT_SIM_1_ID, account_name="Sim 1"))
         account_provider.create_item(user_id, build_simulated_account(account_id=ACCOUNT_SIM_2_ID, account_name="Sim 2"))
-        for account_id, order_ids in configured_sim_open_order_ids.items():
-            seed_account_trading_state(
-                trading_provider,
-                user_id,
-                account_id=account_id,
-                order_exchange_ids=order_ids,
-            )
         try:
             yield {
                 "user_id": user_id,
@@ -369,6 +353,20 @@ async def global_view_functional_environment(
             }
         finally:
             user_root_provider.set_root(previous_user_root)
+
+
+def assert_simulated_account_assets(
+    account: protocol_models.Account,
+    *,
+    expected_total: float,
+) -> None:
+    assert account.assets is not None
+    flattened_assets: list[protocol_models.DetailedAsset] = []
+    for assets_for_trading_type in account.assets:
+        flattened_assets.extend(assets_for_trading_type.assets or [])
+    assets_by_symbol = {asset.symbol: asset for asset in flattened_assets}
+    assert "USDT" in assets_by_symbol
+    assert assets_by_symbol["USDT"].total == pytest.approx(expected_total)
 
 
 def assert_real_account_assets(account: protocol_models.Account) -> None:

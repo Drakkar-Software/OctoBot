@@ -41,12 +41,12 @@ from tests.scheduler import temp_dbos_scheduler
 
 
 _T_ENQUEUE_SECONDS = 5.0
-_T_GRID_SECONDS = 20.0
+_T_GRID_SECONDS = workflow_common_module.functional_timeout_seconds(20.0)
 _T_SIGNAL_SECONDS = 5.0
 _T_STOP_SEND_SECONDS = 5.0
-_T_STOP_COMPLETE_SECONDS = 10.0
+_T_STOP_COMPLETE_SECONDS = workflow_common_module.functional_timeout_seconds(10.0)
 _T_RESTART_ENQUEUE_SECONDS = 10.0
-_T_RESTART_RUNNING_SECONDS = 30.0
+_T_RESTART_RUNNING_SECONDS = workflow_common_module.functional_timeout_seconds(30.0)
 # Fast poll after stop/signal send; protocol status may flip RUNNING→COMPLETED quickly on CI.
 _POST_STOP_PROTOCOL_POLL_SECONDS = 0.05
 
@@ -129,6 +129,8 @@ class TestTriggerTaskGridDbosIntegration:
             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None),
             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None),
         ):
+            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+            workflow_common_module.seed_empty_account_trading_state(user_id, _GRID_ACCOUNT_ID)
             # Step 1 — Enqueue AUTOMATION_CREATE user action; expect a COMPLETED create result and a running workflow.
             try:
                 await asyncio.wait_for(

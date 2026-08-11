@@ -208,10 +208,16 @@ class ProfileStorage:
         clone.bind_profile_storage(self)
         return clone
 
-    def activate_profile(self, profile: profile_module.Profile) -> None:
+    def activate_profile(
+        self,
+        profile: profile_module.Profile,
+        *,
+        init_tentacles_setup: bool = True,
+    ) -> None:
         profile.bind_profile_storage(self)
         self._apply_child_overlay_config(profile)
-        profile.init_tentacles_setup_config()
+        if init_tentacles_setup:
+            profile.init_tentacles_setup_config()
 
     def save_active_profile(
         self,

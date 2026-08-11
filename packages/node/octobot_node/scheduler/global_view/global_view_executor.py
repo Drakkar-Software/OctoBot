@@ -6,6 +6,7 @@ import octobot_flow.jobs.global_view_account_job as global_view_account_job_modu
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
+import octobot_node.scheduler.global_view.automation_trigger as automation_trigger_module
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater
 import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
@@ -46,11 +47,16 @@ async def refresh_account_global_view(
         trading_type,
         exchange_config.sandboxed,
     )
+    has_bound_automation = await automation_trigger_module.account_has_bound_running_automation(
+        user_id,
+        account.id,
+    )
     context = octobot_flow.entities.GlobalViewAccountContext(
         account=account,
         exchange_account=exchange_account,
         exchange_config=exchange_config,
         trading_type=trading_type,
         auth_details=auth_details,
+        has_bound_automation=has_bound_automation,
     )
     return await global_view_account_job_module.GlobalViewAccountJob(user_id, context).run()

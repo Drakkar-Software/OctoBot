@@ -150,12 +150,28 @@ def set_sandbox_mode(exchange_connector, is_sandboxed):
             exchange_connector.client.enable_demo_trading(is_sandboxed)
         else:
             exchange_connector.client.set_sandbox_mode(is_sandboxed)
-    except ccxt.NotSupported as e:
+    except ccxt.NotSupported as err:
         default_type = exchange_connector.client.options.get('defaultType', None)
         additional_info = f" in type {default_type}" if default_type else ""
-        exchange_connector.logger.warning(f"{exchange_connector.name} does not support sandboxing {additional_info}: {e}")
+        message = (
+            f"{exchange_connector.name} does not support sandboxing{additional_info}: "
+            f"sandbox/test URLs are unavailable ({err})"
+        )
+        exchange_connector.logger.warning(message)
         # raise exception to stop this exchange and prevent dealing with a real funds exchange
-        raise e
+        raise ccxt.NotSupported(message) from err
+    except TypeError as err:
+        # ccxt raises TypeError when urls['test'] is None (sandbox endpoints missing).
+        if is_sandboxed:
+            default_type = exchange_connector.client.options.get('defaultType', None)
+            additional_info = f" in type {default_type}" if default_type else ""
+            message = (
+                f"{exchange_connector.name} does not support sandboxing{additional_info}: "
+                f"sandbox/test URLs are unavailable ({err})"
+            )
+            exchange_connector.logger.warning(message)
+            # raise exception to stop this exchange and prevent dealing with a real funds exchange
+            raise ccxt.NotSupported(message) from err
     return None
 
 
@@ -309,6 +325,8 @@ def converted_ccxt_common_errors(f):
     async def converted_ccxt_common_errors_wrapper(*args, **kwargs):
         try:
             return await f(*args, **kwargs)
+        except ccxt.BadSymbol as err:
+            raise errors.UnSupportedSymbolError(err) from err
         except ccxt.RateLimitExceeded as err:
             raise errors.RateLimitExceeded(err) from err
         except ccxt.NotSupported as err:

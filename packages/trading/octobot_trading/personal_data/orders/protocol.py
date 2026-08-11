@@ -35,9 +35,9 @@ def to_protocol_order(
         exchange_id=order_details[enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
         side=order_details[enums.ExchangeConstantsOrderColumns.SIDE.value],
         type=order_details[enums.ExchangeConstantsOrderColumns.TYPE.value],
-        trigger_above=order_details[enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value],
-        reduce_only=order_details[enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value],
-        is_active=order_details[enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value],
+        trigger_above=order_details.get(enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value),
+        reduce_only=order_details.get(enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value, False),
+        is_active=order_details.get(enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value, True),
         status=order_details[enums.ExchangeConstantsOrderColumns.STATUS.value],
         created_at=timestamp_util.utc_datetime_from_timestamp(order_details[enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]),
     )

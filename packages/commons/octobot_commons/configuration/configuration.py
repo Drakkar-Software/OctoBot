@@ -109,15 +109,16 @@ class Configuration:
             self.load_profiles()
             self.select_profile(self._get_selected_profile())
 
-    def select_profile(self, profile_id) -> None:
+    def select_profile(self, profile_id, *, init_tentacles_setup: bool = True) -> None:
         """
         Sets self.profile using its profile_id
         :param profile_id: id of the profile to select
+        :param init_tentacles_setup: when False, skip tentacles setup initialization on activation
         :return: None
         """
         self.config[commons_constants.CONFIG_PROFILE] = profile_id
         self.profile = self.profile_by_id[profile_id]
-        self.profile_storage.activate_profile(self.profile)
+        self.profile_storage.activate_profile(self.profile, init_tentacles_setup=init_tentacles_setup)
         self.logger.info(f"Using {self.profile.name} profile.")
         self._generate_config_from_user_config_and_profile()
 

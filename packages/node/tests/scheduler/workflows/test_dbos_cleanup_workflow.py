@@ -38,7 +38,6 @@ class TestDbosCleanupWorkflowDbosCleanup:
         ) as cleanup_mock:
             result = await dbos_cleanup_workflow_module.DbosCleanupWorkflow._cleanup_outdated_automation_executions(
                 datetime.datetime.now(datetime.timezone.utc),
-                None,
             )
 
         cleanup_mock.assert_awaited_once()
@@ -62,7 +61,6 @@ class TestDbosCleanupWorkflowDbosCleanup:
         ) as skip_for_scheduled_time_mock:
             result = await dbos_cleanup_workflow_module.DbosCleanupWorkflow._cleanup_outdated_automation_executions(
                 datetime.datetime.now(datetime.timezone.utc),
-                None,
             )
 
         cleanup_mock.assert_not_called()
@@ -93,7 +91,6 @@ class TestDbosCleanupWorkflowDbosCleanup:
         ) as cleanup_mock:
             result = await dbos_cleanup_workflow_module.DbosCleanupWorkflow._cleanup_outdated_automation_executions(
                 scheduled_time,
-                None,
             )
 
         cleanup_mock.assert_not_called()

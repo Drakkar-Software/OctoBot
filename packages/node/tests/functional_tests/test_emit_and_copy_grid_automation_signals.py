@@ -68,11 +68,11 @@ _MASTER_INIT_USDC = 10000.0
 _COPY_INIT_USDC = 2000.0
 
 _T_ENQUEUE_SECONDS = 5.0
-_T_GRID_SECONDS = 25.0
-_T_BOOTSTRAP_COPY_SECONDS = 25.0
-_T_POST_SHOCK_SECONDS = 55.0
+_T_GRID_SECONDS = workflow_common_module.functional_timeout_seconds(25.0)
+_T_BOOTSTRAP_COPY_SECONDS = workflow_common_module.functional_timeout_seconds(25.0)
+_T_POST_SHOCK_SECONDS = workflow_common_module.functional_timeout_seconds(55.0)
 _T_STOP_SEND_SECONDS = 5.0
-_T_STOP_COMPLETE_SECONDS = 15.0
+_T_STOP_COMPLETE_SECONDS = workflow_common_module.functional_timeout_seconds(15.0)
 
 _D_DECIMAL_INCREMENT = decimal.Decimal(str(grid_sim_util.GRID_INCREMENT))
 
@@ -628,6 +628,14 @@ class TestEmitAndCopyGridAutomationSignals:
                             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None),
                         ):
                             caplog.set_level(logging.INFO)
+
+                            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+                            workflow_common_module.seed_empty_account_trading_state(
+                                user_id, master_account_id
+                            )
+                            workflow_common_module.seed_empty_account_trading_state(
+                                user_id, copy_account_id
+                            )
 
                             # Step 1 — enqueue master emitting grid signals (pushes to local sync server).
                             try:

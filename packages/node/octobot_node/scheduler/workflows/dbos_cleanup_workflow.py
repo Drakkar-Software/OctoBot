@@ -39,14 +39,12 @@ class DbosCleanupWorkflow:
     ) -> dict[str, typing.Any]:
         return await DbosCleanupWorkflow._cleanup_outdated_automation_executions(
             scheduled_time,
-            context,
         )
 
     @staticmethod
     @SCHEDULER.INSTANCE.step(name="cleanup_outdated_automation_executions")
     async def _cleanup_outdated_automation_executions(
         scheduled_time: datetime.datetime,
-        context: typing.Any,
     ) -> dict[str, typing.Any]:
         logger = logging.get_logger(DbosCleanupWorkflow.__name__)
         if workflows_retention.should_skip_retention_cleanup_on_this_node():

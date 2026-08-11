@@ -14,3 +14,4 @@ class GlobalViewAccountContext:
     exchange_config: protocol_models.ExchangeConfig
     trading_type: protocol_models.TradingType
     auth_details: exchange_data_module.ExchangeAuthDetails
+    has_bound_automation: bool = False

@@ -20,12 +20,12 @@ import dbos
 
 import octobot_commons.logging
 
-import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_trading.errors
 
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.errors
+import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
 import octobot_flow.repositories.community.community_repository as community_repository
 
 import octobot_node.enums
@@ -36,7 +36,6 @@ import octobot_node.constants as constants
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.errors as errors
-import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
@@ -255,9 +254,9 @@ class AutomationWorkflow:
                 AutomationWorkflow.get_logger(parsed_inputs).info(
                     f"Iteration completed, executed step: '{executed_step}', {next_actions_str}"
                 )
-                AutomationWorkflow._persist_account_trading_from_iteration_result(
+                account_state_persistence_module.persist_account_trading_from_iteration_state(
                     parsed_inputs.task.user_id,
-                    result,
+                    result.next_actions_description.state if result.next_actions_description else None,
                 )
             else:
                 retry_delay_seconds = max(0.0, (next_step_at or time.time()) - time.time())
@@ -305,42 +304,6 @@ class AutomationWorkflow:
         return None
 
     @staticmethod
-    def _persist_account_trading_from_iteration_result(
-        user_id: typing.Optional[str],
-        job_result: octobot_flow_client.OctoBotActionsJobResult,
-    ) -> None:
-        # Temporary: persist trading snapshot locally until the global view system owns this sync.
-        if user_id is None or job_result.next_actions_description is None:
-            return
-        automation_state = octobot_flow.entities.AutomationState.from_dict(
-            job_result.next_actions_description.state
-        )
-        exchange_account_elements = automation_state.automation.exchange_account_elements
-        exchange_account_details = automation_state.exchange_account_details
-        if exchange_account_elements is None or exchange_account_details is None:
-            return
-        exchange_account_id = exchange_account_details.exchange_details.exchange_account_id
-        if not exchange_account_id:
-            return
-        try:
-            accounts_trading_protocol.update_account_trading(
-                user_id,
-                exchange_account_id,
-                list(exchange_account_elements.orders.open_orders),
-                list(exchange_account_elements.trades),
-                [
-                    position_details.position
-                    for position_details in exchange_account_elements.positions
-                ],
-            )
-        except wallet_backend_errors.WalletNotFoundError:
-            # Trading collections are wallet-scoped; skip until the wallet is registered locally.
-            octobot_commons.logging.get_logger(AutomationWorkflow.__name__).warning(
-                "Skipping account trading persistence for wallet %s: wallet not registered",
-                user_id,
-            )
-
-    @staticmethod
     def _parse_actions_update_envelope(
         actions_update: typing.Optional[dict],
     ) -> tuple[list[dict], list[dict]]:
@@ -354,6 +317,11 @@ class AutomationWorkflow:
         if envelope.actions_type == octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value:
             return [], []
         return [], []
+
+    @staticmethod
+    def _is_forced_trigger_update(actions_update: dict) -> bool:
+        envelope = params.AutomationWorkflowActionUpdate.from_dict(actions_update)
+        return envelope.actions_type == octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value
 
     @staticmethod
     def _log_iteration_execution_intent(
@@ -382,6 +350,11 @@ class AutomationWorkflow:
         while new_actions_update := await AutomationWorkflow._wait_and_trigger_on_actions_update(
             parsed_inputs, 0
         ):
+            if AutomationWorkflow._is_forced_trigger_update(new_actions_update):
+                AutomationWorkflow.get_logger(parsed_inputs).info(
+                    "Ignoring forced_trigger received after iteration completed; skipping duplicate iteration."
+                )
+                continue
             extra_iteration_inputs = AutomationWorkflow._create_next_iteration_inputs(
                 parsed_inputs, latest_iteration_result.next_iteration_description, 0,
                 latest_iteration_result.next_iteration_description_metadata,

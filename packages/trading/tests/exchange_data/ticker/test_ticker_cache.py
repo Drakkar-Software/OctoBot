@@ -108,3 +108,40 @@ def test_get_exchange_key():
     assert exchange_data.TickerCache.get_exchange_key("binance", "spot", False) == "binance_spot_False"
     assert exchange_data.TickerCache.get_exchange_key("binance", "future", False) == "binance_future_False"
     assert exchange_data.TickerCache.get_exchange_key("okx", "future", False) == "okx_future_False"
+
+
+def test_set_all_tickers_skips_unparseable_symbols(ticker_cache):
+    tickers_with_invalid_symbol = {
+        **SPOT_TICKERS,
+        "INVALID:SYMBOL": mock.Mock(),
+    }
+    ticker_cache.set_all_tickers("binance", "spot", False, tickers_with_invalid_symbol)
+    assert ticker_cache.get_all_tickers("binance", "spot", False) == tickers_with_invalid_symbol
+    assert ticker_cache.get_all_parsed_symbols_by_merged_symbols("binance", "spot", False) == {
+        "BTCUSDT": octobot_commons.symbols.parse_symbol("BTC/USDT"),
+        "ETHUSDT": octobot_commons.symbols.parse_symbol("ETH/USDT"),
+        "SOLUSDT": octobot_commons.symbols.parse_symbol("SOL/USDT"),
+    }
+
+
+def test_set_all_tickers_skips_unparseable_symbols_for_futures(ticker_cache):
+    futures_tickers_with_invalid_symbol = {
+        **FUTURES_TICKERS,
+        "INVALID:SYMBOL": mock.Mock(),
+    }
+    ticker_cache.set_all_tickers(
+        "binance", octobot_commons.constants.CONFIG_EXCHANGE_FUTURE, False, futures_tickers_with_invalid_symbol
+    )
+    assert ticker_cache.get_all_tickers(
+        "binance", octobot_commons.constants.CONFIG_EXCHANGE_FUTURE, False
+    ) == futures_tickers_with_invalid_symbol
+    assert ticker_cache.get_all_parsed_symbols_by_merged_symbols(
+        "binance", octobot_commons.constants.CONFIG_EXCHANGE_FUTURE, False
+    ) == {
+        "BTCUSDT": octobot_commons.symbols.parse_symbol("BTC/USDT:USDT"),
+        "BTCUSDT:USDT": octobot_commons.symbols.parse_symbol("BTC/USDT:USDT"),
+        "ETHUSDT": octobot_commons.symbols.parse_symbol("ETH/USDT:USDT"),
+        "ETHUSDT:USDT": octobot_commons.symbols.parse_symbol("ETH/USDT:USDT"),
+        "SOLUSD": octobot_commons.symbols.parse_symbol("SOL/USD:SOL"),
+        "SOLUSD:SOL": octobot_commons.symbols.parse_symbol("SOL/USD:SOL"),
+    }

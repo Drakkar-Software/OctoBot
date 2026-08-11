@@ -16,6 +16,7 @@
 #  License along with this library.
 import contextlib
 import decimal
+import asyncio
 import aiohttp
 import ccxt.async_support
 from ccxt.base.types import (
@@ -43,11 +44,21 @@ import octobot_trading.exchanges.abstract_exchange as abstract_exchange
 import octobot_trading.exchanges.config.exchange_credentials_data as exchange_credentials_data
 import octobot_trading.exchanges.connectors.ccxt.ccxt_adapter as ccxt_adapter
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
+import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clients_cache
 import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.exchanges.connectors.util as connectors_util
 import octobot_trading.personal_data as personal_data
 from octobot_trading.enums import ExchangeConstantsOrderColumns as ecoc
+
+
+_MARKETS_LOAD_LOCKS: dict[str, asyncio.Lock] = {}
+
+
+def _get_markets_load_lock(client_key: str) -> asyncio.Lock:
+    if client_key not in _MARKETS_LOAD_LOCKS:
+        _MARKETS_LOAD_LOCKS[client_key] = asyncio.Lock()
+    return _MARKETS_LOAD_LOCKS[client_key]
 
 
 class CCXTConnector(abstract_exchange.AbstractExchange):
@@ -272,67 +283,7 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             except KeyError:
                 force_load_markets = True
         if force_load_markets:
-            self.logger.info(
-                f"Loading {self.exchange_manager.exchange_name} "
-                f"{exchanges.get_exchange_type(self.exchange_manager).value}"
-                f"{' sandbox' if self.exchange_manager.is_sandboxed else ''} exchange markets ({reload=} {authenticated_cache=})"
-            )
-            try:
-                await self._load_markets(self.client, reload, market_filter=market_filter)
-                self._persist_markets_cache()
-            except ccxt.async_support.OBIPWhitelistError as err:
-                raise octobot_trading.errors.InvalidAPIKeyIPWhitelistError(
-                    f"Invalid IP whitelist error: {html_util.get_html_summary_if_relevant(err)}"
-                ) from err
-            except (
-                ccxt.async_support.AuthenticationError,
-                ccxt.async_support.ArgumentsRequired,
-                ValueError,
-                binascii.Error, AssertionError, IndexError
-            ) as err:
-                self.set_first_consecutive_authentication_error_at_if_unset()
-                if self.force_authentication:
-                    raise ccxt.async_support.AuthenticationError(
-                        f"Invalid key format ({html_util.get_html_summary_if_relevant(err)})"
-                    ) from err
-                # should not happen: if it does, propagate it
-                if self.exchange_manager.exchange.get_option_value(
-                    enums.ExchangeClientOptions.CAN_MAKE_AUTHENTICATED_REQUESTS_WHEN_LOADING_MARKETS
-                ):
-                    # can happen, just warn
-                    self.logger.warning(f"{err.__class__.__name__} when loading markets: {err}")
-                else:
-                    # unexpected: notify
-                    self.logger.error(f"Unexpected error when loading markets: {err} ({err.__class__.__name__})")
-                raise
-            except ccxt.async_support.NetworkError as err:
-                raise octobot_trading.errors.NetworkError(
-                    f"Failed to load_symbol_markets: {err.__class__.__name__} "
-                    f"on {html_util.get_html_summary_if_relevant(err)}"
-                ) from err
-            except ccxt.async_support.ExchangeError as err:
-                # includes AuthenticationError but also auth error not identified as such by ccxt
-                if not self.force_authentication and self.is_authenticated:
-                    self.logger.debug(
-                        f"Credentials check enabled when fetching exchange market status, trying with "
-                        f"unauthenticated client: {err}."
-                    )
-                    # auth invalid but not required: fetch markets from another client
-                    unauth_client = None
-                    try:
-                        unauth_client = self._client_factory(True)[0]
-                        await self._load_markets(unauth_client, reload, market_filter=market_filter)
-                        self._persist_markets_cache(unauth_client, False)
-                        # apply markets to target client
-                        ccxt_client_util.load_markets_from_cache(self.client, False, market_filter=market_filter)
-                        self.logger.debug(
-                            f"Fetched exchange market status from unauthenticated client."
-                        )
-                    finally:
-                        if unauth_client:
-                            await unauth_client.close()
-                else:
-                    raise
+            await self._load_symbol_markets_under_client_lock(reload, authenticated_cache, market_filter)
         # markets are now loaded, trigger event
         commons_tree.EventProvider.instance().trigger_event(
             self.exchange_manager.bot_id, commons_tree.get_exchange_path(
@@ -340,6 +291,85 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
                 octobot_commons.enums.InitializationEventExchangeTopics.MARKETS.value
             )
         )
+
+    async def _load_symbol_markets_under_client_lock(
+        self,
+        reload: bool,
+        authenticated_cache: bool,
+        market_filter: typing.Optional[typing.Callable[[dict], bool]] = None,
+    ) -> None:
+        client_key = ccxt_clients_cache.get_client_key(self.client, authenticated_cache)
+        async with _get_markets_load_lock(client_key):
+            should_fetch_markets = reload
+            if not reload:
+                try:
+                    ccxt_client_util.load_markets_from_cache(
+                        self.client, authenticated_cache, market_filter=market_filter,
+                    )
+                except KeyError:
+                    should_fetch_markets = True
+            if should_fetch_markets:
+                self.logger.info(
+                    f"Loading {self.exchange_manager.exchange_name} "
+                    f"{exchanges.get_exchange_type(self.exchange_manager).value}"
+                    f"{' sandbox' if self.exchange_manager.is_sandboxed else ''} exchange markets ({reload=} {authenticated_cache=})"
+                )
+                try:
+                    await self._load_markets(self.client, reload, market_filter=market_filter)
+                    self._persist_markets_cache()
+                except ccxt.async_support.OBIPWhitelistError as err:
+                    raise octobot_trading.errors.InvalidAPIKeyIPWhitelistError(
+                        f"Invalid IP whitelist error: {html_util.get_html_summary_if_relevant(err)}"
+                    ) from err
+                except (
+                    ccxt.async_support.AuthenticationError,
+                    ccxt.async_support.ArgumentsRequired,
+                    ValueError,
+                    binascii.Error, AssertionError, IndexError
+                ) as err:
+                    self.set_first_consecutive_authentication_error_at_if_unset()
+                    if self.force_authentication:
+                        raise ccxt.async_support.AuthenticationError(
+                            f"Invalid key format ({html_util.get_html_summary_if_relevant(err)})"
+                        ) from err
+                    # should not happen: if it does, propagate it
+                    if self.exchange_manager.exchange.get_option_value(
+                        enums.ExchangeClientOptions.CAN_MAKE_AUTHENTICATED_REQUESTS_WHEN_LOADING_MARKETS
+                    ):
+                        # can happen, just warn
+                        self.logger.warning(f"{err.__class__.__name__} when loading markets: {err}")
+                    else:
+                        # unexpected: notify
+                        self.logger.error(f"Unexpected error when loading markets: {err} ({err.__class__.__name__})")
+                    raise
+                except ccxt.async_support.NetworkError as err:
+                    raise octobot_trading.errors.NetworkError(
+                        f"Failed to load_symbol_markets: {err.__class__.__name__} "
+                        f"on {html_util.get_html_summary_if_relevant(err)}"
+                    ) from err
+                except ccxt.async_support.ExchangeError as err:
+                    # includes AuthenticationError but also auth error not identified as such by ccxt
+                    if not self.force_authentication and self.is_authenticated:
+                        self.logger.debug(
+                            f"Credentials check enabled when fetching exchange market status, trying with "
+                            f"unauthenticated client: {err}."
+                        )
+                        # auth invalid but not required: fetch markets from another client
+                        unauth_client = None
+                        try:
+                            unauth_client = self._client_factory(True)[0]
+                            await self._load_markets(unauth_client, reload, market_filter=market_filter)
+                            self._persist_markets_cache(unauth_client, False)
+                            # apply markets to target client
+                            ccxt_client_util.load_markets_from_cache(self.client, False, market_filter=market_filter)
+                            self.logger.debug(
+                                f"Fetched exchange market status from unauthenticated client."
+                            )
+                        finally:
+                            if unauth_client:
+                                await unauth_client.close()
+                    else:
+                        raise
 
     def get_client_symbols(self, active_only=True) -> set[str]:
         return ccxt_client_util.get_symbols(self.client, active_only)
@@ -1335,9 +1365,11 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         return self.adapter.get_uniformized_timestamp(timestamp)
 
     async def stop(self) -> None:
-        self.logger.debug(f"Closing connection.")
+        if self.exchange_manager.should_log_exchange_lifecycle_debug():
+            self.logger.debug(f"Closing connection.")
         await ccxt_client_util.close_client(self.client)
-        self.logger.debug(f"Connection closed.")
+        if self.exchange_manager.should_log_exchange_lifecycle_debug():
+            self.logger.debug(f"Connection closed.")
         self.client = None
         self.exchange_manager = None
 

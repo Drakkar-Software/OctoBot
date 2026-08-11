@@ -42,6 +42,44 @@ def _matching_existing_schedule(
     }
 
 
+def _configured_global_view_schedule_input(global_view_workflow_module) -> dict:
+    return global_view_workflow_module.get_schedule_input()
+
+
+def _matching_existing_global_view_schedule(global_view_workflow_module) -> dict:
+    schedule_input = _configured_global_view_schedule_input(global_view_workflow_module)
+    return {
+        "schedule_id": "existing-global-view-schedule-id",
+        "schedule_name": global_view_workflow_module.SCHEDULE_NAME,
+        "workflow_name": "ignored-workflow-name",
+        "workflow_class_name": None,
+        "schedule": schedule_input["schedule"],
+        "status": "ACTIVE",
+        "context": None,
+        "last_fired_at": "2026-07-13T00:00:00+00:00",
+        "automatic_backfill": schedule_input.get("automatic_backfill", False),
+        "cron_timezone": schedule_input.get("cron_timezone"),
+        "queue_name": schedule_input.get("queue_name"),
+    }
+
+
+def _get_schedule_async_side_effect(
+    dbos_cleanup_workflow_module,
+    global_view_workflow_module,
+    *,
+    cleanup_existing: dict | None,
+    global_view_existing: dict | None,
+):
+    async def get_schedule_async(schedule_name: str):
+        if schedule_name == dbos_cleanup_workflow_module.SCHEDULE_NAME:
+            return cleanup_existing
+        if schedule_name == global_view_workflow_module.SCHEDULE_NAME:
+            return global_view_existing
+        return None
+
+    return get_schedule_async
+
+
 class TestExistingScheduleMatchesConfigured:
     def test_returns_true_when_all_fields_match(self, temp_dbos_scheduler):
         import octobot_node.scheduler.schedules as schedules_module
@@ -185,19 +223,35 @@ class TestRegisterSchedules:
 
         yield dbos_cleanup_workflow_module_loaded
 
-    async def test_creates_schedule_when_missing(self, dbos_cleanup_workflow_module, temp_dbos_scheduler):
+    @pytest.fixture
+    def global_view_workflow_module(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow_module_loaded
+
+        yield global_view_workflow_module_loaded
+
+    async def test_creates_schedule_when_missing(
+        self,
+        dbos_cleanup_workflow_module,
+        global_view_workflow_module,
+        temp_dbos_scheduler,
+    ):
         import octobot_node.scheduler.schedules as schedules_module
 
-        schedule_input = _configured_cleanup_schedule_input(dbos_cleanup_workflow_module)
+        cleanup_schedule_input = _configured_cleanup_schedule_input(dbos_cleanup_workflow_module)
+        global_view_schedule_input = _configured_global_view_schedule_input(global_view_workflow_module)
         mock_logger = mock.Mock()
 
         with mock.patch(
             "octobot_node.scheduler.schedules.dbos_cleanup_workflow.get_schedule_input",
-            return_value=schedule_input,
+            return_value=cleanup_schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=None,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=None,
+                global_view_existing=None,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -214,40 +268,68 @@ class TestRegisterSchedules:
         ) as backfill_to_thread_mock:
             await schedules_module.register_schedules(temp_dbos_scheduler)
 
-        create_schedule_mock.assert_awaited_once_with(
-            schedule_name=schedule_input["schedule_name"],
-            workflow_fn=schedule_input["workflow_fn"],
-            schedule=schedule_input["schedule"],
-            context=schedule_input.get("context"),
-            automatic_backfill=schedule_input.get("automatic_backfill", False),
-            cron_timezone=schedule_input.get("cron_timezone"),
-            queue_name=schedule_input.get("queue_name"),
+        assert create_schedule_mock.await_count == 2
+        create_schedule_mock.assert_any_await(
+            schedule_name=cleanup_schedule_input["schedule_name"],
+            workflow_fn=cleanup_schedule_input["workflow_fn"],
+            schedule=cleanup_schedule_input["schedule"],
+            context=cleanup_schedule_input.get("context"),
+            automatic_backfill=cleanup_schedule_input.get("automatic_backfill", False),
+            cron_timezone=cleanup_schedule_input.get("cron_timezone"),
+            queue_name=cleanup_schedule_input.get("queue_name"),
+        )
+        create_schedule_mock.assert_any_await(
+            schedule_name=global_view_schedule_input["schedule_name"],
+            workflow_fn=global_view_schedule_input["workflow_fn"],
+            schedule=global_view_schedule_input["schedule"],
+            context=global_view_schedule_input.get("context"),
+            automatic_backfill=global_view_schedule_input.get("automatic_backfill", False),
+            cron_timezone=global_view_schedule_input.get("cron_timezone"),
+            queue_name=global_view_schedule_input.get("queue_name"),
         )
         apply_schedules_mock.assert_not_awaited()
         backfill_to_thread_mock.assert_not_awaited()
-        mock_logger.info.assert_called_once_with(
+        mock_logger.info.assert_any_call(
             "Creating schedule %s (%s)",
-            schedule_input["schedule_name"],
-            schedule_input["schedule"],
+            cleanup_schedule_input["schedule_name"],
+            cleanup_schedule_input["schedule"],
+        )
+        mock_logger.info.assert_any_call(
+            "Creating schedule %s (%s)",
+            global_view_schedule_input["schedule_name"],
+            global_view_schedule_input["schedule"],
         )
 
-    async def test_keeps_schedule_when_config_matches(self, dbos_cleanup_workflow_module, temp_dbos_scheduler):
+    async def test_keeps_schedule_when_config_matches(
+        self,
+        dbos_cleanup_workflow_module,
+        global_view_workflow_module,
+        temp_dbos_scheduler,
+    ):
         import octobot_node.scheduler.schedules as schedules_module
 
-        schedule_input = _configured_cleanup_schedule_input(dbos_cleanup_workflow_module)
-        existing_schedule = _matching_existing_schedule(
+        cleanup_schedule_input = _configured_cleanup_schedule_input(dbos_cleanup_workflow_module)
+        global_view_schedule_input = _configured_global_view_schedule_input(global_view_workflow_module)
+        existing_cleanup_schedule = _matching_existing_schedule(
             dbos_cleanup_workflow_module,
             temp_dbos_scheduler,
+        )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
         )
         mock_logger = mock.Mock()
 
         with mock.patch(
             "octobot_node.scheduler.schedules.dbos_cleanup_workflow.get_schedule_input",
-            return_value=schedule_input,
+            return_value=cleanup_schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_cleanup_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -267,30 +349,47 @@ class TestRegisterSchedules:
         create_schedule_mock.assert_not_awaited()
         apply_schedules_mock.assert_not_awaited()
         backfill_to_thread_mock.assert_not_awaited()
-        mock_logger.info.assert_called_once_with(
+        mock_logger.info.assert_any_call(
             "Keeping existing schedule %s (%s)",
-            schedule_input["schedule_name"],
-            schedule_input["schedule"],
+            cleanup_schedule_input["schedule_name"],
+            cleanup_schedule_input["schedule"],
+        )
+        mock_logger.info.assert_any_call(
+            "Keeping existing schedule %s (%s)",
+            global_view_schedule_input["schedule_name"],
+            global_view_schedule_input["schedule"],
         )
 
-    async def test_recreates_schedule_when_config_differs(self, dbos_cleanup_workflow_module, temp_dbos_scheduler):
+    async def test_recreates_schedule_when_config_differs(
+        self,
+        dbos_cleanup_workflow_module,
+        global_view_workflow_module,
+        temp_dbos_scheduler,
+    ):
         import octobot_node.scheduler.schedules as schedules_module
 
-        schedule_input = _configured_cleanup_schedule_input(dbos_cleanup_workflow_module)
-        existing_schedule = _matching_existing_schedule(
+        cleanup_schedule_input = _configured_cleanup_schedule_input(dbos_cleanup_workflow_module)
+        existing_cleanup_schedule = _matching_existing_schedule(
             dbos_cleanup_workflow_module,
             temp_dbos_scheduler,
             automatic_backfill=False,
         )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
+        )
         mock_logger = mock.Mock()
 
         with mock.patch(
             "octobot_node.scheduler.schedules.dbos_cleanup_workflow.get_schedule_input",
-            return_value=schedule_input,
+            return_value=cleanup_schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_cleanup_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -308,17 +407,23 @@ class TestRegisterSchedules:
             await schedules_module.register_schedules(temp_dbos_scheduler)
 
         create_schedule_mock.assert_not_awaited()
-        apply_schedules_mock.assert_awaited_once_with([schedule_input])
+        apply_schedules_mock.assert_awaited_once_with([cleanup_schedule_input])
         backfill_to_thread_mock.assert_not_awaited()
-        mock_logger.info.assert_called_once_with(
+        mock_logger.info.assert_any_call(
             "Updating schedule %s (%s): configuration changed",
-            schedule_input["schedule_name"],
-            schedule_input["schedule"],
+            cleanup_schedule_input["schedule_name"],
+            cleanup_schedule_input["schedule"],
+        )
+        mock_logger.info.assert_any_call(
+            "Keeping existing schedule %s (%s)",
+            global_view_workflow_module.SCHEDULE_NAME,
+            _configured_global_view_schedule_input(global_view_workflow_module)["schedule"],
         )
 
     async def test_backfills_when_last_fired_at_is_null(
         self,
         dbos_cleanup_workflow_module,
+        global_view_workflow_module,
         temp_dbos_scheduler,
     ):
         import octobot_node.scheduler.schedules as schedules_module
@@ -327,6 +432,9 @@ class TestRegisterSchedules:
         existing_schedule = _matching_existing_schedule(
             dbos_cleanup_workflow_module,
             temp_dbos_scheduler,
+        )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
         )
         existing_schedule["last_fired_at"] = None
         anchor = datetime.datetime(2026, 7, 14, 6, 30, 0, tzinfo=datetime.timezone.utc)
@@ -348,8 +456,12 @@ class TestRegisterSchedules:
             return_value=schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -409,6 +521,7 @@ class TestRegisterSchedules:
     async def test_skips_backfill_when_all_window_slots_terminal(
         self,
         dbos_cleanup_workflow_module,
+        global_view_workflow_module,
         temp_dbos_scheduler,
     ):
         import octobot_node.scheduler.schedules as schedules_module
@@ -417,6 +530,9 @@ class TestRegisterSchedules:
         existing_schedule = _matching_existing_schedule(
             dbos_cleanup_workflow_module,
             temp_dbos_scheduler,
+        )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
         )
         existing_schedule["last_fired_at"] = None
         anchor = datetime.datetime(2026, 7, 14, 6, 30, 0, tzinfo=datetime.timezone.utc)
@@ -440,8 +556,12 @@ class TestRegisterSchedules:
             return_value=schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -489,6 +609,7 @@ class TestRegisterSchedules:
     async def test_backfill_logs_unchanged_when_slot_already_terminal_in_mixed_window(
         self,
         dbos_cleanup_workflow_module,
+        global_view_workflow_module,
         temp_dbos_scheduler,
     ):
         import octobot_node.scheduler.schedules as schedules_module
@@ -498,6 +619,9 @@ class TestRegisterSchedules:
         existing_schedule = _matching_existing_schedule(
             dbos_cleanup_workflow_module,
             temp_dbos_scheduler,
+        )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
         )
         existing_schedule["last_fired_at"] = None
         existing_schedule["schedule"] = "0 * * * *"
@@ -533,8 +657,12 @@ class TestRegisterSchedules:
             return_value=schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -589,6 +717,7 @@ class TestRegisterSchedules:
     async def test_skips_backfill_when_last_fired_at_set(
         self,
         dbos_cleanup_workflow_module,
+        global_view_workflow_module,
         temp_dbos_scheduler,
     ):
         import octobot_node.scheduler.schedules as schedules_module
@@ -598,14 +727,21 @@ class TestRegisterSchedules:
             dbos_cleanup_workflow_module,
             temp_dbos_scheduler,
         )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
+        )
 
         with mock.patch(
             "octobot_node.scheduler.schedules.dbos_cleanup_workflow.get_schedule_input",
             return_value=schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
@@ -627,6 +763,7 @@ class TestRegisterSchedules:
     async def test_skips_backfill_when_automatic_backfill_false(
         self,
         dbos_cleanup_workflow_module,
+        global_view_workflow_module,
         temp_dbos_scheduler,
     ):
         import octobot_node.scheduler.schedules as schedules_module
@@ -638,6 +775,9 @@ class TestRegisterSchedules:
             temp_dbos_scheduler,
             automatic_backfill=False,
         )
+        existing_global_view_schedule = _matching_existing_global_view_schedule(
+            global_view_workflow_module,
+        )
         existing_schedule["last_fired_at"] = None
 
         with mock.patch(
@@ -645,8 +785,12 @@ class TestRegisterSchedules:
             return_value=schedule_input,
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
-            new_callable=mock.AsyncMock,
-            return_value=existing_schedule,
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                cleanup_existing=existing_schedule,
+                global_view_existing=existing_global_view_schedule,
+            ),
         ), mock.patch(
             "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
             new_callable=mock.AsyncMock,
