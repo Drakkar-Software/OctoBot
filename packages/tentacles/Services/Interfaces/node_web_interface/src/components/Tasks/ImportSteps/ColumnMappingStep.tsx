@@ -110,24 +110,25 @@ function RowParamsCell({
           {param.label}
           {param.required && <span className="text-destructive">*</span>}:
         </span>
+        {/* Avoid type="password": browsers treat it as a login credential and
+            offer to save. Mask sensitive values with -webkit-text-security instead. */}
         <Input
           value={value}
           onChange={(e) =>
             onParamChange(actionRow.rowIndex, param.key, e.target.value)
           }
-          type={
-            param.type === "number"
-              ? "number"
-              : param.type === "password"
-                ? "password"
-                : "text"
-          }
+          type={param.type === "number" ? "number" : "text"}
+          autoComplete="off"
           placeholder={
             param.type === "numberOrDate"
               ? `${param.label} (number or date)`
               : param.label
           }
-          className="h-6 text-xs w-28"
+          className={
+            param.type === "password"
+              ? "h-6 text-xs w-28 [-webkit-text-security:disc]"
+              : "h-6 text-xs w-28"
+          }
         />
       </div>
     )
@@ -333,6 +334,7 @@ export default function ColumnMappingStep({
             onChange={(e) =>
               handleNameChange(info.row.original.rowIndex, e.target.value)
             }
+            autoComplete="off"
             className="h-7 text-xs w-32"
           />
         ),
