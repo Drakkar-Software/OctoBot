@@ -2,7 +2,7 @@
   "name": "@drakkar.software/octobot-client",
   "version": "0.4.0",
   "description": "TypeScript client for the OctoBot node protocol: wallet auth, accounts, automations, strategies, and user actions over the Starfish sync transport.",
-  "license": "GPL-3.0",
+  "license": "LGPL-3.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Drakkar-Software/OctoBot.git",
