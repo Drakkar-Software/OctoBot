@@ -98,6 +98,46 @@ describe("resolveMetaTemplate", () => {
     expect(exchangeParam?.defaultValue).toBe("kraken")
   })
 
+  it("applies later-step override as defaultValue for duplicate param keys", () => {
+    const def: MetaTemplateDef = {
+      id: "test",
+      label: "Test",
+      description: "",
+      steps: [
+        { templateId: "blockchain_wallet_init" },
+        {
+          templateId: "transfer",
+          overrides: { BLOCKCHAIN_FROM: "bitcoin" },
+        },
+      ],
+    }
+    const resolved = resolveMetaTemplate(def)
+    const blockchainFrom = resolved.params.find(
+      (param) => param.key === "BLOCKCHAIN_FROM",
+    )
+    expect(blockchainFrom?.defaultValue).toBe("bitcoin")
+  })
+
+  it("preserves first-step override when later duplicate step has no override", () => {
+    const def: MetaTemplateDef = {
+      id: "test",
+      label: "Test",
+      description: "",
+      steps: [
+        {
+          templateId: "blockchain_wallet_init",
+          overrides: { BLOCKCHAIN_FROM: "bitcoin" },
+        },
+        { templateId: "transfer" },
+      ],
+    }
+    const resolved = resolveMetaTemplate(def)
+    const blockchainFrom = resolved.params.find(
+      (param) => param.key === "BLOCKCHAIN_FROM",
+    )
+    expect(blockchainFrom?.defaultValue).toBe("bitcoin")
+  })
+
   it("sets hidden:true on hiddenParams", () => {
     const def: MetaTemplateDef = {
       id: "test",

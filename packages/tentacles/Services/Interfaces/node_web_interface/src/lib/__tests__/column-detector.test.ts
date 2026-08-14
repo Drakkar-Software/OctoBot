@@ -5,6 +5,7 @@ import {
   detectColumnsAndTemplates,
   detectMappingsForTemplate,
   extractColumnValues,
+  mergeParamValuesOnTemplateChange,
 } from "../column-detector"
 
 describe("column-detector", () => {
@@ -272,6 +273,129 @@ describe("column-detector", () => {
       const values = buildParamValuesForRow(row, mappings)
       expect(values.ADDR).toBeUndefined()
       expect(values.AMT).toBe("1.5")
+    })
+
+    it("applies template defaultValue when mapped column cell is empty", () => {
+      const row = ["", "bitcoin"]
+      const mappings = [
+        {
+          columnIndex: 0,
+          paramKey: "BLOCKCHAIN_FROM",
+          confidence: "high" as const,
+        },
+      ]
+      const template = {
+        id: "transfer",
+        label: "Transfer",
+        description: "",
+        actionTypes: ["transfer"],
+        params: [
+          {
+            key: "BLOCKCHAIN_FROM",
+            label: "Transfer Network",
+            required: true,
+            type: "text" as const,
+            defaultValue: "bitcoin",
+          },
+        ],
+      }
+
+      const values = buildParamValuesForRow(row, mappings, template)
+      expect(values.BLOCKCHAIN_FROM).toBe("bitcoin")
+    })
+  })
+
+  describe("mergeParamValuesOnTemplateChange", () => {
+    const changenowLikeTemplate = {
+      id: "changenow_like",
+      label: "ChangeNOW-like",
+      description: "",
+      actionTypes: ["trade"],
+      params: [
+        {
+          key: "ORDER_AMOUNT",
+          label: "Order Amount",
+          required: true,
+          type: "number" as const,
+        },
+        {
+          key: "EXCHANGE_TO",
+          label: "Exchange",
+          required: false,
+          type: "text" as const,
+          defaultValue: "changenow",
+        },
+        {
+          key: "BLOCKCHAIN_FROM",
+          label: "Transfer Network",
+          required: true,
+          type: "text" as const,
+          defaultValue: "bitcoin",
+        },
+      ],
+    }
+
+    it("preserves manual edits when template has no default for that param", () => {
+      const existing = {
+        ORDER_AMOUNT: "0.5",
+        EXCHANGE_TO: "binance",
+      }
+      const merged = mergeParamValuesOnTemplateChange(
+        existing,
+        changenowLikeTemplate,
+      )
+      expect(merged.ORDER_AMOUNT).toBe("0.5")
+    })
+
+    it("applies template defaultValue over existing value", () => {
+      const existing = {
+        EXCHANGE_TO: "binance",
+        ORDER_AMOUNT: "1.0",
+      }
+      const merged = mergeParamValuesOnTemplateChange(
+        existing,
+        changenowLikeTemplate,
+      )
+      expect(merged.EXCHANGE_TO).toBe("changenow")
+    })
+
+    it("applies template default for params not in existing values", () => {
+      const existing = { ORDER_AMOUNT: "0.5" }
+      const merged = mergeParamValuesOnTemplateChange(
+        existing,
+        changenowLikeTemplate,
+      )
+      expect(merged.BLOCKCHAIN_FROM).toBe("bitcoin")
+    })
+
+    it("drops keys not in the new template", () => {
+      const existing = {
+        ORDER_AMOUNT: "0.5",
+        LEGACY_PARAM: "keep-me-out",
+      }
+      const merged = mergeParamValuesOnTemplateChange(
+        existing,
+        changenowLikeTemplate,
+      )
+      expect(merged.LEGACY_PARAM).toBeUndefined()
+    })
+
+    it("keeps empty existing value when template has no default", () => {
+      const existing = { ORDER_AMOUNT: "" }
+      const merged = mergeParamValuesOnTemplateChange(
+        existing,
+        changenowLikeTemplate,
+      )
+      expect(merged.ORDER_AMOUNT).toBe("")
+    })
+
+    it("omits param when existing has no value and template has no default", () => {
+      const existing = { EXCHANGE_TO: "binance" }
+      const merged = mergeParamValuesOnTemplateChange(
+        existing,
+        changenowLikeTemplate,
+      )
+      expect(merged.ORDER_AMOUNT).toBeUndefined()
     })
   })
 })

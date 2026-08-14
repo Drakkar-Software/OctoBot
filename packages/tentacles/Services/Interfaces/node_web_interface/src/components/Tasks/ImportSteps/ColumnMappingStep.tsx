@@ -27,10 +27,10 @@ import {
 import useCustomToast from "@/hooks/useCustomToast"
 import { type ActionParamDef, isParamValueValid } from "@/lib/action-templates"
 import {
-  buildParamValuesForRow,
   type ColumnMapping,
   detectColumnsAndTemplates,
   detectMappingsForTemplate,
+  mergeParamValuesOnTemplateChange,
 } from "@/lib/column-detector"
 import {
   getAllTemplates,
@@ -45,8 +45,46 @@ import {
 const SENSITIVE_HEADER_PATTERNS =
   /\b(key|private|secret|password|mnemonic|seed|pk)\b/i
 
+const ACTION_NAME_CSV_HEADER = "name"
+
 function isSensitiveHeader(header: string): boolean {
   return SENSITIVE_HEADER_PATTERNS.test(header)
+}
+
+function findHeaderColumnIndex(
+  headers: string[],
+  columnHeader: string,
+): number {
+  const normalized = columnHeader.trim().toLowerCase()
+  return headers.findIndex(
+    (header) => header.trim().toLowerCase() === normalized,
+  )
+}
+
+function filterFromUnmappedColumns(
+  headers: string[],
+  unmappedColumns: number[],
+  excludedColumnHeader: string,
+): number[] {
+  const excludedColumnIndex = findHeaderColumnIndex(headers, excludedColumnHeader)
+  if (excludedColumnIndex < 0) return unmappedColumns
+  return unmappedColumns.filter(
+    (columnIndex) => columnIndex !== excludedColumnIndex,
+  )
+}
+
+function computeUnmappedColumns(
+  headers: string[],
+  mappings: ColumnMapping[],
+): number[] {
+  const mappedColumnIndices = new Set(mappings.map((mapping) => mapping.columnIndex))
+  return filterFromUnmappedColumns(
+    headers,
+    headers
+      .map((_, columnIndex) => columnIndex)
+      .filter((columnIndex) => !mappedColumnIndices.has(columnIndex)),
+    ACTION_NAME_CSV_HEADER,
+  )
 }
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -64,8 +102,37 @@ export interface ActionRow {
 export interface ColumnMappingStepProps {
   headers: string[]
   rows: string[][]
+  /** Restored rows when returning from Review (skips re-detection) */
+  initialActionRows?: ActionRow[]
   onConfirm: (actions: ActionRow[]) => void
   onBack: () => void
+}
+
+function buildActionRowsFromDetection(
+  headers: string[],
+  rows: string[][],
+  detectionResults: ReturnType<typeof detectColumnsAndTemplates>,
+): ActionRow[] {
+  const nameColumnIndex = findHeaderColumnIndex(headers, ACTION_NAME_CSV_HEADER)
+  return detectionResults.map((det, idx) => {
+    const nameFromCsv =
+      nameColumnIndex >= 0
+        ? (rows[idx]?.[nameColumnIndex] ?? "").trim()
+        : ""
+    const unmappedColumns = filterFromUnmappedColumns(
+      headers,
+      det.unmappedColumns,
+      ACTION_NAME_CSV_HEADER,
+    )
+    return {
+      rowIndex: idx,
+      templateId: det.templateId,
+      paramValues: det.paramValues,
+      mappings: det.mappings,
+      unmappedColumns,
+      name: nameFromCsv || `Action ${idx + 1}`,
+    }
+  })
 }
 
 interface RowParamsCellProps {
@@ -184,11 +251,15 @@ const columnHelper = createColumnHelper<ActionRow>()
 export default function ColumnMappingStep({
   headers,
   rows,
+  initialActionRows,
   onConfirm,
   onBack,
 }: ColumnMappingStepProps) {
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const lastChangedTemplateIdRef = useRef<string | null>(
+    initialActionRows?.[0]?.templateId ?? null,
+  )
   // Increment to force re-render after a user template is imported (getAllTemplates reads localStorage)
   const [, setUserTemplatesVersion] = useState(0)
 
@@ -204,24 +275,41 @@ export default function ColumnMappingStep({
   )
 
   const [actionRows, setActionRows] = useState<ActionRow[]>(() => {
-    const nameIdx = headers.findIndex((h) => h.trim().toLowerCase() === "name")
-    return initialDetection.map((det, idx) => {
-      const nameFromCsv =
-        nameIdx >= 0 ? (rows[idx]?.[nameIdx] ?? "").trim() : ""
-      const unmappedColumns =
-        nameIdx >= 0 && det.unmappedColumns.includes(nameIdx)
-          ? det.unmappedColumns.filter((i) => i !== nameIdx)
-          : det.unmappedColumns
-      return {
-        rowIndex: idx,
-        templateId: det.templateId,
-        paramValues: det.paramValues,
-        mappings: det.mappings,
-        unmappedColumns,
-        name: nameFromCsv || `Action ${idx + 1}`,
-      }
-    })
+    if (initialActionRows && initialActionRows.length > 0) {
+      return initialActionRows
+    }
+    return buildActionRowsFromDetection(headers, rows, initialDetection)
   })
+
+  const applyTemplateToRows = useCallback(
+    (templateId: string, rowIndices?: number[]) => {
+      const template = getTemplateById(templateId)
+      if (!template) return
+
+      const mappings = detectMappingsForTemplate(template, headers, rows)
+      const unmappedColumns = computeUnmappedColumns(headers, mappings)
+
+      setLastUsedImportTemplateId(templateId)
+      setActionRows((prev) =>
+        prev.map((row) => {
+          if (rowIndices && !rowIndices.includes(row.rowIndex)) {
+            return row
+          }
+          return {
+            ...row,
+            templateId,
+            mappings,
+            paramValues: mergeParamValuesOnTemplateChange(
+              row.paramValues,
+              template,
+            ),
+            unmappedColumns,
+          }
+        }),
+      )
+    },
+    [headers, rows],
+  )
 
   const updateRow = useCallback(
     (rowIndex: number, update: Partial<ActionRow>) => {
@@ -240,33 +328,18 @@ export default function ColumnMappingStep({
 
   const handleTemplateChange = useCallback(
     (rowIndex: number, newTemplateId: string) => {
-      const template = getTemplateById(newTemplateId)
-      if (!template) return
-
-      const newMappings = detectMappingsForTemplate(template, headers, rows)
-      const csvRow = rows[rowIndex]
-      if (!csvRow) return
-
-      const newParamValues = buildParamValuesForRow(
-        csvRow,
-        newMappings,
-        template,
-      )
-      const mappedCols = new Set(newMappings.map((m) => m.columnIndex))
-      const unmappedColumns = headers
-        .map((_, i) => i)
-        .filter((i) => !mappedCols.has(i))
-
-      setLastUsedImportTemplateId(newTemplateId)
-      updateRow(rowIndex, {
-        templateId: newTemplateId,
-        mappings: newMappings,
-        paramValues: newParamValues,
-        unmappedColumns,
-      })
+      lastChangedTemplateIdRef.current = newTemplateId
+      applyTemplateToRows(newTemplateId, [rowIndex])
     },
-    [headers, rows, updateRow],
+    [applyTemplateToRows],
   )
+
+  const handleApplyTemplateToAllRows = useCallback(() => {
+    const templateId =
+      lastChangedTemplateIdRef.current ?? actionRows[0]?.templateId
+    if (!templateId) return
+    applyTemplateToRows(templateId)
+  }, [actionRows, applyTemplateToRows])
 
   const handleParamChange = useCallback(
     (rowIndex: number, paramKey: string, value: string) => {
@@ -302,6 +375,9 @@ export default function ColumnMappingStep({
         resolveMetaTemplate(def) // validate it resolves without errors
         saveUserMetaTemplate(def)
         setUserTemplatesVersion((v) => v + 1)
+        setLastUsedImportTemplateId(def.id)
+        lastChangedTemplateIdRef.current = def.id
+        applyTemplateToRows(def.id)
         showSuccessToast(`Template "${def.label}" imported`)
       } catch (err) {
         showErrorToast(
@@ -309,7 +385,7 @@ export default function ColumnMappingStep({
         )
       }
     },
-    [showSuccessToast, showErrorToast],
+    [applyTemplateToRows, showSuccessToast, showErrorToast],
   )
 
   // Build dynamic columns based on the union of all param keys across rows
@@ -389,7 +465,15 @@ export default function ColumnMappingStep({
             or change templates as needed.
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleApplyTemplateToAllRows}
+            disabled={actionRows.length === 0}
+          >
+            Apply to all rows
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
