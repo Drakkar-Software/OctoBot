@@ -343,3 +343,23 @@ export function buildParamValuesForRow(
   }
   return values
 }
+
+/**
+ * Merge existing param values when the user switches templates.
+ * Template defaultValue wins; all other params keep current UI values.
+ * Does not read CSV — avoids overwriting manual edits on template change.
+ */
+export function mergeParamValuesOnTemplateChange(
+  existingValues: Record<string, string>,
+  template: ActionTemplate,
+): Record<string, string> {
+  const merged: Record<string, string> = {}
+  for (const param of template.params) {
+    if (param.defaultValue !== undefined) {
+      merged[param.key] = param.defaultValue
+    } else if (param.key in existingValues) {
+      merged[param.key] = existingValues[param.key] ?? ""
+    }
+  }
+  return merged
+}

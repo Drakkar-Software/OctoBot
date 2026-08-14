@@ -128,8 +128,14 @@ export default function ImportTask({ onSuccess }: ImportTaskProps) {
         <ColumnMappingStep
           headers={csvData.headers}
           rows={csvData.rows}
+          initialActionRows={
+            actionRows.length > 0 ? actionRows : undefined
+          }
           onConfirm={handleMappingConfirm}
-          onBack={() => setCurrentStep("upload")}
+          onBack={() => {
+            setActionRows([])
+            setCurrentStep("upload")
+          }}
         />
       )}
 
