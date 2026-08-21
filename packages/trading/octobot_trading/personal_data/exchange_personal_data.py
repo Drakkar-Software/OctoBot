@@ -130,8 +130,8 @@ class ExchangePersonalData(util.Initializable):
                 except asyncio.TimeoutError:
                     self.logger.error(
                         f"Expected portfolio update timed out after {constants.EXPECTED_PORTFOLIO_UPDATE_TIMEOUT} "
-                        f"seconds when waiting for filled order update. Order: "
-                        "{logging.get_private_minimized_message_if_necessary(order)}"
+                        "seconds when waiting for filled order update. Order: "
+                        f"{logging.get_private_minimized_message_if_necessary(order)}"
                     )
             if self.exchange_manager.is_future:
                 changed = await self.positions_manager.handle_position_update_from_order(
