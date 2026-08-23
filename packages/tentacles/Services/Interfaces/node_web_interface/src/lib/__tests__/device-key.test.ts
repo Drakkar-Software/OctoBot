@@ -7,6 +7,7 @@ import {
   derivePassphraseKey,
   hasStoredClientKeys,
   loadClientKeys,
+  loadPassword,
   saveClientKeys,
   savePassword,
 } from "../device-key"
@@ -77,11 +78,13 @@ async function clearIDB(): Promise<void> {
 
 beforeEach(async () => {
   localStorageMock.clear()
+  await clearPassword()
   await clearIDB()
 })
 
 afterEach(async () => {
   localStorageMock.clear()
+  await clearPassword()
   await clearIDB()
 })
 
@@ -348,5 +351,43 @@ describe("wallet switch restores keys on login", () => {
     setWallet(WALLET_A)
     await savePassword(PASSPHRASE_A)
     expect(await loadClientKeys()).toEqual(SAMPLE_KEYS)
+  })
+})
+
+// ─── connection reuse / password cache ──────────────────────────────────────
+
+describe("IndexedDB connection reuse", () => {
+  it("does not reopen the database on repeated reads", async () => {
+    setWallet(WALLET_A)
+    await savePassword(PASSPHRASE_A)
+    await saveClientKeys(SAMPLE_KEYS)
+    // warm up so the shared connection is already established
+    await loadClientKeys()
+
+    // loadClientKeys always hits the store, so any reopen would show up here
+    const openSpy = vi.spyOn(indexedDB, "open")
+    for (let i = 0; i < 5; i++) {
+      expect(await loadClientKeys()).toEqual(SAMPLE_KEYS)
+    }
+    expect(openSpy).not.toHaveBeenCalled()
+    openSpy.mockRestore()
+  })
+})
+
+describe("password cache", () => {
+  it("clearPassword invalidates the cached value", async () => {
+    await savePassword(PASSPHRASE_A)
+    expect(await loadPassword()).toBe(PASSPHRASE_A)
+
+    await clearPassword()
+    expect(await loadPassword()).toBeNull()
+  })
+
+  it("savePassword refreshes the cached value", async () => {
+    await savePassword(PASSPHRASE_A)
+    expect(await loadPassword()).toBe(PASSPHRASE_A)
+
+    await savePassword(PASSPHRASE_B)
+    expect(await loadPassword()).toBe(PASSPHRASE_B)
   })
 })
