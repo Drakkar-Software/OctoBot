@@ -52,6 +52,42 @@ Separate from the node's own collections above — the device-code website-pairi
 | Join session grant document kind | `'octobot-pairing-grant'` | `client/pairing/pairingGrantExchange.ts` |
 | Join session grant document version | `1` | `client/pairing/pairingGrantExchange.ts` |
 
+The short code a user reads off one screen and types into another is drawn from a deliberately
+reduced alphabet, and both halves of that shape are exported so a client classifying scans does not
+have to re-derive them:
+
+| Constant | Value | TS location |
+|---|---|---|
+| Pairing code alphabet | `ABCDEFGHJKMNPQRSTUVWXYZ23456789` | `identity/pairingRequest.ts::PAIRING_CODE_ALPHABET` |
+| Pairing code length | `8` | `identity/pairingRequest.ts::PAIRING_CODE_LENGTH` |
+
+`I`, `O`, `L`, `0` and `1` are absent on purpose. Use `parsePairingCode()` rather than a
+hand-written regular expression.
+
+## QR frame transport
+
+Not shared with the node's Python side, but shared between every client that *displays* a QR and
+every client that *scans* one, which fails just as silently when the two disagree. See
+[QR transport](qr-transport.md) for the full format.
+
+| Constant | Value | TS location |
+|---|---|---|
+| Codec token | `OBQR2` | `protocol/qrFrames.ts::QR_FRAME_CODEC` |
+| Header layout | `OBQR2\|<kind>\|<8 hex>\|<2-digit index>\|<2-digit total>\|` | `protocol/qrFrames.ts` |
+| Header width | 23 bytes, fixed | `protocol/qrFrames.ts::QR_FRAME_HEADER_LENGTH` |
+| Frame ceiling | 240 bytes | `protocol/qrFrames.ts::QR_FRAME_MAX_BYTES` |
+| Body ceiling | 217 bytes | `protocol/qrFrames.ts::QR_FRAME_BODY_MAX_BYTES` |
+| Unframed threshold | 300 bytes | `protocol/qrFrames.ts::QR_SINGLE_FRAME_MAX_BYTES` |
+| Frame count ceiling | 99 | `protocol/qrFrames.ts::QR_MAX_FRAMES` |
+| Cycling cadence | 250 ms | `protocol/qrFrames.ts::QR_FRAME_INTERVAL_MS` |
+| Kind: unspecified | `-` | `protocol/qrFrames.ts::QR_FRAME_KIND_UNSPECIFIED` |
+| Kind: action proposal | `p` | `protocol/qrFrames.ts::QR_FRAME_KIND_ACTION_PROPOSAL` |
+| Kind: read-only pairing | `r` | `protocol/qrFrames.ts::QR_FRAME_KIND_READ_ONLY_PAIRING` |
+
+The header width is load-bearing: the body is recovered by a fixed `slice`, never a `split('|')`,
+because a body is usually JSON and contains `|` freely. Widening any field breaks every scanner
+that has not shipped the same change.
+
 The request payload also carries a required `requesterKind: 'website' | 'device'` field
 (`identity/pairingRequest.ts`) — `'website'` for the original case (a third-party site running this
 package in a browser), `'device'` for another OctoBot client (e.g. a second phone) pairing as a

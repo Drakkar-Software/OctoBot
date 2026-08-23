@@ -3,6 +3,7 @@ import { classifyScannedCode } from '../src/node-api/wallet.js'
 import { createReadOnlyPairing } from '../src/identity/pairing.js'
 import { encodeActionProposal } from '../src/protocol/proposal.js'
 import { buildStopAutomationConfig } from '../src/protocol/actions.js'
+import { encodeQrFrames, createQrFrameAccumulator, QR_FRAME_KIND_ACTION_PROPOSAL } from '../src/protocol/qrFrames.js'
 
 // BIP39 test vectors — real checksums, so validateSeedPhrase accepts them.
 const SEED_12 = 'legal winner thank year wave sausage worth useful legal winner thank yellow'
@@ -136,5 +137,49 @@ describe('classifyScannedCode', () => {
 
   it('rejects an empty code', async () => {
     expect(await classifyScannedCode('   ')).toEqual({ kind: 'unknown' })
+  })
+})
+
+describe('classifyScannedCode: QR frames', () => {
+  // classifyScannedCode is deliberately frame-unaware: framing is a transport
+  // concern that reassembles BEFORE classification. A caller that does not
+  // run an accumulator therefore sees a raw frame as an unrecognized code and
+  // errors immediately, rather than half-recognizing it — which is what makes
+  // "just don't accept frames on this screen" a safe thing for a
+  // single-purpose scanner to do.
+  it('a raw frame of a framed action proposal classifies as unknown, not as a proposal', async () => {
+    const payload = encodeActionProposal(
+      Array.from({ length: 40 }, (_, i) => ({ configuration: buildStopAutomationConfig(`auto_${i}`) })),
+    )
+    const frames = encodeQrFrames(payload, { kind: QR_FRAME_KIND_ACTION_PROPOSAL })
+    expect(frames.length).toBeGreaterThan(1)
+    for (const f of frames) {
+      expect(await classifyScannedCode(f)).toEqual({ kind: 'unknown' })
+    }
+  })
+
+  it('a transfer reassembled through the accumulator classifies as an action proposal', async () => {
+    // The actual end-to-end path: frame -> accumulator -> classify. An earlier
+    // version of this test classified a raw single payload and never touched
+    // the accumulator, so it duplicated an existing case and left the path it
+    // was named for untested.
+    const payload = encodeActionProposal(
+      Array.from({ length: 40 }, (_, i) => ({ configuration: buildStopAutomationConfig(`auto_${i}`) })),
+    )
+    const frames = encodeQrFrames(payload, { kind: QR_FRAME_KIND_ACTION_PROPOSAL })
+    expect(frames.length).toBeGreaterThan(1)
+
+    const acc = createQrFrameAccumulator()
+    let reassembled: string | null = null
+    for (const f of frames) {
+      const r = acc.accept(f)
+      if (r.status === 'complete') reassembled = r.payload
+    }
+    expect(reassembled).toBe(payload)
+
+    const result = await classifyScannedCode(reassembled!)
+    expect(result.kind).toBe('octobotActionProposal')
+    if (result.kind !== 'octobotActionProposal') throw new Error('unreachable')
+    expect(result.payload.actions).toHaveLength(40)
   })
 })

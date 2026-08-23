@@ -45,6 +45,16 @@ const { payload } = await createReadOnlyPairing(seed, 'bip44', { host: '192.168.
 The payload is fully self-contained (it carries the node's endpoint), so the scanning side needs
 nothing else to connect.
 
+**It is also around 1.2 KB**, which is well past what one comfortably-scannable QR holds. Run it
+through [`encodeQrFrames`](qr-transport.md) and cycle the result rather than rendering it as a
+single dense code.
+
+**Treat the displayed code as secret material.** This payload carries a capability certificate and
+one AES key per granted collection; an action proposal can carry exchange API keys, passphrases and
+seed phrases as plaintext JSON. A cycling code stays on screen for seconds rather than an instant,
+so suppress screenshots while it is up, dismiss it once the hand-off completes, and warn against
+screen sharing.
+
 **Default scope**: `ops: ['read', 'list']` — never `'write'` — restricted to the `userData` and
 `accounts` collections. That's enough to reconstruct `accounts.list()`, `automations.list()`, *and*
 `strategies.list()` (the last one is implemented via a `userData` pull, not the legacy `strategies`
@@ -83,7 +93,7 @@ import { connectReadOnlyDevice } from '@drakkar.software/octobot-client'
 const octobot = await connectReadOnlyDevice(pairingPayload)
 const accounts = await octobot.accounts.list()               // works, real pull
 const proposed = await octobot.automations.stop(automationId) // builds, does not send
-console.log(proposed.payload)                                 // render this as a QR
+console.log(proposed.payload)                                 // render this as a QR (see below)
 ```
 
 `ReadOnlyOctoBotClient` has the same method names as the full `OctoBotClient` — `accounts.create/
@@ -98,6 +108,38 @@ append rights to sequence it itself; the executing side must honor that ordering
 proposal.
 
 ## Executing a proposal
+
+A proposal is the payload here most likely to overflow a single QR: `automations.create()` alone
+carries two full action configurations. Frame it before rendering, and reassemble before decoding.
+The scanning side is the half that is easy to get wrong, because a scanner that simply calls
+`decodeActionProposal` on every barcode event never succeeds against a framed transfer, and fails
+by reporting an unrecognized code rather than by erroring:
+
+```ts
+import { createQrFrameAccumulator } from '@drakkar.software/octobot-client/protocol'
+
+const acc = createQrFrameAccumulator()
+
+function onBarcode(data: string) {
+  const r = acc.accept(data)
+  switch (r.status) {
+    // Not a frame at all: a payload short enough to fit one code is never
+    // framed, so the single-action case arrives here. Handling `ignored` is
+    // what keeps that case working — drop it and the most common proposal of
+    // all silently does nothing.
+    case 'ignored':   return execute(decodeActionProposal(data))
+    case 'discarded': return                      // our own malformed frame
+    case 'progress':
+    case 'restarted': return showProgress(r.progress)
+    case 'corrupt':   return                      // the producer refills it
+    case 'complete':  return execute(decodeActionProposal(r.payload))
+  }
+}
+```
+
+`decodeActionProposal` throws on anything that is not a proposal, so wrap the two `execute` calls
+if this scanner also handles other payload kinds — or route through `classifyScannedCode`, as
+[QR transport](qr-transport.md) does. That page also has the full status contract.
 
 ```ts
 import { decodeActionProposal } from '@drakkar.software/octobot-client/protocol'

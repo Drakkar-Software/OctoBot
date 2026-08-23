@@ -12,15 +12,15 @@ import type { NodeCollectionKey } from '../collections/nodeCollections.js'
  *  rate limit (not something this package controls). `randomCode()` uses
  *  rejection sampling (see `CODE_REJECT_THRESHOLD`) so this figure is the
  *  real, uniform entropy — not a biased approximation of it. */
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-const CODE_LENGTH = 8
-// 256 is not a multiple of CODE_ALPHABET.length (31) — a plain `byte %
+export const PAIRING_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+export const PAIRING_CODE_LENGTH = 8
+// 256 is not a multiple of PAIRING_CODE_ALPHABET.length (31) — a plain `byte %
 // length` would over-represent the first `256 % 31 = 8` symbols (A-H) by
 // 12.5% in every character position. Reject any byte at or above the
 // largest multiple of the alphabet length that still fits in a byte
 // (Math.floor(256 / 31) * 31 = 248) and draw a replacement — the remaining
 // range [0, 248) maps onto the 31 symbols with exactly uniform probability.
-const CODE_REJECT_THRESHOLD = Math.floor(256 / CODE_ALPHABET.length) * CODE_ALPHABET.length
+const CODE_REJECT_THRESHOLD = Math.floor(256 / PAIRING_CODE_ALPHABET.length) * PAIRING_CODE_ALPHABET.length
 const DEFAULT_REQUEST_TTL_SEC = 5 * 60
 // `expiresAt`/`createdAt` are NOT covered by popSig — anyone with the code
 // can rewrite them, and the ONLY thing that kept the code's live window
@@ -41,17 +41,35 @@ function randomCode(): string {
   const chars: string[] = []
   // Pull a batch at a time (rather than one byte per iteration) so a run of
   // rejected bytes doesn't turn into a syscall-per-byte loop — rejection
-  // hits ~3% of bytes, so a fresh CODE_LENGTH-sized batch almost always
+  // hits ~3% of bytes, so a fresh PAIRING_CODE_LENGTH-sized batch almost always
   // finishes the code outright, with a further batch only on the rare tail.
-  while (chars.length < CODE_LENGTH) {
-    const batch = randomBytes(CODE_LENGTH)
+  while (chars.length < PAIRING_CODE_LENGTH) {
+    const batch = randomBytes(PAIRING_CODE_LENGTH)
     for (const b of batch) {
       if (b >= CODE_REJECT_THRESHOLD) continue
-      chars.push(CODE_ALPHABET[b % CODE_ALPHABET.length])
-      if (chars.length === CODE_LENGTH) break
+      chars.push(PAIRING_CODE_ALPHABET[b % PAIRING_CODE_ALPHABET.length])
+      if (chars.length === PAIRING_CODE_LENGTH) break
     }
   }
   return chars.join('')
+}
+
+/** Normalize and validate a pairing code a user typed or a scanner read.
+ *  Returns the canonical (trimmed, upper-cased) code, or `null` if the input
+ *  is not one.
+ *
+ *  Exported because a pairing code is a bare human-typeable string, not JSON:
+ *  `classifyScannedCode` has no shape to match it against and would report
+ *  `'unknown'`, so a client scanning both codes and payloads has to test for
+ *  one itself. Without this, that client ends up re-deriving the alphabet and
+ *  length by hand and silently drifts the day either changes here. */
+export function parsePairingCode(value: string): string | null {
+  const normalized = value.trim().toUpperCase()
+  if (normalized.length !== PAIRING_CODE_LENGTH) return null
+  for (const ch of normalized) {
+    if (!PAIRING_CODE_ALPHABET.includes(ch)) return null
+  }
+  return normalized
 }
 
 /** What binds `code`/`devEdPub`/`devKemPub` together and proves the
