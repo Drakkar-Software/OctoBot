@@ -92,7 +92,14 @@ export {
 } from './client/mirror/index.js'
 export { strategy, type StrategyBuilders } from './client/strategy.js'
 export { createReadOnlyPairing, parseReadOnlyPairing, type ReadOnlyPairingPayload } from './identity/pairing.js'
-export { createPairingRequest, parsePairingRequest, type PairingRequestPayload } from './identity/pairingRequest.js'
+export {
+  createPairingRequest,
+  parsePairingRequest,
+  parsePairingCode,
+  PAIRING_CODE_ALPHABET,
+  PAIRING_CODE_LENGTH,
+  type PairingRequestPayload,
+} from './identity/pairingRequest.js'
 export {
   createRendezvousClient,
   pullRendezvousDoc,
@@ -102,6 +109,28 @@ export {
   type RendezvousDoc,
 } from './transport/rendezvous.js'
 export { encodeActionProposal, decodeActionProposal, type ActionProposal, type ProposedActionEntry } from './protocol/proposal.js'
+export {
+  encodeQrFrames,
+  isQrFrame,
+  parseQrFrame,
+  createQrFrameAccumulator,
+  QrPayloadTooLargeError,
+  QR_FRAME_CODEC,
+  QR_FRAME_HEADER_LENGTH,
+  QR_FRAME_INTERVAL_MS,
+  QR_FRAME_STALE_MS,
+  QR_FRAME_MAX_BYTES,
+  QR_FRAME_BODY_MAX_BYTES,
+  QR_SINGLE_FRAME_MAX_BYTES,
+  QR_MAX_FRAMES,
+  QR_FRAME_KIND_UNSPECIFIED,
+  QR_FRAME_KIND_ACTION_PROPOSAL,
+  QR_FRAME_KIND_READ_ONLY_PAIRING,
+  type QrFrame,
+  type QrFrameProgress,
+  type QrFrameAcceptResult,
+  type QrFrameAccumulator,
+} from './protocol/qrFrames.js'
 
 // The ~20 protocol types the facade's own signatures mention, flattened so a
 // first-time user never has to install/import a second package to name a

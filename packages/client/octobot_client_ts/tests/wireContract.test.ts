@@ -11,7 +11,27 @@ import { API_PREFIX, DEFAULT_NODE_PORT, NODE_STATUS_PATH } from '../src/transpor
 import { deriveAesKeyBytes } from '../src/crypto/hkdf.js'
 import { toHex } from '../src/internal/bytes.js'
 import { joinSessionPath } from '../src/transport/rendezvous.js'
-import { createPairingRequest } from '../src/identity/pairingRequest.js'
+import {
+  createPairingRequest,
+  parsePairingCode,
+  PAIRING_CODE_ALPHABET,
+  PAIRING_CODE_LENGTH,
+} from '../src/identity/pairingRequest.js'
+import {
+  encodeQrFrames,
+  parseQrFrame,
+  QR_FRAME_CODEC,
+  QR_FRAME_HEADER_LENGTH,
+  QR_FRAME_MAX_BYTES,
+  QR_FRAME_BODY_MAX_BYTES,
+  QR_SINGLE_FRAME_MAX_BYTES,
+  QR_MAX_FRAMES,
+  QR_FRAME_INTERVAL_MS,
+  QR_FRAME_STALE_MS,
+  QR_FRAME_KIND_UNSPECIFIED,
+  QR_FRAME_KIND_ACTION_PROPOSAL,
+  QR_FRAME_KIND_READ_ONLY_PAIRING,
+} from '../src/protocol/qrFrames.js'
 import { createReadOnlyPairing } from '../src/identity/pairing.js'
 import { publishPairingGrant } from '../src/client/pairing/pairingGrantExchange.js'
 import { generateDeviceKeys } from '@drakkar.software/starfish-identities'
@@ -201,3 +221,55 @@ async function deriveAesKeyBytesViaWebCrypto(secret: string, salt: string, info:
   )
   return new Uint8Array(bits)
 }
+
+// The QR frame transport is not shared with the node's Python side, but it IS
+// shared between every client that displays a QR and every client that scans
+// one — a mobile app cycling frames a desktop client cannot reassemble fails
+// exactly as silently as a sync-path mismatch. Same reason, same treatment.
+describe('wire contract: QR frame transport', () => {
+  it('pins the codec token and the fixed header width', () => {
+    expect(QR_FRAME_CODEC).toBe('OBQR2')
+    expect(QR_FRAME_HEADER_LENGTH).toBe(23)
+  })
+
+  it('pins the exact header layout, byte for byte', () => {
+    const frames = encodeQrFrames('a'.repeat(2000), { kind: QR_FRAME_KIND_ACTION_PROPOSAL })
+    const { transferId, total } = parseQrFrame(frames[0])!
+    expect(frames[0].slice(0, QR_FRAME_HEADER_LENGTH)).toBe(
+      `OBQR2|p|${transferId}|00|${String(total).padStart(2, '0')}|`,
+    )
+    expect(transferId).toMatch(/^[0-9a-f]{8}$/)
+  })
+
+  it('pins the frame budgets a scanner sizes its expectations against', () => {
+    expect(QR_FRAME_MAX_BYTES).toBe(240)
+    expect(QR_FRAME_BODY_MAX_BYTES).toBe(QR_FRAME_MAX_BYTES - QR_FRAME_HEADER_LENGTH)
+    expect(QR_FRAME_BODY_MAX_BYTES).toBe(217)
+    expect(QR_SINGLE_FRAME_MAX_BYTES).toBe(300)
+    expect(QR_MAX_FRAMES).toBe(99)
+    expect(QR_FRAME_INTERVAL_MS).toBe(250)
+    expect(QR_FRAME_STALE_MS).toBe(8000)
+  })
+
+  it('pins the kind tags: one character each, so the header stays fixed-width', () => {
+    expect(QR_FRAME_KIND_UNSPECIFIED).toBe('-')
+    expect(QR_FRAME_KIND_ACTION_PROPOSAL).toBe('p')
+    expect(QR_FRAME_KIND_READ_ONLY_PAIRING).toBe('r')
+    for (const k of [QR_FRAME_KIND_UNSPECIFIED, QR_FRAME_KIND_ACTION_PROPOSAL, QR_FRAME_KIND_READ_ONLY_PAIRING]) {
+      expect(k).toHaveLength(1)
+    }
+  })
+
+  it('a payload at or below the single-frame threshold is emitted verbatim, with no header at all', () => {
+    const payload = 'x'.repeat(QR_SINGLE_FRAME_MAX_BYTES)
+    expect(encodeQrFrames(payload, { kind: QR_FRAME_KIND_ACTION_PROPOSAL })).toEqual([payload])
+  })
+})
+
+describe('wire contract: pairing code shape', () => {
+  it('pins the alphabet and length a code is read off one screen and typed into another', () => {
+    expect(PAIRING_CODE_ALPHABET).toBe('ABCDEFGHJKMNPQRSTUVWXYZ23456789')
+    expect(PAIRING_CODE_LENGTH).toBe(8)
+  })
+
+})

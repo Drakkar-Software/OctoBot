@@ -1,6 +1,37 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
+
+- **Multi-frame QR transport (`protocol/qrFrames.ts`).** This package has always said "render the
+  payload as a QR code with whatever QR library you already have", which quietly assumed the payload
+  fits one code. Several do not: a multi-action proposal from `automations.create()` runs to
+  thousands of bytes, and a read-only pairing payload is around 1.2 KB. Encoded into a single code
+  those reach a module density a phone camera struggles with, and nothing in the package helped.
+
+  `encodeQrFrames(payload)` splits an oversized string into `OBQR2|…` frames a producer cycles at
+  `QR_FRAME_INTERVAL_MS`, and `createQrFrameAccumulator()` reassembles them on the scanning side.
+  The codec is payload-agnostic: plain string in, plain string out, so a reassembled payload goes
+  back through `classifyScannedCode` exactly as a single-frame one does, and nothing new has to be
+  taught about proposals or pairing payloads. A payload at or below `QR_SINGLE_FRAME_MAX_BYTES` is
+  returned unframed and byte-identical, so short codes stay on the path they already use.
+
+  Each frame carries a one-character advisory kind tag (`QR_FRAME_KIND_*`). The codec never
+  interprets it. It exists so a single-purpose scanner can pass `acceptKind` and drop another kind's
+  transfer at its first frame instead of collecting every frame and discovering the mismatch only
+  after reassembly. Pinned in `tests/wireContract.test.ts`: this format is shared between whatever
+  displays a QR and whatever scans it, so a drift breaks a hand-off as silently as a sync-path
+  mismatch does.
+
+- **Pairing codes are parseable from outside the package.** `CODE_ALPHABET` and `CODE_LENGTH` were
+  private, so any client that scans both device-code pairing codes and JSON payloads had to
+  re-derive the shape by hand and silently drift the day either changed. `parsePairingCode(value)`
+  now normalizes (trim, upper-case) and validates one, returning the canonical code or `null`, and
+  `PAIRING_CODE_ALPHABET` / `PAIRING_CODE_LENGTH` are exported alongside it. A pairing code is a
+  bare human-typeable string, so `classifyScannedCode` has no shape to match it against and reports
+  `'unknown'`: testing for one is necessarily the caller's job, and this gives them the real
+  definition instead of a copy of it.
+
+## 0.4.0
 
 - **Cloud mirror: one space per wallet, per-node pairing grants.** The mirror used to spread a
   wallet's collections over three spaces (`octobot-mirror`, `-private`, `-public`) because a space
@@ -25,7 +56,6 @@
   instead of `cap`, `SyncCloudMirrorResult` collapses its three space ids to one `spaceId`, and
   `MIRROR_SPACE_{SHARED,PRIVATE,PUBLIC}_NAME`/`mirrorSpaceNameFor` are replaced by
   `MIRROR_SPACE_NAME`. Requires `starfish-replica` ≥ 3.0.0-alpha.72.
-
 
 Initial version. `@drakkar.software/octobot-client` is the extraction of `@drakkar.software/octobot-sdk`'s
 wallet identity, sync transport, payload encryption, collection registry, node REST client,
