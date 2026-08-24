@@ -32,6 +32,7 @@ import octobot_commons.profiles.profile_data
 pytestmark = pytest.mark.asyncio
 
 AUTH_URL = "https://oh.fake/auth"
+_TEST_SYNC_URL = "https://test-sync.example"
 AUTH_RETURN = {
     "access_token": "1",
     "refresh_token": "2",
@@ -739,4 +740,135 @@ class TestFetchPrivateData:
             await auth.fetch_private_data()
         has_tentacles_mock.assert_awaited_once_with(auth, install_only=False)
         assert auth.user_account.has_pending_packages_to_install is True
+
+
+def test_sync_server_url_is_a_bare_origin():
+    # octobot_sync.client/mirror.writer append SYNC_MOUNT_PATH themselves; a pre-suffixed
+    # default here doubles the "/sync" segment and 404s before reaching the sync server.
+    assert not constants.SYNC_SERVER_URL.rstrip("/").endswith("/sync")
+    assert not constants.STAGING_SYNC_SERVER_URL.rstrip("/").endswith("/sync")
+
+
+def _new_auth_for_signal_session_tests():
+    auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+    auth._dk_sessions = {}
+    auth._dk_session_lock = asyncio.Lock()
+    return auth
+
+
+class TestGetSessionForAddress:
+    async def test_returns_the_same_session_on_a_second_call_for_the_same_address(self):
+        auth = _new_auth_for_signal_session_tests()
+        auth.get_wallet = mock.Mock(return_value=mock.Mock(private_key="pk"))
+        sentinel_session = mock.Mock()
+        with (
+            mock.patch.object(
+                octobot.community.authentication.identifiers_provider.IdentifiersProvider,
+                "SYNC_SERVER_URL",
+                _TEST_SYNC_URL,
+            ),
+            mock.patch.object(
+                octobot.community.authentication.sync_session_writer,
+                "derived_identity_for_mirror",
+                return_value="derived-identity",
+            ),
+            mock.patch.object(
+                octobot.community.authentication.sync_session_writer,
+                "build_mirror_session",
+                mock.AsyncMock(return_value=sentinel_session),
+            ) as mock_build_mirror_session,
+        ):
+            first = await auth.get_session_for_address("0xabc")
+            second = await auth.get_session_for_address("0xabc")
+
+        assert first is sentinel_session
+        assert second is sentinel_session
+        mock_build_mirror_session.assert_awaited_once()
+
+    async def test_raises_wallet_error_when_sync_server_url_is_not_configured(self):
+        auth = _new_auth_for_signal_session_tests()
+        with mock.patch.object(
+            octobot.community.authentication.identifiers_provider.IdentifiersProvider,
+            "SYNC_SERVER_URL",
+            "",
+        ):
+            with pytest.raises(octobot.community.wallet_backend.WalletError):
+                await auth.get_session_for_address("0xabc")
+
+    async def test_builds_the_session_with_the_bare_sync_url_and_signal_name(self):
+        auth = _new_auth_for_signal_session_tests()
+        auth.get_wallet = mock.Mock(return_value=mock.Mock(private_key="pk"))
+        with (
+            mock.patch.object(
+                octobot.community.authentication.identifiers_provider.IdentifiersProvider,
+                "SYNC_SERVER_URL",
+                _TEST_SYNC_URL,
+            ),
+            mock.patch.object(
+                octobot.community.authentication.sync_session_writer,
+                "derived_identity_for_mirror",
+                return_value="derived-identity",
+            ) as mock_derive,
+            mock.patch.object(
+                octobot.community.authentication.sync_session_writer,
+                "build_mirror_session",
+                mock.AsyncMock(return_value=mock.Mock()),
+            ) as mock_build_mirror_session,
+        ):
+            await auth.get_session_for_address("0xabc")
+
+        mock_derive.assert_called_once_with("pk")
+        mock_build_mirror_session.assert_awaited_once_with(
+            "derived-identity", _TEST_SYNC_URL, name="octobot-signals"
+        )
+
+    async def test_distinct_addresses_get_distinct_sessions(self):
+        auth = _new_auth_for_signal_session_tests()
+        auth.get_wallet = mock.Mock(return_value=mock.Mock(private_key="pk"))
+        sessions = [mock.Mock(), mock.Mock()]
+        with (
+            mock.patch.object(
+                octobot.community.authentication.identifiers_provider.IdentifiersProvider,
+                "SYNC_SERVER_URL",
+                _TEST_SYNC_URL,
+            ),
+            mock.patch.object(
+                octobot.community.authentication.sync_session_writer,
+                "derived_identity_for_mirror",
+                return_value="derived-identity",
+            ),
+            mock.patch.object(
+                octobot.community.authentication.sync_session_writer,
+                "build_mirror_session",
+                mock.AsyncMock(side_effect=sessions),
+            ),
+        ):
+            first = await auth.get_session_for_address("0xabc")
+            second = await auth.get_session_for_address("0xdef")
+
+        assert first is sessions[0]
+        assert second is sessions[1]
+        assert first is not second
+
+
+class TestStopClosesCachedDkSessions:
+    async def test_stop_closes_and_clears_cached_dk_sessions(self):
+        auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        auth.logger = mock.Mock()
+        auth._fetch_account_task = None
+        auth.supabase_client = mock.Mock(aclose=mock.AsyncMock())
+        auth._community_feed = None
+        auth.community_bot = None
+        auth._sync_client = None
+        cached_session = mock.Mock(
+            content_client=mock.Mock(close=mock.AsyncMock()),
+            account_client=mock.Mock(close=mock.AsyncMock()),
+        )
+        auth._dk_sessions = {"0xabc": cached_session}
+
+        await auth.stop()
+
+        cached_session.content_client.close.assert_awaited_once()
+        cached_session.account_client.close.assert_awaited_once()
+        assert auth._dk_sessions == {}
 

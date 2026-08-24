@@ -1,33 +1,26 @@
 import dataclasses
 import typing
 
+import starfish_spaces
+
 import octobot_commons.dataclasses
 import octobot_commons.json_util
 import octobot_commons.constants
 import octobot_commons.logging as logging
-import octobot_sync.client
+import octobot_sync.artifacts
 import octobot_flow.entities
+import octobot_flow.errors
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
 import octobot_flow.repositories.community.community_repository as community_repository
-import octobot_flow.errors
 import octobot_flow.constants
 
 
+# artifact-events "version" path segment: a fixed wire-schema version, not a strategy revision.
 VERSION = "1.0.0"
 
 
-def _trading_signal_fingerprint(signal: octobot_flow.entities.TradingSignal) -> tuple[str, float]:
-    """Stable identity for dedupe across JSON round-trips (float normalizes Decimal)."""
-    return (signal.strategy_id, float(signal.account.updated_at))
-
-
-def _signals_sorted_chronologically(
-    signals: list[octobot_flow.entities.TradingSignal],
-) -> list[octobot_flow.entities.TradingSignal]:
-    """Sort by ``account.updated_at``, then original index when timestamps tie."""
-    indexed = list(enumerate(signals))
-    indexed.sort(key=lambda index_signal: (float(index_signal[1].account.updated_at), index_signal[0]))
-    return [signal for _, signal in indexed]
+def _signal_space_id(strategy_id: str) -> str:
+    return octobot_sync.artifacts.artifact_space_id(f"octobot-signals-{strategy_id}")
 
 
 @dataclasses.dataclass
@@ -40,34 +33,6 @@ class TradingSignalPayload(octobot_commons.dataclasses.MinimizableDataclass):
                 octobot_flow.entities.TradingSignal.from_dict(signal)
                 for signal in self.signals
             ]
-
-    def merge_with_remote(self, remote: "TradingSignalPayload") -> "TradingSignalPayload":
-        """Combine server history with client-only snapshots for optimistic-concurrency merge."""
-        remote_ordered = _signals_sorted_chronologically(remote.signals)
-        remote_fingerprints = {_trading_signal_fingerprint(signal) for signal in remote_ordered}
-        local_ordered = _signals_sorted_chronologically(self.signals)
-        local_only = [
-            signal
-            for signal in local_ordered
-            if _trading_signal_fingerprint(signal) not in remote_fingerprints
-        ]
-        return TradingSignalPayload(signals=remote_ordered + local_only)
-
-
-def _sync_signals_path(sync_kind: str, strategy_id: str) -> str:
-    return f"/v1/{sync_kind}/products/{strategy_id}/{VERSION}/signals"
-
-
-def _merge_trading_signal_documents(
-    local_payload: dict[str, typing.Any],
-    remote_payload: dict[str, typing.Any],
-) -> dict[str, typing.Any]:
-    """Merge pending client document with server state after a sync push conflict (409)."""
-    local_model = TradingSignalPayload.from_dict(local_payload if isinstance(local_payload, dict) else {})
-    remote_model = TradingSignalPayload.from_dict(remote_payload if isinstance(remote_payload, dict) else {})
-    return octobot_commons.json_util.sanitize(
-        local_model.merge_with_remote(remote_model).to_dict()
-    )
 
 
 def _trim_historical_snapshots_if_needed(
@@ -91,10 +56,15 @@ class TradingSignalsRepository(community_repository.CommunityRepository):
         history_size: int,
     ) -> list[octobot_flow.entities.TradingSignal]:
         trading_signals: list[octobot_flow.entities.TradingSignal] = []
+        session: typing.Optional[starfish_spaces.Session] = None
+        failed_strategy_ids: list[str] = []
+        first_failure: typing.Optional[Exception] = None
         for strategy_identifier in strategy_ids:
             try:
+                if session is None:
+                    session = await self._get_signal_session()
                 pulled_signals = await self._pull_trading_signals(
-                    self._get_sync_client(), strategy_identifier, history_size
+                    session, strategy_identifier, history_size
                 )
                 if not pulled_signals.signals:
                     continue
@@ -110,36 +80,46 @@ class TradingSignalsRepository(community_repository.CommunityRepository):
                     True,
                     f"Failed to fetch trading signals for strategy {strategy_identifier!r}: {strategy_error}",
                 )
+                failed_strategy_ids.append(strategy_identifier)
+                if first_failure is None:
+                    first_failure = strategy_error
+        if failed_strategy_ids:
+            raise octobot_flow.errors.CommunityTradingSignalError(
+                f"Failed to fetch trading signals for {', '.join(failed_strategy_ids)}: {first_failure}"
+            ) from first_failure
         return trading_signals
 
     async def _upload_trading_signal(
         self,
         trading_signal: octobot_flow.entities.TradingSignal,
     ):
-        client = self._get_sync_client()
         payload = octobot_commons.json_util.sanitize(trading_signal.to_dict())
         try:
-            await octobot_sync.client.append_payload(
-                client,
-                push_path=_sync_signals_path("push", trading_signal.strategy_id),
-                payload=payload,
-                timestamp=int(trading_signal.account.updated_at * octobot_commons.constants.MSECONDS_TO_SECONDS),
+            session = await self._get_signal_session()
+            await octobot_sync.artifacts.publish_artifact_event(
+                session,
+                _signal_space_id(trading_signal.strategy_id),
+                VERSION,
+                payload,
+                ts=int(trading_signal.account.updated_at * octobot_commons.constants.MSECONDS_TO_SECONDS),
             )
         except Exception as upload_error:
             self._logger().exception(upload_error, True, f"Failed to upload trading signal: {upload_error}")
 
     async def _pull_trading_signals(
-        self, client: octobot_sync.client.StarfishClient, strategy_id: str, last: typing.Optional[int]
+        self,
+        session: starfish_spaces.Session,
+        strategy_id: str,
+        last: typing.Optional[int],
+        *,
+        owner_ed_pub: typing.Optional[str] = None,
     ) -> TradingSignalPayload:
-        signals = await client.pull(
-            _sync_signals_path("pull", strategy_id),
-            last=last
+        signals = await octobot_sync.artifacts.pull_artifact_events(
+            session, _signal_space_id(strategy_id), VERSION, last, owner_ed_pub=owner_ed_pub
         )
-        if not isinstance(signals, list):
-            raise octobot_flow.errors.CommunityTradingSignalError(f"Unexpected response type: {type(signals)}")
         return TradingSignalPayload(
             signals=[
-                octobot_flow.entities.TradingSignal.from_dict(signal["data"]) for signal in signals
+                octobot_flow.entities.TradingSignal.from_dict(signal) for signal in signals
             ]
         )
 

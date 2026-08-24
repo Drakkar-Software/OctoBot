@@ -85,12 +85,11 @@ _CONFIG = SyncConfig(
                     encryption="none",
                     maxBodyBytes=constants.MAX_BODY_SIZE_PRIVATE,
                 ),
-                # Product-scoped append-only log (mirrors the temporary
-                # product-signals collection): no {identity} segment, authorized
+                # Generic append-only log with no {identity} segment, authorized
                 # by the node's self-signed root device cap (device:root).
                 CollectionConfig(
-                    name="product-signals",
-                    storagePath="products/{product_id}/{version}/signals",
+                    name="root-scoped-log",
+                    storagePath="feeds/{feed_id}/{version}/events",
                     readRoles=[ROLE_ROOT_DEVICE],
                     writeRoles=[ROLE_ROOT_DEVICE],
                     encryption="none",
@@ -155,11 +154,11 @@ async def test_cap_signed_large_body_not_413():
 
 
 @pytest.mark.asyncio
-async def test_cap_signed_product_append_only_collection():
-    # Product-scoped append-only path (no {identity}) authorized via device:root.
+async def test_cap_signed_root_scoped_append_only_collection():
+    # Root-scoped append-only path (no {identity}) authorized via device:root.
     client, http_client, _user_id = _make_client()
     try:
-        path = "products/prod-123/v1/signals"
+        path = "feeds/feed-123/v1/events"
         await client.append(f"/push/{path}", {"n": 1})
         await client.append(f"/push/{path}", {"n": 2})
         items = await client.pull(f"/pull/{path}", append_field="items", full=True)

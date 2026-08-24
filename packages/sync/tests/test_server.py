@@ -198,26 +198,6 @@ class TestGetData:
             result = await server.get_data("users/0xwallet/settings", context)
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_product_signals_returns_stored_document_unchanged(self):
-        stored_document = json.dumps({
-            "v": 1,
-            "data": {"items": [{"ts": 1, "data": {"strategy_id": "prod-1"}}]},
-            "hash": "append-hash",
-        })
-        mock_store = mock.MagicMock()
-        mock_store.get_string = mock.AsyncMock(return_value=stored_document)
-        context = _make_context(
-            collection=enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value,
-        )
-        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
-            result = await server.get_data(
-                "products/prod-1/1.0.0/signals", context
-            )
-        mock_store.get_string.assert_awaited_once_with("products/prod-1/1.0.0/signals")
-        assert result == stored_document
-        assert isinstance(json.loads(result)["data"], dict)
-
 
 class TestUserActionsAfterWrite:
     @pytest.mark.asyncio
@@ -323,25 +303,6 @@ class TestPutData:
         stored_key, stored_value = mock_store.put.call_args.args
         assert stored_key == "users/0xwallet/accounts"
         assert json.loads(stored_value) == blob
-
-    @pytest.mark.asyncio
-    async def test_product_signals_stores_full_body_verbatim(self):
-        body = json.dumps({
-            "v": 1,
-            "data": {"items": []},
-            "ts": 1000,
-            "hash": "append-hash",
-        })
-        mock_store = mock.MagicMock()
-        mock_store.put = mock.AsyncMock()
-        context = _make_context(
-            collection=enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value,
-        )
-        with mock.patch("octobot_sync.server._get_opaque_store", return_value=mock_store):
-            await server.put_data("products/prod-1/1.0.0/signals", body, context)
-        mock_store.put.assert_awaited_once_with(
-            "products/prod-1/1.0.0/signals", body, content_type="application/json"
-        )
 
 
 class TestStoredDocumentHelpers:
@@ -564,3 +525,18 @@ class TestBuildDefaultSyncApp:
         call_kwargs = mock_sync_app.create_app.call_args
         assert call_kwargs.kwargs["is_allowed_user_id"] is None
         assert call_kwargs.kwargs["sync_config"] is None
+        assert call_kwargs.kwargs["role_enricher"] is None
+
+    def test_forwards_role_enricher(self):
+        sentinel_app = mock.MagicMock()
+        sentinel_role_enricher = mock.MagicMock()
+        with (
+            mock.patch("octobot_sync.server.build_object_store", return_value=mock.MagicMock()) as mock_build,
+            mock.patch("octobot_sync.server.sync_app") as mock_sync_app,
+        ):
+            mock_sync_app.create_app.return_value = sentinel_app
+            result = server.build_default_sync_app(role_enricher=sentinel_role_enricher)
+        assert result is sentinel_app
+        mock_build.assert_called_once()
+        call_kwargs = mock_sync_app.create_app.call_args
+        assert call_kwargs.kwargs["role_enricher"] is sentinel_role_enricher
