@@ -55,13 +55,18 @@ describe('the two read-only write methods no other test touches: accounts.refres
     client.close()
   })
 
-  it('automations.update() proposes strategy_edit + automation_edit, never appending', async () => {
+  it('automations.update() proposes strategy_edit + automation_edit, never appending, with automation_edit chained after strategy_edit', async () => {
     const { payload } = await createReadOnlyPairing(MNEMONIC, 'bip44', NODE)
     const client = await connectReadOnlyDevice(payload)
     const dca = strategy.dca({ pairs: ['BTC/USDT'], buyOrderAmount: '25' })
     const proposed = await client.automations.update('auto_1', { name: 'X', strategy: dca, accountIds: ['acc1'] })
     const decoded = decodeActionProposal(proposed.payload)
     expect(decoded.actions.map((a) => (a.configuration as { action_type: string }).action_type)).toEqual(['strategy_edit', 'automation_edit'])
+    // automation_edit resolves the strategy by (id, version) against the node's
+    // StrategyProvider, which only the confirmed strategy_edit fills — an
+    // executor must not append automation_edit until strategy_edit lands.
+    expect(decoded.actions[0].after).toBeUndefined()
+    expect(decoded.actions[1].after).toBe('previous-confirmed')
     client.close()
   })
 })

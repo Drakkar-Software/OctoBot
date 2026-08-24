@@ -14,4 +14,4 @@
 /**
 * Account category discriminator.
 */
-export type AccountType = 'generic' | 'exchange' | 'blockchain'
+export type AccountType = 'generic' | 'exchange' | 'blockchain' | 'broker' | 'bank' | 'asset'

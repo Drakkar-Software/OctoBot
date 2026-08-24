@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { encodeActionProposal, decodeActionProposal, type ProposedActionEntry } from '../src/protocol/proposal.js'
+import {
+  encodeActionProposal,
+  decodeActionProposal,
+  UnsupportedActionProposalVersionError,
+  type ProposedActionEntry,
+} from '../src/protocol/proposal.js'
 import { buildStopAutomationConfig, buildCreateStrategyConfig, buildCreateAutomationConfig } from '../src/protocol/actions.js'
 import { strategy } from '../src/client/strategy.js'
 
@@ -41,5 +46,27 @@ describe('encodeActionProposal / decodeActionProposal', () => {
   it('label is omitted entirely when not provided, not serialized as undefined', () => {
     const payload = encodeActionProposal([{ configuration: buildStopAutomationConfig('a') }])
     expect(JSON.parse(payload)).not.toHaveProperty('label')
+  })
+
+  it('rejects a recognised envelope with an unsupported v as a distinguishable error, not a generic parse failure', () => {
+    const futurePayload = JSON.stringify({
+      v: 2,
+      kind: 'octobot-action-proposal',
+      actions: [{ configuration: buildStopAutomationConfig('a') }],
+      createdAt: new Date().toISOString(),
+    })
+    expect(() => decodeActionProposal(futurePayload)).toThrow(UnsupportedActionProposalVersionError)
+    try {
+      decodeActionProposal(futurePayload)
+      expect.unreachable()
+    } catch (err) {
+      expect(err).toBeInstanceOf(UnsupportedActionProposalVersionError)
+      expect((err as UnsupportedActionProposalVersionError).version).toBe(2)
+    }
+  })
+
+  it('a mismatched kind still throws the generic error, not the version error', () => {
+    expect(() => decodeActionProposal(JSON.stringify({ v: 2, kind: 'something-else' })))
+      .not.toThrow(UnsupportedActionProposalVersionError)
   })
 })

@@ -29,6 +29,9 @@ class AccountType(str, Enum):
     GENERIC = 'generic'
     EXCHANGE = 'exchange'
     BLOCKCHAIN = 'blockchain'
+    BROKER = 'broker'
+    BANK = 'bank'
+    ASSET = 'asset'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

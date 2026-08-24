@@ -1,6 +1,6 @@
 {
   "name": "@drakkar.software/octobot-client",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "TypeScript client for the OctoBot node protocol: wallet auth, accounts, automations, strategies, and user actions over the Starfish sync transport.",
   "license": "LGPL-3.0",
   "repository": {
@@ -37,7 +37,7 @@
     "dist"
   ],
   "dependencies": {
-    "@drakkar.software/octobot-protocol": "^0.6.0",
+    "@drakkar.software/octobot-protocol": "^0.8.0",
     "@drakkar.software/starfish-client": "3.0.0-alpha.72",
     "@drakkar.software/starfish-identities": "3.0.0-alpha.72",
     "@drakkar.software/starfish-keyring": "3.0.0-alpha.72",

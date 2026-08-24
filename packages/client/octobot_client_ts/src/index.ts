@@ -29,7 +29,6 @@ export {
   type AccountView,
   type AccountKind,
   type AutomationView,
-  type Holding,
   OctoBotError,
   OctoBotConfigError,
   OctoBotConnectionError,
@@ -50,6 +49,7 @@ export {
   type ProposedAction,
   accountViewOf,
   automationViewOf,
+  exchangeConfigIdOf,
   startPairingRequest,
   fetchPairingRequestByCode,
   type StartPairingRequestOptions,
@@ -108,7 +108,13 @@ export {
   joinSessionPath,
   type RendezvousDoc,
 } from './transport/rendezvous.js'
-export { encodeActionProposal, decodeActionProposal, type ActionProposal, type ProposedActionEntry } from './protocol/proposal.js'
+export {
+  encodeActionProposal,
+  decodeActionProposal,
+  UnsupportedActionProposalVersionError,
+  type ActionProposal,
+  type ProposedActionEntry,
+} from './protocol/proposal.js'
 export {
   encodeQrFrames,
   isQrFrame,

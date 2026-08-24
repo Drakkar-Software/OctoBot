@@ -17,14 +17,17 @@ import json
 import pprint
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Any, List, Optional
+from octobot_protocol.models.asset_account import AssetAccount
+from octobot_protocol.models.bank_account import BankAccount
 from octobot_protocol.models.blockchain_account import BlockchainAccount
+from octobot_protocol.models.broker_account import BrokerAccount
 from octobot_protocol.models.exchange_account import ExchangeAccount
 from octobot_protocol.models.generic_account import GenericAccount
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-ACCOUNTSPECIFICS_ONE_OF_SCHEMAS = ["BlockchainAccount", "ExchangeAccount", "GenericAccount"]
+ACCOUNTSPECIFICS_ONE_OF_SCHEMAS = ["AssetAccount", "BankAccount", "BlockchainAccount", "BrokerAccount", "ExchangeAccount", "GenericAccount"]
 
 class AccountSpecifics(BaseModel):
     """
@@ -36,8 +39,14 @@ class AccountSpecifics(BaseModel):
     oneof_schema_2_validator: Optional[BlockchainAccount] = None
     # data type: GenericAccount
     oneof_schema_3_validator: Optional[GenericAccount] = None
-    actual_instance: Optional[Union[BlockchainAccount, ExchangeAccount, GenericAccount]] = None
-    one_of_schemas: Set[str] = { "BlockchainAccount", "ExchangeAccount", "GenericAccount" }
+    # data type: BrokerAccount
+    oneof_schema_4_validator: Optional[BrokerAccount] = None
+    # data type: BankAccount
+    oneof_schema_5_validator: Optional[BankAccount] = None
+    # data type: AssetAccount
+    oneof_schema_6_validator: Optional[AssetAccount] = None
+    actual_instance: Optional[Union[AssetAccount, BankAccount, BlockchainAccount, BrokerAccount, ExchangeAccount, GenericAccount]] = None
+    one_of_schemas: Set[str] = { "AssetAccount", "BankAccount", "BlockchainAccount", "BrokerAccount", "ExchangeAccount", "GenericAccount" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -78,12 +87,27 @@ class AccountSpecifics(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `GenericAccount`")
         else:
             match += 1
+        # validate data type: BrokerAccount
+        if not isinstance(v, BrokerAccount):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BrokerAccount`")
+        else:
+            match += 1
+        # validate data type: BankAccount
+        if not isinstance(v, BankAccount):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BankAccount`")
+        else:
+            match += 1
+        # validate data type: AssetAccount
+        if not isinstance(v, AssetAccount):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AssetAccount`")
+        else:
+            match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in AccountSpecifics with oneOf schemas: AssetAccount, BankAccount, BlockchainAccount, BrokerAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in AccountSpecifics with oneOf schemas: AssetAccount, BankAccount, BlockchainAccount, BrokerAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -103,9 +127,24 @@ class AccountSpecifics(BaseModel):
         if not _data_type:
             raise ValueError("Failed to lookup data type from the field `account_type` in the input.")
 
+        # check if data type is `AssetAccount`
+        if _data_type == "asset":
+            instance.actual_instance = AssetAccount.from_json(json_str)
+            return instance
+
+        # check if data type is `BankAccount`
+        if _data_type == "bank":
+            instance.actual_instance = BankAccount.from_json(json_str)
+            return instance
+
         # check if data type is `BlockchainAccount`
         if _data_type == "blockchain":
             instance.actual_instance = BlockchainAccount.from_json(json_str)
+            return instance
+
+        # check if data type is `BrokerAccount`
+        if _data_type == "broker":
+            instance.actual_instance = BrokerAccount.from_json(json_str)
             return instance
 
         # check if data type is `ExchangeAccount`
@@ -136,13 +175,31 @@ class AccountSpecifics(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
+        # deserialize data into BrokerAccount
+        try:
+            instance.actual_instance = BrokerAccount.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into BankAccount
+        try:
+            instance.actual_instance = BankAccount.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into AssetAccount
+        try:
+            instance.actual_instance = AssetAccount.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into AccountSpecifics with oneOf schemas: AssetAccount, BankAccount, BlockchainAccount, BrokerAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into AccountSpecifics with oneOf schemas: BlockchainAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into AccountSpecifics with oneOf schemas: AssetAccount, BankAccount, BlockchainAccount, BrokerAccount, ExchangeAccount, GenericAccount. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -156,7 +213,7 @@ class AccountSpecifics(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], BlockchainAccount, ExchangeAccount, GenericAccount]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], AssetAccount, BankAccount, BlockchainAccount, BrokerAccount, ExchangeAccount, GenericAccount]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

@@ -33,15 +33,19 @@ from octobot_protocol.models.accounts_authentication_state import AccountsAuthen
 from octobot_protocol.models.accounts_state import AccountsState
 from octobot_protocol.models.action import Action
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
+from octobot_protocol.models.action_proposal import ActionProposal
 from octobot_protocol.models.active_order_swap_strategy import ActiveOrderSwapStrategy
 from octobot_protocol.models.active_order_swap_strategy_type import ActiveOrderSwapStrategyType
+from octobot_protocol.models.asset_account import AssetAccount
 from octobot_protocol.models.automation_action_result import AutomationActionResult
 from octobot_protocol.models.automation_action_result_error_message import AutomationActionResultErrorMessage
 from octobot_protocol.models.automation_configuration import AutomationConfiguration
 from octobot_protocol.models.automation_metadata import AutomationMetadata
 from octobot_protocol.models.automation_signal_type import AutomationSignalType
 from octobot_protocol.models.automation_state import AutomationState
+from octobot_protocol.models.bank_account import BankAccount
 from octobot_protocol.models.blockchain_account import BlockchainAccount
+from octobot_protocol.models.broker_account import BrokerAccount
 from octobot_protocol.models.cancel_policy import CancelPolicy
 from octobot_protocol.models.cancel_policy_type import CancelPolicyType
 from octobot_protocol.models.child_octo_bot_process_state import ChildOctoBotProcessState
@@ -92,6 +96,7 @@ from octobot_protocol.models.market_making_reference_pair import MarketMakingRef
 from octobot_protocol.models.market_making_scheduled_volume import MarketMakingScheduledVolume
 from octobot_protocol.models.market_making_stop_conditions import MarketMakingStopConditions
 from octobot_protocol.models.market_making_symbol_configuration import MarketMakingSymbolConfiguration
+from octobot_protocol.models.node_endpoint import NodeEndpoint
 from octobot_protocol.models.order import Order
 from octobot_protocol.models.order_group import OrderGroup
 from octobot_protocol.models.order_group_type import OrderGroupType
@@ -104,6 +109,7 @@ from octobot_protocol.models.portfolio_historical_values_state import PortfolioH
 from octobot_protocol.models.position import Position
 from octobot_protocol.models.position_status import PositionStatus
 from octobot_protocol.models.position_summary import PositionSummary
+from octobot_protocol.models.proposed_action_entry import ProposedActionEntry
 from octobot_protocol.models.refresh_accounts_configuration import RefreshAccountsConfiguration
 from octobot_protocol.models.restart_automation_configuration import RestartAutomationConfiguration
 from octobot_protocol.models.side import Side

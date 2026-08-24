@@ -1,36 +1,24 @@
-import type { UserActionConfiguration } from '@drakkar.software/octobot-protocol'
+import type { ActionProposal, ProposedActionEntry } from '@drakkar.software/octobot-protocol'
 
-/** One built-but-unsent action inside a proposal. `after: 'previous-confirmed'`
- *  marks an action that must not be appended until the PRIOR entry in the
- *  array has been confirmed by the node — the only case this applies to
- *  today is `automations.create()`'s `strategy_create` → `automation_create`
- *  race (see `orchestration/createAutomation.ts`). A privileged executor
- *  (one that actually has append rights) must honor this ordering; a
- *  read-only proposer never appends anything itself, so it just carries the
- *  constraint as data. */
-export type ProposedActionEntry = {
-  configuration: UserActionConfiguration
-  after?: 'previous-confirmed'
-}
+export type { ActionProposal, ProposedActionEntry }
 
-/** A batch of built-but-unsent user actions, QR-encodable. Produced by a
- *  read-only-connected client's write methods instead of appending; consumed
- *  by a privileged client (one with real append rights) to actually execute
- *  them after a human reviews and confirms. */
-export interface ActionProposal {
-  v: 1
-  kind: 'octobot-action-proposal'
-  actions: ProposedActionEntry[]
-  /** Human-readable summary for a confirm screen, when the generic
-   *  per-action `configuration.name`/`action_type` derivation isn't enough
-   *  (e.g. a multi-action batch). */
-  label?: string
-  createdAt: string
+const SUPPORTED_VERSION = 1
+
+/** A payload that parsed as JSON, looked like an action-proposal envelope by
+ *  `kind`, but carries a `v` this build does not understand. Distinct from
+ *  the generic "not an action proposal payload" error so a caller can tell a
+ *  scanned proposal from a future app apart from a corrupt or unrelated scan
+ *  and prompt the user to update instead. */
+export class UnsupportedActionProposalVersionError extends Error {
+  constructor(public readonly version: unknown) {
+    super(`unsupported action proposal version: ${JSON.stringify(version)}`)
+    this.name = 'UnsupportedActionProposalVersionError'
+  }
 }
 
 export function encodeActionProposal(actions: ProposedActionEntry[], opts?: { label?: string }): string {
   const proposal: ActionProposal = {
-    v: 1,
+    v: SUPPORTED_VERSION,
     kind: 'octobot-action-proposal',
     actions,
     ...(opts?.label ? { label: opts.label } : {}),
@@ -42,7 +30,10 @@ export function encodeActionProposal(actions: ProposedActionEntry[], opts?: { la
 /** Parse and structurally validate a scanned/pasted action-proposal payload.
  *  Throws on anything that isn't shaped like one — callers doing QR
  *  classification should catch and fall through to the next candidate
- *  parser rather than propagate. */
+ *  parser rather than propagate. A recognised envelope with an unsupported
+ *  `v` throws `UnsupportedActionProposalVersionError` specifically, so a
+ *  caller can tell "this is a future proposal, update your app" apart from
+ *  "this isn't a proposal at all". */
 export function decodeActionProposal(payload: string): ActionProposal {
   let parsed: unknown
   try {
@@ -52,7 +43,8 @@ export function decodeActionProposal(payload: string): ActionProposal {
   }
   if (typeof parsed !== 'object' || parsed === null) throw new Error('not an object')
   const p = parsed as Record<string, unknown>
-  if (p.v !== 1 || p.kind !== 'octobot-action-proposal') throw new Error('not an action proposal payload')
+  if (p.kind !== 'octobot-action-proposal') throw new Error('not an action proposal payload')
+  if (p.v !== SUPPORTED_VERSION) throw new UnsupportedActionProposalVersionError(p.v)
   if (!Array.isArray(p.actions) || p.actions.length === 0) throw new Error('malformed action proposal: actions')
   for (const entry of p.actions as unknown[]) {
     if (typeof entry !== 'object' || entry === null || !('configuration' in entry)) {

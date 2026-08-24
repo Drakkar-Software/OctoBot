@@ -26,6 +26,13 @@ import type {
 import { accountIdFromAuthId, accountIdFromExchangeConfigId } from './actions.js'
 import type { StrategyKind } from './strategy/kinds.js'
 
+/** A coarse run-status classification for `AutomationView` — never itself on
+ *  the wire (the real wire enum is `AutomationState.status`'s `WorkflowStatus`,
+ *  7 values); this is a client-side categorization, computed fresh by
+ *  `workflowStatusToAutomationStatus` below, so it stays a local type here
+ *  rather than living in the protocol package. */
+export type AutomationRunStatus = 'live' | 'draft' | 'stopped'
+
 // The node computes `users/{identity}/data` on every pull as a protocol
 // UserDataState { automations: AutomationState[], user_actions: UserAction[] }
 // (snake_case pydantic JSON). This is bidirectional wire state — parse it
@@ -110,8 +117,6 @@ export const parseNodeUserActions: (doc: unknown) => UserAction[] = cachedByDoc(
 /** Protocol workflow status → a coarse live/draft/stopped classification.
  *  'canceled', 'failed', 'completed' and any future unknown value map to
  *  'stopped' so a non-running workflow never renders as a live bot. */
-export type AutomationRunStatus = 'live' | 'draft' | 'stopped'
-
 export function workflowStatusToAutomationStatus(status: WorkflowStatus | string | undefined): AutomationRunStatus {
   switch (status) {
     case 'scheduled':
@@ -183,19 +188,11 @@ export const parseNodeExchangeConfigs: (doc: unknown) => ExchangeConfig[] = cach
   EMPTY_EXCHANGE_CONFIGS,
 )
 
-/** A protocol-shaped account holding: no fiat value (a caller with its own
- *  pricing owns that), no display-only decoration. */
-export type Holding = { symbol: string; total: number; free: number; used: number }
-
-/** Map node-reported asset quantities to a flat holdings list. */
-export function accountHoldingsFromNodeState(na: ProtocolAccount): Holding[] {
-  const assets = normalizeNodeAssets(na.assets as unknown)
-  return assets.map((a) => ({
-    symbol: a.symbol,
-    total:  a.total,
-    free:   a.available,
-    used:   Math.max(0, a.total - a.available),
-  }))
+/** Node-reported asset quantities for an account, flattened. Kept as its own
+ *  named function (rather than inlining `normalizeNodeAssets(na.assets)`
+ *  at call sites) so `accountViewOf`'s intent reads clearly. */
+export function accountHoldingsFromNodeState(na: ProtocolAccount): DetailedAsset[] {
+  return normalizeNodeAssets(na.assets as unknown)
 }
 
 // ── Typed user-action accessors ──────────────────────────────────────────────
@@ -319,34 +316,76 @@ export function actionTargetsAccount(action: UserAction, accountId: string): boo
   return targetAccountIdsOf(action).includes(accountId)
 }
 
-/** The strategy (id, version) an automation runs, recovered from the action
- *  history: node AutomationStates carry no strategy reference — the
- *  automation_create / automation_edit configurations are the only wire
- *  record. The newest action targeting the automation wins (an edit
- *  supersedes the create). */
+/** Pull the (automationId, strategy ref) an `automation_edit`/`automation_create`
+ *  action carries, if any — the shared per-action extraction both
+ *  `automationStrategyRefsOf` and `automationStrategyRefOf` scan for, each
+ *  aggregating it differently (see their own doc comments). */
+function automationStrategyRefFromAction(
+  action: UserAction,
+): { automationId: string; ref: { id: string; version?: string } } | null {
+  const cfg = action.configuration
+  if (!cfg) return null
+  let automationId: string | undefined
+  let ref: { id: string; version: string } | undefined
+  if (cfg.action_type === 'automation_edit') {
+    automationId = (cfg as EditAutomationConfiguration).id
+    ref = (cfg as EditAutomationConfiguration).configuration?.strategy
+  } else if (cfg.action_type === 'automation_create') {
+    automationId = createdAutomationIdOf(action) ?? undefined
+    ref = (cfg as CreateAutomationConfiguration).configuration?.strategy
+  }
+  if (!automationId || !ref?.id) return null
+  return { automationId, ref: { id: ref.id, version: ref.version } }
+}
+
+/** The strategy (id, version) every automation referenced in `actions` runs,
+ *  recovered from the action history in one pass: node AutomationStates
+ *  carry no strategy reference — the automation_create / automation_edit
+ *  configurations are the only wire record. The newest action targeting an
+ *  automation wins (an edit supersedes the create). Prefer this over calling
+ *  `automationStrategyRefOf` once per automation against the same `actions`
+ *  array — that repeats the full scan per automation (O(automations ×
+ *  actions)); this does the equivalent work once (O(actions)). */
+export function automationStrategyRefsOf(actions: UserAction[]): Map<string, { id: string; version?: string }> {
+  const best = new Map<string, { id: string; version?: string }>()
+  const bestAt = new Map<string, string>()
+  for (const action of actions) {
+    const found = automationStrategyRefFromAction(action)
+    if (!found) continue
+    const at = action.updated_at ?? action.created_at ?? ''
+    const prevAt = bestAt.get(found.automationId)
+    if (prevAt === undefined || at >= prevAt) {
+      best.set(found.automationId, found.ref)
+      bestAt.set(found.automationId, at)
+    }
+  }
+  return best
+}
+
+/** The strategy (id, version) one automation runs, scanning `actions` once
+ *  for just that id — a deliberately separate, targeted pass rather than
+ *  `automationStrategyRefsOf(actions).get(automationId)`, so a single lookup
+ *  doesn't pay for building a map entry for every OTHER automation in the
+ *  action history too. Resolving more than one automation against the same
+ *  `actions` array should call `automationStrategyRefsOf` once instead — this
+ *  rescans on every call, which is fine for one-off lookups but O(automations
+ *  × actions) in a loop. */
 export function automationStrategyRefOf(
   actions: UserAction[],
   automationId: string,
 ): { id: string; version?: string } | null {
-  let best: { id: string; version?: string } | null = null
-  let bestAt = ''
+  let best: { id: string; version?: string } | undefined
+  let bestAt: string | undefined
   for (const action of actions) {
-    const cfg = action.configuration
-    if (!cfg) continue
-    let ref: { id: string; version: string } | undefined
-    if (cfg.action_type === 'automation_edit' && (cfg as EditAutomationConfiguration).id === automationId) {
-      ref = (cfg as EditAutomationConfiguration).configuration?.strategy
-    } else if (cfg.action_type === 'automation_create' && createdAutomationIdOf(action) === automationId) {
-      ref = (cfg as CreateAutomationConfiguration).configuration?.strategy
-    }
-    if (!ref?.id) continue
+    const found = automationStrategyRefFromAction(action)
+    if (!found || found.automationId !== automationId) continue
     const at = action.updated_at ?? action.created_at ?? ''
-    if (best === null || at >= bestAt) {
-      best = { id: ref.id, version: ref.version }
+    if (bestAt === undefined || at >= bestAt) {
+      best = found.ref
       bestAt = at
     }
   }
-  return best
+  return best ?? null
 }
 
 /** Human-facing name carried by the action's configuration, when one exists.

@@ -19,11 +19,11 @@ export {
   targetAccountIdsOf,
   actionTargetsAccount,
   automationStrategyRefOf,
+  automationStrategyRefsOf,
   actionDisplayName,
   isRecord,
   cachedByDoc,
   type AutomationRunStatus,
-  type Holding,
   type UserActionDomain,
 } from './state.js'
 export {
@@ -75,6 +75,7 @@ export {
 export {
   encodeActionProposal,
   decodeActionProposal,
+  UnsupportedActionProposalVersionError,
   type ActionProposal,
   type ProposedActionEntry,
 } from './proposal.js'
