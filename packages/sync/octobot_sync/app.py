@@ -18,7 +18,7 @@ from collections.abc import Callable
 
 from fastapi import FastAPI
 from starfish_server.storage.base import AbstractObjectStore
-from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions
+from starfish_server.router.route_builder import create_sync_router, SyncRouterOptions, RoleEnricher
 from starfish_server.config.schema import ConfigEndpointOptions, SyncConfig
 from starfish_protocol.plugins import ServerPlugin
 from starfish_server.router.cap_resolver import create_cap_cert_role_resolver, CapAuthError
@@ -136,6 +136,7 @@ def create_app(
     sync_config: SyncConfig | None = None,
     plugins: list[ServerPlugin] | None = None,
     external_host: str | None = None,
+    role_enricher: RoleEnricher | None = None,
 ):
     if sync_config is None:
         sync_config = sync.load_sync_config(collections_path)
@@ -149,6 +150,7 @@ def create_app(
             store=object_store,
             config=sync_config,
             role_resolver=_build_role_resolver(is_allowed_user_id),
+            role_enricher=role_enricher,
             config_endpoint=ConfigEndpointOptions(auth="public"),
             plugins=plugins,
         )

@@ -2,6 +2,8 @@ import contextlib
 import asyncio
 import typing
 
+import starfish_spaces
+
 import octobot.community
 import octobot_commons.logging
 
@@ -67,3 +69,10 @@ class CommunityRepository:
                 "Wallet not initialized: no wallet address provided"
             )
         return self.authenticator.get_sync_client_for_address(self.wallet_address)
+
+    async def _get_signal_session(self) -> starfish_spaces.Session:
+        if self.wallet_address is None:
+            raise octobot_flow.errors.WalletNotInitializedError(
+                "Wallet not initialized: no wallet address provided"
+            )
+        return await self.authenticator.get_session_for_address(self.wallet_address)

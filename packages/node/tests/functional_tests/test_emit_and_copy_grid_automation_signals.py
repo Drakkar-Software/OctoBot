@@ -12,8 +12,6 @@
 #
 #  You should have received a copy of the GNU General Public License along with
 #  OctoBot. If not, see https://www.gnu.org/licenses/.
-from __future__ import annotations
-
 import asyncio
 import datetime
 import decimal
@@ -21,6 +19,7 @@ import json
 import logging
 import mock
 import os
+import re
 import tempfile
 import time
 import typing
@@ -31,6 +30,8 @@ import uvicorn
 
 import octobot_protocol.models as octobot_protocol_models
 import starfish_server.config.schema as starfish_server_config_schema
+import starfish_server.storage.filesystem as starfish_filesystem_storage_module
+import starfish_sharing as starfish_sharing_module
 
 from .util import grid_workflow as grid_sim_util
 from .util import price_mocks as price_mocks_module
@@ -79,35 +80,84 @@ _D_DECIMAL_INCREMENT = decimal.Decimal(str(grid_sim_util.GRID_INCREMENT))
 _FUNCTIONAL_TEST_SYNC_ENCRYPTION_SECRET = "0123456789abcdef" * 4
 
 
-def _grid_functional_test_sync_config():
-    """Package default sync config plus a collection for ``TradingSignalsRepository`` HTTP paths."""
-    base_config = sync_collections_module.DEFAULT_SYNC_CONFIG
-    sync_namespace_key = sync_collections_module.constants.SYNC_NAMESPACE
-    assert base_config.namespaces is not None
-    assert sync_namespace_key in base_config.namespaces
-    octobot_namespace = base_config.namespaces[sync_namespace_key]
-    trading_signals_collection = sync_collections_module.CollectionConfig(
-        name="trading-signals",
-        storagePath="products/{strategyId}/{version}/signals",
-        readRoles=["public"],
-        writeRoles=["public"],
+_DK_NAMESPACE = "dk"
+
+# Mirrors Infra/sync/server/drakkar_sync/apps/dk_spaces/collections.py's collection set
+# (see octobot_sync.artifacts' module docstring).
+_DK_SIGNAL_COLLECTIONS = [
+    sync_collections_module.CollectionConfig(
+        name="spaces",
+        storagePath="user/{identity}/_spaces",
+        readRoles=["self"],
+        writeRoles=["self"],
         encryption="none",
-        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="spaceregistry",
+        storagePath="spaces/{spaceId}/_access",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="none",
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="spacekeyring",
+        storagePath="spaces/{spaceId}/_keyring",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="none",
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="objindex",
+        storagePath="spaces/{spaceId}/objects/_index",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="none",
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="artifact-events",
+        storagePath="spaces/{spaceId}/artifact/versions/{version}/events",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="delegated",
         appendOnly=starfish_server_config_schema.AppendOnlyConfig(
             type="by_timestamp",
-            requireAuthorSignature=False,
+            requireAuthorSignature=True,
         ),
-    )
-    extended_octobot = sync_collections_module.NamespaceConfig(
-        collections=[*octobot_namespace.collections, trading_signals_collection],
-    )
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
+    ),
+]
+
+
+def _grid_functional_test_sync_config():
+    """Package default sync config plus a dk namespace for TradingSignalsRepository's
+    artifact-events publish/pull (see octobot_sync.artifacts)."""
+    base_config = sync_collections_module.DEFAULT_SYNC_CONFIG
+    assert base_config.namespaces is not None
+    dk_namespace = sync_collections_module.NamespaceConfig(collections=_DK_SIGNAL_COLLECTIONS)
     return base_config.model_copy(
         update={
             "namespaces": {
                 **dict(base_config.namespaces),
-                sync_namespace_key: extended_octobot,
+                _DK_NAMESPACE: dk_namespace,
             }
         }
+    )
+
+
+def _grid_functional_test_dk_role_enricher(object_store):
+    """The generic TOFU space-role enricher, matching Infra/sync's make_space_role_enricher."""
+    return starfish_sharing_module.make_registry_role_enricher(
+        object_store,
+        id_param="spaceId",
+        registry_path="spaces/{id}/_access",
+        owner_role="space:owner",
+        member_role="space:member",
+        allow_tofu=True,
+        id_pattern=re.compile(r"^[a-zA-Z0-9_-]+$"),
     )
 
 
@@ -458,12 +508,19 @@ class TestEmitAndCopyGridAutomationSignals:
                 # ``NamespaceRewriteMiddleware`` is not applied and Starfish paths
                 # ``/octobot/v1/...`` never match (HTTP 404). Use the package default
                 # so the ``octobot`` namespace and rewrite are always active.
+                #
+                # A second FilesystemObjectStore on the same SYNC_DATA_DIR backs the dk
+                # role_enricher, so TOFU role reads see what the server just wrote.
+                dk_role_enricher_store = starfish_filesystem_storage_module.FilesystemObjectStore(
+                    starfish_filesystem_storage_module.FilesystemStorageOptions(base_dir=sync_data_dir)
+                )
                 with mock.patch(
                     "octobot_sync.app.sync.load_sync_config",
                     return_value=_grid_functional_test_sync_config(),
                 ):
                     sync_asgi_app = octobot_sync_server_module.build_default_sync_app(
                         is_allowed_user_id=lambda _address: True,
+                        role_enricher=_grid_functional_test_dk_role_enricher(dk_role_enricher_store),
                     )
                     # StarfishClient builds URLs as ``{base}/sync/v1/{namespace}/...``.
                     # Mount sync_asgi_app under /sync to match the SYNC_MOUNT_PATH prefix.

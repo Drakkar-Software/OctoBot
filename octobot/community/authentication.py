@@ -49,6 +49,8 @@ import octobot_commons.user_root_folder_provider as user_root_folder_provider
 import octobot_trading.enums as trading_enums
 import octobot_sync.client as sync_client
 import octobot_sync.chain as sync_chain
+import octobot_sync.mirror.writer as sync_session_writer
+import starfish_spaces
 
 
 def expired_session_retrier(func):
@@ -133,6 +135,8 @@ class CommunityAuthentication(authentication.Authenticator):
         self._sync_client = None
         self.sync_user_id: str = ""
         self._sync_client_lock = threading.Lock()
+        self._dk_sessions: dict[str, starfish_spaces.Session] = {}
+        self._dk_session_lock = asyncio.Lock()
         self._wallet_backend: wallet_backend.WalletBackend = wallet_backend.WalletBackend(
             self._get_wallet_sync_storage(), self.logger
         )
@@ -607,6 +611,10 @@ class CommunityAuthentication(authentication.Authenticator):
         if self._sync_client:
             await self._sync_client.close()
             self._sync_client = None
+        for session in self._dk_sessions.values():
+            await session.content_client.close()
+            await session.account_client.close()
+        self._dk_sessions.clear()
         self.logger.debug("Stopped")
 
     def _update_supports(self, resp_status, json_data):
@@ -711,6 +719,30 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
         return self._wallet_backend.get_wallet_by_user_id(user_id)
+
+    async def get_session_for_address(self, address: str) -> starfish_spaces.Session:
+        """Build (and cache) a dk-namespace starfish_spaces Session for the given wallet.
+
+        Used for trading-signal publish/pull — see octobot_sync.artifacts. Distinct from
+        get_sync_client_for_address's bare StarfishClient: a space needs a Session.
+        """
+        cached = self._dk_sessions.get(address)
+        if cached is not None:
+            return cached
+        async with self._dk_session_lock:
+            cached = self._dk_sessions.get(address)
+            if cached is not None:
+                return cached
+            sync_url = identifiers_provider.IdentifiersProvider.SYNC_SERVER_URL
+            if not sync_url:
+                raise wallet_backend.WalletError("No sync server URL configured")
+            wallet = self.get_wallet(address)
+            derived = sync_session_writer.derived_identity_for_mirror(wallet.private_key)
+            session = await sync_session_writer.build_mirror_session(
+                derived, sync_url, name="octobot-signals"
+            )
+            self._dk_sessions[address] = session
+            return session
 
     def init_sync_client_for_wallet(self, address: str) -> None:
         """Initialize the sync client for the given wallet address without passphrase."""
