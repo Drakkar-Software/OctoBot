@@ -106,60 +106,22 @@ async def test_run_octobot_process_lifecycle_grid_trading(
                 await init_job.run()
             state = init_job.dump()
 
-            # 2) Register run_octobot_process; poll job until the child reports init_state_ok (live process_bot_state).
+            # 2) Register run_octobot_process; poll until process_bot_state.json exists.
             async with octobot_flow.jobs.AutomationJob(state, [], [], {}) as job:
                 job.automation_state.upsert_automation_actions(
                     functionnal_tests.resolved_actions([run_action])
                 )
                 state = job.dump()
 
-            deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
-            inner: typing.Optional[dict] = None
-            # Run DSL job once, then optionally poll until recall payload shows init_state_ok.
-            first_poll = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                state, [], [], {}
+            state, inner, state_path = (
+                await octobot_process_functional_shared.poll_automation_until_child_process_ready(
+                    state
+                )
             )
-            octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                first_poll.dump()
-            )
-            first_run = octobot_process_functional_shared._get_action_by_id(
-                first_poll, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-            )
-            assert first_run is not None
-            inner = octobot_process_functional_shared._recall_inner_from_dsl_action(first_run)
-            state = first_poll.dump()
-            if not (inner and inner.get("init_state_ok") is True):
-                while time.monotonic() < deadline:
-                    await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-                    poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                        state, [], [], {}
-                    )
-                    octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                        poll_job.dump()
-                    )
-                    run_details = octobot_process_functional_shared._get_action_by_id(
-                        poll_job, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-                    )
-                    assert run_details is not None
-                    inner = octobot_process_functional_shared._recall_inner_from_dsl_action(run_details)
-                    if inner and inner.get("init_state_ok") is True:
-                        state = poll_job.dump()
-                        break
-                    state = poll_job.dump()
-                else:
-                    pytest.fail(
-                        f"OctoBot did not become ready (init_state_ok) within "
-                        f"{octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC}s"
-                    )
 
             assert inner is not None
             assert inner.get("pid"), "expected child pid in ensure state"
             assert popen_calls["count"] >= 1
-
-            # --- process_bot_state path: must exist before poll (child wrote at least one dump) ---
-            # First process_bot_state dump can lag init_state_ok (see shared wait helper).
-            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
-            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
 
             # 1) Poll AutomationJob + dump() until merge yields ≥4 open orders (EAE from automation snapshot,
             #    not from parsing full process_bot_state on disk).
@@ -405,43 +367,11 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
                 )
                 state = job.dump()
 
-            deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
-            inner: typing.Optional[dict] = None
-            first_poll = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                state, [], [], {}
+            state, inner, state_path = (
+                await octobot_process_functional_shared.poll_automation_until_child_process_ready(
+                    state
+                )
             )
-            octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                first_poll.dump()
-            )
-            first_run = octobot_process_functional_shared._get_action_by_id(
-                first_poll, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-            )
-            assert first_run is not None
-            inner = octobot_process_functional_shared._recall_inner_from_dsl_action(first_run)
-            state = first_poll.dump()
-            if not (inner and inner.get("init_state_ok") is True):
-                while time.monotonic() < deadline:
-                    await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-                    poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                        state, [], [], {}
-                    )
-                    octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                        poll_job.dump()
-                    )
-                    run_details = octobot_process_functional_shared._get_action_by_id(
-                        poll_job, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-                    )
-                    assert run_details is not None
-                    inner = octobot_process_functional_shared._recall_inner_from_dsl_action(run_details)
-                    if inner and inner.get("init_state_ok") is True:
-                        state = poll_job.dump()
-                        break
-                    state = poll_job.dump()
-                else:
-                    pytest.fail(
-                        f"OctoBot did not become ready (init_state_ok) within "
-                        f"{octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC}s"
-                    )
 
             assert inner is not None
             assert inner.get("pid"), "expected child pid in ensure state"
@@ -482,9 +412,6 @@ async def test_run_octobot_process_lifecycle_default_config_no_profile_data(
             )
             assert not local_non_trading_profile_json.exists()
 
-            # First process_bot_state dump can lag init_state_ok (see shared wait helper).
-            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
-            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
             with open(state_path, encoding="utf-8") as process_state_file:
                 file_metadata_payload = json.load(process_state_file)
             process_metadata = process_bot_state_import.Metadata.from_dict(

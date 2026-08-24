@@ -153,6 +153,17 @@ class Test_user_action_executor_factory:
         resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
         assert resolved_executor_cls is user_actions_executor_package.RefreshAccountsActionExecutor
 
+    def test_returns_update_historical_exchanges_data_executor_class(self):
+        configuration_inner = protocol_models.UpdateHistoricalExchangesDataConfiguration(
+            action_type=protocol_models.UserActionType.UPDATE_HISTORICAL_EXCHANGES_DATA,
+        )
+        user_action_model = self._user_action(
+            action_identifier="ua-update-historical",
+            configuration_inner=configuration_inner,
+        )
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.UpdateHistoricalExchangesDataActionExecutor
+
     def test_returns_create_exchange_config_executor_class(self):
         configuration_inner = protocol_models.CreateExchangeConfigConfiguration(
             action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_CREATE,

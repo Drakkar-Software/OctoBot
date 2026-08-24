@@ -94,6 +94,11 @@ class TestRefreshExchangeAccountPortfolio:
                 "_refresh_portfolio_valuation",
                 refresh_valuation_mock,
             ),
+            mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
         ):
             refresh_result = await exchange_account_refresh_module.refresh_exchange_account(
                 exchange_manager,
@@ -142,7 +147,7 @@ class TestRefreshExchangeAccountPortfolio:
             )
 
         assert refresh_result.assets == []
-        assert refresh_result.portfolio_snapshot.total == 0.0
+        assert refresh_result.ticker_closes == {}
 
     @pytest.mark.asyncio
     async def test_simulated_refresh_uses_seeded_account_assets(self):
@@ -247,6 +252,11 @@ class TestRefreshExchangeAccountPortfolio:
                 "_refresh_portfolio_valuation",
                 mock.AsyncMock(),
             ),
+            mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
         ):
             refresh_result = await exchange_account_refresh_module.refresh_exchange_account(
                 exchange_manager,
@@ -255,7 +265,7 @@ class TestRefreshExchangeAccountPortfolio:
                 fetch_open_orders=False,
             )
 
-        assert refresh_result.portfolio_snapshot.total > 0
+        assert isinstance(refresh_result.ticker_closes, dict)
 
 
 class TestValuationSymbolsFromPortfolio:
@@ -442,6 +452,11 @@ class TestRefreshExchangeAccountLogging:
                 exchange_account_refresh_module,
                 "_refresh_portfolio_valuation",
                 mock.AsyncMock(),
+            ),
+            mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
             ),
             mock.patch.object(
                 exchange_account_refresh_module,

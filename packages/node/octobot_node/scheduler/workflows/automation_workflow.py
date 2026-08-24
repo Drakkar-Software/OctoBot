@@ -22,6 +22,8 @@ import octobot_commons.logging
 
 import octobot_trading.errors
 
+import octobot_copy.errors as copy_errors
+
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.errors
@@ -116,6 +118,7 @@ class AutomationWorkflow:
             # workflow stopping errors
             errors.WorkflowError,
             octobot_flow.errors.ConfigurationError,
+            copy_errors.OutdatedReferenceAccountError,
         ))
 
     @staticmethod
@@ -175,11 +178,20 @@ class AutomationWorkflow:
                         err, True, f"Retriable error while running automation job: {err}"
                     )
                     raise
-                except octobot_flow.errors.PendingPriorityActionsSkippedError as err:
+                except (
+                    octobot_flow.errors.PendingPriorityActionsSkippedError,
+                    copy_errors.OutdatedReferenceAccountError,
+                ) as err:
                     # don't retry, just skip the iteration
-                    AutomationWorkflow.get_logger(parsed_inputs).error(
-                        f"Pending priority actions were skipped: {err}"
-                    )
+                    workflow_logger = AutomationWorkflow.get_logger(parsed_inputs)
+                    if isinstance(err, copy_errors.OutdatedReferenceAccountError):
+                        workflow_logger.info(
+                            f"Outdated reference account, skipping copy iteration: {err}"
+                        )
+                    else:
+                        workflow_logger.error(
+                            f"Pending priority actions were skipped: {err}"
+                        )
                     if action_job is None:
                         # should never happen, but just in case
                         raise

@@ -1,4 +1,4 @@
-import { Eye, Pencil, Play } from "lucide-react"
+import { Eye, History, Pencil, Play } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type {
@@ -49,6 +49,7 @@ type AccountsTableProps = {
   accountTradings: AccountTradingWithAccountId[]
   onEdit?: (account: Account) => void
   onStartAutomation?: (account: Account) => void
+  onUpdateHistory?: (account: Account) => void
 }
 
 export function AccountsTable({
@@ -57,6 +58,7 @@ export function AccountsTable({
   accountTradings,
   onEdit,
   onStartAutomation,
+  onUpdateHistory,
 }: AccountsTableProps) {
   const [detail, setDetail] = useState<Account | null>(null)
   const [sort, setSort] = useState<SortState<AccountSortKey>>({
@@ -91,7 +93,7 @@ export function AccountsTable({
   ]
 
   const accountColumnCount = accountColumns.length + 1
-  const actionsHeadClass = "w-24"
+  const actionsHeadClass = "w-32"
 
   if (rows.length === 0) {
     return (
@@ -294,6 +296,14 @@ export function AccountsTable({
                       onClick={() => onStartAutomation?.(row)}
                     >
                       <Play className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Update history"
+                      onClick={() => onUpdateHistory?.(row)}
+                    >
+                      <History className="size-4" />
                     </button>
                     <button
                       type="button"

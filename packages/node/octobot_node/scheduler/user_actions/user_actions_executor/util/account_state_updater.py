@@ -127,7 +127,7 @@ def _trading_type_for_account_state_check(
 async def _check_exchange_account_state(
     exchange_account: protocol_models.ExchangeAccount,
     account: protocol_models.Account,
-    user_id: str,
+    wallet_id: str,
 ) -> tuple[protocol_models.AccountState, list[protocol_models.DetailedAssetsForTradingType] | None]:
     if account.is_simulated:
         return (
@@ -138,11 +138,11 @@ async def _check_exchange_account_state(
             None, # not fetching assets for simulated accounts
         )
     authentication = account_authentication_resolver.get_exchange_authentication(
-        user_id,
+        wallet_id,
         account,
     )
     exchange_config = exchange_account_resolver.get_exchange_config(
-        user_id,
+        wallet_id,
         exchange_account,
     )
     trading_type = _trading_type_for_account_state_check(account)

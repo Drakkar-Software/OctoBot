@@ -35,13 +35,17 @@ class TestDbosCleanupWorkflowDbosCleanup:
         ), mock.patch(
             "octobot_node.scheduler.workflows_retention.cleanup_outdated_automation_executions",
             mock.AsyncMock(return_value=expected_summary),
-        ) as cleanup_mock:
+        ) as cleanup_mock, mock.patch(
+            "octobot_node.scheduler.workflows_retention.finalize_dbos_cleanup_run",
+            mock.AsyncMock(return_value={**expected_summary, "database_size_bytes": 1024, "cleanup_schedule_cron": "0 0 * * *", "cleanup_schedule_updated": False}),
+        ) as finalize_mock:
             result = await dbos_cleanup_workflow_module.DbosCleanupWorkflow._cleanup_outdated_automation_executions(
                 datetime.datetime.now(datetime.timezone.utc),
             )
 
         cleanup_mock.assert_awaited_once()
-        assert result == expected_summary
+        finalize_mock.assert_awaited_once()
+        assert result["total_deleted"] == 3
 
     @pytest.mark.asyncio
     async def test_skips_cleanup_on_consumer_only(self, dbos_cleanup_workflow_module):
@@ -69,6 +73,8 @@ class TestDbosCleanupWorkflowDbosCleanup:
         assert result == {
             "deleted_by_automation": {},
             "deleted_cleanup_executions": 0,
+            "deleted_global_view_executions": 0,
+            "deleted_portfolio_history_executions": 0,
             "total_deleted": 0,
         }
 
@@ -101,6 +107,8 @@ class TestDbosCleanupWorkflowDbosCleanup:
         assert result == {
             "deleted_by_automation": {},
             "deleted_cleanup_executions": 0,
+            "deleted_global_view_executions": 0,
+            "deleted_portfolio_history_executions": 0,
             "total_deleted": 0,
         }
 
@@ -119,4 +127,11 @@ class TestDbosCleanupWorkflowGetScheduleInput:
             "automatic_backfill": True,
             "queue_name": octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
         }
+
+    def test_accepts_custom_cron(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow_module
+
+        schedule_input = dbos_cleanup_workflow_module.get_schedule_input(cron="0 */6 * * *")
+
+        assert schedule_input["schedule"] == "0 */6 * * *"
 

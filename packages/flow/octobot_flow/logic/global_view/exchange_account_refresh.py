@@ -6,7 +6,6 @@ import decimal
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as octobot_commons_logging
-import octobot_commons.timestamp_util as timestamp_util
 import octobot_protocol.models as protocol_models
 import octobot_trading.api as trading_api
 import octobot_trading.constants as trading_constants
@@ -89,10 +88,15 @@ async def refresh_exchange_account(
             valuation_symbols=simulated_valuation_symbols,
         )
     else:
-        await _refresh_portfolio_valuation(exchange_manager, valuation_unit)
-    portfolio_total = trading_api.get_current_portfolio_value(exchange_manager)
-
-    # Step: build protocol assets and historical snapshot payload.
+        portfolio_content = trading_api.get_portfolio(exchange_manager, as_decimal=False)
+        valuation_symbols = _valuation_symbols_from_portfolio(
+            exchange_manager, portfolio_content, valuation_unit,
+        )
+        tickers = await _fetch_tickers(exchange_manager, valuation_symbols)
+        await _refresh_portfolio_valuation(
+            exchange_manager, valuation_unit, tickers=tickers, valuation_symbols=valuation_symbols,
+        )
+    # Step: build protocol assets (holdings only, no historical snapshot).
     portfolio_content = trading_api.get_portfolio(exchange_manager, as_decimal=False)
     balance_summary = octobot_commons_logging.get_private_placeholder_if_necessary(
         portfolio_util_module.get_balance_summary(portfolio_content, use_exchange_format=False)
@@ -104,24 +108,15 @@ async def refresh_exchange_account(
         balance_summary,
     )
     detailed_assets = portfolios_protocol.to_protocol_assets(portfolio_content)
-    historical_assets = _historical_assets_from_portfolio(
-        exchange_manager,
-        portfolio_content,
-        trading_type,
-        valuation_unit,
-    )
-    evaluation_time = timestamp_util.utc_now_datetime()
-    portfolio_snapshot = protocol_models.PortfolioHistoricalValue(
-        timestamp=evaluation_time,
-        total=portfolio_total,
-        assets=historical_assets,
-    )
     assets_for_trading_type = [
         protocol_models.DetailedAssetsForTradingType(
             trading_type=trading_type,
             assets=detailed_assets,
         )
     ] if detailed_assets else []
+
+    # Collect ticker close prices for the persisted latest-tickers cache.
+    ticker_closes = _ticker_close_by_symbol_from_tickers(tickers) if tickers else {}
 
     # Step: detect orders that disappeared since the previous refresh.
     changed_order_ids = order_change_detection_module.detect_changed_order_ids(
@@ -130,7 +125,7 @@ async def refresh_exchange_account(
     )
     return octobot_flow.entities.ExchangeAccountRefreshResult(
         assets=assets_for_trading_type,
-        portfolio_snapshot=portfolio_snapshot,
+        ticker_closes=ticker_closes,
         valuation_unit=valuation_unit,
         open_orders=open_orders,
         trades=trades,
@@ -282,36 +277,3 @@ async def _fetch_open_orders_for_symbols(exchange_manager, symbols: list[str]) -
     return list(orders_by_exchange_id.values())
 
 
-def _historical_assets_from_portfolio(
-    exchange_manager,
-    portfolio_content: dict,
-    trading_type: protocol_models.TradingType,
-    valuation_unit: str,
-) -> list[protocol_models.HistoricalAssetsForTradingType]:
-    historical_asset_values: list[protocol_models.HistoricalAssetValue] = []
-    for symbol, symbol_balance in portfolio_content.items():
-        total_holdings = float(symbol_balance.get(commons_constants.PORTFOLIO_TOTAL) or 0)
-        if total_holdings == 0:
-            continue
-        try:
-            unit_price = float(
-                trading_api.get_current_crypto_currency_value(exchange_manager, symbol)
-            )
-        except (KeyError, trading_errors.MissingPriceDataError):
-            unit_price = 0.0
-        asset_value = unit_price * total_holdings
-        historical_asset_values.append(
-            protocol_models.HistoricalAssetValue(
-                symbol=str(symbol),
-                holdings=total_holdings,
-                value=asset_value,
-            )
-        )
-    if not historical_asset_values:
-        return []
-    return [
-        protocol_models.HistoricalAssetsForTradingType(
-            trading_type=trading_type,
-            assets=historical_asset_values,
-        )
-    ]

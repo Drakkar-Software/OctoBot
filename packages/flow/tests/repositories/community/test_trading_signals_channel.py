@@ -82,4 +82,3 @@ async def test_shutdown_internal_trading_signal_channel_allows_recreate(internal
 
     new_channel = await trading_signals_channel.get_or_create_internal_trading_signal_channel()
     assert new_channel is not None
-

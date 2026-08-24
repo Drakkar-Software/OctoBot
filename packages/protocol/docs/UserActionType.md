@@ -28,6 +28,8 @@ UserActionType
 
 * `EXCHANGE_CONFIG_DELETE` (value: `'exchange_config_delete'`)
 
+* `UPDATE_HISTORICAL_EXCHANGES_DATA` (value: `'update_historical_exchanges_data'`)
+
 * `STRATEGY_CREATE` (value: `'strategy_create'`)
 
 * `STRATEGY_EDIT` (value: `'strategy_edit'`)

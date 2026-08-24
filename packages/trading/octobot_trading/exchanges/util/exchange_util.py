@@ -48,8 +48,32 @@ import octobot_trading.util as util
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
 
-
 _AUTH_REQUIRED_EXCHANGES: dict[str, bool] = {}
+
+
+def _get_logger():
+    return logging.get_logger("ExchangeUtil")
+
+
+def _historical_ohlcv_pagination_stalled(
+    symbol,
+    previous_start_time,
+    next_start_time,
+    *,
+    reason: str,
+) -> bool:
+    if next_start_time > previous_start_time:
+        return False
+    _get_logger().warning(
+        "Stopping historical OHLCV fetch for %s: start_time did not advance "
+        "(%s -> %s). %s",
+        symbol,
+        previous_start_time,
+        next_start_time,
+        reason,
+    )
+    return True
+
 
 def get_rest_exchange_class(
     exchange_name: str, tentacles_setup_config, exchange_config_by_exchange: typing.Optional[dict[str, dict]]
@@ -70,7 +94,7 @@ def search_exchange_class_from_exchange_name(
     if enable_default:
         return None
 
-    logging.get_logger("ExchangeUtil").debug(f"No specific exchange implementation for {exchange_name} found, "
+    _get_logger().debug(f"No specific exchange implementation for {exchange_name} found, "
                                              f"using a default one.")
     children_classes = tentacles_management.get_all_classes_from_parent(exchanges_implementations.DefaultRestExchange)
     if children_classes:
@@ -435,6 +459,7 @@ async def get_historical_ohlcv(
     exchange_time = local_exchange_manager.exchange.get_exchange_current_time()
     max_theoretical_time = exchange_time - exchange_time % time_frame_sec
     while start_time < end_time and not reached_max:
+        previous_start_time = start_time
         candles = await local_exchange_manager.exchange.retry_till_success(
             request_retry_timeout,
             local_exchange_manager.exchange.get_symbol_prices,
@@ -447,20 +472,39 @@ async def get_historical_ohlcv(
             if candles:
                 if candles[-1][common_enums.PriceIndexes.IND_PRICE_TIME.value] >= max_theoretical_time:
                     reached_max = True
-                yield candles
-                start_time = candles[-1][common_enums.PriceIndexes.IND_PRICE_TIME.value] * 1000
-                # avoid fetching the last element twice
-                start_time += 1
+                next_start_time = (
+                    candles[-1][common_enums.PriceIndexes.IND_PRICE_TIME.value] * 1000
+                    + 1
+                )
+                if _historical_ohlcv_pagination_stalled(
+                    symbol,
+                    previous_start_time,
+                    next_start_time,
+                    reason="Exchange may be returning duplicate candles.",
+                ):
+                    reached_max = True
+                else:
+                    yield candles
+                    start_time = next_start_time
             else:
                 reached_max = True
         elif local_exchange_manager.exchange.get_option_value(enums.ExchangeClientOptions.MAX_FETCHED_OHLCV_COUNT):
             # history needs to be fetched step by step
-            start_time = start_time + (
+            next_start_time = start_time + (
                 time_frame_msec
                 * local_exchange_manager.exchange.get_option_value(
                     enums.ExchangeClientOptions.MAX_FETCHED_OHLCV_COUNT
                 )
             )
+            if _historical_ohlcv_pagination_stalled(
+                symbol,
+                previous_start_time,
+                next_start_time,
+                reason="Exchange may be returning empty candle batches.",
+            ):
+                reached_max = True
+            else:
+                start_time = next_start_time
         else:
             reached_max = True
 

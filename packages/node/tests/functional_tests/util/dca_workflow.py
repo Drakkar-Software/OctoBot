@@ -15,6 +15,7 @@ import octobot_protocol.models as protocol_models_module
 
 from tests.scheduler.user_actions.user_actions_executor.util import trading_tentacles_test_utils
 
+from . import exchange_account_elements_access as exchange_account_elements_access_module
 from . import price_mocks as price_mocks_module
 from . import workflow_common as workflow_common_module
 
@@ -62,18 +63,11 @@ def d_order_price(price: typing.Any) -> decimal.Decimal:
 def open_order_origins_from_exchange_elements(
     exchange_account_elements: typing.Any,
 ) -> list[dict]:
-    orders_container = getattr(exchange_account_elements, "orders", None)
-    if orders_container is None and isinstance(exchange_account_elements, dict):
-        orders_container = exchange_account_elements.get("orders")
-    if orders_container is None:
-        return []
-    open_orders = getattr(orders_container, "open_orders", None)
-    if open_orders is None and isinstance(orders_container, dict):
-        open_orders = orders_container.get("open_orders", [])
+    open_orders = exchange_account_elements_access_module.open_orders_from_elements(exchange_account_elements)
     storage_key = trading_constants_module.STORAGE_ORIGIN_VALUE
     return [
         order_document[storage_key]
-        for order_document in (open_orders or [])
+        for order_document in open_orders
         if isinstance(order_document, dict) and storage_key in order_document
     ]
 

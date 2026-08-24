@@ -626,6 +626,22 @@ class TestLoadSymbolMarketsLock:
         assert load_count == 1
 
 
+async def test_get_deposits_raises_not_supported_on_not_implemented(ccxt_connector):
+    ccxt_connector.client.has = {"fetchDeposits": True}
+    ccxt_connector.adapter.adapt_transactions = mock.Mock(return_value=[])
+    ccxt_connector.client.fetch_deposits = mock.AsyncMock(side_effect=NotImplementedError("not implemented"))
+    with pytest.raises(octobot_trading.errors.NotSupported, match="not implemented"):
+        await ccxt_connector.get_deposits()
+
+
+async def test_get_withdrawals_raises_not_supported_on_not_implemented(ccxt_connector):
+    ccxt_connector.client.has = {"fetchWithdrawals": True}
+    ccxt_connector.adapter.adapt_transactions = mock.Mock(return_value=[])
+    ccxt_connector.client.fetch_withdrawals = mock.AsyncMock(side_effect=NotImplementedError("not implemented"))
+    with pytest.raises(octobot_trading.errors.NotSupported, match="not implemented"):
+        await ccxt_connector.get_withdrawals()
+
+
 def _get_fees(type, currency, rate, cost):
     return {
         enums.FeePropertyColumns.TYPE.value: type,

@@ -135,13 +135,24 @@ class TestDebugState(unittest.TestCase):
                             name = '', 
                             exchange = '', 
                             sandboxed = True, 
-                            url = '', )
+                            url = '', 
+                            historical_trade_symbols = [
+                                ''
+                                ], )
                         ], 
                     account_tradings = [
                         octobot_protocol.models.account_trading_with_account_id.AccountTradingWithAccountId(
                             account_id = '', 
                             account_trading = octobot_protocol.models.account_trading.AccountTrading(
-                                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), ), )
+                                updated_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                                transactions = [
+                                    octobot_protocol.models.transaction.Transaction(
+                                        id = '', 
+                                        timestamp = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                                        asset = '', 
+                                        amount = 1.337, 
+                                        type = 'blockchain_deposit', )
+                                    ], ), )
                         ], 
                     local_strategies = [
                         octobot_protocol.models.strategy.Strategy(

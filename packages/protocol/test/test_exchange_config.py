@@ -39,7 +39,10 @@ class TestExchangeConfig(unittest.TestCase):
                 name = '',
                 exchange = '',
                 sandboxed = True,
-                url = ''
+                url = '',
+                historical_trade_symbols = [
+                    ''
+                    ]
             )
         else:
             return ExchangeConfig(

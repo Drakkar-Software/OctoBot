@@ -26,6 +26,7 @@ import octobot_node.constants as constants
 import octobot_node.scheduler.scheduler as scheduler_module
 import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
 import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow
+import octobot_node.scheduler.workflows.portfolio_history_workflow as portfolio_history_workflow
 import octobot_node.scheduler.workflows_retention as workflows_retention
 
 
@@ -115,6 +116,20 @@ async def _classify_schedule_window_slots(
     }
 
 
+def _get_latest_schedule_trigger_time_before(
+    schedule_input: dbos.ScheduleInput,
+    before: datetime.datetime,
+) -> datetime.datetime | None:
+    schedule_cron = schedule_input["schedule"]
+    cron_timezone = schedule_input.get("cron_timezone")
+    tz = zoneinfo.ZoneInfo(cron_timezone) if cron_timezone else datetime.timezone.utc
+    if before.tzinfo is None:
+        before = before.replace(tzinfo=datetime.timezone.utc)
+    before_in_tz = before.astimezone(tz)
+    iterator = dbos_croniter.croniter(schedule_cron, before_in_tz, second_at_beginning=True)
+    return iterator.get_prev(_DATETIME_CLASS)
+
+
 def _existing_schedule_matches_configured(
     existing: dbos.WorkflowSchedule,
     schedule_input: dbos.ScheduleInput,
@@ -123,8 +138,62 @@ def _existing_schedule_matches_configured(
         existing["schedule"] == schedule_input["schedule"]
         and bool(existing.get("automatic_backfill"))
         == schedule_input.get("automatic_backfill", False)
+        and bool(existing.get("catch_up_once_on_startup"))
+        == schedule_input.get("catch_up_once_on_startup", False)
         and existing.get("cron_timezone") == schedule_input.get("cron_timezone")
         and existing.get("queue_name") == schedule_input.get("queue_name")
+    )
+
+
+async def _maybe_catch_up_schedule_once_on_startup(
+    schedule_name: str,
+    schedule_input: dbos.ScheduleInput,
+) -> None:
+    if not schedule_input.get("catch_up_once_on_startup", False):
+        return
+    existing_schedule = await dbos.DBOS.get_schedule_async(schedule_name)
+    if existing_schedule is None:
+        return
+
+    logger = _get_logger()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    trigger_time = _get_latest_schedule_trigger_time_before(schedule_input, now)
+    if trigger_time is None:
+        return
+
+    workflow_id = build_scheduled_workflow_id(schedule_name, trigger_time)
+    workflow_status = await dbos.DBOS.get_workflow_status_async(workflow_id)
+    if workflow_status is not None:
+        if workflows_retention.is_terminal_workflow(workflow_status):
+            logger.info(
+                "Startup catch-up not needed for schedule %s: latest slot %s already %s",
+                schedule_name,
+                workflow_id,
+                _workflow_status_string(workflow_status),
+            )
+        else:
+            logger.info(
+                "Startup catch-up skipped for schedule %s: latest slot %s already %s",
+                schedule_name,
+                workflow_id,
+                _workflow_status_string(workflow_status),
+            )
+        return
+
+    logger.info(
+        "Startup catch-up for schedule %s: enqueuing missed latest slot %s",
+        schedule_name,
+        workflow_id,
+    )
+    # backfill_schedule uses get_next from start; start one second before the slot
+    # so the target trigger_time is the first cron fire in [start, end).
+    backfill_start = trigger_time - datetime.timedelta(seconds=1)
+    backfill_end = trigger_time + datetime.timedelta(seconds=1)
+    await asyncio.to_thread(
+        dbos.DBOS.backfill_schedule,
+        schedule_name,
+        backfill_start,
+        backfill_end,
     )
 
 
@@ -267,15 +336,31 @@ async def _ensure_schedule(
         )
         await scheduler.INSTANCE.apply_schedules_async([schedule_input])
     await _maybe_backfill_schedule_on_startup(schedule_name, schedule_input)
+    await _maybe_catch_up_schedule_once_on_startup(schedule_name, schedule_input)
 
 
 async def register_schedules(scheduler: scheduler_module.Scheduler) -> None:
     schedule_inputs: list[dbos.ScheduleInput] = [
         dbos_cleanup_workflow.get_schedule_input(),
         global_view_workflow.get_schedule_input(),
+        portfolio_history_workflow.get_schedule_input(),
     ]
     for schedule_input in schedule_inputs:
         await _ensure_schedule(scheduler, schedule_input)
+
+
+async def update_cleanup_schedule_cron(
+    scheduler: scheduler_module.Scheduler,
+    cron: str,
+) -> dict[str, typing.Any]:
+    existing_schedule = await dbos.DBOS.get_schedule_async(dbos_cleanup_workflow.SCHEDULE_NAME)
+    if existing_schedule is not None and existing_schedule["schedule"] == cron:
+        return {"changed": False, "cron": cron}
+    schedule_input = dbos_cleanup_workflow.get_schedule_input(cron=cron)
+    logger = _get_logger()
+    logger.info("Updating cleanup schedule cron to %s", cron)
+    await scheduler.INSTANCE.apply_schedules_async([schedule_input])
+    return {"changed": True, "cron": cron}
 
 
 def _get_logger() -> logging.BotLogger:

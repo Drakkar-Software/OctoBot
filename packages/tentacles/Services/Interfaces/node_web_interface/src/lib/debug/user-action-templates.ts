@@ -36,6 +36,7 @@ import type {
   StrategyEvaluatorConfiguration,
   StrategyReference,
   TradingTentaclesConfiguration,
+  UpdateHistoricalExchangesDataConfiguration,
   UserAction,
   UserActionConfiguration,
   UserActionType,
@@ -80,6 +81,7 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   { value: "account_auth_edit", label: "Account auth edit" },
   { value: "account_auth_delete", label: "Account auth delete" },
   { value: "accounts_refresh", label: "Accounts refresh" },
+  { value: "update_historical_exchanges_data", label: "Update historical exchanges data" },
   { value: "exchange_config_create", label: "Exchange config create" },
   { value: "exchange_config_edit", label: "Exchange config edit" },
   { value: "exchange_config_delete", label: "Exchange config delete" },
@@ -143,6 +145,7 @@ type DebugUserActionConfiguration =
   | EditAccountAuthConfiguration
   | DeleteAccountAuthConfiguration
   | RefreshAccountsConfiguration
+  | UpdateHistoricalExchangesDataConfiguration
   | CreateExchangeConfigConfiguration
   | EditExchangeConfigConfiguration
   | DeleteExchangeConfigConfiguration
@@ -724,6 +727,10 @@ export function buildUserActionTemplate(
         action_type: actionType,
         account_ids: [TEMPLATE_ACCOUNT_ID],
       } satisfies RefreshAccountsConfiguration)
+    case "update_historical_exchanges_data":
+      return userAction(id, {
+        action_type: actionType,
+      } satisfies UpdateHistoricalExchangesDataConfiguration)
     case "exchange_config_create":
       return userAction(id, {
         action_type: actionType,
@@ -782,6 +789,17 @@ export function buildAccountEditUserActionJson(account: Account): string {
       id: account.id,
       configuration: account,
     } satisfies EditAccountConfiguration),
+  )
+}
+
+export function buildUpdateHistoricalExchangesDataUserActionJson(
+  accountId: string,
+): string {
+  return userActionJson(
+    userAction(uniqueUserActionId(`ua-update-historical-${accountId}`), {
+      action_type: "update_historical_exchanges_data",
+      account_ids: [accountId],
+    } satisfies UpdateHistoricalExchangesDataConfiguration),
   )
 }
 

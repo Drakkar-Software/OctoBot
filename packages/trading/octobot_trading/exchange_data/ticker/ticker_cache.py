@@ -4,6 +4,7 @@ import cachetools
 import octobot_commons.constants
 import octobot_commons.symbols
 import octobot_commons.logging
+import octobot_trading.exchange_data.exchange_cache_key as exchange_cache_key_module
 
 
 class TickerCache:
@@ -98,4 +99,4 @@ class TickerCache:
 
     @staticmethod
     def get_exchange_key(exchange_name: str, exchange_type: str, sandboxed: bool) -> str:
-        return f"{exchange_name}_{exchange_type or octobot_commons.constants.CONFIG_EXCHANGE_SPOT}_{sandboxed}"
+        return exchange_cache_key_module.get_exchange_key(exchange_name, exchange_type, sandboxed)

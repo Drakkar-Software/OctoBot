@@ -9,7 +9,7 @@ import octobot_protocol.models as protocol_models
 @dataclasses.dataclass
 class ExchangeAccountRefreshResult:
     assets: list[protocol_models.DetailedAssetsForTradingType]
-    portfolio_snapshot: protocol_models.PortfolioHistoricalValue
+    ticker_closes: dict[str, float]
     valuation_unit: str
     open_orders: list[dict]
     trades: list[dict]

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **exchange** | **str** |  | 
 **sandboxed** | **bool** |  | [default to False]
 **url** | **str** |  | [optional] 
+**historical_trade_symbols** | **List[str]** |  | [optional] 
 
 ## Example
 

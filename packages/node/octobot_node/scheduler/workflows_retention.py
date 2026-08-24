@@ -15,6 +15,7 @@
 #  License along with this library.
 import datetime
 import os
+import pathlib
 import time
 import typing
 
@@ -29,14 +30,28 @@ import octobot_node.scheduler.workflows_util as workflows_util
 if typing.TYPE_CHECKING:
     import octobot_node.scheduler.scheduler as scheduler_module
 
+_GIBIBYTE = 1024 ** 3
+
 AUTOMATION_EXECUTION_RETENTION_SECONDS = float(
     os.getenv("AUTOMATION_EXECUTION_RETENTION_SECONDS", 60 * 60 * 24 * 2)
 )  # 2 days
 AUTOMATION_EXECUTIONS_TO_KEEP = 2
 
+DBOS_CLEANUP_SIZE_TIER_1_BYTES = int(
+    os.getenv("DBOS_CLEANUP_SIZE_TIER_1_BYTES", str(1 * _GIBIBYTE))
+)
+DBOS_CLEANUP_SIZE_TIER_2_BYTES = int(
+    os.getenv("DBOS_CLEANUP_SIZE_TIER_2_BYTES", str(3 * _GIBIBYTE))
+)
+DBOS_CLEANUP_CRON_DAILY = os.getenv("DBOS_CLEANUP_CRON_DAILY", "0 0 * * *")
+DBOS_CLEANUP_CRON_12H = os.getenv("DBOS_CLEANUP_CRON_12H", "0 */12 * * *")
+DBOS_CLEANUP_CRON_6H = os.getenv("DBOS_CLEANUP_CRON_6H", "0 */6 * * *")
+
 EMPTY_CLEANUP_SUMMARY: dict[str, typing.Any] = {
     "deleted_by_automation": {},
     "deleted_cleanup_executions": 0,
+    "deleted_global_view_executions": 0,
+    "deleted_portfolio_history_executions": 0,
     "total_deleted": 0,
 }
 
@@ -60,6 +75,21 @@ def is_terminal_workflow(workflow_status: dbos.WorkflowStatus) -> bool:
 
 def _retention_cutoff_ms(*, retention_seconds: float, now_ms: int) -> int:
     return now_ms - int(retention_seconds * 1000)
+
+
+def get_outdated_terminal_workflow_ids(
+    workflows: list[dbos.WorkflowStatus],
+    *,
+    retention_seconds: float,
+    now_ms: int,
+) -> list[str]:
+    cutoff_ms = _retention_cutoff_ms(retention_seconds=retention_seconds, now_ms=now_ms)
+    return [
+        workflow_status.workflow_id
+        for workflow_status in workflows
+        if is_terminal_workflow(workflow_status)
+        and (workflow_status.updated_at or 0) < cutoff_ms
+    ]
 
 
 def get_outdated_automation_execution_deletions(
@@ -102,13 +132,11 @@ def get_outdated_dbos_cleanup_execution_workflow_ids(
     retention_seconds: float,
     now_ms: int,
 ) -> list[str]:
-    cutoff_ms = _retention_cutoff_ms(retention_seconds=retention_seconds, now_ms=now_ms)
-    return [
-        workflow_status.workflow_id
-        for workflow_status in cleanup_workflows
-        if is_terminal_workflow(workflow_status)
-        and (workflow_status.updated_at or 0) < cutoff_ms
-    ]
+    return get_outdated_terminal_workflow_ids(
+        cleanup_workflows,
+        retention_seconds=retention_seconds,
+        now_ms=now_ms,
+    )
 
 
 _TERMINAL_DELETE_WORKFLOW_STATUSES = [
@@ -137,6 +165,22 @@ async def get_workflows_to_delete(
     return automation_workflows + user_action_workflows
 
 
+def get_scheduler_database_size_bytes(dbos_instance: dbos.DBOS) -> int | None:
+    if octobot_node.config.settings.SCHEDULER_POSTGRES_URL:
+        return _get_postgres_database_size_bytes(dbos_instance)
+    return _get_sqlite_database_size_bytes()
+
+
+def select_cleanup_cron_for_database_size(database_size_bytes: int | None) -> str:
+    if database_size_bytes is None:
+        return DBOS_CLEANUP_CRON_DAILY
+    if database_size_bytes < DBOS_CLEANUP_SIZE_TIER_1_BYTES:
+        return DBOS_CLEANUP_CRON_DAILY
+    if database_size_bytes < DBOS_CLEANUP_SIZE_TIER_2_BYTES:
+        return DBOS_CLEANUP_CRON_12H
+    return DBOS_CLEANUP_CRON_6H
+
+
 def vacuum_dbos_system_database(dbos_instance: dbos.DBOS) -> None:
     logger = _get_logger()
     logger.info("Vacuuming database")
@@ -145,12 +189,19 @@ def vacuum_dbos_system_database(dbos_instance: dbos.DBOS) -> None:
     logger.info("Database vacuum completed")
 
 
+async def delete_workflows(
+    dbos_instance: dbos.DBOS,
+    workflow_ids: list[str],
+) -> None:
+    _get_logger().info("Deleting %s workflows", len(workflow_ids))
+    await dbos_instance.delete_workflows_async(workflow_ids, delete_children=False)
+
+
 async def delete_workflows_and_vacuum(
     dbos_instance: dbos.DBOS,
     workflow_ids: list[str]
 ) -> None:
-    _get_logger().info("Deleting %s workflows", len(workflow_ids))
-    await dbos_instance.delete_workflows_async(workflow_ids, delete_children=False)
+    await delete_workflows(dbos_instance, workflow_ids)
     vacuum_dbos_system_database(dbos_instance)
 
 
@@ -164,6 +215,8 @@ async def cleanup_outdated_automation_executions(
     retention_seconds = AUTOMATION_EXECUTION_RETENTION_SECONDS
     import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
     import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
+    import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow
+    import octobot_node.scheduler.workflows.portfolio_history_workflow as portfolio_history_workflow
     automation_workflows = await scheduler.INSTANCE.list_workflows_async(
         name=automation_workflow.WORKFLOW_NAME,
         queue_name=[octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value],
@@ -172,6 +225,17 @@ async def cleanup_outdated_automation_executions(
     )
     cleanup_workflows = await scheduler.INSTANCE.list_workflows_async(
         name=dbos_cleanup_workflow.WORKFLOW_NAME,
+        load_input=False,
+        load_output=False,
+    )
+    global_view_workflows = await scheduler.INSTANCE.list_workflows_async(
+        name=global_view_workflow.WORKFLOW_NAME,
+        queue_name=[octobot_node.enums.SchedulerQueues.GLOBAL_VIEW_QUEUE.value],
+        load_input=False,
+        load_output=False,
+    )
+    portfolio_history_workflows = await scheduler.INSTANCE.list_workflows_async(
+        name=portfolio_history_workflow.WORKFLOW_NAME,
         load_input=False,
         load_output=False,
     )
@@ -185,33 +249,81 @@ async def cleanup_outdated_automation_executions(
         retention_seconds=retention_seconds,
         now_ms=now_ms,
     )
+    global_view_execution_ids = get_outdated_terminal_workflow_ids(
+        global_view_workflows,
+        retention_seconds=retention_seconds,
+        now_ms=now_ms,
+    )
+    portfolio_history_execution_ids = get_outdated_terminal_workflow_ids(
+        portfolio_history_workflows,
+        retention_seconds=retention_seconds,
+        now_ms=now_ms,
+    )
     automation_execution_ids = [
         workflow_id
         for workflow_ids in deletions_by_automation.values()
         for workflow_id in workflow_ids
     ]
-    all_ids_to_delete = automation_execution_ids + cleanup_execution_ids
+    all_ids_to_delete = (
+        automation_execution_ids
+        + cleanup_execution_ids
+        + global_view_execution_ids
+        + portfolio_history_execution_ids
+    )
     summary = {
         "deleted_by_automation": {
             parent_id: len(workflow_ids)
             for parent_id, workflow_ids in deletions_by_automation.items()
         },
         "deleted_cleanup_executions": len(cleanup_execution_ids),
+        "deleted_global_view_executions": len(global_view_execution_ids),
+        "deleted_portfolio_history_executions": len(portfolio_history_execution_ids),
         "total_deleted": len(all_ids_to_delete),
     }
     if all_ids_to_delete:
         _get_logger().info(
-            "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs",
+            "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs, "
+            "%s global view runs, %s portfolio history runs",
             len(all_ids_to_delete),
             len(deletions_by_automation),
             len(cleanup_execution_ids),
+            len(global_view_execution_ids),
+            len(portfolio_history_execution_ids),
         )
-        await delete_workflows_and_vacuum(
+        await delete_workflows(
             scheduler.INSTANCE,
             all_ids_to_delete,
         )
     _get_logger().info("DBOS cleanup summary: %s", summary)
     return summary
+
+
+async def finalize_dbos_cleanup_run(
+    scheduler: "scheduler_module.Scheduler",
+    summary: dict[str, typing.Any],
+) -> dict[str, typing.Any]:
+    if not scheduler.INSTANCE:
+        return summary
+    database_size_bytes = get_scheduler_database_size_bytes(scheduler.INSTANCE)
+    finalized_summary = dict(summary)
+    finalized_summary["database_size_bytes"] = database_size_bytes
+    total_deleted = finalized_summary.get("total_deleted", 0)
+    if total_deleted > 0 or (
+        database_size_bytes is not None
+        and database_size_bytes >= DBOS_CLEANUP_SIZE_TIER_2_BYTES
+    ):
+        vacuum_dbos_system_database(scheduler.INSTANCE)
+    desired_cron = select_cleanup_cron_for_database_size(database_size_bytes)
+    finalized_summary["cleanup_schedule_cron"] = desired_cron
+    import octobot_node.scheduler.schedules as schedules_module
+    schedule_update = await schedules_module.update_cleanup_schedule_cron(
+        scheduler,
+        desired_cron,
+    )
+    finalized_summary["cleanup_schedule_updated"] = schedule_update["changed"]
+    _get_logger().info("DBOS cleanup finalized summary: %s", finalized_summary)
+    return finalized_summary
+
 
 def _get_latest_completed_cleanup_timestamp_ms(
     cleanup_workflows: list[dbos.WorkflowStatus],
@@ -242,6 +354,44 @@ async def should_skip_retention_cleanup_for_scheduled_time(
         return False
     scheduled_timestamp_ms = int(scheduled_time.timestamp() * 1000)
     return latest_timestamp_ms > scheduled_timestamp_ms
+
+
+def _get_sqlite_database_size_bytes() -> int | None:
+    sqlite_path = pathlib.Path(octobot_node.config.settings.SCHEDULER_SQLITE_FILE)
+    if not sqlite_path.is_file():
+        missing_file_error = FileNotFoundError(f"Scheduler sqlite file not found: {sqlite_path}")
+        _get_logger().exception(
+            missing_file_error,
+            True,
+            "Scheduler sqlite file not found: %s",
+            sqlite_path,
+        )
+        return None
+    total_size_bytes = sqlite_path.stat().st_size
+    for suffix in ("-wal", "-shm"):
+        sidecar_path = pathlib.Path(f"{sqlite_path}{suffix}")
+        if sidecar_path.is_file():
+            total_size_bytes += sidecar_path.stat().st_size
+    return total_size_bytes
+
+
+def _get_postgres_database_size_bytes(dbos_instance: dbos.DBOS) -> int | None:
+    try:
+        with dbos_instance._sys_db.engine.begin() as connection:
+            database_size = connection.execute(
+                sqlalchemy.text("SELECT pg_database_size(current_database())"),
+            ).scalar()
+        if database_size is None:
+            return None
+        return int(database_size)
+    except Exception as error:
+        _get_logger().exception(
+            error,
+            True,
+            "Failed to read postgres database size: %s",
+            error,
+        )
+        return None
 
 
 def _get_logger() -> logging.BotLogger:

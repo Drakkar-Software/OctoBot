@@ -16,8 +16,10 @@
 import decimal
 import typing
 
+import octobot_protocol.models as protocol_models
 import octobot_commons.constants as commons_constants
 import octobot_commons.symbols as commons_symbols
+import octobot_trading.personal_data.portfolios.history.history_from_trades_and_transaction_builder as history_builder
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchange_channel as exchange_channel
 import octobot_trading.constants
@@ -47,6 +49,18 @@ def get_portfolio_historical_values(exchange_manager, currency, time_frame, from
             currency, time_frame, from_timestamp, to_timestamp
         )
     return []
+
+def compute_portfolio_historical_holdings_from_latest_portfolio_trades_and_transations(
+    latest_portfolio: dict[str, dict[str, decimal.Decimal]],
+    trades: list[protocol_models.Trade],
+    transations: list[protocol_models.Transaction],
+) -> dict[float, dict[str, dict[str, decimal.Decimal]]]:
+    """
+    Compute the portfolio historical holdings from the latest portfolio, trades and transations.
+    The latest portfolio is the portfolio at the latest timestamp and trades and transactions are 
+    replayed in antichronological order.
+    """
+    return history_builder.build_historical_holdings(latest_portfolio, trades, transations)
 
 
 def get_portfolio_reference_market(exchange_manager) -> str:

@@ -7,37 +7,15 @@ from __future__ import annotations
 import math
 import typing
 
+import octobot_commons.constants as commons_constants_module
 import octobot_protocol.models as protocol_models_module
 
+from . import exchange_account_elements_access as exchange_account_elements_access_module
 from . import workflow_common as workflow_common_module
 
 buy_sell_trade_counts_from_exchange_elements = (
     workflow_common_module.buy_sell_trade_counts_from_exchange_elements
 )
-
-
-def portfolio_content_from_exchange_elements(exchange_account_elements: typing.Any) -> dict[str, typing.Any]:
-    portfolio = getattr(exchange_account_elements, "portfolio", None)
-    if portfolio is None and isinstance(exchange_account_elements, dict):
-        portfolio = exchange_account_elements.get("portfolio")
-    if portfolio is None:
-        return {}
-    content = getattr(portfolio, "content", None)
-    if content is None and isinstance(portfolio, dict):
-        content = portfolio.get("content")
-    return content if isinstance(content, dict) else {}
-
-
-def portfolio_row_scalar(row: typing.Any, field_name: str) -> float:
-    if isinstance(row, dict):
-        raw_value = row.get(field_name)
-    else:
-        raw_value = getattr(row, field_name, None)
-    if raw_value is None and field_name == "available":
-        return portfolio_row_scalar(row, "total")
-    if raw_value is None:
-        raise AssertionError(f"portfolio row missing field {field_name!r}: {row!r}")
-    return float(raw_value)
 
 
 def assert_protocol_automation_metadata_name(
@@ -85,7 +63,9 @@ def assert_protocol_automation_matches_exchange_account_elements(
         assert order_summary.symbol == expected_order_symbol, (
             f"unexpected OrderSummary.symbol {order_summary.symbol!r}; expected {expected_order_symbol!r}"
         )
-    content = portfolio_content_from_exchange_elements(exchange_account_elements)
+    content = exchange_account_elements_access_module.portfolio_content_from_elements(
+        exchange_account_elements,
+    )
     protocol_assets = protocol_automation.assets
     assert protocol_assets is not None, (
         "expected AutomationState.assets to be set"
@@ -97,8 +77,12 @@ def assert_protocol_automation_matches_exchange_account_elements(
             f"missing protocol Asset for portfolio symbol {symbol!r}; "
             f"protocol asset symbols: {sorted(assets_by_symbol)!r}"
         )
-        expected_total = portfolio_row_scalar(row, "total")
-        expected_available = portfolio_row_scalar(row, "available")
+        expected_total = exchange_account_elements_access_module.portfolio_row_scalar(
+            row, commons_constants_module.PORTFOLIO_TOTAL,
+        )
+        expected_available = exchange_account_elements_access_module.portfolio_row_scalar(
+            row, commons_constants_module.PORTFOLIO_AVAILABLE,
+        )
         if not math.isclose(float(matching_asset.total), expected_total, rel_tol=1e-9, abs_tol=1e-6):
             raise AssertionError(
                 f"Asset.total mismatch for {symbol!r}: protocol={matching_asset.total!r} "
@@ -153,7 +137,9 @@ def assert_protocol_automation_matches_exchange_account_elements_multi_symbol(
             f"unexpected OrderSummary.symbol {order_summary.symbol!r}; "
             f"expected one of {allowed_order_symbols!r}"
         )
-    content = portfolio_content_from_exchange_elements(exchange_account_elements)
+    content = exchange_account_elements_access_module.portfolio_content_from_elements(
+        exchange_account_elements,
+    )
     protocol_assets = protocol_automation.assets
     assert protocol_assets is not None, "expected AutomationState.assets to be set"
     assets_by_symbol = {asset.symbol: asset for asset in protocol_assets}
@@ -163,8 +149,12 @@ def assert_protocol_automation_matches_exchange_account_elements_multi_symbol(
             f"missing protocol Asset for portfolio symbol {symbol!r}; "
             f"protocol asset symbols: {sorted(assets_by_symbol)!r}"
         )
-        expected_total = portfolio_row_scalar(row, "total")
-        expected_available = portfolio_row_scalar(row, "available")
+        expected_total = exchange_account_elements_access_module.portfolio_row_scalar(
+            row, commons_constants_module.PORTFOLIO_TOTAL,
+        )
+        expected_available = exchange_account_elements_access_module.portfolio_row_scalar(
+            row, commons_constants_module.PORTFOLIO_AVAILABLE,
+        )
         if not math.isclose(float(matching_asset.total), expected_total, rel_tol=1e-9, abs_tol=1e-6):
             raise AssertionError(
                 f"Asset.total mismatch for {symbol!r}: protocol={matching_asset.total!r} "

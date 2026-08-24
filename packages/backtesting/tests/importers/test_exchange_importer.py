@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import pytest
-import os
 from contextlib import asynccontextmanager
 
 
@@ -23,20 +22,27 @@ from octobot_backtesting.importers.exchanges.exchange_importer import ExchangeDa
 from octobot_backtesting.enums import ExchangeDataTables
 from octobot_commons.enums import TimeFrames
 
+import tests.database_test_util as database_test_util
+
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
+
+EXCHANGE_HISTORY_DATA_FILE = "ExchangeHistoryDataCollector_1589740606.4862757.data"
 
 
 # use context manager instead of fixture to prevent pytest threads issues
 @asynccontextmanager
 async def get_importer():
-    database_file = os.path.join("tests", "static", "ExchangeHistoryDataCollector_1589740606.4862757.data")
-    importer = ExchangeDataImporter({}, database_file)
+    temp_database_path = database_test_util.copy_static_database_fixture(EXCHANGE_HISTORY_DATA_FILE)
     try:
-        await importer.initialize()
-        yield importer
+        importer = ExchangeDataImporter({}, temp_database_path)
+        try:
+            await importer.initialize()
+            yield importer
+        finally:
+            await importer.stop()
     finally:
-        await importer.stop()
+        database_test_util.remove_temp_database(temp_database_path)
 
 
 async def test_initialize():

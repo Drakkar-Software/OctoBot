@@ -17,27 +17,12 @@
 import contextlib
 import sqlite3
 
-import octobot_commons.logging as logging
 import octobot_commons.enums as enums
 import octobot_commons.errors as errors
-import octobot_commons.databases.relational_databases.sqlite.cursor_pool as cursor_pool
-import octobot_commons.constants as constants
-
-try:
-    import aiosqlite
-except ImportError:
-    if constants.USE_MINIMAL_LIBS:
-        # mock aiosqlite imports
-        class AiosqliteImportMock:
-            def connect(self, *args):
-                raise ImportError("aiosqlite not installed")
-
-        aiosqlite = AiosqliteImportMock()
-    else:
-        raise
+import octobot_commons.databases.relational_databases.sqlite.base_sqlite_database as base_sqlite_database
 
 
-class SQLiteDatabase:
+class BacktestingDataSQLiteDatabase(base_sqlite_database.BaseSQLiteDatabase):
     TIMESTAMP_COLUMN = "timestamp"
     DEFAULT_ORDER_BY = TIMESTAMP_COLUMN
     DEFAULT_SORT = enums.DataBaseOrderBy.DESC.value
@@ -46,39 +31,18 @@ class SQLiteDatabase:
     CACHE_SIZE = 50
 
     def __init__(self, file_name):
-        self.file_name = file_name
-        self.logger = logging.get_logger(self.__class__.__name__)
-
+        super().__init__(file_name)
         self.tables = []
         self.cache = {}
 
-        self.connection = None
-
-        # should never be used directly, use async with self.aio_cursor() as cursor: instead
-        self._cursor_pool = None
-
     async def initialize(self):
-        try:
-            self.connection = await aiosqlite.connect(self.file_name)
-            self._cursor_pool = cursor_pool.CursorPool(self.connection)
-            await self.__init_tables_list()
-        except (sqlite3.OperationalError, sqlite3.DatabaseError) as err:
-            raise errors.DatabaseNotFoundError(f"{err} (file: {self.file_name})")
+        await super().initialize()
+        await self.__init_tables_list()
 
     async def create_index(self, table, columns):
         await self.__execute_index_creation(
             table, "_".join(columns), ", ".join(columns)
         )
-
-    @contextlib.asynccontextmanager
-    async def aio_cursor(self) -> sqlite3.Cursor:
-        """
-        Use this as a context manager to get a free database cursor
-        :yield: A free cursor
-        :return: None
-        """
-        async with self._cursor_pool.idle_cursor() as cursor:
-            yield cursor.cursor
 
     async def __execute_index_creation(self, table, name, columns):
         async with self.aio_cursor() as cursor:
@@ -90,7 +54,6 @@ class SQLiteDatabase:
         if table.value not in self.tables:
             await self.__create_table(table, **kwargs)
 
-        # Insert a row of data
         inserting_values = [f"'{value}'" for value in kwargs.values()]
         await self.__execute_insert(
             table, self.__insert_values(timestamp, ", ".join(inserting_values))
@@ -104,7 +67,6 @@ class SQLiteDatabase:
         insert_values = []
 
         for index, values in enumerate(timestamp):
-            # Insert a row of data
             inserting_values = [
                 f"'{value if not isinstance(value, list) else value[index]}'"
                 for value in kwargs.values()
@@ -116,7 +78,6 @@ class SQLiteDatabase:
         await self.__execute_insert(table, ", ".join(insert_values))
 
     async def update(self, table, updated_value_by_column, **kwargs):
-        # Update a row of data
         updating_values = [
             f"{key} = '{value}'" for key, value in updated_value_by_column.items()
         ]
@@ -133,7 +94,6 @@ class SQLiteDatabase:
         async with self.aio_cursor() as cursor:
             await cursor.execute(f"INSERT INTO {table.value} VALUES {insert_items}")
 
-        # Save (commit) the changes
         await self.connection.commit()
 
     async def __execute_update(self, table, update_items, where_clauses) -> None:
@@ -142,7 +102,6 @@ class SQLiteDatabase:
                 f"UPDATE {table.value} SET {update_items} WHERE {where_clauses}"
             )
 
-        # Save (commit) the changes
         await self.connection.commit()
 
     async def select(
@@ -249,13 +208,13 @@ class SQLiteDatabase:
         return " AND ".join(
             [
                 self.__where_clauses_from_operation(
-                    keys[i],
-                    values[i],
-                    operations[i] if len(operations) > i else None,
+                    keys[index],
+                    values[index],
+                    operations[index] if len(operations) > index else None,
                     should_quote_value=should_quote_value,
                 )
-                for i in range(len(keys))
-                if values[i] is not None
+                for index in range(len(keys))
+                if values[index] is not None
             ]
         )
 
@@ -311,7 +270,6 @@ class SQLiteDatabase:
     async def __execute_delete(self, table, where_clauses):
         async with self.aio_cursor() as cursor:
             await cursor.execute(f"DELETE FROM {table.value} WHERE {where_clauses} ")
-            # nothing to return, will raise on error
 
     async def check_table_exists(self, table) -> bool:
         async with self.aio_cursor() as cursor:
@@ -340,10 +298,10 @@ class SQLiteDatabase:
             if with_index_on_timestamp:
                 await self.create_index(table, [self.TIMESTAMP_COLUMN])
 
-                for i in range(1, round(len(columns) / 2) + 1):
+                for index in range(1, round(len(columns) / 2) + 1):
                     await self.create_index(
                         table,
-                        [self.TIMESTAMP_COLUMN] + [columns[u] for u in range(0, i)],
+                        [self.TIMESTAMP_COLUMN] + [columns[column_index] for column_index in range(0, index)],
                     )
 
         except sqlite3.OperationalError:
@@ -356,20 +314,10 @@ class SQLiteDatabase:
             await cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             self.tables = [res[0] for res in await cursor.fetchall()]
 
-    async def stop(self):
-        try:
-            if self._cursor_pool is not None:
-                await self._cursor_pool.close()
-        finally:
-            if self.connection is not None:
-                conn = self.connection
-                self.connection = None
-                await conn.close()
-
 
 @contextlib.asynccontextmanager
 async def new_sqlite_database(file_path):
-    local_database = SQLiteDatabase(file_path)
+    local_database = BacktestingDataSQLiteDatabase(file_path)
     try:
         await local_database.initialize()
         yield local_database

@@ -33,6 +33,7 @@ import starfish_server.config.schema as starfish_server_config_schema
 import starfish_server.storage.filesystem as starfish_filesystem_storage_module
 import starfish_sharing as starfish_sharing_module
 
+from .util import exchange_account_elements_access as exchange_account_elements_access_module
 from .util import grid_workflow as grid_sim_util
 from .util import price_mocks as price_mocks_module
 from .util import user_action_assertions as user_action_assertions_module
@@ -40,11 +41,9 @@ from .util import workflow_common as workflow_common_module
 
 import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
-import octobot_trading.constants as trading_constants_module
 import octobot_node.config
 import octobot_node.constants as node_constants_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
-import octobot_commons.constants as octobot_commons_constants_module
 import octobot_commons.os_util as commons_os_util_module
 import octobot_copy.constants as octobot_copy_constants_module
 import octobot_flow.entities as octobot_flow_entities
@@ -179,72 +178,6 @@ def _account_for_id(
         return copy_account
     raise AssertionError(f"Unexpected account_id lookup: {account_id!r}")
 
-def _d_order_price(raw: typing.Union[int, float, str, decimal.Decimal]) -> decimal.Decimal:
-    if isinstance(raw, decimal.Decimal):
-        return raw
-    return decimal.Decimal(str(raw))
-
-def _sorted_limit_prices_from_elements(
-    exchange_account_elements: typing.Any,
-    *,
-    trade_order_side,
-) -> list[decimal.Decimal]:
-    if exchange_account_elements is None:
-        return []
-    orders_container = getattr(exchange_account_elements, "orders", None)
-    if orders_container is None and isinstance(exchange_account_elements, dict):
-        orders_container = exchange_account_elements.get("orders")
-    if orders_container is None:
-        return []
-    open_orders = getattr(orders_container, "open_orders", None)
-    if open_orders is None and isinstance(orders_container, dict):
-        open_orders = orders_container.get("open_orders", [])
-    open_orders = open_orders or []
-
-    storage_origin = trading_constants_module.STORAGE_ORIGIN_VALUE
-
-    def _open_order_payload(order_row: typing.Any) -> typing.Any:
-        """Exchange rows may nest ccxt fields under ``STORAGE_ORIGIN_VALUE``; protocol orders are flat."""
-        if isinstance(order_row, dict):
-            nested = order_row.get(storage_origin)
-            if isinstance(nested, dict):
-                return nested
-            return order_row
-        nested = getattr(order_row, storage_origin, None)
-        if nested is not None:
-            return nested
-        return order_row
-
-    side_key = trading_enums_module.ExchangeConstantsOrderColumns.SIDE.value
-    price_col = trading_enums_module.ExchangeConstantsOrderColumns.PRICE.value
-    type_col = trading_enums_module.ExchangeConstantsOrderColumns.TYPE.value
-    want_side = trade_order_side.value
-    limit_type = trading_enums_module.TradeOrderType.LIMIT.value
-    prices: list[decimal.Decimal] = []
-    for order in open_orders:
-        payload = _open_order_payload(order)
-        if isinstance(payload, dict):
-            side = payload.get(side_key)
-            price_raw = payload.get(price_col)
-            order_type = payload.get(type_col)
-        else:
-            side = getattr(payload, side_key, None)
-            price_raw = getattr(payload, price_col, None)
-            order_type = getattr(payload, type_col, None)
-        if hasattr(side, "value"):
-            side = side.value
-        if side != want_side:
-            continue
-        if price_raw is None:
-            continue
-        if hasattr(order_type, "value"):
-            order_type = order_type.value
-        if order_type is not None and order_type != limit_type:
-            continue
-        prices.append(_d_order_price(price_raw))
-    prices.sort()
-    return prices
-
 def _assert_open_limit_prices_match_reference(
     reference_elements: typing.Any,
     follower_elements: typing.Any,
@@ -253,30 +186,15 @@ def _assert_open_limit_prices_match_reference(
         trading_enums_module.TradeOrderSide.BUY,
         trading_enums_module.TradeOrderSide.SELL,
     ):
-        ref_prices = _sorted_limit_prices_from_elements(reference_elements, trade_order_side=side)
-        got_prices = _sorted_limit_prices_from_elements(follower_elements, trade_order_side=side)
+        ref_prices = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
+            reference_elements,
+            trade_order_side=side,
+        )
+        got_prices = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
+            follower_elements,
+            trade_order_side=side,
+        )
         assert ref_prices == got_prices, f"side={side!r} ref={ref_prices!s} follower={got_prices!s}"
-
-def _portfolio_content_from_exchange_elements(exchange_account_elements: typing.Any) -> dict[str, typing.Any]:
-    portfolio = getattr(exchange_account_elements, "portfolio", None)
-    if portfolio is None and isinstance(exchange_account_elements, dict):
-        portfolio = exchange_account_elements.get("portfolio")
-    if portfolio is None:
-        return {}
-    content = getattr(portfolio, "content", None)
-    if content is None and isinstance(portfolio, dict):
-        content = portfolio.get("content")
-    return content if isinstance(content, dict) else {}
-
-def _portfolio_row_total(row: typing.Any) -> decimal.Decimal:
-    total_key = octobot_commons_constants_module.PORTFOLIO_TOTAL
-    if isinstance(row, dict):
-        raw = row.get(total_key, row.get("total"))
-    else:
-        raw = getattr(row, total_key, None) or getattr(row, "total", None)
-    if raw is None:
-        raise AssertionError("portfolio row has no total amount")
-    return raw if isinstance(raw, decimal.Decimal) else decimal.Decimal(str(raw))
 
 def _value_weighted_btc_usdc_shares(
     content: dict[str, typing.Any],
@@ -286,8 +204,8 @@ def _value_weighted_btc_usdc_shares(
     """USDC notionals: ``btc_total * btc_usdc_close`` vs USDC total; shares sum to 1."""
     for asset in ("BTC", "USDC"):
         assert asset in content, f"missing portfolio row for {asset}"
-    btc_total = _portfolio_row_total(content["BTC"])
-    usdc_total = _portfolio_row_total(content["USDC"])
+    btc_total = exchange_account_elements_access_module.portfolio_row_total(content["BTC"])
+    usdc_total = exchange_account_elements_access_module.portfolio_row_total(content["USDC"])
     btc_notional_usdc = btc_total * btc_usdc_close
     usdc_notional = usdc_total
     total_notional = btc_notional_usdc + usdc_notional
@@ -303,8 +221,8 @@ def _assert_btc_usdc_value_shares_match_reference(
     *,
     btc_usdc_close: decimal.Decimal,
 ) -> None:
-    ref_content = _portfolio_content_from_exchange_elements(reference_elements)
-    follower_content = _portfolio_content_from_exchange_elements(follower_elements)
+    ref_content = exchange_account_elements_access_module.portfolio_content_from_elements(reference_elements)
+    follower_content = exchange_account_elements_access_module.portfolio_content_from_elements(follower_elements)
     ref_shares = _value_weighted_btc_usdc_shares(ref_content, btc_usdc_close=btc_usdc_close)
     follower_shares = _value_weighted_btc_usdc_shares(follower_content, btc_usdc_close=btc_usdc_close)
     # ~3 percentage points slack (master vs copy notionals / float portfolio totals).
@@ -318,7 +236,7 @@ def _assert_btc_usdc_value_shares_match_reference(
         )
 
 def _first_sell_limit_price(exchange_account_elements: typing.Any) -> decimal.Decimal:
-    sells = _sorted_limit_prices_from_elements(
+    sells = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
         exchange_account_elements,
         trade_order_side=trading_enums_module.TradeOrderSide.SELL,
     )
@@ -338,8 +256,10 @@ def _sorted_limit_prices_from_trading_signal_account(
     *,
     trade_order_side,
 ) -> list[decimal.Decimal]:
-    wrapper = {"orders": {"open_orders": list(trading_signal.account.orders or [])}}
-    return _sorted_limit_prices_from_elements(wrapper, trade_order_side=trade_order_side)
+    return exchange_account_elements_access_module.sorted_open_limit_prices_from_protocol_orders(
+        trading_signal.account.orders,
+        trade_order_side=trade_order_side,
+    )
 
 async def _fetch_strategy_signals_from_sync(evm_address: str) -> list[typing.Any]:
     async with local_authenticator_module.local_user_authenticator() as auth:
@@ -360,7 +280,7 @@ def _ladder_limit_prices_match_reference(
         trading_enums_module.TradeOrderSide.BUY,
         trading_enums_module.TradeOrderSide.SELL,
     ):
-        reference_prices = _sorted_limit_prices_from_elements(
+        reference_prices = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
             reference_exchange_account_elements,
             trade_order_side=order_side,
         )

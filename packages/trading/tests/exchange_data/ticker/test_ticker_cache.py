@@ -108,6 +108,7 @@ def test_get_exchange_key():
     assert exchange_data.TickerCache.get_exchange_key("binance", "spot", False) == "binance_spot_False"
     assert exchange_data.TickerCache.get_exchange_key("binance", "future", False) == "binance_future_False"
     assert exchange_data.TickerCache.get_exchange_key("okx", "future", False) == "okx_future_False"
+    assert exchange_data.TickerCache.get_exchange_key("okx", None, False) == "okx_spot_False"
 
 
 def test_set_all_tickers_skips_unparseable_symbols(ticker_cache):

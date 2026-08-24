@@ -99,6 +99,12 @@ class DatabaseNotFoundError(Exception):
     """
 
 
+class DatabaseReadOnlyError(Exception):
+    """
+    Raised when a write operation is attempted on a read-only database connection
+    """
+
+
 class MissingDataError(Exception):
     """
     Raised when there is not enough available candles

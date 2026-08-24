@@ -32,6 +32,7 @@ import octobot_trading.errors as octobot_trading_errors
 import octobot_commons.cryptography
 
 import octobot_copy.constants as copy_constants
+import octobot_copy.errors as copy_errors
 import octobot_protocol.models as protocol_models
 import octobot_node.config
 import octobot_node.constants
@@ -101,7 +102,10 @@ def _automation_state_dict_with_scheduled_to(
 def _octobot_actions_job_mock_class_pending_priority_skipped(
     *,
     automation_inner_state: dict[str, typing.Any],
-    skip_error: "octobot_flow.errors.PendingPriorityActionsSkippedError",
+    skip_error: typing.Union[
+        "octobot_flow.errors.PendingPriorityActionsSkippedError",
+        copy_errors.OutdatedReferenceAccountError,
+    ],
 ) -> mock.Mock:
     async def run_raises(*args, **kwargs):
         raise skip_error
@@ -1085,6 +1089,151 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         mock_logger.info.assert_any_call(
             f"Iteration postponed (None: None), retry scheduled in {scheduled_to - fixed_now:.0f} seconds"
         )
+
+
+class TestExecuteIterationOutdatedReferenceAccountError:
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_postpones_iteration_at_scheduled_to_without_degraded_state(
+        self, import_automation_workflow, task
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        outdated_error = copy_errors.OutdatedReferenceAccountError("reference account is outdated")
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            skip_error=outdated_error,
+        )
+        fixed_now = 1000.0
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows.automation_workflow.time.time",
+            return_value=fixed_now,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ) as persist_account_trading_mock:
+            result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs, None
+            )
+
+        persist_account_trading_mock.assert_not_called()
+        parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
+        assert parsed_progress_status.postponed_iteration is True
+        assert parsed_progress_status.next_step_at == scheduled_to
+        assert parsed_progress_status.error is None
+        assert parsed_progress_status.error_message is None
+        assert result["has_next_actions"] is True
+        assert result["next_iteration_description"] == task_content
+        next_iteration_description = json.loads(result["next_iteration_description"])
+        execution = next_iteration_description["state"]["automation"].get("execution", {})
+        assert "degraded_state" not in execution
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_logs_outdated_reference_account_info(self, import_automation_workflow, task):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        outdated_error = copy_errors.OutdatedReferenceAccountError("reference account is outdated")
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            skip_error=outdated_error,
+        )
+        mock_logger = mock.Mock()
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            automation_workflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            await automation_workflow.execute_iteration(inputs, None)
+
+        mock_logger.info.assert_any_call(
+            f"Outdated reference account, skipping copy iteration: {outdated_error}"
+        )
+        mock_logger.error.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "skip_error,expected_log_method,expected_log_message",
+        [
+            pytest.param(
+                octobot_flow.errors.PendingPriorityActionsSkippedError("stale priority skipped"),
+                "error",
+                "Pending priority actions were skipped: stale priority skipped",
+                id="pending_priority_skipped",
+            ),
+            pytest.param(
+                copy_errors.OutdatedReferenceAccountError("reference account is outdated"),
+                "info",
+                "Outdated reference account, skipping copy iteration: reference account is outdated",
+                id="outdated_reference_account",
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_shared_skip_handler_postpones_without_degraded_state(
+        self,
+        import_automation_workflow,
+        task,
+        skip_error,
+        expected_log_method,
+        expected_log_message,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            skip_error=skip_error,
+        )
+        mock_logger = mock.Mock()
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            automation_workflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            result = await automation_workflow.execute_iteration(inputs, None)
+
+        if expected_log_method == "error":
+            getattr(mock_logger, expected_log_method).assert_called_once_with(expected_log_message)
+        else:
+            getattr(mock_logger, expected_log_method).assert_any_call(expected_log_message)
+        parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
+        assert parsed_progress_status.postponed_iteration is True
+        assert parsed_progress_status.error is None
+
+
+class TestShouldRetryOutdatedReferenceAccountError:
+    def test_should_retry_returns_false_for_outdated_reference_account_error(
+        self, import_automation_workflow
+    ):
+        assert octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._should_retry(
+            copy_errors.OutdatedReferenceAccountError("reference account is outdated")
+        ) is False
 
 
 class TestExecuteAutomationPostponedIteration:

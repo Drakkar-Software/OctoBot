@@ -82,6 +82,7 @@ from octobot_protocol.models.exchange_account import ExchangeAccount
 from octobot_protocol.models.exchange_config import ExchangeConfig
 from octobot_protocol.models.exchange_config_action_result import ExchangeConfigActionResult
 from octobot_protocol.models.exchange_config_action_result_error_message import ExchangeConfigActionResultErrorMessage
+from octobot_protocol.models.fee import Fee
 from octobot_protocol.models.generic_account import GenericAccount
 from octobot_protocol.models.generic_process_configuration import GenericProcessConfiguration
 from octobot_protocol.models.generic_workflow_configuration import GenericWorkflowConfiguration
@@ -133,6 +134,9 @@ from octobot_protocol.models.trading_tentacles_configuration import TradingTenta
 from octobot_protocol.models.trading_type import TradingType
 from octobot_protocol.models.trailing_profile import TrailingProfile
 from octobot_protocol.models.trailing_profile_type import TrailingProfileType
+from octobot_protocol.models.transaction import Transaction
+from octobot_protocol.models.transaction_type import TransactionType
+from octobot_protocol.models.update_historical_exchanges_data_configuration import UpdateHistoricalExchangesDataConfiguration
 from octobot_protocol.models.user_action import UserAction
 from octobot_protocol.models.user_action_configuration import UserActionConfiguration
 from octobot_protocol.models.user_action_result import UserActionResult

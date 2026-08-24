@@ -13,4 +13,3 @@ class GlobalViewAccountRefreshResult:
     open_orders: list[dict] | None = None
     trades: list[dict] | None = None
     positions: list[dict] | None = None
-    portfolio_history_state: protocol_models.PortfolioHistoricalValuesState | None = None

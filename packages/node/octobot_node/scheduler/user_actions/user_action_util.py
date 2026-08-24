@@ -53,6 +53,7 @@ def resolve_user_action_result_type(
             | protocol_models.UserActionType.ACCOUNT_EDIT
             | protocol_models.UserActionType.ACCOUNT_DELETE
             | protocol_models.UserActionType.ACCOUNTS_REFRESH
+            | protocol_models.UserActionType.UPDATE_HISTORICAL_EXCHANGES_DATA
         ):
             return protocol_models.UserActionResultType.ACCOUNT
         case (

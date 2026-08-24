@@ -67,6 +67,7 @@ docs/ExchangeAccount.md
 docs/ExchangeConfig.md
 docs/ExchangeConfigActionResult.md
 docs/ExchangeConfigActionResultErrorMessage.md
+docs/Fee.md
 docs/GenericAccount.md
 docs/GenericProcessConfiguration.md
 docs/GenericWorkflowConfiguration.md
@@ -118,6 +119,9 @@ docs/TradingTentaclesConfiguration.md
 docs/TradingType.md
 docs/TrailingProfile.md
 docs/TrailingProfileType.md
+docs/Transaction.md
+docs/TransactionType.md
+docs/UpdateHistoricalExchangesDataConfiguration.md
 docs/UserAction.md
 docs/UserActionConfiguration.md
 docs/UserActionResult.md
@@ -199,6 +203,7 @@ octobot_protocol/models/exchange_account.py
 octobot_protocol/models/exchange_config.py
 octobot_protocol/models/exchange_config_action_result.py
 octobot_protocol/models/exchange_config_action_result_error_message.py
+octobot_protocol/models/fee.py
 octobot_protocol/models/generic_account.py
 octobot_protocol/models/generic_process_configuration.py
 octobot_protocol/models/generic_workflow_configuration.py
@@ -250,6 +255,9 @@ octobot_protocol/models/trading_tentacles_configuration.py
 octobot_protocol/models/trading_type.py
 octobot_protocol/models/trailing_profile.py
 octobot_protocol/models/trailing_profile_type.py
+octobot_protocol/models/transaction.py
+octobot_protocol/models/transaction_type.py
+octobot_protocol/models/update_historical_exchanges_data_configuration.py
 octobot_protocol/models/user_action.py
 octobot_protocol/models/user_action_configuration.py
 octobot_protocol/models/user_action_result.py
@@ -329,6 +337,7 @@ test/test_exchange_account.py
 test/test_exchange_config.py
 test/test_exchange_config_action_result.py
 test/test_exchange_config_action_result_error_message.py
+test/test_fee.py
 test/test_generic_account.py
 test/test_generic_process_configuration.py
 test/test_generic_workflow_configuration.py
@@ -380,6 +389,9 @@ test/test_trading_tentacles_configuration.py
 test/test_trading_type.py
 test/test_trailing_profile.py
 test/test_trailing_profile_type.py
+test/test_transaction.py
+test/test_transaction_type.py
+test/test_update_historical_exchanges_data_configuration.py
 test/test_user_action.py
 test/test_user_action_configuration.py
 test/test_user_action_result.py

@@ -3,6 +3,7 @@
 
 import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_trading.api as trading_api
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
@@ -109,4 +110,14 @@ class GlobalViewAccountJob:
             refresh_result,
             persist_open_orders=persist_open_orders,
         )
+        # Update persisted latest-tickers cache from fetched ticker closes.
+        if exchange_refresh_result.ticker_closes:
+            await trading_api.update_latest_tickers(
+                self.context.exchange_config.exchange,
+                protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(
+                    self.context.trading_type
+                ).value,
+                self.context.exchange_config.sandboxed,
+                exchange_refresh_result.ticker_closes,
+            )
         return refresh_result

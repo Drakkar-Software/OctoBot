@@ -16,14 +16,15 @@
 #  License along with this library.
 
 
-from octobot_commons.databases.relational_databases.sqlite import sqlite_database
-from octobot_commons.databases.relational_databases.sqlite.sqlite_database import (
-    SQLiteDatabase,
-    new_sqlite_database,
+from octobot_commons.databases.relational_databases.sqlite.base_sqlite_database import (
+    BaseSQLiteDatabase,
+    open_sqlite_database,
+    sqlite_database_write_lock,
 )
 
 
 __all__ = [
-    "SQLiteDatabase",
-    "new_sqlite_database",
+    "BaseSQLiteDatabase",
+    "open_sqlite_database",
+    "sqlite_database_write_lock",
 ]

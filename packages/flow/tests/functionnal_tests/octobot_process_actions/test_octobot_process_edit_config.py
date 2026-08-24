@@ -145,53 +145,18 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
                 )
                 state = job.dump()
 
-            deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
             inner: typing.Optional[dict] = None
-            # 2) First automation pass, then poll until the child reports init_state_ok (ready to query).
-            first_poll = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                state, [], [], {}
+            # 2) Poll until process_bot_state.json exists (single readiness gate).
+            state, inner, state_path = (
+                await octobot_process_functional_shared.poll_automation_until_child_process_ready(
+                    state
+                )
             )
-            octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                first_poll.dump()
-            )
-            first_run = octobot_process_functional_shared._get_action_by_id(
-                first_poll, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-            )
-            assert first_run is not None
-            inner = octobot_process_functional_shared._recall_inner_from_dsl_action(first_run)
-            state = first_poll.dump()
-            if not (inner and inner.get("init_state_ok") is True):
-                while time.monotonic() < deadline:
-                    await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-                    poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                        state, [], [], {}
-                    )
-                    octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                        poll_job.dump()
-                    )
-                    run_details = octobot_process_functional_shared._get_action_by_id(
-                        poll_job, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-                    )
-                    assert run_details is not None
-                    inner = octobot_process_functional_shared._recall_inner_from_dsl_action(run_details)
-                    if inner and inner.get("init_state_ok") is True:
-                        state = poll_job.dump()
-                        break
-                    state = poll_job.dump()
-                else:
-                    pytest.fail(
-                        f"OctoBot did not become ready (init_state_ok) within "
-                        f"{octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC}s"
-                    )
 
             assert inner is not None
             assert inner.get("pid")
             initial_spawn_count = popen_calls["count"]
             assert initial_spawn_count >= 1
-
-            # First process_bot_state dump can lag init_state_ok (see shared wait helper).
-            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
-            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
 
             # 3) Wait until at least four open ladder orders exist, then assert a 2×2 grid pattern.
             orders_deadline = time.monotonic() + octobot_process_functional_shared.GRID_ORDERS_TIMEOUT_SEC

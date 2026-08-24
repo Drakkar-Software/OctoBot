@@ -35,7 +35,7 @@ from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
 WORKFLOW_NAME = "global_view_refresh"
 SCHEDULE_NAME = "global_view_refresh_every_5m"
-SCHEDULE_CRON = "*/5 * * * *"
+SCHEDULE_CRON = "*/5 * * * *" # every 5 minutes
 
 
 def _exchange_label_for_account(user_id: str, account: protocol_models.Account) -> str:
@@ -54,15 +54,8 @@ def _exchange_label_for_account(user_id: str, account: protocol_models.Account) 
 def _portfolio_summary_fields(
     refresh_result: octobot_flow.entities.GlobalViewAccountRefreshResult,
 ) -> tuple[str, str]:
-    portfolio_history_state = refresh_result.portfolio_history_state
-    if portfolio_history_state is None or portfolio_history_state.history is None:
-        return "n/a", "n/a"
-    history = portfolio_history_state.history
-    valuation_unit = history.unit if history.unit else "n/a"
-    history_values = history.values or []
-    if not history_values:
-        return valuation_unit, "n/a"
-    return valuation_unit, str(history_values[-1].total)
+    # Portfolio history is now computed on-the-fly; summary fields are no longer available here.
+    return "n/a", "n/a"
 
 
 def _log_successful_account_refresh(
@@ -115,7 +108,7 @@ class GlobalViewRefreshWorkflow:
         if workflows_retention.should_skip_retention_cleanup_on_this_node():
             logger.info("global_view_refresh stopped: consumer-only node (skipped)")
             return {"refreshed_accounts": 0, "skipped": True}
-        wallet_ids = collection_providers.AccountProvider.instance().list_registered_wallet_ids()
+        wallet_ids = collection_providers.AccountProvider.instance().list_collectable_wallet_ids()
         refreshed_accounts_count = 0
         for wallet_id in wallet_ids:
             refreshed_accounts_count += await GlobalViewRefreshWorkflow._refresh_wallet_accounts(

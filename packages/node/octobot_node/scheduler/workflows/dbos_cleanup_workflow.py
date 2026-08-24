@@ -59,14 +59,15 @@ class DbosCleanupWorkflow:
                 scheduled_time.isoformat(),
             )
             return dict(workflows_retention.EMPTY_CLEANUP_SUMMARY)
-        return await workflows_retention.cleanup_outdated_automation_executions(SCHEDULER)
+        cleanup_summary = await workflows_retention.cleanup_outdated_automation_executions(SCHEDULER)
+        return await workflows_retention.finalize_dbos_cleanup_run(SCHEDULER, cleanup_summary)
 
 
-def get_schedule_input() -> dbos.ScheduleInput:
+def get_schedule_input(cron: str | None = None) -> dbos.ScheduleInput:
     return {
         "schedule_name": SCHEDULE_NAME,
         "workflow_fn": DbosCleanupWorkflow.dbos_cleanup,
-        "schedule": SCHEDULE_CRON,
+        "schedule": cron or SCHEDULE_CRON,
         "context": None,
         "automatic_backfill": True,
         "queue_name": octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,

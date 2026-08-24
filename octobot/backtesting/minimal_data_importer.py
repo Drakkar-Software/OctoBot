@@ -1,9 +1,9 @@
 import octobot_commons.enums
-import octobot_commons.databases as databases
 import octobot_commons.constants
 import octobot_commons.symbols
 import octobot_commons.time_frame_manager as time_frame_manager
 
+import octobot_backtesting.databases as backtesting_databases
 import octobot_backtesting.importers
 import octobot_backtesting.enums
 
@@ -60,7 +60,7 @@ class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):
 
     async def get_ohlcv(self, exchange_name=None, symbol=None,
                         time_frame=octobot_commons.enums.TimeFrames.ONE_HOUR,
-                        limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                        limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                         timestamps=None,
                         operations=None):
         return await self._get_from_db(
@@ -74,7 +74,7 @@ class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):
     async def _get_from_db(
         self, exchange_name, symbol, table,
         time_frame=None,
-        limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+        limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
         timestamps=None,
         operations=None
     ):
@@ -88,7 +88,7 @@ class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):
         parsed_timestamps = [float(timestamp) for timestamp in timestamps]
         return [
             candle
-            for candle in self._select(databases.SQLiteDatabase.DEFAULT_SIZE, symbol, time_frame)
+            for candle in self._select(backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE, symbol, time_frame)
             if _is_valid_from_operations(
                 candle[octobot_commons.enums.PriceIndexes.IND_PRICE_TIME.value], parsed_timestamps, operations
             )
@@ -110,7 +110,7 @@ class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):
             ]
             for candle in candles
         ]
-        if limit != databases.SQLiteDatabase.DEFAULT_SIZE:
+        if limit != backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE:
             return candles_data[:limit]
         return candles_data
 

@@ -19,7 +19,8 @@ import json
 
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
+from octobot_protocol.models.fee import Fee
 from octobot_protocol.models.order_status import OrderStatus
 from octobot_protocol.models.order_type import OrderType
 from octobot_protocol.models.side import Side
@@ -38,9 +39,10 @@ class Trade(BaseModel):
     side: Side
     quantity: Union[StrictFloat, StrictInt]
     price: Union[StrictFloat, StrictInt]
+    fee: Optional[Fee] = None
     status: OrderStatus
     executed_at: datetime
-    __properties: ClassVar[List[str]] = ["id", "trade_id", "type", "symbol", "side", "quantity", "price", "status", "executed_at"]
+    __properties: ClassVar[List[str]] = ["id", "trade_id", "type", "symbol", "side", "quantity", "price", "fee", "status", "executed_at"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -81,6 +83,9 @@ class Trade(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of fee
+        if self.fee:
+            _dict['fee'] = self.fee.to_dict()
         return _dict
 
     @classmethod
@@ -100,6 +105,7 @@ class Trade(BaseModel):
             "side": obj.get("side"),
             "quantity": obj.get("quantity"),
             "price": obj.get("price"),
+            "fee": Fee.from_dict(obj["fee"]) if obj.get("fee") is not None else None,
             "status": obj.get("status"),
             "executed_at": obj.get("executed_at")
         })

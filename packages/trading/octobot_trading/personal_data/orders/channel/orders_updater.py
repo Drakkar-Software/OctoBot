@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import typing
 
 import octobot_commons.async_job as async_job
 import octobot_commons.tree as commons_tree
@@ -24,6 +25,8 @@ import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.logging as logging
 
 import octobot_trading.errors as errors
+import octobot_trading.enums as enums
+import octobot_trading.personal_data.orders.order_factory as order_factory_module
 import octobot_trading.personal_data.orders.channel.orders as orders_channel
 import octobot_trading.constants as constants
 
@@ -284,3 +287,62 @@ class OrdersUpdater(orders_channel.OrdersProducer):
         await super().resume()
         if not self.is_running:
             await self.run()
+
+    @staticmethod
+    def ensure_parsing(
+        exchange_manager,
+        order: dict,
+        force_open_or_pending_creation: bool,
+        ignore_unsupported_orders: bool,
+    ) -> typing.Optional[dict]:
+        if (
+            ignore_unsupported_orders
+            and order[enums.ExchangeConstantsOrderColumns.TYPE.value] == enums.TradeOrderType.UNSUPPORTED.value
+        ):
+            logging.get_logger("OrdersUpdater").warning(
+                f"Ignored unsupported [{exchange_manager.exchange_name}] order: "
+                f"{logging.get_private_minimized_message_if_necessary(order)}"
+            )
+            return None
+        if parsed_order := OrdersUpdater.parse_order_instance(
+            exchange_manager, order, force_open_or_pending_creation
+        ):
+            try:
+                return parsed_order.to_dict()
+            except AttributeError as error:
+                if exchange_manager.trader is None:
+                    logging.get_logger("OrdersUpdater").error(
+                        f"[{exchange_manager.exchange_name}] exchange manager has been stopped, "
+                        f"skipping order parsing ({error})"
+                    )
+                    raise errors.StoppedExchangeManagerError() from error
+                raise
+            except Exception as error:
+                logging.get_logger("OrdersUpdater").exception(
+                    error,
+                    True,
+                    f"Unexpected error when converting [{exchange_manager.exchange_name}] order to dict"
+                    f"({error}. {error.__class__.__name__}), order: "
+                    f"{logging.get_private_minimized_message_if_necessary(order)}",
+                )
+        return None
+
+    @staticmethod
+    def parse_order_instance(
+        exchange_manager, order: dict, force_open_or_pending_creation: bool
+    ) -> typing.Optional[typing.Any]:
+        if not order:
+            return None
+        try:
+            return order_factory_module.create_order_instance_from_raw(
+                exchange_manager.trader, order, force_open_or_pending_creation=force_open_or_pending_creation
+            )
+        except Exception as error:
+            logging.get_logger("OrdersUpdater").exception(
+                error,
+                True,
+                f"Unexpected error when parsing [{exchange_manager.exchange_name}] "
+                f"order ({error} {error.__class__.__name__}), order ignored: "
+                f"{logging.get_private_minimized_message_if_necessary(order)}",
+            )
+        return None

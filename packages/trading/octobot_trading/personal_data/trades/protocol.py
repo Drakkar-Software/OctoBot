@@ -20,6 +20,21 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.enums as enums
 
 
+def _protocol_fee_from_exchange_fee_dict(
+    fee: dict | None,
+) -> protocol_models.Fee | None:
+    if not fee:
+        return None
+    fee_currency = fee.get(enums.FeePropertyColumns.CURRENCY.value)
+    fee_cost = fee.get(enums.FeePropertyColumns.COST.value)
+    if not fee_currency or fee_cost is None:
+        return None
+    return protocol_models.Fee(
+        currency=str(fee_currency),
+        amount=float(fee_cost),
+    )
+
+
 def to_protocol_trade(trade: dict[str, typing.Any]) -> protocol_models.Trade:
     order_columns = enums.ExchangeConstantsOrderColumns
     trade_id = trade.get(order_columns.EXCHANGE_TRADE_ID.value) or trade.get(order_columns.ID.value)
@@ -32,6 +47,7 @@ def to_protocol_trade(trade: dict[str, typing.Any]) -> protocol_models.Trade:
         side=trade[order_columns.SIDE.value],
         quantity=float(trade[order_columns.AMOUNT.value]),
         price=float(trade[order_columns.PRICE.value]),
+        fee=_protocol_fee_from_exchange_fee_dict(trade.get(order_columns.FEE.value)),
         status=trade[order_columns.STATUS.value],
         executed_at=timestamp_util.utc_datetime_from_timestamp(trade[order_columns.TIMESTAMP.value]),
     )
@@ -41,7 +57,7 @@ def exchange_columns_dict_from_protocol_trade(
     trade: protocol_models.Trade,
 ) -> dict[str, typing.Any]:
     order_columns = enums.ExchangeConstantsOrderColumns
-    return {
+    trade_dict = {
         order_columns.ID.value: trade.id,
         order_columns.EXCHANGE_TRADE_ID.value: trade.trade_id,
         order_columns.EXCHANGE_ID.value: trade.id,
@@ -53,3 +69,9 @@ def exchange_columns_dict_from_protocol_trade(
         order_columns.STATUS.value: trade.status.value,
         order_columns.TIMESTAMP.value: trade.executed_at.timestamp(),
     }
+    if trade.fee is not None:
+        trade_dict[order_columns.FEE.value] = {
+            enums.FeePropertyColumns.CURRENCY.value: trade.fee.currency,
+            enums.FeePropertyColumns.COST.value: trade.fee.amount,
+        }
+    return trade_dict

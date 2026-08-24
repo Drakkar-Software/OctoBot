@@ -189,6 +189,55 @@ class TestTriggerUserActionWorkflow:
             assert enqueue_keyword_arguments["inputs"] == expected_inputs_encoded
 
 
+class TestTriggerPortfolioHistoryCollection:
+    @pytest.mark.asyncio
+    async def test_raises_when_scheduler_not_initialized(self):
+        with mock.patch("octobot_node.scheduler.is_initialized", return_value=False):
+            with pytest.raises(RuntimeError, match="Scheduler is not initialized"):
+                await octobot_node.scheduler.tasks.trigger_portfolio_history_collection()
+
+    @pytest.mark.asyncio
+    async def test_enqueues_portfolio_history_collection_on_portfolio_history_queue(self, temp_dbos_scheduler):
+        import datetime
+        import octobot_node.scheduler.workflows.portfolio_history_workflow as portfolio_history_workflow_module_loaded
+
+        expected_workflow_id = "portfolio-history-workflow-test-id"
+        scheduled_time = datetime.datetime(2026, 3, 15, 12, 0, 0, tzinfo=datetime.UTC)
+        collection_params = workflow_params_module.PortfolioHistoryCollectionParams(
+            wallet_ids=["wallet-user-1"],
+            account_ids=["acc-1"],
+        )
+        with (
+            mock.patch(
+                "octobot_commons.timestamp_util.utc_now_datetime",
+                return_value=scheduled_time,
+            ),
+            mock.patch.object(
+                temp_dbos_scheduler.PORTFOLIO_HISTORY_QUEUE,
+                "enqueue_async",
+                mock.AsyncMock(),
+            ) as mock_enqueue_async_operation,
+        ):
+            mock_workflow_enqueue_handle = mock.Mock()
+            mock_workflow_enqueue_handle.workflow_id = expected_workflow_id
+            mock_enqueue_async_operation.return_value = mock_workflow_enqueue_handle
+
+            enqueue_function_result = await octobot_node.scheduler.tasks.trigger_portfolio_history_collection(
+                collection_params,
+            )
+
+        assert enqueue_function_result == expected_workflow_id
+        mock_enqueue_async_operation.assert_awaited_once()
+        positional_workflow_targets, enqueue_keyword_arguments = mock_enqueue_async_operation.call_args
+        assert (
+            positional_workflow_targets[0]
+            is portfolio_history_workflow_module_loaded.PortfolioHistoryWorkflow.portfolio_history_collection
+        )
+        assert positional_workflow_targets[1] == scheduled_time
+        assert positional_workflow_targets[2] == collection_params.to_dict(include_default_values=False)
+        assert enqueue_keyword_arguments == {}
+
+
 class TestSendToActiveAutomationWorkflow:
     _TEST_WALLET_ADDRESS = "0xaaabbbcccddd"
     _TEST_PARENT_AUTOMATION_ID = "00000000-0000-4000-8000-000000000099"
