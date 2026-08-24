@@ -1,9 +1,10 @@
 import octobot_commons.dsl_interpreter
 import octobot_commons.errors
 import octobot_commons.logging
-import octobot_commons.constants
 import octobot_trading.errors
 import octobot_trading.enums
+
+import octobot_copy.errors as copy_errors
 
 import octobot_flow.entities
 import octobot_flow.enums
@@ -138,6 +139,8 @@ def dsl_action_execution(func):
             if _should_postpone_recallable_trading_error(self, action):
                 raise
             return _map_non_recallable_postpone_trading_error(action, err)
+        except copy_errors.OutdatedReferenceAccountError:
+            raise
         except Exception as err:
             # swallowed errors: warning: will stop the workflow
             octobot_commons.logging.get_logger("action_execution").exception(

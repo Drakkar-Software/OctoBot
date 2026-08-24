@@ -22,6 +22,7 @@ import octobot_trading.enums as trading_enums
 import octobot_copy.constants as copy_constants
 import octobot_copy.copiers.spot_account_copier as spot_account_copier_module
 import octobot_copy.entities as copy_entities
+import octobot_copy.errors as copy_errors
 
 
 pytestmark = pytest.mark.asyncio
@@ -120,3 +121,34 @@ class TestAccountCopierCopyAccount:
             grace_identified=True,
         )
         synchronizer.abort_mirrored_orphan_grace.assert_not_called()
+
+
+class TestAccountCopierCopyAccountOutdatedReference:
+    async def test_skips_rebalance_and_sync_when_reference_account_is_outdated(self):
+        reference_account = _copied_reference_account()
+        exchange_interface = mock.MagicMock()
+        exchange_interface.exchange_name = "bitmart"
+        copy_settings = copy_entities.AccountCopySettings()
+        copier = spot_account_copier_module.SpotAccountCopier(
+            reference_account,
+            exchange_interface,
+            copy_settings,
+        )
+        synchronizer = mock.Mock()
+        copier._orders_synchronizer = synchronizer
+        copier._prepare_rebalance_plan = mock.AsyncMock()
+        copier._run_rebalance = mock.AsyncMock()
+        copier._resync_if_mirrored_open_order_grace_period_elapsed = mock.AsyncMock()
+        synchronizer.synchronize = mock.AsyncMock()
+
+        with mock.patch(
+            "octobot_copy.copiers.account_copier.reference_account_outdated_orders_module.ensure_reference_account_not_outdated",
+            mock.AsyncMock(side_effect=copy_errors.OutdatedReferenceAccountError("stale reference")),
+        ):
+            with pytest.raises(copy_errors.OutdatedReferenceAccountError, match="stale reference"):
+                await copier.copy_account()
+
+        copier._resync_if_mirrored_open_order_grace_period_elapsed.assert_not_awaited()
+        copier._prepare_rebalance_plan.assert_not_awaited()
+        copier._run_rebalance.assert_not_awaited()
+        synchronizer.synchronize.assert_not_awaited()
