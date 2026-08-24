@@ -13,6 +13,7 @@ import octobot_copy.entities as copy_entities
 import octobot_copy.errors as copy_errors
 import octobot_copy.exchange as copy_exchange
 import octobot_copy.orders_mirroring.orders_synchronizer as orders_synchronizer_module
+import octobot_copy.validators.reference_account_outdated_orders as reference_account_outdated_orders_module
 import octobot_copy.rebalancing as copy_rebalancing
 
 
@@ -47,6 +48,10 @@ class AccountCopier:
         )
 
     async def copy_account(self) -> copy_entities.AccountCopyResult:
+        await reference_account_outdated_orders_module.ensure_reference_account_not_outdated(
+            self._reference_account,
+            self._copier_exchange_interface,
+        )
         await self._resync_if_mirrored_open_order_grace_period_elapsed()
         rebalancer, should_rebalance, details = await self._prepare_rebalance_plan()
         if self._orders_synchronizer.is_mirrored_orphan_grace_invalid_no_compliant_snapshot():

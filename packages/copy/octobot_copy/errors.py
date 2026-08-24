@@ -14,3 +14,9 @@ class RebalanceAborted(RebalanceError):
     """
     Raised when a rebalance is aborted
     """
+
+
+class OutdatedReferenceAccountError(OctobotCopyError):
+    """
+    Raised when the reference account is outdated
+    """

@@ -34,6 +34,7 @@ CONFIG_REBALANCE_TRIGGER_PROFILE_MIN_PERCENT = "min_percent"
 # Exchange / order lifecycle (seconds)
 FILL_ORDER_TIMEOUT = 60
 OPEN_ORDER_POLL_INTERVAL = 0.5
+OUTDATED_ORDER_PRICE_MAX_THRESHOLD = 0.03 # 3%
 
 # Mirrored orphan grace: max |simulated_copier_pair_share − ref_pair_share| to allow deferral
 DEFAULT_MIRRORED_ORPHAN_GRACE_PAIR_RATIO_MAX_DELTA = decimal.Decimal("0.02") # 2%
