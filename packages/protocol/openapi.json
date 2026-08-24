@@ -607,7 +607,10 @@
         "enum": [
           "generic",
           "exchange",
-          "blockchain"
+          "blockchain",
+          "broker",
+          "bank",
+          "asset"
         ]
       },
       "TradingType": {
@@ -701,6 +704,25 @@
           }
         }
       },
+      "NodeEndpoint": {
+        "description": "A paired node's address triple. Deliberately structural: any host/port/secure works. Not a caller's own document type for a list of paired nodes.",
+        "type": "object",
+        "required": [
+          "host",
+          "port"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "secure": {
+            "type": "boolean"
+          }
+        }
+      },
       "AccountAuthentication": {
         "description": "AccountAuthentication",
         "type": "object",
@@ -708,32 +730,32 @@
           "id"
         ],
         "properties": {
-            "id": {
-              "type": "string"
-            },
-            "updated_at": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "api_key": {
-              "type": "string"
-            },
-            "api_secret": {
-              "type": "string"
-            },
-            "api_passphrase": {
-              "type": "string"
-            },
-            "public_key": {
-              "type": "string"
-            },
-            "private_key": {
-              "type": "string"
-            },
-            "seed_phrase": {
-              "type": "string"
-            }
+          "id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "api_key": {
+            "type": "string"
+          },
+          "api_secret": {
+            "type": "string"
+          },
+          "api_passphrase": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "private_key": {
+            "type": "string"
+          },
+          "seed_phrase": {
+            "type": "string"
           }
+        }
       },
       "AccountTradingWithAccountId": {
         "description": "AccountTradingWithAccountId",
@@ -918,6 +940,66 @@
           }
         }
       },
+      "BrokerAccount": {
+        "description": "BrokerAccount",
+        "type": "object",
+        "required": [
+          "account_type"
+        ],
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "broker"
+          },
+          "provider_id": {
+            "type": "string"
+          },
+          "exchange_config_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BankAccount": {
+        "description": "BankAccount",
+        "type": "object",
+        "required": [
+          "account_type"
+        ],
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "bank"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "AssetAccount": {
+        "description": "AssetAccount",
+        "type": "object",
+        "required": [
+          "account_type"
+        ],
+        "properties": {
+          "account_type": {
+            "$ref": "#/components/schemas/AccountType",
+            "description": "asset"
+          },
+          "asset_type": {
+            "type": "string"
+          },
+          "cost_basis": {
+            "type": "number"
+          }
+        }
+      },
       "AccountStatus": {
         "description": "AccountStatus",
         "type": "string",
@@ -1027,6 +1109,15 @@
               },
               {
                 "$ref": "#/components/schemas/GenericAccount"
+              },
+              {
+                "$ref": "#/components/schemas/BrokerAccount"
+              },
+              {
+                "$ref": "#/components/schemas/BankAccount"
+              },
+              {
+                "$ref": "#/components/schemas/AssetAccount"
               }
             ],
             "discriminator": {
@@ -1034,7 +1125,10 @@
               "mapping": {
                 "exchange": "#/components/schemas/ExchangeAccount",
                 "blockchain": "#/components/schemas/BlockchainAccount",
-                "generic": "#/components/schemas/GenericAccount"
+                "generic": "#/components/schemas/GenericAccount",
+                "broker": "#/components/schemas/BrokerAccount",
+                "bank": "#/components/schemas/BankAccount",
+                "asset": "#/components/schemas/AssetAccount"
               }
             }
           }
@@ -1788,7 +1882,7 @@
         "properties": {
           "action_type": {
             "$ref": "#/components/schemas/UserActionType",
-            "description": "account_create" 
+            "description": "account_create"
           },
           "configuration": {
             "$ref": "#/components/schemas/Account"
@@ -2238,6 +2332,87 @@
           }
         }
       },
+      "UserActionConfiguration": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreateAutomationConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/EditAutomationConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/StopAutomationConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/RestartAutomationConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/SignalAutomationConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/CreateAccountConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/EditAccountConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/DeleteAccountConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/CreateExchangeConfigConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/EditExchangeConfigConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/DeleteExchangeConfigConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/RefreshAccountsConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/CreateStrategyConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/EditStrategyConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/DeleteStrategyConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/CreateAccountAuthConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/EditAccountAuthConfiguration"
+          },
+          {
+            "$ref": "#/components/schemas/DeleteAccountAuthConfiguration"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "action_type",
+          "mapping": {
+            "automation_create": "#/components/schemas/CreateAutomationConfiguration",
+            "automation_edit": "#/components/schemas/EditAutomationConfiguration",
+            "automation_stop": "#/components/schemas/StopAutomationConfiguration",
+            "automation_restart": "#/components/schemas/RestartAutomationConfiguration",
+            "automation_signal": "#/components/schemas/SignalAutomationConfiguration",
+            "account_create": "#/components/schemas/CreateAccountConfiguration",
+            "account_edit": "#/components/schemas/EditAccountConfiguration",
+            "account_delete": "#/components/schemas/DeleteAccountConfiguration",
+            "exchange_config_create": "#/components/schemas/CreateExchangeConfigConfiguration",
+            "exchange_config_edit": "#/components/schemas/EditExchangeConfigConfiguration",
+            "exchange_config_delete": "#/components/schemas/DeleteExchangeConfigConfiguration",
+            "accounts_refresh": "#/components/schemas/RefreshAccountsConfiguration",
+            "strategy_create": "#/components/schemas/CreateStrategyConfiguration",
+            "strategy_edit": "#/components/schemas/EditStrategyConfiguration",
+            "strategy_delete": "#/components/schemas/DeleteStrategyConfiguration",
+            "account_auth_create": "#/components/schemas/CreateAccountAuthConfiguration",
+            "account_auth_edit": "#/components/schemas/EditAccountAuthConfiguration",
+            "account_auth_delete": "#/components/schemas/DeleteAccountAuthConfiguration"
+          }
+        }
+      },
       "UserAction": {
         "description": "UserAction",
         "type": "object",
@@ -2260,85 +2435,7 @@
             "format": "date-time"
           },
           "configuration": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CreateAutomationConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/EditAutomationConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/StopAutomationConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/RestartAutomationConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/SignalAutomationConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/CreateAccountConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/EditAccountConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/DeleteAccountConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/CreateExchangeConfigConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/EditExchangeConfigConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/DeleteExchangeConfigConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/RefreshAccountsConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/CreateStrategyConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/EditStrategyConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/DeleteStrategyConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/CreateAccountAuthConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/EditAccountAuthConfiguration"
-              },
-              {
-                "$ref": "#/components/schemas/DeleteAccountAuthConfiguration"
-              }
-            ],
-            "discriminator": {
-              "propertyName": "action_type",
-              "mapping": {
-                "automation_create": "#/components/schemas/CreateAutomationConfiguration",
-                "automation_edit": "#/components/schemas/EditAutomationConfiguration",
-                "automation_stop": "#/components/schemas/StopAutomationConfiguration",
-                "automation_restart": "#/components/schemas/RestartAutomationConfiguration",
-                "automation_signal": "#/components/schemas/SignalAutomationConfiguration",
-                "account_create": "#/components/schemas/CreateAccountConfiguration",
-                "account_edit": "#/components/schemas/EditAccountConfiguration",
-                "account_delete": "#/components/schemas/DeleteAccountConfiguration",
-                "exchange_config_create": "#/components/schemas/CreateExchangeConfigConfiguration",
-                "exchange_config_edit": "#/components/schemas/EditExchangeConfigConfiguration",
-                "exchange_config_delete": "#/components/schemas/DeleteExchangeConfigConfiguration",
-                "accounts_refresh": "#/components/schemas/RefreshAccountsConfiguration",
-                "strategy_create": "#/components/schemas/CreateStrategyConfiguration",
-                "strategy_edit": "#/components/schemas/EditStrategyConfiguration",
-                "strategy_delete": "#/components/schemas/DeleteStrategyConfiguration",
-                "account_auth_create": "#/components/schemas/CreateAccountAuthConfiguration",
-                "account_auth_edit": "#/components/schemas/EditAccountAuthConfiguration",
-                "account_auth_delete": "#/components/schemas/DeleteAccountAuthConfiguration"
-              }
-            }
+            "$ref": "#/components/schemas/UserActionConfiguration"
           },
           "result": {
             "oneOf": [
@@ -2478,7 +2575,7 @@
           "values"
         ],
         "properties": {
-          "version": {  
+          "version": {
             "type": "string"
           },
           "history": {
@@ -2702,11 +2799,17 @@
         "properties": {
           "baseVolume": {
             "description": "24h base-currency volume.",
-            "type": ["number", "null"]
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "quoteVolume": {
             "description": "24h quote-currency volume.",
-            "type": ["number", "null"]
+            "type": [
+              "number",
+              "null"
+            ]
           }
         }
       },
@@ -2722,6 +2825,63 @@
         "type": "object",
         "additionalProperties": {
           "$ref": "#/components/schemas/TradedPairsForExchange"
+        }
+      },
+      "ProposedActionEntry": {
+        "description": "One built-but-unsent action inside a proposal. after: 'previous-confirmed' marks an action that must not be appended until the prior entry in the array has been confirmed by the node (e.g. automation_create's strategy_create -> automation_create race). A privileged executor must honor this ordering; a read-only proposer never appends anything itself, so it just carries the constraint as data.",
+        "type": "object",
+        "required": [
+          "configuration"
+        ],
+        "properties": {
+          "configuration": {
+            "$ref": "#/components/schemas/UserActionConfiguration"
+          },
+          "after": {
+            "type": "string",
+            "enum": [
+              "previous-confirmed"
+            ]
+          }
+        }
+      },
+      "ActionProposal": {
+        "description": "A batch of built-but-unsent user actions, transported out-of-band (QR code, deep link, file) between a read-only-connected client and a privileged one. v is the envelope version: a client MUST reject an unrecognised v with a distinguishable error rather than treat it as a malformed scan.",
+        "type": "object",
+        "required": [
+          "v",
+          "kind",
+          "actions",
+          "createdAt"
+        ],
+        "properties": {
+          "v": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "octobot-action-proposal"
+            ]
+          },
+          "actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ProposedActionEntry"
+            }
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable summary for a confirm screen, when the generic per-action name/action_type derivation isn't enough."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }

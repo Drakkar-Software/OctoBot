@@ -21,7 +21,7 @@ export { type SettingsApi } from './adapters/settings.js'
 export { type NodeApi } from './adapters/nodeApi.js'
 export { type DocumentsApi, type ReadOnlyDocumentsApi } from './adapters/documents.js'
 export { type ActionHandle } from './adapters/actionHandle.js'
-export { type AccountView, type AccountKind, type AutomationView, type Holding, accountViewOf, automationViewOf } from './core/views.js'
+export { type AccountView, type AccountKind, type AutomationView, accountViewOf, automationViewOf, exchangeConfigIdOf } from './core/views.js'
 export {
   startPairingRequest,
   fetchPairingRequestByCode,

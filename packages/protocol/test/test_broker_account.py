@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.account_specifics import AccountSpecifics
+from octobot_protocol.models.broker_account import BrokerAccount
 
-class TestAccountSpecifics(unittest.TestCase):
-    """AccountSpecifics unit test stubs"""
+class TestBrokerAccount(unittest.TestCase):
+    """BrokerAccount unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,42 +25,30 @@ class TestAccountSpecifics(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> AccountSpecifics:
-        """Test AccountSpecifics
+    def make_instance(self, include_optional) -> BrokerAccount:
+        """Test BrokerAccount
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `AccountSpecifics`
+        # uncomment below to create an instance of `BrokerAccount`
         """
-        model = AccountSpecifics()
+        model = BrokerAccount()
         if include_optional:
-            return AccountSpecifics(
+            return BrokerAccount(
                 account_type = 'generic',
-                remote_account_id = '',
+                provider_id = '',
                 exchange_config_ids = [
                     ''
-                    ],
-                blockchain = '',
-                network = '',
-                provider_id = '',
-                institution = '',
-                currency = '',
-                asset_type = '',
-                cost_basis = 1.337
+                    ]
             )
         else:
-            return AccountSpecifics(
+            return BrokerAccount(
                 account_type = 'generic',
-                remote_account_id = '',
-                exchange_config_ids = [
-                    ''
-                    ],
-                blockchain = '',
         )
         """
 
-    def testAccountSpecifics(self):
-        """Test AccountSpecifics"""
+    def testBrokerAccount(self):
+        """Test BrokerAccount"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

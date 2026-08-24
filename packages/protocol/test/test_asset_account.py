@@ -14,10 +14,10 @@
 
 import unittest
 
-from octobot_protocol.models.account_specifics import AccountSpecifics
+from octobot_protocol.models.asset_account import AssetAccount
 
-class TestAccountSpecifics(unittest.TestCase):
-    """AccountSpecifics unit test stubs"""
+class TestAssetAccount(unittest.TestCase):
+    """AssetAccount unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,42 +25,28 @@ class TestAccountSpecifics(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> AccountSpecifics:
-        """Test AccountSpecifics
+    def make_instance(self, include_optional) -> AssetAccount:
+        """Test AssetAccount
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `AccountSpecifics`
+        # uncomment below to create an instance of `AssetAccount`
         """
-        model = AccountSpecifics()
+        model = AssetAccount()
         if include_optional:
-            return AccountSpecifics(
+            return AssetAccount(
                 account_type = 'generic',
-                remote_account_id = '',
-                exchange_config_ids = [
-                    ''
-                    ],
-                blockchain = '',
-                network = '',
-                provider_id = '',
-                institution = '',
-                currency = '',
                 asset_type = '',
                 cost_basis = 1.337
             )
         else:
-            return AccountSpecifics(
+            return AssetAccount(
                 account_type = 'generic',
-                remote_account_id = '',
-                exchange_config_ids = [
-                    ''
-                    ],
-                blockchain = '',
         )
         """
 
-    def testAccountSpecifics(self):
-        """Test AccountSpecifics"""
+    def testAssetAccount(self):
+        """Test AssetAccount"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

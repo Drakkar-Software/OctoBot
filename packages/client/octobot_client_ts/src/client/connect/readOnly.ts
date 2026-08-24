@@ -33,7 +33,7 @@ import {
 } from '../../protocol/actions.js'
 import { encodeActionProposal, type ProposedActionEntry } from '../../protocol/proposal.js'
 
-export type { AccountView, AccountKind, AutomationView, Holding } from '../core/views.js'
+export type { AccountView, AccountKind, AutomationView } from '../core/views.js'
 export type { AccountInput } from '../adapters/accounts.js'
 export type { CreateAutomationInput } from '../adapters/automations.js'
 
@@ -100,6 +100,16 @@ function proposalOf(actions: ProposedActionEntry[], label?: string): ProposedAct
   return { actions: actions.map((a) => a.configuration), payload: encodeActionProposal(actions, { label }) }
 }
 
+/** Chain every entry but the first to the one before it via
+ *  `after: 'previous-confirmed'`. `after` only guarantees the IMMEDIATELY
+ *  preceding entry is confirmed, so a multi-entry proposal needs it on every
+ *  entry past the first to serialize the whole chain — an unchained later
+ *  entry can still land before an earlier one is confirmed and fail
+ *  NON-RETRIABLY on the node. */
+function chainEntries(entries: ProposedActionEntry[]): ProposedActionEntry[] {
+  return entries.map((entry, i) => (i === 0 ? entry : { ...entry, after: 'previous-confirmed' }))
+}
+
 const neverAppend: AppendAction = () => {
   throw new Error('read-only client: this session has no append rights, this should never be called')
 }
@@ -110,12 +120,18 @@ function createReadOnlyAccountsApi(session: ClientSession): ReadOnlyAccountsApi 
     list: base.list,
     get: base.get,
     async create(input) {
+      // Companion items first (FIFO), then the account that references
+      // them. Every entry chains to the one before it: account_create
+      // landing before exchange_config_create fails NON-RETRIABLY on the
+      // node, and `after: 'previous-confirmed'` only guarantees the
+      // IMMEDIATELY preceding entry, so a 3-entry chain needs it on both
+      // #2 and #3 to serialize the whole thing.
       const { account, auth, exchangeConfig } = toAccountGraph(input)
       const entries: ProposedActionEntry[] = []
       if (auth) entries.push({ configuration: buildCreateAccountAuthConfig(auth) })
       if (exchangeConfig) entries.push({ configuration: buildCreateExchangeConfigConfig(exchangeConfig) })
       entries.push({ configuration: buildCreateAccountConfig(account) })
-      return proposalOf(entries, `Create account "${input.name}"`)
+      return proposalOf(chainEntries(entries), `Create account "${input.name}"`)
     },
     async update(id, input) {
       const { account, auth, exchangeConfig } = toAccountGraph({ ...input, id })
@@ -127,14 +143,14 @@ function createReadOnlyAccountsApi(session: ClientSession): ReadOnlyAccountsApi 
       if (auth) entries.push({ configuration: buildEditAccountAuthConfig(auth) })
       if (exchangeConfig) entries.push({ configuration: buildEditExchangeConfigConfig(exchangeConfig) })
       entries.push({ configuration: buildEditAccountConfig(id, account) })
-      return proposalOf(entries, `Update account "${input.name}"`)
+      return proposalOf(chainEntries(entries), `Update account "${input.name}"`)
     },
     async delete(id) {
-      return proposalOf([
+      return proposalOf(chainEntries([
         { configuration: buildDeleteAccountConfig(id) },
         { configuration: buildDeleteAccountAuthConfig(accountAuthIdFor(id)) },
         { configuration: buildDeleteExchangeConfigConfig(exchangeConfigIdFor(id)) },
-      ], `Delete account ${id}`)
+      ]), `Delete account ${id}`)
     },
     async refresh(accountIds) {
       return proposalOf([{ configuration: buildRefreshAccountsConfig(accountIds) }], 'Refresh account balances')
@@ -153,16 +169,19 @@ function createReadOnlyAutomationsApi(session: ClientSession): ReadOnlyAutomatio
       // StrategyProvider, which only the confirmed `strategy_create` fills.
       // This session can't poll for that confirmation itself (no append
       // rights) — the executing side must, before appending the second entry.
-      return proposalOf([
+      return proposalOf(chainEntries([
         { configuration: buildCreateStrategyConfig(input.strategy) },
-        { configuration: buildCreateAutomationConfig(input), after: 'previous-confirmed' },
-      ], `Create automation "${input.name}"`)
+        { configuration: buildCreateAutomationConfig(input) },
+      ]), `Create automation "${input.name}"`)
     },
     async update(id, input) {
-      return proposalOf([
+      // Same node-side race `create` sequences around: automation_edit
+      // resolves the strategy by (id, version) against the node's
+      // StrategyProvider, which only the confirmed strategy_edit fills.
+      return proposalOf(chainEntries([
         { configuration: buildEditStrategyConfig(input.strategy) },
         { configuration: buildEditAutomationConfig({ ...input, automationId: id }) },
-      ], `Update automation "${input.name}"`)
+      ]), `Update automation "${input.name}"`)
     },
     async stop(id) {
       return proposalOf([{ configuration: buildStopAutomationConfig(id) }], `Stop automation ${id}`)

@@ -14,7 +14,9 @@ Shared **data shapes** for OctoBot (accounts, orders, trades, automations, and r
 | `scripts/clean-protocol-codegen-output.mjs` | Deletes previous codegen output before regenerate (keeps `octobot_protocol_ts/README.md`) |
 | `test/` | Python unittest suite for generated models |
 
-Note: for now octobot_protocol_ts and octobot_protocol_rs are gitignored.
+Note: `octobot_protocol_ts/` is tracked and published from this repo (see its own
+`package.json`). `octobot_protocol_rs/` is configured in `openapitools.json` but has never
+been generated, so it does not exist on disk yet.
 
 ## Regenerating clients
 

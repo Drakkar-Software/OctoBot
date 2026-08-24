@@ -5,11 +5,16 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**account_type** | [**AccountType**](AccountType.md) | generic | 
+**account_type** | [**AccountType**](AccountType.md) | asset | 
 **remote_account_id** | **str** |  | 
 **exchange_config_ids** | **List[str]** |  | 
 **blockchain** | **str** |  | 
 **network** | **str** |  | [optional] 
+**provider_id** | **str** |  | [optional] 
+**institution** | **str** |  | [optional] 
+**currency** | **str** |  | [optional] 
+**asset_type** | **str** |  | [optional] 
+**cost_basis** | **float** |  | [optional] 
 
 ## Example
 
