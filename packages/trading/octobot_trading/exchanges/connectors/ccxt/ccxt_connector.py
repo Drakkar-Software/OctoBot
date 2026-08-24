@@ -906,6 +906,32 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchUserRecentTrades")
 
     @ccxt_client_util.converted_ccxt_common_errors
+    async def get_deposits(self, currency: str = None, since: int = None,
+                           limit: int = None, **kwargs: dict) -> list[dict]:
+        try:
+            if self.client.has['fetchDeposits']:
+                with self.error_describer(True):
+                    return self.adapter.adapt_transactions(
+                        await self.client.fetch_deposits(code=currency, since=since, limit=limit, params=kwargs)
+                    )
+            raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchDeposits")
+        except NotImplementedError as error:
+            raise octobot_trading.errors.NotSupported(str(error)) from error
+
+    @ccxt_client_util.converted_ccxt_common_errors
+    async def get_withdrawals(self, currency: str = None, since: int = None,
+                              limit: int = None, **kwargs: dict) -> list[dict]:
+        try:
+            if self.client.has['fetchWithdrawals']:
+                with self.error_describer(True):
+                    return self.adapter.adapt_transactions(
+                        await self.client.fetch_withdrawals(code=currency, since=since, limit=limit, params=kwargs)
+                    )
+            raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchWithdrawals")
+        except NotImplementedError as error:
+            raise octobot_trading.errors.NotSupported(str(error)) from error
+
+    @ccxt_client_util.converted_ccxt_common_errors
     async def create_market_buy_order(self, symbol, quantity, price=None, params=None) -> dict:
         return self.adapter.adapt_order(
             # use create_order instead of create_market_buy_order to pass the price argument

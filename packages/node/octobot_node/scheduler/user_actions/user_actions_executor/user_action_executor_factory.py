@@ -73,6 +73,8 @@ def user_action_executor_factory(
             return user_actions_executor_package.EditAccountAuthActionExecutor
         case protocol_models.DeleteAccountAuthConfiguration:
             return user_actions_executor_package.DeleteAccountAuthActionExecutor
+        case protocol_models.UpdateHistoricalExchangesDataConfiguration:
+            return user_actions_executor_package.UpdateHistoricalExchangesDataActionExecutor
         case _:
             raise node_errors.UnsupportedUserActionConfigurationTypeError(
                 f"Unknown user action configuration type: {type(actual).__name__}"

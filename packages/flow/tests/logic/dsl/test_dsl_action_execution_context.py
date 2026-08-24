@@ -5,6 +5,8 @@ import octobot_commons.errors
 import octobot_trading.enums
 import octobot_trading.errors
 
+import octobot_copy.errors as copy_errors
+
 import octobot_flow.entities
 import octobot_flow.enums
 import octobot_flow.logic.dsl.dsl_action_execution_context
@@ -243,3 +245,27 @@ class TestDslActionExecutionMapsCaughtException:
 
         assert action.error_status == expected_error_status.value
         assert action.error_message == str(raised_exception)
+
+
+class TestDslActionExecutionReraisesOutdatedReferenceAccountError:
+    @pytest.mark.asyncio
+    async def test_reraises_outdated_reference_account_error(self):
+        outdated_error = copy_errors.OutdatedReferenceAccountError("reference account is outdated")
+
+        class StubExecutor:
+            @octobot_flow.logic.dsl.dsl_action_execution_context.dsl_action_execution
+            async def execute_action(self, action, **_kwargs):
+                raise outdated_error
+
+        action = octobot_flow.entities.DSLScriptActionDetails(
+            id="copy_1",
+            dsl_script="copy_exchange_account()",
+        )
+        stub_executor = StubExecutor()
+
+        with pytest.raises(copy_errors.OutdatedReferenceAccountError) as raised_error:
+            await stub_executor.execute_action(action)
+
+        assert str(raised_error.value) == str(outdated_error)
+        assert action.error_status is None
+        assert action.error_message is None

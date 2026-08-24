@@ -16,6 +16,8 @@ import octobot_trading.personal_data.orders.protocol as orders_protocol
 import octobot_trading.personal_data.positions.protocol as positions_protocol
 import octobot_trading.personal_data.trades.protocol as trades_protocol
 import octobot_trading.personal_data.trades.trades_util as trades_util
+import octobot_trading.personal_data.transactions.protocol as transactions_protocol
+import octobot_trading.personal_data.transactions.transactions_util as transactions_util
 
 import octobot_flow.entities
 import octobot_flow.logic.accounts.portfolio_history as portfolio_history_module
@@ -120,6 +122,7 @@ def persist_account_trading(
     orders: list[dict],
     trades: list[dict],
     positions: list[dict],
+    transactions: list[dict] | None = None,
 ) -> None:
     try:
         trading_state = collection_providers.AccountTradingProvider.instance().load_state(
@@ -145,6 +148,15 @@ def persist_account_trading(
     account_trading.trades = [
         trades_protocol.to_protocol_trade(trade_dict) for trade_dict in merged_trade_dicts
     ] or None
+    if transactions is not None:
+        existing_tx_dicts = [
+            transactions_protocol.to_exchange_columns_dict(protocol_tx)
+            for protocol_tx in (account_trading.transactions or [])
+        ]
+        merged_tx_dicts = transactions_util.merge_transactions_deduped(existing_tx_dicts, transactions)
+        account_trading.transactions = [
+            transactions_protocol.to_protocol_transaction(tx_dict) for tx_dict in merged_tx_dicts
+        ] or None
     account_trading.updated_at = datetime.datetime.now(datetime.UTC)
     collection_providers.AccountTradingProvider.instance().save_state(
         user_id,

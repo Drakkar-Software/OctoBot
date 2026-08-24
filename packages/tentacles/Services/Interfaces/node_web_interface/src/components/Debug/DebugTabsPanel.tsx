@@ -26,6 +26,7 @@ import {
   buildAutomationStopUserActionJson,
   buildExchangeConfigEditUserActionJson,
   buildStrategyEditUserActionJson,
+  buildUpdateHistoricalExchangesDataUserActionJson,
 } from "@/lib/debug/user-action-templates"
 
 const DELETABLE_TABS = new Set<string>(DEBUG_DELETABLE_TAB_VALUES)
@@ -199,6 +200,12 @@ function DebugTabsPanelComponent({
             onOpenExecuteAction({
               actionType: "automation_create",
               jsonText: buildAutomationCreateUserActionJsonForAccount(account),
+            })
+          }
+          onUpdateHistory={(account) =>
+            onOpenExecuteAction({
+              actionType: "update_historical_exchanges_data",
+              jsonText: buildUpdateHistoricalExchangesDataUserActionJson(account.id),
             })
           }
         />

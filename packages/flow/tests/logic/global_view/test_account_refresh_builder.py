@@ -2,15 +2,11 @@
 
 import datetime
 
-import mock
-
 import octobot_protocol.models as protocol_models
-import octobot_sync.constants as sync_constants
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 import octobot_trading.enums as trading_enums
 
 import octobot_flow.entities
-import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
 import octobot_flow.logic.global_view.account_refresh_builder as account_refresh_builder_module
 
 
@@ -39,6 +35,7 @@ def _context() -> octobot_flow.entities.GlobalViewAccountContext:
             name="binance-main",
             exchange="binanceus",
             sandboxed=False,
+            historical_trade_symbols=["BTC/USDT"],
         ),
         trading_type=protocol_models.TradingType.SPOT,
         auth_details=exchange_data_module.ExchangeAuthDetails(
@@ -50,44 +47,22 @@ def _context() -> octobot_flow.entities.GlobalViewAccountContext:
 
 
 class TestBuildGlobalViewAccountRefreshResult:
-    def test_builds_refresh_result_with_history_state(self):
+    def test_builds_refresh_result_without_history(self):
         context = _context()
         exchange_refresh_result = octobot_flow.entities.ExchangeAccountRefreshResult(
             assets=[],
-            portfolio_snapshot=protocol_models.PortfolioHistoricalValue(
-                timestamp=_TEST_TIMESTAMP,
-                total=1000.0,
-            ),
+            ticker_closes={"BTC/USDT": 65000.0},
             valuation_unit="USDC",
             open_orders=[],
             trades=[],
             positions=[],
             changed_order_ids={"gone-order"},
         )
-        expected_history_state = protocol_models.PortfolioHistoricalValuesState(
-            version=sync_constants.USER_ACCOUNTS_HISTORY_STATE_VERSION,
-            history=protocol_models.PortfolioHistoricalValues(
-                unit="USDC",
-                values=[exchange_refresh_result.portfolio_snapshot],
-            ),
-        )
-        with mock.patch.object(
-            account_state_persistence_module,
-            "build_portfolio_history_state",
-            return_value=expected_history_state,
-        ) as build_history_mock:
-            refresh_result = account_refresh_builder_module.build_global_view_account_refresh_result(
-                "wallet-1",
-                context,
-                exchange_refresh_result,
-            )
-        build_history_mock.assert_called_once_with(
+        refresh_result = account_refresh_builder_module.build_global_view_account_refresh_result(
             "wallet-1",
-            "account-1",
-            exchange_refresh_result.portfolio_snapshot,
-            "USDC",
-            _TEST_TIMESTAMP,
+            context,
+            exchange_refresh_result,
         )
         assert refresh_result.updated_account.id == "account-1"
         assert refresh_result.changed_order_ids == {"gone-order"}
-        assert refresh_result.portfolio_history_state == expected_history_state
+        assert not hasattr(refresh_result, "portfolio_history_state") or refresh_result.__dict__.get("portfolio_history_state") is None

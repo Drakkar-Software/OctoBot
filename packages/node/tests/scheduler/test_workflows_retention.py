@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Node
+﻿#  Drakkar-Software OctoBot-Node
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 
 import datetime
@@ -18,6 +18,8 @@ from tests.scheduler import temp_dbos_scheduler
 
 _AUTOMATION_WORKFLOW_NAME = "execute_automation"
 _DBOS_CLEANUP_WORKFLOW_NAME = "dbos_cleanup"
+_GLOBAL_VIEW_WORKFLOW_NAME = "global_view_refresh"
+_PORTFOLIO_HISTORY_WORKFLOW_NAME = "portfolio_history_collection"
 
 _PARENT_WORKFLOW_ID_A = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
 _PARENT_WORKFLOW_ID_B = "852df282-edb0-51cf-94ed-c554d1fbf1f3"
@@ -407,7 +409,7 @@ class TestCleanupOutdatedAutomationExecutions:
         sched = scheduler_module.Scheduler()
         mock_instance = mock.Mock()
         mock_instance.list_workflows_async = mock.AsyncMock(
-            side_effect=[automation_workflows, cleanup_workflows]
+            side_effect=[automation_workflows, cleanup_workflows, [], []]
         )
         mock_instance.delete_workflows_async = mock.AsyncMock()
         mock_engine = mock.Mock()
@@ -431,6 +433,8 @@ class TestCleanupOutdatedAutomationExecutions:
         assert summary == {
             "deleted_by_automation": {_PARENT_WORKFLOW_ID_A: 1},
             "deleted_cleanup_executions": 1,
+            "deleted_global_view_executions": 0,
+            "deleted_portfolio_history_executions": 0,
             "total_deleted": 2,
         }
         mock_instance.delete_workflows_async.assert_awaited_once_with(
@@ -440,12 +444,14 @@ class TestCleanupOutdatedAutomationExecutions:
             ],
             delete_children=False,
         )
-        mock_connection.execute.assert_called_once()
         mock_logger.info.assert_any_call(
-            "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs",
+            "Deleting %s outdated workflow executions: %s automation groups, %s cleanup runs, "
+            "%s global view runs, %s portfolio history runs",
             2,
             1,
             1,
+            0,
+            0,
         )
         mock_logger.info.assert_any_call("DBOS cleanup summary: %s", summary)
 
@@ -453,7 +459,7 @@ class TestCleanupOutdatedAutomationExecutions:
     async def test_skips_delete_and_vacuum_when_nothing_to_delete(self, temp_dbos_scheduler):
         sched = scheduler_module.Scheduler()
         mock_instance = mock.Mock()
-        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], []])
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=[[], [], [], []])
         mock_instance.delete_workflows_async = mock.AsyncMock()
         mock_instance._sys_db.engine = mock.Mock()
         sched.INSTANCE = mock_instance
@@ -468,11 +474,14 @@ class TestCleanupOutdatedAutomationExecutions:
         assert summary == {
             "deleted_by_automation": {},
             "deleted_cleanup_executions": 0,
+            "deleted_global_view_executions": 0,
+            "deleted_portfolio_history_executions": 0,
             "total_deleted": 0,
         }
         mock_instance.delete_workflows_async.assert_not_called()
         mock_instance._sys_db.engine.begin.assert_not_called()
         mock_logger.info.assert_called_once_with("DBOS cleanup summary: %s", summary)
+
 
 
 class TestShouldSkipRetentionCleanupForScheduledTime:
@@ -593,3 +602,240 @@ class TestShouldSkipRetentionCleanupForScheduledTime:
         )
 
         assert result is False
+
+
+class TestGetOutdatedTerminalWorkflowIds:
+    def test_deletes_old_terminal_workflows(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        old_updated_at = now_ms - int(retention_seconds * 1000) - 1
+        workflows = [
+            _workflow_status_row(
+                workflow_id="global-view-old",
+                updated_at=old_updated_at,
+                name=_GLOBAL_VIEW_WORKFLOW_NAME,
+            ),
+            _workflow_status_row(
+                workflow_id="global-view-recent",
+                updated_at=now_ms - 1,
+                name=_GLOBAL_VIEW_WORKFLOW_NAME,
+            ),
+        ]
+
+        deleted_ids = workflows_retention.get_outdated_terminal_workflow_ids(
+            workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deleted_ids == ["global-view-old"]
+
+    def test_skips_non_terminal_workflows(self):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        old_updated_at = now_ms - int(retention_seconds * 1000) - 1
+        workflows = [
+            _workflow_status_row(
+                workflow_id="portfolio-history-pending",
+                updated_at=old_updated_at,
+                status=dbos.WorkflowStatusString.PENDING.value,
+                name=_PORTFOLIO_HISTORY_WORKFLOW_NAME,
+            ),
+        ]
+
+        deleted_ids = workflows_retention.get_outdated_terminal_workflow_ids(
+            workflows,
+            retention_seconds=retention_seconds,
+            now_ms=now_ms,
+        )
+
+        assert deleted_ids == []
+
+
+class TestSelectCleanupCronForDatabaseSize:
+    def test_returns_daily_cron_when_size_unknown(self):
+        assert workflows_retention.select_cleanup_cron_for_database_size(None) == workflows_retention.DBOS_CLEANUP_CRON_DAILY
+
+    def test_returns_daily_cron_below_first_tier(self):
+        size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_1_BYTES - 1
+        assert workflows_retention.select_cleanup_cron_for_database_size(size_bytes) == workflows_retention.DBOS_CLEANUP_CRON_DAILY
+
+    def test_returns_12h_cron_between_tiers(self):
+        size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_1_BYTES
+        assert workflows_retention.select_cleanup_cron_for_database_size(size_bytes) == workflows_retention.DBOS_CLEANUP_CRON_12H
+
+    def test_returns_6h_cron_at_second_tier(self):
+        size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_2_BYTES
+        assert workflows_retention.select_cleanup_cron_for_database_size(size_bytes) == workflows_retention.DBOS_CLEANUP_CRON_6H
+
+
+class TestGetSchedulerDatabaseSizeBytes:
+    def test_sums_sqlite_file_and_sidecars(self, tmp_path):
+        sqlite_path = tmp_path / "tasks.db"
+        sqlite_path.write_bytes(b"x" * 10)
+        wal_path = tmp_path / "tasks.db-wal"
+        wal_path.write_bytes(b"y" * 5)
+        mock_dbos_instance = mock.Mock()
+
+        with mock.patch(
+            "octobot_node.config.settings.SCHEDULER_SQLITE_FILE",
+            str(sqlite_path),
+        ), mock.patch(
+            "octobot_node.config.settings.SCHEDULER_POSTGRES_URL",
+            None,
+        ):
+            size_bytes = workflows_retention.get_scheduler_database_size_bytes(mock_dbos_instance)
+
+        assert size_bytes == 15
+
+    def test_returns_none_when_sqlite_file_missing(self):
+        mock_dbos_instance = mock.Mock()
+        mock_logger = mock.Mock()
+        with mock.patch(
+            "octobot_node.config.settings.SCHEDULER_SQLITE_FILE",
+            "missing-tasks.db",
+        ), mock.patch(
+            "octobot_node.config.settings.SCHEDULER_POSTGRES_URL",
+            None,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            size_bytes = workflows_retention.get_scheduler_database_size_bytes(mock_dbos_instance)
+
+        assert size_bytes is None
+        mock_logger.exception.assert_called_once()
+
+
+class TestCleanupOutdatedAutomationExecutionsScheduledWorkflows:
+    @pytest.mark.asyncio
+    async def test_deletes_outdated_global_view_and_portfolio_history_workflows(self, temp_dbos_scheduler):
+        now_ms = 10_000_000
+        retention_seconds = 100.0
+        cutoff_ms = now_ms - int(retention_seconds * 1000)
+        global_view_workflows = [
+            _workflow_status_row(
+                workflow_id="global-view-old",
+                updated_at=cutoff_ms - 1,
+                name=_GLOBAL_VIEW_WORKFLOW_NAME,
+            ),
+        ]
+        portfolio_history_workflows = [
+            _workflow_status_row(
+                workflow_id="portfolio-history-old",
+                updated_at=cutoff_ms - 1,
+                name=_PORTFOLIO_HISTORY_WORKFLOW_NAME,
+            ),
+        ]
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            side_effect=[[], [], global_view_workflows, portfolio_history_workflows]
+        )
+        mock_instance.delete_workflows_async = mock.AsyncMock()
+        mock_connection = mock.Mock()
+        mock_engine = mock.Mock()
+        mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
+        mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
+        mock_instance._sys_db.engine = mock_engine
+        sched.INSTANCE = mock_instance
+
+        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch.object(
+            workflows_retention,
+            "AUTOMATION_EXECUTION_RETENTION_SECONDS",
+            retention_seconds,
+        ):
+            summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
+
+        assert summary["deleted_global_view_executions"] == 1
+        assert summary["deleted_portfolio_history_executions"] == 1
+        assert summary["total_deleted"] == 2
+        mock_instance.delete_workflows_async.assert_awaited_once_with(
+            ["global-view-old", "portfolio-history-old"],
+            delete_children=False,
+        )
+
+
+class TestFinalizeDbosCleanupRun:
+    @pytest.mark.asyncio
+    async def test_adds_size_and_updates_schedule(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        sched.INSTANCE = mock_instance
+        cleanup_summary = {
+            "deleted_by_automation": {},
+            "deleted_cleanup_executions": 0,
+            "deleted_global_view_executions": 0,
+            "deleted_portfolio_history_executions": 0,
+            "total_deleted": 0,
+        }
+
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=workflows_retention.DBOS_CLEANUP_SIZE_TIER_1_BYTES,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.update_cleanup_schedule_cron",
+            mock.AsyncMock(return_value={"changed": True, "cron": workflows_retention.DBOS_CLEANUP_CRON_12H}),
+        ) as update_schedule_mock:
+            summary = await workflows_retention.finalize_dbos_cleanup_run(sched, cleanup_summary)
+
+        assert summary["database_size_bytes"] == workflows_retention.DBOS_CLEANUP_SIZE_TIER_1_BYTES
+        assert summary["cleanup_schedule_cron"] == workflows_retention.DBOS_CLEANUP_CRON_12H
+        assert summary["cleanup_schedule_updated"] is True
+        update_schedule_mock.assert_awaited_once_with(
+            sched,
+            workflows_retention.DBOS_CLEANUP_CRON_12H,
+        )
+
+    @pytest.mark.asyncio
+    async def test_vacuums_when_workflows_were_deleted(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_connection = mock.Mock()
+        mock_engine = mock.Mock()
+        mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
+        mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
+        mock_instance._sys_db.engine = mock_engine
+        sched.INSTANCE = mock_instance
+
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=0,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.update_cleanup_schedule_cron",
+            mock.AsyncMock(return_value={"changed": False, "cron": workflows_retention.DBOS_CLEANUP_CRON_DAILY}),
+        ):
+            await workflows_retention.finalize_dbos_cleanup_run(
+                sched,
+                {"total_deleted": 3},
+            )
+
+        mock_connection.execute.assert_called_once()
+        assert mock_connection.execute.call_args[0][0].text == "VACUUM"
+
+    @pytest.mark.asyncio
+    async def test_vacuums_when_large_database_and_nothing_deleted(self, temp_dbos_scheduler):
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_connection = mock.Mock()
+        mock_engine = mock.Mock()
+        mock_engine.begin.return_value.__enter__ = mock.Mock(return_value=mock_connection)
+        mock_engine.begin.return_value.__exit__ = mock.Mock(return_value=False)
+        mock_instance._sys_db.engine = mock_engine
+        sched.INSTANCE = mock_instance
+
+        with mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=workflows_retention.DBOS_CLEANUP_SIZE_TIER_2_BYTES,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.update_cleanup_schedule_cron",
+            mock.AsyncMock(return_value={"changed": False, "cron": workflows_retention.DBOS_CLEANUP_CRON_6H}),
+        ):
+            await workflows_retention.finalize_dbos_cleanup_run(
+                sched,
+                {"total_deleted": 0},
+            )
+
+        mock_connection.execute.assert_called_once()
+        assert mock_connection.execute.call_args[0][0].text == "VACUUM"

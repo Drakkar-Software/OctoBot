@@ -31,27 +31,17 @@ def _refresh_result(*, open_orders: list[dict] | None = None) -> octobot_flow.en
         updated_account=account,
         changed_order_ids=set(),
         open_orders=open_orders or [],
-        portfolio_history_state=protocol_models.PortfolioHistoricalValuesState(
-            version=sync_constants.USER_ACCOUNTS_HISTORY_STATE_VERSION,
-            history=protocol_models.PortfolioHistoricalValues(unit="USDC", values=[]),
-        ),
     )
 
 
 class TestPersistGlobalViewRefreshResult:
     def test_does_not_persist_trading_when_persist_open_orders_false(self):
         account_provider = mock.Mock()
-        history_provider = mock.Mock()
         with (
             mock.patch.object(
                 collection_providers.AccountProvider,
                 "instance",
                 return_value=account_provider,
-            ),
-            mock.patch.object(
-                collection_providers.AccountHistoryProvider,
-                "instance",
-                return_value=history_provider,
             ),
             mock.patch.object(
                 account_state_persistence_module,
@@ -65,12 +55,10 @@ class TestPersistGlobalViewRefreshResult:
                 persist_open_orders=False,
             )
         account_provider.update_item.assert_called_once()
-        history_provider.save_state.assert_called_once()
         persist_orders_mock.assert_not_called()
 
     def test_persists_orders_only_when_persist_open_orders_true(self):
         account_provider = mock.Mock()
-        history_provider = mock.Mock()
         open_orders = [
             {
                 trading_enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value: "order-1",
@@ -81,11 +69,6 @@ class TestPersistGlobalViewRefreshResult:
                 collection_providers.AccountProvider,
                 "instance",
                 return_value=account_provider,
-            ),
-            mock.patch.object(
-                collection_providers.AccountHistoryProvider,
-                "instance",
-                return_value=history_provider,
             ),
             mock.patch.object(
                 account_state_persistence_module,

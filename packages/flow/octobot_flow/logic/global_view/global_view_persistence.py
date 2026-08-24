@@ -21,9 +21,3 @@ def persist_global_view_refresh_result(
             account_id,
             refresh_result.open_orders or [],
         )
-    if refresh_result.portfolio_history_state is not None:
-        collection_providers.AccountHistoryProvider.instance().save_state(
-            user_id,
-            account_id,
-            refresh_result.portfolio_history_state,
-        )

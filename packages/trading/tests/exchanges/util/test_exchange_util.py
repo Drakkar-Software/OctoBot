@@ -20,6 +20,7 @@ import mock
 
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as commons_configuration
+import octobot_commons.enums as commons_enums
 import octobot_commons.profiles as commons_profiles
 import octobot_trading.enums as enums
 import octobot_trading.errors as trading_errors
@@ -452,3 +453,38 @@ class TestGetLocalExchangeManager:
         assert tentacle_config["auto_filled"] == {
             "cne": {"url": "https://www.cne.kg/api/"},
         }
+
+
+class TestGetHistoricalOhlcv:
+    @pytest.mark.asyncio
+    async def test_stops_when_start_time_does_not_advance(self):
+        static_candle = [[86400000, 40000.0, 41000.0, 39000.0, 40500.0, 100.0]]
+        exchange = mock.Mock()
+        exchange.get_exchange_current_time.return_value = 1_700_000_000
+        exchange.get_symbol_prices = mock.AsyncMock(return_value=static_candle)
+
+        async def retry_till_success(_timeout, func, *args, **kwargs):
+            return await func(*args, **kwargs)
+
+        exchange.retry_till_success = retry_till_success
+        exchange.get_option_value.return_value = None
+
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange = exchange
+
+        batches = []
+        logger_mock = mock.Mock()
+        with mock.patch.object(exchange_util, "_get_logger", return_value=logger_mock):
+            async for batch in exchange_util.get_historical_ohlcv(
+                exchange_manager,
+                "BTC/USDT",
+                commons_enums.TimeFrames.ONE_DAY,
+                1_000_000_000,
+                2_000_000_000_000,
+            ):
+                batches.append(batch)
+
+        assert len(batches) == 1
+        assert batches[0] == static_candle
+        logger_mock.warning.assert_called_once()
+        assert "start_time did not advance" in logger_mock.warning.call_args[0][0]

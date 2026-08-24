@@ -92,6 +92,7 @@ def _ensure_scheduler_queues() -> None:
         octobot_node_enums_module.SchedulerQueues.USER_ACTION_QUEUE.value: "USER_ACTION_QUEUE",
         octobot_node_enums_module.SchedulerQueues.DBOS_CLEANUP_QUEUE.value: "DBOS_CLEANUP_QUEUE",
         octobot_node_enums_module.SchedulerQueues.GLOBAL_VIEW_QUEUE.value: "GLOBAL_VIEW_QUEUE",
+        octobot_node_enums_module.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value: "PORTFOLIO_HISTORY_QUEUE",
     }
     if all(queue_name in registry.queue_info_map for queue_name in queue_bindings):
         for queue_name, scheduler_attribute in queue_bindings.items():
@@ -117,6 +118,7 @@ def destroy_launched_dbos(*, destroy_registry: bool = False) -> None:
     octobot_node.scheduler.SCHEDULER.USER_ACTION_QUEUE = None
     octobot_node.scheduler.SCHEDULER.DBOS_CLEANUP_QUEUE = None
     octobot_node.scheduler.SCHEDULER.GLOBAL_VIEW_QUEUE = None
+    octobot_node.scheduler.SCHEDULER.PORTFOLIO_HISTORY_QUEUE = None
 
 
 def init_scheduler(db_file_name: str, application_version: str | None = None):

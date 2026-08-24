@@ -24,7 +24,7 @@ import octobot_backtesting.constants as backtesting_constants
 import octobot_backtesting.converters as converters
 import octobot_backtesting.data as backtesting_data
 import octobot_backtesting.enums as backtesting_enums
-import octobot_commons.databases as databases
+import octobot_backtesting.databases as backtesting_databases
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.symbols.symbol_util as symbol_util
@@ -78,7 +78,7 @@ class LegacyDataConverter(converters.DataConverter):
 
     async def convert(self) -> bool:
         try:
-            self.database = databases.SQLiteDatabase(
+            self.database = backtesting_databases.BacktestingDataSQLiteDatabase(
                 path.join(backtesting_constants.BACKTESTING_FILE_PATH, self.converted_file))
             await self.database.initialize()
             await self._create_description()

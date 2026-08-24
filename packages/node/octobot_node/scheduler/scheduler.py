@@ -68,6 +68,7 @@ class Scheduler:
     USER_ACTION_QUEUE: dbos.Queue = None # type: ignore
     DBOS_CLEANUP_QUEUE: dbos.Queue = None # type: ignore
     GLOBAL_VIEW_QUEUE: dbos.Queue = None # type: ignore
+    PORTFOLIO_HISTORY_QUEUE: dbos.Queue = None # type: ignore
 
     @staticmethod
     def _wallet_filter_queue(queue_names: typing.Optional[list[str]]) -> octobot_node.enums.SchedulerQueues:
@@ -153,6 +154,7 @@ class Scheduler:
         Scheduler.USER_ACTION_QUEUE = None
         Scheduler.DBOS_CLEANUP_QUEUE = None
         Scheduler.GLOBAL_VIEW_QUEUE = None
+        Scheduler.PORTFOLIO_HISTORY_QUEUE = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
@@ -164,6 +166,10 @@ class Scheduler:
         )
         self.GLOBAL_VIEW_QUEUE = dbos.Queue(
             name=octobot_node.enums.SchedulerQueues.GLOBAL_VIEW_QUEUE.value,
+            concurrency=1,
+        )
+        self.PORTFOLIO_HISTORY_QUEUE = dbos.Queue(
+            name=octobot_node.enums.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value,
             concurrency=1,
         )
 

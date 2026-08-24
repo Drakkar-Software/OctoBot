@@ -39,3 +39,4 @@ class SchedulerQueues(enum.Enum):
     USER_ACTION_QUEUE = "user_action_queue"
     DBOS_CLEANUP_QUEUE = "dbos_cleanup_queue"
     GLOBAL_VIEW_QUEUE = "global_view_queue"
+    PORTFOLIO_HISTORY_QUEUE = "portfolio_history_queue"

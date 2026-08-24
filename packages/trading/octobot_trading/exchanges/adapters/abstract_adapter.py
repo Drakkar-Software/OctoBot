@@ -101,6 +101,11 @@ class AbstractAdapter:
         return self.parse_trades(fixed, **kwargs)
 
     @_adapter
+    def adapt_transactions(self, raw, **kwargs) -> list[dict]:
+        fixed = self.fix_transactions(raw, **kwargs)
+        return self.parse_transactions(fixed, **kwargs)
+
+    @_adapter
     def adapt_position(self, raw, **kwargs) -> dict:
         fixed = self.fix_position(raw, **kwargs)
         return self.parse_position(fixed, **kwargs)
@@ -227,6 +232,13 @@ class AbstractAdapter:
 
     def parse_trades(self, fixed, **kwargs) -> list[dict]:
         raise NotImplementedError("parse_trades is not implemented")
+
+    def fix_transactions(self, raw, **kwargs) -> list[dict]:
+        return raw
+
+    def parse_transactions(self, fixed, **kwargs) -> list[dict]:
+        # Default: exchange-normalized transaction dicts already match ExchangeConstantsTransactionColumns.
+        return fixed
 
     def fix_position(self, raw, **kwargs) -> dict:
         # add generic logic if necessary

@@ -17,6 +17,9 @@
 
 import typing
 
+import octobot.community.authentication as community_authentication
+import octobot.community.wallet_backend.errors as wallet_backend_errors
+import octobot_commons.logging as commons_logging
 import octobot_commons.singleton.singleton_class as singleton_class
 import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
@@ -130,3 +133,19 @@ class AccountProvider(
 
     def list_registered_wallet_ids(self) -> list[str]:
         return self._storage.list_wallet_storage_keys()
+
+    def list_collectable_wallet_ids(self) -> list[str]:
+        logger = commons_logging.get_logger(self.__class__.__name__)
+        community_auth = community_authentication.CommunityAuthentication.instance()
+        collectable_wallet_ids = []
+        for wallet_id in self.list_registered_wallet_ids():
+            try:
+                community_auth.get_wallet_by_user_id(wallet_id)
+            except wallet_backend_errors.WalletNotFoundError:
+                logger.debug(
+                    "Skipping wallet %s: not registered locally",
+                    wallet_id,
+                )
+                continue
+            collectable_wallet_ids.append(wallet_id)
+        return collectable_wallet_ids

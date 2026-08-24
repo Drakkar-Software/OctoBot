@@ -32,7 +32,8 @@ class ExchangeConfig(BaseModel):
     exchange: StrictStr
     sandboxed: StrictBool
     url: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["id", "name", "exchange", "sandboxed", "url"]
+    historical_trade_symbols: Optional[List[StrictStr]] = None
+    __properties: ClassVar[List[str]] = ["id", "name", "exchange", "sandboxed", "url", "historical_trade_symbols"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -89,7 +90,8 @@ class ExchangeConfig(BaseModel):
             "name": obj.get("name"),
             "exchange": obj.get("exchange"),
             "sandboxed": obj.get("sandboxed") if obj.get("sandboxed") is not None else False,
-            "url": obj.get("url")
+            "url": obj.get("url"),
+            "historical_trade_symbols": obj.get("historical_trade_symbols")
         })
         return _obj
 

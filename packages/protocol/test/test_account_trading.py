@@ -94,6 +94,9 @@ class TestAccountTrading(unittest.TestCase):
                         side = 'buy', 
                         quantity = 1.337, 
                         price = 1.337, 
+                        fee = octobot_protocol.models.fee.Fee(
+                            amount = 1.337, 
+                            currency = '', ), 
                         status = 'pending_creation', 
                         executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), )
                     ],
@@ -107,6 +110,14 @@ class TestAccountTrading(unittest.TestCase):
                         mark_price = 1.337, 
                         liquidation_price = 1.337, 
                         status = 'open', )
+                    ],
+                transactions = [
+                    octobot_protocol.models.transaction.Transaction(
+                        id = '', 
+                        timestamp = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                        asset = '', 
+                        amount = 1.337, 
+                        type = 'blockchain_deposit', )
                     ]
             )
         else:

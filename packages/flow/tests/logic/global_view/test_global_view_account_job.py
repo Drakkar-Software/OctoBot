@@ -130,6 +130,11 @@ class TestGlobalViewAccountJobRun:
                 mock.AsyncMock(),
             ),
             mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
+            mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
                 return_value=mock.Mock(),
@@ -143,11 +148,6 @@ class TestGlobalViewAccountJobRun:
                 account_state_persistence_module,
                 "load_previous_open_orders",
                 return_value=[],
-            ),
-            mock.patch.object(
-                account_state_persistence_module,
-                "load_portfolio_history_state",
-                return_value=_empty_portfolio_history_state(),
             ),
             mock.patch.object(
                 global_view_persistence_module,
@@ -167,11 +167,9 @@ class TestGlobalViewAccountJobRun:
         assert isinstance(refresh_result, octobot_flow.entities.GlobalViewAccountRefreshResult)
         assert refresh_result.updated_account.id == "account-1"
         assert refresh_result.changed_order_ids == set()
-        assert refresh_result.portfolio_history_state is not None
         assert refresh_result.open_orders == []
         assert refresh_result.updated_account.assets is not None
         assert refresh_result.updated_account.assets[0].assets
-        assert refresh_result.portfolio_history_state.history.values[-1].total > 0
 
     async def test_run_detects_disappeared_orders(self):
         context = _exchange_account_context(has_bound_automation=True)
@@ -211,6 +209,11 @@ class TestGlobalViewAccountJobRun:
                 mock.AsyncMock(),
             ),
             mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
+            mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
                 return_value=mock.Mock(),
@@ -224,11 +227,6 @@ class TestGlobalViewAccountJobRun:
                 account_state_persistence_module,
                 "load_previous_open_orders",
                 return_value=previous_open_orders,
-            ),
-            mock.patch.object(
-                account_state_persistence_module,
-                "load_portfolio_history_state",
-                return_value=_empty_portfolio_history_state(),
             ),
             mock.patch.object(
                 global_view_persistence_module,
@@ -298,6 +296,11 @@ class TestGlobalViewAccountJobRun:
                 mock.AsyncMock(),
             ),
             mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
+            mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
                 return_value=mock.Mock(),
@@ -311,11 +314,6 @@ class TestGlobalViewAccountJobRun:
                 account_state_persistence_module,
                 "load_previous_open_orders",
                 return_value=previous_open_orders,
-            ),
-            mock.patch.object(
-                account_state_persistence_module,
-                "load_portfolio_history_state",
-                return_value=_empty_portfolio_history_state(),
             ),
             mock.patch.object(
                 global_view_persistence_module,
@@ -413,11 +411,6 @@ class TestGlobalViewAccountJobRun:
                         trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: 9000.0,
                     },
                 }),
-            ),
-            mock.patch.object(
-                account_state_persistence_module,
-                "load_portfolio_history_state",
-                return_value=_empty_portfolio_history_state(),
             ),
             mock.patch.object(
                 global_view_persistence_module,

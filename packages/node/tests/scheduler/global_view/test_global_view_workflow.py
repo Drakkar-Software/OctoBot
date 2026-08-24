@@ -7,7 +7,6 @@ import pytest
 
 import octobot_flow.entities
 import octobot_protocol.models as protocol_models
-import octobot_sync.constants as sync_constants
 
 from tests.scheduler import temp_dbos_scheduler
 
@@ -35,7 +34,7 @@ class TestGlobalViewRefreshWorkflowRunGlobalViewRefresh:
         wallet_ids = ["wallet-a"]
         accounts = [mock.Mock(id="acc-1"), mock.Mock(id="acc-2")]
         account_provider = mock.Mock()
-        account_provider.list_registered_wallet_ids.return_value = wallet_ids
+        account_provider.list_collectable_wallet_ids.return_value = wallet_ids
         account_provider.list_items.return_value = accounts
         refresh_mock = mock.AsyncMock(return_value=True)
         with mock.patch.object(
@@ -134,24 +133,10 @@ class TestRefreshSingleAccount:
 
     async def test_logs_success_summary_after_refresh(self, global_view_workflow_module):
         account = _exchange_account()
-        evaluation_time = datetime.datetime(2026, 8, 11, 18, 30, tzinfo=datetime.UTC)
         refresh_result = octobot_flow.entities.GlobalViewAccountRefreshResult(
             updated_account=account,
             changed_order_ids={"gone-order-1"},
             open_orders=[{"exchange_id": "stays-order-2"}, {"exchange_id": "stays-order-3"}],
-            portfolio_history_state=protocol_models.PortfolioHistoricalValuesState(
-                version=sync_constants.USER_ACCOUNTS_HISTORY_STATE_VERSION,
-                history=protocol_models.PortfolioHistoricalValues(
-                    unit="USDC",
-                    values=[
-                        protocol_models.PortfolioHistoricalValue(
-                            timestamp=evaluation_time,
-                            total=1500.5,
-                            assets=[],
-                        )
-                    ],
-                ),
-            ),
         )
         mock_logger = mock.Mock()
         with (
@@ -199,6 +184,6 @@ class TestRefreshSingleAccount:
             2,
             1,
             True,
-            "USDC",
-            "1500.5",
+            "n/a",
+            "n/a",
         )

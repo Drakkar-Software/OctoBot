@@ -279,6 +279,22 @@
           }
         }
       },
+      "Fee": {
+        "description": "TradeFee",
+        "type": "object",
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
       "Trade": {
         "description": "Trade",
         "type": "object",
@@ -314,6 +330,9 @@
           },
           "price": {
             "type": "number"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Fee"
           },
           "status": {
             "$ref": "#/components/schemas/OrderStatus"
@@ -818,6 +837,45 @@
           }
         }
       },
+      "TransactionType": {
+        "description": "TransactionType",
+        "type": "string",
+        "enum": [
+          "blockchain_deposit",
+          "blockchain_withdrawal",
+          "funding_fee",
+          "trading_fee"
+        ]
+      },
+      "Transaction": {
+        "description": "Transaction",
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "asset",
+          "amount",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TransactionType"
+          }
+        }
+      },
       "AccountTrading": {
         "description": "AccountTrading",
         "type": "object",
@@ -845,6 +903,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Position"
+            }
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
             }
           }
         }
@@ -874,6 +938,12 @@
           },
           "url": {
             "type": "string"
+          },
+          "historical_trade_symbols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1926,6 +1996,25 @@
           }
         }
       },
+      "UpdateHistoricalExchangesDataConfiguration": {
+        "description": "UpdateHistoricalExchangesDataConfiguration",
+        "type": "object",
+        "required": [
+          "action_type"
+        ],
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/UserActionType",
+            "description": "update_historical_exchanges_data"
+          },
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CreateExchangeConfigConfiguration": {
         "description": "CreateExchangeConfigConfiguration",
         "type": "object",
@@ -2159,6 +2248,7 @@
           "exchange_config_create",
           "exchange_config_edit",
           "exchange_config_delete",
+          "update_historical_exchanges_data",
           "strategy_create",
           "strategy_edit",
           "strategy_delete",

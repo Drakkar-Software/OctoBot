@@ -6,7 +6,6 @@ import pathlib
 import mock
 import pytest
 
-import octobot_node.protocol.accounts_history as accounts_history_protocol
 import octobot_node.scheduler.api as scheduler_api_module
 import octobot_node.scheduler.tasks as scheduler_tasks_module
 
@@ -45,17 +44,6 @@ class TestGlobalViewWorkflowFunctional:
             assert real_account.updated_at is not None
             assert sim_account_1.updated_at is not None
             assert sim_account_2.updated_at is not None
-
-            for account_id in (
-                global_view_workflow_util.ACCOUNT_REAL_ID,
-                global_view_workflow_util.ACCOUNT_SIM_1_ID,
-                global_view_workflow_util.ACCOUNT_SIM_2_ID,
-            ):
-                history_state = accounts_history_protocol.get_portfolio_history_state(user_id, account_id)
-                assert history_state.history is not None
-                assert history_state.history.values
-                assert history_state.history.values[-1].total > 0
-                assert history_state.history.unit
 
     async def test_global_view_workflow_triggers_automation_on_filled_order(
         self,
@@ -127,6 +115,3 @@ class TestGlobalViewWorkflowFunctional:
             ):
                 updated_account = account_provider.get_item(user_id, account_id)
                 assert updated_account.assets is not None
-                history_state = accounts_history_protocol.get_portfolio_history_state(user_id, account_id)
-                assert history_state.history is not None
-                assert history_state.history.values

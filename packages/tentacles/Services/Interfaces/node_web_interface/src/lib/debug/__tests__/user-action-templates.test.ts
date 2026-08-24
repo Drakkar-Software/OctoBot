@@ -10,6 +10,7 @@ import {
   buildAutomationStopUserActionJson,
   buildExchangeConfigEditUserActionJson,
   buildStrategyEditUserActionJson,
+  buildUpdateHistoricalExchangesDataUserActionJson,
   buildUserActionTemplate,
   buildUserActionTemplateJson,
   defaultSignalPayloadText,
@@ -310,6 +311,14 @@ describe("buildUserActionTemplate", () => {
     expect(genericProcessConfiguration.configuration_type).toBe("generic_process")
     expect(genericProcessConfiguration).not.toHaveProperty("profile_data")
   })
+
+  it("builds an update historical exchanges data template", () => {
+    const action = buildUserActionTemplate("update_historical_exchanges_data")
+    expect(action.id).toContain("update_historical_exchanges_data")
+    expect(action.configuration).toMatchObject({
+      action_type: "update_historical_exchanges_data",
+    })
+  })
 })
 
 describe("buildUserActionTemplateJson", () => {
@@ -338,6 +347,18 @@ describe("buildAccountEditUserActionJson", () => {
     const json = JSON.parse(buildAccountEditUserActionJson(account))
     expect(json.configuration.id).toBe("acc-1")
     expect(json.configuration.configuration).toEqual(account)
+  })
+})
+
+describe("buildUpdateHistoricalExchangesDataUserActionJson", () => {
+  it("includes the account id in account_ids", () => {
+    const json = JSON.parse(
+      buildUpdateHistoricalExchangesDataUserActionJson("acc-history-1"),
+    )
+    expect(json.configuration).toMatchObject({
+      action_type: "update_historical_exchanges_data",
+      account_ids: ["acc-history-1"],
+    })
   })
 })
 

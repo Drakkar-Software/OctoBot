@@ -861,6 +861,14 @@ class RestExchange(abstract_exchange.AbstractExchange):
     async def get_user_recent_trades(self, user_id: str, symbol: str = None, since: int = None, limit: int = None, **kwargs: dict) -> list:
         return await self.connector.get_user_recent_trades(user_id=user_id, symbol=symbol, since=since, limit=limit, **kwargs)
 
+    async def get_deposits(self, currency: str = None, since: int = None,
+                           limit: int = None, **kwargs: dict) -> list[dict]:
+        return await self.connector.get_deposits(currency=currency, since=since, limit=limit, **kwargs)
+
+    async def get_withdrawals(self, currency: str = None, since: int = None,
+                              limit: int = None, **kwargs: dict) -> list[dict]:
+        return await self.connector.get_withdrawals(currency=currency, since=since, limit=limit, **kwargs)
+
     async def cancel_all_orders(self, symbol: str = None, **kwargs: dict) -> None:
         return await self.connector.cancel_all_orders(symbol=symbol, **kwargs)
 

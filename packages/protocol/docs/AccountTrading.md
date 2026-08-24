@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **orders** | [**List[Order]**](Order.md) |  | [optional] 
 **trades** | [**List[Trade]**](Trade.md) |  | [optional] 
 **positions** | [**List[Position]**](Position.md) |  | [optional] 
+**transactions** | [**List[Transaction]**](Transaction.md) |  | [optional] 
 
 ## Example
 

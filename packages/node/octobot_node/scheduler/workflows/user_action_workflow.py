@@ -97,3 +97,7 @@ class UserActionWorkflow:
                 output.post_actions.to_create_automation_task,
                 target_workflow_id=output.post_actions.to_create_automation_task.id
             )
+        if output.post_actions.portfolio_history_collection_params:
+            await scheduler_tasks.trigger_portfolio_history_collection(
+                output.post_actions.portfolio_history_collection_params,
+            )

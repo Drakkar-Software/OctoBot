@@ -7,7 +7,6 @@ import octobot_commons.timestamp_util as timestamp_util
 import octobot_protocol.models as protocol_models
 
 import octobot_flow.entities
-import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
 
 
 def build_updated_account(
@@ -28,19 +27,10 @@ def build_global_view_account_refresh_result(
     exchange_refresh_result: octobot_flow.entities.ExchangeAccountRefreshResult,
 ) -> octobot_flow.entities.GlobalViewAccountRefreshResult:
     updated_account = build_updated_account(context.account, exchange_refresh_result.assets)
-    evaluation_time = exchange_refresh_result.portfolio_snapshot.timestamp
-    portfolio_history_state = account_state_persistence_module.build_portfolio_history_state(
-        user_id,
-        context.account.id,
-        exchange_refresh_result.portfolio_snapshot,
-        exchange_refresh_result.valuation_unit,
-        evaluation_time,
-    )
     return octobot_flow.entities.GlobalViewAccountRefreshResult(
         updated_account=updated_account,
         changed_order_ids=exchange_refresh_result.changed_order_ids,
         open_orders=exchange_refresh_result.open_orders,
         trades=exchange_refresh_result.trades,
         positions=exchange_refresh_result.positions,
-        portfolio_history_state=portfolio_history_state,
     )

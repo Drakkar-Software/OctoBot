@@ -105,34 +105,13 @@ async def test_run_octobot_process_aggregates_two_simulator_exchanges(
                 )
                 state = job.dump()
 
-            deadline = time.monotonic() + octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC
-            inner: typing.Optional[dict] = None
-            while time.monotonic() < deadline:
-                poll_job = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
-                    state, [], [], {}
+            state, inner, state_path = (
+                await octobot_process_functional_shared.poll_automation_until_child_process_ready(
+                    state
                 )
-                octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                    poll_job.dump()
-                )
-                run_action_state = octobot_process_functional_shared._get_action_by_id(
-                    poll_job, octobot_process_functional_shared.ACTION_ID_RUN_OCTOBOT
-                )
-                assert run_action_state is not None
-                inner = octobot_process_functional_shared._recall_inner_from_dsl_action(run_action_state)
-                assert inner is not None
-                if inner.get("init_state_ok"):
-                    break
-                state = poll_job.dump()
-                await asyncio.sleep(octobot_process_functional_shared.SLEEP_BETWEEN_JOB_POLLS_SEC)
-            else:
-                pytest.fail(
-                    f"Timed out waiting for init_state_ok within "
-                    f"{octobot_process_functional_shared.GLOBAL_START_TIMEOUT_SEC}s"
-                )
+            )
 
             assert popen_calls["count"] >= 1
-            state_path = octobot_process_functional_shared._process_bot_state_path(inner)
-            await octobot_process_functional_shared._wait_for_process_bot_state_file(state_path)
 
             orders_deadline = time.monotonic() + DUAL_EXCHANGE_ORDERS_TIMEOUT_SEC
             exchange_account_snapshot: typing.Optional[

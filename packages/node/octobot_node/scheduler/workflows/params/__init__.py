@@ -27,12 +27,16 @@ from .user_action_workflow_params import (
     UserActionWorkflowOutput,
     UserActionExecutionResult,
 )
+from .portfolio_history_workflow_params import (
+    PortfolioHistoryCollectionParams,
+)
 
 __all__ = [
     "AutomationWorkflowActionUpdate",
     "AutomationWorkflowInputs",
     "AutomationWorkflowIterationResult",
     "AutomationWorkflowOutput",
+    "PortfolioHistoryCollectionParams",
     "ProgressStatus",
     "UserActionWorkflowInputs",
     "UserActionExecutionResult",

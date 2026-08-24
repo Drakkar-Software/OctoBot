@@ -19,7 +19,6 @@ import octobot_sync.chain.evm as sync_evm_module
 import octobot_sync.constants as sync_constants_module
 import octobot_sync.server as sync_server_module
 import octobot_sync.sync.collection_providers as collection_providers_module
-import octobot_trading.constants as trading_constants_module
 import octobot_trading.enums as trading_enums_module
 
 import octobot_node.constants as node_constants_module
@@ -27,9 +26,12 @@ import octobot_node.enums as node_enums_module
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows
 import octobot_node.scheduler.api as scheduler_api_module
+import octobot_node.scheduler.tasks as scheduler_tasks_module
 import octobot_node.scheduler.workflows.params as workflow_params_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_protocol.models as protocol_models_module
+
+from . import exchange_account_elements_access as exchange_account_elements_access_module
 
 # Passphrase for grid functional tests (WalletBackend requires length >= 8).
 SIMULATOR_GRID_TEST_WALLET_PASSPHRASE = "simgridPW1!"
@@ -208,41 +210,29 @@ def job_description_dict_from_output(
 def buy_sell_trade_counts_from_exchange_elements(
     exchange_account_elements: typing.Any,
 ) -> tuple[int, int, int]:
-    if exchange_account_elements is None:
+    resolved = exchange_account_elements_access_module.resolve_exchange_account_elements(
+        exchange_account_elements,
+    )
+    if resolved is None:
         return 0, 0, 0
-    orders_container = getattr(exchange_account_elements, "orders", None)
-    if orders_container is None and isinstance(exchange_account_elements, dict):
-        orders_container = exchange_account_elements.get("orders")
-    if orders_container is None:
-        trades_only = getattr(exchange_account_elements, "trades", None)
-        if trades_only is None and isinstance(exchange_account_elements, dict):
-            trades_only = exchange_account_elements.get("trades", [])
-        return 0, 0, len(trades_only or [])
 
-    open_orders = getattr(orders_container, "open_orders", None)
-    if open_orders is None and isinstance(orders_container, dict):
-        open_orders = orders_container.get("open_orders", [])
-    open_orders = open_orders or []
-
+    open_orders = exchange_account_elements_access_module.open_orders_from_elements(resolved)
     side_key = trading_enums_module.ExchangeConstantsOrderColumns.SIDE.value
-    storage_key = trading_constants_module.STORAGE_ORIGIN_VALUE
     buy_count = 0
     sell_count = 0
-    for order in open_orders:
-        if isinstance(order, dict):
-            inner = order.get(storage_key, {})
-        else:
-            inner = getattr(order, storage_key, {})
-        side = inner.get(side_key) if isinstance(inner, dict) else getattr(inner, side_key, None)
+    for order_row in open_orders:
+        if not isinstance(order_row, dict):
+            raise TypeError(f"expected open order dict, got {type(order_row).__name__}")
+        inner = exchange_account_elements_access_module.order_storage_payload(order_row)
+        side = exchange_account_elements_access_module.normalize_order_column_value(
+            exchange_account_elements_access_module.order_column_value(inner, side_key),
+        )
         if side == trading_enums_module.TradeOrderSide.BUY.value:
             buy_count += 1
         elif side == trading_enums_module.TradeOrderSide.SELL.value:
             sell_count += 1
 
-    trades = getattr(exchange_account_elements, "trades", None)
-    if trades is None and isinstance(exchange_account_elements, dict):
-        trades = exchange_account_elements.get("trades", [])
-    trade_count = len(trades or [])
+    trade_count = len(exchange_account_elements_access_module.trades_from_elements(resolved))
     return buy_count, sell_count, trade_count
 
 
@@ -483,8 +473,6 @@ async def enqueue_user_action_workflow_and_await_terminal_result(
     user_id: str,
 ):
     """``execute_user_action`` queues user actions; wait until the USER_ACTION_QUEUE workflow completes."""
-    import octobot_node.scheduler.tasks as scheduler_tasks_module
-
     workflow_identifier_encoded = await scheduler_tasks_module.trigger_user_action_workflow(
         user_action_bundle,
         user_id,

@@ -30,7 +30,7 @@ import octobot_commons.errors as commons_errors
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.symbols.symbol_util as symbol_util
-import octobot_commons.databases as databases
+import octobot_backtesting.databases as backtesting_databases
 import octobot_backtesting.data as data
 import octobot_trading.api as trading_api
 import octobot_trading.errors as trading_errors
@@ -396,7 +396,7 @@ class ExchangeBotSnapshotWithHistoryCollector(collector.AbstractExchangeBotSnaps
     async def _import_candles_from_datafile(self, exchange, symbol, time_frame):
         return importers.import_ohlcvs(
             await self.database.select(backtesting_enums.ExchangeDataTables.OHLCV,
-                                       size=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                       size=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                        exchange_name=exchange, symbol=symbol.symbol_str,
                                        time_frame=time_frame.value)
         )

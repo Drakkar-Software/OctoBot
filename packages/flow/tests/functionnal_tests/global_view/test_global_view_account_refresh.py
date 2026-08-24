@@ -149,6 +149,11 @@ class TestGlobalViewAccountJobFunctional:
                 mock.AsyncMock(),
             ),
             mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
+            mock.patch.object(
                 exchange_account_refresh_module.tickers_repository_module.TickersRepository,
                 "fetch_tickers",
                 mock.AsyncMock(return_value={}),
@@ -169,11 +174,6 @@ class TestGlobalViewAccountJobFunctional:
                 return_value=[],
             ),
             mock.patch.object(
-                account_state_persistence_module,
-                "load_portfolio_history_state",
-                return_value=_empty_portfolio_history_state(),
-            ),
-            mock.patch.object(
                 global_view_persistence_module,
                 "persist_global_view_refresh_result",
             ),
@@ -185,10 +185,6 @@ class TestGlobalViewAccountJobFunctional:
 
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
         portfolio_manager.apply_forced_portfolio.assert_called_once()
-        assert refresh_result.portfolio_history_state is not None
-        assert refresh_result.portfolio_history_state.history is not None
-        assert refresh_result.portfolio_history_state.history.unit == "USDC"
-        assert refresh_result.portfolio_history_state.history.values[-1].total > 0
         assert refresh_result.updated_account.assets
         asset_symbols = {
             asset.symbol
@@ -235,6 +231,11 @@ class TestGlobalViewAccountJobFunctional:
                 mock.AsyncMock(),
             ),
             mock.patch.object(
+                exchange_account_refresh_module,
+                "_fetch_tickers",
+                mock.AsyncMock(return_value={}),
+            ),
+            mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
                 return_value=mock.Mock(),
@@ -248,11 +249,6 @@ class TestGlobalViewAccountJobFunctional:
                 account_state_persistence_module,
                 "load_previous_open_orders",
                 return_value=previous_open_orders,
-            ),
-            mock.patch.object(
-                account_state_persistence_module,
-                "load_portfolio_history_state",
-                return_value=_empty_portfolio_history_state(),
             ),
             mock.patch.object(
                 global_view_persistence_module,
@@ -270,8 +266,5 @@ class TestGlobalViewAccountJobFunctional:
             for call in exchange_manager.exchange.get_open_orders.await_args_list
         }
         assert called_symbols == {"BTC/USDT", "ETH/USDT"}
-        assert refresh_result.portfolio_history_state is not None
-        assert refresh_result.portfolio_history_state.history.unit == commons_constants.DEFAULT_REFERENCE_MARKET
         assert refresh_result.updated_account.assets
-        assert refresh_result.portfolio_history_state.history.values[-1].total > 0
         assert refresh_result.changed_order_ids == {"gone-order-1"}
