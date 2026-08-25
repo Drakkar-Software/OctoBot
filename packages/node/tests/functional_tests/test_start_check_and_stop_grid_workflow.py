@@ -34,6 +34,7 @@ import octobot.community.authentication as community_authentication_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_node.config
 import octobot_node.scheduler
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
 
@@ -161,10 +162,10 @@ class TestTriggerTaskGridDbosIntegration:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 grid_predicate_met = False
                 for workflow_row in workflow_rows:
-                    workflow_automation_id = workflows_util_module.get_automation_id(workflow_row)
+                    workflow_automation_id = automation_states_loader_module.get_automation_id(workflow_row)
                     if workflow_automation_id != metadata_automation_id:
                         continue
-                    state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                    state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if state_reader is None:
                         continue
                     elements = state_reader.state.automation.exchange_account_elements
@@ -260,9 +261,9 @@ class TestTriggerTaskGridDbosIntegration:
             signal_deadline = time.monotonic() + _T_SIGNAL_SECONDS
             while time.monotonic() < signal_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_signal = workflows_util_module.get_automation_state_reader(
+                    reader_after_signal = automation_states_loader_module.get_automation_state_reader(
                         workflow_row
                     )
                     if reader_after_signal is None:
@@ -331,9 +332,9 @@ class TestTriggerTaskGridDbosIntegration:
                     key=lambda workflow_status: workflow_status.updated_at or 0,
                     reverse=True,
                 ):
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_send = workflows_util_module.get_automation_state_reader(workflow_row)
+                    reader_after_send = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if reader_after_send is None:
                         continue
                     candidate_elements = reader_after_send.state.automation.exchange_account_elements
@@ -415,7 +416,7 @@ class TestTriggerTaskGridDbosIntegration:
                 workflow_row
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 if workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value
-                and workflows_util_module.get_automation_id(workflow_row) == metadata_automation_id
+                and automation_states_loader_module.get_automation_id(workflow_row) == metadata_automation_id
             ]
             assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
@@ -460,7 +461,7 @@ class TestTriggerTaskGridDbosIntegration:
             protocol_state_after_restart = None
             while time.monotonic() < restart_running_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
                     if workflow_row.status not in (
                         dbos.WorkflowStatusString.PENDING.value,

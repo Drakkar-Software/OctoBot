@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { Fee } from '../models/Fee';
 import { OrderStatus } from '../models/OrderStatus';
 import { OrderType } from '../models/OrderType';
 import { Side } from '../models/Side';
@@ -25,6 +26,7 @@ export class Trade {
     'side': Side;
     'quantity': number;
     'price': number;
+    'fee'?: Fee;
     'status': OrderStatus;
     'executed_at': string;
 
@@ -73,6 +75,12 @@ export class Trade {
             "name": "price",
             "baseName": "price",
             "type": "number",
+            "format": ""
+        },
+        {
+            "name": "fee",
+            "baseName": "fee",
+            "type": "Fee",
             "format": ""
         },
         {

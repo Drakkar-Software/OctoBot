@@ -19,7 +19,7 @@ from fastapi import APIRouter, HTTPException, status
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler
-import octobot_node.scheduler.generic_process_octobot as generic_process_octobot_module
+import octobot_node.scheduler.automations.generic_process_octobot as generic_process_octobot_module
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]

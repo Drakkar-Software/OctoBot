@@ -420,10 +420,13 @@ class TestCleanupOutdatedAutomationExecutions:
         sched.INSTANCE = mock_instance
         mock_logger = mock.Mock()
 
-        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch.object(
+        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=None,
+        ), mock.patch.object(
             workflows_retention,
-            "AUTOMATION_EXECUTION_RETENTION_SECONDS",
-            retention_seconds,
+            "select_retention_seconds_for_database_size",
+            return_value=retention_seconds,
         ), mock.patch(
             "octobot_node.scheduler.workflows_retention._get_logger",
             return_value=mock_logger,
@@ -436,6 +439,8 @@ class TestCleanupOutdatedAutomationExecutions:
             "deleted_global_view_executions": 0,
             "deleted_portfolio_history_executions": 0,
             "total_deleted": 2,
+            "database_size_bytes": None,
+            "retention_seconds": retention_seconds,
         }
         mock_instance.delete_workflows_async.assert_awaited_once_with(
             [
@@ -466,6 +471,9 @@ class TestCleanupOutdatedAutomationExecutions:
         mock_logger = mock.Mock()
 
         with mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=None,
+        ), mock.patch(
             "octobot_node.scheduler.workflows_retention._get_logger",
             return_value=mock_logger,
         ):
@@ -477,6 +485,8 @@ class TestCleanupOutdatedAutomationExecutions:
             "deleted_global_view_executions": 0,
             "deleted_portfolio_history_executions": 0,
             "total_deleted": 0,
+            "database_size_bytes": None,
+            "retention_seconds": workflows_retention.RETENTION_SECONDS_2_DAYS,
         }
         mock_instance.delete_workflows_async.assert_not_called()
         mock_instance._sys_db.engine.begin.assert_not_called()
@@ -652,6 +662,23 @@ class TestGetOutdatedTerminalWorkflowIds:
         assert deleted_ids == []
 
 
+class TestSelectRetentionSecondsForDatabaseSize:
+    def test_returns_2_day_retention_when_size_unknown(self):
+        assert workflows_retention.select_retention_seconds_for_database_size(None) == workflows_retention.RETENTION_SECONDS_2_DAYS
+
+    def test_returns_2_day_retention_below_first_tier(self):
+        size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_1_BYTES - 1
+        assert workflows_retention.select_retention_seconds_for_database_size(size_bytes) == workflows_retention.RETENTION_SECONDS_2_DAYS
+
+    def test_returns_1_day_retention_between_tiers(self):
+        size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_1_BYTES
+        assert workflows_retention.select_retention_seconds_for_database_size(size_bytes) == workflows_retention.RETENTION_SECONDS_1_DAY
+
+    def test_returns_6_hour_retention_at_second_tier(self):
+        size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_2_BYTES
+        assert workflows_retention.select_retention_seconds_for_database_size(size_bytes) == workflows_retention.RETENTION_SECONDS_6_HOURS
+
+
 class TestSelectCleanupCronForDatabaseSize:
     def test_returns_daily_cron_when_size_unknown(self):
         assert workflows_retention.select_cleanup_cron_for_database_size(None) == workflows_retention.DBOS_CLEANUP_CRON_DAILY
@@ -741,19 +768,71 @@ class TestCleanupOutdatedAutomationExecutionsScheduledWorkflows:
         mock_instance._sys_db.engine = mock_engine
         sched.INSTANCE = mock_instance
 
-        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch.object(
+        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=None,
+        ), mock.patch.object(
             workflows_retention,
-            "AUTOMATION_EXECUTION_RETENTION_SECONDS",
-            retention_seconds,
+            "select_retention_seconds_for_database_size",
+            return_value=retention_seconds,
         ):
             summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
 
         assert summary["deleted_global_view_executions"] == 1
         assert summary["deleted_portfolio_history_executions"] == 1
         assert summary["total_deleted"] == 2
+        assert summary["retention_seconds"] == retention_seconds
         mock_instance.delete_workflows_async.assert_awaited_once_with(
             ["global-view-old", "portfolio-history-old"],
             delete_children=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_uses_shorter_retention_when_database_is_large(self, temp_dbos_scheduler):
+        now_ms = 10_000_000
+        six_hour_retention_seconds = workflows_retention.RETENTION_SECONDS_6_HOURS
+        twelve_hours_ms = int(12 * 60 * 60 * 1000)
+        updated_at_ms = now_ms - twelve_hours_ms
+        global_view_workflows = [
+            _workflow_status_row(
+                workflow_id="global-view-12h-old",
+                updated_at=updated_at_ms,
+                name=_GLOBAL_VIEW_WORKFLOW_NAME,
+            ),
+        ]
+
+        sched = scheduler_module.Scheduler()
+        mock_instance = mock.Mock()
+        mock_instance.list_workflows_async = mock.AsyncMock(
+            side_effect=[[], [], global_view_workflows, []]
+        )
+        mock_instance.delete_workflows_async = mock.AsyncMock()
+        mock_instance._sys_db.engine = mock.Mock()
+        sched.INSTANCE = mock_instance
+        large_database_size_bytes = workflows_retention.DBOS_CLEANUP_SIZE_TIER_2_BYTES
+        mock_logger = mock.Mock()
+
+        with mock.patch("octobot_node.scheduler.workflows_retention.time.time", return_value=now_ms / 1000), mock.patch(
+            "octobot_node.scheduler.workflows_retention.get_scheduler_database_size_bytes",
+            return_value=large_database_size_bytes,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows_retention._get_logger",
+            return_value=mock_logger,
+        ):
+            summary = await workflows_retention.cleanup_outdated_automation_executions(sched)
+
+        assert summary["retention_seconds"] == six_hour_retention_seconds
+        assert summary["database_size_bytes"] == large_database_size_bytes
+        assert summary["deleted_global_view_executions"] == 1
+        assert summary["total_deleted"] == 1
+        mock_instance.delete_workflows_async.assert_awaited_once_with(
+            ["global-view-12h-old"],
+            delete_children=False,
+        )
+        mock_logger.info.assert_any_call(
+            "Using retention %s s for database size %s bytes",
+            six_hour_retention_seconds,
+            large_database_size_bytes,
         )
 
 

@@ -14,3 +14,4 @@ class PortfolioHistoryAccountContext:
     exchange_config: protocol_models.ExchangeConfig
     trading_type: protocol_models.TradingType
     auth_details: exchange_data_module.ExchangeAuthDetails
+    trade_symbols: list[str] = dataclasses.field(default_factory=list)

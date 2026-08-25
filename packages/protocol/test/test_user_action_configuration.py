@@ -68,6 +68,9 @@ class TestUserActionConfiguration(unittest.TestCase):
                 id = '',
                 automation_id = '',
                 signal_type = 'actions',
+                account_ids = [
+                    ''
+                    ],
         )
         """
 

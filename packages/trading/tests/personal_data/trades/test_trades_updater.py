@@ -39,6 +39,57 @@ class TestTradesUpdaterFetchTrades:
         assert result == []
 
 
+class TestTradesUpdaterFetchTradesExhaustHistory:
+    @pytest.mark.asyncio
+    async def test_fetch_trades_exhaust_history_single_symbol(self):
+        updater = mock.MagicMock()
+        updater.channel.exchange_manager.exchange.get_my_recent_trades = mock.AsyncMock(
+            return_value=[{"id": "trade-1"}]
+        )
+        result = await trades_updater_module.TradesUpdater.fetch_trades(
+            updater, ["BTC/USDT"], exhaust_history=True,
+        )
+        assert result == [{"id": "trade-1"}]
+        updater.channel.exchange_manager.exchange.get_my_recent_trades.assert_awaited_once_with(
+            symbol="BTC/USDT", exhaust_history=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_trades_exhaust_history_multiple_symbols(self):
+        updater = mock.MagicMock()
+
+        async def get_my_recent_trades(symbol, exhaust_history=False, limit=None):
+            return [{"id": symbol}]
+
+        updater.channel.exchange_manager.exchange.get_my_recent_trades = get_my_recent_trades
+        result = await trades_updater_module.TradesUpdater.fetch_trades(
+            updater, ["BTC/USDT", "ETH/USDT"], exhaust_history=True,
+        )
+        assert result == [{"id": "BTC/USDT"}, {"id": "ETH/USDT"}]
+
+    @pytest.mark.asyncio
+    async def test_fetch_trades_exhaust_history_account_wide(self):
+        updater = mock.MagicMock()
+        updater.channel.exchange_manager.exchange.get_my_recent_trades = mock.AsyncMock(
+            return_value=[{"id": "trade-1"}]
+        )
+        result = await trades_updater_module.TradesUpdater.fetch_trades(
+            updater, [], exhaust_history=True,
+        )
+        assert result == [{"id": "trade-1"}]
+        updater.channel.exchange_manager.exchange.get_my_recent_trades.assert_awaited_once_with(
+            symbol=None, exhaust_history=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_fetch_trades_empty_symbols_without_exhaust_returns_empty(self):
+        updater = mock.MagicMock()
+        updater.channel.exchange_manager.exchange.get_my_recent_trades = mock.AsyncMock()
+        result = await trades_updater_module.TradesUpdater.fetch_trades(updater, [])
+        assert result == []
+        updater.channel.exchange_manager.exchange.get_my_recent_trades.assert_not_called()
+
+
 class TestTradesUpdaterFetchAndPush:
     @pytest.mark.asyncio
     async def test_fetch_and_push_fetches_and_pushes_per_symbol(self):

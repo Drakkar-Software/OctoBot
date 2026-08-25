@@ -2,8 +2,16 @@ import os
 
 import pytest
 
+import octobot_trading.enums as trading_enums
 import octobot_trading.exchange_data.databases.market_data_sqlite_database as market_data_sqlite_database_module
 import octobot_trading.exchange_data.ticker.persisted_ticker_cache as persisted_ticker_cache
+
+
+def _empty_latest_tickers():
+    return {
+        trading_enums.LatestTickersCacheKeys.UPDATED_AT: None,
+        trading_enums.LatestTickersCacheKeys.CLOSES: {},
+    }
 
 
 @pytest.fixture
@@ -30,7 +38,7 @@ class TestLoad:
     @pytest.mark.asyncio
     async def test_missing_database_returns_empty(self, exchange_name, exchange_type, sandboxed, data_root):
         result = await persisted_ticker_cache.load(exchange_name, exchange_type, sandboxed, data_root)
-        assert result == {"updated_at": None, "closes": {}}
+        assert result == _empty_latest_tickers()
 
     @pytest.mark.asyncio
     async def test_existing_data_loaded(self, exchange_name, exchange_type, sandboxed, data_root):
@@ -38,8 +46,8 @@ class TestLoad:
             exchange_name, exchange_type, sandboxed, {"BTC/USDT": 42000.0}, data_root
         )
         result = await persisted_ticker_cache.load(exchange_name, exchange_type, sandboxed, data_root)
-        assert result["closes"]["BTC/USDT"] == 42000.0
-        assert result["updated_at"] is not None
+        assert result[trading_enums.LatestTickersCacheKeys.CLOSES]["BTC/USDT"] == 42000.0
+        assert result[trading_enums.LatestTickersCacheKeys.UPDATED_AT] is not None
         db_path = market_data_sqlite_database_module.MarketDataSQLiteDatabase.get_db_path(
             exchange_name, exchange_type, sandboxed, data_root
         )
@@ -54,8 +62,8 @@ class TestUpdate:
             exchange_name, exchange_type, sandboxed, {"BTC/USDT": 65000.0}, data_root
         )
         result = await persisted_ticker_cache.load(exchange_name, exchange_type, sandboxed, data_root)
-        assert result["closes"]["BTC/USDT"] == 65000.0
-        assert result["updated_at"] is not None
+        assert result[trading_enums.LatestTickersCacheKeys.CLOSES]["BTC/USDT"] == 65000.0
+        assert result[trading_enums.LatestTickersCacheKeys.UPDATED_AT] is not None
 
     @pytest.mark.asyncio
     async def test_incremental_update(self, exchange_name, exchange_type, sandboxed, data_root):
@@ -66,15 +74,15 @@ class TestUpdate:
             exchange_name, exchange_type, sandboxed, {"ETH/USDT": 3200.0}, data_root
         )
         result = await persisted_ticker_cache.load(exchange_name, exchange_type, sandboxed, data_root)
-        assert result["closes"]["BTC/USDT"] == 65000.0
-        assert result["closes"]["ETH/USDT"] == 3200.0
+        assert result[trading_enums.LatestTickersCacheKeys.CLOSES]["BTC/USDT"] == 65000.0
+        assert result[trading_enums.LatestTickersCacheKeys.CLOSES]["ETH/USDT"] == 3200.0
 
 
 class TestGetClose:
     def test_found(self):
-        data = {"closes": {"BTC/USDT": 65000.0}}
+        data = {trading_enums.LatestTickersCacheKeys.CLOSES: {"BTC/USDT": 65000.0}}
         assert persisted_ticker_cache.get_close(data, "BTC/USDT") == 65000.0
 
     def test_missing_returns_default(self):
-        data = {"closes": {}}
+        data = {trading_enums.LatestTickersCacheKeys.CLOSES: {}}
         assert persisted_ticker_cache.get_close(data, "BTC/USDT", default=0.0) == 0.0

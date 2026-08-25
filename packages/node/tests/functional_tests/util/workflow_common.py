@@ -28,6 +28,7 @@ import octobot_node.scheduler.workflows
 import octobot_node.scheduler.api as scheduler_api_module
 import octobot_node.scheduler.tasks as scheduler_tasks_module
 import octobot_node.scheduler.workflows.params as workflow_params_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_protocol.models as protocol_models_module
 
@@ -306,7 +307,7 @@ async def _list_matching_automation_workflow_rows(
     return [
         workflow_row
         for workflow_row in workflow_rows
-        if workflows_util_module.get_automation_id(workflow_row) == automation_id
+        if automation_states_loader_module.get_automation_id(workflow_row) == automation_id
     ]
 
 

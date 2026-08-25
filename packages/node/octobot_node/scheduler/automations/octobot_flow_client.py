@@ -22,7 +22,7 @@ import octobot_commons.logging
 
 import octobot_node.constants
 import octobot_node.errors as errors
-import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 
 try:
     import octobot_flow.environment
@@ -55,7 +55,7 @@ class OctoBotActionsJobDescription(octobot_commons.dataclasses.MinimizableDatacl
     @staticmethod
     def parse_task_description(description: typing.Union[str, dict]) -> dict:
         try:
-            parsed_description = workflows_util.get_automation_dict(description)
+            parsed_description = automation_states_loader.get_automation_dict(description)
         except ValueError:
             if isinstance(description, dict):
                 parsed_description = description

@@ -38,6 +38,7 @@ class TestMEXCAuthenticatedExchange(
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True
     USED_TO_HAVE_UNTRADABLE_SYMBOL = True
+    ALLOW_NO_DEPOSIT_HISTORY = True
 
     async def test_get_portfolio(self):
         await super().test_get_portfolio()
@@ -87,6 +88,15 @@ class TestMEXCAuthenticatedExchange(
 
     async def test_get_my_recent_trades(self):
         await super().test_get_my_recent_trades()
+
+    async def test_get_my_recent_trades_exhaust_history(self):
+        await super().test_get_my_recent_trades_exhaust_history()
+
+    async def test_get_deposits(self):
+        await super().test_get_deposits()
+
+    async def test_get_withdrawals(self):
+        await super().test_get_withdrawals()
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()

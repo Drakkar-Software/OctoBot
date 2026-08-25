@@ -22,6 +22,7 @@ from .util import workflow_common as workflow_common_module
 import octobot.community.authentication as community_authentication_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_trading.enums as trading_enums_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
 
@@ -145,10 +146,10 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 dca_predicate_met = False
                 for workflow_row in workflow_rows:
-                    workflow_automation_id = workflows_util_module.get_automation_id(workflow_row)
+                    workflow_automation_id = automation_states_loader_module.get_automation_id(workflow_row)
                     if workflow_automation_id != metadata_automation_id:
                         continue
-                    state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                    state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if state_reader is None:
                         continue
                     elements = state_reader.state.automation.exchange_account_elements
@@ -249,9 +250,9 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
             open_orders_after_first_fill: list[dict] | None = None
             while time.monotonic() < partial_fill_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_first_fill = workflows_util_module.get_automation_state_reader(
+                    reader_after_first_fill = automation_states_loader_module.get_automation_state_reader(
                         workflow_row
                     )
                     if reader_after_first_fill is None:
@@ -304,9 +305,9 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
             elements_after_fill: typing.Any = None
             while time.monotonic() < fill_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_fill = workflows_util_module.get_automation_state_reader(workflow_row)
+                    reader_after_fill = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if reader_after_fill is None:
                         continue
                     candidate_elements = reader_after_fill.state.automation.exchange_account_elements
@@ -419,7 +420,7 @@ class TestTriggerTaskDCANoEvaluatorDbosIntegration:
                 workflow_row
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 if workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value
-                and workflows_util_module.get_automation_id(workflow_row) == metadata_automation_id
+                and automation_states_loader_module.get_automation_id(workflow_row) == metadata_automation_id
             ]
             assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)

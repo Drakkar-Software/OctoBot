@@ -14,8 +14,8 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
 import decimal
+import datetime
 
 import octobot_commons.constants as commons_constants
 import octobot_protocol.models as protocol_models
@@ -88,19 +88,11 @@ async def compute_portfolio_historical_values_from_latest_portfolio_trades_and_t
 
     # Step 6: Daily valuation.
     valuation_unit = "USDT"
-    valued_days = portfolio_value_history_module.compute_daily_portfolio_values(
+    history_values = portfolio_value_history_module.compute_daily_portfolio_values(
         daily_holdings, daily_prices, latest_tickers, reference_market=valuation_unit,
     )
 
     # Step 7: Build and return result (not saved).
-    history_values = [
-        protocol_models.PortfolioHistoricalValue(
-            timestamp=_timestamp_to_datetime(day["timestamp"]),
-            total=day["value"],
-            assets=[],
-        )
-        for day in valued_days
-    ]
     if not history_values:
         return _empty_state()
     return protocol_models.PortfolioHistoricalValuesState(
@@ -110,6 +102,116 @@ async def compute_portfolio_historical_values_from_latest_portfolio_trades_and_t
             values=history_values,
         ),
     )
+
+
+async def compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+    user_id: str,
+    *,
+    is_simulated: bool,
+    data_root: str = None,
+) -> protocol_models.PortfolioHistoricalValuesState:
+    """
+    Compute aggregated portfolio value history across all accounts matching is_simulated.
+    Each account is valued independently, then daily totals are summed by timestamp.
+    """
+    accounts = [
+        account
+        for account in collection_providers.AccountProvider.instance().list_accounts(user_id)
+        if account.is_simulated == is_simulated
+    ]
+    if not accounts:
+        return _empty_state()
+
+    account_histories: list[list[protocol_models.PortfolioHistoricalValue]] = []
+    for account in accounts:
+        account_state = await compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+            user_id,
+            account.id,
+            data_root=data_root,
+        )
+        if account_state.history is None or not account_state.history.values:
+            continue
+        account_histories.append(account_state.history.values)
+
+    if not account_histories:
+        return _empty_state()
+
+    valuation_unit = "USDT"
+    aggregated_values = _aggregate_portfolio_historical_values(account_histories)
+    if not aggregated_values:
+        return _empty_state()
+    return protocol_models.PortfolioHistoricalValuesState(
+        version=sync_constants.USER_ACCOUNTS_HISTORY_STATE_VERSION,
+        history=protocol_models.PortfolioHistoricalValues(
+            unit=valuation_unit,
+            values=aggregated_values,
+        ),
+    )
+
+
+def _iter_historical_assets(
+    history_value: protocol_models.PortfolioHistoricalValue,
+):
+    if not history_value.assets:
+        return
+    for assets_for_type in history_value.assets:
+        for asset in assets_for_type.assets or []:
+            yield assets_for_type.trading_type, asset
+
+
+def _aggregate_portfolio_historical_values(
+    account_histories: list[list[protocol_models.PortfolioHistoricalValue]],
+) -> list[protocol_models.PortfolioHistoricalValue]:
+    totals_by_day: dict[float, float] = {}
+    assets_by_day: dict[float, dict[protocol_models.TradingType, dict[str, list[float]]]] = {}
+    for history_values in account_histories:
+        for history_value in history_values:
+            day_key = portfolio_value_history_module._utc_day_start(
+                history_value.timestamp.timestamp(),
+            )
+            totals_by_day[day_key] = totals_by_day.get(day_key, 0.0) + float(history_value.total)
+            day_assets = assets_by_day.setdefault(day_key, {})
+            for trading_type, asset in _iter_historical_assets(history_value):
+                symbol_totals = day_assets.setdefault(trading_type, {})
+                holdings_sum, value_sum = symbol_totals.get(asset.symbol, [0.0, 0.0])
+                symbol_totals[asset.symbol] = [
+                    holdings_sum + float(asset.holdings),
+                    value_sum + float(asset.value),
+                ]
+
+    aggregated_values: list[protocol_models.PortfolioHistoricalValue] = []
+    for day_key in sorted(totals_by_day):
+        assets_for_day = assets_by_day.get(day_key, {})
+        assets_by_trading_type: list[protocol_models.HistoricalAssetsForTradingType] = []
+        for trading_type in sorted(assets_for_day, key=lambda trading_type_value: trading_type_value.value):
+            symbol_totals = assets_for_day[trading_type]
+            day_asset_values: list[protocol_models.HistoricalAssetValue] = []
+            for symbol, holdings_and_value in sorted(symbol_totals.items()):
+                holdings_sum, value_sum = holdings_and_value
+                if holdings_sum == 0:
+                    continue
+                day_asset_values.append(
+                    protocol_models.HistoricalAssetValue(
+                        symbol=symbol,
+                        holdings=holdings_sum,
+                        value=value_sum,
+                    )
+                )
+            if day_asset_values:
+                assets_by_trading_type.append(
+                    protocol_models.HistoricalAssetsForTradingType(
+                        trading_type=trading_type,
+                        assets=day_asset_values,
+                    )
+                )
+        aggregated_values.append(
+            protocol_models.PortfolioHistoricalValue(
+                timestamp=datetime.datetime.fromtimestamp(day_key, tz=datetime.timezone.utc),
+                total=totals_by_day[day_key],
+                assets=assets_by_trading_type or None,
+            )
+        )
+    return aggregated_values
 
 
 def _empty_state() -> protocol_models.PortfolioHistoricalValuesState:
@@ -160,6 +262,3 @@ def _resolve_exchange_info(
         exchange_type.value if exchange_type else "spot",
         exchange_config.sandboxed,
     )
-
-def _timestamp_to_datetime(timestamp: float) -> datetime.datetime:
-    return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)

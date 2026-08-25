@@ -38,6 +38,17 @@ class TestFetchDeposits:
         result = await repo.fetch_deposits()
         assert result == []
 
+    @pytest.mark.asyncio
+    async def test_forwards_currencies_to_exchange_get_deposits(self):
+        exchange_manager = mock.AsyncMock()
+        exchange_manager.exchange.get_deposits.return_value = [{"id": "d1"}]
+        repo = _make_repo(exchange_manager)
+        result = await repo.fetch_deposits(currencies=["BTC", "ETH"])
+        assert result == [{"id": "d1"}]
+        exchange_manager.exchange.get_deposits.assert_awaited_once_with(
+            since=None, limit=None, currencies=["BTC", "ETH"]
+        )
+
 
 class TestFetchWithdrawals:
     @pytest.mark.asyncio
@@ -65,3 +76,14 @@ class TestFetchWithdrawals:
         repo = _make_repo(exchange_manager)
         result = await repo.fetch_withdrawals()
         assert result == []
+
+    @pytest.mark.asyncio
+    async def test_forwards_currencies_to_exchange_get_withdrawals(self):
+        exchange_manager = mock.AsyncMock()
+        exchange_manager.exchange.get_withdrawals.return_value = [{"id": "w1"}]
+        repo = _make_repo(exchange_manager)
+        result = await repo.fetch_withdrawals(currencies=["BTC", "ETH"])
+        assert result == [{"id": "w1"}]
+        exchange_manager.exchange.get_withdrawals.assert_awaited_once_with(
+            since=None, limit=None, currencies=["BTC", "ETH"]
+        )

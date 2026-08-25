@@ -5,6 +5,7 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as commons_logging
 import octobot_trading.api as trading_api
+import octobot_trading.exchange_data.prices.daily_prices_cache_types as daily_prices_cache_types
 import octobot_trading.constants as trading_constants
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges.util.exchange_util as exchange_util
@@ -38,7 +39,7 @@ async def update_daily_prices(
         if base_asset in commons_constants.USD_LIKE_COINS:
             continue
 
-        sticky_fetch_symbol = daily_prices.get("sources", {}).get(base_asset)
+        sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, base_asset)
         if _is_daily_cache_up_to_date(daily_prices, reference_symbol):
             continue
 
@@ -71,7 +72,7 @@ async def update_daily_prices(
                 exchange_name, exchange_type, sandboxed,
                 sticky_fetch_symbol, fetch_symbol, data_root,
             )
-            _move_symbol_cache_in_memory(
+            trading_api.move_daily_prices_symbol_in_memory(
                 daily_prices, sticky_fetch_symbol, fetch_symbol,
             )
         elif fetch_symbol != reference_symbol:
@@ -83,14 +84,20 @@ async def update_daily_prices(
             )
 
         closes_by_timestamp = _closes_from_candles(candles, is_reversed)
+        closes_by_timestamp = _filter_closes_for_merge(
+            daily_prices, fetch_symbol, closes_by_timestamp,
+        )
+        if not closes_by_timestamp:
+            continue
+
         await trading_api.merge_daily_prices(
             exchange_name, exchange_type, sandboxed, fetch_symbol, closes_by_timestamp, data_root,
         )
         await trading_api.set_daily_close_source(
             exchange_name, exchange_type, sandboxed, base_asset, fetch_symbol, data_root,
         )
-        daily_prices.setdefault("sources", {})[base_asset] = fetch_symbol
-        daily_prices.setdefault("symbols", {}).setdefault(fetch_symbol, {}).update(closes_by_timestamp)
+        trading_api.set_daily_close_source_in_memory(daily_prices, base_asset, fetch_symbol)
+        trading_api.merge_daily_prices_in_memory(daily_prices, fetch_symbol, closes_by_timestamp)
 
 
 def _parse_base_quote(symbol: str) -> tuple[str, str] | None:
@@ -271,6 +278,14 @@ async def _try_limited_history_daily_candles(
     except trading_errors.UnSupportedSymbolError:
         return None
     except trading_errors.FailedRequest as error:
+        if since_ms is not None:
+            logger.info(
+                "Daily candle incremental fetch failed for %s on %s, skipping fallback without since: %s",
+                fetch_symbol,
+                exchange_name,
+                error,
+            )
+            return None
         logger.info(
             "Daily candle ideal fetch failed for %s on %s, retrying without since/limit: %s",
             fetch_symbol,
@@ -299,7 +314,7 @@ async def _try_limited_history_daily_candles(
 def _closes_from_candles(candles: list, is_reversed: bool) -> dict[str, float]:
     closes_by_timestamp = {}
     for candle in candles:
-        day_ts = str(int(candle[0] / 1000))
+        day_ts = str(int(candle[0]))
         close_price = float(candle[4])
         if is_reversed:
             close_price = 1.0 / close_price
@@ -307,11 +322,28 @@ def _closes_from_candles(candles: list, is_reversed: bool) -> dict[str, float]:
     return closes_by_timestamp
 
 
-def _move_symbol_cache_in_memory(daily_prices: dict, old_symbol: str, new_symbol: str) -> None:
-    symbols = daily_prices.setdefault("symbols", {})
-    old_closes = symbols.pop(old_symbol, {})
-    if old_closes:
-        symbols.setdefault(new_symbol, {}).update(old_closes)
+def _filter_closes_for_merge(
+    daily_prices: daily_prices_cache_types.DailyPricesCache,
+    fetch_symbol: str,
+    closes_by_timestamp: dict[str, float],
+) -> dict[str, float]:
+    oldest_cached = trading_api.get_oldest_daily_price_timestamp(daily_prices, fetch_symbol)
+    if oldest_cached is not None:
+        oldest_cached_int = int(oldest_cached)
+        return {
+            day_ts: close
+            for day_ts, close in closes_by_timestamp.items()
+            if int(day_ts) >= oldest_cached_int
+        }
+    lookback_floor = _utc_day_start(time.time()) - (
+        flow_constants.PORTFOLIO_HISTORY_DAILY_LOOKBACK_DAYS * commons_constants.DAYS_TO_SECONDS
+    )
+    lookback_floor_int = int(lookback_floor)
+    return {
+        day_ts: close
+        for day_ts, close in closes_by_timestamp.items()
+        if int(day_ts) >= lookback_floor_int
+    }
 
 
 def _utc_day_start(timestamp: float) -> float:
@@ -321,7 +353,10 @@ def _utc_day_start(timestamp: float) -> float:
     ) * commons_constants.DAYS_TO_SECONDS)
 
 
-def _compute_fetch_since_ms(daily_prices: dict, symbol: str) -> int | None:
+def _compute_fetch_since_ms(
+    daily_prices: daily_prices_cache_types.DailyPricesCache,
+    symbol: str,
+) -> int | None:
     newest_timestamp = trading_api.get_latest_daily_price_timestamp(daily_prices, symbol)
     if newest_timestamp is None:
         return None
@@ -342,7 +377,10 @@ def _compute_fetch_time_range_ms(since_ms: int | None) -> tuple[int, int]:
     return end_time_ms - lookback_ms, end_time_ms
 
 
-def _is_daily_cache_up_to_date(daily_prices: dict, symbol: str) -> bool:
+def _is_daily_cache_up_to_date(
+    daily_prices: daily_prices_cache_types.DailyPricesCache,
+    symbol: str,
+) -> bool:
     latest_cached_timestamp = trading_api.get_latest_daily_price_timestamp(daily_prices, symbol)
     if latest_cached_timestamp is None:
         return False

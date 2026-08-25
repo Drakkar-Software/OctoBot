@@ -31,10 +31,20 @@ if typing.TYPE_CHECKING:
     import octobot_node.scheduler.scheduler as scheduler_module
 
 _GIBIBYTE = 1024 ** 3
+_DEFAULT_RETENTION_2_DAYS_SECONDS = 60 * 60 * 24 * 2
 
 AUTOMATION_EXECUTION_RETENTION_SECONDS = float(
-    os.getenv("AUTOMATION_EXECUTION_RETENTION_SECONDS", 60 * 60 * 24 * 2)
+    os.getenv("AUTOMATION_EXECUTION_RETENTION_SECONDS", _DEFAULT_RETENTION_2_DAYS_SECONDS)
 )  # 2 days
+RETENTION_SECONDS_2_DAYS = float(
+    os.getenv("DBOS_RETENTION_SECONDS_2_DAYS", str(AUTOMATION_EXECUTION_RETENTION_SECONDS))
+)
+RETENTION_SECONDS_1_DAY = float(
+    os.getenv("DBOS_RETENTION_SECONDS_1_DAY", 60 * 60 * 24)
+)
+RETENTION_SECONDS_6_HOURS = float(
+    os.getenv("DBOS_RETENTION_SECONDS_6_HOURS", 60 * 60 * 6)
+)
 AUTOMATION_EXECUTIONS_TO_KEEP = 2
 
 DBOS_CLEANUP_SIZE_TIER_1_BYTES = int(
@@ -181,6 +191,16 @@ def select_cleanup_cron_for_database_size(database_size_bytes: int | None) -> st
     return DBOS_CLEANUP_CRON_6H
 
 
+def select_retention_seconds_for_database_size(database_size_bytes: int | None) -> float:
+    if database_size_bytes is None:
+        return RETENTION_SECONDS_2_DAYS
+    if database_size_bytes < DBOS_CLEANUP_SIZE_TIER_1_BYTES:
+        return RETENTION_SECONDS_2_DAYS
+    if database_size_bytes < DBOS_CLEANUP_SIZE_TIER_2_BYTES:
+        return RETENTION_SECONDS_1_DAY
+    return RETENTION_SECONDS_6_HOURS
+
+
 def vacuum_dbos_system_database(dbos_instance: dbos.DBOS) -> None:
     logger = _get_logger()
     logger.info("Vacuuming database")
@@ -212,7 +232,14 @@ async def cleanup_outdated_automation_executions(
         _get_logger().warning("Scheduler not initialized, skipping cleanup")
         return dict(EMPTY_CLEANUP_SUMMARY)
     now_ms = int(time.time() * 1000)
-    retention_seconds = AUTOMATION_EXECUTION_RETENTION_SECONDS
+    database_size_bytes = get_scheduler_database_size_bytes(scheduler.INSTANCE)
+    retention_seconds = select_retention_seconds_for_database_size(database_size_bytes)
+    if retention_seconds < RETENTION_SECONDS_2_DAYS:
+        _get_logger().info(
+            "Using retention %s s for database size %s bytes",
+            retention_seconds,
+            database_size_bytes,
+        )
     import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
     import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
     import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow
@@ -279,6 +306,8 @@ async def cleanup_outdated_automation_executions(
         "deleted_global_view_executions": len(global_view_execution_ids),
         "deleted_portfolio_history_executions": len(portfolio_history_execution_ids),
         "total_deleted": len(all_ids_to_delete),
+        "database_size_bytes": database_size_bytes,
+        "retention_seconds": retention_seconds,
     }
     if all_ids_to_delete:
         _get_logger().info(

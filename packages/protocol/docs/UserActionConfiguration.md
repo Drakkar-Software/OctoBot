@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **automation_id** | **str** |  | 
 **signal_type** | [**AutomationSignalType**](AutomationSignalType.md) |  | 
 **signal_payload** | [**SignalAutomationConfigurationSignalPayload**](SignalAutomationConfigurationSignalPayload.md) |  | [optional] 
-**account_ids** | **List[str]** |  | [optional] 
+**account_ids** | **List[str]** |  | 
 
 ## Example
 

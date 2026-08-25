@@ -27,7 +27,8 @@ import octobot.community.authentication as community_authentication_module
 import octobot_node.config
 import octobot_node.constants as octobot_node_constants_module
 import octobot_node.scheduler
-import octobot_node.scheduler.generic_process_octobot as generic_process_octobot_module
+import octobot_node.scheduler.automations.generic_process_octobot as generic_process_octobot_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_sync.sync.collection_providers as collection_providers_module
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
@@ -191,9 +192,9 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
             workflow_row_matching: typing.Any = None
             state_reader_matching: typing.Any = None
             for workflow_row in workflow_rows:
-                if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                     continue
-                state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                 if state_reader is None:
                     continue
                 workflow_row_matching = workflow_row
@@ -296,7 +297,7 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
             workflow_rows_after_restart = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
             workflow_row_after_restart: typing.Any = None
             for workflow_row in workflow_rows_after_restart:
-                if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                     continue
                 if workflow_row.status not in (
                     dbos.WorkflowStatusString.PENDING.value,
@@ -410,9 +411,9 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 workflow_row_matching: typing.Any = None
                 for workflow_row in workflow_rows:
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                    state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if state_reader is None:
                         continue
                     workflow_row_matching = workflow_row

@@ -13,6 +13,7 @@
 import { Order } from '../models/Order';
 import { Position } from '../models/Position';
 import { Trade } from '../models/Trade';
+import { Transaction } from '../models/Transaction';
 
 /**
 * AccountTrading
@@ -22,6 +23,7 @@ export class AccountTrading {
     'orders'?: Array<Order>;
     'trades'?: Array<Trade>;
     'positions'?: Array<Position>;
+    'transactions'?: Array<Transaction>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -50,6 +52,12 @@ export class AccountTrading {
             "name": "positions",
             "baseName": "positions",
             "type": "Array<Position>",
+            "format": ""
+        },
+        {
+            "name": "transactions",
+            "baseName": "transactions",
+            "type": "Array<Transaction>",
             "format": ""
         }    ];
 

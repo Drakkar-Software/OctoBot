@@ -244,6 +244,17 @@ class TestResolveUserActionResultType:
             == protocol_models.UserActionResultType.ACCOUNT
         )
 
+    def test_reset_account_trading_data_returns_account(self):
+        configuration_inner = protocol_models.ResetAccountTradingDataConfiguration(
+            action_type=protocol_models.UserActionType.RESET_ACCOUNT_TRADING_DATA,
+            account_ids=["acc-1"],
+        )
+        user_action = _user_action_with_configuration(configuration_inner)
+        assert (
+            user_action_util.resolve_user_action_result_type(user_action)
+            == protocol_models.UserActionResultType.ACCOUNT
+        )
+
 
 class TestBuildSynthesizedFailureUserActionResult:
     def test_automation_result(self):

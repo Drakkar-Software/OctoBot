@@ -27,14 +27,36 @@ _TEST_WALLET_ID = TEST_WALLET_ID
 _TEST_PRIVATE_KEY = "functional-test-private-key"
 _TEST_TIMESTAMP = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=datetime.UTC)
 _DEFAULT_SYMBOL = "BTC/USDT"
+_DEFAULT_ACCOUNT_ASSET_SYMBOLS = ["BTC", "ETH", "USDT"]
+
+
+def default_spot_account_assets(
+    symbols: list[str] | None = None,
+) -> list[protocol_models.DetailedAssetsForTradingType]:
+    resolved_symbols = symbols or _DEFAULT_ACCOUNT_ASSET_SYMBOLS
+    return [
+        protocol_models.DetailedAssetsForTradingType(
+            trading_type=protocol_models.TradingType.SPOT,
+            assets=[
+                protocol_models.DetailedAsset(
+                    symbol=symbol,
+                    total=1.0,
+                    available=1.0,
+                )
+                for symbol in resolved_symbols
+            ],
+        )
+    ]
 
 
 def build_portfolio_history_context(
     *,
     account_id: str = "functional-account-1",
     symbols: list[str] | None = None,
+    trade_symbols: list[str] | None = None,
     is_simulated: bool = False,
     exchange: str = "binanceus",
+    assets: list[protocol_models.DetailedAssetsForTradingType] | None = None,
 ) -> portfolio_history_entities.PortfolioHistoryAccountContext:
     exchange_account = protocol_models.ExchangeAccount(
         account_type=protocol_models.AccountType.EXCHANGE,
@@ -48,6 +70,7 @@ def build_portfolio_history_context(
         created_at=_TEST_TIMESTAMP,
         updated_at=_TEST_TIMESTAMP,
         specifics=protocol_models.AccountSpecifics(actual_instance=exchange_account),
+        assets=default_spot_account_assets() if assets is None else assets,
     )
     exchange_config = protocol_models.ExchangeConfig(
         id="exchange-config-1",
@@ -62,12 +85,18 @@ def build_portfolio_history_context(
         exchange_account_id=account_id,
         api_key=account_id,
     )
+    resolved_trade_symbols = (
+        trade_symbols
+        if trade_symbols is not None
+        else (symbols or [_DEFAULT_SYMBOL])
+    )
     return portfolio_history_entities.PortfolioHistoryAccountContext(
         account=account,
         exchange_account=exchange_account,
         exchange_config=exchange_config,
         trading_type=protocol_models.TradingType.SPOT,
         auth_details=auth_details,
+        trade_symbols=list(resolved_trade_symbols),
     )
 
 
@@ -129,11 +158,11 @@ def sample_withdrawal(
 
 def sample_daily_candles(
     *,
-    day_timestamp_ms: int = 86400000,
+    day_timestamp: int = 86400,
     close_price: float = 40500.0,
 ) -> list[list[float]]:
     return [
-        [day_timestamp_ms, 40000.0, 41000.0, 39000.0, close_price, 100.0],
+        [day_timestamp, 40000.0, 41000.0, 39000.0, close_price, 100.0],
     ]
 
 
@@ -160,12 +189,22 @@ async def build_exchange_manager(
     configured_withdrawals = withdrawals or []
     configured_daily_candles = daily_candles or sample_daily_candles()
 
-    async def get_my_recent_trades(symbol: str, limit=None):
-        return [
+    async def get_my_recent_trades(symbol: str, limit=None, since=None, **_kwargs):
+        matched_trades = [
             raw_trade
             for raw_trade in configured_raw_trades
             if raw_trade.get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value) == symbol
         ]
+        if since is not None:
+            matched_trades = [
+                raw_trade
+                for raw_trade in matched_trades
+                if int(float(raw_trade.get(trading_enums.ExchangeConstantsOrderColumns.TIMESTAMP.value, 0)) * 1000)
+                >= since
+            ]
+        if limit is not None:
+            matched_trades = matched_trades[:limit]
+        return matched_trades
 
     exchange_manager.exchange.get_my_recent_trades = get_my_recent_trades
     exchange_manager.exchange.get_deposits = mock.AsyncMock(return_value=configured_deposits)

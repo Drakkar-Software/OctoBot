@@ -20,26 +20,12 @@ import dbos as dbos_lib
 
 import octobot_commons.logging
 import octobot_protocol.models as protocol_models
-import octobot_node.config
 import octobot_node.constants
 import octobot_node.enums as octobot_node_enums
 import octobot_node.models as models
-import octobot_node.scheduler.task_context as task_context
 import octobot_node.scheduler.workflows.params as params
 
-
-try:
-    import octobot_flow.entities
-    import octobot_flow.parsers
-except ImportError:
-    octobot_flow = None  # type: ignore
-    octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util").warning(
-        "octobot_flow is not installed, workflows utilities will not be available"
-    )
-
 logger = octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util")
-
-STATE_KEY = "state"
 
 _USER_ACTION_TERMINAL_WORKFLOW_STATUSES = (
     dbos_lib.WorkflowStatusString.SUCCESS,
@@ -250,12 +236,6 @@ def get_latest_workflow(
     return get_latest_child_workflow(workflows)
 
 
-def get_automation_copied_strategy_ids(workflow_status: dbos_lib.WorkflowStatus) -> list[str]:
-    if reader := get_automation_state_reader(workflow_status):
-        return reader.get_automation_copied_strategy_ids()
-    return []
-
-
 def get_workflows_by_parent_id(
     workflows: list[dbos_lib.WorkflowStatus]
 ) -> dict[str, list[dbos_lib.WorkflowStatus]]:
@@ -264,26 +244,6 @@ def get_workflows_by_parent_id(
         parent_id = w.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
         by_parent.setdefault(parent_id, []).append(w)
     return by_parent
-
-
-def get_automation_state_reader(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional["octobot_flow.parsers.AutomationStateReader"]:
-    """Get the resolved automation state for a workflow row (input or terminal output)."""
-    try:
-        import octobot_flow.entities
-        import octobot_flow.parsers
-    except ImportError:
-        return None
-    if state_dict := get_automation_state_dict(workflow_status):
-        return octobot_flow.parsers.AutomationStateReader(
-            octobot_flow.entities.AutomationState.from_dict(state_dict)
-        )
-    return None
-
-
-def get_automation_id(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[str]:
-    if state_dict := get_automation_state_dict(workflow_status):
-        return state_dict.get("automation", {}).get("metadata", {}).get("automation_id")
-    return None
 
 
 def parse_automation_workflow_output(
@@ -334,17 +294,6 @@ def get_resolved_automation_task(workflow_status: dbos_lib.WorkflowStatus) -> ty
     return input_task
 
 
-def get_automation_state_dict(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[dict]:
-    resolved_task = get_resolved_automation_task(workflow_status)
-    if resolved_task is None:
-        return None
-    with task_context.encrypted_task(resolved_task):
-        try:
-            return get_automation_dict(resolved_task.content)[STATE_KEY]
-        except ValueError:
-            return None
-
-
 def get_automation_input_task(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[models.Task]:
     if inputs := get_automation_workflow_inputs(workflow_status):
         return inputs.task
@@ -368,46 +317,3 @@ def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> 
 def get_user_action_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> typing.Optional[params.UserActionWorkflowInputs]:
     resolved = resolve_user_action_workflow_inputs(workflow_status)
     return resolved.inputs
-
-
-def get_automation_dict(description: typing.Union[str, dict]) -> dict:
-    if isinstance(description, str):
-        description = json.loads(description)
-    if isinstance(description, dict) and (state := description.get(STATE_KEY)) and isinstance(state, dict):
-        return description
-    raise ValueError("No automation state found in description")
-
-
-def patch_task_content_degraded_state(
-    task_content: str,
-    error_status: str,
-    error_message: str,
-    *,
-    since: float,
-) -> str:
-    if octobot_flow is None:
-        raise RuntimeError("octobot_flow is required to patch automation degraded state")
-    description = get_automation_dict(task_content)
-    automation_state = octobot_flow.entities.AutomationState.from_dict(description[STATE_KEY])
-    existing_degraded_state = automation_state.automation.execution.degraded_state
-    degraded_since = (
-        existing_degraded_state.since
-        if existing_degraded_state.since > 0
-        else since
-    )
-    automation_state.automation.execution.degraded_state = octobot_flow.entities.DegradedStateDetails(
-        since=degraded_since,
-        error=error_status,
-        reason=error_message,
-    )
-    description[STATE_KEY] = automation_state.to_dict(include_default_values=False)
-    return json.dumps(description)
-
-
-async def get_automation_workflow_status(automation_id: str) -> dbos_lib.WorkflowStatus:
-    for workflow_status in await dbos_lib.DBOS.list_workflows_async(status=[
-        dbos_lib.WorkflowStatusString.PENDING.value, dbos_lib.WorkflowStatusString.ENQUEUED.value
-    ]):
-        if get_automation_id(workflow_status) == automation_id:
-            return workflow_status
-    raise ValueError(f"No automation workflow found for automation_id: {automation_id}")

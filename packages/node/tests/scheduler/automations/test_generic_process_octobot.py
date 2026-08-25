@@ -18,7 +18,7 @@ import mock
 import pytest
 import uuid
 
-from octobot_node.scheduler.generic_process_octobot import create_generic_process_bot
+from octobot_node.scheduler.automations.generic_process_octobot import create_generic_process_bot
 
 from tests.scheduler import temp_dbos_scheduler
 

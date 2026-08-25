@@ -23,6 +23,7 @@ import octobot_node.constants as node_constants
 import octobot_node.enums
 import octobot_node.errors as node_errors
 import octobot_node.models
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
 import octobot_protocol.models as protocol_models
@@ -92,7 +93,7 @@ async def trigger_task(
 
 
 async def send_actions_to_automation(actions: list[dict], automation_id: str):
-    workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    workflow_status = await automation_states_loader.get_automation_workflow_status(automation_id)
     await send_actions_to_automation_workflow(actions, workflow_status.workflow_id)
 
 
@@ -110,7 +111,7 @@ async def trigger_copier_automation(automation_id: str, trading_signal: octobot_
 
 
 async def send_forced_trigger_to_automation(automation_id: str):
-    workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    workflow_status = await automation_states_loader.get_automation_workflow_status(automation_id)
     await send_forced_trigger_to_automation_workflow(workflow_status.workflow_id)
 
 

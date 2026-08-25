@@ -26,7 +26,6 @@ import octobot_commons.timestamp_util as octobot_commons_timestamp_util
 import octobot_flow.entities as flow_entities
 import octobot_flow.entities.automations.octobot_process_state as octobot_process_state_module
 import octobot_node.models as node_models
-import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_protocol.models as protocol_models
 import octobot_trading.constants as octobot_trading_constants
@@ -195,11 +194,11 @@ def _to_protocol_automation_state(
     workflow_error: typing.Optional[str] = None,
 ) -> protocol_models.AutomationState:
     content_missing = _task_content_is_missing(task.content)
-    flow_automation_state = (
-        _empty_flow_automation_state()
-        if content_missing
-        else _parse_automation_state(task)
-    )
+    if content_missing:
+        flow_automation_state = _empty_flow_automation_state()
+    else:
+        import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
+        flow_automation_state = automation_states_loader.parse_flow_automation_state(task)
     filled = _fill_protocol_automation_state(
         _base_protocol_automation_state(task), flow_automation_state
     )
@@ -211,14 +210,6 @@ def _to_protocol_automation_state(
         workflow_error=workflow_error,
         merge_task_errors_when_workflow_absent=content_missing,
     )
-
-
-def _parse_automation_state(task: node_models.Task) -> flow_entities.AutomationState:
-    parsed_description = octobot_flow_client.OctoBotActionsJobDescription.parse_task_description(task.content)
-    automation_state: octobot_flow_client.OctoBotActionsJobDescription = octobot_flow_client.OctoBotActionsJobDescription.from_dict(
-        parsed_description
-    )
-    return flow_entities.AutomationState.from_dict(automation_state.state)
 
 
 def _flow_action_reports_error(flow_action: flow_entities.AbstractActionDetails) -> bool:

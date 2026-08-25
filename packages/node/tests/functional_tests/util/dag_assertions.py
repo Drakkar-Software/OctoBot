@@ -11,13 +11,13 @@ import typing
 import pytest
 
 import octobot_flow.enums as octobot_flow_enums_module
-import octobot_node.scheduler.workflows_util as workflows_util_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 
 from . import workflow_common as workflow_common_module
 
 
 def actions_dag_from_workflow_row(workflow_row: typing.Any):
-    state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+    state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
     if state_reader is None:
         return None
     return state_reader.state.automation.actions_dag
@@ -91,9 +91,9 @@ async def wait_for_workflow_matching_automation_id(
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         for workflow_row in await scheduler.INSTANCE.list_workflows_async():
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
-            if workflows_util_module.get_automation_state_reader(workflow_row) is not None:
+            if automation_states_loader_module.get_automation_state_reader(workflow_row) is not None:
                 return workflow_row
         await asyncio.sleep(poll_interval_seconds)
     return None
@@ -109,7 +109,7 @@ async def wait_for_executable_action_ids(
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         for workflow_row in await scheduler.INSTANCE.list_workflows_async():
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
             actions_dag = actions_dag_from_workflow_row(workflow_row)
             if actions_dag is None:
@@ -137,7 +137,7 @@ async def wait_for_dag_snapshot(
     last_actions_dag = None
     while time.monotonic() < deadline:
         for workflow_row in await scheduler.INSTANCE.list_workflows_async():
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
             actions_dag = actions_dag_from_workflow_row(workflow_row)
             if actions_dag is None:

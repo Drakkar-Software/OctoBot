@@ -1,9 +1,19 @@
 #  Drakkar-Software OctoBot-Flow
 
+import time
+
 import pytest
 
+import octobot_commons.constants as commons_constants
+import octobot_trading.enums as trading_enums
 import octobot_flow.jobs.portfolio_history_job as portfolio_history_job_module
+import octobot_flow.logic.portfolio_history.daily_price_cache_updater as daily_price_cache_updater_module
 from tests.functionnal_tests.portfolio_history import portfolio_history_test_util as portfolio_history_test_util
+
+
+def _recent_day_timestamp(days_ago: int = 1) -> int:
+    today_start = int(daily_price_cache_updater_module._utc_day_start(time.time()))
+    return today_start - days_ago * commons_constants.DAYS_TO_SECONDS
 
 
 @pytest.mark.asyncio
@@ -14,11 +24,15 @@ class TestPortfolioHistoryJobFunctional:
             account_id=account_id,
             symbols=["BTC/USDT"],
         )
+        btc_day = _recent_day_timestamp(1)
         exchange_manager = await portfolio_history_test_util.build_exchange_manager(
             raw_trades=[portfolio_history_test_util.sample_raw_trade()],
             deposits=[portfolio_history_test_util.sample_deposit()],
             withdrawals=[portfolio_history_test_util.sample_withdrawal()],
-            daily_candles=portfolio_history_test_util.sample_daily_candles(close_price=40500.0),
+            daily_candles=portfolio_history_test_util.sample_daily_candles(
+                day_timestamp=btc_day,
+                close_price=40500.0,
+            ),
         )
 
         with portfolio_history_test_util.portfolio_history_test_environment(
@@ -60,8 +74,8 @@ class TestPortfolioHistoryJobFunctional:
                 "spot",
                 False,
             )
-            assert daily_prices["symbols"]["BTC/USDT"]["86400"] == 40500.0
-            assert "ETH/USDT" in daily_prices["symbols"]
+            assert daily_prices[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"][str(btc_day)] == 40500.0
+            assert "ETH/USDT" in daily_prices[trading_enums.DailyPricesCacheKeys.SYMBOLS]
 
     async def test_two_accounts_both_persist(self, tmp_path):
         account_id_1 = "functional-account-1"
@@ -74,6 +88,8 @@ class TestPortfolioHistoryJobFunctional:
             account_id=account_id_2,
             symbols=["ETH/USDT"],
         )
+        btc_day = _recent_day_timestamp(1)
+        eth_day = _recent_day_timestamp(2)
         exchange_manager_1 = await portfolio_history_test_util.build_exchange_manager(
             raw_trades=[
                 portfolio_history_test_util.sample_raw_trade(
@@ -83,7 +99,10 @@ class TestPortfolioHistoryJobFunctional:
             ],
             deposits=[portfolio_history_test_util.sample_deposit(txid="account-1-deposit")],
             withdrawals=[portfolio_history_test_util.sample_withdrawal(txid="account-1-withdrawal")],
-            daily_candles=portfolio_history_test_util.sample_daily_candles(close_price=41000.0),
+            daily_candles=portfolio_history_test_util.sample_daily_candles(
+                day_timestamp=btc_day,
+                close_price=41000.0,
+            ),
         )
         exchange_manager_2 = await portfolio_history_test_util.build_exchange_manager(
             raw_trades=[
@@ -95,7 +114,7 @@ class TestPortfolioHistoryJobFunctional:
             deposits=[portfolio_history_test_util.sample_deposit(txid="account-2-deposit", currency="ETH")],
             withdrawals=[portfolio_history_test_util.sample_withdrawal(txid="account-2-withdrawal", currency="USDT")],
             daily_candles=portfolio_history_test_util.sample_daily_candles(
-                day_timestamp_ms=172800000,
+                day_timestamp=eth_day,
                 close_price=2500.0,
             ),
         )

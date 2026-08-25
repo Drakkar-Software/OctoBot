@@ -7,6 +7,7 @@ import math
 import mock
 
 import octobot.community.authentication as community_authentication
+import octobot_flow.logic.portfolio_history.portfolio_value_history as portfolio_value_history_module
 import octobot_protocol.models as protocol_models
 import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collection_providers as collection_providers
@@ -188,6 +189,16 @@ async def write_latest_tickers_cache(
         closes_by_symbol,
         data_root,
     )
+
+
+@contextlib.contextmanager
+def with_current_time(end_timestamp: float):
+    with mock.patch.object(
+        portfolio_value_history_module.time,
+        "time",
+        return_value=end_timestamp,
+    ):
+        yield
 
 
 @contextlib.contextmanager

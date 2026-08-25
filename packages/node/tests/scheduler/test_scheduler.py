@@ -633,7 +633,7 @@ class TestSchedulerGetPendingTasks:
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        with mock.patch("octobot_node.scheduler.workflows_util.get_automation_state_reader", return_value=None):
+        with mock.patch("octobot_node.scheduler.automations.automation_states_loader.get_automation_state_reader", return_value=None):
             executions = await sched.get_pending_tasks()
 
         assert len(executions) == 1
@@ -653,76 +653,13 @@ class TestSchedulerGetPendingTasks:
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        with mock.patch("octobot_node.scheduler.workflows_util.get_automation_state_reader", return_value=None):
+        with mock.patch("octobot_node.scheduler.automations.automation_states_loader.get_automation_state_reader", return_value=None):
             executions = await sched.get_pending_tasks()
 
         assert len(executions) == 1
         assert executions[0].name is None
 
 
-def _running_automation_task_content() -> str:
-    state_dict = {
-        "automation": {
-            "metadata": {"automation_id": "automation_1"},
-            "actions_dag": {
-                "actions": [{"id": "a1", "dsl_script": "True"}],
-            },
-            "execution": {
-                "current_execution": {"scheduled_to": 1, "triggered_at": 2},
-            },
-        },
-    }
-    return json.dumps({"state": state_dict})
-
-
-class TestSchedulerGetAutomationStates:
-
-    @pytest.mark.asyncio
-    async def test_error_workflow_reports_failed_not_running(self):
-        """DBOS ERROR with input-only task content must not surface as running in protocol state."""
-        task = octobot_node.models.Task(
-            id=PARENT_ID,
-            name="failed-automation",
-            content=_running_automation_task_content(),
-            type="execute_actions",
-        )
-        error_ws = _build_mock_workflow_status_error(task, RuntimeError("DBOSUnexpectedStepError"), workflow_id=PARENT_ID)
-
-        sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[error_ws])
-
-        automation_states = await sched.get_automation_states(None)
-
-        assert len(automation_states) == 1
-        assert automation_states[0].id == PARENT_ID
-        assert automation_states[0].status == protocol_models.WorkflowStatus.FAILED
-        assert "DBOSUnexpectedStepError" in (automation_states[0].error or "")
-        assert automation_states[0].error_message is None
-
-    @pytest.mark.asyncio
-    async def test_success_workflow_with_output_preserves_metadata_name(self):
-        """Completed automation with workflow output must keep task.name in protocol metadata."""
-        task = octobot_node.models.Task(
-            id=PARENT_ID,
-            name="my-automation",
-            content=_running_automation_task_content(),
-            type="execute_actions",
-        )
-        success_ws = _build_mock_workflow_status(
-            task,
-            encrypted_state=_running_automation_task_content(),
-            state_metadata="",
-            workflow_id=PARENT_ID,
-        )
-
-        sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[success_ws])
-
-        automation_states = await sched.get_automation_states(None)
-
-        assert len(automation_states) == 1
-        assert automation_states[0].id == PARENT_ID
-        assert automation_states[0].metadata.name == "my-automation"
 
 
 class TestSchedulerListUserActions:

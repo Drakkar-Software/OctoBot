@@ -32,6 +32,7 @@ from octobot_protocol.models.edit_automation_configuration import EditAutomation
 from octobot_protocol.models.edit_exchange_config_configuration import EditExchangeConfigConfiguration
 from octobot_protocol.models.edit_strategy_configuration import EditStrategyConfiguration
 from octobot_protocol.models.refresh_accounts_configuration import RefreshAccountsConfiguration
+from octobot_protocol.models.reset_account_trading_data_configuration import ResetAccountTradingDataConfiguration
 from octobot_protocol.models.restart_automation_configuration import RestartAutomationConfiguration
 from octobot_protocol.models.signal_automation_configuration import SignalAutomationConfiguration
 from octobot_protocol.models.stop_automation_configuration import StopAutomationConfiguration
@@ -40,7 +41,7 @@ from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-USERACTIONCONFIGURATION_ONE_OF_SCHEMAS = ["CreateAccountAuthConfiguration", "CreateAccountConfiguration", "CreateAutomationConfiguration", "CreateExchangeConfigConfiguration", "CreateStrategyConfiguration", "DeleteAccountAuthConfiguration", "DeleteAccountConfiguration", "DeleteExchangeConfigConfiguration", "DeleteStrategyConfiguration", "EditAccountAuthConfiguration", "EditAccountConfiguration", "EditAutomationConfiguration", "EditExchangeConfigConfiguration", "EditStrategyConfiguration", "RefreshAccountsConfiguration", "RestartAutomationConfiguration", "SignalAutomationConfiguration", "StopAutomationConfiguration", "UpdateHistoricalExchangesDataConfiguration"]
+USERACTIONCONFIGURATION_ONE_OF_SCHEMAS = ["CreateAccountAuthConfiguration", "CreateAccountConfiguration", "CreateAutomationConfiguration", "CreateExchangeConfigConfiguration", "CreateStrategyConfiguration", "DeleteAccountAuthConfiguration", "DeleteAccountConfiguration", "DeleteExchangeConfigConfiguration", "DeleteStrategyConfiguration", "EditAccountAuthConfiguration", "EditAccountConfiguration", "EditAutomationConfiguration", "EditExchangeConfigConfiguration", "EditStrategyConfiguration", "RefreshAccountsConfiguration", "ResetAccountTradingDataConfiguration", "RestartAutomationConfiguration", "SignalAutomationConfiguration", "StopAutomationConfiguration", "UpdateHistoricalExchangesDataConfiguration"]
 
 class UserActionConfiguration(BaseModel):
     """
@@ -62,30 +63,32 @@ class UserActionConfiguration(BaseModel):
     oneof_schema_7_validator: Optional[EditAccountConfiguration] = None
     # data type: DeleteAccountConfiguration
     oneof_schema_8_validator: Optional[DeleteAccountConfiguration] = None
-    # data type: CreateExchangeConfigConfiguration
-    oneof_schema_9_validator: Optional[CreateExchangeConfigConfiguration] = None
-    # data type: EditExchangeConfigConfiguration
-    oneof_schema_10_validator: Optional[EditExchangeConfigConfiguration] = None
-    # data type: DeleteExchangeConfigConfiguration
-    oneof_schema_11_validator: Optional[DeleteExchangeConfigConfiguration] = None
     # data type: UpdateHistoricalExchangesDataConfiguration
-    oneof_schema_12_validator: Optional[UpdateHistoricalExchangesDataConfiguration] = None
+    oneof_schema_9_validator: Optional[UpdateHistoricalExchangesDataConfiguration] = None
+    # data type: ResetAccountTradingDataConfiguration
+    oneof_schema_10_validator: Optional[ResetAccountTradingDataConfiguration] = None
+    # data type: CreateExchangeConfigConfiguration
+    oneof_schema_11_validator: Optional[CreateExchangeConfigConfiguration] = None
+    # data type: EditExchangeConfigConfiguration
+    oneof_schema_12_validator: Optional[EditExchangeConfigConfiguration] = None
+    # data type: DeleteExchangeConfigConfiguration
+    oneof_schema_13_validator: Optional[DeleteExchangeConfigConfiguration] = None
     # data type: RefreshAccountsConfiguration
-    oneof_schema_13_validator: Optional[RefreshAccountsConfiguration] = None
+    oneof_schema_14_validator: Optional[RefreshAccountsConfiguration] = None
     # data type: CreateStrategyConfiguration
-    oneof_schema_14_validator: Optional[CreateStrategyConfiguration] = None
+    oneof_schema_15_validator: Optional[CreateStrategyConfiguration] = None
     # data type: EditStrategyConfiguration
-    oneof_schema_15_validator: Optional[EditStrategyConfiguration] = None
+    oneof_schema_16_validator: Optional[EditStrategyConfiguration] = None
     # data type: DeleteStrategyConfiguration
-    oneof_schema_16_validator: Optional[DeleteStrategyConfiguration] = None
+    oneof_schema_17_validator: Optional[DeleteStrategyConfiguration] = None
     # data type: CreateAccountAuthConfiguration
-    oneof_schema_17_validator: Optional[CreateAccountAuthConfiguration] = None
+    oneof_schema_18_validator: Optional[CreateAccountAuthConfiguration] = None
     # data type: EditAccountAuthConfiguration
-    oneof_schema_18_validator: Optional[EditAccountAuthConfiguration] = None
+    oneof_schema_19_validator: Optional[EditAccountAuthConfiguration] = None
     # data type: DeleteAccountAuthConfiguration
-    oneof_schema_19_validator: Optional[DeleteAccountAuthConfiguration] = None
-    actual_instance: Optional[Union[CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration]] = None
-    one_of_schemas: Set[str] = { "CreateAccountAuthConfiguration", "CreateAccountConfiguration", "CreateAutomationConfiguration", "CreateExchangeConfigConfiguration", "CreateStrategyConfiguration", "DeleteAccountAuthConfiguration", "DeleteAccountConfiguration", "DeleteExchangeConfigConfiguration", "DeleteStrategyConfiguration", "EditAccountAuthConfiguration", "EditAccountConfiguration", "EditAutomationConfiguration", "EditExchangeConfigConfiguration", "EditStrategyConfiguration", "RefreshAccountsConfiguration", "RestartAutomationConfiguration", "SignalAutomationConfiguration", "StopAutomationConfiguration", "UpdateHistoricalExchangesDataConfiguration" }
+    oneof_schema_20_validator: Optional[DeleteAccountAuthConfiguration] = None
+    actual_instance: Optional[Union[CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, ResetAccountTradingDataConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration]] = None
+    one_of_schemas: Set[str] = { "CreateAccountAuthConfiguration", "CreateAccountConfiguration", "CreateAutomationConfiguration", "CreateExchangeConfigConfiguration", "CreateStrategyConfiguration", "DeleteAccountAuthConfiguration", "DeleteAccountConfiguration", "DeleteExchangeConfigConfiguration", "DeleteStrategyConfiguration", "EditAccountAuthConfiguration", "EditAccountConfiguration", "EditAutomationConfiguration", "EditExchangeConfigConfiguration", "EditStrategyConfiguration", "RefreshAccountsConfiguration", "ResetAccountTradingDataConfiguration", "RestartAutomationConfiguration", "SignalAutomationConfiguration", "StopAutomationConfiguration", "UpdateHistoricalExchangesDataConfiguration" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -151,6 +154,16 @@ class UserActionConfiguration(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `DeleteAccountConfiguration`")
         else:
             match += 1
+        # validate data type: UpdateHistoricalExchangesDataConfiguration
+        if not isinstance(v, UpdateHistoricalExchangesDataConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `UpdateHistoricalExchangesDataConfiguration`")
+        else:
+            match += 1
+        # validate data type: ResetAccountTradingDataConfiguration
+        if not isinstance(v, ResetAccountTradingDataConfiguration):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `ResetAccountTradingDataConfiguration`")
+        else:
+            match += 1
         # validate data type: CreateExchangeConfigConfiguration
         if not isinstance(v, CreateExchangeConfigConfiguration):
             error_messages.append(f"Error! Input type `{type(v)}` is not `CreateExchangeConfigConfiguration`")
@@ -164,11 +177,6 @@ class UserActionConfiguration(BaseModel):
         # validate data type: DeleteExchangeConfigConfiguration
         if not isinstance(v, DeleteExchangeConfigConfiguration):
             error_messages.append(f"Error! Input type `{type(v)}` is not `DeleteExchangeConfigConfiguration`")
-        else:
-            match += 1
-        # validate data type: UpdateHistoricalExchangesDataConfiguration
-        if not isinstance(v, UpdateHistoricalExchangesDataConfiguration):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `UpdateHistoricalExchangesDataConfiguration`")
         else:
             match += 1
         # validate data type: RefreshAccountsConfiguration
@@ -208,10 +216,10 @@ class UserActionConfiguration(BaseModel):
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, ResetAccountTradingDataConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, ResetAccountTradingDataConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -306,6 +314,11 @@ class UserActionConfiguration(BaseModel):
             instance.actual_instance = EditExchangeConfigConfiguration.from_json(json_str)
             return instance
 
+        # check if data type is `ResetAccountTradingDataConfiguration`
+        if _data_type == "reset_account_trading_data":
+            instance.actual_instance = ResetAccountTradingDataConfiguration.from_json(json_str)
+            return instance
+
         # check if data type is `CreateStrategyConfiguration`
         if _data_type == "strategy_create":
             instance.actual_instance = CreateStrategyConfiguration.from_json(json_str)
@@ -374,6 +387,18 @@ class UserActionConfiguration(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
+        # deserialize data into UpdateHistoricalExchangesDataConfiguration
+        try:
+            instance.actual_instance = UpdateHistoricalExchangesDataConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
+        # deserialize data into ResetAccountTradingDataConfiguration
+        try:
+            instance.actual_instance = ResetAccountTradingDataConfiguration.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
         # deserialize data into CreateExchangeConfigConfiguration
         try:
             instance.actual_instance = CreateExchangeConfigConfiguration.from_json(json_str)
@@ -389,12 +414,6 @@ class UserActionConfiguration(BaseModel):
         # deserialize data into DeleteExchangeConfigConfiguration
         try:
             instance.actual_instance = DeleteExchangeConfigConfiguration.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into UpdateHistoricalExchangesDataConfiguration
-        try:
-            instance.actual_instance = UpdateHistoricalExchangesDataConfiguration.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
@@ -443,10 +462,10 @@ class UserActionConfiguration(BaseModel):
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, ResetAccountTradingDataConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into UserActionConfiguration with oneOf schemas: CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, ResetAccountTradingDataConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -460,7 +479,7 @@ class UserActionConfiguration(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], CreateAccountAuthConfiguration, CreateAccountConfiguration, CreateAutomationConfiguration, CreateExchangeConfigConfiguration, CreateStrategyConfiguration, DeleteAccountAuthConfiguration, DeleteAccountConfiguration, DeleteExchangeConfigConfiguration, DeleteStrategyConfiguration, EditAccountAuthConfiguration, EditAccountConfiguration, EditAutomationConfiguration, EditExchangeConfigConfiguration, EditStrategyConfiguration, RefreshAccountsConfiguration, ResetAccountTradingDataConfiguration, RestartAutomationConfiguration, SignalAutomationConfiguration, StopAutomationConfiguration, UpdateHistoricalExchangesDataConfiguration]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None
