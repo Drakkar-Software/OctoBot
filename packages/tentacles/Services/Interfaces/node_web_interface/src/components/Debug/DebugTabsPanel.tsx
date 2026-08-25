@@ -9,11 +9,13 @@ import type {
   UserAction,
 } from "@/client"
 import { DebugTabDeleteControls } from "@/components/Debug/DebugTabDeleteControls"
+import { AccountsHistoryDialog } from "@/components/Debug/dialogs/AccountsHistoryDialog"
 import { AccountsTable } from "@/components/Debug/tables/AccountsTable"
 import { AutomationsTable } from "@/components/Debug/tables/AutomationsTable"
 import { ExchangeConfigsTable } from "@/components/Debug/tables/ExchangeConfigsTable"
 import { StrategiesTable } from "@/components/Debug/tables/StrategiesTable"
 import { UserActionsTable } from "@/components/Debug/tables/UserActionsTable"
+import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DEBUG_DELETABLE_TAB_VALUES } from "@/lib/debug/constants"
 import type { ExecuteActionDraft } from "@/lib/debug/types"
@@ -59,6 +61,7 @@ function DebugTabsPanelComponent({
   const [activeTab, setActiveTab] = useState("automations")
   const [deleteMode, setDeleteMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [accountsHistoryOpen, setAccountsHistoryOpen] = useState(false)
 
   const isDeletableTab = DELETABLE_TABS.has(activeTab)
   const canDelete = isDeletableTab && !isImportedMode
@@ -190,6 +193,8 @@ function DebugTabsPanelComponent({
           rows={accounts}
           exchangeConfigs={exchangeConfigs}
           accountTradings={accountTradings}
+          walletQueryParam={walletQueryParam}
+          isImportedMode={isImportedMode}
           onEdit={(account) =>
             onOpenExecuteAction({
               actionType: "account_edit",
@@ -208,6 +213,24 @@ function DebugTabsPanelComponent({
               jsonText: buildUpdateHistoricalExchangesDataUserActionJson(account.id),
             })
           }
+        />
+        {!isImportedMode ? (
+          <div className="mt-3 flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAccountsHistoryOpen(true)}
+            >
+              Accounts history
+            </Button>
+          </div>
+        ) : null}
+        <AccountsHistoryDialog
+          accounts={accounts}
+          open={accountsHistoryOpen}
+          onOpenChange={setAccountsHistoryOpen}
+          walletQueryParam={walletQueryParam}
+          isImportedMode={isImportedMode}
         />
       </TabsContent>
       <TabsContent value="exchange-configs" className="mt-4">

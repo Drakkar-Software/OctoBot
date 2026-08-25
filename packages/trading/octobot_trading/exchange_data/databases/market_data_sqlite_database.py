@@ -6,7 +6,9 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.databases.relational_databases.sqlite.base_sqlite_database as base_sqlite_database
 
 import octobot_trading.constants as trading_constants
+import octobot_trading.enums as trading_enums
 import octobot_trading.exchange_data.exchange_cache_key as exchange_cache_key_module
+import octobot_trading.exchange_data.prices.daily_prices_cache_types as daily_prices_cache_types
 
 MARKET_DATA_DB_FILENAME = "market_data.sqlite"
 SCHEMA_VERSION = 1
@@ -93,15 +95,18 @@ class MarketDataSQLiteDatabase(base_sqlite_database.BaseSQLiteDatabase):
         )
         await self.commit()
 
-    async def load_daily_prices_dict(self) -> dict:
+    async def load_daily_prices_dict(self) -> daily_prices_cache_types.DailyPricesCache:
         if not await self._table_exists("daily_closes"):
-            return {"symbols": {}, "sources": {}}
+            return daily_prices_cache_types.empty_daily_prices_cache()
         rows = await self.fetchall("SELECT symbol, day_ts, close FROM daily_closes")
         symbols: dict[str, dict[str, float]] = {}
         for symbol, day_timestamp, close in rows:
             symbols.setdefault(symbol, {})[str(day_timestamp)] = close
         sources = await self._load_daily_close_sources()
-        return {"symbols": symbols, "sources": sources}
+        return {
+            trading_enums.DailyPricesCacheKeys.SYMBOLS: symbols,
+            trading_enums.DailyPricesCacheKeys.SOURCES: sources,
+        }
 
     async def _load_daily_close_sources(self) -> dict[str, str]:
         if not await self._table_exists("daily_close_sources"):
@@ -178,13 +183,16 @@ class MarketDataSQLiteDatabase(base_sqlite_database.BaseSQLiteDatabase):
         )
         await self.commit()
 
-    async def load_latest_tickers_dict(self) -> dict:
+    async def load_latest_tickers_dict(self) -> daily_prices_cache_types.LatestTickersCache:
         if not await self._table_exists("latest_tickers"):
-            return {"updated_at": None, "closes": {}}
+            return daily_prices_cache_types.empty_latest_tickers_cache()
         rows = await self.fetchall("SELECT symbol, close, updated_at FROM latest_tickers")
         closes = {symbol: close for symbol, close, _updated_at in rows}
         updated_at = max((row[2] for row in rows), default=None) if rows else None
-        return {"updated_at": updated_at, "closes": closes}
+        return {
+            trading_enums.LatestTickersCacheKeys.UPDATED_AT: updated_at,
+            trading_enums.LatestTickersCacheKeys.CLOSES: closes,
+        }
 
 
 @contextlib.asynccontextmanager

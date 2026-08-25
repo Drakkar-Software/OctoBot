@@ -10,6 +10,8 @@ import octobot_node.models as node_models
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.workflows_util as workflows_util
 
+_AUTOMATION_STATE_KEY = "state"
+
 _PARENT_WORKFLOW_ID = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
 
 
@@ -35,7 +37,7 @@ def _workflow_status_row(
 def _automation_task_content(*, automation_name: str) -> str:
     return json.dumps(
         {
-            workflows_util.STATE_KEY: {
+            _AUTOMATION_STATE_KEY: {
                 "automation": {
                     "metadata": {
                         "automation_id": "automation_1",
@@ -227,60 +229,3 @@ class TestGetResolvedAutomationTask:
         assert resolved_task is not None
         assert resolved_task.content == output_content
 
-
-class TestGetAutomationStateDict:
-    def test_success_workflow_state_dict_matches_output(self):
-        input_content = _automation_task_content(automation_name="from-input")
-        output_content = _automation_task_content(automation_name="from-output")
-        workflow_status = _workflow_status_with_automation_task(
-            status=dbos.WorkflowStatusString.SUCCESS.value,
-            input_content=input_content,
-            output_content=output_content,
-        )
-
-        state_dict = workflows_util.get_automation_state_dict(workflow_status)
-
-        assert state_dict is not None
-        assert state_dict["automation"]["metadata"]["name"] == "from-output"
-
-
-class TestPatchTaskContentDegradedState:
-    def test_persists_degraded_state_in_task_content(self):
-        task_content = _automation_task_content(automation_name="copy-grid")
-
-        patched_content = workflows_util.patch_task_content_degraded_state(
-            task_content,
-            "not_enough_funds",
-            "Insufficient funds",
-            since=1234.5,
-        )
-
-        degraded_state = json.loads(patched_content)["state"]["automation"]["execution"]["degraded_state"]
-        assert degraded_state == {
-            "since": 1234.5,
-            "error": "not_enough_funds",
-            "reason": "Insufficient funds",
-        }
-
-    def test_preserves_existing_degraded_since_on_subsequent_patch(self):
-        task_content = _automation_task_content(automation_name="copy-grid")
-        task_content = workflows_util.patch_task_content_degraded_state(
-            task_content,
-            "not_enough_funds",
-            "Insufficient funds",
-            since=1000.0,
-        )
-
-        patched_content = workflows_util.patch_task_content_degraded_state(
-            task_content,
-            "invalid_order",
-            "Order volume below exchange minimum",
-            since=2000.0,
-        )
-
-        degraded_state = json.loads(patched_content)["state"]["automation"]["execution"]["degraded_state"]
-        assert degraded_state == {
-            "since": 1000.0,
-            "error": "invalid_order",
-            "reason": "Order volume below exchange minimum",
-        }

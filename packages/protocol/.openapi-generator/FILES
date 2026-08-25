@@ -97,6 +97,7 @@ docs/PositionStatus.md
 docs/PositionSummary.md
 docs/ProposedActionEntry.md
 docs/RefreshAccountsConfiguration.md
+docs/ResetAccountTradingDataConfiguration.md
 docs/RestartAutomationConfiguration.md
 docs/Side.md
 docs/SignalAutomationConfiguration.md
@@ -233,6 +234,7 @@ octobot_protocol/models/position_status.py
 octobot_protocol/models/position_summary.py
 octobot_protocol/models/proposed_action_entry.py
 octobot_protocol/models/refresh_accounts_configuration.py
+octobot_protocol/models/reset_account_trading_data_configuration.py
 octobot_protocol/models/restart_automation_configuration.py
 octobot_protocol/models/side.py
 octobot_protocol/models/signal_automation_configuration.py
@@ -367,6 +369,7 @@ test/test_position_status.py
 test/test_position_summary.py
 test/test_proposed_action_entry.py
 test/test_refresh_accounts_configuration.py
+test/test_reset_account_trading_data_configuration.py
 test/test_restart_automation_configuration.py
 test/test_side.py
 test/test_signal_automation_configuration.py

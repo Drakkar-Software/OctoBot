@@ -32,10 +32,11 @@ import octobot_flow.repositories.community.community_repository as community_rep
 
 import octobot_node.enums
 import octobot_node.models
-import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
+import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context
 import octobot_node.constants as constants
 import octobot_node.scheduler.workflows.params as params
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.errors as errors
 
@@ -221,7 +222,7 @@ class AutomationWorkflow:
                     execution_error_message = str(err)
                     postponed_iteration = True
                     has_next_actions_override = True
-                    next_iteration_description_override = workflows_util.patch_task_content_degraded_state(
+                    next_iteration_description_override = automation_states_loader.patch_task_content_degraded_state(
                         parsed_inputs.task.content,
                         execution_error,
                         execution_error_message,

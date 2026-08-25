@@ -48,11 +48,22 @@ import octobot_trading.exchanges.connectors.ccxt.ccxt_clients_cache as ccxt_clie
 import octobot_trading.exchanges.connectors.ccxt.enums as ccxt_enums
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.exchanges.connectors.util as connectors_util
+import octobot_trading.personal_data.trades.trades_util as trades_util_module
 import octobot_trading.personal_data as personal_data
 from octobot_trading.enums import ExchangeConstantsOrderColumns as ecoc
 
 
 _MARKETS_LOAD_LOCKS: dict[str, asyncio.Lock] = {}
+PAGINATION_FULL_PAGE_MIN_SIZE = 10
+MAX_MY_TRADES_OFFSET_PAGINATION_REQUESTS = 200
+
+
+def _is_potentially_full_page(trade_count: int) -> bool:
+    # Exchanges (e.g. Kraken TradesHistory) return fixed-size pages (often 50) but we
+    # do not hardcode page size. A count that is a positive multiple of 10 suggests the
+    # API may have more data; stop when the page is empty, tiny (<10), or not aligned
+    # to 10 (e.g. 25 = last page). Avoids needing MY_TRADES_FETCH_PAGE_SIZE per exchange.
+    return trade_count >= PAGINATION_FULL_PAGE_MIN_SIZE and trade_count % PAGINATION_FULL_PAGE_MIN_SIZE == 0
 
 
 def _get_markets_load_lock(client_key: str) -> asyncio.Lock:
@@ -216,15 +227,6 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         market_filter: typing.Optional[typing.Callable[[dict], bool]]
     ):
         try:
-            if self.exchange_manager.exchange.get_option_value(
-                enums.ExchangeClientOptions.ADJUST_FOR_TIME_DIFFERENCE
-            ):
-                # load time difference before loading markets in case a signature is needed to load markets
-                try:
-                    await client.load_time_difference()
-                except Exception as err:
-                    # don't crash when loading time difference
-                    self.logger.error(f"Error loading time difference for {self.exchange_manager.exchange_name}: {err}")
             if self.exchange_manager.exchange.FETCH_MIN_EXCHANGE_MARKETS and market_filter:
                 with ccxt_client_util.filtered_fetched_markets(client, market_filter):
                     await client.load_markets(reload=reload)
@@ -257,6 +259,30 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
         """
         await self._filtered_if_necessary_load_markets(client, reload, market_filter)
 
+    async def _ensure_time_difference_synced(
+        self,
+        client,
+        authenticated_cache: bool,
+    ):
+        if not self.exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.ADJUST_FOR_TIME_DIFFERENCE
+        ):
+            return
+        try:
+            client_key = ccxt_clients_cache.get_client_key(client, authenticated_cache)
+            if cached_time_difference := ccxt_clients_cache.get_exchange_time_difference(client_key):
+                if client.options is not None:
+                    client.options[ccxt_constants.CCXT_TIME_DIFFERENCE] = cached_time_difference
+                return
+            await client.load_time_difference()
+            if time_difference := client.options.get(ccxt_constants.CCXT_TIME_DIFFERENCE):
+                ccxt_clients_cache.set_exchange_time_difference(client_key, time_difference)
+        except Exception as err:
+            self.logger.exception(
+                err, True,
+                f"Error loading time difference for {self.exchange_manager.exchange_name}: {err}"
+            )
+
     def set_first_consecutive_authentication_error_at_if_unset(self):
         if self.first_consecutive_authentication_error_at is None:
             self.first_consecutive_authentication_error_at = self.get_exchange_current_time()
@@ -276,6 +302,8 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             reload = True
             self._force_next_market_reload = False
         authenticated_cache = self.exchange_manager.exchange.requires_authentication_for_this_configuration_only()
+        if self.is_authenticated:
+            await self._ensure_time_difference_synced(self.client, authenticated_cache)
         force_load_markets = reload
         if not force_load_markets:
             try:
@@ -850,9 +878,17 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_closed_orders(self, symbol: str = None, since: int = None,
                                 limit: int = None, **kwargs: dict) -> list[dict]:
+        exhaust_history = bool(kwargs.pop("exhaust_history", False))
+        request_params = dict(kwargs)
+        if exhaust_history and self.exchange_manager.exchange.get_option_value(
+            enums.ExchangeClientOptions.CLOSED_ORDERS_FETCH_USE_CCXT_PAGINATE
+        ):
+            request_params["paginate"] = True
         with self.error_describer(True):
             return self.adapter.adapt_orders(
-                await self.client.fetch_closed_orders(symbol=symbol, since=since, limit=limit, params=kwargs),
+                await self.client.fetch_closed_orders(
+                    symbol=symbol, since=since, limit=limit, params=request_params
+                ),
                 symbol=symbol
             )
 
@@ -876,23 +912,78 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_my_recent_trades(self, symbol: str = None, since: int = None,
                                    limit: int = None, **kwargs: dict) -> list[dict]:
+        exhaust_history = bool(kwargs.pop("exhaust_history", False))
         if self.client.has['fetchMyTrades'] or self.client.has['fetchTrades']:
             with self.error_describer(True):
                 method = self.client.fetch_my_trades if self.client.has['fetchMyTrades'] else self.client.fetch_trades
-                trades = self.adapter.adapt_trades(await method(symbol=symbol, since=since, limit=limit, params=kwargs))
+                offset_param = self.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.MY_TRADES_FETCH_PAGINATION_OFFSET
+                )
+                if exhaust_history and offset_param is not None:
+                    return await self._fetch_my_recent_trades_with_offset_pagination(
+                        method=method,
+                        symbol=symbol,
+                        since=since,
+                        limit=limit,
+                        offset_param=str(offset_param),
+                        request_params=kwargs,
+                    )
+                request_params = dict(kwargs)
+                if exhaust_history and self.exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.MY_TRADES_FETCH_USE_CCXT_PAGINATE
+                ):
+                    request_params["paginate"] = True
+                trades = self.adapter.adapt_trades(
+                    await method(symbol=symbol, since=since, limit=limit, params=request_params)
+                )
                 if trades or not self.exchange_manager.exchange.get_option_value(
                     enums.ExchangeClientOptions.ALLOW_TRADES_FROM_CLOSED_ORDERS
                 ):
                     return trades
-                # on some exchanges, recent trades are only fetching very recent trade. also try closed orders
                 return await self.exchange_manager.exchange.get_closed_orders(
                     symbol=symbol,
                     since=since,
                     limit=limit,
+                    exhaust_history=exhaust_history,
                     **kwargs
                 )
         else:
             raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchMyTrades nor fetchTrades")
+
+    async def _fetch_my_recent_trades_with_offset_pagination(
+        self,
+        method,
+        symbol: str | None,
+        since: int | None,
+        limit: int | None,
+        offset_param: str,
+        request_params: dict,
+    ) -> list[dict]:
+        offset = 0
+        merged_trades: list[dict] = []
+        request_count = 0
+        while request_count < MAX_MY_TRADES_OFFSET_PAGINATION_REQUESTS:
+            request_count += 1
+            page_params = dict(request_params)
+            page_params[offset_param] = offset
+            trade_page = self.adapter.adapt_trades(
+                await method(symbol=symbol, since=since, limit=limit, params=page_params)
+            )
+            merged_trades = trades_util_module.merge_trades_deduped(merged_trades, trade_page)
+            if not _is_potentially_full_page(len(trade_page)):
+                break
+            offset += len(trade_page)
+        else:
+            self.logger.warning(
+                "Stopped %s my-trades offset pagination after %d requests "
+                "(offset_param=%s, offset=%d, symbol=%s); exchange may have more history",
+                self.exchange_manager.exchange_name,
+                MAX_MY_TRADES_OFFSET_PAGINATION_REQUESTS,
+                offset_param,
+                offset,
+                symbol,
+            )
+        return merged_trades
 
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_user_recent_trades(self, user_id: str, symbol: str = None, since: int = None,
@@ -906,26 +997,40 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchUserRecentTrades")
 
     @ccxt_client_util.converted_ccxt_common_errors
-    async def get_deposits(self, currency: str = None, since: int = None,
-                           limit: int = None, **kwargs: dict) -> list[dict]:
+    async def get_deposits(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
         try:
             if self.client.has['fetchDeposits']:
                 with self.error_describer(True):
                     return self.adapter.adapt_transactions(
-                        await self.client.fetch_deposits(code=currency, since=since, limit=limit, params=kwargs)
+                        await self.client.fetch_deposits(code=currency, since=since, limit=limit, params=kwargs),
+                        transaction_type=enums.TransactionType.BLOCKCHAIN_DEPOSIT,
                     )
             raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchDeposits")
         except NotImplementedError as error:
             raise octobot_trading.errors.NotSupported(str(error)) from error
 
     @ccxt_client_util.converted_ccxt_common_errors
-    async def get_withdrawals(self, currency: str = None, since: int = None,
-                              limit: int = None, **kwargs: dict) -> list[dict]:
+    async def get_withdrawals(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
         try:
             if self.client.has['fetchWithdrawals']:
                 with self.error_describer(True):
                     return self.adapter.adapt_transactions(
-                        await self.client.fetch_withdrawals(code=currency, since=since, limit=limit, params=kwargs)
+                        await self.client.fetch_withdrawals(code=currency, since=since, limit=limit, params=kwargs),
+                        transaction_type=enums.TransactionType.BLOCKCHAIN_WITHDRAWAL,
                     )
             raise octobot_trading.errors.NotSupported("This exchange doesn't support fetchWithdrawals")
         except NotImplementedError as error:
@@ -1198,7 +1303,8 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             params = params or {}
             params[self.exchange_manager.exchange.WITHDRAW_NETWORK_PARAM_KEY] = network
         return self.adapter.adapt_transaction(
-            await self.client.withdraw(asset, float(amount), address, tag=tag, params=params)
+            await self.client.withdraw(asset, float(amount), address, tag=tag, params=params),
+            transaction_type=enums.TransactionType.BLOCKCHAIN_WITHDRAWAL,
         )
 
     async def get_deposit_address(self, asset: str, params: dict = None) -> dict:

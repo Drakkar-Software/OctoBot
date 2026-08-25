@@ -224,16 +224,16 @@ async def wait_for_init_state_ok(
     while time.monotonic() < deadline:
         workflow_rows = await scheduler.INSTANCE.list_workflows_async()
         for workflow_row in workflow_rows:
-            import octobot_node.scheduler.workflows_util as workflows_util_module
+            import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 
             if active_workflows_only and workflow_row.status not in (
                 dbos.WorkflowStatusString.PENDING.value,
                 dbos.WorkflowStatusString.ENQUEUED.value,
             ):
                 continue
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
-            state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+            state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
             if state_reader is None:
                 continue
             run_action = get_action_by_id(state_reader.state, GENERIC_PROCESS_ACTION_ID)

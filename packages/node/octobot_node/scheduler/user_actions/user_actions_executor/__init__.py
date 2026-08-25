@@ -38,6 +38,7 @@ import octobot_node.scheduler.user_actions.user_actions_executor.automation.sign
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_user_action_executor as user_actions_executor_strategy_base
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.restart_automation as user_actions_executor_restart_automation
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation as user_actions_executor_stop_automation
+import octobot_node.scheduler.user_actions.user_actions_executor.account.reset_account_trading_data as user_actions_executor_reset_account_trading_data
 import octobot_node.scheduler.user_actions.user_actions_executor.historical_data.update_historical_exchanges_data as user_actions_executor_update_historical_exchanges_data
 
 from octobot_node.scheduler.user_actions.user_action_post_actions import UserActionPostActions
@@ -70,6 +71,7 @@ CreateAccountAuthActionExecutor = user_actions_executor_create_account_auth.Crea
 EditAccountAuthActionExecutor = user_actions_executor_edit_account_auth.EditAccountAuthActionExecutor
 DeleteAccountAuthActionExecutor = user_actions_executor_delete_account_auth.DeleteAccountAuthActionExecutor
 UpdateHistoricalExchangesDataActionExecutor = user_actions_executor_update_historical_exchanges_data.UpdateHistoricalExchangesDataActionExecutor
+ResetAccountTradingDataActionExecutor = user_actions_executor_reset_account_trading_data.ResetAccountTradingDataActionExecutor
 
 __all__ = [
     "UserActionExecutor",
@@ -97,6 +99,7 @@ __all__ = [
     "EditAccountAuthActionExecutor",
     "DeleteAccountAuthActionExecutor",
     "UpdateHistoricalExchangesDataActionExecutor",
+    "ResetAccountTradingDataActionExecutor",
     "user_action_executor_factory",
     "UserActionPostActions",
 ]

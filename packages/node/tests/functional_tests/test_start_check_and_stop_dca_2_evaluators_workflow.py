@@ -26,6 +26,7 @@ from .util import workflow_common as workflow_common_module
 
 import octobot.community.authentication as community_authentication_module
 import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_trading.enums as trading_enums_module
 
@@ -275,7 +276,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 },
                 timeout_seconds=_T_STEP_SECONDS,
             )
-            after_strategy_reader = workflows_util_module.get_automation_state_reader(
+            after_strategy_reader = automation_states_loader_module.get_automation_state_reader(
                 after_strategy_workflow
             )
             assert after_strategy_reader is not None
@@ -335,9 +336,9 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             last_trade_count: int | None = None
             while time.monotonic() < btc_only_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_cycle1 = workflows_util_module.get_automation_state_reader(workflow_row)
+                    reader_after_cycle1 = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if reader_after_cycle1 is None:
                         continue
                     candidate_elements = reader_after_cycle1.state.automation.exchange_account_elements
@@ -437,9 +438,9 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             async def _poll_cycle2_post_fill_state() -> bool:
                 nonlocal elements_after_cycle2_strategy
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_cycle2 = workflows_util_module.get_automation_state_reader(workflow_row)
+                    reader_after_cycle2 = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if reader_after_cycle2 is None:
                         continue
                     candidate_elements = reader_after_cycle2.state.automation.exchange_account_elements
@@ -462,9 +463,9 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
 
             while time.monotonic() < cycle2_strategy_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_cycle2_strategy = workflows_util_module.get_automation_state_reader(
+                    reader_after_cycle2_strategy = automation_states_loader_module.get_automation_state_reader(
                         workflow_row
                     )
                     if reader_after_cycle2_strategy is None:
@@ -521,9 +522,9 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
             elements_after_cycle2_dca: typing.Any = None
             while time.monotonic() < cycle2_dca_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_cycle2_dca = workflows_util_module.get_automation_state_reader(
+                    reader_after_cycle2_dca = automation_states_loader_module.get_automation_state_reader(
                         workflow_row
                     )
                     if reader_after_cycle2_dca is None:
@@ -601,7 +602,7 @@ class TestTriggerTaskDCATwoEvaluatorsDbosIntegration:
                 workflow_row
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 if workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value
-                and workflows_util_module.get_automation_id(workflow_row) == metadata_automation_id
+                and automation_states_loader_module.get_automation_id(workflow_row) == metadata_automation_id
             ]
             assert success_rows
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)

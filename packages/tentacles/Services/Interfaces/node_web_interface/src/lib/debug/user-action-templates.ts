@@ -28,6 +28,7 @@ import type {
   MarketMakingConfiguration,
   MarketMakingSymbolConfiguration,
   RefreshAccountsConfiguration,
+  ResetAccountTradingDataConfiguration,
   RestartAutomationConfiguration,
   SignalAutomationConfiguration,
   StopAutomationConfiguration,
@@ -82,6 +83,7 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   { value: "account_auth_delete", label: "Account auth delete" },
   { value: "accounts_refresh", label: "Accounts refresh" },
   { value: "update_historical_exchanges_data", label: "Update historical exchanges data" },
+  { value: "reset_account_trading_data", label: "Reset account trading data" },
   { value: "exchange_config_create", label: "Exchange config create" },
   { value: "exchange_config_edit", label: "Exchange config edit" },
   { value: "exchange_config_delete", label: "Exchange config delete" },
@@ -146,6 +148,7 @@ type DebugUserActionConfiguration =
   | DeleteAccountAuthConfiguration
   | RefreshAccountsConfiguration
   | UpdateHistoricalExchangesDataConfiguration
+  | ResetAccountTradingDataConfiguration
   | CreateExchangeConfigConfiguration
   | EditExchangeConfigConfiguration
   | DeleteExchangeConfigConfiguration
@@ -307,6 +310,7 @@ function sampleExchangeConfig(id = TEMPLATE_EXCHANGE_CONFIG_ID): ExchangeConfig 
     name: "binance-main",
     exchange: "binance",
     sandboxed: false,
+    historical_trade_symbols: ["BTC/USDT", "ETH/USDT"],
   } satisfies ExchangeConfig
 }
 
@@ -731,6 +735,11 @@ export function buildUserActionTemplate(
       return userAction(id, {
         action_type: actionType,
       } satisfies UpdateHistoricalExchangesDataConfiguration)
+    case "reset_account_trading_data":
+      return userAction(id, {
+        action_type: actionType,
+        account_ids: [TEMPLATE_ACCOUNT_ID],
+      } satisfies ResetAccountTradingDataConfiguration)
     case "exchange_config_create":
       return userAction(id, {
         action_type: actionType,
@@ -800,6 +809,17 @@ export function buildUpdateHistoricalExchangesDataUserActionJson(
       action_type: "update_historical_exchanges_data",
       account_ids: [accountId],
     } satisfies UpdateHistoricalExchangesDataConfiguration),
+  )
+}
+
+export function buildResetAccountTradingDataUserActionJson(
+  accountId: string,
+): string {
+  return userActionJson(
+    userAction(uniqueUserActionId(`ua-reset-account-trading-${accountId}`), {
+      action_type: "reset_account_trading_data",
+      account_ids: [accountId],
+    } satisfies ResetAccountTradingDataConfiguration),
   )
 }
 

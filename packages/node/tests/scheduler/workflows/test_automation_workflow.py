@@ -42,7 +42,7 @@ import octobot_node.scheduler.workflows
 import octobot_node.errors as errors
 import octobot_node.models
 import octobot_node.scheduler.workflows.params as params
-import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
+import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.encryption.task_inputs as task_inputs_encryption
 import octobot_node.scheduler.task_context as task_context
 

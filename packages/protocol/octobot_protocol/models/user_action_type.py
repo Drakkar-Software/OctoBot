@@ -39,6 +39,7 @@ class UserActionType(str, Enum):
     EXCHANGE_CONFIG_EDIT = 'exchange_config_edit'
     EXCHANGE_CONFIG_DELETE = 'exchange_config_delete'
     UPDATE_HISTORICAL_EXCHANGES_DATA = 'update_historical_exchanges_data'
+    RESET_ACCOUNT_TRADING_DATA = 'reset_account_trading_data'
     STRATEGY_CREATE = 'strategy_create'
     STRATEGY_EDIT = 'strategy_edit'
     STRATEGY_DELETE = 'strategy_delete'

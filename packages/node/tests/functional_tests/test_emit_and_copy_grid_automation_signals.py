@@ -43,6 +43,7 @@ import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
 import octobot_node.config
 import octobot_node.constants as node_constants_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_commons.os_util as commons_os_util_module
 import octobot_copy.constants as octobot_copy_constants_module
@@ -333,9 +334,9 @@ async def _poll_state_reader_until(
     while time.monotonic() < poll_deadline:
         workflow_rows = await scheduler.INSTANCE.list_workflows_async()
         for workflow_row in workflow_rows:
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
-            state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+            state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
             if state_reader is None:
                 continue
             last_reader = state_reader
@@ -604,7 +605,7 @@ class TestEmitAndCopyGridAutomationSignals:
                             master_workflow_rows_for_user_action_selector = [
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
-                                if workflows_util_module.get_automation_id(workflow_row)
+                                if automation_states_loader_module.get_automation_id(workflow_row)
                                 == user_action_assertions_module.resolve_create_automation_metadata_id(
                                     master_user_action,
                                 )
@@ -699,7 +700,7 @@ class TestEmitAndCopyGridAutomationSignals:
                             copy_workflow_rows_for_user_action_selector = [
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
-                                if workflows_util_module.get_automation_id(workflow_row)
+                                if automation_states_loader_module.get_automation_id(workflow_row)
                                 == _COPY_AUTOMATION_ID
                             ]
                             assert copy_workflow_rows_for_user_action_selector
@@ -787,7 +788,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                     key=lambda workflow_status: workflow_status.updated_at or 0,
                                     reverse=True,
                                 ):
-                                    if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+                                    if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                                         continue
                                     matching_parent_id = workflow_row.workflow_id[
                                         : node_constants_module.PARENT_WORKFLOW_ID_LENGTH

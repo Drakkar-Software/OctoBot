@@ -12,9 +12,9 @@ import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
 import { AssetsPortfolioCell } from "@/components/Debug/cells/AssetsPortfolioCell"
+import { AccountDetailDialog } from "@/components/Debug/dialogs/AccountDetailDialog"
 import { AutomationTradingCountCell } from "@/components/Debug/cells/AutomationTradingCountCell"
 import { DebugStatusCell } from "@/components/Debug/cells/DebugStatusCell"
-import { JsonDetailDialog } from "@/components/Debug/dialogs/JsonDetailDialog"
 import {
   Table,
   TableBody,
@@ -47,6 +47,8 @@ type AccountsTableProps = {
   rows: Account[]
   exchangeConfigs: ExchangeConfig[]
   accountTradings: AccountTradingWithAccountId[]
+  walletQueryParam?: string
+  isImportedMode?: boolean
   onEdit?: (account: Account) => void
   onStartAutomation?: (account: Account) => void
   onUpdateHistory?: (account: Account) => void
@@ -56,6 +58,8 @@ export function AccountsTable({
   rows,
   exchangeConfigs,
   accountTradings,
+  walletQueryParam,
+  isImportedMode = false,
   onEdit,
   onStartAutomation,
   onUpdateHistory,
@@ -320,13 +324,15 @@ export function AccountsTable({
           )}
         </TableBody>
       </Table>
-      <JsonDetailDialog
-        title="Account"
-        data={detail}
+      <AccountDetailDialog
+        account={detail}
         open={detail !== null}
         onOpenChange={(open) => {
           if (!open) setDetail(null)
         }}
+        walletQueryParam={walletQueryParam}
+        isImportedMode={isImportedMode}
+        exchangeConfigs={exchangeConfigs}
       />
     </>
   )

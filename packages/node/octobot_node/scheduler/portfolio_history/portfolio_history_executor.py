@@ -10,6 +10,8 @@ import octobot_flow.jobs.portfolio_history_job as portfolio_history_job_module
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_authentication_resolver as account_authentication_resolver
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater
 import octobot_node.scheduler.user_actions.user_actions_executor.util.exchange_account_resolver as exchange_account_resolver
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
+import octobot_node.scheduler.automations.trade_symbols_resolver as trade_symbols_resolver_module
 
 logger = commons_logging.get_logger("PortfolioHistoryExecutor")
 
@@ -47,6 +49,16 @@ async def run_portfolio_history_collection(
         logger.info("No exchange accounts found for wallet %s", wallet_id)
         return []
 
+    wallet_automation_states = await automation_states_loader_module.load_wallet_automation_states(wallet_id)
+    for context in contexts:
+        context.trade_symbols = await trade_symbols_resolver_module.resolve_trade_symbols(
+            wallet_id,
+            context.account,
+            context.exchange_config,
+            automation_states=wallet_automation_states.protocol_states,
+            flow_automation_states_by_id=wallet_automation_states.flow_states_by_id,
+        )
+
     job = portfolio_history_job_module.PortfolioHistoryJob(wallet_id, contexts)
     results = await job.run()
     for result in results:
@@ -60,7 +72,7 @@ async def run_portfolio_history_collection(
         else:
             logger.info(
                 "Collected %d trades + %d transactions for [%s %s %s] account %s "
-                "in %.2fs, %d fetched candles symbols",
+                "in %.2fs, %d trade symbols, %d fetched candles symbols",
                 result.trades_count,
                 result.transactions_count,
                 result.exchange_name,
@@ -68,6 +80,7 @@ async def run_portfolio_history_collection(
                 result.trading_type or commons_constants.CONFIG_EXCHANGE_SPOT,
                 result.account_id,
                 result.duration_seconds or 0.0,
+                result.trade_symbols_count,
                 result.price_symbols_count,
             )
     return results

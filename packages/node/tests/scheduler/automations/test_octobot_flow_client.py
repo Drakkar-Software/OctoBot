@@ -28,7 +28,7 @@ import octobot_trading.errors
 import octobot_trading.enums as trading_enums
 import octobot_trading.blockchain_wallets.simulator.blockchain_wallet_simulator as blockchain_wallet_simulator
 import octobot_trading.personal_data.orders.order_factory as order_factory
-import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
+import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 
 RUN_TESTS = True
 

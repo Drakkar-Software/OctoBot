@@ -5,6 +5,7 @@ import time
 import pytest
 
 import octobot_trading.constants as trading_constants
+import octobot_trading.enums as trading_enums
 import octobot_commons.databases.relational_databases.sqlite.base_sqlite_database as base_sqlite_database_module
 import octobot_trading.exchange_data.prices.persisted_price_cache as persisted_price_cache
 import octobot_trading.exchange_data.databases.market_data_sqlite_database as market_data_sqlite_database_module
@@ -78,7 +79,7 @@ class TestMergeDailyCloses:
             await database.merge_daily_closes("BTC/USDT", {"1000": 42000.0, "2000": 43000.0})
             await database.merge_daily_closes("BTC/USDT", {"1000": 42500.0})
             result = await database.load_daily_prices_dict()
-        assert result["symbols"]["BTC/USDT"] == {"1000": 42500.0, "2000": 43000.0}
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"] == {"1000": 42500.0, "2000": 43000.0}
 
 
 class TestLoadDailyPricesDict:
@@ -92,7 +93,10 @@ class TestLoadDailyPricesDict:
             "binance", "spot", False, data_root, read_only=True
         ) as database:
             result = await database.load_daily_prices_dict()
-        assert result == {"symbols": {}, "sources": {}}
+        assert result == {
+            trading_enums.DailyPricesCacheKeys.SYMBOLS: {},
+            trading_enums.DailyPricesCacheKeys.SOURCES: {},
+        }
 
     @pytest.mark.asyncio
     async def test_multi_symbol_shape(self, data_root):
@@ -103,8 +107,8 @@ class TestLoadDailyPricesDict:
             await database.merge_daily_closes("ETH/USDT", {"1000": 2.0})
             result = await database.load_daily_prices_dict()
         assert result == {
-            "symbols": {"BTC/USDT": {"1000": 1.0}, "ETH/USDT": {"1000": 2.0}},
-            "sources": {},
+            trading_enums.DailyPricesCacheKeys.SYMBOLS: {"BTC/USDT": {"1000": 1.0}, "ETH/USDT": {"1000": 2.0}},
+            trading_enums.DailyPricesCacheKeys.SOURCES: {},
         }
 
 
@@ -117,7 +121,7 @@ class TestDailyCloseSources:
             await database.set_daily_close_source("KNC", "KNC/USD")
             result = await database.load_daily_prices_dict()
             assert await database.get_daily_close_source("KNC") == "KNC/USD"
-        assert result["sources"] == {"KNC": "KNC/USD"}
+        assert result[trading_enums.DailyPricesCacheKeys.SOURCES] == {"KNC": "KNC/USD"}
 
 
 class TestRenameDailyClosesSymbol:
@@ -129,8 +133,8 @@ class TestRenameDailyClosesSymbol:
             await database.merge_daily_closes("KNC/USD", {"1000": 1.0, "2000": 1.1})
             await database.rename_daily_closes_symbol("KNC/USD", "KNC/USDC")
             result = await database.load_daily_prices_dict()
-        assert "KNC/USD" not in result["symbols"]
-        assert result["symbols"]["KNC/USDC"] == {"1000": 1.0, "2000": 1.1}
+        assert "KNC/USD" not in result[trading_enums.DailyPricesCacheKeys.SYMBOLS]
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["KNC/USDC"] == {"1000": 1.0, "2000": 1.1}
 
     @pytest.mark.asyncio
     async def test_conflict_keeps_migrated_value(self, data_root):
@@ -141,7 +145,7 @@ class TestRenameDailyClosesSymbol:
             await database.merge_daily_closes("KNC/USDC", {"1000": 2.0})
             await database.rename_daily_closes_symbol("KNC/USD", "KNC/USDC")
             result = await database.load_daily_prices_dict()
-        assert result["symbols"]["KNC/USDC"] == {"1000": 1.0}
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["KNC/USDC"] == {"1000": 1.0}
 
 
 class TestOldestNewestDayTs:
@@ -165,8 +169,8 @@ class TestUpdateLatestTickers:
         ) as database:
             await database.update_latest_tickers({"BTC/USDT": 65000.0})
             result = await database.load_latest_tickers_dict()
-        assert result["closes"]["BTC/USDT"] == 65000.0
-        assert result["updated_at"] is not None
+        assert result[trading_enums.LatestTickersCacheKeys.CLOSES]["BTC/USDT"] == 65000.0
+        assert result[trading_enums.LatestTickersCacheKeys.UPDATED_AT] is not None
 
 
 class TestPerDbPathLock:
@@ -184,8 +188,8 @@ class TestPerDbPathLock:
             merge_closes(1.0),
             merge_closes(2.0),
         )
-        final = first_result if first_result["symbols"] else second_result
-        assert final["symbols"]["BTC/USDT"]["1000"] in (1.0, 2.0)
+        final = first_result if first_result[trading_enums.DailyPricesCacheKeys.SYMBOLS] else second_result
+        assert final[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"]["1000"] in (1.0, 2.0)
 
 
 class TestConcurrentReadOnlyOpens:
@@ -206,8 +210,8 @@ class TestConcurrentReadOnlyOpens:
         started_at = time.monotonic()
         first_result, second_result = await asyncio.gather(read_prices(), read_prices())
         elapsed = time.monotonic() - started_at
-        assert first_result["symbols"]["BTC/USDT"]["1000"] == 42000.0
-        assert second_result["symbols"]["BTC/USDT"]["1000"] == 42000.0
+        assert first_result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"]["1000"] == 42000.0
+        assert second_result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"]["1000"] == 42000.0
         assert elapsed < _CONCURRENT_READ_MAX_ELAPSED_SECONDS
 
 
@@ -226,7 +230,7 @@ class TestCrashRecovery:
             result = await database.load_daily_prices_dict()
 
         assert integrity_row == ("ok",)
-        assert result["symbols"]["BTC/USDT"]["1000"] == 42000.0
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"]["1000"] == 42000.0
 
     @pytest.mark.asyncio
     async def test_uncommitted_write_discarded_after_abrupt_connection_close(self, data_root):
@@ -262,7 +266,7 @@ class TestCrashRecovery:
             result = await database.load_daily_prices_dict()
 
         assert integrity_row == ("ok",)
-        assert result["symbols"]["BTC/USDT"] == {"1000": 1.0}
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"] == {"1000": 1.0}
 
     @pytest.mark.asyncio
     async def test_wal_truncated_after_graceful_close(self, data_root):
@@ -284,7 +288,7 @@ class TestCrashRecovery:
             result = await database.load_daily_prices_dict()
 
         assert integrity_row == ("ok",)
-        assert result["symbols"]["BTC/USDT"]["1000"] == 42000.0
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"]["1000"] == 42000.0
 
     @pytest.mark.asyncio
     async def test_read_only_open_after_graceful_close(self, data_root):
@@ -294,14 +298,17 @@ class TestCrashRecovery:
             await database.merge_daily_closes("BTC/USDT", {"1000": 42000.0})
 
         result = await persisted_price_cache.load("binance", "spot", False, data_root)
-        assert result["symbols"]["BTC/USDT"]["1000"] == 42000.0
+        assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"]["1000"] == 42000.0
 
 
 class TestReadOnlyMissingDatabase:
     @pytest.mark.asyncio
     async def test_missing_database_returns_empty_without_creating_file(self, data_root):
         result = await persisted_price_cache.load("binance", "spot", False, data_root)
-        assert result == {"symbols": {}, "sources": {}}
+        assert result == {
+            trading_enums.DailyPricesCacheKeys.SYMBOLS: {},
+            trading_enums.DailyPricesCacheKeys.SOURCES: {},
+        }
         db_path = market_data_sqlite_database_module.MarketDataSQLiteDatabase.get_db_path(
             "binance", "spot", False, data_root
         )

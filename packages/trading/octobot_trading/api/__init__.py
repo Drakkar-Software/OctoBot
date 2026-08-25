@@ -262,9 +262,14 @@ from octobot_trading.api.exchange_data_cache import (
     load_latest_tickers,
     update_latest_tickers,
     get_daily_price,
+    get_latest_daily_close_on_or_before,
     get_latest_ticker_close,
     get_oldest_daily_price_timestamp,
     get_latest_daily_price_timestamp,
+    get_daily_close_source,
+    set_daily_close_source_in_memory,
+    merge_daily_prices_in_memory,
+    move_daily_prices_symbol_in_memory,
 )
 __all__ = [
     "get_symbol_data",
@@ -472,7 +477,12 @@ __all__ = [
     "load_latest_tickers",
     "update_latest_tickers",
     "get_daily_price",
+    "get_latest_daily_close_on_or_before",
     "get_latest_ticker_close",
     "get_oldest_daily_price_timestamp",
     "get_latest_daily_price_timestamp",
+    "get_daily_close_source",
+    "set_daily_close_source_in_memory",
+    "merge_daily_prices_in_memory",
+    "move_daily_prices_symbol_in_memory",
 ]

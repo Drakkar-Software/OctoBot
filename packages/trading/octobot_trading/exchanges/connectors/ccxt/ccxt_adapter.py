@@ -474,8 +474,17 @@ class CCXTAdapter(adapters.AbstractAdapter):
             })
         return fixed
 
+    def parse_transactions(self, fixed, **kwargs) -> list[dict]:
+        return [
+            self.parse_transaction(transaction, **kwargs)
+            for transaction in fixed
+        ]
+
     def parse_transaction(self, fixed: CCXTTransaction, **kwargs) -> dict:
         # CCXT standard transaction parsing logic
+        transaction_type = kwargs.get("transaction_type")
+        if transaction_type is None:
+            raise ValueError("transaction_type is required when parsing CCXT transactions")
         return {
             enums.ExchangeConstantsTransactionColumns.ID.value: fixed.get(enums.ExchangeConstantsTransactionColumns.ID.value),
             enums.ExchangeConstantsTransactionColumns.TXID.value: fixed.get(enums.ExchangeConstantsTransactionColumns.TXID.value),
@@ -483,7 +492,7 @@ class CCXTAdapter(adapters.AbstractAdapter):
             enums.ExchangeConstantsTransactionColumns.ADDRESS_FROM.value: fixed.get(enums.ExchangeConstantsTransactionColumns.ADDRESS_FROM.value),
             enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value: fixed.get(enums.ExchangeConstantsTransactionColumns.ADDRESS_TO.value),
             enums.ExchangeConstantsTransactionColumns.TAG.value: fixed.get(enums.ExchangeConstantsTransactionColumns.TAG.value),
-            enums.ExchangeConstantsTransactionColumns.TYPE.value: fixed.get(enums.ExchangeConstantsTransactionColumns.TYPE.value),
+            enums.ExchangeConstantsTransactionColumns.TYPE.value: transaction_type.value,
             enums.ExchangeConstantsTransactionColumns.AMOUNT.value: decimal.Decimal(str(fixed.get(enums.ExchangeConstantsTransactionColumns.AMOUNT.value, 0))),
             enums.ExchangeConstantsTransactionColumns.CURRENCY.value: fixed.get(enums.ExchangeConstantsTransactionColumns.CURRENCY.value),
             enums.ExchangeConstantsTransactionColumns.STATUS.value: fixed.get(enums.ExchangeConstantsTransactionColumns.STATUS.value),

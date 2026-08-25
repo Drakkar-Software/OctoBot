@@ -37,8 +37,10 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_constants
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
+import octobot_protocol.models as protocol_models
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders as personal_data_orders
+import octobot_trading.personal_data.transactions.protocol as transactions_protocol
 import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_tentacles_manager.api as tentacles_manager_api
@@ -128,6 +130,8 @@ class AbstractAuthenticatedExchangeTester:
     # dedicated api and have to be checked by sending an order operation
     EXPECTED_INVALID_ORDERS_QUANTITY = []   # orders with known invalid quantity exchange order id    (usually legacy)
     IS_READ_ONLY_EXCHANGE = False # set True when the exchange is read only and should not be able to fetch portfolio, create or cancel orders
+    REQUIRES_CURRENCIES_FOR_TRANSACTIONS = False  # True when get_deposits/get_withdrawals need portfolio currencies (e.g. Coinbase)
+    ALLOW_NO_DEPOSIT_HISTORY = False  # True when empty deposit history is valid (e.g. MEXC 7-day window)
     CHECK_EMPTY_ACCOUNT = False  # set True when the account to check has no funds. Warning: does not check order
     # parse/create/fill/cancel or portfolio & trades parsing
     IS_BROKER_ENABLED_ACCOUNT = True # set False when this test account can't generate broker fees
@@ -776,6 +780,115 @@ class AbstractAuthenticatedExchangeTester:
         assert trades
         self.check_raw_trades(trades)
 
+    def _exhaust_history_symbol_kwargs(self) -> dict:
+        if self._get_option_value(
+            trading_enums.ExchangeClientOptions.MY_TRADES_SYMBOL_FILTER_IS_CLIENT_SIDE
+        ):
+            return {"symbol": None}
+        return {"symbol": self.SYMBOL}
+
+    def _expects_my_trades_pagination(self) -> bool:
+        if self._get_option_value(
+            trading_enums.ExchangeClientOptions.MY_TRADES_FETCH_PAGINATION_OFFSET
+        ):
+            return True
+        if self._get_option_value(
+            trading_enums.ExchangeClientOptions.MY_TRADES_FETCH_USE_CCXT_PAGINATE
+        ):
+            return True
+        if (
+            self._get_option_value(
+                trading_enums.ExchangeClientOptions.REQUIRE_RECENT_TRADES_FROM_CLOSED_ORDERS
+            )
+            and self._get_option_value(
+                trading_enums.ExchangeClientOptions.CLOSED_ORDERS_FETCH_USE_CCXT_PAGINATE
+            )
+        ):
+            return True
+        return False
+
+    async def test_get_my_recent_trades_exhaust_history(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_my_recent_trades_exhaust_history()
+
+    @expect_not_supported_on_read_only("get_my_recent_trades")
+    async def inner_test_get_my_recent_trades_exhaust_history(self):
+        if self.CHECK_EMPTY_ACCOUNT or self.EXPECT_EMPTY_RECENT_TRADES:
+            return
+        symbol_kwargs = self._exhaust_history_symbol_kwargs()
+        single = await self.exchange_manager.exchange.get_my_recent_trades(
+            **symbol_kwargs, exhaust_history=False,
+        )
+        exhaust = await self.exchange_manager.exchange.get_my_recent_trades(
+            **symbol_kwargs, exhaust_history=True,
+        )
+        if self._expects_my_trades_pagination():
+            assert len(exhaust) >= len(single)
+            if exhaust:
+                self.check_raw_trades(exhaust)
+        else:
+            assert len(exhaust) == len(single)
+            if exhaust:
+                self.check_raw_trades(exhaust)
+
+    async def test_get_deposits(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_deposits()
+
+    @expect_not_supported_on_read_only("get_deposits")
+    async def inner_test_get_deposits(self):
+        if self.CHECK_EMPTY_ACCOUNT:
+            deposits = await self.get_deposits()
+            assert deposits == [], f"{deposits} != []"
+            return
+        if not self.exchange_manager.exchange.connector.client.has["fetchDeposits"]:
+            with pytest.raises(trading_errors.NotSupported):
+                await self.get_deposits()
+            return
+        deposits_kwargs = {}
+        if self.REQUIRES_CURRENCIES_FOR_TRANSACTIONS:
+            portfolio = await self.get_portfolio()
+            currencies = self._portfolio_currencies_for_transactions(portfolio)
+            if not currencies:
+                return
+            deposits_kwargs = {"currencies": currencies}
+        deposits = await self.get_deposits(**deposits_kwargs)
+        assert isinstance(deposits, list)
+        if not deposits and self.ALLOW_NO_DEPOSIT_HISTORY:
+            return
+        assert deposits
+        self.check_raw_transactions(
+            deposits, trading_enums.TransactionType.BLOCKCHAIN_DEPOSIT
+        )
+
+    async def test_get_withdrawals(self):
+        async with self.local_exchange_manager():
+            await self.inner_test_get_withdrawals()
+
+    @expect_not_supported_on_read_only("get_withdrawals")
+    async def inner_test_get_withdrawals(self):
+        if self.CHECK_EMPTY_ACCOUNT:
+            withdrawals = await self.get_withdrawals()
+            assert withdrawals == [], f"{withdrawals} != []"
+            return
+        if not self.exchange_manager.exchange.connector.client.has["fetchWithdrawals"]:
+            with pytest.raises(trading_errors.NotSupported):
+                await self.get_withdrawals()
+            return
+        withdrawals_kwargs = {}
+        if self.REQUIRES_CURRENCIES_FOR_TRANSACTIONS:
+            portfolio = await self.get_portfolio()
+            currencies = self._portfolio_currencies_for_transactions(portfolio)
+            if not currencies:
+                return
+            withdrawals_kwargs = {"currencies": currencies}
+        withdrawals = await self.get_withdrawals(**withdrawals_kwargs)
+        assert isinstance(withdrawals, list)
+        if withdrawals:
+            self.check_raw_transactions(
+                withdrawals, trading_enums.TransactionType.BLOCKCHAIN_WITHDRAWAL
+            )
+
     async def test_get_closed_orders(self):
         async with self.local_exchange_manager():
             await self.inner_test_get_closed_orders()
@@ -1050,6 +1163,20 @@ class AbstractAuthenticatedExchangeTester:
         exchange_data = exchange_data or self.get_exchange_data()
         return await exchanges_test_tools.get_trades(self.exchange_manager, exchange_data)
 
+    async def get_deposits(self, **kwargs):
+        return await self.exchange_manager.exchange.get_deposits(**kwargs)
+
+    async def get_withdrawals(self, **kwargs):
+        return await self.exchange_manager.exchange.get_withdrawals(**kwargs)
+
+    def _portfolio_currencies_for_transactions(self, portfolio, max_count=3):
+        min_holdings_threshold = decimal.Decimal("1e-8")
+        funded_currencies = sorted([
+            asset for asset, values in portfolio.items()
+            if values[trading_constants.CONFIG_PORTFOLIO_TOTAL] > min_holdings_threshold
+        ])
+        return funded_currencies[:max_count]
+
     async def get_closed_orders(self, symbol=None):
         return await self.exchange_manager.exchange.get_closed_orders(symbol or self.SYMBOL)
 
@@ -1204,6 +1331,65 @@ class AbstractAuthenticatedExchangeTester:
                     f"{self.MIN_TRADE_USD_VALUE * decimal.Decimal('0.9')} < {trade.total_cost} < {self.MAX_TRADE_USD_VALUE} "
                     f"is FALSE: Trade: {trade.to_dict()}"
                 )
+
+    def check_duplicate_transactions(self, transactions):
+        transaction_columns = trading_enums.ExchangeConstantsTransactionColumns
+        unique_transaction_keys = {
+            f"{transaction.get(transaction_columns.ID.value)}"
+            f"{transaction.get(transaction_columns.TXID.value)}"
+            f"{transaction[transaction_columns.TIMESTAMP.value]}"
+            f"{transaction[transaction_columns.AMOUNT.value]}"
+            f"{transaction[transaction_columns.CURRENCY.value]}"
+            for transaction in transactions
+        }
+        assert len(unique_transaction_keys) == len(transactions)
+
+    def check_raw_transactions(self, transactions, expected_type: trading_enums.TransactionType):
+        self.check_duplicate_transactions(transactions)
+        for transaction in transactions:
+            self.check_parsed_transaction(transaction, expected_type)
+
+    def check_parsed_transaction(
+        self, transaction: dict, expected_type: trading_enums.TransactionType
+    ):
+        transaction_columns = trading_enums.ExchangeConstantsTransactionColumns
+        assert transaction[transaction_columns.TYPE.value] == expected_type.value
+        currency = transaction[transaction_columns.CURRENCY.value]
+        assert currency
+        assert isinstance(currency, str)
+        amount = transaction[transaction_columns.AMOUNT.value]
+        assert isinstance(amount, decimal.Decimal)
+        assert amount > trading_constants.ZERO
+        timestamp = transaction[transaction_columns.TIMESTAMP.value]
+        assert timestamp is not None
+        assert int(timestamp) > 0
+        transaction_id = transaction.get(transaction_columns.ID.value)
+        transaction_txid = transaction.get(transaction_columns.TXID.value)
+        assert transaction_id or transaction_txid
+        status = transaction.get(transaction_columns.STATUS.value)
+        if status is not None:
+            assert status
+            assert isinstance(status, str)
+        protocol_raw = transaction
+        if not transaction_txid and transaction_id:
+            protocol_raw = dict(transaction)
+            protocol_raw[transaction_columns.TXID.value] = transaction_id
+        protocol_transaction = transactions_protocol.to_protocol_transaction(protocol_raw)
+        assert protocol_transaction.asset == currency
+        assert protocol_transaction.amount == float(amount)
+        expected_protocol_type = {
+            trading_enums.TransactionType.BLOCKCHAIN_DEPOSIT: (
+                protocol_models.TransactionType.BLOCKCHAIN_DEPOSIT
+            ),
+            trading_enums.TransactionType.BLOCKCHAIN_WITHDRAWAL: (
+                protocol_models.TransactionType.BLOCKCHAIN_WITHDRAWAL
+            ),
+        }[expected_type]
+        assert protocol_transaction.type == expected_protocol_type
+        if transaction_txid:
+            assert protocol_transaction.id == transaction_txid
+        else:
+            assert protocol_transaction.id == transaction_id
 
     def check_theoretical_cost(self, symbol, quantity, price, cost):
         theoretical_cost = quantity * price

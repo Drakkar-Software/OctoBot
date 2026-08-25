@@ -70,26 +70,48 @@ class TradesUpdater(trades_channel.TradesProducer):
         except Exception as error:
             self.logger.error(f"Fail to initialize trade history : {html_util.get_html_summary_if_relevant(error)}")
 
+    @staticmethod
+    async def _fetch_trades_for_symbol(
+        exchange,
+        symbol: str,
+        *,
+        limit: int | None = None,
+        exhaust_history: bool = False,
+    ) -> list:
+        if exhaust_history:
+            return await exchange.get_my_recent_trades(symbol=symbol, exhaust_history=True)
+        return await exchange.get_my_recent_trades(symbol=symbol, limit=limit)
+
     async def fetch_trades(
         self,
         symbols: list[str],
         limit: int = MAX_OLD_TRADES_TO_FETCH,
+        *,
+        exhaust_history: bool = False,
     ) -> list:
         """
         Fetch recent trades from the exchange for the given symbols.
         This is the only method that calls exchange.get_my_recent_trades.
+        When exhaust_history is True and symbols is empty, fetches account-wide history.
         """
+        exchange = self.channel.exchange_manager.exchange
+        if exhaust_history and not symbols:
+            trades = await exchange.get_my_recent_trades(symbol=None, exhaust_history=True)
+            return trades or []
         if not symbols:
             return []
-        exchange = self.channel.exchange_manager.exchange
 
         if len(symbols) == 1:
-            trades = await exchange.get_my_recent_trades(symbol=symbols[0], limit=limit)
+            trades = await TradesUpdater._fetch_trades_for_symbol(
+                exchange, symbols[0], limit=limit, exhaust_history=exhaust_history,
+            )
             return trades or []
 
         trade_batches = await asyncio_tools.gather_waiting_for_all_before_raising(
             *[
-                exchange.get_my_recent_trades(symbol=trading_symbol, limit=limit)
+                TradesUpdater._fetch_trades_for_symbol(
+                    exchange, trading_symbol, limit=limit, exhaust_history=exhaust_history,
+                )
                 for trading_symbol in symbols
             ]
         )

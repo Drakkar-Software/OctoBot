@@ -16,3 +16,4 @@ class PortfolioHistoryRunResult:
     trading_type: str = ""
     duration_seconds: float | None = None
     price_symbols_count: int = 0
+    trade_symbols_count: int = 0

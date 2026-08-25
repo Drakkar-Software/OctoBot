@@ -310,12 +310,24 @@ class AbstractExchange(octobot_trading.accounts.AbstractAccount):
         """
         raise NotImplementedError("get_my_recent_trades is not implemented")
 
-    async def get_deposits(self, currency: str = None, since: int = None,
-                           limit: int = None, **kwargs: dict) -> list[dict]:
+    async def get_deposits(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
         raise NotImplementedError("get_deposits is not implemented")
 
-    async def get_withdrawals(self, currency: str = None, since: int = None,
-                              limit: int = None, **kwargs: dict) -> list[dict]:
+    async def get_withdrawals(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
         raise NotImplementedError("get_withdrawals is not implemented")
 
     async def get_user_recent_trades(self, user_id: str, symbol: str = None, since: int = None,

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import pytest
+import decimal
 
 from additional_tests.exchanges_tests import abstract_authenticated_exchange_tester
 
@@ -34,6 +35,7 @@ class TestKrakenAuthenticatedExchange(
     EXPECTED_GENERATED_ACCOUNT_ID = True
     IS_BROKER_ENABLED_ACCOUNT = False # set False when this test account can't generate broker fees
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
+    MAX_TRADE_USD_VALUE = decimal.Decimal(10000)
 
 
     async def test_get_portfolio(self):
@@ -83,6 +85,15 @@ class TestKrakenAuthenticatedExchange(
 
     async def test_get_my_recent_trades(self):
         await super().test_get_my_recent_trades()
+
+    async def test_get_my_recent_trades_exhaust_history(self):
+        await super().test_get_my_recent_trades_exhaust_history()
+
+    async def test_get_deposits(self):
+        await super().test_get_deposits()
+
+    async def test_get_withdrawals(self):
+        await super().test_get_withdrawals()
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()

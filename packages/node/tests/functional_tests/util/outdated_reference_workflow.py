@@ -16,7 +16,7 @@ import octobot_commons.timestamp_util as timestamp_util
 import octobot_copy.constants as copy_constants
 import octobot_flow.entities as octobot_flow_entities
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals_module
-import octobot_node.scheduler.workflows_util as workflows_util_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
 
@@ -120,9 +120,9 @@ async def deliver_trading_signal_when_pending(
             ],
         )
         for workflow_row in pending_rows:
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
-            copied_strategy_ids = workflows_util_module.get_automation_copied_strategy_ids(workflow_row)
+            copied_strategy_ids = automation_states_loader_module.get_automation_copied_strategy_ids(workflow_row)
             if trading_signal.strategy_id not in copied_strategy_ids:
                 continue
             await internal_trading_signals_module.send_internal_trading_signal(trading_signal)
@@ -154,9 +154,9 @@ async def poll_state_reader_until(
     while time.monotonic() < poll_deadline:
         workflow_rows = await scheduler.INSTANCE.list_workflows_async()
         for workflow_row in workflow_rows:
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
-            state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+            state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
             if state_reader is None:
                 continue
             last_reader = state_reader

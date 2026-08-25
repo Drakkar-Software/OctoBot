@@ -68,7 +68,7 @@ def _execute_actions_task_content_json(
 ) -> str:
     """
     Build Task.content for EXECUTE_ACTIONS: JSON envelope with automation state and actions DAG,
-    matching octobot_node.scheduler.workflows_util.get_automation_dict / functional workflow tests.
+    matching octobot_node.scheduler.automations.automation_states_loader.get_automation_dict / functional workflow tests.
     """
     automation_state = flow_entities.AutomationState(
         automation=flow_entities.AutomationDetails(

@@ -17,7 +17,7 @@
 import pytest
 import mock
 
-import octobot_node.scheduler.octobot_flow_client as octobot_flow_client
+import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 from octobot_node.scheduler.task_context import encrypted_task
 from octobot_node.models import Task
 

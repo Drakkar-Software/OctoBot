@@ -164,6 +164,18 @@ class Test_user_action_executor_factory:
         resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
         assert resolved_executor_cls is user_actions_executor_package.UpdateHistoricalExchangesDataActionExecutor
 
+    def test_returns_reset_account_trading_data_executor_class(self):
+        configuration_inner = protocol_models.ResetAccountTradingDataConfiguration(
+            action_type=protocol_models.UserActionType.RESET_ACCOUNT_TRADING_DATA,
+            account_ids=["acc-1"],
+        )
+        user_action_model = self._user_action(
+            action_identifier="ua-reset-account-trading",
+            configuration_inner=configuration_inner,
+        )
+        resolved_executor_cls = executor_factory_module.user_action_executor_factory(user_action_model)
+        assert resolved_executor_cls is user_actions_executor_package.ResetAccountTradingDataActionExecutor
+
     def test_returns_create_exchange_config_executor_class(self):
         configuration_inner = protocol_models.CreateExchangeConfigConfiguration(
             action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_CREATE,

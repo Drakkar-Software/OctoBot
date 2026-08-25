@@ -8,6 +8,7 @@ import {
   buildAutomationRestartUserActionJson,
   buildAutomationSignalUserActionJson,
   buildAutomationStopUserActionJson,
+  buildResetAccountTradingDataUserActionJson,
   buildExchangeConfigEditUserActionJson,
   buildStrategyEditUserActionJson,
   buildUpdateHistoricalExchangesDataUserActionJson,
@@ -319,6 +320,15 @@ describe("buildUserActionTemplate", () => {
       action_type: "update_historical_exchanges_data",
     })
   })
+
+  it("builds a reset account trading data template", () => {
+    const action = buildUserActionTemplate("reset_account_trading_data")
+    expect(action.id).toContain("reset_account_trading_data")
+    expect(action.configuration).toMatchObject({
+      action_type: "reset_account_trading_data",
+      account_ids: [TEMPLATE_ACCOUNT_ID],
+    })
+  })
 })
 
 describe("buildUserActionTemplateJson", () => {
@@ -362,6 +372,18 @@ describe("buildUpdateHistoricalExchangesDataUserActionJson", () => {
   })
 })
 
+describe("buildResetAccountTradingDataUserActionJson", () => {
+  it("includes the account id in account_ids", () => {
+    const json = JSON.parse(
+      buildResetAccountTradingDataUserActionJson("acc-reset-1"),
+    )
+    expect(json.configuration).toMatchObject({
+      action_type: "reset_account_trading_data",
+      account_ids: ["acc-reset-1"],
+    })
+  })
+})
+
 describe("buildExchangeConfigEditUserActionJson", () => {
   it("embeds the exchange config", () => {
     const config: ExchangeConfig = {
@@ -372,6 +394,21 @@ describe("buildExchangeConfigEditUserActionJson", () => {
     }
     const json = JSON.parse(buildExchangeConfigEditUserActionJson(config))
     expect(json.configuration.id).toBe("cfg-1")
+  })
+
+  it("preserves historical_trade_symbols when present", () => {
+    const config: ExchangeConfig = {
+      id: "cfg-1",
+      name: "Kraken",
+      exchange: "kraken",
+      sandboxed: false,
+      historical_trade_symbols: ["BTC/USDT", "ADA/USDT"],
+    }
+    const json = JSON.parse(buildExchangeConfigEditUserActionJson(config))
+    expect(json.configuration.configuration.historical_trade_symbols).toEqual([
+      "BTC/USDT",
+      "ADA/USDT",
+    ])
   })
 })
 

@@ -20,6 +20,7 @@ export class ExchangeConfig {
     'exchange': string;
     'sandboxed': boolean;
     'url'?: string;
+    'historical_trade_symbols'?: Array<string>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -54,6 +55,12 @@ export class ExchangeConfig {
             "name": "url",
             "baseName": "url",
             "type": "string",
+            "format": ""
+        },
+        {
+            "name": "historical_trade_symbols",
+            "baseName": "historical_trade_symbols",
+            "type": "Array<string>",
             "format": ""
         }    ];
 
