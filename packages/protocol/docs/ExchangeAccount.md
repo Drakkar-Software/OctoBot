@@ -1,6 +1,6 @@
 # ExchangeAccount
 
-ExchangeAccount
+A centralized or DEX trading account, live-synced via a provider connection.
 
 ## Properties
 

@@ -1,6 +1,6 @@
 # BankAccount
 
-BankAccount
+A cash/deposit account, always manually entered, never live-synced.
 
 ## Properties
 

@@ -26,7 +26,7 @@ from pydantic_core import to_jsonable_python
 
 class BrokerAccount(BaseModel):
     """
-    BrokerAccount
+    A brokerage account for trading stocks, commodities, forex, and similar instruments (eToro-style platforms), which may be live-synced via a provider connection.
     """ # noqa: E501
     account_type: AccountType = Field(description="broker")
     provider_id: Optional[StrictStr] = None

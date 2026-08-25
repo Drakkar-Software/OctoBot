@@ -26,7 +26,7 @@ from pydantic_core import to_jsonable_python
 
 class BlockchainAccount(BaseModel):
     """
-    BlockchainAccount
+    A wallet address tracked read-only on-chain.
     """ # noqa: E501
     account_type: AccountType = Field(description="blockchain")
     blockchain: StrictStr

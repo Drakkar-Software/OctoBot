@@ -1,6 +1,6 @@
 # BrokerAccount
 
-BrokerAccount
+A brokerage account for trading stocks, commodities, forex, and similar instruments (eToro-style platforms), which may be live-synced via a provider connection.
 
 ## Properties
 

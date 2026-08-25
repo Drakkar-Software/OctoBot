@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import * as qrFrames from '../src/protocol/qrFrames.js'
 import * as proposal from '../src/protocol/proposal.js'
+import * as proposalSummary from '../src/protocol/proposalSummary.js'
 import * as protocolBarrel from '../src/protocol/index.js'
 import * as identityBarrel from '../src/identity/index.js'
 import * as root from '../src/index.js'
@@ -54,6 +55,15 @@ describe('barrel parity: the root entry point re-exports what the submodules do'
       expect(protocolBarrel, `./protocol is missing ${name}`).toHaveProperty(name)
       expect((root as Record<string, unknown>)[name]).toBe((proposal as Record<string, unknown>)[name])
       expect((protocolBarrel as Record<string, unknown>)[name]).toBe((proposal as Record<string, unknown>)[name])
+    }
+  })
+
+  it('re-exports every runtime symbol of protocol/proposalSummary, by identity, from both the root and ./protocol', () => {
+    for (const name of Object.keys(proposalSummary)) {
+      expect(root, `root barrel is missing ${name}`).toHaveProperty(name)
+      expect(protocolBarrel, `./protocol is missing ${name}`).toHaveProperty(name)
+      expect((root as Record<string, unknown>)[name]).toBe((proposalSummary as Record<string, unknown>)[name])
+      expect((protocolBarrel as Record<string, unknown>)[name]).toBe((proposalSummary as Record<string, unknown>)[name])
     }
   })
 

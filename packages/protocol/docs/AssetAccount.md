@@ -1,6 +1,6 @@
 # AssetAccount
 
-AssetAccount
+A manually-entered, single tracked non-liquid asset (a watch, a car, real estate, and similar).
 
 ## Properties
 

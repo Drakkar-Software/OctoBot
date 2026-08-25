@@ -115,6 +115,7 @@ export {
   type ActionProposal,
   type ProposedActionEntry,
 } from './protocol/proposal.js'
+export { describeProposedAction } from './protocol/proposalSummary.js'
 export {
   encodeQrFrames,
   isQrFrame,

@@ -1,14 +1,14 @@
-import { Download, Play, RefreshCw, Upload } from "lucide-react"
+import { ClipboardPaste, Download, Play, RefreshCw, Upload } from "lucide-react"
 
 import type { WalletInfo } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import {
   DEBUG_WALLET_SELECTOR_LAYOUT_CLASS,
   formatWalletSelectOptionLabel,
   getDebugWalletSelectorWidthStyle,
 } from "@/lib/wallet-utils"
-import { cn } from "@/lib/utils"
 
 type DebugToolbarProps = {
   isImportedMode: boolean
@@ -24,6 +24,7 @@ type DebugToolbarProps = {
   isRefreshPending?: boolean
   onRefresh: () => void
   onExecute: () => void
+  onPasteProposal: () => void
 }
 
 export function DebugToolbar({
@@ -40,6 +41,7 @@ export function DebugToolbar({
   isRefreshPending = false,
   onRefresh,
   onExecute,
+  onPasteProposal,
 }: DebugToolbarProps) {
   if (isImportedMode) {
     return (
@@ -108,6 +110,10 @@ export function DebugToolbar({
           className={cn("size-4", isRefreshPending && "animate-spin")}
         />
         Refresh
+      </Button>
+      <Button variant="outline" size="sm" onClick={onPasteProposal}>
+        <ClipboardPaste className="size-4" />
+        Paste proposal
       </Button>
       <Button size="sm" onClick={onExecute}>
         <Play className="size-4" />
