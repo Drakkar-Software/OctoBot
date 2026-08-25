@@ -26,7 +26,7 @@ from pydantic_core import to_jsonable_python
 
 class BankAccount(BaseModel):
     """
-    BankAccount
+    A cash/deposit account, always manually entered, never live-synced.
     """ # noqa: E501
     account_type: AccountType = Field(description="bank")
     institution: Optional[StrictStr] = None

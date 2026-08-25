@@ -13,7 +13,7 @@
 import { AccountType } from '../models/AccountType';
 
 /**
-* BankAccount
+* A cash/deposit account, always manually entered, never live-synced.
 */
 export class BankAccount {
     /**

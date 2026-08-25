@@ -79,6 +79,7 @@ export {
   type ActionProposal,
   type ProposedActionEntry,
 } from './proposal.js'
+export { describeProposedAction } from './proposalSummary.js'
 export {
   encodeQrFrames,
   isQrFrame,

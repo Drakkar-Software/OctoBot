@@ -26,7 +26,7 @@ from pydantic_core import to_jsonable_python
 
 class AssetAccount(BaseModel):
     """
-    AssetAccount
+    A manually-entered, single tracked non-liquid asset (a watch, a car, real estate, and similar).
     """ # noqa: E501
     account_type: AccountType = Field(description="asset")
     asset_type: Optional[StrictStr] = None

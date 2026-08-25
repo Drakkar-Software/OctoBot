@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0
+
+- **New: `describeProposedAction(configuration)` (`protocol/proposalSummary.js`)** —
+  a human-readable one-line label for a single `ProposedActionEntry`'s configuration
+  (`"automation stop"`, `"account create — \"Binance\""`), derived generically from
+  `action_type` and an optional nested `name`, never reading credential fields. Promoted
+  from mobile2's `src/lib/protocol/proposalSummary.ts`, ported verbatim, now that a second
+  consumer outside Astrolab (the OctoBot node web interface's paste-a-proposal dialog)
+  needs the identical wording — keeping it in one place avoids the two copies drifting.
+  Exported from both the root package and `./protocol`.
+
 ## 0.7.0
 
 - **`AccountView`, `AutomationView`, `AccountKind` and `AutomationRunStatus` are un-promoted

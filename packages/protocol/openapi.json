@@ -878,7 +878,7 @@
         }
       },
       "ExchangeAccount": {
-        "description": "ExchangeAccount",
+        "description": "A centralized or DEX trading account, live-synced via a provider connection.",
         "type": "object",
         "required": [
           "account_type",
@@ -902,7 +902,7 @@
         }
       },
       "BlockchainAccount": {
-        "description": "BlockchainAccount",
+        "description": "A wallet address tracked read-only on-chain.",
         "type": "object",
         "required": [
           "account_type",
@@ -928,7 +928,7 @@
         }
       },
       "GenericAccount": {
-        "description": "GenericAccount",
+        "description": "A placeholder account created before its real kind is known (e.g. mid-onboarding), not a semantic category of its own.",
         "type": "object",
         "required": [
           "account_type"
@@ -941,7 +941,7 @@
         }
       },
       "BrokerAccount": {
-        "description": "BrokerAccount",
+        "description": "A brokerage account for trading stocks, commodities, forex, and similar instruments (eToro-style platforms), which may be live-synced via a provider connection.",
         "type": "object",
         "required": [
           "account_type"
@@ -963,7 +963,7 @@
         }
       },
       "BankAccount": {
-        "description": "BankAccount",
+        "description": "A cash/deposit account, always manually entered, never live-synced.",
         "type": "object",
         "required": [
           "account_type"
@@ -982,7 +982,7 @@
         }
       },
       "AssetAccount": {
-        "description": "AssetAccount",
+        "description": "A manually-entered, single tracked non-liquid asset (a watch, a car, real estate, and similar).",
         "type": "object",
         "required": [
           "account_type"

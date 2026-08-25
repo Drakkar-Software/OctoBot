@@ -5,14 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "sdk:build": "npm --prefix ../../../../client/octobot_client_ts install --no-audit --no-fund && npm --prefix ../../../../client/octobot_client_ts run build",
+    "prebuild": "npm run sdk:build",
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",
     "generate-client": "openapi-ts",
+    "pretest": "npm run sdk:build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@drakkar.software/octobot-client": "file:../../../../client/octobot_client_ts",
     "@drakkar.software/octochat-sdk": "^0.8.1",
     "@drakkar.software/starfish-identities": "3.0.0-alpha.27",
     "@hookform/resolvers": "^5.2.2",
