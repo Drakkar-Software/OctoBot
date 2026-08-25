@@ -26,6 +26,10 @@ import octobot_commons.logging as logging
 PATTERN_SEP = '/'
 
 
+def _decode_subprocess_output(raw: bytes) -> str:
+    return raw.decode("utf-8", errors="replace").encode("ascii", errors="ignore").decode("ascii")
+
+
 async def execute_tentacle_build(tentacle, logger: std_logging.Logger = None) -> None:
     if not tentacle.build_command:
         return
@@ -49,14 +53,14 @@ async def execute_tentacle_build(tentacle, logger: std_logging.Logger = None) ->
         stdout, stderr = await process.communicate()
         
         if process.returncode != 0:
-            error_msg = stderr.decode() if stderr else "Unknown error"
+            error_msg = _decode_subprocess_output(stderr) if stderr else "Unknown error"
             raise RuntimeError(
                 f"Build command '{command}' failed for {tentacle.name} "
                 f"with return code {process.returncode}: {error_msg}"
             )
         
         if stdout:
-            logger.debug(f"Command output: {stdout.decode()}")
+            logger.debug(f"Command output: {_decode_subprocess_output(stdout)}")
     
     logger.info(f"All build commands completed successfully for {tentacle.name}")
 
