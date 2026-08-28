@@ -17,11 +17,30 @@ import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.enums
 
-import tentacles.Trading.Mode.trading_view_signals_trading_mode.actions_params as actions_params
-import tentacles.Trading.Mode.trading_view_signals_trading_mode.trading_view_signals_trading as trading_view_signals_trading
-import tentacles.Trading.Mode.trading_view_signals_trading_mode.tradingview_signal_to_dsl_translator as tradingview_signal_to_dsl_translator
+
+def _actions_params():
+    # avoid hard tentacles dependencies
+    import tentacles.Trading.Mode.trading_view_signals_trading_mode.actions_params as actions_params
+
+    return actions_params
+
+
+def _trading_view_signals_trading():
+    # avoid hard tentacles dependencies
+    import tentacles.Trading.Mode.trading_view_signals_trading_mode.trading_view_signals_trading as trading_view_signals_trading
+
+    return trading_view_signals_trading
+
+
+def _tradingview_signal_to_dsl_translator():
+    # avoid hard tentacles dependencies
+    import tentacles.Trading.Mode.trading_view_signals_trading_mode.tradingview_signal_to_dsl_translator as tradingview_signal_to_dsl_translator
+
+    return tradingview_signal_to_dsl_translator
+
 
 def key_val_to_dict(key_val: str) -> dict:
+    trading_view_signals_trading = _trading_view_signals_trading()
     return trading_view_signals_trading.TradingViewSignalsTradingMode.parse_signal_data(key_val, None, None, None, [])
 
 
@@ -429,6 +448,8 @@ class ActionsDAGParser:
                 )
     
     def _create_order_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        trading_view_signals_trading = _trading_view_signals_trading()
+        tv_trading_mode = trading_view_signals_trading.TradingViewSignalsTradingMode
         self._ensure_params(
             ["ORDER_SYMBOL", "ORDER_AMOUNT", "ORDER_TYPE"],
             "trade",
@@ -438,57 +459,60 @@ class ActionsDAGParser:
             signal = self.params.ORDER_SIDE.lower()
         elif parsed_symbol.base == self.params.BLOCKCHAIN_FROM_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_TO_ASSET: # type: ignore
             # sell the first blockchain asset to get the second one
-            signal = trading_view_signals_trading.TradingViewSignalsTradingMode.SELL_SIGNAL
+            signal = tv_trading_mode.SELL_SIGNAL
         elif parsed_symbol.base == self.params.BLOCKCHAIN_TO_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_FROM_ASSET: # type: ignore
             # buy the second blockchain asset to get the first one
-            signal = trading_view_signals_trading.TradingViewSignalsTradingMode.BUY_SIGNAL
+            signal = tv_trading_mode.BUY_SIGNAL
         else:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 f"Invalid order symbol: {self.params.ORDER_SYMBOL}: symbol must contain the 2 "
                 f"blockchain assets to determine the side of the order"
             )
         order_details = {
-            trading_view_signals_trading.TradingViewSignalsTradingMode.EXCHANGE_KEY: self.params.get_exchange_internal_name(),
-            trading_view_signals_trading.TradingViewSignalsTradingMode.SYMBOL_KEY: self.params.ORDER_SYMBOL,
-            trading_view_signals_trading.TradingViewSignalsTradingMode.VOLUME_KEY: self.params.ORDER_AMOUNT,
-            trading_view_signals_trading.TradingViewSignalsTradingMode.ORDER_TYPE_SIGNAL: self.params.ORDER_TYPE,
+            tv_trading_mode.EXCHANGE_KEY: self.params.get_exchange_internal_name(),
+            tv_trading_mode.SYMBOL_KEY: self.params.ORDER_SYMBOL,
+            tv_trading_mode.VOLUME_KEY: self.params.ORDER_AMOUNT,
+            tv_trading_mode.ORDER_TYPE_SIGNAL: self.params.ORDER_TYPE,
         }
         if self.params.ORDER_PRICE:
-            order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.PRICE_KEY] = self.params.ORDER_PRICE
+            order_details[tv_trading_mode.PRICE_KEY] = self.params.ORDER_PRICE
         if self.params.ORDER_STOP_PRICE:
-            order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.STOP_PRICE_KEY] = self.params.ORDER_STOP_PRICE
+            order_details[tv_trading_mode.STOP_PRICE_KEY] = self.params.ORDER_STOP_PRICE
         if self.params.ORDER_TAG:
-            order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.TAG_KEY] = self.params.ORDER_TAG
+            order_details[tv_trading_mode.TAG_KEY] = self.params.ORDER_TAG
         if self.params.ORDER_REDUCE_ONLY:
-            order_details[trading_view_signals_trading.TradingViewSignalsTradingMode.REDUCE_ONLY_KEY] = self.params.ORDER_REDUCE_ONLY
+            order_details[tv_trading_mode.REDUCE_ONLY_KEY] = self.params.ORDER_REDUCE_ONLY
         if self.params.ORDER_EXTRA_PARAMS:
             for extra_param, value in self.params.ORDER_EXTRA_PARAMS.items():
-                order_details[f"{trading_view_signals_trading.TradingViewSignalsTradingMode.PARAM_PREFIX_KEY}{extra_param}"] = value
+                order_details[f"{tv_trading_mode.PARAM_PREFIX_KEY}{extra_param}"] = value
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_trade_{index}", signal, order_details,
         )
     
     def _create_cancel_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
         self._ensure_params(
             ["ORDER_SYMBOL"],
             "cancel",
         )
         cancel_details = {
-            trading_view_signals_trading.TradingViewSignalsTradingMode.SYMBOL_KEY: self.params.ORDER_SYMBOL,
+            tv_trading_mode.SYMBOL_KEY: self.params.ORDER_SYMBOL,
         }
         if self.params.ORDER_SIDE:
-            cancel_details[trading_view_signals_trading.TradingViewSignalsTradingMode.SIDE_PARAM_KEY] = self.params.ORDER_SIDE.lower()
+            cancel_details[tv_trading_mode.SIDE_PARAM_KEY] = self.params.ORDER_SIDE.lower()
         if self.params.ORDER_TAG:
-            cancel_details[trading_view_signals_trading.TradingViewSignalsTradingMode.TAG_KEY] = self.params.ORDER_TAG
+            cancel_details[tv_trading_mode.TAG_KEY] = self.params.ORDER_TAG
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_cancel_{index}",
-            trading_view_signals_trading.TradingViewSignalsTradingMode.CANCEL_SIGNAL,
+            tv_trading_mode.CANCEL_SIGNAL,
             cancel_details,
         )
     
     def _create_withdraw_action(
         self, index: int
     ) -> octobot_flow.entities.AbstractActionDetails:
+        actions_params = _actions_params()
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
         self._ensure_params(
             ["BLOCKCHAIN_TO_ASSET", "BLOCKCHAIN_TO", "BLOCKCHAIN_TO_ADDRESS"],
             "withdraw",
@@ -502,13 +526,15 @@ class ActionsDAGParser:
             withdraw_details.amount = self.params.BLOCKCHAIN_TO_AMOUNT
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_withdraw_{index}",
-            trading_view_signals_trading.TradingViewSignalsTradingMode.WITHDRAW_FUNDS_SIGNAL,
+            tv_trading_mode.WITHDRAW_FUNDS_SIGNAL,
             dataclasses.asdict(withdraw_details),
         )
     
     def _create_deposit_action(
         self, index: int
     ) -> octobot_flow.entities.AbstractActionDetails:
+        actions_params = _actions_params()
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
         self._ensure_params(
             ["BLOCKCHAIN_FROM_ASSET", "BLOCKCHAIN_FROM_AMOUNT", "BLOCKCHAIN_FROM", "EXCHANGE_TO"],
             "deposit",
@@ -522,7 +548,7 @@ class ActionsDAGParser:
         )
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_deposit_{index}",
-            trading_view_signals_trading.TradingViewSignalsTradingMode.TRANSFER_FUNDS_SIGNAL,
+            tv_trading_mode.TRANSFER_FUNDS_SIGNAL,
             dataclasses.asdict(deposit_details),
         )
 
@@ -531,6 +557,7 @@ class ActionsDAGParser:
         *,
         close_wallet_override: typing.Optional[bool] = None,
     ) -> dict:
+        actions_params = _actions_params()
         self._ensure_params(
             ["BLOCKCHAIN_FROM_ASSET", "BLOCKCHAIN_FROM"],
             "blockchain_wallet_init",
@@ -555,9 +582,12 @@ class ActionsDAGParser:
         )
 
     def _translate_blockchain_wallet_init_signal(self, details: dict) -> str:
+        trading_view_signals_trading = _trading_view_signals_trading()
+        tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
+        tv_trading_mode = trading_view_signals_trading.TradingViewSignalsTradingMode
         parsed_signal = {
-            trading_view_signals_trading.TradingViewSignalsTradingMode.SIGNAL_KEY:
-                trading_view_signals_trading.TradingViewSignalsTradingMode.BLOCKCHAIN_WALLET_INIT_SIGNAL,
+            tv_trading_mode.SIGNAL_KEY:
+                tv_trading_mode.BLOCKCHAIN_WALLET_INIT_SIGNAL,
             **details,
         }
         dsl_script = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_signal(
@@ -565,7 +595,7 @@ class ActionsDAGParser:
         )
         if dsl_script == tradingview_signal_to_dsl_translator.UNKNOWN_SIGNAL_RESULT:
             raise octobot_flow.errors.InvalidAutomationActionError(
-                f"Invalid signal: {trading_view_signals_trading.TradingViewSignalsTradingMode.BLOCKCHAIN_WALLET_INIT_SIGNAL}"
+                f"Invalid signal: {tv_trading_mode.BLOCKCHAIN_WALLET_INIT_SIGNAL}"
                 f"({details})"
             )
         return dsl_script
@@ -593,16 +623,19 @@ class ActionsDAGParser:
         )
 
     def _create_blockchain_wallet_init_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
         blockchain_wallet_init_details = self._wallet_init_details_for_translate()
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_blockchain_wallet_init_{index}",
-            trading_view_signals_trading.TradingViewSignalsTradingMode.BLOCKCHAIN_WALLET_INIT_SIGNAL,
+            tv_trading_mode.BLOCKCHAIN_WALLET_INIT_SIGNAL,
             blockchain_wallet_init_details,
         )
     
     def _create_transfer_action(
         self, index: int
     ) -> octobot_flow.entities.AbstractActionDetails:
+        actions_params = _actions_params()
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
         self._ensure_params(
             ["BLOCKCHAIN_FROM_ASSET", "BLOCKCHAIN_FROM_AMOUNT", "BLOCKCHAIN_FROM", "BLOCKCHAIN_TO_ADDRESS"],
             "transfer",
@@ -615,7 +648,7 @@ class ActionsDAGParser:
         )
         return self.create_dsl_script_from_tv_format_action_details(
             f"action_transfer_{index}",
-            trading_view_signals_trading.TradingViewSignalsTradingMode.TRANSFER_FUNDS_SIGNAL,
+            tv_trading_mode.TRANSFER_FUNDS_SIGNAL,
             dataclasses.asdict(transfer_details),
         )
 
@@ -656,6 +689,7 @@ class ActionsDAGParser:
         return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, params)
 
     def _create_loop_until_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
+        tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
         loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
         amount, asset = self.params.BLOCKCHAIN_BALANCE_AMOUNT, self.params.BLOCKCHAIN_BALANCE_ASSET
         if not amount or not asset:
@@ -758,6 +792,7 @@ class ActionsDAGParser:
         Find dependency::... references in string param values.
         Returns (dsl_parameter_name, dependency_action_id, result_path_keys, source_literal).
         """
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
         refs: list[tuple[str, str, tuple[str, ...], str]] = []
         for key, value in details.items():
             if isinstance(value, dict):
@@ -769,7 +804,7 @@ class ActionsDAGParser:
                 continue
             dep_action_id, result_path = parsed
             dsl_key = (
-                trading_view_signals_trading.TradingViewSignalsTradingMode.TRADINGVIEW_TO_DSL_PARAM.get(
+                tv_trading_mode.TRADINGVIEW_TO_DSL_PARAM.get(
                     key, key.lower() if isinstance(key, str) else str(key).lower()
                 )
             )
@@ -807,8 +842,11 @@ class ActionsDAGParser:
     def create_dsl_script_from_tv_format_action_details(
         self, action_id: str, signal: str, details: dict
     ) -> octobot_flow.entities.DSLScriptActionDetails:
+        trading_view_signals_trading = _trading_view_signals_trading()
+        tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
+        tv_trading_mode = trading_view_signals_trading.TradingViewSignalsTradingMode
         dsl_script = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_signal(
-            {**{trading_view_signals_trading.TradingViewSignalsTradingMode.SIGNAL_KEY: signal}, **details}
+            {**{tv_trading_mode.SIGNAL_KEY: signal}, **details}
         )
         if dsl_script == tradingview_signal_to_dsl_translator.UNKNOWN_SIGNAL_RESULT:
             raise octobot_flow.errors.InvalidAutomationActionError(

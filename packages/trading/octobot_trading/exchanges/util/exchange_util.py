@@ -527,6 +527,26 @@ def get_default_exchange_type(exchange_name):
     return common_constants.DEFAULT_EXCHANGE_TYPE
 
 
+def get_default_exchange_reference_market(exchange_name: str) -> str:
+    try:
+        quote_currency = ccxt_client_util.get_option_value_from_new_ccxt_client(
+            exchange_name,
+            enums.ExchangeClientOptions.DEFAULT_QUOTE_CURRENCY,
+        )
+    except AttributeError:
+        quote_currency = None
+    if quote_currency:
+        return str(quote_currency)
+    return common_constants.DEFAULT_REFERENCE_MARKET
+
+
+def get_default_reference_market_per_exchange(exchange_names: list[str]) -> dict[str, str]:
+    return {
+        exchange_name: get_default_exchange_reference_market(exchange_name)
+        for exchange_name in exchange_names
+    }
+
+
 def get_supported_exchange_types(exchange_name, tentacles_setup_config, exchange_config_by_exchange=None):
     exchange_class = get_exchange_class_from_name(
         exchanges_types.RestExchange, exchange_name, tentacles_setup_config,

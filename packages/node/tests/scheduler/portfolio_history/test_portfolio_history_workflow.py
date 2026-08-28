@@ -106,3 +106,12 @@ class TestPortfolioHistoryWorkflow:
             account_ids=["acc-1"],
         )
         assert result["succeeded"] == 1
+
+
+class TestPortfolioHistoryCollectionStepRegistration:
+    def test_run_collection_is_registered_as_dbos_step(self, portfolio_history_workflow_module):
+        import dbos._registrations as dbos_registrations_module
+
+        run_collection = portfolio_history_workflow_module.PortfolioHistoryWorkflow._run_collection
+        assert dbos_registrations_module.get_dbos_func_name(run_collection) == "run_portfolio_history_collection"
+        assert hasattr(run_collection, "dbos_function_name")

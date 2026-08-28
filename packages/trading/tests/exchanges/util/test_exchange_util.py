@@ -488,3 +488,41 @@ class TestGetHistoricalOhlcv:
         assert batches[0] == static_candle
         logger_mock.warning.assert_called_once()
         assert "start_time did not advance" in logger_mock.warning.call_args[0][0]
+
+
+class TestGetDefaultExchangeReferenceMarket:
+    @mock.patch.object(
+        exchange_util.ccxt_client_util,
+        "get_option_value_from_new_ccxt_client",
+        return_value="USDC",
+    )
+    def test_returns_ccxt_default_quote_currency_when_set(self, _mock_get_option):
+        assert exchange_util.get_default_exchange_reference_market("binance") == "USDC"
+
+    @mock.patch.object(
+        exchange_util.ccxt_client_util,
+        "get_option_value_from_new_ccxt_client",
+        return_value=None,
+    )
+    def test_falls_back_to_default_reference_market_when_option_missing(self, _mock_get_option):
+        assert (
+            exchange_util.get_default_exchange_reference_market("kraken")
+            == commons_constants.DEFAULT_REFERENCE_MARKET
+        )
+
+    def test_returns_default_reference_market_for_unknown_exchange(self):
+        assert (
+            exchange_util.get_default_exchange_reference_market("????")
+            == commons_constants.DEFAULT_REFERENCE_MARKET
+        )
+
+    @mock.patch.object(
+        exchange_util,
+        "get_default_exchange_reference_market",
+        side_effect=lambda exchange_name: "USDC" if exchange_name == "binance" else "USDT",
+    )
+    def test_get_default_reference_market_per_exchange(self, _mock_get_default):
+        assert exchange_util.get_default_reference_market_per_exchange(["binance", "kraken"]) == {
+            "binance": "USDC",
+            "kraken": "USDT",
+        }

@@ -17,22 +17,16 @@ import decimal
 import typing
 
 import octobot_protocol.models as protocol_models
-import octobot_commons.constants as commons_constants
 import octobot_commons.symbols as commons_symbols
+import octobot_trading.api.exchange as exchange_api
 import octobot_trading.personal_data.portfolios.history.history_from_trades_and_transaction_builder as history_builder
-import octobot_trading.enums as trading_enums
 import octobot_trading.exchange_channel as exchange_channel
 import octobot_trading.constants
 import octobot_trading.personal_data as personal_data
 
 
 def resolve_portfolio_valuation_unit(exchange_manager) -> str:
-    quote_currency = exchange_manager.exchange.get_option_value(
-        trading_enums.ExchangeClientOptions.DEFAULT_QUOTE_CURRENCY
-    )
-    if quote_currency:
-        return str(quote_currency)
-    return commons_constants.DEFAULT_REFERENCE_MARKET
+    return exchange_api.get_default_exchange_reference_market(exchange_manager.exchange_name)
 
 
 def get_portfolio(exchange_manager, as_decimal=True) -> dict:

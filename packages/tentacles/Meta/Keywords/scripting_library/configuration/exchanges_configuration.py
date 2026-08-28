@@ -13,25 +13,11 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import octobot_commons.constants as constants
 
-
-# TODO later: find a way to store this in exchange tentacles instead and use exchange.get_default_reference_market
-# Issue: hollaex based exchanages require an exchange configuration to be identified as such 
-_SPECIFIC_REFERENCE_MARKET_PER_EXCHANGE: dict[str, str] = {
-    "coinbase": "USDC",
-    "binance": "USDC",
-}
 _EXCHANGES_WITH_DIFFERENT_PUBLIC_DATA_AFTER_AUTH = set[str]([
     "mexc",
     "lbank",
 ])
-
-def get_default_reference_market_per_exchange(exchanges: list[str]) -> dict[str, str]:
-    return {exchange: get_default_exchange_reference_market(exchange) for exchange in exchanges}
-
-def get_default_exchange_reference_market(exchange: str) -> str:
-    return _SPECIFIC_REFERENCE_MARKET_PER_EXCHANGE.get(exchange, constants.DEFAULT_REFERENCE_MARKET)
 
 def is_exchange_with_different_public_data_after_auth(exchange: str) -> bool:
     return exchange in _EXCHANGES_WITH_DIFFERENT_PUBLIC_DATA_AFTER_AUTH

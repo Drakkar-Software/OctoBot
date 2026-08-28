@@ -14,6 +14,9 @@ get_automation_workflow_status = automations_automation_states_loader.get_automa
 load_flow_automation_states_by_id = automations_automation_states_loader.load_flow_automation_states_by_id
 load_protocol_automation_states = automations_automation_states_loader.load_protocol_automation_states
 load_wallet_automation_states = automations_automation_states_loader.load_wallet_automation_states
+load_wallet_automation_states_for_trade_symbols = (
+    automations_automation_states_loader.load_wallet_automation_states_for_trade_symbols
+)
 parse_flow_automation_state = automations_automation_states_loader.parse_flow_automation_state
 patch_task_content_degraded_state = automations_automation_states_loader.patch_task_content_degraded_state
 resolve_trade_symbols = automations_trade_symbols_resolver.resolve_trade_symbols
@@ -36,6 +39,7 @@ __all__ = [
     "load_flow_automation_states_by_id",
     "load_protocol_automation_states",
     "load_wallet_automation_states",
+    "load_wallet_automation_states_for_trade_symbols",
     "parse_flow_automation_state",
     "patch_task_content_degraded_state",
     "resolve_trade_symbols",

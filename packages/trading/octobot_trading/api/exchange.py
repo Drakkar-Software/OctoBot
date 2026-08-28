@@ -353,6 +353,14 @@ def get_default_exchange_type(exchange_name: str) -> str:
     return exchanges.get_default_exchange_type(exchange_name)
 
 
+def get_default_exchange_reference_market(exchange_name: str) -> str:
+    return exchanges.util.exchange_util.get_default_exchange_reference_market(exchange_name)
+
+
+def get_default_reference_market_per_exchange(exchange_names: list[str]) -> dict[str, str]:
+    return exchanges.util.exchange_util.get_default_reference_market_per_exchange(exchange_names)
+
+
 def is_sponsoring(exchange_name: str) -> bool:
     return exchanges.is_broker_enabled_on_exchange(exchange_name)
 

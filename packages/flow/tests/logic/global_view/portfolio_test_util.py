@@ -13,6 +13,7 @@ def wire_portfolio_pipeline(
     portfolio_content: dict,
     *,
     portfolio_total: float = 1500.0,
+    exchange_name: str = "binanceus",
 ) -> None:
     stored_portfolio = {
         currency: dict(balances)
@@ -67,3 +68,4 @@ def wire_portfolio_pipeline(
     exchange_manager.get_symbol_data = mock.Mock(return_value=mock.Mock())
     exchange_manager.client_symbols = ["BTC/USDC", "USDC/BTC", "BTC/USDT", "ETH/USDT"]
     exchange_manager.symbol_exists = mock.Mock(return_value=True)
+    exchange_manager.exchange_name = exchange_name

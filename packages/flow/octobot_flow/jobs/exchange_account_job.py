@@ -11,6 +11,7 @@ import octobot_commons.timestamp_util as timestamp_util
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums
 import octobot_trading.errors
+import octobot_trading.api.exchange as exchange_api
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders.order_util as order_util
 import octobot_trading.exchanges
@@ -229,7 +230,7 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         self._update_exchange_account_portfolio(fetched_authenticated_data.portfolio)
 
     def _update_exchange_account_portfolio(self, portfolio: exchange_data_import.PortfolioDetails):
-        unit = scripting_library.get_default_exchange_reference_market(self._exchange_manager.exchange_name)
+        unit = exchange_api.get_default_exchange_reference_market(self._exchange_manager.exchange_name)
         self.automation_state.exchange_account_details.portfolio.content = [
             octobot_flow.entities.PortfolioAssetHolding(
                 asset,
