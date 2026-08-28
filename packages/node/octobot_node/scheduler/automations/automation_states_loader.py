@@ -10,7 +10,7 @@ import dbos as dbos_lib
 import octobot_protocol.models as protocol_models
 
 import octobot_flow.entities as flow_entities
-import octobot_flow.parsers as flow_parsers
+import octobot_flow.parsers.automation_state_reader as automation_state_reader_module
 
 import octobot_node.models as node_models
 import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
@@ -50,10 +50,10 @@ def get_automation_state_dict(workflow_status: dbos_lib.WorkflowStatus) -> typin
 
 def get_automation_state_reader(
     workflow_status: dbos_lib.WorkflowStatus,
-) -> typing.Optional[flow_parsers.AutomationStateReader]:
+) -> typing.Optional[automation_state_reader_module.AutomationStateReader]:
     """Get the resolved automation state for a workflow row (input or terminal output)."""
     if state_dict := get_automation_state_dict(workflow_status):
-        return flow_parsers.AutomationStateReader(
+        return automation_state_reader_module.AutomationStateReader(
             flow_entities.AutomationState.from_dict(state_dict)
         )
     return None
@@ -132,9 +132,17 @@ def _protocol_states_from_sources(
     return automations_protocol.to_protocol_automations_state(sources)
 
 
+TRADE_SYMBOL_AUTOMATION_STATUSES: tuple[dbos_lib.WorkflowStatusString, ...] = (
+    dbos_lib.WorkflowStatusString.ENQUEUED,
+    dbos_lib.WorkflowStatusString.PENDING,
+)
+
+
 async def load_automation_state_sources(
     wallet_id: str,
     statuses: typing.Optional[list[dbos_lib.WorkflowStatusString]] = None,
+    *,
+    load_output: bool = True,
 ) -> list["automations_protocol.AutomationStateSource"]:
     import octobot_node.protocol.automations as automations_protocol
     import octobot_node.scheduler as scheduler_module
@@ -143,7 +151,7 @@ async def load_automation_state_sources(
     workflows = await scheduler._get_latest_workflow_for_each_automation(
         wallet_id,
         statuses,
-        load_output=True,
+        load_output=load_output,
     )
     sources: list[automations_protocol.AutomationStateSource] = []
     for workflow in workflows:
@@ -186,8 +194,10 @@ async def load_flow_automation_states_by_id(
 async def load_wallet_automation_states(
     wallet_id: str,
     statuses: typing.Optional[list[dbos_lib.WorkflowStatusString]] = None,
+    *,
+    load_output: bool = True,
 ) -> WalletAutomationStates:
-    sources = await load_automation_state_sources(wallet_id, statuses)
+    sources = await load_automation_state_sources(wallet_id, statuses, load_output=load_output)
     with contextlib.ExitStack() as exit_stack:
         for source in sources:
             exit_stack.enter_context(task_context_module.encrypted_task(source.task))
@@ -196,4 +206,13 @@ async def load_wallet_automation_states(
     return WalletAutomationStates(
         protocol_states=protocol_states,
         flow_states_by_id=flow_states_by_id,
+    )
+
+
+async def load_wallet_automation_states_for_trade_symbols(wallet_id: str) -> WalletAutomationStates:
+    """Load active automation states for trade-symbol resolution (inputs only, no workflow outputs)."""
+    return await load_wallet_automation_states(
+        wallet_id,
+        statuses=list(TRADE_SYMBOL_AUTOMATION_STATUSES),
+        load_output=False,
     )

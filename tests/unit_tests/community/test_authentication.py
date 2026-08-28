@@ -513,7 +513,9 @@ async def test_stop(auth):
 class TestCommunityAuthenticationStopLogging:
     async def test_non_singleton_stop_does_not_log_lifecycle(self):
         auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        # __init__ is skipped via __new__; assign attributes normally set in __init__
         auth._use_as_singleton = False
+        auth._dk_sessions = {}
         auth.logger = mock.Mock()
         auth._fetch_account_task = None
         auth.supabase_client = mock.Mock(aclose=mock.AsyncMock())
@@ -529,7 +531,9 @@ class TestCommunityAuthenticationStopLogging:
 
     async def test_singleton_stop_logs_lifecycle(self):
         auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        # __init__ is skipped via __new__; assign attributes normally set in __init__
         auth._use_as_singleton = True
+        auth._dk_sessions = {}
         auth.logger = mock.Mock()
         auth._fetch_account_task = None
         auth.supabase_client = mock.Mock(aclose=mock.AsyncMock())
@@ -784,6 +788,7 @@ def test_sync_server_url_is_a_bare_origin():
 
 def _new_auth_for_signal_session_tests():
     auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+    # __init__ is skipped via __new__; assign attributes normally set in __init__
     auth._dk_sessions = {}
     auth._dk_session_lock = asyncio.Lock()
     return auth
@@ -887,6 +892,8 @@ class TestGetSessionForAddress:
 class TestStopClosesCachedDkSessions:
     async def test_stop_closes_and_clears_cached_dk_sessions(self):
         auth = community.CommunityAuthentication.__new__(community.CommunityAuthentication)
+        # __init__ is skipped via __new__; assign attributes normally set in __init__
+        auth._use_as_singleton = False
         auth.logger = mock.Mock()
         auth._fetch_account_task = None
         auth.supabase_client = mock.Mock(aclose=mock.AsyncMock())

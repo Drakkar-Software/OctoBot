@@ -322,10 +322,36 @@ class TestLoadWalletAutomationStates:
                 "wallet-id",
             )
 
-        load_sources_mock.assert_awaited_once_with("wallet-id", None)
+        load_sources_mock.assert_awaited_once_with("wallet-id", None, load_output=True)
         assert len(wallet_automation_states.protocol_states) == 1
         assert wallet_automation_states.protocol_states[0].id == _LOADER_PARENT_ID
         assert wallet_automation_states.flow_states_by_id[_LOADER_PARENT_ID].automation.metadata.automation_id == "automation_1"
+
+
+class TestLoadWalletAutomationStatesForTradeSymbols:
+    @pytest.mark.asyncio
+    async def test_uses_enqueued_pending_statuses_and_skips_workflow_outputs(self):
+        get_latest_mock = mock.AsyncMock(return_value=[])
+        scheduler_mock = mock.Mock()
+        scheduler_mock._get_latest_workflow_for_each_automation = get_latest_mock
+        with mock.patch(
+            "octobot_node.scheduler.SCHEDULER",
+            scheduler_mock,
+        ):
+            wallet_automation_states = await automation_states_loader_module.load_wallet_automation_states_for_trade_symbols(
+                "wallet-id",
+            )
+
+        get_latest_mock.assert_awaited_once_with(
+            "wallet-id",
+            [
+                dbos.WorkflowStatusString.ENQUEUED,
+                dbos.WorkflowStatusString.PENDING,
+            ],
+            load_output=False,
+        )
+        assert wallet_automation_states.protocol_states == []
+        assert wallet_automation_states.flow_states_by_id == {}
 
 
 class TestGetAutomationWorkflowStatus:

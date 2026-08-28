@@ -6,6 +6,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_trading.api.exchange as exchange_api
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
@@ -22,9 +23,6 @@ import octobot_flow.logic.portfolio_history.daily_price_cache_updater as daily_p
 import octobot_flow.logic.portfolio_history.trade_symbols_discovery as trade_symbols_discovery_module
 import octobot_flow.repositories.exchange.trades_repository as trades_repository_module
 import octobot_flow.repositories.exchange.transactions_repository as transactions_repository_module
-
-import tentacles.Meta.Keywords.scripting_library as scripting_library
-
 
 logger = commons_logging.get_logger("PortfolioHistoryJob")
 
@@ -304,7 +302,7 @@ def _reference_market_from_account_assets(
                 )
     if usd_like_holdings:
         return max(usd_like_holdings, key=usd_like_holdings.get)
-    return scripting_library.get_default_exchange_reference_market(exchange_name)
+    return exchange_api.get_default_exchange_reference_market(exchange_name)
 
 
 def _filter_trades_on_live_markets(

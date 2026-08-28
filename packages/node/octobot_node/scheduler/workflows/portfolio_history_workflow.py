@@ -48,10 +48,15 @@ class PortfolioHistoryWorkflow:
         return await PortfolioHistoryWorkflow._run_collection(scheduled_time, collection_params)
 
     @staticmethod
+    @SCHEDULER.INSTANCE.step(name="run_portfolio_history_collection")
     async def _run_collection(
         scheduled_time: datetime.datetime,
         collection_params: workflow_params_module.PortfolioHistoryCollectionParams | None = None,
     ) -> dict[str, typing.Any]:
+        """
+        This is a step to avoid storing results of internal dbos select statements,
+        which are otherwise counted as steps and have their result stored
+        """
         try:
             logger.info("Starting portfolio history collection at %s", scheduled_time)
             if collection_params and collection_params.wallet_ids:

@@ -227,7 +227,7 @@ class TradingViewSignalsTradingMode(dsl_trading_mode.DSLTradingMode):
                 default_reference_market = reference_market
             else:
                 # replace the generic USD stablecoin symbol with the actual stablecoin symbol for this exchange
-                default_reference_market = scripting_library.get_default_exchange_reference_market(exchange_name)
+                default_reference_market = trading_api.exchange.get_default_exchange_reference_market(exchange_name)
             replaced_symbol = parsed_data[cls.SYMBOL_KEY].replace(cls.GENERIC_USD_STABLECOIN_SYMBOL, default_reference_market)
             commons_logging.get_logger(cls.__name__).info(
                 f"Replaced generic USD stablecoin symbol {parsed_data[cls.SYMBOL_KEY]} with {replaced_symbol} for exchange {exchange_name} in signal data: {parsed_data}"

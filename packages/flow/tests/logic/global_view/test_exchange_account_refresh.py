@@ -436,11 +436,12 @@ class TestRefreshExchangeAccountLogging:
     async def test_logs_fetched_portfolio_once_at_info(self):
         balance_content = _portfolio_content()
         exchange_manager = mock.Mock()
-        exchange_manager.exchange_name = "binance"
         exchange_manager.exchange.get_balance = mock.AsyncMock(return_value=balance_content)
         exchange_manager.exchange.get_option_value = mock.Mock(return_value="USDC")
         exchange_manager.exchange_personal_data = mock.Mock()
-        _wire_portfolio_pipeline(exchange_manager, balance_content, portfolio_total=6000.0)
+        _wire_portfolio_pipeline(
+            exchange_manager, balance_content, portfolio_total=6000.0, exchange_name="binance",
+        )
         logger_mock = mock.Mock()
         with (
             mock.patch.object(
@@ -485,10 +486,9 @@ class TestSimulatedTickerFetchMerge:
     @pytest.mark.asyncio
     async def test_fetches_order_and_valuation_symbols_once(self):
         exchange_manager = mock.Mock()
-        exchange_manager.exchange_name = "bitmart"
         exchange_manager.exchange.get_option_value = mock.Mock(return_value="USDT")
         portfolio_content = _portfolio_content()
-        _wire_portfolio_pipeline(exchange_manager, portfolio_content)
+        _wire_portfolio_pipeline(exchange_manager, portfolio_content, exchange_name="bitmart")
         open_order = _open_order_dict("order-1", "ETH/USDT")
         fetch_tickers_mock = mock.AsyncMock(return_value={
             "ETH/USDT": {trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: 3000},

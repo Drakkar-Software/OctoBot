@@ -3,6 +3,7 @@
 
 import datetime
 
+import octobot_commons.constants as commons_constants
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
@@ -110,3 +111,15 @@ class TestProfileDataForAccount:
         )
         assert profile_data.trader.enabled is False
         assert profile_data.trader_simulator.enabled is True
+
+
+class TestInferReferenceMarket:
+    def test_returns_default_reference_market_when_internal_name_missing(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+        )
+        assert (
+            profile_data_factory_module.infer_reference_market(exchange_account_details, [])
+            == commons_constants.DEFAULT_REFERENCE_MARKET
+        )

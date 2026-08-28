@@ -370,9 +370,8 @@ class TestReferenceMarketFromAccountAssets:
     def test_falls_back_to_exchange_default_when_no_usd_like_holdings(self):
         account = mock.MagicMock()
         account.assets = []
-        with mock.patch.object(
-            portfolio_history_job_module.scripting_library,
-            "get_default_exchange_reference_market",
+        with mock.patch(
+            "octobot_trading.api.exchange.get_default_exchange_reference_market",
             return_value="USDT",
         ) as default_reference_market_mock:
             reference_market = portfolio_history_job_module._reference_market_from_account_assets(
@@ -420,7 +419,7 @@ class TestCurrenciesWithBalanceFromAccount:
 
 class TestDerivePriceSymbols:
     @mock.patch(
-        "octobot_flow.jobs.portfolio_history_job.scripting_library.get_default_exchange_reference_market",
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
         return_value="USDT",
     )
     def test_skips_reference_market_currency_from_transactions(self, _mock_reference_market):
@@ -432,7 +431,7 @@ class TestDerivePriceSymbols:
         assert symbols == []
 
     @mock.patch(
-        "octobot_flow.jobs.portfolio_history_job.scripting_library.get_default_exchange_reference_market",
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
         return_value="USDT",
     )
     def test_adds_transaction_currency_against_reference_market(self, _mock_reference_market):
@@ -444,7 +443,7 @@ class TestDerivePriceSymbols:
         assert symbols == ["BTC/USDT"]
 
     @mock.patch(
-        "octobot_flow.jobs.portfolio_history_job.scripting_library.get_default_exchange_reference_market",
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
         return_value="USDT",
     )
     def test_filters_invalid_same_base_quote_symbols(self, _mock_reference_market):
@@ -456,7 +455,7 @@ class TestDerivePriceSymbols:
         assert symbols == ["BTC/USDT", "ETH/USDT"]
 
     @mock.patch(
-        "octobot_flow.jobs.portfolio_history_job.scripting_library.get_default_exchange_reference_market",
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
         return_value="USDT",
     )
     def test_maps_trade_symbols_to_one_reference_pair_per_base(self, _mock_reference_market):
@@ -468,7 +467,7 @@ class TestDerivePriceSymbols:
         assert symbols == ["DOT/USDC", "ETH/USDC"]
 
     @mock.patch(
-        "octobot_flow.jobs.portfolio_history_job.scripting_library.get_default_exchange_reference_market",
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
         return_value="USDT",
     )
     def test_maps_transaction_currency_to_reference_pair(self, _mock_reference_market):
@@ -480,7 +479,7 @@ class TestDerivePriceSymbols:
         assert symbols == ["EUR/USDC"]
 
     @mock.patch(
-        "octobot_flow.jobs.portfolio_history_job.scripting_library.get_default_exchange_reference_market",
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
         return_value="USDT",
     )
     def test_skips_usd_like_stablecoin_from_transactions(self, _mock_reference_market):

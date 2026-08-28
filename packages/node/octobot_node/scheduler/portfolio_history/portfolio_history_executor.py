@@ -49,7 +49,9 @@ async def run_portfolio_history_collection(
         logger.info("No exchange accounts found for wallet %s", wallet_id)
         return []
 
-    wallet_automation_states = await automation_states_loader_module.load_wallet_automation_states(wallet_id)
+    wallet_automation_states = await automation_states_loader_module.load_wallet_automation_states_for_trade_symbols(
+        wallet_id,
+    )
     for context in contexts:
         context.trade_symbols = await trade_symbols_resolver_module.resolve_trade_symbols(
             wallet_id,
