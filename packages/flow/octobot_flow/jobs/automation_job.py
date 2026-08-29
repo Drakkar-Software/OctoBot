@@ -420,7 +420,8 @@ class AutomationJob:
             )
             raise
         except Exception as err:
-            self._logger.error(
+            self._logger.exception(
+                err, True,
                 f"Unexpected error when updating {automation_signature}: {err.__class__.__name__}: {err}"
             )
             raise

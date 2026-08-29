@@ -5,6 +5,7 @@ import json
 
 import dbos
 import mock
+import octobot_flow.entities
 import pytest
 
 import octobot_protocol.models as protocol_models
@@ -18,6 +19,36 @@ _PARENT_WORKFLOW_ID = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
 _LOADER_PARENT_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 
+def _sample_postpone_dag_actions() -> list[dict]:
+    return [
+        {"id": "action_dsl_1", "dsl_script": "1 if True else 2"},
+        {
+            "id": "action_dsl_2",
+            "dsl_script": "1 if True else 2",
+            "dependencies": [{"action_id": "action_dsl_1"}],
+        },
+    ]
+
+
+def _actions_dag_from_task_content(task_content: str) -> dict:
+    return json.loads(task_content)["state"]["automation"]["actions_dag"]
+
+
+def _canonical_actions_dag(actions_dag: dict) -> dict:
+    automation_state = octobot_flow.entities.AutomationState.from_dict({
+        "automation": {
+            "metadata": {"automation_id": "canonical"},
+            "actions_dag": actions_dag,
+            "execution": {},
+        }
+    })
+    return automation_state.to_dict(include_default_values=False)["automation"]["actions_dag"]
+
+
+def _assert_actions_dag_equal(actions_dag_left: dict, actions_dag_right: dict) -> None:
+    assert _canonical_actions_dag(actions_dag_left) == _canonical_actions_dag(actions_dag_right)
+
+
 def _automation_task_content(*, automation_name: str, automation_id: str = "automation_1") -> str:
     return json.dumps(
         {
@@ -27,7 +58,7 @@ def _automation_task_content(*, automation_name: str, automation_id: str = "auto
                         "automation_id": automation_id,
                         "name": automation_name,
                     },
-                    "actions_dag": {"actions": []},
+                    "actions_dag": {"actions": _sample_postpone_dag_actions()},
                     "execution": {},
                 },
             },
@@ -137,6 +168,7 @@ class TestGetAutomationStateDict:
 class TestPatchTaskContentDegradedState:
     def test_persists_degraded_state_in_task_content(self):
         task_content = _automation_task_content(automation_name="copy-grid")
+        actions_dag_before = _actions_dag_from_task_content(task_content)
 
         patched_content = automation_states_loader_module.patch_task_content_degraded_state(
             task_content,
@@ -145,6 +177,7 @@ class TestPatchTaskContentDegradedState:
             since=1234.5,
         )
 
+        _assert_actions_dag_equal(_actions_dag_from_task_content(patched_content), actions_dag_before)
         degraded_state = json.loads(patched_content)["state"]["automation"]["execution"]["degraded_state"]
         assert degraded_state == {
             "since": 1234.5,
@@ -154,12 +187,14 @@ class TestPatchTaskContentDegradedState:
 
     def test_preserves_existing_degraded_since_on_subsequent_patch(self):
         task_content = _automation_task_content(automation_name="copy-grid")
+        actions_dag_before = _actions_dag_from_task_content(task_content)
         task_content = automation_states_loader_module.patch_task_content_degraded_state(
             task_content,
             "not_enough_funds",
             "Insufficient funds",
             since=1000.0,
         )
+        _assert_actions_dag_equal(_actions_dag_from_task_content(task_content), actions_dag_before)
 
         patched_content = automation_states_loader_module.patch_task_content_degraded_state(
             task_content,
@@ -168,6 +203,7 @@ class TestPatchTaskContentDegradedState:
             since=2000.0,
         )
 
+        _assert_actions_dag_equal(_actions_dag_from_task_content(patched_content), actions_dag_before)
         degraded_state = json.loads(patched_content)["state"]["automation"]["execution"]["degraded_state"]
         assert degraded_state == {
             "since": 1000.0,
