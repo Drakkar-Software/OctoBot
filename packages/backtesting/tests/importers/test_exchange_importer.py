@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import os
+
 import pytest
 from contextlib import asynccontextmanager
 
@@ -28,21 +30,25 @@ import tests.database_test_util as database_test_util
 pytestmark = pytest.mark.asyncio
 
 EXCHANGE_HISTORY_DATA_FILE = "ExchangeHistoryDataCollector_1589740606.4862757.data"
+STATIC_FIXTURE_PATH = database_test_util.static_database_fixture_path(EXCHANGE_HISTORY_DATA_FILE)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _static_fixture_unchanged():
+    mtime_before = os.path.getmtime(STATIC_FIXTURE_PATH)
+    yield
+    assert os.path.getmtime(STATIC_FIXTURE_PATH) == mtime_before
 
 
 # use context manager instead of fixture to prevent pytest threads issues
 @asynccontextmanager
 async def get_importer():
-    temp_database_path = database_test_util.copy_static_database_fixture(EXCHANGE_HISTORY_DATA_FILE)
+    importer = ExchangeDataImporter({}, STATIC_FIXTURE_PATH)
     try:
-        importer = ExchangeDataImporter({}, temp_database_path)
-        try:
-            await importer.initialize()
-            yield importer
-        finally:
-            await importer.stop()
+        await importer.initialize()
+        yield importer
     finally:
-        database_test_util.remove_temp_database(temp_database_path)
+        await importer.stop()
 
 
 async def test_initialize():

@@ -79,7 +79,9 @@ class LegacyDataConverter(converters.DataConverter):
     async def convert(self) -> bool:
         try:
             self.database = backtesting_databases.BacktestingDataSQLiteDatabase(
-                path.join(backtesting_constants.BACKTESTING_FILE_PATH, self.converted_file))
+                path.join(backtesting_constants.BACKTESTING_FILE_PATH, self.converted_file),
+                read_only=False,
+            )
             await self.database.initialize()
             await self._create_description()
             for time_frame in self.time_frames:

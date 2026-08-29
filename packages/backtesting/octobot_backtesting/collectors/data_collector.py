@@ -85,7 +85,9 @@ class DataCollector:
 
     def create_database(self) -> None:
         if not self.database:
-            self.database = backtesting_databases.BacktestingDataSQLiteDatabase(self.temp_file_path)
+            self.database = backtesting_databases.BacktestingDataSQLiteDatabase(
+                self.temp_file_path, read_only=False
+            )
 
     def finalize_database(self):
         os.rename(self.temp_file_path, self.file_path)

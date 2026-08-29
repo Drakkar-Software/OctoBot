@@ -23,6 +23,12 @@ import octobot_commons.databases.relational_databases.sqlite.base_sqlite_databas
 
 
 class BacktestingDataSQLiteDatabase(base_sqlite_database.BaseSQLiteDatabase):
+    """SQLite store for backtesting .data files.
+
+    Read-only by default: data importers only read committed fixtures and must not
+    checkpoint WAL into them. Data collectors and converters that write OHLCV /
+    description rows must pass read_only=False.
+    """
     TIMESTAMP_COLUMN = "timestamp"
     DEFAULT_ORDER_BY = TIMESTAMP_COLUMN
     DEFAULT_SORT = enums.DataBaseOrderBy.DESC.value
@@ -30,8 +36,8 @@ class BacktestingDataSQLiteDatabase(base_sqlite_database.BaseSQLiteDatabase):
     DEFAULT_SIZE = -1
     CACHE_SIZE = 50
 
-    def __init__(self, file_name):
-        super().__init__(file_name)
+    def __init__(self, file_name, read_only: bool = True):
+        super().__init__(file_name, read_only=read_only)
         self.tables = []
         self.cache = {}
 
@@ -316,8 +322,8 @@ class BacktestingDataSQLiteDatabase(base_sqlite_database.BaseSQLiteDatabase):
 
 
 @contextlib.asynccontextmanager
-async def new_sqlite_database(file_path):
-    local_database = BacktestingDataSQLiteDatabase(file_path)
+async def new_sqlite_database(file_path, read_only: bool = True):
+    local_database = BacktestingDataSQLiteDatabase(file_path, read_only=read_only)
     try:
         await local_database.initialize()
         yield local_database
