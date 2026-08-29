@@ -22,6 +22,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as commons_configuration
 import octobot_commons.enums as commons_enums
 import octobot_commons.profiles as commons_profiles
+import octobot_protocol.models as protocol_models
 import octobot_trading.enums as enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as exchanges
@@ -526,3 +527,291 @@ class TestGetDefaultExchangeReferenceMarket:
             "binance": "USDC",
             "kraken": "USDT",
         }
+
+
+def _mock_describe_exchange_class(name, logo=None, referral=None):
+    class _Exchange:
+        def describe(self):
+            return {"name": name, "urls": {"logo": logo, "referral": referral}}
+    return _Exchange
+
+
+class TestGetExchangeSupportStatus:
+    def test_tested_exchange_is_officially_supported(self):
+        assert (
+            exchange_util._get_exchange_support_status("binance")
+            == protocol_models.ExchangeSupportStatus.OFFICIALLY_SUPPORTED
+        )
+
+    def test_simulator_tested_exchange_is_partially_tested(self):
+        assert (
+            exchange_util._get_exchange_support_status("bitfinex")
+            == protocol_models.ExchangeSupportStatus.PARTIALLY_TESTED
+        )
+
+    def test_unknown_exchange_is_untested(self):
+        assert (
+            exchange_util._get_exchange_support_status("unknown-exchange")
+            == protocol_models.ExchangeSupportStatus.UNTESTED
+        )
+
+    def test_tested_exchange_takes_precedence_over_simulator_list(self):
+        assert "binance" in exchange_util.constants.TESTED_EXCHANGES
+        assert (
+            exchange_util._get_exchange_support_status("binance")
+            == protocol_models.ExchangeSupportStatus.OFFICIALLY_SUPPORTED
+        )
+
+
+class TestGetCcxtExchangeMetadata:
+    @mock.patch.object(
+        exchange_util.ccxt_client_util,
+        "ccxt_exchange_class_factory",
+    )
+    def test_returns_describe_metadata_without_instantiation(self, factory_mock):
+        exchange_class = _mock_describe_exchange_class(
+            "Binance",
+            logo="https://logo.example/binance",
+            referral="https://register.example/binance",
+        )
+        factory_mock.return_value = exchange_class
+        metadata = exchange_util._get_ccxt_exchange_metadata("binance")
+        factory_mock.assert_called_once_with("binance")
+        assert metadata["name"] == "Binance"
+        assert metadata["urls"]["logo"] == "https://logo.example/binance"
+        assert metadata["urls"]["referral"] == "https://register.example/binance"
+
+
+class TestIsExchangeSandboxable:
+    def test_returns_true_when_has_sandbox_is_true(self):
+        assert exchange_util._is_exchange_sandboxable({"has": {"sandbox": True}}) is True
+
+    def test_returns_false_when_has_sandbox_is_false(self):
+        assert exchange_util._is_exchange_sandboxable({"has": {"sandbox": False}}) is False
+
+    def test_returns_false_when_has_or_sandbox_is_missing(self):
+        assert exchange_util._is_exchange_sandboxable({}) is False
+        assert exchange_util._is_exchange_sandboxable({"has": {}}) is False
+
+    def test_ignores_urls_test_when_has_sandbox_is_absent(self):
+        assert exchange_util._is_exchange_sandboxable({
+            "urls": {"test": "https://test.example"},
+        }) is False
+
+
+class TestBuildCcxtExchangeAvailability:
+    @mock.patch.object(exchange_util, "is_broker_enabled_on_exchange", return_value=False)
+    @mock.patch.object(exchange_util, "get_supported_exchange_types")
+    @mock.patch.object(exchange_util, "_get_ccxt_exchange_metadata")
+    def test_builds_exchange_availability_from_metadata(
+        self,
+        metadata_mock,
+        supported_types_mock,
+        _broker_enabled_mock,
+    ):
+        metadata_mock.return_value = {
+            "name": "Binance",
+            "urls": {
+                "logo": "https://logo.example/binance",
+                "referral": {
+                    "url": "https://register.example/binance",
+                    "discount": 0.1,
+                },
+            },
+        }
+        supported_types_mock.return_value = [enums.ExchangeTypes.SPOT, enums.ExchangeTypes.FUTURE]
+        availability = exchange_util._build_ccxt_exchange_availability("binance")
+        assert availability.internal_name == "binance"
+        assert availability.name == "Binance"
+        assert availability.logo == "https://logo.example/binance"
+        assert availability.register_url == "https://register.example/binance"
+        assert availability.api_url is None
+        assert availability.sandboxable is False
+        assert availability.broker_enabled is False
+        assert availability.available_trading_types == [
+            protocol_models.TradingType.SPOT,
+            protocol_models.TradingType.FUTURES,
+        ]
+
+    @mock.patch.object(exchange_util, "is_broker_enabled_on_exchange", return_value=False)
+    @mock.patch.object(exchange_util, "get_supported_exchange_types")
+    @mock.patch.object(exchange_util, "_get_ccxt_exchange_metadata")
+    def test_sets_sandboxable_when_has_sandbox_true(
+        self,
+        metadata_mock,
+        supported_types_mock,
+        _broker_enabled_mock,
+    ):
+        metadata_mock.return_value = {
+            "name": "Binance",
+            "has": {"sandbox": True},
+            "urls": {},
+        }
+        supported_types_mock.return_value = [enums.ExchangeTypes.SPOT]
+        availability = exchange_util._build_ccxt_exchange_availability("binance")
+        assert availability.sandboxable is True
+        assert availability.broker_enabled is False
+
+    @mock.patch.object(exchange_util, "is_broker_enabled_on_exchange", return_value=True)
+    @mock.patch.object(exchange_util, "get_supported_exchange_types")
+    @mock.patch.object(exchange_util, "_get_ccxt_exchange_metadata")
+    def test_sets_broker_enabled_from_octobot_has_broker(
+        self,
+        metadata_mock,
+        supported_types_mock,
+        broker_enabled_mock,
+    ):
+        metadata_mock.return_value = {
+            "name": "Binance",
+            "urls": {},
+        }
+        supported_types_mock.return_value = [enums.ExchangeTypes.SPOT]
+        availability = exchange_util._build_ccxt_exchange_availability("binance")
+        broker_enabled_mock.assert_called_once_with("binance")
+        assert availability.broker_enabled is True
+        assert availability.sandboxable is False
+
+    @mock.patch.object(exchange_util, "get_supported_exchange_types")
+    @mock.patch.object(exchange_util, "_get_ccxt_exchange_metadata")
+    def test_lists_ob_subclass_metadata_under_normal_internal_name(
+        self,
+        metadata_mock,
+        supported_types_mock,
+    ):
+        partner_register_url = "https://accounts.binance.com/en/register?ref=528112221"
+        metadata_mock.return_value = {
+            "name": "Binance",
+            "urls": {
+                "logo": "https://logo.example/binance",
+                "referral": {
+                    "url": partner_register_url,
+                },
+            },
+        }
+        supported_types_mock.return_value = [enums.ExchangeTypes.SPOT]
+        availability = exchange_util._build_ccxt_exchange_availability("binance")
+        metadata_mock.assert_called_once_with("binance")
+        assert availability.internal_name == "binance"
+        assert availability.register_url == partner_register_url
+
+
+class TestIterCcxtAvailabilityInternalNames:
+    @mock.patch.object(exchange_util.ccxt, "exchanges", new=["binance", "ob_binance", "kraken"])
+    def test_prefers_ob_variant_base_name_and_skips_duplicate_base_row(self):
+        assert exchange_util._iter_ccxt_availability_internal_names() == ["binance", "kraken"]
+
+    @mock.patch.object(exchange_util.ccxt, "exchanges", new=["ob_weex"])
+    def test_lists_ob_only_exchange_under_normal_internal_name(self):
+        assert exchange_util._iter_ccxt_availability_internal_names() == ["weex"]
+
+    @mock.patch.object(exchange_util.ccxt, "exchanges", new=["kraken"])
+    def test_lists_exchange_without_ob_variant(self):
+        assert exchange_util._iter_ccxt_availability_internal_names() == ["kraken"]
+
+
+class TestCollectTentacleExchangeAvailabilities:
+    @mock.patch.object(exchange_util.tentacles_management, "get_all_classes_from_parent")
+    def test_collects_only_non_simulated_non_default_extras(self, get_classes_mock):
+        tentacle_extra = protocol_models.ExchangeAvailability(
+            internal_name="custom",
+            name="Custom",
+            available_trading_types=[protocol_models.TradingType.SPOT],
+            api_url="https://example.com/api/",
+        )
+
+        class _SimulatedExchange:
+            @classmethod
+            def is_simulated_exchange(cls):
+                return True
+
+            @classmethod
+            def is_default_exchange(cls):
+                return False
+
+            @classmethod
+            def get_exchange_availabilities(cls):
+                return [tentacle_extra]
+
+        class _CustomExchange:
+            @classmethod
+            def is_simulated_exchange(cls):
+                return False
+
+            @classmethod
+            def is_default_exchange(cls):
+                return False
+
+            @classmethod
+            def get_exchange_availabilities(cls):
+                return [tentacle_extra]
+
+        get_classes_mock.return_value = [_SimulatedExchange, _CustomExchange]
+        collected_availabilities = exchange_util._collect_tentacle_exchange_availabilities()
+        assert collected_availabilities == [tentacle_extra]
+
+
+class TestGetExchangesAvailability:
+    def setup_method(self):
+        exchange_util.get_exchanges_availability.cache.clear()
+
+    def teardown_method(self):
+        exchange_util.get_exchanges_availability.cache.clear()
+
+    @mock.patch.object(exchange_util, "_collect_tentacle_exchange_availabilities")
+    @mock.patch.object(exchange_util, "_build_ccxt_exchange_availability")
+    @mock.patch.object(exchange_util.ccxt, "exchanges", new=["binance", "ob_binance", "broken"])
+    def test_merges_ccxt_and_tentacle_entries_sorted_by_internal_name(
+        self,
+        build_ccxt_mock,
+        collect_tentacle_mock,
+    ):
+        ccxt_availability = protocol_models.ExchangeAvailability(
+            internal_name="binance",
+            name="Binance",
+            available_trading_types=[protocol_models.TradingType.SPOT],
+            api_url=None,
+        )
+        tentacle_availability = protocol_models.ExchangeAvailability(
+            internal_name="custom",
+            name="Custom",
+            available_trading_types=[protocol_models.TradingType.SPOT],
+            api_url="https://example.com/api/",
+        )
+
+        def build_side_effect(exchange_name):
+            if exchange_name == "broken":
+                raise AttributeError("broken exchange")
+            return ccxt_availability
+
+        build_ccxt_mock.side_effect = build_side_effect
+        collect_tentacle_mock.return_value = [tentacle_availability]
+        availabilities = exchange_util.get_exchanges_availability()
+        assert availabilities == [ccxt_availability, tentacle_availability]
+        called_exchange_names = [call.args[0] for call in build_ccxt_mock.call_args_list]
+        assert called_exchange_names == ["binance", "broken"]
+        entries_with_api_url = [availability for availability in availabilities if availability.api_url]
+        assert len(entries_with_api_url) == 1
+        assert entries_with_api_url[0].api_url == "https://example.com/api/"
+
+
+class TestGetExchangesAvailabilityCaching:
+    def setup_method(self):
+        exchange_util.get_exchanges_availability.cache.clear()
+
+    def teardown_method(self):
+        exchange_util.get_exchanges_availability.cache.clear()
+
+    @mock.patch.object(exchange_util, "_build_exchanges_availability")
+    def test_caches_full_list_between_calls(self, build_mock):
+        expected_availabilities = [
+            protocol_models.ExchangeAvailability(
+                internal_name="binance",
+                name="Binance",
+                available_trading_types=[protocol_models.TradingType.SPOT],
+            )
+        ]
+        build_mock.return_value = expected_availabilities
+        first_call = exchange_util.get_exchanges_availability()
+        second_call = exchange_util.get_exchanges_availability()
+        assert first_call is second_call
+        build_mock.assert_called_once()

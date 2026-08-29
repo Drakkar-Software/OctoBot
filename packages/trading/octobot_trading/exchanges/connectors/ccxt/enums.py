@@ -153,6 +153,7 @@ class ExchangeColumns(enum.Enum):
     REST = "rest"
     WEBSOCKET = "ws"
     LOGO_URL = "logo"
+    REFERRAL = "referral"
 
 
 class ExchangeMarginTypes(enum.Enum):

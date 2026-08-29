@@ -98,6 +98,7 @@ from octobot_trading.exchanges.util import (
     force_set_mark_price,
     get_traded_assets,
     is_broker_enabled_on_exchange,
+    get_exchanges_availability,
 )
 from octobot_trading.exchanges import market_filters
 from octobot_trading.exchanges.market_filters.market_filter_factory import (
@@ -237,4 +238,5 @@ __all__ = [
     "ExchangeDetails",
     "create_market_filter",
     "is_broker_enabled_on_exchange",
+    "get_exchanges_availability",
 ]

@@ -20,6 +20,7 @@ import pytest
 import octobot_commons
 import octobot_commons.symbols.symbol_util as commons_symbols
 import octobot_protocol.models as protocol_models
+import octobot_trading.api as trading_api
 import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import tentacles.Services.Interfaces.node_api_interface.core.exchanges as node_exchanges_core
@@ -30,6 +31,7 @@ from tentacles.Services.Interfaces.node_api_interface.tests.conftest import asse
 _TRADED_PAIRS = "/api/v1/exchanges/traded-pairs"
 _TRADED_PAIRS_AND_TIMEFRAMES = "/api/v1/exchanges/traded-pairs-and-timeframes"
 _DEX_PAIRS = "/api/v1/exchanges/dex_pairs"
+_EXCHANGES_AVAILABILITIES = "/api/v1/exchanges/"
 DEX_BTCB_USDT = "BTCB/USDT"
 BTCB_BSC_TOKEN_ADDRESS = "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c"
 USDT_BSC_TOKEN_ADDRESS = "0x55d398326f99059fF775485246999027B3197955"
@@ -177,6 +179,54 @@ def _defillama_query_params(symbols: list[str] | None = None) -> list[tuple[str,
     ]
     params.extend(("symbols", symbol) for symbol in requested_symbols)
     return params
+
+
+def _mock_exchanges_availability_payload() -> list[protocol_models.ExchangeAvailability]:
+    return [
+        protocol_models.ExchangeAvailability(
+            internal_name="binance",
+            name="Binance",
+            available_trading_types=[protocol_models.TradingType.SPOT],
+            support_type=protocol_models.ExchangeSupportStatus.OFFICIALLY_SUPPORTED,
+            sandboxable=False,
+            broker_enabled=False,
+            api_url=None,
+        ),
+        protocol_models.ExchangeAvailability(
+            internal_name="custom",
+            name="Custom Exchange",
+            available_trading_types=[protocol_models.TradingType.SPOT],
+            support_type=protocol_models.ExchangeSupportStatus.OFFICIALLY_SUPPORTED,
+            sandboxable=False,
+            broker_enabled=False,
+            api_url="https://example.com/api/",
+        ),
+    ]
+
+
+class TestExchangesGetAvailabilities:
+    def test_returns_availability_list_from_trading_api(
+        self,
+        client: typing.Any,
+    ) -> None:
+        expected_availabilities = _mock_exchanges_availability_payload()
+        with mock.patch.object(
+            trading_api,
+            "get_exchanges_availability",
+            return_value=expected_availabilities,
+        ) as get_availabilities_mock:
+            response = client.get(_EXCHANGES_AVAILABILITIES)
+            get_availabilities_mock.assert_called_once_with()
+            assert response.status_code == 200
+            body = response.json()
+            assert isinstance(body, list)
+            assert len(body) == len(expected_availabilities)
+            entries_with_api_url = [entry for entry in body if entry.get("api_url")]
+            assert len(entries_with_api_url) == 1
+            assert entries_with_api_url[0]["api_url"] == "https://example.com/api/"
+            assert body[0]["internal_name"] == "binance"
+            assert body[0]["api_url"] is None
+            assert_response_headers(response)
 
 
 class TestExchangesGetTradedPairs:

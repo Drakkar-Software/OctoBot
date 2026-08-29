@@ -18,6 +18,7 @@ import typing
 import ccxt
 import uuid
 import decimal
+import cachetools
 
 import octobot_commons.logging as logging
 import octobot_commons.constants as common_constants
@@ -32,6 +33,7 @@ import octobot_commons.profiles as commons_profiles
 import octobot_tentacles_manager.api as api
 import octobot_tentacles_manager.configuration as tentacles_setup_configuration
 
+import octobot_protocol.models as protocol_models
 import octobot_trading.enums as enums
 import octobot_trading.errors as errors
 import octobot_trading.constants as constants
@@ -44,6 +46,7 @@ import octobot_trading.exchanges.exchange_builder as exchange_builder
 import octobot_trading.exchange_data
 import octobot_trading.storage.util as storage_util
 import octobot_trading.util as util
+import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
@@ -719,4 +722,99 @@ def _get_is_auth_required_exchange(
         exchange_config_by_exchange,
         ccxt_rest_exchange_id=None,
     )
+
+
+def _get_exchange_support_status(exchange_name: str) -> protocol_models.ExchangeSupportStatus:
+    if exchange_name in constants.TESTED_EXCHANGES:
+        return protocol_models.ExchangeSupportStatus.OFFICIALLY_SUPPORTED
+    if exchange_name in constants.SIMULATOR_TESTED_EXCHANGES:
+        return protocol_models.ExchangeSupportStatus.PARTIALLY_TESTED
+    return protocol_models.ExchangeSupportStatus.UNTESTED
+
+
+def _get_ccxt_exchange_metadata(exchange_name: str) -> dict:
+    exchange_class = ccxt_client_util.ccxt_exchange_class_factory(exchange_name)
+    return exchange_class.__new__(exchange_class).describe()
+
+
+def _to_available_trading_types(exchange_name: str) -> list[protocol_models.TradingType]:
+    return [
+        protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE[exchange_type]
+        for exchange_type in get_supported_exchange_types(exchange_name, None)
+        if exchange_type in protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE
+    ]
+
+
+def _get_register_url_from_exchange_urls(exchange_urls: dict) -> typing.Optional[str]:
+    referral = exchange_urls.get(ccxt_enums.ExchangeColumns.REFERRAL.value)
+    if isinstance(referral, dict):
+        return referral.get("url")
+    if isinstance(referral, str):
+        return referral
+    return None
+
+
+def _is_exchange_sandboxable(exchange_metadata: dict) -> bool:
+    return bool(exchange_metadata.get("has", {}).get("sandbox"))
+
+
+def _build_ccxt_exchange_availability(exchange_name: str) -> protocol_models.ExchangeAvailability:
+    exchange_metadata = _get_ccxt_exchange_metadata(exchange_name)
+    exchange_urls = exchange_metadata.get("urls") or {}
+    return protocol_models.ExchangeAvailability(
+        internal_name=exchange_name,
+        name=exchange_metadata.get("name") or exchange_name,
+        logo=exchange_urls.get(ccxt_enums.ExchangeColumns.LOGO_URL.value),
+        available_trading_types=_to_available_trading_types(exchange_name),
+        support_type=_get_exchange_support_status(exchange_name),
+        sandboxable=_is_exchange_sandboxable(exchange_metadata),
+        broker_enabled=is_broker_enabled_on_exchange(exchange_name),
+        register_url=_get_register_url_from_exchange_urls(exchange_urls),
+        api_url=None,
+    )
+
+
+def _iter_ccxt_availability_internal_names() -> list[str]:
+    all_exchange_names = set(ccxt.exchanges)
+    ob_base_names = {
+        exchange_name.removeprefix(constants.OB_EXCHANGE_PREFIX)
+        for exchange_name in all_exchange_names
+        if exchange_name.startswith(constants.OB_EXCHANGE_PREFIX)
+    }
+    internal_names = set(ob_base_names)
+    for exchange_name in all_exchange_names:
+        if exchange_name.startswith(constants.OB_EXCHANGE_PREFIX):
+            continue
+        if exchange_name not in ob_base_names:
+            internal_names.add(exchange_name)
+    return sorted(internal_names)
+
+
+def _collect_tentacle_exchange_availabilities() -> list[protocol_models.ExchangeAvailability]:
+    exchange_availabilities = []
+    for exchange_candidate in tentacles_management.get_all_classes_from_parent(exchanges_types.RestExchange):
+        if exchange_candidate.is_simulated_exchange() or exchange_candidate.is_default_exchange():
+            continue
+        exchange_availabilities.extend(exchange_candidate.get_exchange_availabilities())
+    return exchange_availabilities
+
+
+def _build_exchanges_availability() -> list[protocol_models.ExchangeAvailability]:
+    exchange_availabilities = []
+    for exchange_name in _iter_ccxt_availability_internal_names():
+        try:
+            exchange_availabilities.append(_build_ccxt_exchange_availability(exchange_name))
+        except AttributeError as error:
+            _get_logger().debug(
+                "Skipping unavailable ccxt exchange %s: %s",
+                exchange_name,
+                error,
+            )
+    exchange_availabilities.extend(_collect_tentacle_exchange_availabilities())
+    return sorted(exchange_availabilities, key=lambda availability: availability.internal_name)
+
+
+@cachetools.cached(cachetools.LRUCache(maxsize=1))
+def get_exchanges_availability() -> list[protocol_models.ExchangeAvailability]:
+    return _build_exchanges_availability()
 

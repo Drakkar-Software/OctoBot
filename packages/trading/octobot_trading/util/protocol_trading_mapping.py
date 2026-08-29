@@ -12,6 +12,11 @@ TRADING_TYPE_TO_EXCHANGE_TYPE: dict[protocol_models.TradingType, trading_enums.E
     protocol_models.TradingType.MARGIN: trading_enums.ExchangeTypes.MARGIN,
 }
 
+EXCHANGE_TYPE_TO_TRADING_TYPE: dict[trading_enums.ExchangeTypes, protocol_models.TradingType] = {
+    exchange_type: trading_type
+    for trading_type, exchange_type in TRADING_TYPE_TO_EXCHANGE_TYPE.items()
+}
+
 API_KEY_RIGHT_TO_ACCOUNT_PERMISSION: dict[
     trading_enums.APIKeyRights,
     protocol_models.AccountPermission,
