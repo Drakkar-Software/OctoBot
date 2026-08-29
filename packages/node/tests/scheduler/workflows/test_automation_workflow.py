@@ -103,6 +103,61 @@ def _automation_state_dict_with_scheduled_to(
     return state
 
 
+def _sample_postpone_dag_actions() -> list[dict[str, typing.Any]]:
+    return [
+        {"id": "action_dsl_1", "dsl_script": "1 if True else 2"},
+        {
+            "id": "action_dsl_2",
+            "dsl_script": "1 if True else 2",
+            "dependencies": [{"action_id": "action_dsl_1"}],
+        },
+    ]
+
+
+def _actions_dag_from_task_content(task_content: str) -> dict:
+    return json.loads(task_content)["state"]["automation"]["actions_dag"]
+
+
+def _actions_dag_from_execute_iteration_result(result: dict) -> dict:
+    next_description = json.loads(result["next_iteration_description"])
+    return next_description["state"]["automation"]["actions_dag"]
+
+
+def _actions_dag_from_enqueued_inputs(enqueued_inputs: dict) -> dict:
+    return json.loads(enqueued_inputs["task"]["content"])["state"]["automation"]["actions_dag"]
+
+
+def _canonical_actions_dag(actions_dag: dict) -> dict:
+    automation_state = octobot_flow.entities.AutomationState.from_dict({
+        "automation": {
+            "metadata": {"automation_id": "canonical"},
+            "actions_dag": actions_dag,
+            "execution": {},
+        }
+    })
+    return automation_state.to_dict(include_default_values=False)["automation"]["actions_dag"]
+
+
+def _assert_actions_dag_equal(actions_dag_left: dict, actions_dag_right: dict) -> None:
+    assert _canonical_actions_dag(actions_dag_left) == _canonical_actions_dag(actions_dag_right)
+
+
+def _assert_actions_dag_unchanged(task_content: str, result: dict) -> None:
+    _assert_actions_dag_equal(
+        _actions_dag_from_task_content(task_content),
+        _actions_dag_from_execute_iteration_result(result),
+    )
+
+
+def _assert_skip_postpone_preserves_state(task_content: str, result: dict) -> None:
+    assert result["next_iteration_description"] == task_content
+    _assert_actions_dag_unchanged(task_content, result)
+
+
+def _assert_trading_postpone_preserves_dag(task_content: str, result: dict) -> None:
+    _assert_actions_dag_unchanged(task_content, result)
+
+
 def _automation_state_with_trade_count(trade_count: int) -> octobot_flow.entities.AutomationState:
     order_columns = trading_enums.ExchangeConstantsOrderColumns
     trades = [
@@ -795,7 +850,7 @@ class TestExecuteIteration:
         expected_error_status,
         expected_retry_delay_seconds,
     ):
-        task_content = json.dumps({"state": _automation_state_dict([])})
+        task_content = json.dumps({"state": _automation_state_dict(_sample_postpone_dag_actions())})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
         mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
@@ -832,6 +887,42 @@ class TestExecuteIteration:
         assert degraded_state["error"] == expected_error_status
         assert degraded_state["reason"] == str(run_side_effect)
         assert degraded_state["since"] == fixed_now
+        _assert_trading_postpone_preserves_dag(task_content, result)
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_iteration_postponed_error_round_trips_serialization(
+        self,
+        import_automation_workflow,
+        task,
+    ):
+        task_content = json.dumps({"state": _automation_state_dict(_sample_postpone_dag_actions())})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        failed_request_error = octobot_trading_errors.FailedRequest("Exchange API request failed")
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_side_effect=failed_request_error,
+        )
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ):
+            raw_result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs, None
+            )
+
+        iteration_result = params.AutomationWorkflowIterationResult.from_dict(raw_result)
+        assert iteration_result.progress_status.postponed_iteration is True
+        assert iteration_result.has_next_actions is True
+        assert iteration_result.progress_status.error == (
+            octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value
+        )
+        _assert_trading_postpone_preserves_dag(task_content, raw_result)
 
     @pytest.mark.asyncio
     @required_imports
@@ -1107,7 +1198,9 @@ class TestPersistBeforeTrimTrades:
         self, import_automation_workflow, task
     ):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1128,12 +1221,13 @@ class TestPersistBeforeTrimTrades:
             octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
             "trim_live_trades_in_iteration_state",
         ) as trim_mock:
-            await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+            result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
                 inputs, None
             )
 
         persist_mock.assert_not_called()
         trim_mock.assert_not_called()
+        _assert_skip_postpone_preserves_state(task_content, result)
 
 
 class TestExecuteIterationPendingPriorityActionsSkippedError:
@@ -1143,7 +1237,9 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         self, import_automation_workflow, task
     ):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1178,7 +1274,7 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         assert parsed_progress_status.error is None
         assert parsed_progress_status.error_message is None
         assert result["has_next_actions"] is True
-        assert result["next_iteration_description"] == task_content
+        _assert_skip_postpone_preserves_state(task_content, result)
         next_iteration_description = json.loads(result["next_iteration_description"])
         execution = next_iteration_description["state"]["automation"].get("execution", {})
         assert "degraded_state" not in execution
@@ -1187,7 +1283,9 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
     @required_imports
     async def test_logs_pending_priority_skipped_error(self, import_automation_workflow, task):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1218,7 +1316,9 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
     @required_imports
     async def test_postponed_log_uses_none_error_fields(self, import_automation_workflow, task):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1257,7 +1357,9 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         self, import_automation_workflow, task
     ):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1290,7 +1392,7 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         assert parsed_progress_status.error is None
         assert parsed_progress_status.error_message is None
         assert result["has_next_actions"] is True
-        assert result["next_iteration_description"] == task_content
+        _assert_skip_postpone_preserves_state(task_content, result)
         next_iteration_description = json.loads(result["next_iteration_description"])
         execution = next_iteration_description["state"]["automation"].get("execution", {})
         assert "degraded_state" not in execution
@@ -1299,7 +1401,9 @@ class TestExecuteIterationOutdatedReferenceAccountError:
     @required_imports
     async def test_logs_outdated_reference_account_info(self, import_automation_workflow, task):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1355,7 +1459,9 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         expected_log_message,
     ):
         scheduled_to = 5000.0
-        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
         task_content = json.dumps({"state": automation_inner_state})
         task.content = task_content
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
@@ -1384,6 +1490,7 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
         assert parsed_progress_status.postponed_iteration is True
         assert parsed_progress_status.error is None
+        _assert_skip_postpone_preserves_state(task_content, result)
 
 
 class TestShouldRetryOutdatedReferenceAccountError:
@@ -1935,6 +2042,25 @@ class TestShouldContinueWorkflow:
             parsed_inputs, progress, False
         ) is False
 
+    def test_should_continue_returns_true_when_postponed_iteration_despite_error(
+        self, import_automation_workflow, parsed_inputs
+    ):
+        progress = params.ProgressStatus(
+            error=octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+            postponed_iteration=True,
+            should_stop=False,
+        )
+        with mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "get_logger",
+            return_value=mock.Mock(),
+        ) as get_logger_mock:
+            workflow_logger = get_logger_mock.return_value
+            assert octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._should_continue_workflow(
+                parsed_inputs, progress, False
+            ) is True
+        workflow_logger.error.assert_not_called()
+
     def test_should_continue_returns_false_when_should_stop(self, import_automation_workflow, parsed_inputs):
         progress = params.ProgressStatus(error=None, should_stop=True)
         assert octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._should_continue_workflow(
@@ -1952,6 +2078,170 @@ class TestShouldContinueWorkflow:
         assert octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._should_continue_workflow(
             parsed_inputs, progress, False
         ) is True
+
+
+class TestExecuteAutomationPostponedFailedRequestIntegration:
+    def setup_method(self):
+        octobot_trading.constants.ALLOW_FUNDS_TRANSFER = True
+        self._no_encrypt_rsa = mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None)
+        self._no_encrypt_ecdsa = mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None)
+        self._no_encrypt_rsa.start()
+        self._no_encrypt_ecdsa.start()
+
+    def teardown_method(self):
+        octobot_trading.constants.ALLOW_FUNDS_TRANSFER = False
+        self._no_encrypt_rsa.stop()
+        self._no_encrypt_ecdsa.stop()
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_reschedules_after_failed_request_via_dbos_step(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        failed_request_error = octobot_trading_errors.FailedRequest("Exchange API request failed")
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_side_effect=failed_request_error,
+        )
+        task_content = json.dumps({"state": _automation_state_dict(_sample_postpone_dag_actions())})
+        task = octobot_node.models.Task(
+            name="postponed_failed_request",
+            content=task_content,
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        fixed_now = 1000.0
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        real_enqueue_async = temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE.enqueue_async
+        enqueue_mock = mock.AsyncMock(wraps=real_enqueue_async)
+        automation_wf = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+        with mock.patch(recv_path, mock.AsyncMock(return_value=None)), mock.patch(
+            "octobot_node.scheduler.workflows.automation_workflow.time.time",
+            return_value=fixed_now,
+        ), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ), mock.patch.object(
+            octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
+            "enqueue_async",
+            enqueue_mock,
+        ), mock.patch.object(
+            automation_wf,
+            "get_logger",
+            return_value=mock.Mock(),
+        ) as get_logger_mock:
+            workflow_logger = get_logger_mock.return_value
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                automation_wf.execute_automation,
+                inputs=inputs,
+            )
+            workflow_result = await handle.get_result()
+
+        assert workflow_result is None
+        enqueue_mock.assert_called_once()
+        enqueued_inputs = enqueue_mock.call_args.kwargs["inputs"]
+        assert enqueued_inputs["execution_time"] == (
+            fixed_now + octobot_node.constants.DEFAULT_WORKFLOW_RESCHEDULE_IN_SECONDS
+        )
+        workflows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+        assert len(workflows) >= 2
+        error_messages = [str(call) for call in workflow_logger.error.call_args_list]
+        assert not any("unrecoverable iteration error" in message for message in error_messages)
+        assert not any("Automation stopped (remaining steps:" in message for message in error_messages)
+        info_messages = [str(call) for call in workflow_logger.info.call_args_list]
+        assert any("Enqueuing next iteration" in message for message in info_messages)
+        _assert_actions_dag_equal(
+            _actions_dag_from_enqueued_inputs(enqueued_inputs),
+            _actions_dag_from_task_content(task_content),
+        )
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_reschedules_after_postponed_iteration_with_priority_trading_signal(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        failed_request_error = octobot_trading_errors.FailedRequest("Exchange API request failed")
+        mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+            run_side_effect=failed_request_error,
+        )
+        trading_signal = octobot_flow.entities.TradingSignal(
+            account=protocol_models.CopiedAccount(
+                version=copy_constants.COPIED_ACCOUNT_VERSION,
+                updated_at=time.time(),
+                copied_assets=[],
+            ),
+            strategy_id="test-strategy-id",
+        )
+        trading_signal_envelope = _trading_signal_update_envelope(
+            [trading_signal.to_dict(include_default_values=False)]
+        )
+        task_content = json.dumps({"state": _automation_state_dict(_sample_postpone_dag_actions())})
+        task = octobot_node.models.Task(
+            name="postponed_failed_request_priority_signal",
+            content=task_content,
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        fixed_now = 1000.0
+        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+        real_enqueue_async = temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE.enqueue_async
+        enqueue_mock = mock.AsyncMock(wraps=real_enqueue_async)
+        automation_wf = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+        with mock.patch(
+            recv_path,
+            mock.AsyncMock(side_effect=[None, trading_signal_envelope, None]),
+        ), mock.patch(
+            "octobot_node.scheduler.workflows.automation_workflow.time.time",
+            return_value=fixed_now,
+        ), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ), mock.patch.object(
+            octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
+            "enqueue_async",
+            enqueue_mock,
+        ), mock.patch.object(
+            automation_wf,
+            "get_logger",
+            return_value=mock.Mock(),
+        ) as get_logger_mock:
+            workflow_logger = get_logger_mock.return_value
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                automation_wf.execute_automation,
+                inputs=inputs,
+            )
+            workflow_result = await handle.get_result()
+
+        assert workflow_result is None
+        assert run_mock.await_count == 2
+        enqueue_mock.assert_called_once()
+        error_messages = [str(call) for call in workflow_logger.error.call_args_list]
+        assert not any("unrecoverable iteration error" in message for message in error_messages)
+        assert not any("Automation stopped (remaining steps:" in message for message in error_messages)
+        info_messages = [str(call) for call in workflow_logger.info.call_args_list]
+        assert any("Enqueuing next iteration" in message for message in info_messages)
+        enqueued_inputs = enqueue_mock.call_args.kwargs["inputs"]
+        _assert_actions_dag_equal(
+            _actions_dag_from_enqueued_inputs(enqueued_inputs),
+            _actions_dag_from_task_content(task_content),
+        )
 
 
 class TestGetActionsSummary:

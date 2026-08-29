@@ -87,7 +87,7 @@ class AutomationWorkflow:
                 )
             if not continue_workflow:
                 AutomationWorkflow.get_logger(parsed_inputs).info(
-                    f"Stopped workflow (remaining steps: {iteration_result.progress_status.remaining_steps})"
+                    f"Automation stopped (remaining steps: {iteration_result.progress_status.remaining_steps})"
                 )
                 final_state = iteration_result.next_iteration_description
                 final_state_metadata = iteration_result.next_iteration_description_metadata
@@ -147,7 +147,6 @@ class AutomationWorkflow:
         executed_step: str = "no action executed"
         execution_error = next_step = next_step_at = execution_error_message = None
         postponed_iteration = False
-        has_next_actions_override: typing.Optional[bool] = None
         next_iteration_description_override: typing.Optional[str] = None
         next_iteration_description_metadata_override: typing.Optional[str] = None
         result = octobot_flow_client.OctoBotActionsJobResult()
@@ -200,7 +199,6 @@ class AutomationWorkflow:
                         action_job.description.state
                     )
                     postponed_iteration = True
-                    has_next_actions_override = True
                     next_iteration_description_override = parsed_inputs.task.content
                     next_iteration_description_metadata_override = parsed_inputs.task.content_metadata
                 except (
@@ -221,7 +219,6 @@ class AutomationWorkflow:
                     execution_error = execution_error_status.value
                     execution_error_message = str(err)
                     postponed_iteration = True
-                    has_next_actions_override = True
                     next_iteration_description_override = automation_states_loader.patch_task_content_degraded_state(
                         parsed_inputs.task.content,
                         execution_error,
@@ -306,7 +303,7 @@ class AutomationWorkflow:
                 else result.next_actions_description_encryption_metadata
             ),
             has_next_actions=(
-                has_next_actions_override if postponed_iteration else result.has_next_actions
+                True if postponed_iteration else result.has_next_actions
             ),
         ).to_dict(include_default_values=False)
 
@@ -360,7 +357,10 @@ class AutomationWorkflow:
         parsed_inputs: params.AutomationWorkflowInputs,
         previous_iteration_result: params.AutomationWorkflowIterationResult
     ) -> tuple[bool, params.AutomationWorkflowIterationResult]:
-        if not previous_iteration_result.has_next_actions:
+        if (
+            not previous_iteration_result.has_next_actions
+            and not previous_iteration_result.progress_status.postponed_iteration
+        ):
             return False, previous_iteration_result
         # In case new priority actions were sent, execute them now.
         # Any action sent to this workflow will be lost if not processed by it.
@@ -460,10 +460,12 @@ class AutomationWorkflow:
         progress_status: params.ProgressStatus,
         stop_on_error: bool
     ) -> bool:
+        if progress_status.postponed_iteration:
+            return True
         if progress_status.error:
             # failed iteration, return global progress where it stopped and exit workflow
             AutomationWorkflow.get_logger(parsed_inputs).error(
-                f"Failed iteration: stopping workflow, error: {progress_status.error}. "
+                f"Automation stopped: unrecoverable iteration error: {progress_status.error}. "
                 f"Iteration's last step: {progress_status.latest_step}"
             )
             return stop_on_error
