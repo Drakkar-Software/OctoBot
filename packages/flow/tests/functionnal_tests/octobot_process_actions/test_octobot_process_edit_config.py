@@ -218,8 +218,8 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
             priority_actions = functionnal_tests.resolved_actions([update_config_priority_action])
             async with octobot_flow.jobs.AutomationJob(state, priority_actions, [], {}) as refresh_phase:
                 await refresh_phase.run()
-            octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                refresh_phase.dump()
+            octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_from_job(
+                refresh_phase
             )
             assert popen_calls["count"] == spawn_before_refresh + 1
             state = refresh_phase.dump()
@@ -237,10 +237,10 @@ async def test_run_octobot_process_grid_refresh_four_to_six_orders(
                 six_poll = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
                     state, [], [], {}
                 )
-                dump_payload = six_poll.dump()
-                octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                    dump_payload
+                octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_from_job(
+                    six_poll
                 )
+                dump_payload = six_poll.dump()
                 automation_dump = dump_payload.get("automation")
                 eae_dict = (
                     automation_dump.get("exchange_account_elements")

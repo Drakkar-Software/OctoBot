@@ -4,6 +4,7 @@ import datetime
 
 import mock
 
+import octobot.community.wallet_backend.errors as wallet_backend_errors_module
 import octobot_protocol.models as protocol_models
 import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collection_backend.errors as collection_errors
@@ -11,6 +12,7 @@ import octobot_sync.sync.collection_providers as collection_providers
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 
+import octobot_flow.entities
 import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
 
 
@@ -331,8 +333,6 @@ class TestPersistAccountTrading:
 
 class TestPersistAccountTradingFromIterationState:
     def test_persists_trading_snapshot_from_automation_state(self):
-        import octobot_flow.entities
-
         exchange_details = octobot_flow.entities.ExchangeAccountDetails()
         exchange_details.exchange_details.exchange_account_id = "acc-sync-1"
         elements = octobot_flow.entities.ExchangeAccountElements()
@@ -361,9 +361,6 @@ class TestPersistAccountTradingFromIterationState:
         )
 
     def test_skips_when_wallet_not_registered(self):
-        import octobot.community.wallet_backend.errors as wallet_backend_errors_module
-        import octobot_flow.entities
-
         exchange_details = octobot_flow.entities.ExchangeAccountDetails()
         exchange_details.exchange_details.exchange_account_id = "acc-sync-1"
         elements = octobot_flow.entities.ExchangeAccountElements()
@@ -384,3 +381,53 @@ class TestPersistAccountTradingFromIterationState:
                 "wallet-1",
                 automation_state.to_dict(include_default_values=False),
             )
+
+
+class TestTrimLiveTradesInIterationState:
+    def test_trims_exchange_account_elements_in_state_dict(self):
+        order_columns = trading_enums.ExchangeConstantsOrderColumns
+        state_dict = octobot_flow.entities.AutomationState(
+            automation=octobot_flow.entities.AutomationDetails(
+                metadata=octobot_flow.entities.AutomationMetadata(automation_id="automation-1"),
+                exchange_account_elements=octobot_flow.entities.ExchangeAccountElements(
+                    trades=[
+                        {
+                            order_columns.EXCHANGE_TRADE_ID.value: f"trade-{trade_index}",
+                            order_columns.SYMBOL.value: "BTC/USDT",
+                            order_columns.TIMESTAMP.value: float(trade_index),
+                        }
+                        for trade_index in range(3)
+                    ],
+                ),
+            ),
+        ).to_dict(include_default_values=False)
+        account_state_persistence_module.trim_live_trades_in_iteration_state(state_dict, 2)
+        restored_state = octobot_flow.entities.AutomationState.from_dict(state_dict)
+        elements = restored_state.automation.exchange_account_elements
+        assert elements is not None
+        assert len(elements.trades) == 2
+        assert elements.trade_summaries == {"BTC/USDT": ["trade-0"]}
+
+    def test_no_op_when_trade_count_within_window(self):
+        order_columns = trading_enums.ExchangeConstantsOrderColumns
+        state_dict = octobot_flow.entities.AutomationState(
+            automation=octobot_flow.entities.AutomationDetails(
+                metadata=octobot_flow.entities.AutomationMetadata(automation_id="automation-1"),
+                exchange_account_elements=octobot_flow.entities.ExchangeAccountElements(
+                    trades=[
+                        {
+                            order_columns.EXCHANGE_TRADE_ID.value: "trade-1",
+                            order_columns.SYMBOL.value: "BTC/USDT",
+                            order_columns.TIMESTAMP.value: 1.0,
+                        },
+                    ],
+                    trade_summaries={"ETH/USDT": ["archived-1"]},
+                ),
+            ),
+        ).to_dict(include_default_values=False)
+        account_state_persistence_module.trim_live_trades_in_iteration_state(state_dict, 100)
+        restored_state = octobot_flow.entities.AutomationState.from_dict(state_dict)
+        elements = restored_state.automation.exchange_account_elements
+        assert elements is not None
+        assert len(elements.trades) == 1
+        assert elements.trade_summaries == {"ETH/USDT": ["archived-1"]}

@@ -51,7 +51,9 @@ import octobot_protocol.models.generic_process_configuration as generic_process_
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers as collection_providers
 
-DEFAULT_PING_WAITING_TIME = 2.0
+DEFAULT_PING_WAITING_TIME = 30.0
+FAST_PING_WAITING_TIME = 5.0
+STEADY_PING_WAITING_TIME = 60.0
 DEFAULT_ENSURE_TIMEOUT = 120.0
 DEFAULT_FORCE_KILL_EXIT_WAIT_SECONDS = 5.0
 DEFAULT_DSL_PROFILE_ID = "non-trading"
@@ -207,6 +209,32 @@ def _in_restart_grace_period(
     if last_updated_at <= 0:
         return False
     return (now - last_updated_at) < ping_timeout
+
+
+def _resolve_recall_waiting_time(
+    recall_state: octobot_process_state_import.OctobotProcessState,
+    loaded_state: typing.Optional[process_bot_state_import.ProcessBotState],
+    *,
+    dsl_waiting_time: typing.Optional[float],
+    now: float,
+    ping_timeout: float,
+    stored_pid_running: bool,
+) -> float:
+    child_confirmed_alive = _is_child_confirmed_alive(loaded_state)
+    is_running = stored_pid_running or child_confirmed_alive
+    if _in_restart_grace_period(
+        recall_state,
+        loaded_state,
+        now=now,
+        ping_timeout=ping_timeout,
+        stored_pid_running=stored_pid_running,
+    ):
+        return FAST_PING_WAITING_TIME
+    if recall_state.init_state_ok and is_running:
+        if dsl_waiting_time is not None:
+            return float(dsl_waiting_time)
+        return STEADY_PING_WAITING_TIME
+    return FAST_PING_WAITING_TIME
 
 
 def _should_use_recall_path(
@@ -1130,7 +1158,7 @@ def create_octobot_process_operators(
                     octobot_flow_entities.PostIterationActionsDetails(
                         updated_exchange_account_elements=(
                             parsed_process_bot_state.exchange_account_elements.to_dict(
-                                include_default_values=True
+                                include_default_values=False
                             )
                         ),
                     ).to_dict(include_default_values=False)
@@ -1148,7 +1176,7 @@ def create_octobot_process_operators(
             last_result: dict,
             *,
             start_time: float,
-            recall_interval: float,
+            dsl_waiting_time: typing.Optional[float],
             ping_timeout: float,
             loaded_state: typing.Optional[process_bot_state_import.ProcessBotState] = None,
         ) -> None:
@@ -1205,6 +1233,14 @@ def create_octobot_process_operators(
                     self.pid = resolved_pid
             recall_state = _apply_resolved_pid_to_state(recall_state, resolved_pid)
             _get_logger().info("process state path (re-call path): %s", state_path)
+            resolved_recall_interval = _resolve_recall_waiting_time(
+                recall_state,
+                loaded_state,
+                dsl_waiting_time=dsl_waiting_time,
+                now=now,
+                ping_timeout=ping_timeout,
+                stored_pid_running=stored_pid_running,
+            )
             # Running: stored recall pid or child-confirmed-alive → init_state_ok, optional EAE.
             is_running = stored_pid_running or child_confirmed_alive
             if is_running:
@@ -1224,7 +1260,7 @@ def create_octobot_process_operators(
                     state=updated,
                     last_result=last_result,
                     start_time=start_time,
-                    recall_interval=recall_interval,
+                    recall_interval=resolved_recall_interval,
                     parsed_process_bot_state=loaded_state,
                 )
                 return
@@ -1242,7 +1278,7 @@ def create_octobot_process_operators(
                 state=recall_state.model_copy(update={"state_file_path": state_path}),
                 last_result=last_result,
                 start_time=start_time,
-                recall_interval=recall_interval,
+                recall_interval=resolved_recall_interval,
                 parsed_process_bot_state=loaded_state,
             )
 
@@ -1254,7 +1290,7 @@ def create_octobot_process_operators(
             last_result: dict,
             *,
             start_time: float,
-            recall_interval: float,
+            dsl_waiting_time: typing.Optional[float],
         ) -> None:
             # One-time (or re-) materialization, free ports, env, and `Popen` at project root.
             exchange_auth_overrides = params.get("exchange_auth_data")
@@ -1334,6 +1370,16 @@ def create_octobot_process_operators(
             )
             # First process state check after spawn (init cap still uses `state.started_waiting_at`).
             loaded = await _load_process_bot_state(state_file_path)
+            ping_timeout = float(params.get("ping_timeout") or DEFAULT_ENSURE_TIMEOUT)
+            stored_pid_running = state.pid > 0 and process_util.pid_is_running(state.pid)
+            resolved_recall_interval = _resolve_recall_waiting_time(
+                state,
+                loaded,
+                dsl_waiting_time=dsl_waiting_time,
+                now=time.time(),
+                ping_timeout=ping_timeout,
+                stored_pid_running=stored_pid_running,
+            )
             is_live = loaded is not None and _is_process_state_alive(loaded)
             if is_live:
                 state_pid = loaded.metadata.pid
@@ -1355,11 +1401,19 @@ def create_octobot_process_operators(
                     )
                     ready = state.model_copy(update={"init_state_ok": True})
                     _release_child_listen_ports(web_port, node_port, user_folder)
+                    resolved_recall_interval = _resolve_recall_waiting_time(
+                        ready,
+                        loaded,
+                        dsl_waiting_time=dsl_waiting_time,
+                        now=time.time(),
+                        ping_timeout=ping_timeout,
+                        stored_pid_running=True,
+                    )
                     self._emit_ensure_recall(
                         state=ready,
                         last_result=last_result,
                         start_time=start_time,
-                        recall_interval=recall_interval,
+                        recall_interval=resolved_recall_interval,
                         parsed_process_bot_state=loaded,
                     )
                     return
@@ -1377,7 +1431,7 @@ def create_octobot_process_operators(
                 state=state,
                 last_result=last_result,
                 start_time=start_time,
-                recall_interval=recall_interval,
+                recall_interval=resolved_recall_interval,
                 parsed_process_bot_state=loaded,
             )
 
@@ -1426,7 +1480,7 @@ def create_octobot_process_operators(
             params: dict,
             *,
             start_time: float,
-            recall_interval: float,
+            dsl_waiting_time: typing.Optional[float],
             ping_timeout: float,
         ) -> None:
             # Resolve prior child layout from re-call payload; required for stop, wait, and paths to remove.
@@ -1469,7 +1523,7 @@ def create_octobot_process_operators(
                 params,
                 {},
                 start_time=start_time,
-                recall_interval=recall_interval,
+                dsl_waiting_time=dsl_waiting_time,
             )
 
         async def pre_compute(self) -> None:
@@ -1520,7 +1574,12 @@ def create_octobot_process_operators(
             last_result = self.get_last_execution_result(params) or {}
             start_time = time.time()
             ping_timeout = float(params.get("ping_timeout") or DEFAULT_ENSURE_TIMEOUT)
-            recall_interval = float(params.get("waiting_time") or DEFAULT_PING_WAITING_TIME)
+            waiting_time_param = params.get("waiting_time")
+            dsl_waiting_time = None
+            if waiting_time_param is not None:
+                waiting_time_value = float(waiting_time_param)
+                if waiting_time_value != DEFAULT_PING_WAITING_TIME:
+                    dsl_waiting_time = waiting_time_value
             if self.matches_operator_signal(dsl_interpreter.OperatorSignal.UPDATE_CONFIG.value):
                 await self._pre_compute_update_config_refresh(
                     last_result,
@@ -1528,7 +1587,7 @@ def create_octobot_process_operators(
                     working_directory,
                     params,
                     start_time=start_time,
-                    recall_interval=recall_interval,
+                    dsl_waiting_time=dsl_waiting_time,
                     ping_timeout=ping_timeout,
                 )
                 return
@@ -1558,7 +1617,7 @@ def create_octobot_process_operators(
                         params,
                         last_result,
                         start_time=start_time,
-                        recall_interval=recall_interval,
+                        dsl_waiting_time=dsl_waiting_time,
                     )
                     return
                 # 3. Recall vs respawn from liveness/grace rules.
@@ -1573,7 +1632,7 @@ def create_octobot_process_operators(
                         recall_state,
                         last_result,
                         start_time=start_time,
-                        recall_interval=recall_interval,
+                        dsl_waiting_time=dsl_waiting_time,
                         ping_timeout=ping_timeout,
                         loaded_state=loaded_state,
                     )
@@ -1600,7 +1659,7 @@ def create_octobot_process_operators(
                 params,
                 last_result,
                 start_time=start_time,
-                recall_interval=recall_interval,
+                dsl_waiting_time=dsl_waiting_time,
             )
 
 

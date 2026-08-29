@@ -222,3 +222,19 @@ def persist_account_trading_from_iteration_state(
             "Skipping account trading persistence for wallet %s: wallet not registered",
             user_id,
         )
+
+
+def trim_live_trades_in_iteration_state(
+    iteration_state: typing.Optional[dict],
+    max_full_trades: int,
+) -> None:
+    if iteration_state is None or max_full_trades <= 0:
+        return
+    automation_state = octobot_flow.entities.AutomationState.from_dict(iteration_state)
+    exchange_account_elements = automation_state.automation.exchange_account_elements
+    if exchange_account_elements is None:
+        return
+    exchange_account_elements.trim_trades_to_live_window(max_full_trades)
+    trimmed_state = automation_state.to_dict(include_default_values=False)
+    iteration_state.clear()
+    iteration_state.update(trimmed_state)

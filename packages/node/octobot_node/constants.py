@@ -51,6 +51,9 @@ RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS = float(
     os.getenv("RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS", 150.0)
 )
 
+# Max full trade dicts kept on automation.exchange_account_elements.trades; older ids archived in trade_summaries.
+AUTOMATION_LIVE_STATE_MAX_TRADES = 100
+
 TASKS_ENCRYPTION_ENV_VARS = [
     "TASKS_SERVER_RSA_PRIVATE_KEY",
     "TASKS_SERVER_ECDSA_PRIVATE_KEY",

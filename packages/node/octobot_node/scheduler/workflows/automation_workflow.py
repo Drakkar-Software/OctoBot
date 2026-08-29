@@ -271,6 +271,11 @@ class AutomationWorkflow:
                     parsed_inputs.task.user_id,
                     result.next_actions_description.state if result.next_actions_description else None,
                 )
+                if result.next_actions_description is not None:
+                    account_state_persistence_module.trim_live_trades_in_iteration_state(
+                        result.next_actions_description.state,
+                        constants.AUTOMATION_LIVE_STATE_MAX_TRADES,
+                    )
             else:
                 retry_delay_seconds = max(0.0, (next_step_at or time.time()) - time.time())
                 AutomationWorkflow.get_logger(parsed_inputs).info(

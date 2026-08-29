@@ -50,8 +50,10 @@ CHILD_STOP_WAIT_SEC = 15.0
 # it is fixed at import time and stays 30 unless the interpreter reloads constants.
 EXPECTED_PROCESS_BOT_DUMP_INTERVAL_SEC = 5.0
 
-# Same as `waiting_time=` in run_octobot_process(...) DSL for this file's tests.
+# Same as `waiting_time=` in run_octobot_process(...) DSL for this file's tests (steady override when child is healthy).
 WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC = 2
+# Init / child-not-alive recall interval (matches octobot_process_ops.FAST_PING_WAITING_TIME).
+FAST_RECALL_WAITING_TIME_SEC = 5.0
 RECALL_SCHEDULE_TOLERANCE_SEC = 1.5
 
 
@@ -271,6 +273,12 @@ def _recall_inner_from_dsl_action(
     return None
 
 
+def _expected_recall_waiting_time_from_inner(inner: typing.Optional[dict]) -> float:
+    if isinstance(inner, dict) and inner.get("waiting_time") is not None:
+        return float(inner["waiting_time"])
+    return FAST_RECALL_WAITING_TIME_SEC
+
+
 def _assert_run_octobot_process_recall_scheduled_to_in_dump(
     job_dump: dict[str, typing.Any],
     *,
@@ -302,6 +310,28 @@ def _assert_run_octobot_process_recall_scheduled_to_in_dump(
             f"recall scheduled_to should be ~triggered_at+{expected_waiting_time_sec}s: "
             f"delay={delay_sec}s scheduled_to={scheduled_to} triggered_at={triggered_at}"
         )
+
+
+def _assert_run_octobot_process_recall_scheduled_to_from_job(
+    job: octobot_flow.jobs.AutomationJob,
+    *,
+    expected_waiting_time_sec: typing.Optional[float] = None,
+    schedule_tolerance_sec: float = RECALL_SCHEDULE_TOLERANCE_SEC,
+    assert_delay_matches_waiting_time: bool = True,
+) -> None:
+    if assert_delay_matches_waiting_time and expected_waiting_time_sec is None:
+        run_action_state = _get_action_by_id(job, ACTION_ID_RUN_OCTOBOT)
+        assert run_action_state is not None
+        inner = _recall_inner_from_dsl_action(run_action_state)
+        expected_waiting_time_sec = _expected_recall_waiting_time_from_inner(inner)
+    elif expected_waiting_time_sec is None:
+        expected_waiting_time_sec = WAITING_TIME_RUN_OCTOBOT_PROCESS_SEC
+    _assert_run_octobot_process_recall_scheduled_to_in_dump(
+        job.dump(),
+        expected_waiting_time_sec=expected_waiting_time_sec,
+        schedule_tolerance_sec=schedule_tolerance_sec,
+        assert_delay_matches_waiting_time=assert_delay_matches_waiting_time,
+    )
 
 
 def _get_action_by_id(
@@ -376,7 +406,7 @@ async def poll_automation_until_child_process_ready(
     state = automation_state
     while time.monotonic() < deadline:
         poll_job = await run_automation_job_without_exchange_manager(state, [], [], {})
-        _assert_run_octobot_process_recall_scheduled_to_in_dump(poll_job.dump())
+        _assert_run_octobot_process_recall_scheduled_to_from_job(poll_job)
         run_action_state = _get_action_by_id(poll_job, ACTION_ID_RUN_OCTOBOT)
         assert run_action_state is not None
         inner = _recall_inner_from_dsl_action(run_action_state)
