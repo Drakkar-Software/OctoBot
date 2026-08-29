@@ -59,7 +59,9 @@ class DataImporter:
     def load_database(self) -> None:
         file_path = self.adapt_file_path_if_necessary()
         if not self.database:
-            self.database = backtesting_databases.BacktestingDataSQLiteDatabase(file_path)
+            self.database = backtesting_databases.BacktestingDataSQLiteDatabase(
+                file_path, read_only=True
+            )
 
     def adapt_file_path_if_necessary(self):
         if path.isfile(self.file_path):

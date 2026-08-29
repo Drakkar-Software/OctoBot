@@ -17,19 +17,31 @@ pytestmark = pytest.mark.asyncio
 
 DATA_FILE1 = "ExchangeHistoryDataCollector_1589740606.4862757.data"
 DATA_FILE2 = "second_ExchangeHistoryDataCollector_1589740606.4862757.data"
+STATIC_FIXTURE_PATHS = {
+    DATA_FILE1: database_test_util.static_database_fixture_path(DATA_FILE1),
+    DATA_FILE2: database_test_util.static_database_fixture_path(DATA_FILE2),
+}
 OHLCV = mock.Mock(value="ohlcv")
 KLINE = mock.Mock(value="kline")
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _static_fixtures_unchanged():
+    mtimes_before = {
+        file_name: os.path.getmtime(fixture_path)
+        for file_name, fixture_path in STATIC_FIXTURE_PATHS.items()
+    }
+    yield
+    for file_name, fixture_path in STATIC_FIXTURE_PATHS.items():
+        assert os.path.getmtime(fixture_path) == mtimes_before[file_name]
+
+
 @contextlib.asynccontextmanager
 async def get_database(data_file=DATA_FILE1):
-    temp_database_path = database_test_util.copy_static_database_fixture(data_file)
-    try:
-        async with backtesting_databases.new_sqlite_database(temp_database_path) as database:
-            yield database
-        await asyncio_tools.wait_asyncio_next_cycle()
-    finally:
-        database_test_util.remove_temp_database(temp_database_path)
+    fixture_path = STATIC_FIXTURE_PATHS[data_file]
+    async with backtesting_databases.new_sqlite_database(fixture_path) as database:
+        yield database
+    await asyncio_tools.wait_asyncio_next_cycle()
 
 
 @contextlib.asynccontextmanager
@@ -37,7 +49,7 @@ async def get_temp_empty_database():
     with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
         database_name = temp_file.name
     try:
-        async with backtesting_databases.new_sqlite_database(database_name) as database:
+        async with backtesting_databases.new_sqlite_database(database_name, read_only=False) as database:
             yield database
     finally:
         await asyncio_tools.wait_asyncio_next_cycle()
@@ -48,7 +60,7 @@ async def get_temp_empty_database():
 async def test_invalid_file():
     with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
         file_name = temp_file.name
-    database = backtesting_databases.BacktestingDataSQLiteDatabase(file_name)
+    database = backtesting_databases.BacktestingDataSQLiteDatabase(file_name, read_only=False)
     try:
         await database.initialize()
         assert not await database.check_table_exists(KLINE)

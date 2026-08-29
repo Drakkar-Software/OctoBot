@@ -83,6 +83,8 @@ class BaseSQLiteDatabase:
         # uncommitted writer work stays in the WAL and is rolled back on recovery.
         # synchronous=FULL: fsync on commit so committed data survives sudden process kill.
         # busy_timeout: wait up to 5s when a read overlaps a writer checkpoint instead of failing immediately.
+        if self.read_only:
+            return ["PRAGMA busy_timeout=5000"]
         return [
             "PRAGMA journal_mode=WAL",
             "PRAGMA synchronous=FULL",
