@@ -115,7 +115,7 @@ def _healthy_recall_inner(
     user_root = user_root or "/x/ub"
     state_fn = os.path.join(user_root, octobot_constants.PROCESS_BOT_STATE_FILE_NAME)
     return {
-        "waiting_time": octobot_process_ops.DEFAULT_PING_WAITING_TIME,
+        "waiting_time": octobot_process_ops.STEADY_PING_WAITING_TIME,
         "last_execution_time": 0.0,
         "http_base_url": "http://127.0.0.1:20050",
         "web_port": 20050,
@@ -1957,7 +1957,7 @@ class TestEnsureOctobotProcessPrecomputeWhenProcessStateLiveAfterFirstSpawn:
         assert le.get("init_state_ok") is True
         assert le.get("http_base_url", "").startswith("http://")
         assert le.get("pid") == 10001
-        assert le.get("waiting_time") == octobot_process_ops.DEFAULT_PING_WAITING_TIME
+        assert le.get("waiting_time") == octobot_process_ops.STEADY_PING_WAITING_TIME
         assert octobot_flow_entities.PostIterationActionsDetails.__name__ in le
         post = octobot_flow_entities.PostIterationActionsDetails.from_dict(
             le[octobot_flow_entities.PostIterationActionsDetails.__name__]
@@ -2318,7 +2318,7 @@ class TestEnsureOctobotProcessLivenessNotBlockedByInitTimeout:
 
 
 class TestEnsureOctobotProcessWaitingTimeConstantInPayload:
-    async def test_waiting_time_uses_parameter_for_recall_emissions(self, tmp_path):
+    async def test_waiting_time_uses_fast_tier_during_init_even_with_dsl_override(self, tmp_path):
         start_script = tmp_path / "start.py"
         start_script.write_text("#", encoding="utf-8")
         op = EnsureOctobotProcessOperator(
@@ -2361,6 +2361,32 @@ class TestEnsureOctobotProcessWaitingTimeConstantInPayload:
         assert isinstance(op.value, dict)
         le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
         assert isinstance(le, dict)
+        assert le.get("waiting_time") == octobot_process_ops.FAST_PING_WAITING_TIME
+
+    async def test_dsl_waiting_time_overrides_steady_tier_when_child_is_healthy(self, tmp_path):
+        inner = _healthy_recall_inner(tmp_path=tmp_path, init_state_ok=True)
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+            waiting_time=7.0,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == inner["pid"],
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_with_pid_10001),
+        ):
+            await op.pre_compute()
+        le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
         assert le.get("waiting_time") == 7.0
 
 
@@ -3927,3 +3953,187 @@ class TestRecallPathRebindsManagedChildRegistry:
         spawn_mock.assert_not_called()
         rebind_mock.assert_not_called()
         assert op.pid == 25044
+
+
+def _minimal_octobot_process_state(**updates) -> octobot_process_state_import.OctobotProcessState:
+    base_state = {
+        "http_base_url": "http://127.0.0.1:20050",
+        "web_port": 20050,
+        "node_port": 30050,
+        "user_root": "/x/ub",
+        "user_folder": "ub",
+        "log_folder": "/x/l",
+        "profile_id": "p",
+        "pid": 10001,
+        "state_file_path": "/x/ub/process_bot_state.json",
+        "executor_id": TEST_EXECUTOR_ID,
+    }
+    base_state.update(updates)
+    return octobot_process_state_import.OctobotProcessState.model_validate(base_state)
+
+
+class TestTwoTierPingWaitingTime:
+    def test_fast_when_init_state_not_ok(self):
+        recall_state = _minimal_octobot_process_state(init_state_ok=False)
+        resolved_interval = octobot_process_ops._resolve_recall_waiting_time(
+            recall_state,
+            None,
+            dsl_waiting_time=None,
+            now=1000.0,
+            ping_timeout=30.0,
+            stored_pid_running=False,
+        )
+        assert resolved_interval == octobot_process_ops.FAST_PING_WAITING_TIME
+
+    def test_steady_when_init_ok_and_child_running(self):
+        recall_state = _minimal_octobot_process_state(init_state_ok=True)
+        resolved_interval = octobot_process_ops._resolve_recall_waiting_time(
+            recall_state,
+            None,
+            dsl_waiting_time=None,
+            now=1000.0,
+            ping_timeout=30.0,
+            stored_pid_running=True,
+        )
+        assert resolved_interval == octobot_process_ops.STEADY_PING_WAITING_TIME
+
+    def test_restart_grace_window_uses_fast_tier(self):
+        recall_state = _minimal_octobot_process_state(init_state_ok=True, pid=0)
+        loaded_state = process_bot_state_import.ProcessBotState(
+            metadata=process_bot_state_import.Metadata(updated_at=995.0),
+        )
+        resolved_interval = octobot_process_ops._resolve_recall_waiting_time(
+            recall_state,
+            loaded_state,
+            dsl_waiting_time=None,
+            now=1000.0,
+            ping_timeout=30.0,
+            stored_pid_running=False,
+        )
+        assert resolved_interval == octobot_process_ops.FAST_PING_WAITING_TIME
+
+    def test_dsl_waiting_time_overrides_steady_only(self):
+        recall_state = _minimal_octobot_process_state(init_state_ok=True)
+        resolved_interval = octobot_process_ops._resolve_recall_waiting_time(
+            recall_state,
+            None,
+            dsl_waiting_time=7.0,
+            now=1000.0,
+            ping_timeout=30.0,
+            stored_pid_running=True,
+        )
+        assert resolved_interval == 7.0
+
+    def test_dsl_waiting_time_does_not_override_fast_tier(self):
+        recall_state = _minimal_octobot_process_state(init_state_ok=False)
+        resolved_interval = octobot_process_ops._resolve_recall_waiting_time(
+            recall_state,
+            None,
+            dsl_waiting_time=7.0,
+            now=1000.0,
+            ping_timeout=30.0,
+            stored_pid_running=False,
+        )
+        assert resolved_interval == octobot_process_ops.FAST_PING_WAITING_TIME
+
+    async def test_executor_restart_first_spawn_uses_fast_waiting_time(self, tmp_path):
+        (tmp_path / "start.py").write_text("#", encoding="utf-8")
+        inner = _healthy_recall_inner(
+            pid=10002,
+            tmp_path=tmp_path,
+            executor_id="old-executor-id",
+        )
+        op = octobot_process_ops.create_octobot_process_operators(
+            None, TEST_EXECUTOR_ID
+        )[0](
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=_re_calling_ensure_value(inner),
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            process_util,
+            "pid_is_running",
+            return_value=False,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": inner["user_root"],
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_return_none_mock),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock:
+            spawn_mock.return_value = mock.Mock(spec=["pid"], pid=30005)
+            await op.pre_compute()
+        le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert le.get("waiting_time") == octobot_process_ops.FAST_PING_WAITING_TIME
+        assert le.get("init_state_ok") is False
+
+
+class TestEmitEnsureRecallEaeSerialization:
+    async def test_emitted_post_iteration_eae_omits_default_only_fields(self, tmp_path):
+        start_script = tmp_path / "start.py"
+        start_script.write_text("#", encoding="utf-8")
+        op = EnsureOctobotProcessOperator(
+            user_folder="ub",
+            user_id=_PROCESS_TEST_USER_ID,
+            profile_data=_MINIMAL_PROFILE_DATA,
+            last_execution_result=None,
+        )
+        with mock.patch.object(
+            octobot_process_ops.os,
+            "getcwd",
+            return_value=str(tmp_path),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "ensure_user_profile_and_layout",
+            new=mock.AsyncMock(
+                return_value={
+                    "user_root": str(
+                        tmp_path / commons_constants.USER_FOLDER / commons_constants.AUTOMATIONS_FOLDER / "ub"
+                    ),
+                    "profile_id": "x",
+                    "already_prepared": True,
+                }
+            ),
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_listen_port_pair_with_shared_scan_offset",
+            return_value=(20050, 30050),
+        ), mock.patch.object(
+            process_util,
+            "spawn_managed_subprocess",
+        ) as spawn_mock, mock.patch.object(
+            process_util,
+            "pid_is_running",
+            side_effect=lambda process_id: process_id == 10001,
+        ), mock.patch.object(
+            octobot_process_ops,
+            "_load_process_bot_state",
+            new=mock.AsyncMock(side_effect=_async_live_process_bot_state_with_pid_10001),
+        ):
+            spawn_mock.return_value.pid = 10001
+            await op.pre_compute()
+        le = op.value[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        post_iteration_payload = le[octobot_flow_entities.PostIterationActionsDetails.__name__]
+        emitted_eae_dict = post_iteration_payload["updated_exchange_account_elements"]
+        assert "trade_summaries" not in emitted_eae_dict
+

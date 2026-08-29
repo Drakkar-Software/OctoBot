@@ -16,6 +16,7 @@
 
 import asyncio
 import contextlib
+import copy
 import importlib
 import json
 import os
@@ -29,7 +30,10 @@ import dbos
 
 import octobot_trading.constants
 import octobot_trading.errors as octobot_trading_errors
+import octobot_trading.enums as trading_enums
 import octobot_commons.cryptography
+
+import octobot.community.wallet_backend.errors as wallet_backend_errors_module
 
 import octobot_copy.constants as copy_constants
 import octobot_copy.errors as copy_errors
@@ -97,6 +101,30 @@ def _automation_state_dict_with_scheduled_to(
         "current_execution": {"scheduled_to": scheduled_to},
     }
     return state
+
+
+def _automation_state_with_trade_count(trade_count: int) -> octobot_flow.entities.AutomationState:
+    order_columns = trading_enums.ExchangeConstantsOrderColumns
+    trades = [
+        {
+            order_columns.EXCHANGE_TRADE_ID.value: f"trade-{trade_index}",
+            order_columns.SYMBOL.value: "BTC/USDT",
+            order_columns.TIMESTAMP.value: float(trade_index),
+        }
+        for trade_index in range(trade_count)
+    ]
+    elements = octobot_flow.entities.ExchangeAccountElements()
+    elements.trades = trades
+    exchange_details = octobot_flow.entities.ExchangeAccountDetails()
+    exchange_details.exchange_details.exchange_account_id = "acc-sync-1"
+    automation_state = octobot_flow.entities.AutomationState(
+        automation=octobot_flow.entities.AutomationDetails(
+            metadata=octobot_flow.entities.AutomationMetadata(automation_id="automation_1"),
+        ),
+        exchange_account_details=exchange_details,
+    )
+    automation_state.automation.exchange_account_elements = elements
+    return automation_state
 
 
 def _octobot_actions_job_mock_class_pending_priority_skipped(
@@ -856,8 +884,6 @@ class TestExecuteIteration:
     async def test_execute_iteration_persists_open_orders_to_account_trading(
         self, import_automation_workflow, task
     ):
-        import octobot_trading.enums as trading_enums
-
         task.user_id = "0xwallet-trading-sync"
         task.content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
             "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
@@ -921,9 +947,6 @@ class TestExecuteIteration:
     async def test_execute_iteration_continues_when_trading_persistence_wallet_missing(
         self, import_automation_workflow, task
     ):
-        import octobot.community.wallet_backend.errors as wallet_backend_errors_module
-        import octobot_trading.enums as trading_enums
-
         task.user_id = "0xwallet-trading-sync"
         task.content = json.dumps({"params": {"ACTIONS": "trade", "EXCHANGE_FROM": "binance",
             "ORDER_SYMBOL": "ETH/BTC", "ORDER_AMOUNT": 1, "ORDER_TYPE": "market",
@@ -975,6 +998,142 @@ class TestExecuteIteration:
 
         parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
         assert parsed_progress_status.error is None
+
+
+class TestPersistBeforeTrimTrades:
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_persist_receives_full_trades_then_state_trimmed_to_live_window(
+        self, import_automation_workflow, task
+    ):
+        task.user_id = "0xwallet-trading-sync"
+        task.content = json.dumps({"params": {"ACTIONS": "trade"}})
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        automation_state = _automation_state_with_trade_count(120)
+        next_actions_description = octobot_flow_client.OctoBotActionsJobDescription(
+            state=automation_state.to_dict(include_default_values=False),
+        )
+        action = octobot_flow.entities.ConfiguredActionDetails(id="action_1", action="trade")
+        mock_result = octobot_flow_client.OctoBotActionsJobResult(
+            processed_actions=[action],
+            next_actions_description=next_actions_description,
+            has_next_actions=True,
+            actions_dag=None,
+            should_stop=False,
+        )
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(result_ref, mock_result),
+        )
+        persisted_state_snapshots: list[dict] = []
+
+        def capture_persisted_state(user_id, state_dict):
+            if state_dict is not None:
+                persisted_state_snapshots.append(copy.deepcopy(state_dict))
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            task_context,
+            "encrypted_task",
+            mock.MagicMock(),
+        ) as mock_encrypted, mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+            side_effect=capture_persisted_state,
+        ):
+            mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
+            mock_encrypted.return_value.__exit__ = mock.Mock(return_value=None)
+            await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs, None
+            )
+
+        assert len(persisted_state_snapshots) == 1
+        persisted_state = octobot_flow.entities.AutomationState.from_dict(persisted_state_snapshots[0])
+        assert len(persisted_state.automation.exchange_account_elements.trades) == 120
+        trimmed_state = octobot_flow.entities.AutomationState.from_dict(mock_result.next_actions_description.state)
+        trimmed_elements = trimmed_state.automation.exchange_account_elements
+        assert len(trimmed_elements.trades) == octobot_node.constants.AUTOMATION_LIVE_STATE_MAX_TRADES
+        assert len(trimmed_elements.trade_summaries.get("BTC/USDT", [])) == 20
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_trim_runs_when_wallet_persistence_skipped(self, import_automation_workflow, task):
+        task.user_id = "0xwallet-trading-sync"
+        task.content = json.dumps({"params": {"ACTIONS": "trade"}})
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        automation_state = _automation_state_with_trade_count(120)
+        next_actions_description = octobot_flow_client.OctoBotActionsJobDescription(
+            state=automation_state.to_dict(include_default_values=False),
+        )
+        mock_result = octobot_flow_client.OctoBotActionsJobResult(
+            processed_actions=[],
+            next_actions_description=next_actions_description,
+            has_next_actions=True,
+            actions_dag=None,
+            should_stop=False,
+        )
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_on_result=lambda result_ref: _apply_octobot_actions_job_result_template(result_ref, mock_result),
+        )
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            task_context,
+            "encrypted_task",
+            mock.MagicMock(),
+        ) as mock_encrypted, mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "trim_live_trades_in_iteration_state",
+        ) as trim_mock:
+            mock_encrypted.return_value.__enter__ = mock.Mock(return_value=None)
+            mock_encrypted.return_value.__exit__ = mock.Mock(return_value=None)
+            await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs, None
+            )
+
+        trim_mock.assert_called_once_with(
+            mock_result.next_actions_description.state,
+            octobot_node.constants.AUTOMATION_LIVE_STATE_MAX_TRADES,
+        )
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_postponed_iteration_skips_persist_and_trim(
+        self, import_automation_workflow, task
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(scheduled_to)
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        skip_error = octobot_flow.errors.PendingPriorityActionsSkippedError("skipped")
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            skip_error=skip_error,
+        )
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ) as persist_mock, mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "trim_live_trades_in_iteration_state",
+        ) as trim_mock:
+            await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs, None
+            )
+
+        persist_mock.assert_not_called()
+        trim_mock.assert_not_called()
 
 
 class TestExecuteIterationPendingPriorityActionsSkippedError:

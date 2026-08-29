@@ -403,7 +403,7 @@ def _fill_protocol_automation_state(
             assets = octobot_trading_portfolios_protocol.to_protocol_assets(portfolio.content)
         orders = _order_summaries_from_open_orders(exchange_elements.orders.open_orders) or None
         positions = _position_summaries(exchange_elements.positions) or None
-        trades = _trade_summaries(exchange_elements.trades) or None
+        trades = _automation_trade_summaries(exchange_elements) or None
     metadata = protocol_automation_state.metadata.model_copy(
         update={
             "updated_at": _metadata_updated_at_from_execution(
@@ -474,3 +474,24 @@ def _trade_summaries(trades: list[dict]) -> list[protocol_models.TradeSummary]:
             continue
         summaries.append(protocol_models.TradeSummary(id=str(trade_id), symbol=str(symbol)))
     return summaries
+
+
+def _automation_trade_summaries(
+    exchange_elements: flow_entities.ExchangeAccountElements,
+) -> list[protocol_models.TradeSummary]:
+    summaries_by_id: dict[str, protocol_models.TradeSummary] = {}
+    for symbol, trade_ids in (exchange_elements.trade_summaries or {}).items():
+        symbol_text = str(symbol).strip()
+        if not symbol_text:
+            continue
+        for trade_id in trade_ids or []:
+            trade_id_text = str(trade_id).strip()
+            if not trade_id_text:
+                continue
+            summaries_by_id[trade_id_text] = protocol_models.TradeSummary(
+                id=trade_id_text,
+                symbol=symbol_text,
+            )
+    for trade_summary in _trade_summaries(exchange_elements.trades):
+        summaries_by_id[trade_summary.id] = trade_summary
+    return list(summaries_by_id.values())

@@ -17,6 +17,10 @@
 import pytest
 import mock
 
+import octobot_flow.entities as flow_entities_module
+import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
+import octobot_trading.enums as trading_enums_module
+
 import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 from octobot_node.scheduler.task_context import encrypted_task
 from octobot_node.models import Task
@@ -211,3 +215,67 @@ class TestEncryptedTask:
         mock_decrypt.assert_called_once_with(
             "encrypted_content", "metadata", user_ecdsa_public_key=b"per_task_key"
         )
+
+
+class TestEncryptedTaskTrimmedState:
+    def test_encrypts_trimmed_next_actions_description_state(self) -> None:
+        mock_settings = mock.Mock()
+        mock_settings.TASKS_SERVER_RSA_PRIVATE_KEY = None
+        mock_settings.TASKS_USER_ECDSA_PUBLIC_KEY = None
+
+        order_columns = trading_enums_module.ExchangeConstantsOrderColumns
+        trades = [
+            {
+                order_columns.EXCHANGE_TRADE_ID.value: f"trade-{trade_index}",
+                order_columns.SYMBOL.value: "BTC/USDT",
+                order_columns.TIMESTAMP.value: float(trade_index),
+            }
+            for trade_index in range(120)
+        ]
+        elements = flow_entities_module.ExchangeAccountElements(trades=trades)
+        automation_state = flow_entities_module.AutomationState(
+            automation=flow_entities_module.AutomationDetails(
+                metadata=flow_entities_module.AutomationMetadata(automation_id="automation-1"),
+                exchange_account_elements=elements,
+            ),
+        )
+        job_description = octobot_flow_client.OctoBotActionsJobDescription(
+            state=automation_state.to_dict(include_default_values=False),
+            auth_details={},
+            params={},
+        )
+        to_update_result = octobot_flow_client.OctoBotActionsJobResult(
+            processed_actions=[mock.Mock()],
+            next_actions_description=job_description,
+            actions_dag=mock.Mock(),
+        )
+        captured_state_dicts: list[dict] = []
+
+        def capture_encrypt(state_dict: dict) -> tuple[str, str]:
+            captured_state_dicts.append(state_dict)
+            return "encrypted_payload", "encryption_meta"
+
+        mock_encrypt = mock.Mock(side_effect=capture_encrypt)
+
+        with mock.patch("octobot_node.config.settings", mock_settings), \
+             mock.patch(
+                 "octobot_node.scheduler.task_context.encryption.get_next_encrypted_if_needed_content_and_metadata",
+                 mock_encrypt,
+             ):
+            task = Task(name="test_task", content="plain")
+            with encrypted_task(task, to_update_result=to_update_result):
+                job_description.state = automation_state.to_dict(include_default_values=False)
+                account_state_persistence_module.trim_live_trades_in_iteration_state(
+                    job_description.state,
+                    100,
+                )
+
+        assert len(captured_state_dicts) == 1
+        restored_state = flow_entities_module.AutomationState.from_dict(
+            captured_state_dicts[0]["state"]
+        )
+        trimmed_elements = restored_state.automation.exchange_account_elements
+        assert trimmed_elements is not None
+        assert len(trimmed_elements.trades) == 100
+        assert len(trimmed_elements.trade_summaries.get("BTC/USDT", [])) == 20
+        assert to_update_result.maybe_encrypted_next_actions_description == "encrypted_payload"
