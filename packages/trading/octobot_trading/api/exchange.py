@@ -21,6 +21,7 @@ import typing
 import octobot_commons.symbols as commons_symbols
 import octobot_commons.enums as commons_enums
 
+import octobot_protocol.models as protocol_models
 import octobot_trading.constants
 import octobot_trading.enums
 import octobot_trading.exchanges as exchanges
@@ -419,3 +420,7 @@ def cancel_ccxt_throttle_task():
         # manually cancel ccxt async throttle task since it apparently can't be cancelled otherwise
         if str(task._coro).startswith("<coroutine object Throttler.looper at"):
             task.cancel()
+
+
+def get_exchanges_availability() -> list[protocol_models.ExchangeAvailability]:
+    return exchanges.util.exchange_util.get_exchanges_availability()

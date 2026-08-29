@@ -27,6 +27,7 @@ import octobot_commons.tree as commons_tree
 import octobot_commons.constants as commons_constants
 import octobot_commons.html_util as html_util
 
+import octobot_protocol.models as protocol_models
 import octobot_trading.enums as enums
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
@@ -182,6 +183,10 @@ class RestExchange(abstract_exchange.AbstractExchange):
         :return: The list of supported exchange types. Override if necessary
         """
         return [enums.ExchangeTypes.SPOT]
+
+    @classmethod
+    def get_exchange_availabilities(cls) -> list[protocol_models.ExchangeAvailability]:
+        return []
 
     @classmethod
     def get_rest_name(cls, exchange_manager):

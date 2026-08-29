@@ -64,9 +64,11 @@ docs/EditExchangeConfigConfiguration.md
 docs/EditStrategyConfiguration.md
 docs/EvaluatorConfiguration.md
 docs/ExchangeAccount.md
+docs/ExchangeAvailability.md
 docs/ExchangeConfig.md
 docs/ExchangeConfigActionResult.md
 docs/ExchangeConfigActionResultErrorMessage.md
+docs/ExchangeSupportStatus.md
 docs/Fee.md
 docs/GenericAccount.md
 docs/GenericProcessConfiguration.md
@@ -201,9 +203,11 @@ octobot_protocol/models/edit_exchange_config_configuration.py
 octobot_protocol/models/edit_strategy_configuration.py
 octobot_protocol/models/evaluator_configuration.py
 octobot_protocol/models/exchange_account.py
+octobot_protocol/models/exchange_availability.py
 octobot_protocol/models/exchange_config.py
 octobot_protocol/models/exchange_config_action_result.py
 octobot_protocol/models/exchange_config_action_result_error_message.py
+octobot_protocol/models/exchange_support_status.py
 octobot_protocol/models/fee.py
 octobot_protocol/models/generic_account.py
 octobot_protocol/models/generic_process_configuration.py
@@ -336,9 +340,11 @@ test/test_edit_exchange_config_configuration.py
 test/test_edit_strategy_configuration.py
 test/test_evaluator_configuration.py
 test/test_exchange_account.py
+test/test_exchange_availability.py
 test/test_exchange_config.py
 test/test_exchange_config_action_result.py
 test/test_exchange_config_action_result_error_message.py
+test/test_exchange_support_status.py
 test/test_fee.py
 test/test_generic_account.py
 test/test_generic_process_configuration.py

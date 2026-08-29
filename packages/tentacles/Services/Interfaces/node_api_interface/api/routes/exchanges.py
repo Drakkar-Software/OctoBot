@@ -18,6 +18,7 @@ import typing
 
 import octobot_commons.json_util as json_util
 import octobot_protocol.models as protocol_models
+import octobot_trading.api as trading_api
 import octobot_trading.errors as trading_errors
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
@@ -29,6 +30,11 @@ except ImportError:
 
 
 router = APIRouter(prefix="/exchanges", tags=["exchanges"])
+
+
+@router.get("/", response_model=list[protocol_models.ExchangeAvailability])
+def get_exchanges_availability() -> list[protocol_models.ExchangeAvailability]:
+    return trading_api.get_exchanges_availability()
 
 
 def _exchange_config_from_query(

@@ -43,3 +43,43 @@ class TestOptimisticApiKeyRightsWhenPermissionsUnsupported:
             trading_enums.APIKeyRights.SPOT_TRADING,
             trading_enums.APIKeyRights.FUTURES_TRADING,
         ]
+
+
+class TestExchangeTypeToTradingType:
+    def test_maps_spot_exchange_type(self):
+        assert (
+            protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE.get(
+                trading_enums.ExchangeTypes.SPOT,
+            )
+            == protocol_models.TradingType.SPOT
+        )
+
+    def test_maps_future_exchange_type(self):
+        assert (
+            protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE.get(
+                trading_enums.ExchangeTypes.FUTURE,
+            )
+            == protocol_models.TradingType.FUTURES
+        )
+
+    def test_maps_margin_exchange_type(self):
+        assert (
+            protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE.get(
+                trading_enums.ExchangeTypes.MARGIN,
+            )
+            == protocol_models.TradingType.MARGIN
+        )
+
+    def test_maps_option_exchange_type(self):
+        assert (
+            protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE.get(
+                trading_enums.ExchangeTypes.OPTION,
+            )
+            == protocol_models.TradingType.OPTIONS
+        )
+
+    def test_is_bijection_of_trading_type_to_exchange_type(self):
+        assert protocol_trading_mapping.EXCHANGE_TYPE_TO_TRADING_TYPE == {
+            exchange_type: trading_type
+            for trading_type, exchange_type in protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.items()
+        }

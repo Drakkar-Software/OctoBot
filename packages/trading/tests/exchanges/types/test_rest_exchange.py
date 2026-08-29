@@ -34,3 +34,8 @@ class TestRestExchangeGetMyRecentTradesExhaustHistory:
         )
         exchange.connector.get_my_recent_trades.assert_not_awaited()
         assert result == [{"id": "order-1"}]
+
+
+class TestRestExchangeGetExchangeAvailabilities:
+    def test_default_returns_empty_list(self):
+        assert rest_exchange_module.RestExchange.get_exchange_availabilities() == []

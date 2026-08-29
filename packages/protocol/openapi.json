@@ -642,6 +642,15 @@
           "margin"
         ]
       },
+      "ExchangeSupportStatus": {
+        "description": "ExchangeSupportStatus",
+        "type": "string",
+        "enum": [
+          "officially_supported",
+          "partially_tested",
+          "untested"
+        ]
+      },
       "HistoricalAssetValue": {
         "description": "HistoricalAssetValue",
         "type": "object",
@@ -3001,6 +3010,49 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ExchangeAvailability": {
+        "description": "ExchangeAvailability",
+        "type": "object",
+        "required": [
+          "internal_name",
+          "name",
+          "available_trading_types"
+        ],
+        "properties": {
+          "internal_name": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "available_trading_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradingType"
+            }
+          },
+          "support_type": {
+            "$ref": "#/components/schemas/ExchangeSupportStatus"
+          },
+          "sandboxable": {
+            "type": "boolean",
+            "default": false
+          },
+          "broker_enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "register_url": {
+            "type": "string"
+          },
+          "api_url": {
+            "type": "string"
           }
         }
       }

@@ -522,8 +522,12 @@ def _use_request_counter(
 
 def ccxt_exchange_class_factory(exchange_name):
     # Prefer OctoBot-specific ccxt subclasses (async_support.ob_<id>) when exported.
-    if not exchange_name.startswith("ob_"):
-        if ob_subclass := getattr(async_ccxt, f"ob_{exchange_name}", None):
+    if not exchange_name.startswith(constants.OB_EXCHANGE_PREFIX):
+        if ob_subclass := getattr(
+            async_ccxt,
+            f"{constants.OB_EXCHANGE_PREFIX}{exchange_name}",
+            None,
+        ):
             return ob_subclass
     return getattr(async_ccxt, exchange_name)
 
