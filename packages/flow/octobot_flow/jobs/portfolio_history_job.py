@@ -339,10 +339,10 @@ def _derive_price_symbols(
     """Build the set of symbols whose daily prices should be cached."""
     base_assets: set[str] = set()
     for trading_symbol in trade_symbols:
-        if "/" not in trading_symbol:
+        if not symbol_util.is_symbol(trading_symbol):
             continue
-        base_currency, _quote_currency = trading_symbol.split("/", 1)
-        if base_currency in commons_constants.USD_LIKE_COINS:
+        base_currency, _quote_currency = symbol_util.parse_symbol(trading_symbol).base_and_quote()
+        if symbol_util.is_usd_like_coin(base_currency):
             continue
         if base_currency and base_currency != reference_market:
             base_assets.add(base_currency)
@@ -351,7 +351,7 @@ def _derive_price_symbols(
         if (
             not transaction_currency
             or transaction_currency == reference_market
-            or transaction_currency in commons_constants.USD_LIKE_COINS
+            or symbol_util.is_usd_like_coin(transaction_currency)
         ):
             continue
         base_assets.add(transaction_currency)
@@ -367,9 +367,9 @@ def _derive_price_symbols(
 
 
 def _is_valid_trading_symbol(symbol: str) -> bool:
-    if "/" not in symbol:
+    if not symbol_util.is_symbol(symbol):
         return False
-    base_currency, quote_currency = symbol.split("/", 1)
-    if base_currency in commons_constants.USD_LIKE_COINS:
+    base_currency, quote_currency = symbol_util.parse_symbol(symbol).base_and_quote()
+    if symbol_util.is_usd_like_coin(base_currency):
         return False
     return bool(base_currency) and bool(quote_currency) and base_currency != quote_currency

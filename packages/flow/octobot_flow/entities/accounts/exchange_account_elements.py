@@ -1,6 +1,5 @@
 import copy
 import dataclasses
-import decimal
 import typing
 
 import octobot_commons.logging
@@ -223,64 +222,20 @@ class ExchangeAccountElements(account_elements_import.AccountElements):
         return aggregated
 
     def _aggregate_portfolio_from_snapshot(self, snapshot: "ExchangeAccountElements") -> None:
-        for asset_name, holdings in snapshot.portfolio.content.items():
-            if asset_name not in self.portfolio.content:
-                self.portfolio.content[asset_name] = dict(holdings)
-                continue
-            merged_holdings = self.portfolio.content[asset_name]
-            for holding_key, holding_value in holdings.items():
-                if holding_key in merged_holdings:
-                    merged_holdings[holding_key] = self._sum_numeric_holdings(
-                        merged_holdings[holding_key],
-                        holding_value,
-                    )
-                else:
-                    merged_holdings[holding_key] = holding_value
-
-    @staticmethod
-    def _sum_numeric_holdings(
-        left_value: typing.Union[float, decimal.Decimal, int],
-        right_value: typing.Union[float, decimal.Decimal, int],
-    ) -> typing.Union[float, decimal.Decimal]:
-        if isinstance(left_value, decimal.Decimal) or isinstance(right_value, decimal.Decimal):
-            return decimal.Decimal(str(left_value)) + decimal.Decimal(str(right_value))
-        return left_value + right_value
+        octobot_trading.personal_data.merge_portfolio_contents(
+            self.portfolio.content,
+            snapshot.portfolio.content,
+        )
 
     def _aggregate_orders_from_snapshot(self, snapshot: "ExchangeAccountElements") -> None:
-        self.orders.open_orders = self._merge_enriched_orders_deduped(
+        self.orders.open_orders = octobot_trading.personal_data.merge_enriched_orders_deduped(
             self.orders.open_orders,
             snapshot.orders.open_orders,
         )
-        self.orders.missing_orders = self._merge_enriched_orders_deduped(
+        self.orders.missing_orders = octobot_trading.personal_data.merge_enriched_orders_deduped(
             self.orders.missing_orders,
             snapshot.orders.missing_orders,
         )
-
-    @staticmethod
-    def _merge_enriched_orders_deduped(
-        existing_orders: list[dict],
-        new_orders: list[dict],
-    ) -> list[dict]:
-        orders_by_exchange_id = octobot_trading.personal_data.get_enriched_orders_by_exchange_id(
-            list(existing_orders)
-        )
-        orders_without_exchange_id = [
-            order
-            for order in existing_orders
-            if order.get(octobot_trading.constants.STORAGE_ORIGIN_VALUE, {}).get(
-                octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
-            )
-            is None
-        ]
-        for order in new_orders:
-            exchange_order_id = order.get(octobot_trading.constants.STORAGE_ORIGIN_VALUE, {}).get(
-                octobot_trading.enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value
-            )
-            if exchange_order_id is None:
-                orders_without_exchange_id.append(order)
-                continue
-            orders_by_exchange_id[exchange_order_id] = order
-        return list(orders_by_exchange_id.values()) + orders_without_exchange_id
 
     def sync_orders_from_exchange_manager(self, exchange_manager: octobot_trading.exchanges.ExchangeManager) -> bool:
         previous_orders = self.orders

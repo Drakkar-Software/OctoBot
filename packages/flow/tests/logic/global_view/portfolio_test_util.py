@@ -6,6 +6,7 @@ import decimal
 import mock
 
 import octobot_commons.constants as commons_constants
+import octobot_trading.personal_data as personal_data_module
 
 
 def wire_portfolio_pipeline(
@@ -69,3 +70,35 @@ def wire_portfolio_pipeline(
     exchange_manager.client_symbols = ["BTC/USDC", "USDC/BTC", "BTC/USDT", "ETH/USDT"]
     exchange_manager.symbol_exists = mock.Mock(return_value=True)
     exchange_manager.exchange_name = exchange_name
+
+
+def wire_repository_factory(
+    exchange_manager,
+    balance_content: dict,
+    *,
+    open_orders: list | None = None,
+    tickers: dict | None = None,
+):
+    async def fetch_and_apply_portfolio():
+        decimal_balance = personal_data_module.parse_decimal_portfolio(
+            personal_data_module.filter_empty_values(balance_content)
+        )
+        await exchange_manager.exchange_personal_data.handle_portfolio_update(
+            decimal_balance,
+            should_notify=False,
+        )
+        return balance_content
+
+    portfolio_repository = mock.Mock()
+    portfolio_repository.fetch_and_apply_portfolio = mock.AsyncMock(side_effect=fetch_and_apply_portfolio)
+    orders_repository = mock.Mock()
+    orders_repository.fetch_open_orders = mock.AsyncMock(
+        return_value=[] if open_orders is None else open_orders
+    )
+    tickers_repository = mock.Mock()
+    tickers_repository.fetch_tickers = mock.AsyncMock(return_value=tickers or {})
+    factory = mock.Mock()
+    factory.get_portfolio_repository.return_value = portfolio_repository
+    factory.get_orders_repository.return_value = orders_repository
+    factory.get_tickers_repository.return_value = tickers_repository
+    return factory, portfolio_repository, orders_repository, tickers_repository

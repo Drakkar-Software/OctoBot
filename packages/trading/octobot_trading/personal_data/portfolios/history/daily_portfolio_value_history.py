@@ -1,17 +1,31 @@
+#  Drakkar-Software OctoBot-Trading
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 import copy
-import datetime
 import decimal
 import math
 import time
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.symbols as commons_symbols_module
+import octobot_commons.timestamp_util as timestamp_util_module
 import octobot_protocol.models as protocol_models
-import octobot_trading.api as trading_api
 import octobot_trading.exchange_data.prices.daily_prices_cache_types as daily_prices_cache_types
-
-
-def _timestamp_to_datetime(timestamp: float) -> datetime.datetime:
-    return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+import octobot_trading.exchange_data.prices.persisted_price_cache as persisted_price_cache_module
+import octobot_trading.exchange_data.ticker.persisted_ticker_cache as persisted_ticker_cache_module
 
 
 def _resolve_asset_unit_price(
@@ -27,21 +41,21 @@ def _resolve_asset_unit_price(
     if asset in commons_constants.USD_LIKE_COINS:
         return decimal.Decimal(1)
 
-    symbol = f"{asset}/{reference_market}"
-    exact_price = trading_api.get_daily_price(daily_prices, symbol, day_ts_str)
+    symbol = commons_symbols_module.merge_currencies(asset, reference_market)
+    exact_price = persisted_price_cache_module.get_close(daily_prices, symbol, day_ts_str)
     if exact_price is not None:
         return decimal.Decimal(str(exact_price))
 
-    historical_price = trading_api.get_latest_daily_close_on_or_before(
+    historical_price = persisted_price_cache_module.latest_close_on_or_before(
         daily_prices, symbol, day_timestamp,
     )
     if historical_price is not None:
         return decimal.Decimal(str(historical_price))
 
-    if trading_api.get_oldest_daily_price_timestamp(daily_prices, symbol) is not None:
+    if persisted_price_cache_module.oldest_timestamp(daily_prices, symbol) is not None:
         return None
 
-    ticker_price = trading_api.get_latest_ticker_close(latest_tickers, symbol)
+    ticker_price = persisted_ticker_cache_module.get_close(latest_tickers, symbol)
     if ticker_price is not None:
         return decimal.Decimal(str(ticker_price))
     return None
@@ -93,7 +107,7 @@ def _earliest_valuation_timestamp(
         return 0.0
     oldest_timestamps = []
     for symbol in required_symbols:
-        oldest_timestamp = trading_api.get_oldest_daily_price_timestamp(daily_prices, symbol)
+        oldest_timestamp = persisted_price_cache_module.oldest_timestamp(daily_prices, symbol)
         if oldest_timestamp is not None:
             oldest_timestamps.append(oldest_timestamp)
     if not oldest_timestamps:
@@ -101,7 +115,7 @@ def _earliest_valuation_timestamp(
     return max(oldest_timestamps)
 
 
-def _utc_day_start(timestamp: float) -> float:
+def utc_day_start(timestamp: float) -> float:
     return float(math.floor(
         timestamp / commons_constants.DAYS_TO_SECONDS
     ) * commons_constants.DAYS_TO_SECONDS)
@@ -173,11 +187,11 @@ def compute_daily_portfolio_values(
     required_symbols = _collect_required_valuation_symbols(daily_holdings, reference_market)
     earliest_valuation_timestamp = _earliest_valuation_timestamp(daily_prices, required_symbols)
 
-    end_day_timestamp = _utc_day_start(time.time())
+    end_day_timestamp = utc_day_start(time.time())
     valuation_start_timestamp = earliest_valuation_timestamp
     if valuation_start_timestamp == 0.0:
         valuation_start_timestamp = min(daily_holdings)
-    valuation_start_timestamp = _utc_day_start(valuation_start_timestamp)
+    valuation_start_timestamp = utc_day_start(valuation_start_timestamp)
     dense_holdings = _expand_sparse_daily_holdings(
         daily_holdings,
         valuation_start_timestamp,
@@ -216,7 +230,7 @@ def compute_daily_portfolio_values(
 
         valued_days.append(
             protocol_models.PortfolioHistoricalValue(
-                timestamp=_timestamp_to_datetime(day_timestamp),
+                timestamp=timestamp_util_module.utc_datetime_from_timestamp(day_timestamp),
                 total=float(total_value),
                 assets=_build_day_assets_protocol(day_assets),
             )

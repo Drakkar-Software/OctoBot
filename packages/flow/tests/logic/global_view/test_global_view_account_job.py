@@ -15,12 +15,13 @@ import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 import octobot_flow.entities
 import octobot_flow.jobs.global_view_account_job as global_view_account_job_module
 import octobot_flow.logic.accounts.account_state_persistence as account_state_persistence_module
-import octobot_flow.logic.exchange.orders.order_change_detection as order_change_detection_module
+import octobot_trading.personal_data as personal_data
 import octobot_flow.logic.global_view.exchange_account_refresh as exchange_account_refresh_module
 import octobot_flow.logic.global_view.global_view_persistence as global_view_persistence_module
 import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
 import octobot_sync.constants as sync_constants
 from tests.logic.global_view.portfolio_test_util import wire_portfolio_pipeline
+from tests.logic.global_view.portfolio_test_util import wire_repository_factory
 
 
 def _open_order_dict(exchange_id: str, symbol: str = "BTC/USDT") -> dict:
@@ -96,16 +97,31 @@ def _empty_portfolio_history_state() -> protocol_models.PortfolioHistoricalValue
     )
 
 
+def _patch_repository_factory(exchange_manager, balance_content: dict, **kwargs):
+    factory, portfolio_repository, orders_repository, tickers_repository = wire_repository_factory(
+        exchange_manager,
+        balance_content,
+        **kwargs,
+    )
+    factory_patch = mock.patch.object(
+        exchange_account_refresh_module,
+        "_create_exchange_repository_factory",
+        mock.Mock(return_value=factory),
+    )
+    return factory_patch, factory, portfolio_repository, orders_repository, tickers_repository
+
+
 @pytest.mark.asyncio
 class TestGlobalViewAccountJobRun:
     async def test_run_returns_refresh_result_shape(self):
         context = _exchange_account_context()
         exchange_manager = mock.Mock()
         exchange_manager.exchange_personal_data = mock.Mock()
-        exchange_manager.exchange.get_balance = mock.AsyncMock(return_value=_portfolio_content())
-        exchange_manager.exchange.get_open_orders = mock.AsyncMock(return_value=[])
         exchange_manager.exchange.get_option_value = mock.Mock(return_value="USDC")
         wire_portfolio_pipeline(exchange_manager, {})
+        factory_patch, _factory, portfolio_repository, orders_repository, _tickers_repository = (
+            _patch_repository_factory(exchange_manager, _portfolio_content())
+        )
 
         @contextlib.asynccontextmanager
         async def fake_exchange_manager(*_args, **_kwargs):
@@ -125,15 +141,11 @@ class TestGlobalViewAccountJobRun:
                 ensure_ticker_channel_mock,
             ),
             mock.patch.object(
-                exchange_account_refresh_module,
-                "_refresh_portfolio_valuation",
-                mock.AsyncMock(),
+                personal_data,
+                "refresh_portfolio_valuation",
+                mock.Mock(),
             ),
-            mock.patch.object(
-                exchange_account_refresh_module,
-                "_fetch_tickers",
-                mock.AsyncMock(return_value={}),
-            ),
+            factory_patch,
             mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
@@ -161,7 +173,8 @@ class TestGlobalViewAccountJobRun:
             ).run()
 
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
-        exchange_manager.exchange.get_open_orders.assert_not_called()
+        portfolio_repository.fetch_and_apply_portfolio.assert_awaited_once()
+        orders_repository.fetch_open_orders.assert_not_called()
         persist_mock.assert_called_once()
         assert persist_mock.call_args.kwargs["persist_open_orders"] is False
         assert isinstance(refresh_result, octobot_flow.entities.GlobalViewAccountRefreshResult)
@@ -175,16 +188,19 @@ class TestGlobalViewAccountJobRun:
         context = _exchange_account_context(has_bound_automation=True)
         exchange_manager = mock.Mock()
         exchange_manager.exchange_personal_data = mock.Mock()
-        exchange_manager.exchange.get_balance = mock.AsyncMock(return_value=_portfolio_content())
-        exchange_manager.exchange.get_open_orders = mock.AsyncMock(
-            return_value=[_open_order_dict("stays-order-2")],
-        )
         exchange_manager.exchange.get_option_value = mock.Mock(return_value=None)
         wire_portfolio_pipeline(exchange_manager, {})
         previous_open_orders = [
             _open_order_dict("gone-order-1", "BTC/USDT"),
             _open_order_dict("stays-order-2", "ETH/USDT"),
         ]
+        factory_patch, _factory, _portfolio_repository, orders_repository, _tickers_repository = (
+            _patch_repository_factory(
+                exchange_manager,
+                _portfolio_content(),
+                open_orders=[_open_order_dict("stays-order-2")],
+            )
+        )
 
         @contextlib.asynccontextmanager
         async def fake_exchange_manager(*_args, **_kwargs):
@@ -204,15 +220,11 @@ class TestGlobalViewAccountJobRun:
                 ensure_ticker_channel_mock,
             ),
             mock.patch.object(
-                exchange_account_refresh_module,
-                "_refresh_portfolio_valuation",
-                mock.AsyncMock(),
+                personal_data,
+                "refresh_portfolio_valuation",
+                mock.Mock(),
             ),
-            mock.patch.object(
-                exchange_account_refresh_module,
-                "_fetch_tickers",
-                mock.AsyncMock(return_value={}),
-            ),
+            factory_patch,
             mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
@@ -239,11 +251,7 @@ class TestGlobalViewAccountJobRun:
                 context,
             ).run()
 
-        called_symbols = {
-            call.kwargs.get("symbol")
-            for call in exchange_manager.exchange.get_open_orders.await_args_list
-        }
-        assert called_symbols == {"BTC/USDT", "ETH/USDT"}
+        orders_repository.fetch_open_orders.assert_awaited_once_with(["BTC/USDT", "ETH/USDT"])
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
         assert persist_mock.call_args.kwargs["persist_open_orders"] is False
         assert refresh_result.changed_order_ids == {"gone-order-1"}
@@ -252,10 +260,6 @@ class TestGlobalViewAccountJobRun:
         context = _exchange_account_context()
         exchange_manager = mock.Mock()
         exchange_manager.exchange_personal_data = mock.Mock()
-        exchange_manager.exchange.get_balance = mock.AsyncMock(return_value=_portfolio_content())
-        exchange_manager.exchange.get_open_orders = mock.AsyncMock(
-            return_value=[_open_order_dict("stays-order-2")],
-        )
         exchange_manager.exchange.get_option_value = mock.Mock(return_value=None)
         wire_portfolio_pipeline(exchange_manager, {})
         previous_open_orders = [
@@ -272,6 +276,13 @@ class TestGlobalViewAccountJobRun:
                 }
             },
         ]
+        factory_patch, _factory, _portfolio_repository, orders_repository, _tickers_repository = (
+            _patch_repository_factory(
+                exchange_manager,
+                _portfolio_content(),
+                open_orders=[_open_order_dict("stays-order-2")],
+            )
+        )
 
         @contextlib.asynccontextmanager
         async def fake_exchange_manager(*_args, **_kwargs):
@@ -291,15 +302,11 @@ class TestGlobalViewAccountJobRun:
                 ensure_ticker_channel_mock,
             ),
             mock.patch.object(
-                exchange_account_refresh_module,
-                "_refresh_portfolio_valuation",
-                mock.AsyncMock(),
+                personal_data,
+                "refresh_portfolio_valuation",
+                mock.Mock(),
             ),
-            mock.patch.object(
-                exchange_account_refresh_module,
-                "_fetch_tickers",
-                mock.AsyncMock(return_value={}),
-            ),
+            factory_patch,
             mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
                 "get_full_tentacles_setup_config",
@@ -326,11 +333,7 @@ class TestGlobalViewAccountJobRun:
                 context,
             ).run()
 
-        called_symbols = {
-            call.kwargs.get("symbol")
-            for call in exchange_manager.exchange.get_open_orders.await_args_list
-        }
-        assert called_symbols == {"BTC/USDT", "ETH/USDT"}
+        orders_repository.fetch_open_orders.assert_awaited_once_with(["BTC/USDT", "ETH/USDT"])
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
         assert persist_mock.call_args.kwargs["persist_open_orders"] is True
         assert refresh_result.changed_order_ids == {"gone-order-1"}
@@ -339,8 +342,6 @@ class TestGlobalViewAccountJobRun:
         context = _exchange_account_context(account_id="sim-account", is_simulated=True)
         exchange_manager = mock.Mock()
         exchange_manager.exchange_personal_data = mock.Mock()
-        exchange_manager.exchange.get_balance = mock.AsyncMock()
-        exchange_manager.exchange.get_open_orders = mock.AsyncMock()
         exchange_manager.exchange.get_option_value = mock.Mock(return_value="USDC")
         wire_portfolio_pipeline(exchange_manager, {}, portfolio_total=0.0)
         previous_open_orders = [
@@ -361,6 +362,7 @@ class TestGlobalViewAccountJobRun:
                 }
             },
         ]
+        create_factory_mock = mock.Mock()
 
         @contextlib.asynccontextmanager
         async def fake_exchange_manager(*_args, **_kwargs):
@@ -380,9 +382,9 @@ class TestGlobalViewAccountJobRun:
                 ensure_ticker_channel_mock,
             ),
             mock.patch.object(
-                exchange_account_refresh_module,
-                "_refresh_portfolio_valuation",
-                mock.AsyncMock(),
+                personal_data,
+                "refresh_portfolio_valuation",
+                mock.Mock(),
             ),
             mock.patch.object(
                 global_view_account_job_module.tentacles_manager_api,
@@ -404,13 +406,18 @@ class TestGlobalViewAccountJobRun:
                 return_value=previous_open_orders,
             ),
             mock.patch.object(
-                exchange_account_refresh_module.tickers_repository_module.TickersRepository,
-                "fetch_tickers",
+                exchange_account_refresh_module,
+                "_fetch_tickers",
                 mock.AsyncMock(return_value={
                     "BTC/USDT": {
                         trading_enums.ExchangeConstantsTickersColumns.CLOSE.value: 9000.0,
                     },
                 }),
+            ),
+            mock.patch.object(
+                exchange_account_refresh_module,
+                "_create_exchange_repository_factory",
+                create_factory_mock,
             ),
             mock.patch.object(
                 global_view_persistence_module,
@@ -424,11 +431,10 @@ class TestGlobalViewAccountJobRun:
             ).run()
 
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
-        exchange_manager.exchange.get_balance.assert_not_called()
-        exchange_manager.exchange.get_open_orders.assert_not_called()
+        create_factory_mock.assert_not_called()
         assert persist_mock.call_args.kwargs["persist_open_orders"] is True
         assert refresh_result.changed_order_ids == {"filled-order"}
-        remaining_exchange_ids = order_change_detection_module.open_order_exchange_ids_from_open_orders(
+        remaining_exchange_ids = personal_data.open_order_exchange_ids_from_open_orders(
             refresh_result.open_orders
         )
         assert remaining_exchange_ids == {"open-order"}

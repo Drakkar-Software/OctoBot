@@ -19,9 +19,10 @@ import octobot_trading.personal_data.trades.trades_util as trades_util
 import octobot_trading.personal_data.transactions.protocol as transactions_protocol
 import octobot_trading.personal_data.transactions.transactions_util as transactions_util
 
+import octobot_trading.personal_data as personal_data
+
 import octobot_flow.entities
 import octobot_flow.logic.accounts.portfolio_history as portfolio_history_module
-import octobot_flow.logic.exchange.orders.order_change_detection as order_change_detection_module
 
 
 def load_previous_open_order_exchange_ids(user_id: str, account_id: str) -> set[str]:
@@ -35,7 +36,7 @@ def load_previous_open_order_exchange_ids(user_id: str, account_id: str) -> set[
     account_trading = trading_state.account_trading
     if account_trading is None or account_trading.orders is None:
         return set()
-    return order_change_detection_module.open_order_exchange_ids_from_protocol_orders(
+    return personal_data.open_order_exchange_ids_from_protocol_orders(
         account_trading.orders
     )
 
