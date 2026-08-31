@@ -23,6 +23,8 @@ class Collections(enum.StrEnum):
     USER_ACCOUNTS_AUTH = "user-accounts-auth"
     USER_ACCOUNTS_TRADING = "user-accounts-trading"
     USER_ACCOUNTS_HISTORY = "user-accounts-history"
+    USER_ACCOUNTS_HISTORY_AGGREGATED_REAL = "user-accounts-history-aggregated-real"
+    USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED = "user-accounts-history-aggregated-simulated"
     USER_SETTINGS = "user-settings"
     USER_ACTIONS = "user-actions"
     DEBUG = "debug"

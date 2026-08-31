@@ -87,7 +87,7 @@ def test_fallback_to_default_config():
     assert config.version == 1
     assert config.namespaces is not None
     ns_collections = config.namespaces["octobot"].collections
-    assert len(ns_collections) == 9
+    assert len(ns_collections) == 11
     by_name = {c.name: c for c in ns_collections}
     assert set(by_name) == {
         "user-data",
@@ -95,6 +95,8 @@ def test_fallback_to_default_config():
         "user-accounts-auth",
         "user-accounts-trading",
         "user-accounts-history",
+        "user-accounts-history-aggregated-real",
+        "user-accounts-history-aggregated-simulated",
         "user-settings",
         "user-strategies",
         "user-actions",
@@ -105,6 +107,10 @@ def test_fallback_to_default_config():
     assert by_name["user-accounts-auth"].storage_path == "users/{identity}/accounts/auth"
     assert by_name["user-accounts-trading"].storage_path == "users/{identity}/accounts/{account_id}/trading"
     assert by_name["user-accounts-history"].storage_path == "users/{identity}/accounts/{account_id}/history"
+    assert by_name["user-accounts-history-aggregated-real"].storage_path == "users/{identity}/accounts/history/real"
+    assert by_name["user-accounts-history-aggregated-simulated"].storage_path == (
+        "users/{identity}/accounts/history/simulated"
+    )
     assert by_name["user-settings"].storage_path == "users/{identity}/settings"
     assert by_name["user-strategies"].storage_path == "users/{identity}/strategies"
     assert by_name["user-actions"].storage_path == "users/{identity}/actions"
@@ -113,6 +119,12 @@ def test_fallback_to_default_config():
         assert col.read_roles == ["self"]
         assert col.write_roles == ["self"]
         assert col.encryption == "delegated"
+    for history_collection_name in (
+        "user-accounts-history",
+        "user-accounts-history-aggregated-real",
+        "user-accounts-history-aggregated-simulated",
+    ):
+        assert by_name[history_collection_name].pull_only is True
     actions = by_name["user-actions"]
     assert actions.append_only is not None
     assert actions.append_only.type == "by_timestamp"

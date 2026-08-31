@@ -175,6 +175,144 @@ class TestGetData:
         assert wrapper["data"] == encrypted_blob_json
 
     @pytest.mark.asyncio
+    async def test_USER_ACCOUNTS_HISTORY_collection(self):
+        expected_plain = json.dumps({"version": "1.0.0", "history": {"unit": "USDT", "values": []}})
+        stub_state = mock.MagicMock()
+        stub_state.to_json.return_value = expected_plain
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_HISTORY.value,
+            params={"account_id": "acc-1"},
+        )
+        with (
+            mock.patch("octobot_sync.server.accounts_history_protocol") as mock_proto,
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
+        ):
+            mock_proto.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions = (
+                mock.AsyncMock(return_value=stub_state)
+            )
+            result = await server.get_data("users/0xwallet/accounts/acc-1/history", context)
+        mock_proto.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions.assert_awaited_once_with(
+            "0xwallet",
+            "acc-1",
+        )
+        wrapper = json.loads(result)
+        assert wrapper["hash"] == sync_crypto.sha256_hex(expected_plain)
+        decrypted = sync_crypto.decrypt_wire_to_utf8_json(
+            wrapper["data"],
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS_HISTORY.value,
+        )
+        assert decrypted == expected_plain
+
+    @pytest.mark.asyncio
+    async def test_USER_ACCOUNTS_HISTORY_AGGREGATED_REAL_collection(self):
+        expected_plain = json.dumps({"version": "1.0.0", "history": None})
+        stub_state = mock.MagicMock()
+        stub_state.to_json.return_value = expected_plain
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_REAL.value,
+        )
+        with (
+            mock.patch("octobot_sync.server.accounts_history_protocol") as mock_proto,
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
+        ):
+            mock_proto.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions = (
+                mock.AsyncMock(return_value=stub_state)
+            )
+            result = await server.get_data("users/0xwallet/accounts/history/real", context)
+        mock_proto.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions.assert_awaited_once_with(
+            "0xwallet",
+            is_simulated=False,
+        )
+        wrapper = json.loads(result)
+        decrypted = sync_crypto.decrypt_wire_to_utf8_json(
+            wrapper["data"],
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_REAL.value,
+        )
+        assert decrypted == expected_plain
+
+    @pytest.mark.asyncio
+    async def test_USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED_collection(self):
+        expected_plain = json.dumps({"version": "1.0.0", "history": None})
+        stub_state = mock.MagicMock()
+        stub_state.to_json.return_value = expected_plain
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED.value,
+        )
+        with (
+            mock.patch("octobot_sync.server.accounts_history_protocol") as mock_proto,
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
+        ):
+            mock_proto.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions = (
+                mock.AsyncMock(return_value=stub_state)
+            )
+            result = await server.get_data("users/0xwallet/accounts/history/simulated", context)
+        mock_proto.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions.assert_awaited_once_with(
+            "0xwallet",
+            is_simulated=True,
+        )
+        wrapper = json.loads(result)
+        decrypted = sync_crypto.decrypt_wire_to_utf8_json(
+            wrapper["data"],
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED.value,
+        )
+        assert decrypted == expected_plain
+
+    @pytest.mark.asyncio
+    async def test_USER_ACCOUNTS_HISTORY_raises_when_account_id_missing(self):
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_HISTORY.value,
+        )
+        with pytest.raises(errors.OctobotSyncAccountIdMissingError):
+            await server.get_data("users/0xwallet/accounts/acc-1/history", context)
+
+    @pytest.mark.asyncio
+    async def test_USER_ACCOUNTS_HISTORY_empty_state_encrypts(self):
+        expected_plain = json.dumps({"version": "1.0.0", "history": None})
+        stub_state = mock.MagicMock()
+        stub_state.to_json.return_value = expected_plain
+        context = _make_context(
+            identity="0xwallet",
+            collection=enums.Collections.USER_ACCOUNTS_HISTORY.value,
+            params={"account_id": "acc-1"},
+        )
+        with (
+            mock.patch("octobot_sync.server.accounts_history_protocol") as mock_proto,
+            mock.patch(
+                "octobot_sync.server._get_wallet_private_key",
+                return_value=_TEST_WALLET_PRIVATE_KEY,
+            ),
+        ):
+            mock_proto.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions = (
+                mock.AsyncMock(return_value=stub_state)
+            )
+            result = await server.get_data("users/0xwallet/accounts/acc-1/history", context)
+        wrapper = json.loads(result)
+        assert wrapper["v"] == 1
+        assert wrapper["hash"] == sync_crypto.sha256_hex(expected_plain)
+        decrypted = sync_crypto.decrypt_wire_to_utf8_json(
+            wrapper["data"],
+            _TEST_WALLET_PRIVATE_KEY,
+            enums.Collections.USER_ACCOUNTS_HISTORY.value,
+        )
+        assert decrypted == expected_plain
+
+    @pytest.mark.asyncio
     async def test_unmatched_collection_reads_opaque_store(self):
         """Any collection without a protocol-bridge case falls through to
         opaque filesystem storage and the node never touches the ciphertext."""
