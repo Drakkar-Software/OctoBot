@@ -12,6 +12,8 @@ import octobot_trading.personal_data.portfolios.protocol as portfolios_protocol
 import octobot_flow.entities
 import octobot_flow.logic.exchange.simulator.simulated_order_fill_detector as simulated_order_fill_detector_module
 import octobot_flow.repositories.exchange.exchange_repository_factory as exchange_repository_factory_module
+import octobot_flow.repositories.exchange.orders_repository as orders_repository_module
+import octobot_flow.repositories.exchange.portfolio_repository as portfolio_repository_module
 import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
 
 
@@ -74,6 +76,9 @@ async def refresh_exchange_account(
             ticker_close_by_symbol,
         )
     else:
+        await portfolio_repository_module.PortfolioRepository.ensure_temporary_balance_channel(exchange_manager)
+        if fetch_open_orders:
+            await orders_repository_module.OrdersRepository.ensure_temporary_orders_channel(exchange_manager)
         repository_factory = _create_exchange_repository_factory(exchange_manager)
         portfolio_repository = repository_factory.get_portfolio_repository()
         await portfolio_repository.fetch_and_apply_portfolio()

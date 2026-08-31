@@ -21,6 +21,22 @@ def _open_order_dict(exchange_id: str, symbol: str) -> dict:
     }
 
 
+class TestOrdersRepositoryEnsureTemporaryOrdersChannel:
+    async def test_creates_orders_producer_only(self):
+        exchange_manager = mock.Mock()
+        with mock.patch(
+            "octobot_trading.exchanges.create_producers",
+            mock.AsyncMock(),
+        ) as create_producers_mock:
+            await orders_repository_module.OrdersRepository.ensure_temporary_orders_channel(exchange_manager)
+
+        create_producers_mock.assert_awaited_once_with(
+            exchange_manager,
+            [trading_personal_data.OrdersUpdater],
+            start_producers=False,
+        )
+
+
 class TestFetchOpenOrders:
     async def test_returns_parsed_orders_from_updater(self):
         eth_order = _open_order_dict("stays-order-2", "ETH/USDT")

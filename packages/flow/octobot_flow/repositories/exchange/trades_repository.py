@@ -6,6 +6,7 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.personal_data as trading_personal_data
+import octobot_trading.personal_data.trades.trades_util as trades_util_module
 
 import octobot_flow.repositories.exchange.base_exchange_repository as base_exchange_repository_import
 
@@ -60,6 +61,31 @@ def _parse_raw_trades(
         ):
             parsed_trades.append(parsed_trade)
     return parsed_trades, skipped_symbols, skipped_trade_count
+
+
+def _split_symbols_by_fetch_mode(
+    symbols: list[str],
+    symbol_since_ms: dict[str, int] | None,
+) -> tuple[list[str], dict[str, int]]:
+    if not symbol_since_ms:
+        return list(symbols), {}
+    full_symbols: list[str] = []
+    incremental_symbols: dict[str, int] = {}
+    for trading_symbol in symbols:
+        if trading_symbol in symbol_since_ms:
+            incremental_symbols[trading_symbol] = symbol_since_ms[trading_symbol]
+        else:
+            full_symbols.append(trading_symbol)
+    return full_symbols, incremental_symbols
+
+
+def _merge_parsed_trades(parsed_trade_batches: list[list[dict]]) -> list[dict]:
+    merged_trades: list[dict] = []
+    for parsed_trade_batch in parsed_trade_batches:
+        if not parsed_trade_batch:
+            continue
+        merged_trades = trades_util_module.merge_trades_deduped(merged_trades, parsed_trade_batch)
+    return merged_trades
 
 
 def _log_skipped_delisted_trades(
@@ -137,6 +163,7 @@ class TradesRepository(base_exchange_repository_import.BaseExchangeRepository):
         account_id: str,
         exchange_config_id: str,
         exchange_config_name: str,
+        symbol_since_ms: dict[str, int] | None = None,
     ) -> list[dict]:
         if not symbols:
             return []
@@ -147,18 +174,25 @@ class TradesRepository(base_exchange_repository_import.BaseExchangeRepository):
             exchange_config_id=exchange_config_id,
             exchange_config_name=exchange_config_name,
         )
+        full_symbols, incremental_symbols = _split_symbols_by_fetch_mode(symbols, symbol_since_ms)
 
         if self.exchange_manager.exchange.get_option_value(
             trading_enums.ExchangeClientOptions.MY_TRADES_SYMBOL_FILTER_IS_CLIENT_SIDE
         ):
             return await self._fetch_all_trades_account_wide(
                 symbols,
+                full_symbols=full_symbols,
+                incremental_symbols=incremental_symbols,
                 existing_config_symbols=existing_config_symbols,
                 context=context,
             )
 
         _log_new_symbol_fetches(symbols, existing_config_symbols, context)
-        parsed_trades = await self._fetch_and_parse_raw_trades(symbols, context)
+        parsed_trades = await self._fetch_paginated_per_symbol(
+            full_symbols,
+            incremental_symbols,
+            context,
+        )
         self._log_fetched_trade_counts_per_symbol(parsed_trades, symbols, context)
         return parsed_trades
 
@@ -172,36 +206,95 @@ class TradesRepository(base_exchange_repository_import.BaseExchangeRepository):
         self,
         symbols: list[str],
         *,
+        since: int | None = None,
         exhaust_history: bool = False,
     ) -> list[dict]:
-        return await self._get_trades_updater().fetch_trades(
-            symbols,
-            exhaust_history=exhaust_history,
-        )
-
-    async def _fetch_all_trades_account_wide(
-        self,
-        symbols: list[str],
-        *,
-        existing_config_symbols: set[str],
-        context: _TradeFetchContext,
-    ) -> list[dict]:
-        _log_new_symbol_fetches(symbols, existing_config_symbols, context)
-        parsed_trades = await self._fetch_and_parse_raw_trades([], context)
-        self._log_fetched_trade_counts_per_symbol(parsed_trades, symbols, context)
-        return parsed_trades
+        fetch_kwargs: dict = {}
+        if since is not None:
+            fetch_kwargs["since"] = since
+        if exhaust_history:
+            fetch_kwargs["exhaust_history"] = True
+        return await self._get_trades_updater().fetch_trades(symbols, **fetch_kwargs)
 
     async def _fetch_and_parse_raw_trades(
         self,
         symbols: list[str],
         context: _TradeFetchContext,
+        *,
+        since: int | None = None,
+        exhaust_history: bool = True,
     ) -> list[dict]:
-        raw_trades = await self._fetch_raw_trades(symbols, exhaust_history=True)
+        raw_trades = await self._fetch_raw_trades(
+            symbols,
+            since=since,
+            exhaust_history=exhaust_history,
+        )
         parsed_trades, skipped_symbols, skipped_trade_count = _parse_raw_trades(
             self.exchange_manager,
             raw_trades,
         )
         _log_skipped_delisted_trades(skipped_trade_count, skipped_symbols, context)
+        return parsed_trades
+
+    async def _fetch_paginated_per_symbol(
+        self,
+        full_symbols: list[str],
+        incremental_symbols: dict[str, int],
+        context: _TradeFetchContext,
+    ) -> list[dict]:
+        parsed_trade_batches: list[list[dict]] = []
+        if full_symbols:
+            parsed_trade_batches.append(
+                await self._fetch_and_parse_raw_trades(full_symbols, context)
+            )
+        for trading_symbol, since_ms in incremental_symbols.items():
+            parsed_trade_batches.append(
+                await self._fetch_and_parse_raw_trades(
+                    [trading_symbol],
+                    context,
+                    since=since_ms,
+                    exhaust_history=True,
+                )
+            )
+        return _merge_parsed_trades(parsed_trade_batches)
+
+    async def _fetch_all_trades_account_wide(
+        self,
+        symbols: list[str],
+        *,
+        full_symbols: list[str],
+        incremental_symbols: dict[str, int],
+        existing_config_symbols: set[str],
+        context: _TradeFetchContext,
+    ) -> list[dict]:
+        _log_new_symbol_fetches(symbols, existing_config_symbols, context)
+        parsed_trade_batches: list[list[dict]] = []
+        requested_symbols = set(symbols)
+        if incremental_symbols:
+            account_wide_since_ms = min(incremental_symbols.values())
+            account_wide_trades = await self._fetch_and_parse_raw_trades(
+                [],
+                context,
+                since=account_wide_since_ms,
+                exhaust_history=True,
+            )
+            parsed_trade_batches.append([
+                trade
+                for trade in account_wide_trades
+                if trade.get(_order_columns.SYMBOL.value) in requested_symbols
+            ])
+        if full_symbols:
+            if incremental_symbols:
+                for trading_symbol in full_symbols:
+                    parsed_trade_batches.append(
+                        await self._fetch_and_parse_raw_trades([trading_symbol], context)
+                    )
+            else:
+                parsed_trade_batches.append(
+                    await self._fetch_and_parse_raw_trades([], context)
+                )
+        parsed_trades = _merge_parsed_trades(parsed_trade_batches)
+        self._log_fetched_trade_counts_per_symbol(parsed_trades, symbols, context)
         return parsed_trades
 
     def _log_fetched_trade_counts_per_symbol(

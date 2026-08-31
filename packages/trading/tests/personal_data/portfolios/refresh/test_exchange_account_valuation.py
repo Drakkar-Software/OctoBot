@@ -119,7 +119,7 @@ class TestRefreshPortfolioValuation:
                 "USDT",
             )
 
-        portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values.assert_called_once_with(
+        portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values.assert_called_once_with(
             init_price_fetchers=False,
         )
         exchange_manager.exchange_personal_data.handle_portfolio_profitability_update.assert_not_called()
@@ -152,6 +152,6 @@ class TestRefreshPortfolioValuation:
             decimal.Decimal("50000"),
         )
         portfolio_manager.handle_mark_price_update.assert_not_called()
-        portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values.assert_called_once_with(
+        portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values.assert_called_once_with(
             init_price_fetchers=False,
         )

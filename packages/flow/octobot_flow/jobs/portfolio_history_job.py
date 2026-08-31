@@ -6,6 +6,7 @@ import octobot_commons.logging as commons_logging
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_protocol.models as protocol_models
 import octobot_tentacles_manager.api as tentacles_manager_api
+import octobot_trading.api as trading_api
 import octobot_trading.api.exchange as exchange_api
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as trading_exchanges
@@ -20,6 +21,7 @@ import octobot_sync.sync.collection_providers as collection_providers
 
 import octobot_flow.logic.portfolio_history.trading_history_merge as trading_history_merge_module
 import octobot_flow.logic.portfolio_history.daily_price_cache_updater as daily_price_cache_updater_module
+import octobot_flow.logic.portfolio_history.trade_fetch_cursors as trade_fetch_cursors_module
 import octobot_flow.logic.portfolio_history.trade_symbols_discovery as trade_symbols_discovery_module
 import octobot_flow.repositories.exchange.trades_repository as trades_repository_module
 import octobot_flow.repositories.exchange.transactions_repository as transactions_repository_module
@@ -142,6 +144,14 @@ class PortfolioHistoryJob:
                 fresh_transactions=all_transactions,
                 reference_market=reference_market,
             )
+            symbol_since_ms = await _build_trade_fetch_symbol_since_ms(
+                discovered_symbols,
+                account_trading,
+                exchange_config,
+                exchange_type,
+                account.id,
+                self.data_root,
+            )
             fetched_trades_count = 0
             trades = await trades_repo.fetch_trades_paginated(
                 discovered_symbols,
@@ -150,6 +160,7 @@ class PortfolioHistoryJob:
                 account_id=account.id,
                 exchange_config_id=exchange_config.id,
                 exchange_config_name=exchange_config.name,
+                symbol_since_ms=symbol_since_ms or None,
             )
             fetched_trades_count = len(trades)
             trades, dropped_trade_symbols = _filter_trades_on_live_markets(
@@ -230,6 +241,78 @@ def _load_account_trading(
         return trading_state.account_trading
     except collection_errors.CollectionNoDataError:
         return None
+
+
+async def _build_trade_fetch_symbol_since_ms(
+    discovered_symbols: list[str],
+    account_trading: protocol_models.AccountTrading | None,
+    exchange_config: protocol_models.ExchangeConfig,
+    exchange_type: str,
+    account_id: str,
+    data_root: str | None,
+) -> dict[str, int]:
+    # Load cached daily closes and derive per-symbol incremental trade-fetch cursors.
+    daily_prices = await trading_api.load_daily_prices(
+        exchange_config.exchange,
+        exchange_type,
+        exchange_config.sandboxed,
+        data_root,
+    )
+    symbol_since_ms = trade_fetch_cursors_module.build_symbol_since_ms(
+        discovered_symbols,
+        account_trading,
+        daily_prices,
+    )
+
+    # Classify symbols for logging: incremental vs full-history vs no-candle fallback.
+    persisted_trade_symbols = trade_fetch_cursors_module.symbols_with_persisted_trades(
+        account_trading,
+    )
+    incremental_symbols = set(symbol_since_ms)
+    full_fetch_symbols = [
+        trading_symbol
+        for trading_symbol in discovered_symbols
+        if trading_symbol not in incremental_symbols
+    ]
+    global_cursor_symbols = sorted(
+        trading_symbol
+        for trading_symbol in discovered_symbols
+        if trading_symbol in incremental_symbols
+        and trade_fetch_cursors_module.uses_global_daily_price_cursor(daily_prices, trading_symbol)
+    )
+    no_candle_fallback_symbols = sorted(
+        trading_symbol
+        for trading_symbol in persisted_trade_symbols
+        if trading_symbol in discovered_symbols
+        and trading_symbol not in incremental_symbols
+        and not trade_fetch_cursors_module.uses_global_daily_price_cursor(daily_prices, trading_symbol)
+    )
+
+    if incremental_symbols or full_fetch_symbols:
+        logger.info(
+            "Trade fetch for %s account %s: %d incremental, %d full-history symbol(s)",
+            exchange_config.exchange,
+            account_id,
+            len(incremental_symbols),
+            len(full_fetch_symbols),
+        )
+    if global_cursor_symbols:
+        logger.info(
+            "Using global daily candle cursor for USD-like pair(s) on %s account %s: %s",
+            exchange_config.exchange,
+            account_id,
+            ", ".join(global_cursor_symbols),
+        )
+    if no_candle_fallback_symbols:
+        logger.info(
+            "Falling back to full trade history for %s on %s account %s "
+            "(persisted trades but no daily candle cache): %s",
+            exchange_config.exchange,
+            exchange_config.name or exchange_config.id,
+            account_id,
+            ", ".join(no_candle_fallback_symbols),
+        )
+    return symbol_since_ms
 
 
 def _result_metadata_from_context(

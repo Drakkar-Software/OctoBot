@@ -34,8 +34,7 @@ import octobot_flow.logic.exchange.simulator.simulated_portfolio_seeder as simul
 
 import octobot_flow.logic.global_view.exchange_account_refresh as exchange_account_refresh_module
 
-import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
-
+from tests.logic.global_view.portfolio_test_util import patch_temporary_exchange_channel_ensure
 from tests.logic.global_view.portfolio_test_util import wire_portfolio_pipeline
 
 from tests.logic.global_view.portfolio_test_util import wire_repository_factory
@@ -148,21 +147,11 @@ class TestRefreshExchangeAccountPortfolio:
 
         )
 
-        ensure_ticker_channel_mock = mock.AsyncMock()
-
         refresh_valuation_mock = mock.Mock()
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                ensure_ticker_channel_mock,
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(
 
@@ -246,15 +235,7 @@ class TestRefreshExchangeAccountPortfolio:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(
 
@@ -400,15 +381,7 @@ class TestRefreshExchangeAccountPortfolio:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(
 
@@ -502,15 +475,7 @@ class TestRefreshExchangeAccountPortfolio:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(
 
@@ -570,15 +535,7 @@ class TestRefreshExchangeAccountRepositoryBranches:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(personal_data, "refresh_portfolio_valuation", mock.Mock()),
 
@@ -630,15 +587,7 @@ class TestRefreshExchangeAccountRepositoryBranches:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(personal_data, "refresh_portfolio_valuation", mock.Mock()),
 
@@ -698,15 +647,7 @@ class TestRefreshExchangeAccountRepositoryBranches:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(personal_data, "refresh_portfolio_valuation", mock.Mock()),
 
@@ -762,15 +703,7 @@ class TestDetectChangedOrderIds:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(personal_data, "refresh_portfolio_valuation", mock.Mock()),
 
@@ -820,15 +753,7 @@ class TestDetectChangedOrderIds:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(personal_data, "refresh_portfolio_valuation", mock.Mock()),
 
@@ -886,15 +811,7 @@ class TestRefreshExchangeAccountLogging:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(
 
@@ -980,15 +897,7 @@ class TestSimulatedTickerFetchMerge:
 
         with (
 
-            mock.patch.object(
-
-                tickers_repository_module.TickersRepository,
-
-                "ensure_temporary_ticker_channel",
-
-                mock.AsyncMock(),
-
-            ),
+            patch_temporary_exchange_channel_ensure(),
 
             mock.patch.object(
 
