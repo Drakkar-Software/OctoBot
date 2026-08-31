@@ -112,7 +112,9 @@ class Scheduler:
         """Register DBOS workflow ID provider and add workflow file handler for per-workflow log files."""
         octobot_commons.logging.add_context_based_file_handler(
             octobot_node.constants.AUTOMATION_LOGS_FOLDER,
-            self._get_dbos_workflow_id
+            self._get_dbos_workflow_id,
+            max_file_bytes=octobot_node.constants.AUTOMATION_LOG_FILE_MAX_BYTES,
+            trim_lines_fraction=octobot_node.constants.AUTOMATION_LOG_FILE_TRIM_LINES_FRACTION,
         )
 
     @staticmethod

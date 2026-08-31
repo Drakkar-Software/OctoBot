@@ -23,6 +23,14 @@ except ImportError:
     BASE_LOGS_FOLDER = "logs"
 
 AUTOMATION_LOGS_FOLDER = f"{BASE_LOGS_FOLDER}/automations"
+_AUTOMATION_LOG_FILE_MAX_MIB = 10
+AUTOMATION_LOG_FILE_MAX_BYTES = int(
+    os.getenv(
+        "AUTOMATION_LOG_FILE_MAX_BYTES",
+        str(_AUTOMATION_LOG_FILE_MAX_MIB * 1024 * 1024),
+    )
+)
+AUTOMATION_LOG_FILE_TRIM_LINES_FRACTION = 0.2
 PARENT_WORKFLOW_ID_LENGTH = 36 # length of a UUID4
 
 # default to 19 retry after 1, 2.5, 4.75, 8.125, 13.188, ... 2953.784 seconds (total of 4430 seconds)
