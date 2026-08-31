@@ -190,6 +190,8 @@ from octobot_trading.api.portfolio import (
     get_global_portfolio_currencies_values,
     get_fees_only_asset_deltas_from_orders,
     compute_portfolio_historical_holdings_from_latest_portfolio_trades_and_transations,
+    compute_daily_portfolio_values,
+    aggregate_portfolio_historical_values,
 )
 from octobot_trading.api.profitability import (
     get_profitability_stats,

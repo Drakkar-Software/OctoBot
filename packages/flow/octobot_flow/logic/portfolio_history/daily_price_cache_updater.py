@@ -4,6 +4,7 @@ import time
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.logging as commons_logging
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.api as trading_api
 import octobot_trading.exchange_data.prices.daily_prices_cache_types as daily_prices_cache_types
 import octobot_trading.constants as trading_constants
@@ -101,9 +102,7 @@ async def update_daily_prices(
 
 
 def _parse_base_quote(symbol: str) -> tuple[str, str] | None:
-    if "/" not in symbol:
-        return None
-    base_asset, quote = symbol.split("/", 1)
+    base_asset, quote = symbol_util.parse_symbol(symbol).base_and_quote()
     if not base_asset or not quote or base_asset == quote:
         return None
     return base_asset, quote

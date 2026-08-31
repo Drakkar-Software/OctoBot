@@ -944,6 +944,19 @@ def get_enriched_orders_by_exchange_id(enriched_orders: list[dict]) -> dict[str,
     }
 
 
+def open_order_exchange_ids_from_open_orders(open_orders: list[dict]) -> set[str]:
+    exchange_ids: set[str] = set()
+    order_columns = enums.ExchangeConstantsOrderColumns
+    for open_order in open_orders:
+        inner_order = open_order.get(constants.STORAGE_ORIGIN_VALUE, open_order)
+        exchange_id = inner_order.get(order_columns.EXCHANGE_ID.value) or inner_order.get(
+            order_columns.ID.value
+        )
+        if exchange_id is not None:
+            exchange_ids.add(str(exchange_id))
+    return exchange_ids
+
+
 def get_symbol_count(raw_trades_or_raw_orders: list[dict]) -> dict[str, int]:
     return dict(
         collections.Counter(

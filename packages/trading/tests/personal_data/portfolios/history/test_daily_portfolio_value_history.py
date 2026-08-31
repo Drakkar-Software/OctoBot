@@ -1,3 +1,19 @@
+#  Drakkar-Software OctoBot-Trading
+#  Copyright (c) Drakkar-Software, All rights reserved.
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3.0 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
+
 import datetime
 import decimal
 from contextlib import contextmanager
@@ -5,7 +21,7 @@ from contextlib import contextmanager
 import mock
 import pytest
 
-import octobot_flow.logic.portfolio_history.portfolio_value_history as portfolio_value_history_module
+import octobot_trading.personal_data.portfolios.history.daily_portfolio_value_history as daily_portfolio_value_history_module
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchange_data.prices.daily_prices_cache_types as daily_prices_cache_types
 
@@ -38,7 +54,7 @@ def _tickers(closes: dict[str, float]) -> daily_prices_cache_types.LatestTickers
 @contextmanager
 def _with_end_day(end_day_timestamp: float):
     with mock.patch.object(
-        portfolio_value_history_module.time,
+        daily_portfolio_value_history_module.time,
         "time",
         return_value=end_day_timestamp,
     ):
@@ -54,7 +70,7 @@ def _compute_values(
     reference_market: str = "USDT",
 ):
     with _with_end_day(end_day_timestamp):
-        return portfolio_value_history_module.compute_daily_portfolio_values(
+        return daily_portfolio_value_history_module.compute_daily_portfolio_values(
             daily_holdings,
             daily_prices,
             latest_tickers,
@@ -81,7 +97,7 @@ class TestExpandSparseDailyHoldings:
             259200.0: _portfolio({"BTC": 2.0}),
         }
 
-        dense_holdings = portfolio_value_history_module._expand_sparse_daily_holdings(
+        dense_holdings = daily_portfolio_value_history_module._expand_sparse_daily_holdings(
             sparse_holdings, 86400.0, 259200.0,
         )
 
@@ -96,13 +112,13 @@ class TestEarliestValuationTimestamp:
             "ETH/USDT": {"172800": 1.0},
         })
         required_symbols = {"BTC/USDT", "ETH/USDT"}
-        result = portfolio_value_history_module._earliest_valuation_timestamp(
+        result = daily_portfolio_value_history_module._earliest_valuation_timestamp(
             daily_prices, required_symbols,
         )
         assert result == 172800.0
 
     def test_returns_zero_when_no_required_symbols(self):
-        result = portfolio_value_history_module._earliest_valuation_timestamp(
+        result = daily_portfolio_value_history_module._earliest_valuation_timestamp(
             _daily_prices({}), set(),
         )
         assert result == 0.0
@@ -112,7 +128,7 @@ class TestResolveAssetUnitPrice:
     def test_uses_ticker_only_when_no_historical_closes_exist(self):
         daily_prices = _daily_prices({})
         latest_tickers = _tickers({"ETH/USDT": 3000.0})
-        result = portfolio_value_history_module._resolve_asset_unit_price(
+        result = daily_portfolio_value_history_module._resolve_asset_unit_price(
             "ETH", 86400.0, "86400", daily_prices, latest_tickers, "USDT",
         )
         assert result == decimal.Decimal("3000")
@@ -120,7 +136,7 @@ class TestResolveAssetUnitPrice:
     def test_does_not_use_ticker_when_historical_exists_but_not_on_day(self):
         daily_prices = _daily_prices({"ETH/USDT": {"172800": 2500.0}})
         latest_tickers = _tickers({"ETH/USDT": 3000.0})
-        result = portfolio_value_history_module._resolve_asset_unit_price(
+        result = daily_portfolio_value_history_module._resolve_asset_unit_price(
             "ETH", 86400.0, "86400", daily_prices, latest_tickers, "USDT",
         )
         assert result is None

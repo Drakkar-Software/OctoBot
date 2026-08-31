@@ -91,3 +91,15 @@ def exchange_columns_dict_from_protocol_order(
         enums.ExchangeConstantsOrderColumns.STATUS.value: order.status.value,
         enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: order.created_at.timestamp(),
     }
+
+
+def open_order_exchange_ids_from_protocol_orders(
+    protocol_orders: list[protocol_models.Order] | None,
+) -> set[str]:
+    if not protocol_orders:
+        return set()
+    return {
+        str(protocol_order.exchange_id)
+        for protocol_order in protocol_orders
+        if protocol_order.exchange_id
+    }
