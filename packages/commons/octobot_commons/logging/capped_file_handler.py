@@ -97,7 +97,7 @@ class CappedFileHandler(logging.FileHandler):
             super().emit(record)
             self._approx_bytes += written_bytes
             self._bytes_since_size_check += written_bytes
-        except Exception:
+        except Exception: # pylint: disable=broad-exception-caught
             self.handleError(record)
             return
         if (
@@ -118,7 +118,7 @@ class CappedFileHandler(logging.FileHandler):
             self.stream = None
         try:
             _trim_file_bytes(self.baseFilename, self._trim_lines_fraction)
-        except Exception:
+        except Exception: # pylint: disable=broad-exception-caught
             _MODULE_LOGGER.exception("Failed to trim log file %s", self.baseFilename)
             raise
         self.stream = self._open()

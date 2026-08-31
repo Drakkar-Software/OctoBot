@@ -76,17 +76,25 @@ class TradesUpdater(trades_channel.TradesProducer):
         symbol: str,
         *,
         limit: int | None = None,
+        since: int | None = None,
         exhaust_history: bool = False,
     ) -> list:
+        fetch_kwargs: dict = {}
+        if since is not None:
+            fetch_kwargs["since"] = since
         if exhaust_history:
-            return await exchange.get_my_recent_trades(symbol=symbol, exhaust_history=True)
-        return await exchange.get_my_recent_trades(symbol=symbol, limit=limit)
+            fetch_kwargs["exhaust_history"] = True
+            return await exchange.get_my_recent_trades(symbol=symbol, **fetch_kwargs)
+        if limit is not None:
+            fetch_kwargs["limit"] = limit
+        return await exchange.get_my_recent_trades(symbol=symbol, **fetch_kwargs)
 
     async def fetch_trades(
         self,
         symbols: list[str],
         limit: int = MAX_OLD_TRADES_TO_FETCH,
         *,
+        since: int | None = None,
         exhaust_history: bool = False,
     ) -> list:
         """
@@ -96,21 +104,35 @@ class TradesUpdater(trades_channel.TradesProducer):
         """
         exchange = self.channel.exchange_manager.exchange
         if exhaust_history and not symbols:
-            trades = await exchange.get_my_recent_trades(symbol=None, exhaust_history=True)
+            account_wide_kwargs: dict = {"exhaust_history": True}
+            if since is not None:
+                account_wide_kwargs["since"] = since
+            trades = await exchange.get_my_recent_trades(
+                symbol=None,
+                **account_wide_kwargs,
+            )
             return trades or []
         if not symbols:
             return []
 
         if len(symbols) == 1:
             trades = await TradesUpdater._fetch_trades_for_symbol(
-                exchange, symbols[0], limit=limit, exhaust_history=exhaust_history,
+                exchange,
+                symbols[0],
+                limit=limit,
+                since=since,
+                exhaust_history=exhaust_history,
             )
             return trades or []
 
         trade_batches = await asyncio_tools.gather_waiting_for_all_before_raising(
             *[
                 TradesUpdater._fetch_trades_for_symbol(
-                    exchange, trading_symbol, limit=limit, exhaust_history=exhaust_history,
+                    exchange,
+                    trading_symbol,
+                    limit=limit,
+                    since=since,
+                    exhaust_history=exhaust_history,
                 )
                 for trading_symbol in symbols
             ]

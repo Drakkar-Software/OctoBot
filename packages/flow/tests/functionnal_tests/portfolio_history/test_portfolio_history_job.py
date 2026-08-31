@@ -6,6 +6,7 @@ import pytest
 
 import octobot_commons.constants as commons_constants
 import octobot_trading.enums as trading_enums
+import octobot_flow.constants as flow_constants
 import octobot_flow.jobs.portfolio_history_job as portfolio_history_job_module
 import octobot_flow.logic.portfolio_history.daily_price_cache_updater as daily_price_cache_updater_module
 from tests.functionnal_tests.portfolio_history import portfolio_history_test_util as portfolio_history_test_util
@@ -14,6 +15,17 @@ from tests.functionnal_tests.portfolio_history import portfolio_history_test_uti
 def _recent_day_timestamp(days_ago: int = 1) -> int:
     today_start = int(daily_price_cache_updater_module._utc_day_start(time.time()))
     return today_start - days_ago * commons_constants.DAYS_TO_SECONDS
+
+
+def _expected_since_ms(candle_day: int) -> int:
+    return int(
+        (
+            candle_day
+            - flow_constants.PORTFOLIO_HISTORY_TRADE_FETCH_SINCE_LOOKBACK_DAYS
+            * commons_constants.DAYS_TO_SECONDS
+        )
+        * 1000
+    )
 
 
 @pytest.mark.asyncio
@@ -164,3 +176,279 @@ class TestPortfolioHistoryJobFunctional:
                 "account-2-deposit",
                 "account-2-withdrawal",
             }
+
+
+@pytest.mark.asyncio
+class TestPortfolioHistoryJobIncrementalFetch:
+    async def test_second_run_uses_since_from_daily_candle_cache(self, tmp_path):
+        account_id = "incremental-account-1"
+        context = portfolio_history_test_util.build_portfolio_history_context(
+            account_id=account_id,
+            symbols=["BTC/USDT"],
+        )
+        btc_day = _recent_day_timestamp(1)
+        raw_trades = [portfolio_history_test_util.sample_raw_trade()]
+        exchange_manager = await portfolio_history_test_util.build_exchange_manager(
+            raw_trades=raw_trades,
+            deposits=[portfolio_history_test_util.sample_deposit()],
+            withdrawals=[portfolio_history_test_util.sample_withdrawal()],
+            daily_candles=portfolio_history_test_util.sample_daily_candles(
+                day_timestamp=btc_day,
+                close_price=40500.0,
+            ),
+        )
+
+        with portfolio_history_test_util.portfolio_history_test_environment(
+            tmp_path,
+            exchange_manager_by_account_id={account_id: exchange_manager},
+        ) as trading_provider:
+            portfolio_history_test_util.seed_empty_account_trading(
+                trading_provider,
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+            )
+            job = portfolio_history_job_module.PortfolioHistoryJob(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                [context],
+                data_root=str(tmp_path),
+            )
+            await job.run()
+
+            first_run_calls = list(exchange_manager.trade_fetch_calls)
+            assert first_run_calls
+            assert all(call["since"] is None for call in first_run_calls)
+            assert all(call["exhaust_history"] for call in first_run_calls)
+
+            exchange_manager.trade_fetch_calls.clear()
+            raw_trades.append(
+                portfolio_history_test_util.sample_raw_trade(
+                    trade_id="functional-trade-2",
+                    timestamp=btc_day,
+                )
+            )
+            await job.run()
+
+            second_run_calls = list(exchange_manager.trade_fetch_calls)
+            assert second_run_calls
+            expected_since_ms = _expected_since_ms(btc_day)
+            assert any(call["since"] == expected_since_ms for call in second_run_calls)
+            assert all(call["exhaust_history"] for call in second_run_calls)
+
+            account_trading = portfolio_history_test_util.load_account_trading(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+            )
+            trade_ids = {trade.trade_id for trade in account_trading.trades or []}
+            assert trade_ids == {"functional-trade-1", "functional-trade-2"}
+
+
+@pytest.mark.asyncio
+class TestPortfolioHistoryJobOldSingleTradeUsesCandleSince:
+    async def test_old_persisted_trade_uses_candle_based_since_not_trade_timestamp(self, tmp_path):
+        account_id = "incremental-account-old-trade"
+        context = portfolio_history_test_util.build_portfolio_history_context(
+            account_id=account_id,
+            symbols=["BTC/USDT"],
+        )
+        btc_day = _recent_day_timestamp(1)
+        old_trade = portfolio_history_test_util.sample_raw_trade(
+            trade_id="old-trade",
+            timestamp=1_000.0,
+        )
+        new_trade = portfolio_history_test_util.sample_raw_trade(
+            trade_id="recent-trade",
+            timestamp=float(btc_day),
+        )
+        exchange_manager = await portfolio_history_test_util.build_exchange_manager(
+            raw_trades=[new_trade],
+            daily_candles=portfolio_history_test_util.sample_daily_candles(
+                day_timestamp=btc_day,
+                close_price=40500.0,
+            ),
+        )
+
+        with portfolio_history_test_util.portfolio_history_test_environment(
+            tmp_path,
+            exchange_manager_by_account_id={account_id: exchange_manager},
+        ) as trading_provider:
+            portfolio_history_test_util.seed_account_trading_with_trades(
+                trading_provider,
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+                [old_trade],
+            )
+            await portfolio_history_test_util.seed_daily_prices_cache(
+                str(tmp_path),
+                "binanceus",
+                "BTC/USDT",
+                btc_day,
+                40500.0,
+            )
+            await portfolio_history_job_module.PortfolioHistoryJob(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                [context],
+                data_root=str(tmp_path),
+            ).run()
+
+            expected_since_ms = _expected_since_ms(btc_day)
+            assert any(call["since"] == expected_since_ms for call in exchange_manager.trade_fetch_calls)
+
+            account_trading = portfolio_history_test_util.load_account_trading(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+            )
+            trade_ids = {trade.trade_id for trade in account_trading.trades or []}
+            assert trade_ids == {"old-trade", "recent-trade"}
+
+
+@pytest.mark.asyncio
+class TestPortfolioHistoryJobIncrementalMergesNewTrades:
+    async def test_second_run_merges_new_trade_without_duplicating_overlap(self, tmp_path):
+        account_id = "incremental-account-merge"
+        context = portfolio_history_test_util.build_portfolio_history_context(
+            account_id=account_id,
+            symbols=["BTC/USDT"],
+        )
+        btc_day = _recent_day_timestamp(1)
+        existing_trade = portfolio_history_test_util.sample_raw_trade(
+            trade_id="existing-trade",
+            timestamp=float(btc_day),
+        )
+        duplicate_trade = portfolio_history_test_util.sample_raw_trade(
+            trade_id="existing-trade",
+            timestamp=float(btc_day),
+        )
+        exchange_manager = await portfolio_history_test_util.build_exchange_manager(
+            raw_trades=[duplicate_trade],
+            daily_candles=portfolio_history_test_util.sample_daily_candles(
+                day_timestamp=btc_day,
+                close_price=40500.0,
+            ),
+        )
+
+        with portfolio_history_test_util.portfolio_history_test_environment(
+            tmp_path,
+            exchange_manager_by_account_id={account_id: exchange_manager},
+        ) as trading_provider:
+            portfolio_history_test_util.seed_account_trading_with_trades(
+                trading_provider,
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+                [existing_trade],
+            )
+            await portfolio_history_test_util.seed_daily_prices_cache(
+                str(tmp_path),
+                "binanceus",
+                "BTC/USDT",
+                btc_day,
+                40500.0,
+            )
+            await portfolio_history_job_module.PortfolioHistoryJob(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                [context],
+                data_root=str(tmp_path),
+            ).run()
+
+            account_trading = portfolio_history_test_util.load_account_trading(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+            )
+            assert len(account_trading.trades or []) == 1
+
+
+@pytest.mark.asyncio
+class TestPortfolioHistoryJobNoCandleFullFetch:
+    async def test_persisted_trades_without_daily_cache_use_full_fetch(self, tmp_path):
+        account_id = "incremental-account-no-candle"
+        context = portfolio_history_test_util.build_portfolio_history_context(
+            account_id=account_id,
+            symbols=["BTC/USDT"],
+        )
+        persisted_trade = portfolio_history_test_util.sample_raw_trade(trade_id="persisted-trade")
+        exchange_manager = await portfolio_history_test_util.build_exchange_manager(
+            raw_trades=[persisted_trade],
+            daily_candles=portfolio_history_test_util.sample_daily_candles(),
+        )
+
+        with portfolio_history_test_util.portfolio_history_test_environment(
+            tmp_path,
+            exchange_manager_by_account_id={account_id: exchange_manager},
+        ) as trading_provider:
+            portfolio_history_test_util.seed_account_trading_with_trades(
+                trading_provider,
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+                [persisted_trade],
+            )
+            await portfolio_history_job_module.PortfolioHistoryJob(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                [context],
+                data_root=str(tmp_path),
+            ).run()
+
+            assert exchange_manager.trade_fetch_calls
+            assert all(call["since"] is None for call in exchange_manager.trade_fetch_calls)
+            assert all(call["exhaust_history"] for call in exchange_manager.trade_fetch_calls)
+
+
+@pytest.mark.asyncio
+class TestPortfolioHistoryJobUsdLikePairIncrementalFetch:
+    async def test_second_run_uses_global_cache_for_usdc_usd(self, tmp_path):
+        account_id = "incremental-usd-like-account"
+        context = portfolio_history_test_util.build_portfolio_history_context(
+            account_id=account_id,
+            symbols=["USDC/USD"],
+        )
+        usd_like_day = _recent_day_timestamp(1)
+        raw_trades = [
+            portfolio_history_test_util.sample_raw_trade(
+                trade_id="usd-like-trade-1",
+                symbol="USDC/USD",
+                timestamp=float(usd_like_day),
+            )
+        ]
+        exchange_manager = await portfolio_history_test_util.build_exchange_manager(
+            raw_trades=raw_trades,
+            daily_candles=portfolio_history_test_util.sample_daily_candles(
+                day_timestamp=usd_like_day,
+                close_price=1.0,
+            ),
+        )
+
+        with portfolio_history_test_util.portfolio_history_test_environment(
+            tmp_path,
+            exchange_manager_by_account_id={account_id: exchange_manager},
+        ) as trading_provider:
+            portfolio_history_test_util.seed_empty_account_trading(
+                trading_provider,
+                portfolio_history_test_util.TEST_WALLET_ID,
+                account_id,
+            )
+            job = portfolio_history_job_module.PortfolioHistoryJob(
+                portfolio_history_test_util.TEST_WALLET_ID,
+                [context],
+                data_root=str(tmp_path),
+            )
+            await job.run()
+
+            first_run_calls = list(exchange_manager.trade_fetch_calls)
+            assert first_run_calls
+            assert all(call["since"] is None for call in first_run_calls)
+            assert all(call["exhaust_history"] for call in first_run_calls)
+
+            await portfolio_history_test_util.seed_daily_prices_cache(
+                str(tmp_path),
+                "binanceus",
+                "BTC/USDT",
+                usd_like_day,
+                40500.0,
+            )
+
+            exchange_manager.trade_fetch_calls.clear()
+            await job.run()
+
+            second_run_calls = list(exchange_manager.trade_fetch_calls)
+            assert second_run_calls
+            expected_since_ms = _expected_since_ms(usd_like_day)
+            assert any(call["since"] == expected_since_ms for call in second_run_calls)
+            assert all(call["exhaust_history"] for call in second_run_calls)

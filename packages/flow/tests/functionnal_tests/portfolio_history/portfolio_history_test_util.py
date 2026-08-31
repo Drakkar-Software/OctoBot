@@ -15,6 +15,7 @@ import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.exchange_manager as exchange_manager_module
 import octobot_trading.exchanges.traders.trader_simulator as trader_simulator_module
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
+import octobot_trading.personal_data.trades.protocol as trades_protocol
 
 import octobot_flow.entities.portfolio_history as portfolio_history_entities
 import octobot_flow.jobs.portfolio_history_job as portfolio_history_job_module
@@ -104,13 +105,14 @@ def sample_raw_trade(
     *,
     trade_id: str = "functional-trade-1",
     symbol: str = _DEFAULT_SYMBOL,
+    timestamp: float = 1700000000.0,
 ) -> dict:
     return {
         "info": {},
         "id": trade_id,
         "exchange_id": trade_id,
         "exchange_trade_id": trade_id,
-        "timestamp": 1700000000.0,
+        "timestamp": timestamp,
         "symbol": symbol,
         "type": "limit",
         "side": "buy",
@@ -181,20 +183,32 @@ async def build_exchange_manager(
     deposits: list[dict] | None = None,
     withdrawals: list[dict] | None = None,
     daily_candles: list[list[float]] | None = None,
+    client_side_trade_filter: bool = False,
 ) -> exchange_manager_module.ExchangeManager:
     exchange_manager = await _create_exchange_manager_with_trader()
 
-    configured_raw_trades = raw_trades or []
+    configured_raw_trades = raw_trades if raw_trades is not None else []
     configured_deposits = deposits or []
     configured_withdrawals = withdrawals or []
     configured_daily_candles = daily_candles or sample_daily_candles()
+    trade_fetch_calls: list[dict] = []
 
-    async def get_my_recent_trades(symbol: str, limit=None, since=None, **_kwargs):
-        matched_trades = [
-            raw_trade
-            for raw_trade in configured_raw_trades
-            if raw_trade.get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value) == symbol
-        ]
+    async def get_my_recent_trades(symbol=None, limit=None, since=None, exhaust_history=False, **_kwargs):
+        trade_fetch_calls.append(
+            {
+                "symbol": symbol,
+                "limit": limit,
+                "since": since,
+                "exhaust_history": exhaust_history,
+            }
+        )
+        matched_trades = list(configured_raw_trades)
+        if symbol is not None:
+            matched_trades = [
+                raw_trade
+                for raw_trade in matched_trades
+                if raw_trade.get(trading_enums.ExchangeConstantsOrderColumns.SYMBOL.value) == symbol
+            ]
         if since is not None:
             matched_trades = [
                 raw_trade
@@ -206,7 +220,11 @@ async def build_exchange_manager(
             matched_trades = matched_trades[:limit]
         return matched_trades
 
+    exchange_manager.trade_fetch_calls = trade_fetch_calls
     exchange_manager.exchange.get_my_recent_trades = get_my_recent_trades
+    exchange_manager.exchange.get_option_value = mock.Mock(
+        return_value=client_side_trade_filter,
+    )
     exchange_manager.exchange.get_deposits = mock.AsyncMock(return_value=configured_deposits)
     exchange_manager.exchange.get_withdrawals = mock.AsyncMock(return_value=configured_withdrawals)
     exchange_manager.exchange.get_symbol_prices = mock.AsyncMock(return_value=configured_daily_candles)
@@ -238,6 +256,46 @@ def seed_empty_account_trading(
         ),
     )
     provider.save_state(wallet_id, account_id, trading_state)
+
+
+def seed_account_trading_with_trades(
+    provider: collection_providers.AccountTradingProvider,
+    wallet_id: str,
+    account_id: str,
+    raw_trades: list[dict],
+) -> None:
+    protocol_trades = [
+        trades_protocol.to_protocol_trade(raw_trade)
+        for raw_trade in raw_trades
+    ]
+    trading_state = protocol_models.AccountTradingState(
+        version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+        account_trading=protocol_models.AccountTrading(
+            updated_at=_TEST_TIMESTAMP,
+            trades=protocol_trades,
+        ),
+    )
+    provider.save_state(wallet_id, account_id, trading_state)
+
+
+async def seed_daily_prices_cache(
+    data_root: str,
+    exchange_name: str,
+    symbol: str,
+    day_timestamp: int,
+    close_price: float,
+    *,
+    exchange_type: str = trading_enums.ExchangeTypes.SPOT.value,
+    sandboxed: bool = False,
+) -> None:
+    await trading_api.merge_daily_prices(
+        exchange_name,
+        exchange_type,
+        sandboxed,
+        symbol,
+        {str(day_timestamp): close_price},
+        data_root,
+    )
 
 
 def load_account_trading(wallet_id: str, account_id: str) -> protocol_models.AccountTrading:

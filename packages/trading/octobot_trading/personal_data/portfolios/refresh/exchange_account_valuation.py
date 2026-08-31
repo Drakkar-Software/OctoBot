@@ -69,7 +69,7 @@ def refresh_portfolio_valuation(
             portfolio_manager.portfolio_value_holder.value_converter.update_last_price(symbol, mark_price)
             if exchange_manager.symbol_exists(symbol):
                 exchange_manager.get_symbol_data(symbol).handle_ticker_update(ticker)
-    portfolio_manager.portfolio_value_holder._sync_portfolio_current_value_using_available_currencies_values(
+    portfolio_manager.portfolio_value_holder.sync_portfolio_current_value_using_available_currencies_values(
         init_price_fetchers=False,
     )
 

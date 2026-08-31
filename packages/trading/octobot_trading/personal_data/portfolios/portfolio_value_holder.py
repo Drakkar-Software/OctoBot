@@ -75,7 +75,7 @@ class PortfolioValueHolder:
             # portfolio is not initialized, skip portfolio values initialization
             return
         try:
-            self._sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
+            self.sync_portfolio_current_value_using_available_currencies_values(init_price_fetchers=False)
             portfolio_value = self.portfolio_current_value
             if not portfolio_value or portfolio_value <= constants.ZERO:
                 if self._should_have_initialized_portfolio_values():
@@ -153,7 +153,7 @@ class PortfolioValueHolder:
         :return: the current crypto-currencies values
         """
         if not self.current_crypto_currencies_values:
-            self._sync_portfolio_current_value_using_available_currencies_values()
+            self.sync_portfolio_current_value_using_available_currencies_values()
         return self.current_crypto_currencies_values
 
     def get_current_holdings_values(self):
@@ -218,7 +218,7 @@ class PortfolioValueHolder:
         Initialize values required by portfolio profitability to perform its profitability calculation
         :param force_recompute_origin_portfolio: when True, force origin portfolio computation
         """
-        self._sync_portfolio_current_value_using_available_currencies_values()
+        self.sync_portfolio_current_value_using_available_currencies_values()
         self._init_portfolio_values_if_necessary(force_recompute_origin_portfolio)
 
     def get_origin_portfolio_current_value(self, refresh_values=False):
@@ -295,7 +295,7 @@ class PortfolioValueHolder:
             if currency not in currencies_values
         })
 
-    def _sync_portfolio_current_value_using_available_currencies_values(self, init_price_fetchers=True):
+    def sync_portfolio_current_value_using_available_currencies_values(self, init_price_fetchers=True):
         """
         :param init_price_fetchers: When True, can init price using fetchers
         Update the portfolio current value with the current portfolio instance

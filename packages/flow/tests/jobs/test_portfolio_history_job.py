@@ -1,13 +1,18 @@
 import asyncio
+import datetime
 import mock
 import pytest
 
+import octobot_commons.constants as commons_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.sync.collection_backend.errors as collection_errors
+import octobot_sync.constants as sync_constants
 
+import octobot_flow.constants as flow_constants
 import octobot_flow.entities.portfolio_history as portfolio_history_entities
 import octobot_flow.jobs.portfolio_history_job as portfolio_history_job_module
 import octobot_flow.repositories.exchange.trades_repository as trades_repository_module
+import octobot_trading.enums as trading_enums
 
 def _make_account(account_id: str, is_simulated: bool = False, is_exchange: bool = True):
     account = mock.MagicMock()
@@ -1008,3 +1013,475 @@ class TestPersistTradeConfirmedConfigFromJob:
             context.exchange_config,
             {"ALGO/USDC", "KNC/USDC", "SOL/USDC"},
         )
+
+
+_TEST_TIMESTAMP = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=datetime.UTC)
+
+
+def _make_protocol_trade(symbol: str = "BTC/USDT") -> protocol_models.Trade:
+    return protocol_models.Trade(
+        id="persisted-trade-1",
+        trade_id="persisted-trade-1",
+        type=protocol_models.OrderType.LIMIT,
+        symbol=symbol,
+        side=protocol_models.Side.BUY,
+        quantity=1.0,
+        price=1.0,
+        status=protocol_models.OrderStatus.FILLED,
+        executed_at=_TEST_TIMESTAMP,
+    )
+
+
+def _daily_prices_with_symbol(day_timestamp: int, symbol: str = "BTC/USDT") -> dict:
+    return {
+        trading_enums.DailyPricesCacheKeys.SYMBOLS: {
+            symbol: {str(day_timestamp): 42000.0},
+        },
+        trading_enums.DailyPricesCacheKeys.SOURCES: {},
+    }
+
+
+def _incremental_job_patch_stack():
+    return (
+        mock.patch("octobot_flow.jobs.portfolio_history_job.collection_providers"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.trade_symbols_discovery_module"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.trading_exchanges"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.tentacles_manager_api"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.trading_history_merge_module"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.daily_price_cache_updater_module"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.trades_repository_module"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.transactions_repository_module"),
+        mock.patch("octobot_flow.jobs.portfolio_history_job.profile_data_factory_module"),
+    )
+
+
+class TestIncrementalTradeFetchWiring:
+    @pytest.mark.asyncio
+    async def test_load_daily_prices_before_fetch_and_passes_symbol_since_ms(self):
+        account = _make_account("acc1")
+        context = _make_context(account)
+        candle_day = 2_000_000
+        expected_since_ms = int(
+            (candle_day - flow_constants.PORTFOLIO_HISTORY_TRADE_FETCH_SINCE_LOOKBACK_DAYS * commons_constants.DAYS_TO_SECONDS)
+            * 1000
+        )
+        account_trading = protocol_models.AccountTrading(
+            updated_at=_TEST_TIMESTAMP,
+            trades=[_make_protocol_trade()],
+        )
+        trading_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=account_trading,
+        )
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value=_daily_prices_with_symbol(candle_day),
+            ) as mock_load_daily_prices,
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.return_value = (
+                trading_state
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["BTC/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["BTC/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            mock_load_daily_prices.assert_awaited_once()
+            fetch_trades_paginated_mock.assert_awaited_once()
+            assert fetch_trades_paginated_mock.await_args.kwargs["symbol_since_ms"] == {
+                "BTC/USDT": expected_since_ms,
+            }
+
+
+class TestIncrementalTradeFetchFirstRun:
+    @pytest.mark.asyncio
+    async def test_empty_account_trading_passes_no_symbol_since_ms(self):
+        account = _make_account("acc1")
+        context = _make_context(account)
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value=_daily_prices_with_symbol(2_000_000),
+            ),
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.side_effect = (
+                collection_errors.CollectionNoDataError
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["BTC/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["BTC/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            assert fetch_trades_paginated_mock.await_args.kwargs.get("symbol_since_ms") is None
+
+
+class TestIncrementalTradeFetchNoCandleFallback:
+    @pytest.mark.asyncio
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.logger")
+    async def test_persisted_trades_without_daily_cache_use_full_fetch(self, mock_logger):
+        account = _make_account("acc1")
+        context = _make_context(account)
+        account_trading = protocol_models.AccountTrading(
+            updated_at=_TEST_TIMESTAMP,
+            trades=[_make_protocol_trade()],
+        )
+        trading_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=account_trading,
+        )
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value={
+                    trading_enums.DailyPricesCacheKeys.SYMBOLS: {},
+                    trading_enums.DailyPricesCacheKeys.SOURCES: {},
+                },
+            ),
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.return_value = (
+                trading_state
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["BTC/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["BTC/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            assert fetch_trades_paginated_mock.await_args.kwargs.get("symbol_since_ms") is None
+            info_messages = " ".join(
+                str(argument) for call in mock_logger.info.call_args_list for argument in call.args
+            )
+            assert "Falling back to full trade history" in info_messages
+            assert "BTC/USDT" in info_messages
+
+
+class TestIncrementalTradeFetchNullAccountTrading:
+    @pytest.mark.asyncio
+    async def test_collection_no_data_error_passes_no_symbol_since_ms(self):
+        account = _make_account("acc1")
+        context = _make_context(account)
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value=_daily_prices_with_symbol(2_000_000),
+            ),
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.side_effect = (
+                collection_errors.CollectionNoDataError
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["BTC/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["BTC/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            assert fetch_trades_paginated_mock.await_args.kwargs.get("symbol_since_ms") is None
+
+
+class TestIncrementalTradeFetchLogging:
+    @pytest.mark.asyncio
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.logger")
+    async def test_logs_incremental_and_full_symbol_counts(self, mock_logger):
+        account = _make_account("acc1")
+        context = _make_context(account, trade_symbols=["BTC/USDT", "ETH/USDT"])
+        account_trading = protocol_models.AccountTrading(
+            updated_at=_TEST_TIMESTAMP,
+            trades=[_make_protocol_trade("BTC/USDT")],
+        )
+        trading_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=account_trading,
+        )
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value=_daily_prices_with_symbol(2_000_000, "BTC/USDT"),
+            ),
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.return_value = (
+                trading_state
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["BTC/USDT", "ETH/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["BTC/USDT", "ETH/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            info_messages = " ".join(
+                str(argument) for call in mock_logger.info.call_args_list for argument in call.args
+            )
+            assert "incremental" in info_messages
+            assert "full-history symbol(s)" in info_messages
+            assert info_messages.endswith("1 1")
+
+
+class TestIncrementalTradeFetchUsdLikePair:
+    @pytest.mark.asyncio
+    async def test_usd_like_pair_uses_global_cache_for_symbol_since_ms(self):
+        account = _make_account("acc1")
+        context = _make_context(account)
+        candle_day = 2_000_000
+        expected_since_ms = int(
+            (
+                candle_day
+                - flow_constants.PORTFOLIO_HISTORY_TRADE_FETCH_SINCE_LOOKBACK_DAYS
+                * commons_constants.DAYS_TO_SECONDS
+            )
+            * 1000
+        )
+        account_trading = protocol_models.AccountTrading(
+            updated_at=_TEST_TIMESTAMP,
+            trades=[_make_protocol_trade("USDC/USDT")],
+        )
+        trading_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=account_trading,
+        )
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value=_daily_prices_with_symbol(candle_day, "BTC/USDT"),
+            ),
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.return_value = (
+                trading_state
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["USDC/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["USDC/USDT", "BTC/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            assert fetch_trades_paginated_mock.await_args.kwargs["symbol_since_ms"] == {
+                "USDC/USDT": expected_since_ms,
+            }
+
+    @pytest.mark.asyncio
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.logger")
+    async def test_mixed_symbols_log_global_cursor_and_no_candle_fallback(self, mock_logger):
+        account = _make_account("acc1")
+        context = _make_context(account)
+        candle_day = 2_000_000
+        account_trading = protocol_models.AccountTrading(
+            updated_at=_TEST_TIMESTAMP,
+            trades=[
+                _make_protocol_trade("USDC/USD"),
+                _make_protocol_trade("ETH/USDT"),
+            ],
+        )
+        trading_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=account_trading,
+        )
+        patches = _incremental_job_patch_stack()
+        with (
+            patches[0] as mock_collection_providers,
+            patches[1] as mock_discovery,
+            patches[2] as mock_exchanges,
+            patches[3],
+            patches[4],
+            patches[5] as mock_daily_cache,
+            patches[6] as mock_trades_repo,
+            patches[7] as mock_tx_repo,
+            patches[8],
+            mock.patch(
+                "octobot_flow.jobs.portfolio_history_job.trading_api.load_daily_prices",
+                new_callable=mock.AsyncMock,
+                return_value=_daily_prices_with_symbol(candle_day, "BTC/USDT"),
+            ),
+        ):
+            mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.return_value = (
+                trading_state
+            )
+            mock_discovery.discover_trade_symbols.return_value = ["USDC/USD", "ETH/USDT"]
+            mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+            mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+            mock_exchange_manager = mock.AsyncMock()
+            mock_exchange_manager.client_symbols = ["USDC/USD", "ETH/USDT", "BTC/USDT"]
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+                return_value=mock_exchange_manager
+            )
+            mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+                return_value=False
+            )
+            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+            mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+            mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+            mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+            job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+            await job.run()
+
+            info_messages = " ".join(
+                str(argument) for call in mock_logger.info.call_args_list for argument in call.args
+            )
+            assert "Using global daily candle cursor" in info_messages
+            assert "USDC/USD" in info_messages
+            assert "Falling back to full trade history" in info_messages
+            assert "ETH/USDT" in info_messages
+            fallback_messages = [
+                str(argument)
+                for call in mock_logger.info.call_args_list
+                for argument in call.args
+                if "Falling back to full trade history" in str(argument)
+            ]
+            assert all("USDC/USD" not in message for message in fallback_messages)

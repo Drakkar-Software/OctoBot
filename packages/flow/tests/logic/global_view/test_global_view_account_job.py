@@ -18,8 +18,8 @@ import octobot_flow.logic.accounts.account_state_persistence as account_state_pe
 import octobot_trading.personal_data as personal_data
 import octobot_flow.logic.global_view.exchange_account_refresh as exchange_account_refresh_module
 import octobot_flow.logic.global_view.global_view_persistence as global_view_persistence_module
-import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
 import octobot_sync.constants as sync_constants
+from tests.logic.global_view.portfolio_test_util import patch_temporary_exchange_channel_ensure
 from tests.logic.global_view.portfolio_test_util import wire_portfolio_pipeline
 from tests.logic.global_view.portfolio_test_util import wire_repository_factory
 
@@ -127,7 +127,6 @@ class TestGlobalViewAccountJobRun:
         async def fake_exchange_manager(*_args, **_kwargs):
             yield exchange_manager
 
-        ensure_ticker_channel_mock = mock.AsyncMock()
         persist_mock = mock.Mock()
         with (
             mock.patch.object(
@@ -135,10 +134,10 @@ class TestGlobalViewAccountJobRun:
                 "exchange_manager_from_exchange_data",
                 fake_exchange_manager,
             ),
-            mock.patch.object(
-                tickers_repository_module.TickersRepository,
-                "ensure_temporary_ticker_channel",
+            patch_temporary_exchange_channel_ensure() as (
                 ensure_ticker_channel_mock,
+                ensure_balance_channel_mock,
+                ensure_orders_channel_mock,
             ),
             mock.patch.object(
                 personal_data,
@@ -173,6 +172,8 @@ class TestGlobalViewAccountJobRun:
             ).run()
 
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_balance_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_orders_channel_mock.assert_not_awaited()
         portfolio_repository.fetch_and_apply_portfolio.assert_awaited_once()
         orders_repository.fetch_open_orders.assert_not_called()
         persist_mock.assert_called_once()
@@ -207,17 +208,16 @@ class TestGlobalViewAccountJobRun:
             yield exchange_manager
 
         persist_mock = mock.Mock()
-        ensure_ticker_channel_mock = mock.AsyncMock()
         with (
             mock.patch.object(
                 global_view_account_job_module.trading_exchanges,
                 "exchange_manager_from_exchange_data",
                 fake_exchange_manager,
             ),
-            mock.patch.object(
-                tickers_repository_module.TickersRepository,
-                "ensure_temporary_ticker_channel",
+            patch_temporary_exchange_channel_ensure() as (
                 ensure_ticker_channel_mock,
+                ensure_balance_channel_mock,
+                ensure_orders_channel_mock,
             ),
             mock.patch.object(
                 personal_data,
@@ -253,6 +253,8 @@ class TestGlobalViewAccountJobRun:
 
         orders_repository.fetch_open_orders.assert_awaited_once_with(["BTC/USDT", "ETH/USDT"])
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_balance_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_orders_channel_mock.assert_awaited_once_with(exchange_manager)
         assert persist_mock.call_args.kwargs["persist_open_orders"] is False
         assert refresh_result.changed_order_ids == {"gone-order-1"}
 
@@ -289,17 +291,16 @@ class TestGlobalViewAccountJobRun:
             yield exchange_manager
 
         persist_mock = mock.Mock()
-        ensure_ticker_channel_mock = mock.AsyncMock()
         with (
             mock.patch.object(
                 global_view_account_job_module.trading_exchanges,
                 "exchange_manager_from_exchange_data",
                 fake_exchange_manager,
             ),
-            mock.patch.object(
-                tickers_repository_module.TickersRepository,
-                "ensure_temporary_ticker_channel",
+            patch_temporary_exchange_channel_ensure() as (
                 ensure_ticker_channel_mock,
+                ensure_balance_channel_mock,
+                ensure_orders_channel_mock,
             ),
             mock.patch.object(
                 personal_data,
@@ -335,6 +336,8 @@ class TestGlobalViewAccountJobRun:
 
         orders_repository.fetch_open_orders.assert_awaited_once_with(["BTC/USDT", "ETH/USDT"])
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_balance_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_orders_channel_mock.assert_awaited_once_with(exchange_manager)
         assert persist_mock.call_args.kwargs["persist_open_orders"] is True
         assert refresh_result.changed_order_ids == {"gone-order-1"}
 
@@ -368,7 +371,6 @@ class TestGlobalViewAccountJobRun:
         async def fake_exchange_manager(*_args, **_kwargs):
             yield exchange_manager
 
-        ensure_ticker_channel_mock = mock.AsyncMock()
         persist_mock = mock.Mock()
         with (
             mock.patch.object(
@@ -376,10 +378,10 @@ class TestGlobalViewAccountJobRun:
                 "exchange_manager_from_exchange_data",
                 fake_exchange_manager,
             ),
-            mock.patch.object(
-                tickers_repository_module.TickersRepository,
-                "ensure_temporary_ticker_channel",
+            patch_temporary_exchange_channel_ensure() as (
                 ensure_ticker_channel_mock,
+                ensure_balance_channel_mock,
+                ensure_orders_channel_mock,
             ),
             mock.patch.object(
                 personal_data,
@@ -431,6 +433,8 @@ class TestGlobalViewAccountJobRun:
             ).run()
 
         ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
+        ensure_balance_channel_mock.assert_not_awaited()
+        ensure_orders_channel_mock.assert_not_awaited()
         create_factory_mock.assert_not_called()
         assert persist_mock.call_args.kwargs["persist_open_orders"] is True
         assert refresh_result.changed_order_ids == {"filled-order"}

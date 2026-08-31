@@ -9,6 +9,36 @@ import octobot_commons.constants as commons_constants
 import octobot_trading.personal_data as personal_data_module
 
 
+import octobot_flow.repositories.exchange.orders_repository as orders_repository_module
+import octobot_flow.repositories.exchange.portfolio_repository as portfolio_repository_module
+import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
+
+
+@contextlib.contextmanager
+def patch_temporary_exchange_channel_ensure():
+    ticker_ensure_mock = mock.AsyncMock()
+    balance_ensure_mock = mock.AsyncMock()
+    orders_ensure_mock = mock.AsyncMock()
+    with (
+        mock.patch.object(
+            tickers_repository_module.TickersRepository,
+            "ensure_temporary_ticker_channel",
+            ticker_ensure_mock,
+        ),
+        mock.patch.object(
+            portfolio_repository_module.PortfolioRepository,
+            "ensure_temporary_balance_channel",
+            balance_ensure_mock,
+        ),
+        mock.patch.object(
+            orders_repository_module.OrdersRepository,
+            "ensure_temporary_orders_channel",
+            orders_ensure_mock,
+        ),
+    ):
+        yield ticker_ensure_mock, balance_ensure_mock, orders_ensure_mock
+
+
 def wire_portfolio_pipeline(
     exchange_manager,
     portfolio_content: dict,
