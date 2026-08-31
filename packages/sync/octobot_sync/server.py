@@ -51,6 +51,7 @@ import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.accounts as accounts_protocol
 import octobot_node.protocol.accounts_authentication as accounts_auth_protocol
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
+import octobot_node.protocol.accounts_history as accounts_history_protocol
 import octobot_node.protocol.strategies as strategies_protocol
 
 
@@ -201,6 +202,24 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 _get_account_id(context),
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
+        case enums.Collections.USER_ACCOUNTS_HISTORY.value:
+            history_state = await accounts_history_protocol.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                _get_identity(context),
+                _get_account_id(context),
+            )
+            plaintext = history_state.to_json()
+        case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_REAL.value:
+            history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                _get_identity(context),
+                is_simulated=False,
+            )
+            plaintext = history_state.to_json()
+        case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED.value:
+            history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                _get_identity(context),
+                is_simulated=True,
+            )
+            plaintext = history_state.to_json()
         case enums.TemporaryCollections.TEMP_USER_STRATEGIES.value:
             encrypted_blob = strategies_protocol.get_strategies_state_encrypted(
                 _get_identity(context)
