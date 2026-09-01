@@ -62,10 +62,14 @@ export function buildEditAutomationConfig(input: AutomationBuildInput & { automa
   }
 }
 
-export function buildStopAutomationConfig(automationId: string): StopAutomationConfiguration {
+export function buildStopAutomationConfig(
+  automationId: string,
+  options?: { cancelOrders?: boolean },
+): StopAutomationConfiguration {
   return {
     id:          automationId,
     action_type: 'automation_stop',
+    ...(options?.cancelOrders ? { cancel_orders: true } : {}),
   }
 }
 

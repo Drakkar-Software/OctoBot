@@ -55,10 +55,12 @@ async def test_run_octobot_process_lifecycle_grid_trading(
         "dependencies": [{"action_id": octobot_process_functional_shared.ACTION_ID_INIT}],
     }
     # Depends only on init so it can run in the same ActionsExecutor pass after run_octobot re-calls;
-    # stop_automation() triggers _await_recallable_operator_signal(STOP) → run_octobot_process(execution_stop).
+    # stop_automation(cancel_orders=True) is a no-op for order cancellation on process-bound automations
+    # (no exchange_manager in flow) but must still trigger _await_recallable_operator_signal(STOP)
+    # → run_octobot_process(execution_stop).
     stop_automation_action = {
         "id": octobot_process_functional_shared.ACTION_ID_STOP_AUTOMATION,
-        "dsl_script": "stop_automation()",
+        "dsl_script": "stop_automation(cancel_orders=True)",
         "dependencies": [{"action_id": octobot_process_functional_shared.ACTION_ID_INIT}],
     }
 
@@ -206,6 +208,7 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             octobot_process_functional_shared._assert_two_by_two_grid_ladder_orders(
                 exchange_account_snapshot.orders.open_orders,
             )
+            open_orders_count_before_stop = len(exchange_account_snapshot.orders.open_orders)
 
             # Grid polls update recall state (e.g. adopted pid from process_bot_state); refresh inner.
             run_after_grid = octobot_process_functional_shared._get_action_by_id(
@@ -237,12 +240,14 @@ async def test_run_octobot_process_lifecycle_grid_trading(
 
             state = idem_job.dump()
 
-            # 4) stop_automation + execution_stop on run_octobot (SIGTERM to child), then wait for exit.
+            # 4) stop_automation(cancel_orders=True) + execution_stop on run_octobot (SIGTERM to child).
             priority_actions = functionnal_tests.resolved_actions([stop_automation_action])
-            async with octobot_flow.jobs.AutomationJob(state, priority_actions, [], {}) as stop_phase:
-                await stop_phase.run()
+            stop_phase = await octobot_process_functional_shared.run_automation_job_without_exchange_manager(
+                state, priority_actions, [], {}
+            )
+            stop_dump = stop_phase.dump()
             octobot_process_functional_shared._assert_run_octobot_process_recall_scheduled_to_in_dump(
-                stop_phase.dump(),
+                stop_dump,
                 assert_delay_matches_waiting_time=False,
             )
             assert stop_phase.automation_state.automation.post_actions.stop_automation is True
@@ -252,6 +257,17 @@ async def test_run_octobot_process_lifecycle_grid_trading(
             assert run_stopped is not None
             assert isinstance(run_stopped.result, dict)
             assert run_stopped.result.get("status") in ("stopped", "already_stopped")
+            stop_automation_dump = stop_dump.get("automation")
+            assert isinstance(stop_automation_dump, dict)
+            stop_exchange_account_snapshot_dict = stop_automation_dump.get("exchange_account_elements")
+            assert stop_exchange_account_snapshot_dict is not None
+            orders_after_stop = (
+                exchange_account_elements_import.ExchangeAccountElements.from_dict(
+                    stop_exchange_account_snapshot_dict
+                ).orders.open_orders
+            )
+            assert len(orders_after_stop) == open_orders_count_before_stop
+            octobot_process_functional_shared._assert_two_by_two_grid_ladder_orders(orders_after_stop)
 
             # SIGTERM triggers graceful stop; the HTTP server can keep returning 200
             # until late in shutdown, so wait for the child PID to be gone.

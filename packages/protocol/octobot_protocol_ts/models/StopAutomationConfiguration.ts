@@ -21,6 +21,7 @@ export class StopAutomationConfiguration {
     * automation_stop
     */
     'action_type': 'automation_stop';
+    'cancel_orders'?: boolean;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -37,6 +38,12 @@ export class StopAutomationConfiguration {
             "name": "action_type",
             "baseName": "action_type",
             "type": "UserActionType",
+            "format": ""
+        },
+        {
+            "name": "cancel_orders",
+            "baseName": "cancel_orders",
+            "type": "boolean",
             "format": ""
         }    ];
 

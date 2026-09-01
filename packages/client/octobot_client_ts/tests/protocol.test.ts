@@ -275,6 +275,11 @@ describe('userAction builders', () => {
     const c = buildStopAutomationConfig('auto_1')
     expect(c).toEqual({ id: 'auto_1', action_type: 'automation_stop' })
   })
+
+  it('buildStopAutomationConfig sets cancel_orders when requested', () => {
+    const c = buildStopAutomationConfig('auto_1', { cancelOrders: true })
+    expect(c).toEqual({ id: 'auto_1', action_type: 'automation_stop', cancel_orders: true })
+  })
 })
 
 type GridPairSetting = { pair?: string; flat_spread: number; flat_increment: number; buy_orders_count: number; sell_orders_count: number }

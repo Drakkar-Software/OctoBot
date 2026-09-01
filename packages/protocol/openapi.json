@@ -1887,6 +1887,10 @@
           "action_type": {
             "$ref": "#/components/schemas/UserActionType",
             "description": "automation_stop"
+          },
+          "cancel_orders": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
