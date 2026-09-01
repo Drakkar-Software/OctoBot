@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **action_type** | [**UserActionType**](UserActionType.md) | account_auth_delete | 
 **configuration** | [**AccountAuthentication**](AccountAuthentication.md) |  | 
 **id** | **str** |  | 
+**cancel_orders** | **bool** |  | [optional] [default to False]
 **automation_id** | **str** |  | 
 **signal_type** | [**AutomationSignalType**](AutomationSignalType.md) |  | 
 **signal_payload** | [**SignalAutomationConfigurationSignalPayload**](SignalAutomationConfigurationSignalPayload.md) |  | [optional] 

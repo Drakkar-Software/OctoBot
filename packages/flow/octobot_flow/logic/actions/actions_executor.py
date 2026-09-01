@@ -133,7 +133,6 @@ class ActionsExecutor:
         if post_iteration_actions_details.stop_automation:
             self._get_logger().info(f"Stopping automation: {self._automation.metadata.automation_id}")
             self._automation.post_actions.stop_automation = True
-            # todo cancel open orders and sell assets if required in action config
             await self._await_recallable_operator_signal(
                 dsl_executor,
                 octobot_commons.dsl_interpreter.OperatorSignal.STOP.value,

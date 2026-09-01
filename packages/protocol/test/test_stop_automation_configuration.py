@@ -36,7 +36,8 @@ class TestStopAutomationConfiguration(unittest.TestCase):
         if include_optional:
             return StopAutomationConfiguration(
                 id = '',
-                action_type = 'automation_create'
+                action_type = 'automation_create',
+                cancel_orders = True
             )
         else:
             return StopAutomationConfiguration(

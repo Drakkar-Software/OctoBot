@@ -44,6 +44,7 @@ describe("buildUserActionTemplate", () => {
     expect(action.configuration).toMatchObject({
       action_type: "automation_stop",
       id: TEMPLATE_AUTOMATION_ID,
+      cancel_orders: false,
     })
   })
 
@@ -438,6 +439,7 @@ describe("buildAutomationStopUserActionJson", () => {
     expect(firstJson.configuration).toEqual({
       action_type: "automation_stop",
       id: "auto-1",
+      cancel_orders: false,
     })
   })
 })

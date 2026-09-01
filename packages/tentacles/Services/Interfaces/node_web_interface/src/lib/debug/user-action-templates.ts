@@ -679,6 +679,7 @@ export function buildUserActionTemplate(
       return userAction(id, {
         action_type: actionType,
         id: TEMPLATE_AUTOMATION_ID,
+        cancel_orders: false,
       } satisfies StopAutomationConfiguration)
     case "automation_restart":
       return userAction(id, {
@@ -852,6 +853,7 @@ export function buildAutomationStopUserActionJson(
     userAction(uniqueUserActionId(`ua-stop-${automationId}`), {
       action_type: "automation_stop",
       id: automationId,
+      cancel_orders: false,
     } satisfies StopAutomationConfiguration),
   )
 }

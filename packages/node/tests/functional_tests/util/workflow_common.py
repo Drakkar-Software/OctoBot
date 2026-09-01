@@ -148,14 +148,35 @@ def build_stop_user_action(
     *,
     automation_id: str,
     user_action_id: str,
+    cancel_orders: bool = False,
 ) -> protocol_models_module.UserAction:
     payload = protocol_models_module.StopAutomationConfiguration(
         action_type=protocol_models_module.UserActionType.AUTOMATION_STOP,
         id=automation_id,
+        cancel_orders=cancel_orders,
     )
     return protocol_models_module.UserAction(
         id=user_action_id,
         configuration=wrap_user_action_configuration(payload),
+    )
+
+
+def account_trading_open_orders_count(user_id: str, account_id: str) -> int:
+    trading_state = collection_providers_module.AccountTradingProvider.instance().load_state(
+        user_id,
+        account_id,
+    )
+    account_trading = trading_state.account_trading
+    if account_trading is None or account_trading.orders is None:
+        return 0
+    return len(account_trading.orders)
+
+
+def assert_account_trading_has_no_open_orders(user_id: str, account_id: str) -> None:
+    open_orders_count = account_trading_open_orders_count(user_id, account_id)
+    assert open_orders_count == 0, (
+        f"expected no open orders in AccountTrading for account {account_id!r}, "
+        f"got {open_orders_count}"
     )
 
 
@@ -436,6 +457,67 @@ async def wait_for_stop_success_output(
         diagnostic_details.append("latest SUCCESS output with workflow error")
     pytest.fail(
         f"Timed out waiting for stop completion for {automation_id} "
+        f"within {deadline_seconds}s; {'; '.join(diagnostic_details)}"
+    )
+
+
+async def wait_for_latest_automation_exchange_elements_until(
+    scheduler: typing.Any,
+    automation_id: str,
+    elements_predicate: typing.Callable[[typing.Any], bool],
+    deadline_seconds: float,
+    failure_label: str,
+    *,
+    user_id: str | None = None,
+    account_id: str | None = None,
+    require_account_trading_open_orders: bool = False,
+    poll_interval_seconds: float = DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS,
+) -> typing.Any:
+    if require_account_trading_open_orders and (user_id is None or account_id is None):
+        raise ValueError(
+            "user_id and account_id are required when require_account_trading_open_orders is True"
+        )
+    poll_deadline = time.monotonic() + deadline_seconds
+    latest_workflow_id: str | None = None
+    latest_workflow_status: str | None = None
+    last_buy_count = 0
+    last_sell_count = 0
+    last_trade_count = 0
+    last_account_trading_open_orders = 0
+    while time.monotonic() < poll_deadline:
+        matching_rows = await _list_matching_automation_workflow_rows(scheduler, automation_id)
+        if not matching_rows:
+            await asyncio.sleep(poll_interval_seconds)
+            continue
+        latest_workflow_row = workflows_util_module.get_latest_child_workflow(matching_rows)
+        latest_workflow_id = latest_workflow_row.workflow_id
+        latest_workflow_status = latest_workflow_row.status
+        state_reader = automation_states_loader_module.get_automation_state_reader(latest_workflow_row)
+        if state_reader is None:
+            await asyncio.sleep(poll_interval_seconds)
+            continue
+        elements = state_reader.state.automation.exchange_account_elements
+        last_buy_count, last_sell_count, last_trade_count = buy_sell_trade_counts_from_exchange_elements(
+            elements
+        )
+        elements_predicate_met = elements_predicate(elements)
+        account_trading_predicate_met = True
+        if require_account_trading_open_orders:
+            last_account_trading_open_orders = account_trading_open_orders_count(user_id, account_id)
+            account_trading_predicate_met = last_account_trading_open_orders > 0
+        if elements_predicate_met and account_trading_predicate_met:
+            return elements
+        await asyncio.sleep(poll_interval_seconds)
+    diagnostic_details = [
+        f"latest workflow: {latest_workflow_id!r} status={latest_workflow_status!r}",
+        f"last EAE counts: buys={last_buy_count}, sells={last_sell_count}, trades={last_trade_count}",
+    ]
+    if require_account_trading_open_orders:
+        diagnostic_details.append(
+            f"last AccountTrading open orders: {last_account_trading_open_orders}"
+        )
+    pytest.fail(
+        f"Timed out waiting for {failure_label} for {automation_id!r} "
         f"within {deadline_seconds}s; {'; '.join(diagnostic_details)}"
     )
 

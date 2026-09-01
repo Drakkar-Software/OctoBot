@@ -46,6 +46,7 @@ class TestUserActionConfiguration(unittest.TestCase):
                     private_key = '', 
                     seed_phrase = '', ),
                 id = '',
+                cancel_orders = True,
                 automation_id = '',
                 signal_type = 'actions',
                 signal_payload = None,
