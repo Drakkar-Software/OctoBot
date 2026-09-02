@@ -1,0 +1,7 @@
+{
+  "configuration": {
+    "action_type": "automation_restart",
+    "id": "id-1"
+  },
+  "id": "user-action-automation_restart"
+}

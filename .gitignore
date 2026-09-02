@@ -21,6 +21,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!packages/protocol/scripts/lib/
+!packages/protocol/scripts/lib/*.py
 lib64/
 parts/
 sdist/

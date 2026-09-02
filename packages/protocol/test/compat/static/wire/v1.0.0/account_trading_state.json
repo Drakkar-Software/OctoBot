@@ -1,0 +1,10 @@
+{
+  "account_trading": {
+    "orders": [],
+    "positions": [],
+    "trades": [],
+    "transactions": [],
+    "updated_at": "2020-01-01T00:00:00Z"
+  },
+  "version": "1.0.0"
+}

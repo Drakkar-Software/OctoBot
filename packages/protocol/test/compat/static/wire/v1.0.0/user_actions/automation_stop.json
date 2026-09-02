@@ -1,0 +1,8 @@
+{
+  "configuration": {
+    "action_type": "automation_stop",
+    "cancel_orders": false,
+    "id": "id-1"
+  },
+  "id": "user-action-automation_stop"
+}

@@ -1,0 +1,8 @@
+{
+  "configuration": {
+    "action_type": "automation_signal",
+    "automation_id": "id-1",
+    "signal_type": "actions"
+  },
+  "id": "user-action-automation_signal"
+}
