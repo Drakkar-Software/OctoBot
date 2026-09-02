@@ -25,6 +25,7 @@ import pytest
 
 import octobot_protocol.models as protocol_models
 
+import octobot_node.constants as octobot_node_constants
 import octobot_node.enums as node_enums
 import octobot_node.errors as node_errors
 import octobot_node.models
@@ -276,6 +277,40 @@ class TestSendToActiveAutomationWorkflow:
         payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(call_args.args[1])
         assert payload.actions_type == node_enums.AutomationWorkflowActionTypes.USER_ACTIONS.value
         assert payload.actions_details == actions
+        assert payload.execution_result_callback is None
+
+    @pytest.mark.asyncio
+    async def test_send_actions_to_active_automation_attaches_execution_callback_when_provided(self):
+        actions = [{"id": "action_1", "dsl_script": "noop()"}]
+        execution_result_callback = workflow_params_module.AutomationWorkflowExecutionResultCallback(
+            reply_workflow_id="ua-workflow-1",
+            user_action_id="ua-1",
+        )
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.send_async = mock.AsyncMock()
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(scheduler_module.SCHEDULER, "INSTANCE", mock_dbos_instance),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[self._TEST_CHILD_WORKFLOW_ID],
+            ),
+        ):
+            await octobot_node.scheduler.tasks.send_actions_to_active_automation(
+                self._TEST_PARENT_AUTOMATION_ID,
+                self._TEST_WALLET_ADDRESS,
+                actions,
+                execution_result_callback,
+            )
+
+        payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(
+            mock_dbos_instance.send_async.await_args.args[1]
+        )
+        assert payload.execution_result_callback is not None
+        assert payload.execution_result_callback.reply_workflow_id == "ua-workflow-1"
+        assert payload.execution_result_callback.user_action_id == "ua-1"
 
     @pytest.mark.asyncio
     async def test_send_forced_trigger_to_active_automation_sends_forced_trigger_payload(self):

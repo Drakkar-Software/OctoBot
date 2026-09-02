@@ -31,6 +31,7 @@ import type {
   ResetAccountTradingDataConfiguration,
   RestartAutomationConfiguration,
   SignalAutomationConfiguration,
+  SignalBotConfiguration,
   StopAutomationConfiguration,
   Strategy,
   StrategyConfiguration,
@@ -42,6 +43,9 @@ import type {
   UserActionConfiguration,
   UserActionType,
 } from "@/client"
+import { defaultSignalActionsPayloadText } from "@/lib/debug/signal-payload"
+
+export { buildDefaultDslActionsSignalPayload } from "@/lib/debug/signal-payload"
 
 export const DEFAULT_USER_ACTION_TYPE: UserActionType = "automation_stop"
 
@@ -62,6 +66,7 @@ export type UserActionTemplateKey =
   | "strategy_create_dca_time_based"
   | "strategy_create_market_making"
   | "strategy_create_generic_process"
+  | "strategy_create_signal_bot"
 
 export const DEFAULT_USER_ACTION_TEMPLATE_KEY: UserActionTemplateKey =
   DEFAULT_USER_ACTION_TYPE
@@ -111,16 +116,13 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
     value: "strategy_create_generic_process",
     label: "Strategy create (generic process OctoBot)",
   },
+  {
+    value: "strategy_create_signal_bot",
+    label: "Strategy create (signal bot)",
+  },
   { value: "strategy_edit", label: "Strategy edit" },
   { value: "strategy_delete", label: "Strategy delete" },
 ]
-
-export const DEFAULT_ACTIONS_SIGNAL_PAYLOAD = `[
-  {
-    "id": "action_1",
-    "dsl_script": "noop()"
-  }
-]`
 
 export const DEFAULT_TRADING_SIGNAL_PAYLOAD = `{
   "strategy_id": "test-strategy-id",
@@ -158,6 +160,7 @@ type StrategyConfigurationVariant =
   | CopyConfiguration
   | GenericProcessConfiguration
   | MarketMakingConfiguration
+  | SignalBotConfiguration
 
 function assertNever(value: never): never {
   throw new Error(`Unexpected value: ${String(value)}`)
@@ -195,7 +198,7 @@ export function defaultSignalPayloadText(
 ): string {
   switch (signalType) {
     case "actions":
-      return DEFAULT_ACTIONS_SIGNAL_PAYLOAD
+      return defaultSignalActionsPayloadText("dsl_json")
     case "trading_signal":
       return DEFAULT_TRADING_SIGNAL_PAYLOAD
     default:
@@ -358,6 +361,21 @@ function sampleGenericProcessOctobotStrategyConfiguration(
     {
       configuration_type: "generic_process",
     } satisfies GenericProcessConfiguration,
+    "USDC",
+  )
+}
+
+function sampleSignalBotStrategyConfiguration(
+  id = TEMPLATE_STRATEGY_ID,
+): Strategy {
+  return sampleStrategyShell(
+    id,
+    "Signal bot strategy",
+    {
+      configuration_type: "signal_bot",
+      sync_interval_with_open_trades_seconds: 3600,
+      sync_interval_without_open_trades_seconds: 14400,
+    } satisfies SignalBotConfiguration,
     "USDC",
   )
 }
@@ -654,6 +672,13 @@ export function buildUserActionTemplate(
     return userAction("ua-manual-strategy_create_generic_process", {
       action_type: "strategy_create",
       configuration: sampleGenericProcessOctobotStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
+  }
+
+  if (templateKey === "strategy_create_signal_bot") {
+    return userAction("ua-manual-strategy_create_signal_bot", {
+      action_type: "strategy_create",
+      configuration: sampleSignalBotStrategyConfiguration(newResourceId()),
     } satisfies CreateStrategyConfiguration)
   }
 

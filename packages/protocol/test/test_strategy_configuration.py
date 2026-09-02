@@ -101,6 +101,8 @@ class TestStrategyConfiguration(unittest.TestCase):
                         include_in_construction_candle = True, )
                     ],
                 strategy_id = '',
+                sync_interval_with_open_trades_seconds = 1.337,
+                sync_interval_without_open_trades_seconds = 1.337,
                 profile_data = octobot_protocol.models.profile_data.profile_data(),
                 actions = [
                     octobot_protocol.models.action.Action(
@@ -165,6 +167,8 @@ class TestStrategyConfiguration(unittest.TestCase):
                 name = '',
                 config = { },
                 strategy_id = '',
+                sync_interval_with_open_trades_seconds = 1.337,
+                sync_interval_without_open_trades_seconds = 1.337,
                 actions = [
                     octobot_protocol.models.action.Action(
                         id = '', 

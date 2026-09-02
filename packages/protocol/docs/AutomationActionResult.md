@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **error_details** | **str** |  | [optional] 
 **created_automation_id** | **str** |  | [optional] 
 **result_type** | [**UserActionResultType**](UserActionResultType.md) |  | 
+**signal_execution_results** | [**List[SignalPriorityActionExecutionResult]**](SignalPriorityActionExecutionResult.md) |  | [optional] 
 
 ## Example
 

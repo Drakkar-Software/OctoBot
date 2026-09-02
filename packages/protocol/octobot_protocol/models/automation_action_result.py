@@ -21,6 +21,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.automation_action_result_error_message import AutomationActionResultErrorMessage
+from octobot_protocol.models.signal_priority_action_execution_result import SignalPriorityActionExecutionResult
 from octobot_protocol.models.user_action_result_type import UserActionResultType
 from typing import Optional, Set
 from typing_extensions import Self
@@ -35,7 +36,8 @@ class AutomationActionResult(BaseModel):
     error_details: Optional[StrictStr] = None
     created_automation_id: Optional[StrictStr] = None
     result_type: UserActionResultType
-    __properties: ClassVar[List[str]] = ["updated_at", "error_message", "error_details", "created_automation_id", "result_type"]
+    signal_execution_results: Optional[List[SignalPriorityActionExecutionResult]] = None
+    __properties: ClassVar[List[str]] = ["updated_at", "error_message", "error_details", "created_automation_id", "result_type", "signal_execution_results"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -76,6 +78,13 @@ class AutomationActionResult(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in signal_execution_results (list)
+        _items = []
+        if self.signal_execution_results:
+            for _item_signal_execution_results in self.signal_execution_results:
+                if _item_signal_execution_results:
+                    _items.append(_item_signal_execution_results.to_dict())
+            _dict['signal_execution_results'] = _items
         return _dict
 
     @classmethod
@@ -92,7 +101,8 @@ class AutomationActionResult(BaseModel):
             "error_message": obj.get("error_message"),
             "error_details": obj.get("error_details"),
             "created_automation_id": obj.get("created_automation_id"),
-            "result_type": obj.get("result_type")
+            "result_type": obj.get("result_type"),
+            "signal_execution_results": [SignalPriorityActionExecutionResult.from_dict(_item) for _item in obj["signal_execution_results"]] if obj.get("signal_execution_results") is not None else None
         })
         return _obj
 

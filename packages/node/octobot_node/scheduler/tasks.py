@@ -119,11 +119,13 @@ async def _send_automation_workflow_action_update(
     target_workflow_id: str,
     actions_type: str,
     actions_details: list[dict],
+    execution_result_callback: typing.Optional[params.AutomationWorkflowExecutionResultCallback] = None,
 ) -> None:
     import octobot_node.scheduler  # avoid circular import
     payload = params.AutomationWorkflowActionUpdate(
         actions_type=actions_type,
         actions_details=actions_details,
+        execution_result_callback=execution_result_callback,
     ).to_dict(include_default_values=False)
     await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
         target_workflow_id,
@@ -153,6 +155,7 @@ async def _send_to_active_automation_workflow(
     wallet_address: str,
     actions_type: str,
     actions_details: list[dict],
+    execution_result_callback: typing.Optional[params.AutomationWorkflowExecutionResultCallback] = None,
 ) -> None:
     """
     Resolve the latest pending/enqueued child workflow and deliver a priority action update.
@@ -175,6 +178,7 @@ async def _send_to_active_automation_workflow(
                 matching_workflow_ids[0],
                 actions_type,
                 actions_details,
+                execution_result_callback,
             )
             return
         await asyncio.sleep(node_constants.AUTOMATION_WORKFLOW_ACTIVE_SEND_POLL_INTERVAL_SECONDS)
@@ -188,12 +192,14 @@ async def send_actions_to_active_automation(
     parent_automation_id: str,
     wallet_address: str,
     actions: list[dict],
+    execution_result_callback: typing.Optional[params.AutomationWorkflowExecutionResultCallback] = None,
 ) -> None:
     await _send_to_active_automation_workflow(
         parent_automation_id,
         wallet_address,
         octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
         actions,
+        execution_result_callback,
     )
 
 

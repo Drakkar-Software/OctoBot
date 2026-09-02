@@ -12,7 +12,6 @@ import octobot_trading.dsl
 import octobot_trading.modes as trading_modes
 import octobot_evaluators.evaluators as evaluators
 
-import octobot_flow.entities
 import octobot_flow.environment
 import octobot_flow.errors
 import octobot_flow.enums
@@ -24,7 +23,6 @@ from octobot_flow.logic.actions.abstract_action_executor import AbstractActionEx
 from octobot_flow.logic.dsl.dsl_actions_util import is_recallable_dsl_action
 
 import tentacles.Meta.DSL_operators as dsl_operators
-import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
 
 
 class DSLExecutor(AbstractActionExecutor):
@@ -91,7 +89,10 @@ class DSLExecutor(AbstractActionExecutor):
                 copier_exchange_manager=self._exchange_manager,
                 copier_trading_mode=None,
             )
-            + octobot_process_ops.create_octobot_process_operators(
+            + dsl_operators.create_recall_when_relevant_for_context_operators(
+                self._exchange_manager,
+            )
+            + dsl_operators.create_octobot_process_operators(
                 self._interpreter_signals,
                 resolved_executor_id,
             )

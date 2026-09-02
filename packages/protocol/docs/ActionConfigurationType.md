@@ -14,6 +14,8 @@ ActionConfigurationType
 
 * `GENERIC_WORKFLOW` (value: `'generic_workflow'`)
 
+* `SIGNAL_BOT` (value: `'signal_bot'`)
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

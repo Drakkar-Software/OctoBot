@@ -248,6 +248,23 @@ def copy_action_factory(
     )
 
 
+def signal_bot_action_factory(
+    init_action: flow_entities.AbstractActionDetails,
+    signal_bot_configuration: protocol_models.SignalBotConfiguration,
+) -> flow_entities.AbstractActionDetails:
+    dsl_script = (
+        "recall_when_relevant_for_context("
+        f"with_open_trades_seconds={dsl_interpreter.format_parameter_value(signal_bot_configuration.sync_interval_with_open_trades_seconds)}, "
+        f"without_open_trades_seconds={dsl_interpreter.format_parameter_value(signal_bot_configuration.sync_interval_without_open_trades_seconds)}, "
+        "return_remaining_time=True)"
+    )
+    return flow_entities.DSLScriptActionDetails(
+        id=_action_id_from_configuration(signal_bot_configuration),
+        dsl_script=dsl_script,
+        dependencies=[_action_dependency(init_action.id)],
+    )
+
+
 def _protocol_time_frame_values(
     time_frames: typing.Iterable[typing.Any],
 ) -> list[str]:
