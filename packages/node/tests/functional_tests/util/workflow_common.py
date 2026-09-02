@@ -215,6 +215,26 @@ def build_forced_trigger_signal_user_action(
     )
 
 
+def build_actions_signal_user_action(
+    *,
+    automation_id: str,
+    user_action_id: str,
+    signal_payload: typing.Any,
+) -> protocol_models_module.UserAction:
+    payload = protocol_models_module.SignalAutomationConfiguration(
+        action_type=protocol_models_module.UserActionType.AUTOMATION_SIGNAL,
+        automation_id=automation_id,
+        signal_type=protocol_models_module.AutomationSignalType.ACTIONS,
+        signal_payload=protocol_models_module.SignalAutomationConfigurationSignalPayload(
+            actual_instance=signal_payload,
+        ),
+    )
+    return protocol_models_module.UserAction(
+        id=user_action_id,
+        configuration=wrap_user_action_configuration(payload),
+    )
+
+
 def parse_automation_workflow_output(
     workflow_output: str,
 ) -> workflow_params_module.AutomationWorkflowOutput:
