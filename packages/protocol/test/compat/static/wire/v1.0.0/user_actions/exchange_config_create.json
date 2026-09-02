@@ -1,0 +1,12 @@
+{
+  "configuration": {
+    "action_type": "exchange_config_create",
+    "configuration": {
+      "exchange": "x",
+      "id": "id-1",
+      "name": "name",
+      "sandboxed": false
+    }
+  },
+  "id": "user-action-exchange_config_create"
+}

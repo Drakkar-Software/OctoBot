@@ -1,0 +1,1678 @@
+{
+  "Account": {
+    "kind": "object",
+    "properties": {
+      "assets": "array:ref:DetailedAssetsForTradingType",
+      "authentication_id": "string",
+      "created_at": "string",
+      "description": "string",
+      "id": "string",
+      "is_simulated": "boolean",
+      "name": "string",
+      "specifics": "oneOf",
+      "state": "ref:AccountState",
+      "updated_at": "string"
+    },
+    "required": [
+      "created_at",
+      "id",
+      "is_simulated",
+      "name"
+    ]
+  },
+  "AccountActionResult": {
+    "kind": "object",
+    "properties": {
+      "error_details": "string",
+      "error_message": "ref:AccountActionResultErrorMessage",
+      "result_type": "ref:UserActionResultType",
+      "updated_at": "string"
+    },
+    "required": [
+      "result_type",
+      "updated_at"
+    ]
+  },
+  "AccountActionResultErrorMessage": {
+    "kind": "enum",
+    "values": [
+      "account_authentication_details_not_found",
+      "account_not_found",
+      "duplicate_item",
+      "internal_error",
+      "invalid_configuration"
+    ]
+  },
+  "AccountAuthActionResult": {
+    "kind": "object",
+    "properties": {
+      "error_details": "string",
+      "error_message": "ref:AccountAuthActionResultErrorMessage",
+      "result_type": "ref:UserActionResultType",
+      "updated_at": "string"
+    },
+    "required": [
+      "result_type",
+      "updated_at"
+    ]
+  },
+  "AccountAuthActionResultErrorMessage": {
+    "kind": "enum",
+    "values": [
+      "account_auth_not_found",
+      "duplicate_item",
+      "internal_error",
+      "invalid_configuration"
+    ]
+  },
+  "AccountAuthentication": {
+    "kind": "object",
+    "properties": {
+      "api_key": "string",
+      "api_passphrase": "string",
+      "api_secret": "string",
+      "id": "string",
+      "private_key": "string",
+      "public_key": "string",
+      "seed_phrase": "string",
+      "updated_at": "string"
+    },
+    "required": [
+      "id"
+    ]
+  },
+  "AccountPermission": {
+    "kind": "enum",
+    "values": [
+      "futures_trading",
+      "internal_transfer",
+      "read",
+      "spot_trading",
+      "withdraw"
+    ]
+  },
+  "AccountReference": {
+    "kind": "object",
+    "properties": {
+      "id": "string"
+    },
+    "required": [
+      "id"
+    ]
+  },
+  "AccountState": {
+    "kind": "object",
+    "properties": {
+      "message": "ref:AccountStatusMessage",
+      "permissions": "array:ref:AccountPermission",
+      "status": "ref:AccountStatus"
+    },
+    "required": [
+      "status"
+    ]
+  },
+  "AccountStatus": {
+    "kind": "enum",
+    "values": [
+      "invalid",
+      "unknown",
+      "valid"
+    ]
+  },
+  "AccountStatusMessage": {
+    "kind": "enum",
+    "values": [
+      "account_too_old",
+      "incompatible_account_referral",
+      "internal_server_error",
+      "invalid_api_ip_whitelist",
+      "invalid_api_keys",
+      "missing_api_trading_rights",
+      "pending_validation",
+      "revoke_api_withdrawal_rights",
+      "valid"
+    ]
+  },
+  "AccountTrading": {
+    "kind": "object",
+    "properties": {
+      "orders": "array:ref:Order",
+      "positions": "array:ref:Position",
+      "trades": "array:ref:Trade",
+      "transactions": "array:ref:Transaction",
+      "updated_at": "string"
+    },
+    "required": [
+      "updated_at"
+    ]
+  },
+  "AccountTradingState": {
+    "kind": "object",
+    "properties": {
+      "account_trading": "ref:AccountTrading",
+      "version": "string"
+    },
+    "required": [
+      "account_trading",
+      "version"
+    ]
+  },
+  "AccountTradingWithAccountId": {
+    "kind": "object",
+    "properties": {
+      "account_id": "string",
+      "account_trading": "ref:AccountTrading"
+    },
+    "required": [
+      "account_id"
+    ]
+  },
+  "AccountType": {
+    "kind": "enum",
+    "values": [
+      "asset",
+      "bank",
+      "blockchain",
+      "broker",
+      "exchange",
+      "generic"
+    ]
+  },
+  "AccountsAuthenticationState": {
+    "kind": "object",
+    "properties": {
+      "account_authentication": "array:ref:AccountAuthentication",
+      "version": "string"
+    },
+    "required": [
+      "account_authentication",
+      "version"
+    ]
+  },
+  "AccountsState": {
+    "kind": "object",
+    "properties": {
+      "accounts": "array:ref:Account",
+      "exchange_configs": "array:ref:ExchangeConfig",
+      "version": "string"
+    },
+    "required": [
+      "version"
+    ]
+  },
+  "Action": {
+    "kind": "object",
+    "properties": {
+      "action_type": "string",
+      "completed_at": "string",
+      "configuration": "object",
+      "dsl": "string",
+      "error": "string",
+      "id": "string",
+      "result": "string",
+      "status": "ref:WorkflowStatus"
+    },
+    "required": [
+      "action_type",
+      "id",
+      "status"
+    ]
+  },
+  "ActionConfigurationType": {
+    "kind": "enum",
+    "values": [
+      "copy",
+      "generic_process",
+      "generic_workflow",
+      "market_making",
+      "trading_tentacles"
+    ]
+  },
+  "ActionProposal": {
+    "kind": "object",
+    "properties": {
+      "actions": "array:ref:ProposedActionEntry",
+      "createdAt": "string",
+      "kind": "enum",
+      "label": "string",
+      "v": "integer"
+    },
+    "required": [
+      "actions",
+      "createdAt",
+      "kind",
+      "v"
+    ]
+  },
+  "ActiveOrderSwapStrategy": {
+    "kind": "object",
+    "properties": {
+      "timeout": "number",
+      "trigger_price_configuration": "object",
+      "type": "ref:ActiveOrderSwapStrategyType"
+    },
+    "required": [
+      "type"
+    ]
+  },
+  "ActiveOrderSwapStrategyType": {
+    "kind": "enum",
+    "values": [
+      "StopFirstActiveOrderSwapStrategy",
+      "TakeProfitFirstActiveOrderSwapStrategy"
+    ]
+  },
+  "AssetAccount": {
+    "kind": "object",
+    "properties": {
+      "account_type": "ref:AccountType",
+      "asset_type": "string",
+      "cost_basis": "number"
+    },
+    "required": [
+      "account_type"
+    ]
+  },
+  "AutomationActionResult": {
+    "kind": "object",
+    "properties": {
+      "created_automation_id": "string",
+      "error_details": "string",
+      "error_message": "ref:AutomationActionResultErrorMessage",
+      "result_type": "ref:UserActionResultType",
+      "updated_at": "string"
+    },
+    "required": [
+      "result_type",
+      "updated_at"
+    ]
+  },
+  "AutomationActionResultErrorMessage": {
+    "kind": "enum",
+    "values": [
+      "account_authentication_details_not_found",
+      "account_not_found",
+      "ambiguous_exchange_config",
+      "ambiguous_trading_type",
+      "automation_not_found",
+      "internal_error",
+      "invalid_automation_id",
+      "invalid_configuration",
+      "strategy_not_found",
+      "strategy_version_not_found",
+      "unknown_trading_type"
+    ]
+  },
+  "AutomationConfiguration": {
+    "kind": "object",
+    "properties": {
+      "accounts": "array:ref:AccountReference",
+      "created_at": "string",
+      "description": "string",
+      "id": "string",
+      "name": "string",
+      "strategy": "ref:StrategyReference",
+      "updated_at": "string"
+    },
+    "required": [
+      "accounts",
+      "created_at",
+      "name",
+      "strategy"
+    ]
+  },
+  "AutomationMetadata": {
+    "kind": "object",
+    "properties": {
+      "created_at": "string",
+      "description": "string",
+      "name": "string",
+      "updated_at": "string"
+    },
+    "required": [
+      "description",
+      "name"
+    ]
+  },
+  "AutomationSignalType": {
+    "kind": "enum",
+    "values": [
+      "actions",
+      "forced_trigger",
+      "trading_signal"
+    ]
+  },
+  "AutomationState": {
+    "kind": "object",
+    "properties": {
+      "actions": "array:ref:Action",
+      "assets": "array:ref:DetailedAssetsForTradingType",
+      "child_octobot_process": "ref:ChildOctoBotProcessState",
+      "error": "string",
+      "error_message": "string",
+      "exchange_account_ids": "array:string",
+      "exchanges": "array:string",
+      "id": "string",
+      "metadata": "ref:AutomationMetadata",
+      "orders": "array:ref:OrderSummary",
+      "positions": "array:ref:PositionSummary",
+      "priority_actions": "array:ref:Action",
+      "status": "ref:WorkflowStatus",
+      "trades": "array:ref:TradeSummary"
+    },
+    "required": [
+      "id",
+      "metadata",
+      "status"
+    ]
+  },
+  "BankAccount": {
+    "kind": "object",
+    "properties": {
+      "account_type": "ref:AccountType",
+      "currency": "string",
+      "institution": "string"
+    },
+    "required": [
+      "account_type"
+    ]
+  },
+  "BlockchainAccount": {
+    "kind": "object",
+    "properties": {
+      "account_type": "ref:AccountType",
+      "blockchain": "string",
+      "exchange_config_ids": "array:string",
+      "network": "string"
+    },
+    "required": [
+      "account_type",
+      "blockchain"
+    ]
+  },
+  "BrokerAccount": {
+    "kind": "object",
+    "properties": {
+      "account_type": "ref:AccountType",
+      "exchange_config_ids": "array:string",
+      "provider_id": "string"
+    },
+    "required": [
+      "account_type"
+    ]
+  },
+  "CancelPolicy": {
+    "kind": "object",
+    "properties": {
+      "specifics": "object",
+      "type": "ref:CancelPolicyType"
+    },
+    "required": [
+      "type"
+    ]
+  },
+  "CancelPolicyType": {
+    "kind": "enum",
+    "values": [
+      "ChainedOrderFillingPriceOrderCancelPolicy",
+      "ExpirationTimeOrderCancelPolicy"
+    ]
+  },
+  "ChildOctoBotProcessState": {
+    "kind": "object",
+    "properties": {
+      "http_base_url": "string",
+      "init_state_ok": "boolean",
+      "web_port": "integer"
+    },
+    "required": [
+      "http_base_url",
+      "init_state_ok",
+      "web_port"
+    ]
+  },
+  "CopiedAccount": {
+    "kind": "object",
+    "properties": {
+      "copied_assets": "array:ref:CopiedAsset",
+      "historical_snapshots": "array:ref:CopiedAccount",
+      "orders": "array:ref:Order",
+      "positions": "array:ref:Position",
+      "updated_at": "number",
+      "version": "string"
+    },
+    "required": [
+      "copied_assets",
+      "updated_at",
+      "version"
+    ]
+  },
+  "CopiedAsset": {
+    "kind": "object",
+    "properties": {
+      "available": "number",
+      "name": "string",
+      "ratio": "number",
+      "total": "number"
+    },
+    "required": [
+      "available",
+      "name",
+      "ratio",
+      "total"
+    ]
+  },
+  "CopyConfiguration": {
+    "kind": "object",
+    "properties": {
+      "configuration_type": "ref:ActionConfigurationType",
+      "strategy_id": "string"
+    },
+    "required": [
+      "configuration_type",
+      "strategy_id"
+    ]
+  },
+  "CreateAccountAuthConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:AccountAuthentication"
+    },
+    "required": [
+      "action_type",
+      "configuration"
+    ]
+  },
+  "CreateAccountConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:Account"
+    },
+    "required": [
+      "action_type",
+      "configuration"
+    ]
+  },
+  "CreateAutomationConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:AutomationConfiguration"
+    },
+    "required": [
+      "action_type",
+      "configuration"
+    ]
+  },
+  "CreateExchangeConfigConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:ExchangeConfig"
+    },
+    "required": [
+      "action_type",
+      "configuration"
+    ]
+  },
+  "CreateStrategyConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:Strategy"
+    },
+    "required": [
+      "action_type",
+      "configuration"
+    ]
+  },
+  "Debug": {
+    "kind": "object",
+    "properties": {
+      "account_tradings": "array:ref:AccountTradingWithAccountId",
+      "accounts": "array:ref:Account",
+      "automations": "array:ref:AutomationState",
+      "exchange_configs": "array:ref:ExchangeConfig",
+      "local_strategies": "array:ref:Strategy",
+      "user_actions": "array:ref:UserAction"
+    },
+    "required": [
+      "automations",
+      "user_actions"
+    ]
+  },
+  "DebugState": {
+    "kind": "object",
+    "properties": {
+      "debug": "ref:Debug",
+      "version": "string"
+    },
+    "required": [
+      "version"
+    ]
+  },
+  "DeleteAccountAuthConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "DeleteAccountConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "DeleteExchangeConfigConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "DeleteStrategyConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "DetailedAsset": {
+    "kind": "object",
+    "properties": {
+      "available": "number",
+      "symbol": "string",
+      "total": "number"
+    },
+    "required": [
+      "available",
+      "symbol",
+      "total"
+    ]
+  },
+  "DetailedAssetsForTradingType": {
+    "kind": "object",
+    "properties": {
+      "assets": "array:ref:DetailedAsset",
+      "trading_type": "ref:TradingType"
+    },
+    "required": [
+      "assets",
+      "trading_type"
+    ]
+  },
+  "DslKeyword": {
+    "kind": "object",
+    "properties": {
+      "category": "ref:DslKeywordCategory",
+      "description": "string",
+      "inputs": "array:ref:DslParameter",
+      "label": "string",
+      "name": "string",
+      "outputs": "array:ref:DslParameter"
+    },
+    "required": [
+      "category",
+      "description",
+      "inputs",
+      "label",
+      "name",
+      "outputs"
+    ]
+  },
+  "DslKeywordCategory": {
+    "kind": "enum",
+    "values": [
+      "action",
+      "condition",
+      "logic",
+      "source",
+      "trigger"
+    ]
+  },
+  "DslKeywordsState": {
+    "kind": "object",
+    "properties": {
+      "keywords": "array:ref:DslKeyword",
+      "version": "string"
+    },
+    "required": [
+      "keywords",
+      "version"
+    ]
+  },
+  "DslParameter": {
+    "kind": "object",
+    "properties": {
+      "default_value": "oneOf",
+      "description": "string",
+      "label": "string",
+      "maximum": "number",
+      "minimum": "number",
+      "multiple": "boolean",
+      "name": "string",
+      "options": "array:ref:DslParameterOption",
+      "primary": "boolean",
+      "required": "boolean",
+      "step": "number",
+      "value_type": "ref:DslValueType"
+    },
+    "required": [
+      "label",
+      "name",
+      "value_type"
+    ]
+  },
+  "DslParameterOption": {
+    "kind": "object",
+    "properties": {
+      "label": "string",
+      "value": "string"
+    },
+    "required": [
+      "label",
+      "value"
+    ]
+  },
+  "DslValueType": {
+    "kind": "enum",
+    "values": [
+      "any",
+      "boolean",
+      "dict",
+      "number",
+      "order",
+      "series",
+      "signal",
+      "text",
+      "time_frame"
+    ]
+  },
+  "EditAccountAuthConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:AccountAuthentication",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "configuration",
+      "id"
+    ]
+  },
+  "EditAccountConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:Account",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "EditAutomationConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:AutomationConfiguration",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "configuration",
+      "id"
+    ]
+  },
+  "EditExchangeConfigConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:ExchangeConfig",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "EditStrategyConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "configuration": "ref:Strategy",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "configuration",
+      "id"
+    ]
+  },
+  "EvaluatorConfiguration": {
+    "kind": "object",
+    "properties": {
+      "config": "object",
+      "include_in_construction_candle": "boolean",
+      "name": "string",
+      "symbols": "array:string"
+    },
+    "required": [
+      "config",
+      "name",
+      "symbols"
+    ]
+  },
+  "ExchangeAccount": {
+    "kind": "object",
+    "properties": {
+      "account_type": "ref:AccountType",
+      "exchange_config_ids": "array:string",
+      "remote_account_id": "string"
+    },
+    "required": [
+      "account_type",
+      "exchange_config_ids",
+      "remote_account_id"
+    ]
+  },
+  "ExchangeAvailability": {
+    "kind": "object",
+    "properties": {
+      "api_url": "string",
+      "available_trading_types": "array:ref:TradingType",
+      "broker_enabled": "boolean",
+      "internal_name": "string",
+      "logo": "string",
+      "name": "string",
+      "register_url": "string",
+      "sandboxable": "boolean",
+      "support_type": "ref:ExchangeSupportStatus"
+    },
+    "required": [
+      "available_trading_types",
+      "internal_name",
+      "name"
+    ]
+  },
+  "ExchangeConfig": {
+    "kind": "object",
+    "properties": {
+      "exchange": "string",
+      "historical_trade_symbols": "array:string",
+      "id": "string",
+      "name": "string",
+      "sandboxed": "boolean",
+      "url": "string"
+    },
+    "required": [
+      "exchange",
+      "id",
+      "name",
+      "sandboxed"
+    ]
+  },
+  "ExchangeConfigActionResult": {
+    "kind": "object",
+    "properties": {
+      "error_details": "string",
+      "error_message": "ref:ExchangeConfigActionResultErrorMessage",
+      "result_type": "ref:UserActionResultType",
+      "updated_at": "string"
+    },
+    "required": [
+      "result_type",
+      "updated_at"
+    ]
+  },
+  "ExchangeConfigActionResultErrorMessage": {
+    "kind": "enum",
+    "values": [
+      "duplicate_item",
+      "exchange_config_not_found",
+      "internal_error",
+      "invalid_configuration"
+    ]
+  },
+  "ExchangeSupportStatus": {
+    "kind": "enum",
+    "values": [
+      "officially_supported",
+      "partially_tested",
+      "untested"
+    ]
+  },
+  "Fee": {
+    "kind": "object",
+    "properties": {
+      "amount": "number",
+      "currency": "string"
+    },
+    "required": [
+      "amount",
+      "currency"
+    ]
+  },
+  "GenericAccount": {
+    "kind": "object",
+    "properties": {
+      "account_type": "ref:AccountType"
+    },
+    "required": [
+      "account_type"
+    ]
+  },
+  "GenericProcessConfiguration": {
+    "kind": "object",
+    "properties": {
+      "configuration_type": "ref:ActionConfigurationType",
+      "profile_data": "object"
+    },
+    "required": [
+      "configuration_type"
+    ]
+  },
+  "GenericWorkflowConfiguration": {
+    "kind": "object",
+    "properties": {
+      "actions": "array:ref:Action",
+      "configuration_type": "ref:ActionConfigurationType"
+    },
+    "required": [
+      "actions",
+      "configuration_type"
+    ]
+  },
+  "HistoricalAssetValue": {
+    "kind": "object",
+    "properties": {
+      "holdings": "number",
+      "symbol": "string",
+      "value": "number"
+    },
+    "required": [
+      "holdings",
+      "symbol",
+      "value"
+    ]
+  },
+  "HistoricalAssetsForTradingType": {
+    "kind": "object",
+    "properties": {
+      "assets": "array:ref:HistoricalAssetValue",
+      "trading_type": "ref:TradingType"
+    },
+    "required": [
+      "assets",
+      "trading_type"
+    ]
+  },
+  "MarketMakingConfiguration": {
+    "kind": "object",
+    "properties": {
+      "configuration_type": "ref:ActionConfigurationType",
+      "pair_settings": "array:ref:MarketMakingSymbolConfiguration"
+    },
+    "required": [
+      "configuration_type",
+      "pair_settings"
+    ]
+  },
+  "MarketMakingFundsDistribution": {
+    "kind": "enum",
+    "values": [
+      "flat",
+      "random",
+      "valley"
+    ]
+  },
+  "MarketMakingHedgingEngine": {
+    "kind": "object",
+    "properties": {
+      "average_price_counted_minutes": "number",
+      "hedging_engine_type": "enum",
+      "hedging_exchange": "string",
+      "hedging_max_loss_threshold": "number",
+      "hedging_profit_threshold": "number",
+      "max_negative_percent_price_change": "number",
+      "max_positive_percent_price_change": "number"
+    },
+    "required": []
+  },
+  "MarketMakingOrderBookDepth": {
+    "kind": "object",
+    "properties": {
+      "cumulated_volume_percent": "number",
+      "percent_daily_trading_volume": "number"
+    },
+    "required": [
+      "cumulated_volume_percent",
+      "percent_daily_trading_volume"
+    ]
+  },
+  "MarketMakingOrdersDistribution": {
+    "kind": "enum",
+    "values": [
+      "linear"
+    ]
+  },
+  "MarketMakingReferencePair": {
+    "kind": "object",
+    "properties": {
+      "exchange": "string",
+      "formula": "string",
+      "pair": "string",
+      "time_frame": "ref:TimeFrame",
+      "weight": "number"
+    },
+    "required": [
+      "exchange",
+      "pair"
+    ]
+  },
+  "MarketMakingScheduledVolume": {
+    "kind": "object",
+    "properties": {
+      "max_amount": "number",
+      "max_interval_seconds": "number",
+      "min_amount": "number",
+      "min_interval_seconds": "number"
+    },
+    "required": [
+      "max_amount",
+      "max_interval_seconds",
+      "min_amount",
+      "min_interval_seconds"
+    ]
+  },
+  "MarketMakingStopConditions": {
+    "kind": "object",
+    "properties": {
+      "average_price_counted_minutes": "number",
+      "max_negative_percent_price_change": "number",
+      "max_positive_percent_price_change": "number",
+      "min_base_holding": "number",
+      "min_quote_holding": "number"
+    },
+    "required": []
+  },
+  "MarketMakingSymbolConfiguration": {
+    "kind": "object",
+    "properties": {
+      "asks_count": "number",
+      "bids_count": "number",
+      "exchange": "string",
+      "funds_distribution": "ref:MarketMakingFundsDistribution",
+      "hedging_engine": "ref:MarketMakingHedgingEngine",
+      "max_base_budget": "number",
+      "max_quote_budget": "number",
+      "max_spread": "number",
+      "min_base_budget": "number",
+      "min_quote_budget": "number",
+      "min_spread": "number",
+      "order_book_depth": "ref:MarketMakingOrderBookDepth",
+      "orders_distribution": "ref:MarketMakingOrdersDistribution",
+      "reference_price": "array:ref:MarketMakingReferencePair",
+      "scheduled_volume": "ref:MarketMakingScheduledVolume",
+      "stop_conditions": "ref:MarketMakingStopConditions",
+      "trading_pair": "string"
+    },
+    "required": [
+      "asks_count",
+      "bids_count",
+      "exchange",
+      "funds_distribution",
+      "max_spread",
+      "min_spread",
+      "orders_distribution",
+      "reference_price",
+      "trading_pair"
+    ]
+  },
+  "NodeEndpoint": {
+    "kind": "object",
+    "properties": {
+      "host": "string",
+      "port": "integer",
+      "secure": "boolean"
+    },
+    "required": [
+      "host",
+      "port"
+    ]
+  },
+  "Order": {
+    "kind": "object",
+    "properties": {
+      "cancel_policy": "ref:CancelPolicy",
+      "chained_orders": "array:ref:Order",
+      "created_at": "string",
+      "entries": "array:string",
+      "exchange_id": "string",
+      "filled": "number",
+      "id": "string",
+      "is_active": "boolean",
+      "order_group": "ref:OrderGroup",
+      "price": "number",
+      "quantity": "number",
+      "reduce_only": "boolean",
+      "side": "ref:Side",
+      "status": "ref:OrderStatus",
+      "symbol": "string",
+      "trailing_profile": "ref:TrailingProfile",
+      "trigger_above": "boolean",
+      "type": "ref:OrderType",
+      "update_with_triggering_order_fees": "boolean"
+    },
+    "required": [
+      "created_at",
+      "exchange_id",
+      "filled",
+      "id",
+      "price",
+      "quantity",
+      "side",
+      "status",
+      "symbol",
+      "type"
+    ]
+  },
+  "OrderGroup": {
+    "kind": "object",
+    "properties": {
+      "active_order_swap_strategy": "ref:ActiveOrderSwapStrategy",
+      "id": "string",
+      "type": "ref:OrderGroupType"
+    },
+    "required": [
+      "id"
+    ]
+  },
+  "OrderGroupType": {
+    "kind": "enum",
+    "values": [
+      "BalancedTakeProfitAndStopOrderGroup",
+      "OneCancelsTheOtherOrderGroup",
+      "TrailingOnFilledTPBalancedOrderGroup"
+    ]
+  },
+  "OrderStatus": {
+    "kind": "enum",
+    "values": [
+      "canceled",
+      "canceling",
+      "closed",
+      "expired",
+      "filled",
+      "open",
+      "partially_filled",
+      "pending_creation",
+      "rejected",
+      "unknown"
+    ]
+  },
+  "OrderSummary": {
+    "kind": "object",
+    "properties": {
+      "id": "string",
+      "symbol": "string"
+    },
+    "required": [
+      "id",
+      "symbol"
+    ]
+  },
+  "OrderType": {
+    "kind": "enum",
+    "values": [
+      "limit",
+      "market",
+      "stop_loss",
+      "stop_loss_limit",
+      "take_profit",
+      "take_profit_limit"
+    ]
+  },
+  "PortfolioHistoricalValue": {
+    "kind": "object",
+    "properties": {
+      "assets": "array:ref:HistoricalAssetsForTradingType",
+      "timestamp": "string",
+      "total": "number"
+    },
+    "required": [
+      "timestamp",
+      "total"
+    ]
+  },
+  "PortfolioHistoricalValues": {
+    "kind": "object",
+    "properties": {
+      "unit": "string",
+      "values": "array:ref:PortfolioHistoricalValue"
+    },
+    "required": [
+      "unit",
+      "values"
+    ]
+  },
+  "PortfolioHistoricalValuesState": {
+    "kind": "object",
+    "properties": {
+      "history": "ref:PortfolioHistoricalValues",
+      "version": "string"
+    },
+    "required": [
+      "values",
+      "version"
+    ]
+  },
+  "Position": {
+    "kind": "object",
+    "properties": {
+      "entry_price": "number",
+      "id": "string",
+      "liquidation_price": "number",
+      "mark_price": "number",
+      "quantity": "number",
+      "side": "ref:Side",
+      "status": "ref:PositionStatus",
+      "symbol": "string"
+    },
+    "required": [
+      "entry_price",
+      "id",
+      "liquidation_price",
+      "mark_price",
+      "quantity",
+      "side",
+      "status",
+      "symbol"
+    ]
+  },
+  "PositionStatus": {
+    "kind": "enum",
+    "values": [
+      "auto_deleveraging",
+      "liquidated",
+      "liquidating",
+      "open"
+    ]
+  },
+  "PositionSummary": {
+    "kind": "object",
+    "properties": {
+      "id": "string",
+      "symbol": "string"
+    },
+    "required": [
+      "id",
+      "symbol"
+    ]
+  },
+  "ProposedActionEntry": {
+    "kind": "object",
+    "properties": {
+      "after": "enum",
+      "configuration": "ref:UserActionConfiguration"
+    },
+    "required": [
+      "configuration"
+    ]
+  },
+  "RefreshAccountsConfiguration": {
+    "kind": "object",
+    "properties": {
+      "account_ids": "array:string",
+      "action_type": "ref:UserActionType"
+    },
+    "required": [
+      "action_type"
+    ]
+  },
+  "ResetAccountTradingDataConfiguration": {
+    "kind": "object",
+    "properties": {
+      "account_ids": "array:string",
+      "action_type": "ref:UserActionType"
+    },
+    "required": [
+      "account_ids",
+      "action_type"
+    ]
+  },
+  "RestartAutomationConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "Side": {
+    "kind": "enum",
+    "values": [
+      "buy",
+      "sell"
+    ]
+  },
+  "SignalAutomationConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "automation_id": "string",
+      "signal_payload": "oneOf",
+      "signal_type": "ref:AutomationSignalType"
+    },
+    "required": [
+      "action_type",
+      "automation_id",
+      "signal_type"
+    ]
+  },
+  "StopAutomationConfiguration": {
+    "kind": "object",
+    "properties": {
+      "action_type": "ref:UserActionType",
+      "cancel_orders": "boolean",
+      "id": "string"
+    },
+    "required": [
+      "action_type",
+      "id"
+    ]
+  },
+  "StrategiesState": {
+    "kind": "object",
+    "properties": {
+      "strategies": "array:ref:Strategy",
+      "version": "string"
+    },
+    "required": [
+      "strategies",
+      "version"
+    ]
+  },
+  "Strategy": {
+    "kind": "object",
+    "properties": {
+      "configuration": "oneOf",
+      "created_at": "string",
+      "description": "string",
+      "id": "string",
+      "name": "string",
+      "reference_market": "string",
+      "updated_at": "string",
+      "version": "string"
+    },
+    "required": [
+      "configuration",
+      "id",
+      "reference_market",
+      "version"
+    ]
+  },
+  "StrategyActionResult": {
+    "kind": "object",
+    "properties": {
+      "error_details": "string",
+      "error_message": "ref:StrategyActionResultErrorMessage",
+      "result_type": "ref:UserActionResultType",
+      "updated_at": "string"
+    },
+    "required": [
+      "result_type",
+      "updated_at"
+    ]
+  },
+  "StrategyActionResultErrorMessage": {
+    "kind": "enum",
+    "values": [
+      "duplicate_item",
+      "internal_error",
+      "invalid_configuration",
+      "strategy_not_found"
+    ]
+  },
+  "StrategyEvaluatorConfiguration": {
+    "kind": "object",
+    "properties": {
+      "config": "object",
+      "name": "string",
+      "time_frames": "array:ref:TimeFrame"
+    },
+    "required": [
+      "config",
+      "name",
+      "time_frames"
+    ]
+  },
+  "StrategyReference": {
+    "kind": "object",
+    "properties": {
+      "emit_signals": "boolean",
+      "id": "string",
+      "version": "string"
+    },
+    "required": [
+      "id",
+      "version"
+    ]
+  },
+  "TimeFrame": {
+    "kind": "enum",
+    "values": [
+      "12h",
+      "15m",
+      "1d",
+      "1h",
+      "1m",
+      "1w",
+      "30m",
+      "3d",
+      "4h",
+      "5m",
+      "6h",
+      "8h"
+    ]
+  },
+  "Trade": {
+    "kind": "object",
+    "properties": {
+      "executed_at": "string",
+      "fee": "ref:Fee",
+      "id": "string",
+      "price": "number",
+      "quantity": "number",
+      "side": "ref:Side",
+      "status": "ref:OrderStatus",
+      "symbol": "string",
+      "trade_id": "string",
+      "type": "ref:OrderType"
+    },
+    "required": [
+      "executed_at",
+      "id",
+      "price",
+      "quantity",
+      "side",
+      "status",
+      "symbol",
+      "trade_id",
+      "type"
+    ]
+  },
+  "TradeSummary": {
+    "kind": "object",
+    "properties": {
+      "id": "string",
+      "symbol": "string"
+    },
+    "required": [
+      "id",
+      "symbol"
+    ]
+  },
+  "TradedPairVolume": {
+    "kind": "object",
+    "properties": {
+      "baseVolume": "unknown",
+      "quoteVolume": "unknown"
+    },
+    "required": []
+  },
+  "TradedPairsByExchange": {
+    "kind": "object",
+    "properties": {},
+    "required": []
+  },
+  "TradedPairsForExchange": {
+    "kind": "object",
+    "properties": {},
+    "required": []
+  },
+  "TradingTentaclesConfiguration": {
+    "kind": "object",
+    "properties": {
+      "config": "object",
+      "configuration_type": "ref:ActionConfigurationType",
+      "evaluators": "array:ref:EvaluatorConfiguration",
+      "name": "string",
+      "strategies": "array:ref:StrategyEvaluatorConfiguration"
+    },
+    "required": [
+      "config",
+      "configuration_type",
+      "name"
+    ]
+  },
+  "TradingType": {
+    "kind": "enum",
+    "values": [
+      "futures",
+      "margin",
+      "options",
+      "spot"
+    ]
+  },
+  "TrailingProfile": {
+    "kind": "object",
+    "properties": {
+      "specifics": "object",
+      "type": "ref:TrailingProfileType"
+    },
+    "required": [
+      "type"
+    ]
+  },
+  "TrailingProfileType": {
+    "kind": "enum",
+    "values": [
+      "filled_take_profit"
+    ]
+  },
+  "Transaction": {
+    "kind": "object",
+    "properties": {
+      "amount": "number",
+      "asset": "string",
+      "id": "string",
+      "timestamp": "string",
+      "type": "ref:TransactionType"
+    },
+    "required": [
+      "amount",
+      "asset",
+      "id",
+      "timestamp",
+      "type"
+    ]
+  },
+  "TransactionType": {
+    "kind": "enum",
+    "values": [
+      "blockchain_deposit",
+      "blockchain_withdrawal",
+      "funding_fee",
+      "trading_fee"
+    ]
+  },
+  "UpdateHistoricalExchangesDataConfiguration": {
+    "kind": "object",
+    "properties": {
+      "account_ids": "array:string",
+      "action_type": "ref:UserActionType"
+    },
+    "required": [
+      "action_type"
+    ]
+  },
+  "UserAction": {
+    "kind": "object",
+    "properties": {
+      "configuration": "ref:UserActionConfiguration",
+      "created_at": "string",
+      "id": "string",
+      "result": "oneOf",
+      "status": "ref:UserActionStatus",
+      "updated_at": "string"
+    },
+    "required": [
+      "id"
+    ]
+  },
+  "UserActionConfiguration": {
+    "kind": "object",
+    "one_of": {
+      "discriminator": "action_type",
+      "mapping_keys": [
+        "account_auth_create",
+        "account_auth_delete",
+        "account_auth_edit",
+        "account_create",
+        "account_delete",
+        "account_edit",
+        "accounts_refresh",
+        "automation_create",
+        "automation_edit",
+        "automation_restart",
+        "automation_signal",
+        "automation_stop",
+        "exchange_config_create",
+        "exchange_config_delete",
+        "exchange_config_edit",
+        "reset_account_trading_data",
+        "strategy_create",
+        "strategy_delete",
+        "strategy_edit",
+        "update_historical_exchanges_data"
+      ],
+      "variants": [
+        "CreateAccountAuthConfiguration",
+        "CreateAccountConfiguration",
+        "CreateAutomationConfiguration",
+        "CreateExchangeConfigConfiguration",
+        "CreateStrategyConfiguration",
+        "DeleteAccountAuthConfiguration",
+        "DeleteAccountConfiguration",
+        "DeleteExchangeConfigConfiguration",
+        "DeleteStrategyConfiguration",
+        "EditAccountAuthConfiguration",
+        "EditAccountConfiguration",
+        "EditAutomationConfiguration",
+        "EditExchangeConfigConfiguration",
+        "EditStrategyConfiguration",
+        "RefreshAccountsConfiguration",
+        "ResetAccountTradingDataConfiguration",
+        "RestartAutomationConfiguration",
+        "SignalAutomationConfiguration",
+        "StopAutomationConfiguration",
+        "UpdateHistoricalExchangesDataConfiguration"
+      ]
+    },
+    "properties": {},
+    "required": []
+  },
+  "UserActionResultType": {
+    "kind": "enum",
+    "values": [
+      "account",
+      "account_auth",
+      "automation",
+      "exchange_config",
+      "strategy"
+    ]
+  },
+  "UserActionStatus": {
+    "kind": "enum",
+    "values": [
+      "completed",
+      "failed",
+      "pending",
+      "running"
+    ]
+  },
+  "UserActionType": {
+    "kind": "enum",
+    "values": [
+      "account_auth_create",
+      "account_auth_delete",
+      "account_auth_edit",
+      "account_create",
+      "account_delete",
+      "account_edit",
+      "accounts_refresh",
+      "automation_create",
+      "automation_edit",
+      "automation_restart",
+      "automation_signal",
+      "automation_stop",
+      "exchange_config_create",
+      "exchange_config_delete",
+      "exchange_config_edit",
+      "reset_account_trading_data",
+      "strategy_create",
+      "strategy_delete",
+      "strategy_edit",
+      "update_historical_exchanges_data"
+    ]
+  },
+  "UserActionsState": {
+    "kind": "object",
+    "properties": {
+      "user_actions": "array:ref:UserAction",
+      "version": "string"
+    },
+    "required": [
+      "version"
+    ]
+  },
+  "UserDataState": {
+    "kind": "object",
+    "properties": {
+      "automations": "array:ref:AutomationState",
+      "user_actions": "array:ref:UserAction",
+      "version": "string"
+    },
+    "required": [
+      "version"
+    ]
+  },
+  "WorkflowStatus": {
+    "kind": "enum",
+    "values": [
+      "canceled",
+      "completed",
+      "failed",
+      "pending",
+      "periodic",
+      "running",
+      "scheduled"
+    ]
+  }
+}

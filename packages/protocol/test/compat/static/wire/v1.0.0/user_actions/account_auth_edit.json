@@ -1,0 +1,10 @@
+{
+  "configuration": {
+    "action_type": "account_auth_edit",
+    "configuration": {
+      "id": "id-1"
+    },
+    "id": "id-1"
+  },
+  "id": "user-action-account_auth_edit"
+}
