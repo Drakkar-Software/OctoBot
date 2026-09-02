@@ -26,6 +26,7 @@ _INVALID_PARAMETER_FORMAT_MESSAGE = "Invalid signal parameter format"
 _NOT_SUPPORTED_STOP_LOSS_ORDER_MESSAGE = "STOP_LOSS orders are not supported on binance"
 _NOT_SUPPORTED_BUY_MARKET_ORDER_MESSAGE = "BUY_MARKET orders are not supported on binance"
 _BLOCKCHAIN_WALLET_ERROR_MESSAGE = "Blockchain wallet connection failed"
+_ORDER_NOT_FOUND_MESSAGE = "No [binance] order found matching {'symbol': 'BTC/USDC'}"
 _GENERIC_EXCEPTION_MESSAGE = "Unexpected DSL execution failure"
 _FAILED_REQUEST_ERROR_MESSAGE = "Exchange API request failed"
 
@@ -216,6 +217,11 @@ class TestDslActionExecutionMapsCaughtException:
                 octobot_trading.errors.BlockchainWalletError(_BLOCKCHAIN_WALLET_ERROR_MESSAGE),
                 octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR,
                 id="blockchain_wallet",
+            ),
+            pytest.param(
+                octobot_trading.errors.OrderDescriptionNotFoundError(_ORDER_NOT_FOUND_MESSAGE),
+                octobot_flow.enums.ActionErrorStatus.ORDER_NOT_FOUND,
+                id="order_description_not_found",
             ),
             pytest.param(
                 RuntimeError(_GENERIC_EXCEPTION_MESSAGE),

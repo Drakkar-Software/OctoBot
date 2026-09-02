@@ -16,6 +16,7 @@ import octobot_trading.enums as trading_enums
 import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.enums
+import octobot_flow.parsers.signal_script_resolver as signal_script_resolver
 
 
 def _actions_params():
@@ -37,11 +38,6 @@ def _tradingview_signal_to_dsl_translator():
     import tentacles.Trading.Mode.trading_view_signals_trading_mode.tradingview_signal_to_dsl_translator as tradingview_signal_to_dsl_translator
 
     return tradingview_signal_to_dsl_translator
-
-
-def key_val_to_dict(key_val: str) -> dict:
-    trading_view_signals_trading = _trading_view_signals_trading()
-    return trading_view_signals_trading.TradingViewSignalsTradingMode.parse_signal_data(key_val, None, None, None, [])
 
 
 class ActionType(enum.Enum):
@@ -842,16 +838,15 @@ class ActionsDAGParser:
     def create_dsl_script_from_tv_format_action_details(
         self, action_id: str, signal: str, details: dict
     ) -> octobot_flow.entities.DSLScriptActionDetails:
-        trading_view_signals_trading = _trading_view_signals_trading()
-        tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
-        tv_trading_mode = trading_view_signals_trading.TradingViewSignalsTradingMode
-        dsl_script = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_signal(
-            {**{tv_trading_mode.SIGNAL_KEY: signal}, **details}
-        )
-        if dsl_script == tradingview_signal_to_dsl_translator.UNKNOWN_SIGNAL_RESULT:
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
+        try:
+            dsl_script = signal_script_resolver.translate_signal_parsed_data(
+                {**{tv_trading_mode.SIGNAL_KEY: signal}, **details}
+            )
+        except octobot_flow.errors.InvalidAutomationActionError as error:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 f"Invalid signal: {signal}({details}) (action {action_id})"
-            )
+            ) from error
         return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, details)
 
     def _create_dsl_action_with_dependencies_if_any(

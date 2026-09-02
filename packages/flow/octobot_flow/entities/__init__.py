@@ -44,6 +44,9 @@ from octobot_flow.entities.portfolio_history import (
     PortfolioHistoryAccountContext,
     PortfolioHistoryRunResult,
 )
+from octobot_flow.entities.signals import (
+    SignalExchangeContext,
+)
 __all__ = [
     "AccountElements",
     "ExchangeAccountElements",
@@ -79,4 +82,5 @@ __all__ = [
     "GlobalViewAccountRefreshResult",
     "PortfolioHistoryAccountContext",
     "PortfolioHistoryRunResult",
+    "SignalExchangeContext",
 ]

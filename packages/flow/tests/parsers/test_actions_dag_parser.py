@@ -192,3 +192,27 @@ class TestParseWalletCleanupIfError:
         wait_action = self._wait_action_after_parse(params)
         assert wait_action.dsl_script.startswith("wait(")
         assert "if_error(" not in wait_action.dsl_script
+
+
+class TestCreateDslScriptFromTvFormatActionDetails:
+    def test_buy_market_action_details(self):
+        parser = actions_dag_parser.ActionsDAGParser({})
+        action_details = parser.create_dsl_script_from_tv_format_action_details(
+            "action_trade_1",
+            "buy",
+            {"SYMBOL": "BTC/USDC", "VOLUME": 0.01},
+        )
+        assert "market" in action_details.dsl_script
+        assert "buy" in action_details.dsl_script
+        assert "BTC/USDC" in action_details.dsl_script
+
+    def test_cancel_action_details(self):
+        parser = actions_dag_parser.ActionsDAGParser({})
+        action_details = parser.create_dsl_script_from_tv_format_action_details(
+            "action_cancel_1",
+            "cancel",
+            {"SYMBOL": "BTC/USDC"},
+        )
+        assert action_details.dsl_script.startswith("cancel_order(")
+        assert "BTC/USDC" in action_details.dsl_script
+

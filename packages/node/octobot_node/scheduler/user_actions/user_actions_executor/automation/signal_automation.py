@@ -18,11 +18,12 @@ import typing
 
 import octobot_protocol.models as protocol_models
 
-import octobot_flow.entities
 import octobot_node.errors as node_errors
 import octobot_node.scheduler as scheduler_module
 import octobot_node.scheduler.tasks as scheduler_tasks
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
+import octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_priority_action_builder as signal_priority_action_builder
+import octobot_flow.entities
 
 
 def _get_signal_automation_payload(
@@ -48,41 +49,6 @@ def _raw_signal_payload(
     if signal_config.signal_payload is None:
         return None
     return signal_config.signal_payload.to_dict()
-
-
-def _parse_actions_payload(raw_payload: typing.Any) -> list[dict]:
-    if raw_payload is None:
-        raise node_errors.InvalidUserActionPayloadError(
-            "signal_payload is required for actions signal_type."
-        )
-    if isinstance(raw_payload, list):
-        if not raw_payload:
-            raise node_errors.InvalidUserActionPayloadError(
-                "signal_payload actions list must not be empty."
-            )
-        if not all(isinstance(action, dict) for action in raw_payload):
-            raise node_errors.InvalidUserActionPayloadError(
-                "signal_payload actions list must contain only action dicts."
-            )
-        return raw_payload
-    if isinstance(raw_payload, dict):
-        nested_actions = raw_payload.get("actions")
-        if nested_actions is not None:
-            if not isinstance(nested_actions, list) or not all(
-                isinstance(action, dict) for action in nested_actions
-            ):
-                raise node_errors.InvalidUserActionPayloadError(
-                    "signal_payload.actions must be a list of action dicts."
-                )
-            if not nested_actions:
-                raise node_errors.InvalidUserActionPayloadError(
-                    "signal_payload.actions must not be empty."
-                )
-            return nested_actions
-        return [raw_payload]
-    raise node_errors.InvalidUserActionPayloadError(
-        f"signal_payload for actions must be a list or dict, got {type(raw_payload).__name__}."
-    )
 
 
 def _parse_trading_signal_payload(raw_payload: typing.Any) -> octobot_flow.entities.TradingSignal:
@@ -157,7 +123,12 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
 
         match signal_config.signal_type:
             case protocol_models.AutomationSignalType.ACTIONS:
-                actions = _parse_actions_payload(raw_payload)
+                actions = await signal_priority_action_builder.build_signal_priority_actions(
+                    user_action_id=user_action.id,
+                    automation_id=signal_config.automation_id,
+                    user_id=self._user_id,
+                    signal_payload=raw_payload,
+                )
                 await scheduler_tasks.send_actions_to_active_automation(
                     signal_config.automation_id,
                     self._user_id,
