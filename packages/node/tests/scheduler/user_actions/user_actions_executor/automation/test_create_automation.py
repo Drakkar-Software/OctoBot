@@ -317,6 +317,42 @@ class TestCreateAutomationExecutor:
         assert len(actions[1].dependencies) == 1
         assert actions[1].dependencies[0].action_id == "action_init"
 
+    def test_signal_bot_returns_init_and_recall_when_relevant_for_context_action(self):
+        signal_bot_configuration = protocol_models.SignalBotConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.SIGNAL_BOT,
+            sync_interval_with_open_trades_seconds=5.0,
+            sync_interval_without_open_trades_seconds=10.0,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="signal-bot-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-signal-bot", payload=create_payload)
+
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        account = _minimal_exchange_account(account_id="acc-1")
+        stored = _stored_strategy_matching_reference(strat_ref, signal_bot_configuration)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock:
+            _stub_account_provider(account_mock, account)
+            strategy_mock.return_value.get_item.return_value = stored
+            actions = executor._create_automation_actions(user_action)
+
+        assert len(actions) == 2
+        assert actions[0].id == "action_init"
+        assert actions[1].id == f"{protocol_models.ActionConfigurationType.SIGNAL_BOT.value}_1"
+        assert isinstance(actions[1], flow_entities.DSLScriptActionDetails)
+        assert "recall_when_relevant_for_context(" in actions[1].dsl_script
+        assert "return_remaining_time=True" in actions[1].dsl_script
+        assert "grid_trading_mode" not in actions[1].dsl_script
+        assert "dca_trading_mode" not in actions[1].dsl_script
+
     def test_copy_uses_strategy_reference_market(self):
         copy_strategy_id = "copy-strategy"
         copy_configuration = protocol_models.CopyConfiguration(

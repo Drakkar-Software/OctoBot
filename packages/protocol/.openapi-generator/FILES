@@ -104,6 +104,8 @@ docs/RestartAutomationConfiguration.md
 docs/Side.md
 docs/SignalAutomationConfiguration.md
 docs/SignalAutomationConfigurationSignalPayload.md
+docs/SignalBotConfiguration.md
+docs/SignalPriorityActionExecutionResult.md
 docs/StopAutomationConfiguration.md
 docs/StrategiesState.md
 docs/Strategy.md
@@ -243,6 +245,8 @@ octobot_protocol/models/restart_automation_configuration.py
 octobot_protocol/models/side.py
 octobot_protocol/models/signal_automation_configuration.py
 octobot_protocol/models/signal_automation_configuration_signal_payload.py
+octobot_protocol/models/signal_bot_configuration.py
+octobot_protocol/models/signal_priority_action_execution_result.py
 octobot_protocol/models/stop_automation_configuration.py
 octobot_protocol/models/strategies_state.py
 octobot_protocol/models/strategy.py
@@ -380,6 +384,8 @@ test/test_restart_automation_configuration.py
 test/test_side.py
 test/test_signal_automation_configuration.py
 test/test_signal_automation_configuration_signal_payload.py
+test/test_signal_bot_configuration.py
+test/test_signal_priority_action_execution_result.py
 test/test_stop_automation_configuration.py
 test/test_strategies_state.py
 test/test_strategy.py

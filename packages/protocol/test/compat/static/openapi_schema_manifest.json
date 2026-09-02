@@ -225,6 +225,7 @@
       "generic_process",
       "generic_workflow",
       "market_making",
+      "signal_bot",
       "trading_tentacles"
     ]
   },
@@ -280,6 +281,7 @@
       "error_details": "string",
       "error_message": "ref:AutomationActionResultErrorMessage",
       "result_type": "ref:UserActionResultType",
+      "signal_execution_results": "array:ref:SignalPriorityActionExecutionResult",
       "updated_at": "string"
     },
     "required": [
@@ -294,12 +296,20 @@
       "account_not_found",
       "ambiguous_exchange_config",
       "ambiguous_trading_type",
+      "authentication_error",
       "automation_not_found",
+      "execution_failed",
+      "execution_timeout",
       "internal_error",
       "invalid_automation_id",
       "invalid_configuration",
+      "invalid_order",
+      "missing_symbol",
+      "not_enough_funds",
+      "order_not_found",
       "strategy_not_found",
       "strategy_version_not_found",
+      "symbol_incompatible_with_account",
       "unknown_trading_type"
     ]
   },
@@ -1293,6 +1303,30 @@
       "action_type",
       "automation_id",
       "signal_type"
+    ]
+  },
+  "SignalBotConfiguration": {
+    "kind": "object",
+    "properties": {
+      "configuration_type": "ref:ActionConfigurationType",
+      "sync_interval_with_open_trades_seconds": "number",
+      "sync_interval_without_open_trades_seconds": "number"
+    },
+    "required": [
+      "configuration_type",
+      "sync_interval_with_open_trades_seconds",
+      "sync_interval_without_open_trades_seconds"
+    ]
+  },
+  "SignalPriorityActionExecutionResult": {
+    "kind": "object",
+    "properties": {
+      "error_message": "string",
+      "error_status": "string",
+      "priority_action_id": "string"
+    },
+    "required": [
+      "priority_action_id"
     ]
   },
   "StopAutomationConfiguration": {

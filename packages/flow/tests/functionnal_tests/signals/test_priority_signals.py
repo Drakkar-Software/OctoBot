@@ -230,28 +230,72 @@ class TestPrioritySignalFailureHistorized:
             assert portfolio_content["USDC"]["total"] == 1000.0
 
 
-@pytest.mark.xfail(
-    reason="ETH/USDC priority trading on BTC/USDC-only grid not enabled yet; see follow-up plan",
-    strict=False,
-)
 @pytest.mark.asyncio
-class TestPrioritySignalCrossSymbolGridDraft:
-    async def test_eth_usdc_buy_on_btc_usdc_grid_historized(self):
-        # Draft: cross-pair signal priority on a single-pair grid automation.
-        # Follow-up plan must enable non-config symbols before removing xfail.
-        # 1. Bootstrap BTC/USDC grid
+class TestPrioritySignalCrossSymbolDca:
+    async def test_eth_usdc_buy_on_btc_usdc_dca_historized(self):
+        # Cross-pair signal priority on a BTC/USDC-only DCA automation (no ETH/USDC in DCA config).
         init_action_dict = signal_test_util.init_action()
-        after_grid_dump = await signal_test_util.run_simulator_grid_bootstrap(init_action_dict)
-        baseline_buy_count, baseline_sell_count, _ = signal_test_util.open_order_counts_from_dump(after_grid_dump)
-        assert baseline_buy_count >= 1
-        assert baseline_sell_count >= 1
+        with signal_test_util.patch_cross_symbol_simulator_exchange_prices():
+            # 1. Bootstrap BTC/USDC DCA (USDC-heavy portfolio + 2 BTC buy limits)
+            after_dca_dump = await signal_test_util.run_simulator_dca_bootstrap(init_action_dict)
+            baseline_buy_count, baseline_sell_count, _ = signal_test_util.open_order_counts_from_dump(
+                after_dca_dump,
+            )
+            assert baseline_buy_count == 2
+            assert baseline_sell_count == 0
+            signal_test_util.assert_open_orders_are_btc_usdc_only(after_dca_dump)
 
-        # 2. Resolve ETH/USDC signal buy and run as priority action
-        eth_buy_dsl = signal_test_util.resolved_signal_dsl(
-            "SYMBOL=ETH/USDC\nSIGNAL=buy\nVOLUME=0.01",
+            # 2. Resolve ETH/USDC signal buy and run as priority action
+            eth_buy_dsl = signal_test_util.resolved_signal_dsl(
+                "SYMBOL=ETH/USDC\nSIGNAL=buy\nVOLUME=0.01",
+            )
+            priority_actions = resolved_actions(
+                [signal_test_util.priority_action("priority_eth_buy", eth_buy_dsl)],
+            )
+            with (
+                functionnal_tests.mocked_community_authentication(),
+                functionnal_tests.mocked_community_repository(),
+                mock.patch.object(time, "time", return_value=current_time),
+            ):
+                async with octobot_flow.jobs.AutomationJob(
+                    after_dca_dump,
+                    priority_actions,
+                    [],
+                    {},
+                ) as automation_job:
+                    await automation_job.run()
+
+                # 3. Assert success historization
+                signal_test_util.assert_historized_priority_actions(
+                    automation_job.automation_state,
+                    priority_actions,
+                    executed_at_min=current_time,
+                )
+
+                # 4. Assert ETH/USDC side-effect; BTC/USDC DCA orders unchanged
+                portfolio_content = automation_job.dump()["automation"]["exchange_account_elements"]["portfolio"]["content"]
+                assert "ETH" in portfolio_content or portfolio_content["USDC"]["total"] < 1000.0
+                final_buy_count, final_sell_count, _ = signal_test_util.open_order_counts_from_dump(
+                    automation_job.dump(),
+                )
+                assert final_buy_count == baseline_buy_count
+                assert final_sell_count == baseline_sell_count
+
+
+@pytest.mark.asyncio
+class TestPrioritySignalBuyWithTakeProfitCreatesChainedOrder:
+    async def test_buy_with_take_profit_price_creates_chained_tp_on_parent(self):
+        import octobot_trading.constants as trading_constants
+        import octobot_trading.enums as trading_enums
+
+        init_action_dict = signal_test_util.init_action()
+        after_init_dump = await signal_test_util.run_init_only(init_action_dict)
+        buy_dsl = signal_test_util.resolved_signal_dsl(
+            "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.01\nTAKE_PROFIT_PRICE=10%",
         )
-        priority_actions = resolved_actions(
-            [signal_test_util.priority_action("priority_eth_buy", eth_buy_dsl)],
+        assert "take_profit_prices=" in buy_dsl
+        priority_actions = functionnal_tests.resolved_actions(
+            [signal_test_util.priority_action("priority_buy_tp", buy_dsl)],
         )
         with (
             functionnal_tests.mocked_community_authentication(),
@@ -259,25 +303,32 @@ class TestPrioritySignalCrossSymbolGridDraft:
             mock.patch.object(time, "time", return_value=current_time),
         ):
             async with octobot_flow.jobs.AutomationJob(
-                after_grid_dump,
+                after_init_dump,
                 priority_actions,
                 [],
                 {},
             ) as automation_job:
                 await automation_job.run()
 
-            # 3. Assert success historization (target behavior once feature lands)
             signal_test_util.assert_historized_priority_actions(
                 automation_job.automation_state,
                 priority_actions,
                 executed_at_min=current_time,
             )
-
-            # 4. Assert ETH/USDC side-effect; BTC/USDC grid orders unchanged
-            portfolio_content = automation_job.dump()["automation"]["exchange_account_elements"]["portfolio"]["content"]
-            assert "ETH" in portfolio_content or portfolio_content["USDC"]["total"] < 1000.0
-            final_buy_count, final_sell_count, _ = signal_test_util.open_order_counts_from_dump(
-                automation_job.dump(),
-            )
-            assert final_buy_count == baseline_buy_count
-            assert final_sell_count == baseline_sell_count
+            orders = automation_job.dump()["automation"]["exchange_account_elements"]["orders"]
+            all_wrapped_orders = list(orders["open_orders"]) + list(orders["missing_orders"])
+            chained_orders_found = False
+            open_sell_count = 0
+            for wrapped_order in all_wrapped_orders:
+                order_details = wrapped_order.get(trading_constants.STORAGE_ORIGIN_VALUE, wrapped_order)
+                chained_orders = order_details.get(trading_enums.StoredOrdersAttr.CHAINED_ORDERS.value, [])
+                if chained_orders:
+                    chained_orders_found = True
+                    assert chained_orders[0][trading_enums.ExchangeConstantsOrderColumns.SIDE.value] == (
+                        trading_enums.TradeOrderSide.SELL.value
+                    )
+                if order_details.get(trading_enums.ExchangeConstantsOrderColumns.SIDE.value) == (
+                    trading_enums.TradeOrderSide.SELL.value
+                ):
+                    open_sell_count += 1
+            assert chained_orders_found or open_sell_count >= 1

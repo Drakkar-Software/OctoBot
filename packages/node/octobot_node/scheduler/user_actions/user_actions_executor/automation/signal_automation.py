@@ -16,11 +16,15 @@
 
 import typing
 
+import dbos
+
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
 import octobot_node.scheduler as scheduler_module
 import octobot_node.scheduler.tasks as scheduler_tasks
+import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_node.scheduler.user_actions.signal_priority_action as signal_priority_action_module
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_priority_action_builder as signal_priority_action_builder
 import octobot_flow.entities
@@ -69,45 +73,10 @@ def _parse_trading_signal_payload(raw_payload: typing.Any) -> octobot_flow.entit
     )
 
 
-async def _resolve_target_automation_workflow_id(
-    parent_automation_id: str,
-    user_id: str,
-) -> str:
-    scheduler = scheduler_module.SCHEDULER
-    matching_workflow_ids = await scheduler.resolve_active_automation_workflow_ids_for_parent_id(
-        user_id,
-        parent_automation_id,
-    )
-    if not matching_workflow_ids:
-        raise node_errors.ActiveAutomationWorkflowNotFoundError(
-            f"No active automation workflow for parent id {parent_automation_id!r} "
-            f"(user_id={user_id!r})."
-        )
-    if len(matching_workflow_ids) > 1:
-        raise node_errors.AmbiguousActiveAutomationWorkflowError(
-            f"Expected exactly one active automation workflow for parent id {parent_automation_id!r}, "
-            f"got {len(matching_workflow_ids)}: {matching_workflow_ids!r} "
-            f"(user_id={user_id!r})."
-        )
-    return matching_workflow_ids[0]
-
-
-async def _send_actions_to_automation_with_workflow_lookup(
-    actions: list[dict],
-    automation_id: str,
-    user_id: str,
-) -> None:
-    target_workflow_id = await _resolve_target_automation_workflow_id(automation_id, user_id)
-    await scheduler_tasks.send_actions_to_automation_workflow(actions, target_workflow_id)
-
-
-async def _send_forced_trigger_to_automation_with_workflow_lookup(
-    automation_id: str,
-    user_id: str,
-) -> None:
-    target_workflow_id = await _resolve_target_automation_workflow_id(automation_id, user_id)
-    await scheduler_tasks.send_forced_trigger_to_automation_workflow(target_workflow_id)
-
+def _should_await_signal_execution(
+    actions: list[signal_priority_action_module.SignalPriorityAction],
+) -> bool:
+    return any(action.await_execution_result for action in actions)
 
 
 class SignalAutomationActionExecutor(automation_user_action_executor.AutomationUserActionExecutor):
@@ -129,25 +98,50 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
                     user_id=self._user_id,
                     signal_payload=raw_payload,
                 )
-                await scheduler_tasks.send_actions_to_active_automation(
-                    signal_config.automation_id,
-                    self._user_id,
-                    actions,
-                )
+                action_dicts = [
+                    action.to_dict(include_default_values=False) for action in actions
+                ]
+                if _should_await_signal_execution(actions):
+                    reply_workflow_id = dbos.DBOS.workflow_id
+                    if reply_workflow_id is None:
+                        raise RuntimeError(
+                            "Missing current workflow ID while dispatching signal priority actions."
+                        )
+                    execution_result_callback = workflow_params.AutomationWorkflowExecutionResultCallback(
+                        reply_workflow_id=reply_workflow_id,
+                        user_action_id=user_action.id,
+                    )
+                    await scheduler_tasks.send_actions_to_active_automation(
+                        signal_config.automation_id,
+                        self._user_id,
+                        action_dicts,
+                        execution_result_callback,
+                    )
+                    self.signal_execution_await_context = workflow_params.SignalExecutionAwaitContext(
+                        user_action_id=user_action.id,
+                        sent_action_ids=[action.id for action in actions],
+                    )
+                else:
+                    await scheduler_tasks.send_actions_to_active_automation(
+                        signal_config.automation_id,
+                        self._user_id,
+                        action_dicts,
+                    )
+                    self._mark_user_action_completed(user_action)
             case protocol_models.AutomationSignalType.TRADING_SIGNAL:
                 trading_signal = _parse_trading_signal_payload(raw_payload)
                 await scheduler_tasks.trigger_copier_automation(
                     signal_config.automation_id,
                     trading_signal,
                 )
+                self._mark_user_action_completed(user_action)
             case protocol_models.AutomationSignalType.FORCED_TRIGGER:
                 await scheduler_tasks.send_forced_trigger_to_active_automation(
                     signal_config.automation_id,
                     self._user_id,
                 )
+                self._mark_user_action_completed(user_action)
             case _:
                 raise node_errors.InvalidUserActionPayloadError(
                     f"Unsupported signal_type: {signal_config.signal_type!r}"
                 )
-
-        self._mark_user_action_completed(user_action)

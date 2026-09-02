@@ -108,3 +108,7 @@ class AmbiguousTradingTypeError(UserActionError):
 
 class UnrestartableAutomationError(UserActionError):
     """Raised when an automation cannot be restarted."""
+
+
+class SignalExecutionResultTimeoutError(UserActionError):
+    """Raised when waiting for a signal execution result callback times out."""
