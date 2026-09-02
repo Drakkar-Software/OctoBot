@@ -19,6 +19,7 @@ import enum
 class ExchangeConstantsCCXTColumns(enum.Enum):
     TIMESTAMP = "timestamp"
     DATETIME = "datetime"
+    DEBT = "debt"
 
 
 class ExchangeConstantsMarketStatusCCXTColumns(enum.Enum):

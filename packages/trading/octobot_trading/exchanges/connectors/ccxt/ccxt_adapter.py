@@ -199,6 +199,7 @@ class CCXTAdapter(adapters.AbstractAdapter):
         fixed.pop(ccxt_constants.CCXT_INFO, None)
         fixed.pop(ccxt_enums.ExchangeConstantsCCXTColumns.DATETIME.value, None)
         fixed.pop(ccxt_enums.ExchangeConstantsCCXTColumns.TIMESTAMP.value, None)
+        fixed.pop(ccxt_enums.ExchangeConstantsCCXTColumns.DEBT.value, None)
         return portfolio_util.parse_decimal_portfolio(fixed)
 
     def fix_order_book(self, raw: CCXTOrderBook, **kwargs) -> dict:

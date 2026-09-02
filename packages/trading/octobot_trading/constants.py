@@ -150,6 +150,7 @@ FULL_CANDLE_HISTORY_EXCHANGES = [
     "bitfinex",
     "bitstamp",
     "bybit",
+    "bybiteu",
     # "bingx",  # not supported: BingX caps daily k-line query range at 380 days
     "hollaex",
     "htx",
@@ -180,6 +181,7 @@ TESTED_EXCHANGES = [
     "okx",
     "gate",
     "bybit",
+    "bybiteu",
     "phemex",
     "hollaex",
     "mexc",
