@@ -111,7 +111,7 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Set up Node.js
-      if: matrix.package == 'octobot'
+      if: env.USES_TENTACLES == 'true'
       uses: actions/setup-node@v6
       with:
         node-version: 22
@@ -150,6 +150,12 @@ jobs:
         for crate in ${{ matrix.package }}/crates/*/; do
           cargo clippy --manifest-path "$crate/Cargo.toml" -- -D warnings
         done
+
+    - name: Build web client SDK
+      if: env.USES_TENTACLES == 'true'
+      run: |
+        npm ci
+        npm run build -w packages/client/octobot_client_ts
 
     - name: Install tentacles
       if: env.USES_TENTACLES == 'true'
@@ -196,7 +202,6 @@ jobs:
       run: |
         find packages/tentacles -name "package.json" -not -path "*/node_modules/*" | while read pkg; do
           cd "$(dirname "$pkg")"
-          npm ci
           npm test
           cd - > /dev/null
         done
@@ -372,7 +377,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
   
   tentacles:
-    needs: [ build, tests ]
+    needs: [ build, tests, publish-npm ]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/')
     name: ${{ matrix.os }}${{ matrix.arch }} - Python ${{ matrix.version }} - Upload Tentacles
     runs-on: ${{ matrix.os }}
@@ -510,7 +515,7 @@ jobs:
   publish-npm:
     name: Publish npm packages
     needs: [ build, tests ]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -540,11 +545,11 @@ jobs:
           fi
 
       - name: Publish octobot-client if version not already on npm
-        working-directory: packages/client/octobot_client_ts
         run: |
           npm ci
-          npm run build
-          npm test
+          npm run build -w packages/client/octobot_client_ts
+          npm test -w packages/client/octobot_client_ts
+          cd packages/client/octobot_client_ts
           NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
           if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then

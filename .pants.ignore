@@ -24,3 +24,6 @@ __pycache__/
 # Pants internal directories (already ignored by default)
 .pants.d/
 dist/
+
+# Node dependency trees (pants_ignore_use_gitignore is false, so .gitignore does not cover these)
+node_modules/
