@@ -26,7 +26,16 @@ const CANONICAL_UUID_V4_PATTERN =
 
 describe("defaultSignalPayloadText", () => {
   it("returns sample payloads for payload signal types", () => {
-    expect(defaultSignalPayloadText("actions")).toContain("dsl_script")
+    const actionsPayload = defaultSignalPayloadText("actions")
+    expect(actionsPayload).toContain("dsl_script")
+    expect(actionsPayload).toContain("dsl_placeholder()")
+    const parsedActions = JSON.parse(actionsPayload) as Array<{
+      id: string
+      dsl_script: string
+    }>
+    expect(parsedActions[0].id).toMatch(
+      /^action_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    )
     expect(defaultSignalPayloadText("trading_signal")).toContain("strategy_id")
     expect(defaultSignalPayloadText("forced_trigger")).toBe("")
   })
@@ -312,6 +321,30 @@ describe("buildUserActionTemplate", () => {
     >
     expect(genericProcessConfiguration.configuration_type).toBe("generic_process")
     expect(genericProcessConfiguration).not.toHaveProperty("profile_data")
+  })
+
+  it("builds a signal bot strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_signal_bot")
+    expect(action.id).toBe("ua-manual-strategy_create_signal_bot")
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(strategy.reference_market).toBe("USDC")
+    expect(strategy.id).toMatch(CANONICAL_UUID_V4_PATTERN)
+
+    const signalBotConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
+    expect(signalBotConfiguration.configuration_type).toBe("signal_bot")
+    expect(signalBotConfiguration.sync_interval_with_open_trades_seconds).toBe(3600)
+    expect(signalBotConfiguration.sync_interval_without_open_trades_seconds).toBe(
+      14400,
+    )
   })
 
   it("builds an update historical exchanges data template", () => {

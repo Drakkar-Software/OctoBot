@@ -9,6 +9,7 @@ import octobot_flow.parsers.signal_script_resolver as signal_script_resolver
 import octobot_trading.enums as trading_enums
 
 import octobot_node.errors as node_errors
+import octobot_node.scheduler.user_actions.signal_priority_action as signal_priority_action_module
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_priority_action_builder as signal_priority_action_builder
 
 
@@ -60,8 +61,8 @@ class TestBuildSignalPriorityActionsNormalizePayload:
             )
 
         assert len(actions) == 2
-        assert actions[0]["id"] == f"action_signal_priority_{USER_ACTION_ID}_0"
-        assert actions[1]["id"] == f"action_signal_priority_{USER_ACTION_ID}_1"
+        assert actions[0].id == f"action_signal_priority_{USER_ACTION_ID}_0"
+        assert actions[1].id == f"action_signal_priority_{USER_ACTION_ID}_1"
         assert resolve_mock.call_count == 2
 
     @pytest.mark.asyncio
@@ -122,15 +123,28 @@ class TestBuildSignalPriorityActionsResolve:
 
     @pytest.mark.asyncio
     async def test_legacy_passthrough(self, mock_exchange_context_loader):
-        legacy_action = {"id": "x", "dsl_script": "stop_automation()"}
+        legacy_action = {"id": "x", "dsl_script": "stop_automation()", "await_execution_result": False}
         with mock.patch.object(
             signal_script_resolver,
             "resolve_signal_script",
         ) as resolve_mock:
             actions = await _build_payload([legacy_action])
 
-        assert actions == [legacy_action]
+        assert actions == [signal_priority_action_module.SignalPriorityAction.from_dict(legacy_action)]
         resolve_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_passes_through_await_execution_result(self, mock_exchange_context_loader):
+        with mock.patch.object(
+            signal_script_resolver,
+            "resolve_signal_script",
+            return_value=RESOLVED_DSL,
+        ):
+            actions = await _build_payload(
+                [{"script": SIGNAL_SCRIPT, "await_execution_result": False}],
+            )
+
+        assert actions[0].await_execution_result is False
 
     @pytest.mark.asyncio
     async def test_mixed_resolve_and_passthrough(self, mock_exchange_context_loader):
@@ -156,7 +170,7 @@ class TestBuildSignalPriorityActionsResolve:
         ):
             actions = await _build_payload([{"id": "custom", "script": SIGNAL_SCRIPT}])
 
-        assert actions[0]["id"] == "custom"
+        assert actions[0].id == "custom"
 
 
 class TestBuildSignalPriorityActionsFailFast:
@@ -208,7 +222,8 @@ class TestBuildSignalPriorityActionsResolverIntegration:
         actions = await _build_payload([{"script": SIGNAL_BUY_KEYVAL}])
 
         assert len(actions) == 1
-        dsl_script = actions[0]["dsl_script"]
+        assert isinstance(actions[0], signal_priority_action_module.SignalPriorityAction)
+        dsl_script = actions[0].dsl_script
         assert "market" in dsl_script
         assert "buy" in dsl_script
         assert "BTC/USDC" in dsl_script

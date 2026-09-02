@@ -51,6 +51,12 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
         await self._fetch_authenticated_data(fetched_authenticated_data)
         await self._update_bot_authenticated_data(fetched_authenticated_data)
 
+    async def update_portfolio_only(self):
+        fetched_authenticated_data = octobot_flow.entities.FetchedExchangeAccountElements()
+        self._ensure_exchange_dependencies()
+        await self._fetch_portfolio(fetched_authenticated_data)
+        await self._update_bot_authenticated_data(fetched_authenticated_data)
+
     async def _fetch_authenticated_data(self, fetched_authenticated_data: octobot_flow.entities.FetchedExchangeAccountElements):
         coros = [
             self._fetch_open_orders(fetched_authenticated_data),

@@ -79,6 +79,19 @@ def _legacy_grid_strategy_dict() -> dict[str, typing.Any]:
     }
 
 
+def _signal_bot_strategy_dict() -> dict[str, typing.Any]:
+    return {
+        "id": "strat-signal-bot",
+        "version": "1",
+        "reference_market": "USDC",
+        "configuration": {
+            "configuration_type": "signal_bot",
+            "sync_interval_with_open_trades_seconds": 5.0,
+            "sync_interval_without_open_trades_seconds": 10.0,
+        },
+    }
+
+
 class TestSanitizeStrategyConfigurationDict:
     def test_removes_invalid_configuration_type(self):
         sanitize = strategy_provider_module.StrategyProvider.MODEL_SANITIZERS[
@@ -100,6 +113,20 @@ class TestSanitizeStrategyConfigurationDict:
             "config": {},
         }
 
+    def test_keeps_signal_bot_configuration_type(self):
+        sanitize = strategy_provider_module.StrategyProvider.MODEL_SANITIZERS[
+            protocol_strategy_configuration.StrategyConfiguration
+        ]
+        sanitized = sanitize(
+            {
+                "configuration_type": "signal_bot",
+                "sync_interval_with_open_trades_seconds": 5.0,
+                "sync_interval_without_open_trades_seconds": 10.0,
+            },
+        )
+        assert sanitized["configuration_type"] == "signal_bot"
+        assert sanitized["sync_interval_with_open_trades_seconds"] == 5.0
+
 
 class TestModelFromDictLenient:
     def test_returns_valid_strategy_unchanged(self):
@@ -119,6 +146,28 @@ class TestModelFromDictLenient:
         assert (
             parsed_strategy.configuration.actual_instance.configuration_type
             == protocol_models.ActionConfigurationType.TRADING_TENTACLES
+        )
+
+    def test_signal_bot_configuration_round_trips(self):
+        loader = tolerant_state_loading_test_support.make_loader(
+            "test",
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
+        )
+        parsed_strategy = loader.model_from_dict_lenient(
+            protocol_models.Strategy,
+            _signal_bot_strategy_dict(),
+            context="test.strategies",
+            allow_skip=False,
+        )
+        assert parsed_strategy is not None
+        assert parsed_strategy.id == "strat-signal-bot"
+        assert isinstance(
+            parsed_strategy.configuration.actual_instance,
+            protocol_models.SignalBotConfiguration,
+        )
+        assert (
+            parsed_strategy.configuration.actual_instance.configuration_type
+            == protocol_models.ActionConfigurationType.SIGNAL_BOT
         )
 
     def test_legacy_grid_configuration_uses_empty_shell(self):

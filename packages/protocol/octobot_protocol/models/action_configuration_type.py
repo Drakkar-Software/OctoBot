@@ -31,6 +31,7 @@ class ActionConfigurationType(str, Enum):
     COPY = 'copy'
     GENERIC_PROCESS = 'generic_process'
     GENERIC_WORKFLOW = 'generic_workflow'
+    SIGNAL_BOT = 'signal_bot'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

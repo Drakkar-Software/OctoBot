@@ -143,7 +143,9 @@ class AutomationRunnerJob(octobot_flow.repositories.exchange.ExchangeContextMixi
         if self.fetched_dependencies.fetched_exchange_data:
             exchange_data.markets = self.fetched_dependencies.fetched_exchange_data.public_data.markets
         exchange_data.portfolio_details.content = exchange_account_elements.portfolio.content
-        exchange_data.orders_details.open_orders = exchange_account_elements.orders.open_orders
+        exchange_data.orders_details.open_orders = list(exchange_account_elements.orders.open_orders)
+        exchange_data.orders_details.missing_orders = list(exchange_account_elements.orders.missing_orders)
+        exchange_data.positions = list(exchange_account_elements.positions)
         exchange_data.trades = exchange_account_elements.trades
 
     def _get_profile_data(self) -> commons_profiles.ProfileData:

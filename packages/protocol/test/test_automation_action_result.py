@@ -39,7 +39,13 @@ class TestAutomationActionResult(unittest.TestCase):
                 error_message = 'automation_not_found',
                 error_details = '',
                 created_automation_id = '',
-                result_type = 'automation'
+                result_type = 'automation',
+                signal_execution_results = [
+                    octobot_protocol.models.signal_priority_action_execution_result.SignalPriorityActionExecutionResult(
+                        priority_action_id = '', 
+                        error_status = '', 
+                        error_message = '', )
+                    ]
             )
         else:
             return AutomationActionResult(

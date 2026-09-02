@@ -14,11 +14,18 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import dataclasses
+import typing
 
 import octobot_commons.dataclasses.minimizable_dataclass
 import octobot_protocol.models as protocol_models
 
 import octobot_node.scheduler.user_actions.user_actions_executor as user_actions_executor
+
+
+@dataclasses.dataclass
+class SignalExecutionAwaitContext(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
+    user_action_id: str
+    sent_action_ids: list[str]
 
 
 @dataclasses.dataclass
@@ -37,3 +44,4 @@ class UserActionWorkflowOutput(octobot_commons.dataclasses.minimizable_dataclass
 class UserActionExecutionResult(octobot_commons.dataclasses.minimizable_dataclass.MinimizableDataclass):
     updated_user_action: protocol_models.UserAction
     post_actions: user_actions_executor.UserActionPostActions
+    signal_execution_await_context: typing.Optional[SignalExecutionAwaitContext] = None

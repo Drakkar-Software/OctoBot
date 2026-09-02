@@ -17,10 +17,13 @@
 import typing
 
 import octobot_commons.timestamp_util as timestamp_util
+import octobot_flow.protocol.action_error_status_mapping as action_error_status_mapping
 import octobot_protocol.models as protocol_models
 
 import octobot_node.errors as node_errors
+import octobot_node.scheduler.automations.signal_execution_result_util as signal_execution_result_util
 import octobot_node.scheduler.user_actions.user_actions_executor.base_user_action_executor as user_actions_executor_base
+import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.constants as constants
 
 
@@ -43,6 +46,8 @@ class AutomationUserActionExecutor(user_actions_executor_base.UserActionExecutor
         )
 
     def _get_error_message(self, exc: BaseException) -> protocol_models.AutomationActionResultErrorMessage:
+        if isinstance(exc, node_errors.SignalExecutionResultTimeoutError):
+            return protocol_models.AutomationActionResultErrorMessage.EXECUTION_TIMEOUT
         if isinstance(exc, (
             node_errors.ActiveAutomationWorkflowNotFoundError,
             node_errors.AmbiguousActiveAutomationWorkflowError
@@ -76,6 +81,117 @@ class AutomationUserActionExecutor(user_actions_executor_base.UserActionExecutor
         ):
             return protocol_models.AutomationActionResultErrorMessage.INVALID_CONFIGURATION
         return protocol_models.AutomationActionResultErrorMessage(super()._get_error_message(exc))
+
+    def _build_protocol_signal_execution_results(
+        self,
+        priority_action_results: list[workflow_params.PriorityActionExecutionResult],
+    ) -> list[protocol_models.SignalPriorityActionExecutionResult]:
+        return [
+            protocol_models.SignalPriorityActionExecutionResult(
+                priority_action_id=priority_action_result.priority_action_id,
+                error_status=priority_action_result.error_status,
+                error_message=priority_action_result.error_message,
+            )
+            for priority_action_result in priority_action_results
+        ]
+
+    def apply_signal_execution_result(
+        self,
+        user_action: protocol_models.UserAction,
+        execution_result: workflow_params.AutomationWorkflowSignalExecutionResult,
+        sent_action_ids: list[str],
+    ) -> None:
+        priority_action_results_by_id = {
+            priority_action_result.priority_action_id: priority_action_result
+            for priority_action_result in execution_result.priority_action_results
+        }
+        missing_action_ids = [
+            action_id for action_id in sent_action_ids if action_id not in priority_action_results_by_id
+        ]
+        if missing_action_ids:
+            raise node_errors.InvalidUserActionPayloadError(
+                f"Signal execution result is missing priority actions: {missing_action_ids!r}"
+            )
+        protocol_signal_execution_results = self._build_protocol_signal_execution_results(
+            execution_result.priority_action_results
+        )
+        if execution_result.iteration_error:
+            self._mark_signal_execution_failed(
+                user_action,
+                protocol_models.AutomationActionResultErrorMessage.EXECUTION_FAILED,
+                execution_result.iteration_error_message,
+                protocol_signal_execution_results,
+            )
+            return
+        failed_priority_action_results = [
+            priority_action_result
+            for priority_action_result in execution_result.priority_action_results
+            if not signal_execution_result_util.is_successful_priority_action_error_status(
+                priority_action_result.error_status
+            )
+        ]
+        if failed_priority_action_results:
+            first_failed_result = failed_priority_action_results[0]
+            self._mark_signal_execution_failed(
+                user_action,
+                action_error_status_mapping.map_action_error_status_to_protocol_error_message(
+                    first_failed_result.error_status
+                ),
+                first_failed_result.error_message,
+                protocol_signal_execution_results,
+            )
+            return
+        self._mark_signal_execution_completed(user_action, protocol_signal_execution_results)
+
+    def apply_signal_execution_timeout(
+        self,
+        user_action: protocol_models.UserAction,
+        timeout_error: node_errors.SignalExecutionResultTimeoutError,
+    ) -> None:
+        now = timestamp_util.utc_now_datetime()
+        user_action.status = protocol_models.UserActionStatus.FAILED
+        user_action.result = protocol_models.UserActionResult(
+            actual_instance=protocol_models.AutomationActionResult(
+                updated_at=now,
+                result_type=protocol_models.UserActionResultType.AUTOMATION,
+                error_message=protocol_models.AutomationActionResultErrorMessage.EXECUTION_TIMEOUT,
+                error_details=str(timeout_error)[:constants.FAILURE_ERROR_DETAILS_MAX_LENGTH],
+            )
+        )
+
+    def _mark_signal_execution_completed(
+        self,
+        user_action: protocol_models.UserAction,
+        signal_execution_results: list[protocol_models.SignalPriorityActionExecutionResult],
+    ) -> None:
+        now = timestamp_util.utc_now_datetime()
+        user_action.status = protocol_models.UserActionStatus.COMPLETED
+        user_action.result = protocol_models.UserActionResult(
+            actual_instance=protocol_models.AutomationActionResult(
+                updated_at=now,
+                result_type=protocol_models.UserActionResultType.AUTOMATION,
+                signal_execution_results=signal_execution_results,
+            )
+        )
+
+    def _mark_signal_execution_failed(
+        self,
+        user_action: protocol_models.UserAction,
+        error_message: protocol_models.AutomationActionResultErrorMessage,
+        error_details: typing.Optional[str],
+        signal_execution_results: list[protocol_models.SignalPriorityActionExecutionResult],
+    ) -> None:
+        now = timestamp_util.utc_now_datetime()
+        user_action.status = protocol_models.UserActionStatus.FAILED
+        user_action.result = protocol_models.UserActionResult(
+            actual_instance=protocol_models.AutomationActionResult(
+                updated_at=now,
+                result_type=protocol_models.UserActionResultType.AUTOMATION,
+                error_message=error_message,
+                error_details=(error_details or "")[:constants.FAILURE_ERROR_DETAILS_MAX_LENGTH] or None,
+                signal_execution_results=signal_execution_results,
+            )
+        )
 
     def _mark_user_action_completed(
         self,

@@ -78,6 +78,7 @@ def trading_type_from_strategy(
         inner_configuration,
         (
             protocol_models.CopyConfiguration,
+            protocol_models.SignalBotConfiguration,
             protocol_models.GenericWorkflowConfiguration,
             protocol_models.GenericProcessConfiguration,
         ),

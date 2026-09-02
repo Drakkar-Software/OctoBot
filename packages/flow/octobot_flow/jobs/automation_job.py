@@ -43,10 +43,6 @@ class AutomationJob:
         self._added_priority_actions: list[octobot_flow.entities.AbstractActionDetails] = (
             list(added_priority_actions) if added_priority_actions else []
         )
-        if added_priority_actions:
-            # Include added priority actions in the automation state. 
-            # All pending priority actions will be executed before any other actions.
-            self.automation_state.update_priority_actions(added_priority_actions)
         if updated_trading_signals:
             default_reference_market = octobot_flow.logic.configuration.infer_reference_market(
                 self.automation_state.exchange_account_details, [],
@@ -77,16 +73,8 @@ class AutomationJob:
                 if maybe_authenticator else None
             )
             with octobot_flow.encryption.decrypted_bots_configurations(self.automation_state):
+                self._prepare_added_priority_actions_for_run()
                 to_execute_actions, are_priority_actions = self._get_actions_to_execute()
-                if self._added_priority_actions and not are_priority_actions:
-                    added_action_ids = [action.id for action in self._added_priority_actions]
-                    self._logger.error(
-                        f"Skipped {len(self._added_priority_actions)} supplied priority action(s) "
-                        f"because they are already completed or duplicate in state: {added_action_ids}"
-                    )
-                    raise octobot_flow.errors.PendingPriorityActionsSkippedError(
-                        f"Supplied priority actions were not pending and were skipped: {added_action_ids}"
-                    )
                 if are_priority_actions:
                     self._logger.info(f"Running {len(to_execute_actions)} priority actions: {to_execute_actions}")
                     self._resolve_dsl_scripts(to_execute_actions, True)
@@ -316,6 +304,10 @@ class AutomationJob:
         account_elements = self.automation_state.automation.exchange_account_elements
         if account_elements is not None:
             symbols.update(account_elements.get_open_orders_symbols())
+        use_portfolio_only_fetch = AutomationJob._should_use_portfolio_only_exchange_fetch(
+            symbols,
+            account_elements,
+        )
         async with exchange_account_job.account_exchange_context(
             octobot_flow.logic.configuration.create_profile_data(
                 self.automation_state.exchange_account_details,
@@ -324,19 +316,44 @@ class AutomationJob:
                 as_simulator=None,
             )
         ):
-            await exchange_account_job.update_public_data()
-            self._logger.info(
-                f"Public data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t0, 2)} seconds"
-            )
-            t1 = time.time()
-            await exchange_account_job.update_authenticated_data()
-            self._logger.info(
-                f"Authenticated data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t1, 2)} seconds"
-            )
+            if use_portfolio_only_fetch:
+                t1 = time.time()
+                await exchange_account_job.update_portfolio_only()
+                self._logger.info(
+                    f"Portfolio-only data updated for {exchange_account_details.exchange_details.internal_name} "
+                    f"in {round(time.time() - t1, 2)} seconds"
+                )
+            else:
+                await exchange_account_job.update_public_data()
+                self._logger.info(
+                    f"Public data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t0, 2)} seconds"
+                )
+                t1 = time.time()
+                await exchange_account_job.update_authenticated_data()
+                self._logger.info(
+                    f"Authenticated data updated for {exchange_account_details.exchange_details.internal_name} in {round(time.time() - t1, 2)} seconds"
+                )
         self._logger.info(
             f"Initialized all required data for {exchange_summary} in {round(time.time() - t0, 2)} seconds."
         )
         return exchange_account_job.fetched_dependencies.fetched_exchange_data  # type: ignore
+
+    @staticmethod
+    def _should_use_portfolio_only_exchange_fetch(
+        symbols: set[str],
+        account_elements: typing.Optional[octobot_flow.entities.ExchangeAccountElements],
+    ) -> bool:
+        if symbols:
+            return False
+        if account_elements is None:
+            return True
+        if account_elements.orders.open_orders:
+            return False
+        for position_details in account_elements.positions:
+            position_size = position_details.position.get("size") or position_details.position.get("contracts")
+            if position_size:
+                return False
+        return True
 
     async def _init_all_required_copy_trading_data(
         self,
@@ -467,6 +484,31 @@ class AutomationJob:
 
     def _get_pending_priority_actions(self) -> list[octobot_flow.entities.AbstractActionDetails]:
         return self.automation_state.get_pending_priority_actions()
+
+    def _prepare_added_priority_actions_for_run(self) -> None:
+        if not self._added_priority_actions:
+            return
+        priority_actions_by_id = {
+            priority_action.id: priority_action
+            for priority_action in self.automation_state.priority_actions
+        }
+        stale_action_ids = [
+            action.id
+            for action in self._added_priority_actions
+            if (existing_priority_action := priority_actions_by_id.get(action.id)) is not None
+            and existing_priority_action.is_completed()
+        ]
+        if stale_action_ids:
+            added_action_ids = [action.id for action in self._added_priority_actions]
+            self._logger.error(
+                f"Skipped supplied priority action envelope ({len(added_action_ids)} action(s), "
+                f"all-or-nothing) because {len(stale_action_ids)} "
+                f"already completed in state: {stale_action_ids}"
+            )
+            raise octobot_flow.errors.PendingPriorityActionsSkippedError(
+                f"Supplied priority actions were not pending and were skipped: {added_action_ids}"
+            )
+        self.automation_state.update_priority_actions(self._added_priority_actions)
 
     def _resolve_dsl_scripts(
         self, actions: list[octobot_flow.entities.AbstractActionDetails],

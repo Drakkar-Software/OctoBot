@@ -1346,7 +1346,8 @@
           "trading_tentacles",
           "copy",
           "generic_process",
-          "generic_workflow"
+          "generic_workflow",
+          "signal_bot"
         ]
       },
       "MarketMakingReferencePair": {
@@ -1725,6 +1726,29 @@
           },
           "strategy_id": {
             "type": "string"
+          }
+        }
+      },
+      "SignalBotConfiguration": {
+        "description": "SignalBotConfiguration",
+        "type": "object",
+        "required": [
+          "configuration_type",
+          "sync_interval_with_open_trades_seconds",
+          "sync_interval_without_open_trades_seconds"
+        ],
+        "properties": {
+          "configuration_type": {
+            "$ref": "#/components/schemas/ActionConfigurationType",
+            "description": "signal_bot"
+          },
+          "sync_interval_with_open_trades_seconds": {
+            "type": "number",
+            "description": "Periodic tick interval when the automation has open trades (open orders and/or open positions)."
+          },
+          "sync_interval_without_open_trades_seconds": {
+            "type": "number",
+            "description": "Periodic tick interval when the automation is idle (no open trades)."
           }
         }
       },
@@ -2327,8 +2351,34 @@
           "ambiguous_exchange_config",
           "account_not_found",
           "account_authentication_details_not_found",
-          "internal_error"
+          "internal_error",
+          "execution_timeout",
+          "execution_failed",
+          "not_enough_funds",
+          "order_not_found",
+          "invalid_order",
+          "authentication_error",
+          "missing_symbol",
+          "symbol_incompatible_with_account"
         ]
+      },
+      "SignalPriorityActionExecutionResult": {
+        "description": "SignalPriorityActionExecutionResult",
+        "type": "object",
+        "required": [
+          "priority_action_id"
+        ],
+        "properties": {
+          "priority_action_id": {
+            "type": "string"
+          },
+          "error_status": {
+            "type": "string"
+          },
+          "error_message": {
+            "type": "string"
+          }
+        }
       },
       "AutomationActionResult": {
         "description": "AutomationActionResult",
@@ -2353,6 +2403,12 @@
           },
           "result_type": {
             "$ref": "#/components/schemas/UserActionResultType"
+          },
+          "signal_execution_results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignalPriorityActionExecutionResult"
+            }
           }
         }
       },
@@ -2646,6 +2702,9 @@
                 "$ref": "#/components/schemas/CopyConfiguration"
               },
               {
+                "$ref": "#/components/schemas/SignalBotConfiguration"
+              },
+              {
                 "$ref": "#/components/schemas/GenericProcessConfiguration"
               },
               {
@@ -2658,6 +2717,7 @@
                 "market_making": "#/components/schemas/MarketMakingConfiguration",
                 "trading_tentacles": "#/components/schemas/TradingTentaclesConfiguration",
                 "copy": "#/components/schemas/CopyConfiguration",
+                "signal_bot": "#/components/schemas/SignalBotConfiguration",
                 "generic_process": "#/components/schemas/GenericProcessConfiguration",
                 "generic_workflow": "#/components/schemas/GenericWorkflowConfiguration"
               }

@@ -12,6 +12,8 @@ Name | Type | Description | Notes
 **strategies** | [**List[StrategyEvaluatorConfiguration]**](StrategyEvaluatorConfiguration.md) |  | [optional] 
 **evaluators** | [**List[EvaluatorConfiguration]**](EvaluatorConfiguration.md) |  | [optional] 
 **strategy_id** | **str** |  | 
+**sync_interval_with_open_trades_seconds** | **float** | Periodic tick interval when the automation has open trades (open orders and/or open positions). | 
+**sync_interval_without_open_trades_seconds** | **float** | Periodic tick interval when the automation is idle (no open trades). | 
 **profile_data** | **object** |  | [optional] 
 **actions** | [**List[Action]**](Action.md) |  | 
 
