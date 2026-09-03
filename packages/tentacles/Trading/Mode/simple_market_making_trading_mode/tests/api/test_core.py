@@ -609,6 +609,36 @@ async def test_get_price_and_predicted_order_book_with_error(profile_data_with_f
     }
 
 
+async def test_get_price_and_predicted_order_book_preserves_reference_price_error(
+    profile_data_with_full_mm_config, mm_data_by_exchange
+):
+    """NaN reference-source prices must not be overwritten with unsupported-pair on MM exchange."""
+    pair_settings = profile_data_with_full_mm_config.tentacles[0].config[
+        simple_market_making_trading.SimpleMarketMakingTradingMode.CONFIG_PAIR_SETTINGS
+    ][0]
+    pair_settings[simple_market_making_trading.SimpleMarketMakingTradingMode.EXCHANGE] = "bingx"
+    pair_settings[simple_market_making_trading.SimpleMarketMakingTradingMode.REFERENCE_PRICE] = [
+        {
+            simple_market_making_trading.SimpleMarketMakingTradingMode.EXCHANGE: "binance",
+            simple_market_making_trading.SimpleMarketMakingTradingMode.PAIR: "BTC/USDT",
+            simple_market_making_trading.SimpleMarketMakingTradingMode.WEIGHT: decimal.Decimal("1.0"),
+        }
+    ]
+
+    mm_data_by_exchange["bingx"] = mm_data_by_exchange["binance"]
+    mm_data_by_exchange["binance"]["BTC/USDT"].price = decimal.Decimal("NaN")
+
+    result = await market_making_core._get_price_and_predicted_order_book(
+        profile_data_with_full_mm_config,
+        mm_data_by_exchange,
+        "bingx"
+    )
+
+    error_message = result["BTC/USDT"][market_making_constants.ERROR_KEY]
+    assert "can't be computed from the following price sources" in error_message
+    assert "is not supported on" not in error_message
+
+
 def _get_order_book_data_dict(price_and_amount_list: list[tuple[float, float]]) -> list[dict]:
     return market_making_core._book_order_data_to_dict(
         [
@@ -686,9 +716,7 @@ async def test_get_minimal_volume_by_symbol_no_reference_price(profile_data_with
     )
 
     assert volumes_by_symbol == {}
-    assert error_by_symbol == {
-        "BTC/USDT": "BTC/USDT reference price on binance can't be computed from the following price sources: {}"
-    }
+    assert error_by_symbol == {}
 
 
 async def test_get_minimal_volume_by_symbol_missing_pair_data(profile_data_with_full_mm_config):
