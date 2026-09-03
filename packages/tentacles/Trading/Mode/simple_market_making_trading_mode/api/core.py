@@ -658,7 +658,7 @@ async def get_reference_price_by_pair(
             error_by_pair[pair] = f"{err}"
             continue
         reference_price = reference_price_by_pair[pair]
-        if not reference_price or reference_price.is_nan():
+        if (not reference_price or reference_price.is_nan()) and price_by_source:
             error_by_pair[pair] = (
                 f"{pair} reference price on {mm_exchange} can't be computed from the following "
                 f"price sources: {price_by_source}"
@@ -716,7 +716,8 @@ async def _get_price_and_predicted_order_book(
     books_by_symbol = {}
     for pair, reference_price in reference_price_by_pair.items():
         if not reference_price or reference_price.is_nan():
-            error_by_pair[pair] = _get_unsupported_pair_message(pair, mm_exchange)
+            if pair not in error_by_pair:
+                error_by_pair[pair] = _get_unsupported_pair_message(pair, mm_exchange)
             continue
         mm_data = mm_data_by_exchange[mm_exchange].get(pair)
         _adapt_volume_if_necessary(mm_data, reference_price)
