@@ -401,20 +401,11 @@ class ActionsDAGParser:
 
     def _parse_generic_actions(self, actions_dag: octobot_flow.entities.ActionsDAG) -> None:
         latest_action = actions_dag.get_executable_actions()[0]
-        previous_action_needs_if_error_wallet_cleanup = False
         for index, action_name in enumerate(self.params.ACTIONS):
             new_action = self._create_generic_action(action_name, index + 1)
-            if previous_action_needs_if_error_wallet_cleanup and isinstance(
-                new_action, octobot_flow.entities.DSLScriptActionDetails
-            ):
-                self._wrap_dsl_script_with_wallet_cleanup_if_error(new_action)
             new_action.add_dependency(latest_action.id)
             actions_dag.add_action(new_action)
             latest_action = new_action
-            previous_action_needs_if_error_wallet_cleanup = (
-                action_name == ActionType.BLOCKCHAIN_WALLET_INIT.value
-                and self.params.BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT is not True
-            )
 
     def _create_generic_action(
         self, action: str, index: int
@@ -595,28 +586,6 @@ class ActionsDAGParser:
                 f"({details})"
             )
         return dsl_script
-
-    def _build_blockchain_wallet_init_dsl(self, *, force_close_wallet_on_exit: bool) -> str:
-        # force_close_wallet_on_exit: recovery path uses True so the wallet is closed on error.
-        details = self._wallet_init_details_for_translate(
-            close_wallet_override=True if force_close_wallet_on_exit else None,
-        )
-        return self._translate_blockchain_wallet_init_signal(details)
-
-    def _wrap_dsl_script_with_wallet_cleanup_if_error(
-        self,
-        dsl_action: octobot_flow.entities.DSLScriptActionDetails,
-    ) -> None:
-        # Step: wrap the primary DSL so a failing step runs a matching init with close_wallet_on_exit=True.
-        primary_script = dsl_action.dsl_script
-        if not primary_script:
-            raise octobot_flow.errors.InvalidAutomationActionError(
-                "Cannot wrap empty dsl_script with if_error wallet cleanup"
-            )
-        recovery_script = self._build_blockchain_wallet_init_dsl(force_close_wallet_on_exit=True)
-        dsl_action.dsl_script = (
-            f"if_error(value=({primary_script}), on_error={json.dumps(recovery_script)})"
-        )
 
     def _create_blockchain_wallet_init_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
         tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode

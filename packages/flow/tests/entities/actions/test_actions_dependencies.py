@@ -273,6 +273,19 @@ class TestActionsDependenciesResolverFilledAllDependencies:
         with pytest.raises(flow_errors.ActionDependencyNotFoundError):
             resolver.filled_all_dependencies(dependent_action)
 
+    def test_returns_false_when_dependency_failed(self):
+        failed_action = action_details.ConfiguredActionDetails(id="action_init")
+        failed_action.complete(
+            error_status=flow_enums.ActionErrorStatus.INTERNAL_ERROR.value,
+            error_message="trade failed",
+        )
+        dependent_action = _dsl_action("action_dma", "dma_evaluator()", [{"action_id": "action_init"}])
+        resolver = actions_dependencies.ActionsDependenciesResolver(
+            _actions_by_id(failed_action, dependent_action)
+        )
+
+        assert resolver.filled_all_dependencies(dependent_action) is False
+
 
 class TestActionsDependenciesResolverGetTransitiveDependents:
     def test_returns_all_direct_and_indirect_dependents(self):

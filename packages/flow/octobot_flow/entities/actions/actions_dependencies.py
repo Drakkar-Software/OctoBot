@@ -76,13 +76,20 @@ class ActionsDependenciesResolver:
     def filled_all_dependencies(self, action: action_details.AbstractActionDetails) -> bool:
         try:
             return all(
-                self._actions_by_id[dep.action_id].is_completed()
+                self._dependency_succeeded(dep.action_id)
                 for dep in action.dependencies
             )
         except KeyError as err:
             raise octobot_flow.errors.ActionDependencyNotFoundError(
                 f"Action {action.id} has dependencies with unknown action IDs: {err}"
             ) from err
+
+    def _dependency_succeeded(self, action_id: str) -> bool:
+        dependency_action = self._actions_by_id[action_id]
+        return (
+            dependency_action.is_completed()
+            and dependency_action.error_status is octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        )
 
     def read_dependency_result(
         self,

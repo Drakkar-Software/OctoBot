@@ -253,6 +253,31 @@ class TestDslActionExecutionMapsCaughtException:
         assert action.error_message == str(raised_exception)
 
 
+class TestDslActionExecutionReraisesRetriableFailedRequest:
+    @pytest.mark.asyncio
+    async def test_reraises_on_non_recallable_action(self):
+        retriable_error = octobot_trading.errors.RetriableFailedRequest("transient exchange failure")
+
+        class StubExecutor:
+            @octobot_flow.logic.dsl.dsl_action_execution_context.dsl_action_execution
+            async def execute_action(self, action, **_kwargs):
+                raise retriable_error
+
+        action = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_trade_1",
+            dsl_script="market('BTC/USDC', 'buy', 0.01)",
+            resolved_dsl_script="market('BTC/USDC', 'buy', 0.01)",
+        )
+        stub_executor = StubExecutor()
+
+        with pytest.raises(octobot_trading.errors.RetriableFailedRequest) as raised_error:
+            await stub_executor.execute_action(action)
+
+        assert str(raised_error.value) == str(retriable_error)
+        assert action.error_status is None
+        assert action.error_message is None
+
+
 class TestDslActionExecutionReraisesOutdatedReferenceAccountError:
     @pytest.mark.asyncio
     async def test_reraises_outdated_reference_account_error(self):
