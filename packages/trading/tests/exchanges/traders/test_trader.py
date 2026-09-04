@@ -1510,7 +1510,12 @@ async def test_create_order(future_trader_simulator_with_default_linear):
         _create_new_order_mock.assert_called_once_with(
             order_mock, {}, True, constants.INDIVIDUAL_ORDER_SYNC_TIMEOUT
         )
-    for err in (errors.MissingFunds, errors.AuthenticationError, errors.ExchangeCompliancyError):
+    for err in (
+        errors.MissingFunds,
+        errors.AuthenticationError,
+        errors.ExchangeCompliancyError,
+        errors.RetriableFailedRequest,
+    ):
         with mock.patch.object(
                 trader_inst, "_create_new_order", mock.AsyncMock(side_effect=err)
         ) as _create_new_order_mock:
