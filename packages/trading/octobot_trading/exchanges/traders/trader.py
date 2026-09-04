@@ -232,7 +232,8 @@ class Trader(util.Initializable):
                                     f"the order being refused by the exchange.")
         except (
             errors.MissingFunds, errors.AuthenticationError,
-            errors.ExchangeCompliancyError, errors.OrderCreationError
+            errors.ExchangeCompliancyError, errors.OrderCreationError,
+            errors.RetriableFailedRequest,
         ):
             # forward errors that require actions to fix the situation
             raise

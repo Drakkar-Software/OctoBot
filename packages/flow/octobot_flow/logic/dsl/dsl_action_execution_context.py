@@ -135,6 +135,8 @@ def dsl_action_execution(func):
                 octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
                 str(err),
             )
+        except octobot_trading.errors.RetriableFailedRequest:
+            raise
         except POSTPONE_ON_RECALLABLE_TRADING_ERRORS as err:
             if _should_postpone_recallable_trading_error(self, action):
                 raise

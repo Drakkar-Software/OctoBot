@@ -259,6 +259,7 @@ def _assert_iteration_job_errors_logged(
     *,
     iteration_failure_count: int,
     expect_workflow_interrupted_log: bool = False,
+    iteration_error_log_prefix: str = "Error while running automation job",
 ) -> None:
     expected_call_count = iteration_failure_count + (1 if expect_workflow_interrupted_log else 0)
     assert mock_logger.exception.call_count == expected_call_count
@@ -267,11 +268,75 @@ def _assert_iteration_job_errors_logged(
         assert isinstance(logged_exception, type(raised_exception))
         assert str(logged_exception) == str(raised_exception)
         assert publish_error is True
-        assert error_message == f"Error while running automation job: {logged_exception}"
+        assert error_message == f"{iteration_error_log_prefix}: {logged_exception}"
     if expect_workflow_interrupted_log:
         assert "Interrupted workflow: unexpected critical error: " in str(
             mock_logger.exception.call_args_list[-1][0][2]
         )
+
+
+async def _run_execute_automation_until_iteration_retries_exhausted(
+    run_side_effect: BaseException,
+    *,
+    temp_dbos_scheduler,
+    task_name: str,
+) -> tuple[str, mock.AsyncMock, mock.Mock]:
+    max_attempts = octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
+    task = octobot_node.models.Task(
+        name=task_name,
+        content="{}",
+        type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+    )
+    inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+        include_default_values=False
+    )
+    inputs["task"] = task.model_dump(exclude_defaults=True)
+
+    mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
+        run_side_effect=run_side_effect
+    )
+    mock_logger = mock.Mock()
+
+    recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
+    with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch(
+        "asyncio.sleep", mock.AsyncMock()
+    ), mock.patch.object(
+        octobot_flow_client,
+        "OctoBotActionsJob",
+        mock_octobot_actions_job_class,
+    ), mock.patch.object(
+        octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+        "get_logger",
+        mock.Mock(return_value=mock_logger),
+    ):
+        handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+            inputs=inputs,
+        )
+        workflow_result = await handle.get_result()
+        expected_error_message = _dbos_step_retries_exhausted_error_message(
+            "execute_iteration",
+            max_attempts,
+        )
+        assert workflow_result == json.dumps(
+            params.AutomationWorkflowOutput(
+                error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                error_message=expected_error_message,
+            ).to_dict(include_default_values=False)
+        )
+        parsed_output = _parse_automation_workflow_output(workflow_result)
+        assert parsed_output.state is None
+        assert (
+            parsed_output.error
+            == octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+        )
+        assert parsed_output.error_message == expected_error_message
+        wf_status = await handle.get_status()
+        assert wf_status.status == dbos.WorkflowStatusString.SUCCESS.value
+        assert wf_status.output == workflow_result
+
+    assert run_mock.await_count == max_attempts
+    return workflow_result, run_mock, mock_logger
 
 
 def _octobot_actions_job_mock_class(
@@ -2977,65 +3042,39 @@ class TestExecuteAutomationIntegration:
     ):
         """After AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES failed OctoBotActionsJob.run() calls, the step must stop retrying."""
         max_attempts = octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
-        task = octobot_node.models.Task(
-            name="retry_exhausted_test",
-            content="{}",
-            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        run_error = RuntimeError("persistent failure")
+        _, run_mock, mock_logger = await _run_execute_automation_until_iteration_retries_exhausted(
+            run_error,
+            temp_dbos_scheduler=temp_dbos_scheduler,
+            task_name="retry_exhausted_test",
         )
-        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
-            include_default_values=False
-        )
-        inputs["task"] = task.model_dump(exclude_defaults=True)
-
-        mock_octobot_actions_job_class, run_mock = _octobot_actions_job_mock_class(
-            run_side_effect=RuntimeError("persistent failure")
-        )
-        mock_logger = mock.Mock()
-
-        recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
-        with mock.patch(recv_path, mock.AsyncMock(return_value=[])), mock.patch(
-            "asyncio.sleep", mock.AsyncMock()
-        ), mock.patch.object(
-            octobot_flow_client,
-            "OctoBotActionsJob",
-            mock_octobot_actions_job_class,
-        ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
-            "get_logger",
-            mock.Mock(return_value=mock_logger),
-        ):
-            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
-                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
-                inputs=inputs,
-            )
-            workflow_result = await handle.get_result()
-            expected_error_message = _dbos_step_retries_exhausted_error_message(
-                "execute_iteration",
-                max_attempts,
-            )
-            assert workflow_result == json.dumps(
-                params.AutomationWorkflowOutput(
-                    error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
-                    error_message=expected_error_message,
-                ).to_dict(include_default_values=False)
-            )
-            parsed_output = _parse_automation_workflow_output(workflow_result)
-            assert parsed_output.state is None
-            assert (
-                parsed_output.error
-                == octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
-            )
-            assert parsed_output.error_message == expected_error_message
-            wf_status = await handle.get_status()
-            assert wf_status.status == dbos.WorkflowStatusString.SUCCESS.value
-            assert wf_status.output == workflow_result
-
-        assert run_mock.await_count == max_attempts
         _assert_iteration_job_errors_logged(
             mock_logger,
-            RuntimeError("persistent failure"),
+            run_error,
             iteration_failure_count=max_attempts,
             expect_workflow_interrupted_log=True,
+        )
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_execute_iteration_exhausts_retries_when_retriable_failed_request(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        max_attempts = octobot_node.constants.AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES
+        run_error = octobot_trading_errors.RetriableFailedRequest("transient exchange failure")
+        _, run_mock, mock_logger = await _run_execute_automation_until_iteration_retries_exhausted(
+            run_error,
+            temp_dbos_scheduler=temp_dbos_scheduler,
+            task_name="retry_exhausted_retriable_test",
+        )
+        _assert_iteration_job_errors_logged(
+            mock_logger,
+            run_error,
+            iteration_failure_count=max_attempts,
+            expect_workflow_interrupted_log=True,
+            iteration_error_log_prefix="Retriable error while running automation job",
         )
 
     @pytest.mark.asyncio
