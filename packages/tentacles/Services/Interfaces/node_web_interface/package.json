@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "sdk:build": "npm run build -w @drakkar.software/octobot-client",
+    "prebuild": "npm run sdk:build",
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",
     "generate-client": "openapi-ts",
+    "pretest": "npm run sdk:build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
