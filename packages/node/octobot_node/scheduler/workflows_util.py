@@ -309,8 +309,9 @@ def get_automation_workflow_inputs(workflow_status: dbos_lib.WorkflowStatus) -> 
                 parsed_inputs = params.AutomationWorkflowInputs.from_dict(input)
                 return parsed_inputs
             except TypeError:
-                print(f"Failed to parse inputs: {input}")
-                pass
+                # not an automation input: this runs on every listed workflow row,
+                # so keep it quiet and out of stdout.
+                logger.debug(f"Failed to parse inputs: {input}")
     return None
 
 

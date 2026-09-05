@@ -350,6 +350,34 @@ class TestGetAllTasks:
             assert "dddddddd-dddd-dddd-dddd-dddddddddddd" in task_ids
 
     @pytest.mark.asyncio
+    async def test_get_all_tasks_content_mirrors_active_execution_actions(self, temp_dbos_scheduler) -> None:
+        """content duplicates the active execution's actions, so it is opt-in."""
+        actions = '[{"action": "buy"}]'
+        pending_executions = [
+            Execution(id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", status=TaskStatus.PENDING, actions=actions)
+        ]
+
+        async def _all_tasks(include_content: bool):
+            with mock.patch.object(
+                temp_dbos_scheduler, "get_periodic_tasks", mock.AsyncMock(return_value=[])
+            ), mock.patch.object(
+                temp_dbos_scheduler, "get_pending_tasks", mock.AsyncMock(return_value=pending_executions)
+            ), mock.patch.object(
+                temp_dbos_scheduler, "get_scheduled_tasks", mock.AsyncMock(return_value=[])
+            ), mock.patch.object(
+                temp_dbos_scheduler, "get_results", mock.AsyncMock(return_value=[])
+            ):
+                return await get_all_tasks(include_content=include_content)
+
+        included = await _all_tasks(True)
+        assert included[0].content == actions
+
+        excluded = await _all_tasks(False)
+        assert excluded[0].content is None
+        # the actions are still reachable through the execution itself
+        assert excluded[0].executions[0].actions == actions
+
+    @pytest.mark.asyncio
     async def test_get_all_tasks_merges_same_id(self, temp_dbos_scheduler) -> None:
         """Test that executions sharing the same parent ID are merged into a single Task."""
         parent_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"

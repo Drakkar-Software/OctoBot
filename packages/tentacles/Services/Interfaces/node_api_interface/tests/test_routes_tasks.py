@@ -44,7 +44,7 @@ def test_admin_sees_all_tasks(admin_client, mock_auth):
     assert resp.status_code == 200
     assert len(resp.json()) == 2
     # Admin passes no user_id filter
-    mock_get.assert_called_once_with(user_id=None)
+    mock_get.assert_called_once_with(user_id=None, include_content=False)
 
 
 def test_tenant_sees_only_own_tasks(tenant_client, mock_auth):
@@ -56,7 +56,24 @@ def test_tenant_sees_only_own_tasks(tenant_client, mock_auth):
     assert len(data) == 1
     assert data[0]["user_id"] == TENANT_USER_ID
     # Tenant's user_id is passed as filter
-    mock_get.assert_called_once_with(user_id=TENANT_USER_ID)
+    mock_get.assert_called_once_with(user_id=TENANT_USER_ID, include_content=False)
+
+
+def test_tasks_list_skips_content_by_default(admin_client, mock_auth):
+    """Task.content duplicates the active execution's actions: the list must not carry it."""
+    mock_get = AsyncMock(return_value=[_admin_task()])
+    with patch("octobot_node.scheduler.api.get_all_tasks", new=mock_get):
+        resp = admin_client.get("/api/v1/tasks/")
+    assert resp.status_code == 200
+    mock_get.assert_called_once_with(user_id=None, include_content=False)
+
+
+def test_tasks_list_can_opt_into_content(admin_client, mock_auth):
+    mock_get = AsyncMock(return_value=[_admin_task()])
+    with patch("octobot_node.scheduler.api.get_all_tasks", new=mock_get):
+        resp = admin_client.get("/api/v1/tasks/?include_content=true")
+    assert resp.status_code == 200
+    mock_get.assert_called_once_with(user_id=None, include_content=True)
 
 
 def test_task_creation_stamps_tenant_wallet(tenant_client, mock_auth):
