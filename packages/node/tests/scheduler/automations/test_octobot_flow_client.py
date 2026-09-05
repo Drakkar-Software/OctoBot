@@ -363,12 +363,6 @@ def get_deposit_and_withdrawal_details(actions: list["octobot_flow.entities.Abst
     return list_util.flatten_list(withdrawal_lists) if withdrawal_lists else []
 
 
-def _decode_if_error_on_error_script(dsl_script: str) -> str:
-    remainder = dsl_script[dsl_script.index("on_error=") + len("on_error="):].lstrip()
-    recovery_source, _end = json.JSONDecoder().raw_decode(remainder)
-    return recovery_source
-
-
 class TestOctoBotActionsJob:
 
     def setup_method(self):
@@ -1068,7 +1062,8 @@ class TestOctoBotActionsJob:
         ) as get_open_wallet_details_mock:
             job = octobot_flow_client.OctoBotActionsJob(trade_transfer_and_check_balance_actions_bundle_no_wait, [], [], octobot_flow_client.OctoBotActionsJobResult())
             await job.run()
-            assert get_open_wallet_details_mock.call_count == 4
+            # Parse no longer injects cleanup blockchain_wallet_init (no if_error wrapper).
+            assert get_open_wallet_details_mock.call_count == 3
         result = job.result
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
@@ -1180,9 +1175,9 @@ class TestOctoBotActionsJob:
         next_actions = parsed_state.automation.actions_dag.get_executable_actions()
         assert len(next_actions) == 1
         assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert next_actions[0].dsl_script is not None 
-        assert next_actions[0].dsl_script.startswith("if_error(")
+        assert next_actions[0].dsl_script is not None
         assert "blockchain_wallet_transfer" in next_actions[0].dsl_script
+        assert "if_error(" not in next_actions[0].dsl_script
         job4 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
@@ -1279,14 +1274,11 @@ class TestOctoBotActionsJob:
         assert result.next_actions_description
         assert result.has_next_actions is False
 
-    async def test_run_trade_wallet_init_trade_if_error_wallet_cleanup(
+    async def test_run_trade_wallet_init_trade_without_if_error_on_failure(
         self, trade_wallet_init_trade_if_error_cleanup_bundle
     ):
         mock_wallet_details_step3 = {
             "filename": "init_wallet", "password": "init_pw", "port": 18088,
-        }
-        mock_wallet_details_recovery = {
-            "filename": "recovery_wallet", "password": "recovery_pw", "port": 18089,
         }
 
         # step 1: configure the job (ACTIONS: trade, blockchain_wallet_init, trade)
@@ -1366,7 +1358,7 @@ class TestOctoBotActionsJob:
         assert DSL_operators.WALLET_DETAILS_KEY in processed_actions[0].result
         assert processed_actions[0].result[DSL_operators.WALLET_DETAILS_KEY] == mock_wallet_details_step3
 
-        # step 4: if_error-wrapped market trade — primary raises, on_error runs blockchain_wallet_init cleanup
+        # step 4: plain market trade — failure is recorded on the action, no wallet re-init
         next_actions_description = result.next_actions_description
         assert next_actions_description is not None
         parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
@@ -1376,14 +1368,8 @@ class TestOctoBotActionsJob:
         assert next_actions[0].id == "action_trade_3"
         dsl_script = next_actions[0].dsl_script
         assert dsl_script is not None
-        assert dsl_script.startswith("if_error(value=(")
-        assert "market(" in dsl_script
-        parser = actions_dag_parser.ActionsDAGParser(
-            trade_wallet_init_trade_if_error_cleanup_bundle["params"]
-        )
-        expected_recovery = parser._build_blockchain_wallet_init_dsl(force_close_wallet_on_exit=True)
-        assert _decode_if_error_on_error_script(dsl_script) == expected_recovery
-        assert "blockchain_wallet_init" in expected_recovery
+        assert dsl_script.startswith("market(")
+        assert "if_error(" not in dsl_script
 
         job4 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
@@ -1395,7 +1381,7 @@ class TestOctoBotActionsJob:
         ) as create_order_instance_mock, mock.patch.object(
             blockchain_wallet_simulator.BlockchainWalletSimulator,
             "get_open_wallet_details",
-            mock.Mock(return_value=mock_wallet_details_recovery),
+            mock.Mock(),
         ) as get_open_wallet_details_mock:
             await job4.run()
 
@@ -1403,15 +1389,12 @@ class TestOctoBotActionsJob:
         assert len(result.processed_actions) == 1
         processed_actions = result.processed_actions
         assert isinstance(processed_actions[0], octobot_flow.entities.DSLScriptActionDetails)
-        assert processed_actions[0].error_status is None
-        assert DSL_operators.CREATED_ORDERS_KEY not in processed_actions[0].result
+        assert processed_actions[0].error_status == octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value
+        assert processed_actions[0].error_message == "simulated order failure"
+        assert DSL_operators.CREATED_ORDERS_KEY not in (processed_actions[0].result or {})
         assert len(get_created_orders(processed_actions)) == 0
         create_order_instance_mock.assert_called_once()
-        # open wallet was called again from the if_error statement        get_open_wallet_details_mock.assert_called_once()
-        assert (
-            processed_actions[0].result[DSL_operators.WALLET_DETAILS_KEY]
-            == mock_wallet_details_recovery
-        )
+        get_open_wallet_details_mock.assert_not_called()
         assert result.has_next_actions is False
 
 

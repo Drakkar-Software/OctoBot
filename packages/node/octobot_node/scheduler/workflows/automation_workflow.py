@@ -38,6 +38,7 @@ import octobot_node.constants as constants
 import octobot_node.scheduler.workflows.params as params
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_node.scheduler.automations.signal_execution_result_util as signal_execution_result_util
 import octobot_node.errors as errors
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
@@ -192,6 +193,8 @@ class AutomationWorkflow:
                         workflow_logger.error(
                             f"Pending priority actions were skipped: {err}"
                         )
+                        execution_error = "pending_priority_actions_skipped"
+                        execution_error_message = str(err)
                     if action_job is None:
                         # should never happen, but just in case
                         raise
@@ -279,6 +282,18 @@ class AutomationWorkflow:
                     f"Iteration postponed ({execution_error}: {execution_error_message}), "
                     f"retry scheduled in {retry_delay_seconds:.0f} seconds"
                 )
+            try:
+                await AutomationWorkflow._maybe_send_signal_execution_result(
+                    actions_update,
+                    result.processed_actions,
+                    iteration_error=execution_error if postponed_iteration else None,
+                    iteration_error_message=execution_error_message if postponed_iteration else None,
+                )
+            except Exception:
+                AutomationWorkflow.get_logger(parsed_inputs).exception(
+                    "Failed to send signal execution result callback",
+                    exc_info=True,
+                )
             #### End of decryped task context - no clear data after this point in encrypted context ####
 
         return params.AutomationWorkflowIterationResult(
@@ -306,6 +321,34 @@ class AutomationWorkflow:
                 True if postponed_iteration else result.has_next_actions
             ),
         ).to_dict(include_default_values=False)
+
+    @staticmethod
+    async def _maybe_send_signal_execution_result(
+        actions_update: typing.Optional[dict],
+        processed_actions: list["octobot_flow.entities.AbstractActionDetails"],
+        iteration_error: typing.Optional[str] = None,
+        iteration_error_message: typing.Optional[str] = None,
+    ) -> None:
+        if not actions_update:
+            return
+        envelope = params.AutomationWorkflowActionUpdate.from_dict(actions_update)
+        if envelope.execution_result_callback is None:
+            return
+        if envelope.actions_type != octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value:
+            return
+        execution_result_payload = signal_execution_result_util.build_signal_execution_result_payload(
+            envelope,
+            processed_actions,
+            iteration_error=iteration_error,
+            iteration_error_message=iteration_error_message,
+        )
+        if execution_result_payload is None:
+            return
+        await SCHEDULER.INSTANCE.send_async(
+            envelope.execution_result_callback.reply_workflow_id,
+            execution_result_payload.to_dict(include_default_values=False),
+            topic=octobot_node.enums.AutomationWorkflowMessageTopics.SIGNAL_EXECUTION_RESULT.value,
+        )
 
     @staticmethod
     async def _wait_and_trigger_on_actions_update(

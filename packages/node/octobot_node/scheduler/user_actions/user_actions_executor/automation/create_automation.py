@@ -231,6 +231,14 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         reference_market=stored_strategy.reference_market,
                     ),
                 ]
+            case protocol_models.SignalBotConfiguration() as signal_bot_configuration:
+                return [
+                    init_action,
+                    action_details_factory.signal_bot_action_factory(
+                        init_action,
+                        signal_bot_configuration,
+                    ),
+                ]
             case protocol_models.GenericWorkflowConfiguration() as generic_workflow_configuration:
                 workflow_actions = action_details_factory.generic_workflow_actions_factory(
                     init_action,

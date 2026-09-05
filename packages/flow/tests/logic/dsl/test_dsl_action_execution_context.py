@@ -26,6 +26,7 @@ _INVALID_PARAMETER_FORMAT_MESSAGE = "Invalid signal parameter format"
 _NOT_SUPPORTED_STOP_LOSS_ORDER_MESSAGE = "STOP_LOSS orders are not supported on binance"
 _NOT_SUPPORTED_BUY_MARKET_ORDER_MESSAGE = "BUY_MARKET orders are not supported on binance"
 _BLOCKCHAIN_WALLET_ERROR_MESSAGE = "Blockchain wallet connection failed"
+_ORDER_NOT_FOUND_MESSAGE = "No [binance] order found matching {'symbol': 'BTC/USDC'}"
 _GENERIC_EXCEPTION_MESSAGE = "Unexpected DSL execution failure"
 _FAILED_REQUEST_ERROR_MESSAGE = "Exchange API request failed"
 
@@ -218,6 +219,11 @@ class TestDslActionExecutionMapsCaughtException:
                 id="blockchain_wallet",
             ),
             pytest.param(
+                octobot_trading.errors.OrderDescriptionNotFoundError(_ORDER_NOT_FOUND_MESSAGE),
+                octobot_flow.enums.ActionErrorStatus.ORDER_NOT_FOUND,
+                id="order_description_not_found",
+            ),
+            pytest.param(
                 RuntimeError(_GENERIC_EXCEPTION_MESSAGE),
                 octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR,
                 id="generic_exception",
@@ -245,6 +251,31 @@ class TestDslActionExecutionMapsCaughtException:
 
         assert action.error_status == expected_error_status.value
         assert action.error_message == str(raised_exception)
+
+
+class TestDslActionExecutionReraisesRetriableFailedRequest:
+    @pytest.mark.asyncio
+    async def test_reraises_on_non_recallable_action(self):
+        retriable_error = octobot_trading.errors.RetriableFailedRequest("transient exchange failure")
+
+        class StubExecutor:
+            @octobot_flow.logic.dsl.dsl_action_execution_context.dsl_action_execution
+            async def execute_action(self, action, **_kwargs):
+                raise retriable_error
+
+        action = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_trade_1",
+            dsl_script="market('BTC/USDC', 'buy', 0.01)",
+            resolved_dsl_script="market('BTC/USDC', 'buy', 0.01)",
+        )
+        stub_executor = StubExecutor()
+
+        with pytest.raises(octobot_trading.errors.RetriableFailedRequest) as raised_error:
+            await stub_executor.execute_action(action)
+
+        assert str(raised_error.value) == str(retriable_error)
+        assert action.error_status is None
+        assert action.error_message is None
 
 
 class TestDslActionExecutionReraisesOutdatedReferenceAccountError:

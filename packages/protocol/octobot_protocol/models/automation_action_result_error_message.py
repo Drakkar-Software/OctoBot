@@ -37,6 +37,14 @@ class AutomationActionResultErrorMessage(str, Enum):
     ACCOUNT_NOT_FOUND = 'account_not_found'
     ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND = 'account_authentication_details_not_found'
     INTERNAL_ERROR = 'internal_error'
+    EXECUTION_TIMEOUT = 'execution_timeout'
+    EXECUTION_FAILED = 'execution_failed'
+    NOT_ENOUGH_FUNDS = 'not_enough_funds'
+    ORDER_NOT_FOUND = 'order_not_found'
+    INVALID_ORDER = 'invalid_order'
+    AUTHENTICATION_ERROR = 'authentication_error'
+    MISSING_SYMBOL = 'missing_symbol'
+    SYMBOL_INCOMPATIBLE_WITH_ACCOUNT = 'symbol_incompatible_with_account'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

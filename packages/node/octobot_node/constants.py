@@ -99,10 +99,19 @@ USER_ACTION_WORKFLOW_RESULT_TIMEOUT_SECONDS = float(
     os.getenv("USER_ACTION_WORKFLOW_RESULT_TIMEOUT_SECONDS", 120.0)
 )
 
+SIGNAL_EXECUTION_RESULT_TIMEOUT_SECONDS = float(
+    os.getenv("SIGNAL_EXECUTION_RESULT_TIMEOUT_SECONDS", USER_ACTION_WORKFLOW_RESULT_TIMEOUT_SECONDS)
+)
+
+SIGNAL_EXECUTION_RESULT_RECV_POLL_INTERVAL_SECONDS = float(
+    os.getenv("SIGNAL_EXECUTION_RESULT_RECV_POLL_INTERVAL_SECONDS", 0.05)
+)
+
 SCHEDULER_EXECUTOR_ID = str(uuid.uuid4()) # unique for each worker
 
 # Stable DBOS application_version for workflow recovery across OctoBot releases.
 # Bump only when workflow step order/semantics change in a breaking way.
+# WARNING: changing this value requires an explicit migration process — ask for confirmation before bumping.
 SCHEDULER_APPLICATION_VERSION = "octobot_node_v1"
 ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION = bool((
     os.getenv("ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION") or "false"

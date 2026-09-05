@@ -135,10 +135,18 @@ def dsl_action_execution(func):
                 octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
                 str(err),
             )
+        except octobot_trading.errors.RetriableFailedRequest:
+            raise
         except POSTPONE_ON_RECALLABLE_TRADING_ERRORS as err:
             if _should_postpone_recallable_trading_error(self, action):
                 raise
             return _map_non_recallable_postpone_trading_error(action, err)
+        except octobot_trading.errors.OrderDescriptionNotFoundError as err:
+            return _dsl_action_error_call_result(
+                action,
+                octobot_flow.enums.ActionErrorStatus.ORDER_NOT_FOUND.value,
+                str(err),
+            )
         except copy_errors.OutdatedReferenceAccountError:
             raise
         except Exception as err:

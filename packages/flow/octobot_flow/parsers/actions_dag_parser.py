@@ -16,6 +16,7 @@ import octobot_trading.enums as trading_enums
 import octobot_flow.errors
 import octobot_flow.entities
 import octobot_flow.enums
+import octobot_flow.parsers.signal_script_resolver as signal_script_resolver
 
 
 def _actions_params():
@@ -37,11 +38,6 @@ def _tradingview_signal_to_dsl_translator():
     import tentacles.Trading.Mode.trading_view_signals_trading_mode.tradingview_signal_to_dsl_translator as tradingview_signal_to_dsl_translator
 
     return tradingview_signal_to_dsl_translator
-
-
-def key_val_to_dict(key_val: str) -> dict:
-    trading_view_signals_trading = _trading_view_signals_trading()
-    return trading_view_signals_trading.TradingViewSignalsTradingMode.parse_signal_data(key_val, None, None, None, [])
 
 
 class ActionType(enum.Enum):
@@ -405,20 +401,11 @@ class ActionsDAGParser:
 
     def _parse_generic_actions(self, actions_dag: octobot_flow.entities.ActionsDAG) -> None:
         latest_action = actions_dag.get_executable_actions()[0]
-        previous_action_needs_if_error_wallet_cleanup = False
         for index, action_name in enumerate(self.params.ACTIONS):
             new_action = self._create_generic_action(action_name, index + 1)
-            if previous_action_needs_if_error_wallet_cleanup and isinstance(
-                new_action, octobot_flow.entities.DSLScriptActionDetails
-            ):
-                self._wrap_dsl_script_with_wallet_cleanup_if_error(new_action)
             new_action.add_dependency(latest_action.id)
             actions_dag.add_action(new_action)
             latest_action = new_action
-            previous_action_needs_if_error_wallet_cleanup = (
-                action_name == ActionType.BLOCKCHAIN_WALLET_INIT.value
-                and self.params.BLOCKCHAIN_INIT_CLOSE_WALLET_ON_EXIT is not True
-            )
 
     def _create_generic_action(
         self, action: str, index: int
@@ -599,28 +586,6 @@ class ActionsDAGParser:
                 f"({details})"
             )
         return dsl_script
-
-    def _build_blockchain_wallet_init_dsl(self, *, force_close_wallet_on_exit: bool) -> str:
-        # force_close_wallet_on_exit: recovery path uses True so the wallet is closed on error.
-        details = self._wallet_init_details_for_translate(
-            close_wallet_override=True if force_close_wallet_on_exit else None,
-        )
-        return self._translate_blockchain_wallet_init_signal(details)
-
-    def _wrap_dsl_script_with_wallet_cleanup_if_error(
-        self,
-        dsl_action: octobot_flow.entities.DSLScriptActionDetails,
-    ) -> None:
-        # Step: wrap the primary DSL so a failing step runs a matching init with close_wallet_on_exit=True.
-        primary_script = dsl_action.dsl_script
-        if not primary_script:
-            raise octobot_flow.errors.InvalidAutomationActionError(
-                "Cannot wrap empty dsl_script with if_error wallet cleanup"
-            )
-        recovery_script = self._build_blockchain_wallet_init_dsl(force_close_wallet_on_exit=True)
-        dsl_action.dsl_script = (
-            f"if_error(value=({primary_script}), on_error={json.dumps(recovery_script)})"
-        )
 
     def _create_blockchain_wallet_init_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
         tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
@@ -842,16 +807,15 @@ class ActionsDAGParser:
     def create_dsl_script_from_tv_format_action_details(
         self, action_id: str, signal: str, details: dict
     ) -> octobot_flow.entities.DSLScriptActionDetails:
-        trading_view_signals_trading = _trading_view_signals_trading()
-        tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
-        tv_trading_mode = trading_view_signals_trading.TradingViewSignalsTradingMode
-        dsl_script = tradingview_signal_to_dsl_translator.TradingViewSignalToDSLTranslator.translate_signal(
-            {**{tv_trading_mode.SIGNAL_KEY: signal}, **details}
-        )
-        if dsl_script == tradingview_signal_to_dsl_translator.UNKNOWN_SIGNAL_RESULT:
+        tv_trading_mode = _trading_view_signals_trading().TradingViewSignalsTradingMode
+        try:
+            dsl_script = signal_script_resolver.translate_signal_parsed_data(
+                {**{tv_trading_mode.SIGNAL_KEY: signal}, **details}
+            )
+        except octobot_flow.errors.InvalidAutomationActionError as error:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 f"Invalid signal: {signal}({details}) (action {action_id})"
-            )
+            ) from error
         return self._create_dsl_action_with_dependencies_if_any(action_id, dsl_script, details)
 
     def _create_dsl_action_with_dependencies_if_any(

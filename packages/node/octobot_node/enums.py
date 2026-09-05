@@ -32,6 +32,7 @@ class AutomationWorkflowActionTypes(enum.Enum):
 
 class AutomationWorkflowMessageTopics(enum.Enum):
     ACTIONS_UPDATE = "actions_update"
+    SIGNAL_EXECUTION_RESULT = "signal_execution_result"
 
 
 class SchedulerQueues(enum.Enum):
