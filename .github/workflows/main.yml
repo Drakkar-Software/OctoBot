@@ -36,7 +36,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
 
       - name: Install Rust toolchain
         if: hashFiles('packages/*/crates/*/Cargo.toml') != ''
@@ -114,7 +114,7 @@ jobs:
       if: env.USES_TENTACLES == 'true'
       uses: actions/setup-node@v6
       with:
-        node-version: 22
+        node-version-file: .nvmrc
 
     - name: Download build wheel artifact
       uses: actions/download-artifact@v8
@@ -480,7 +480,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: docs/package-lock.json
 
@@ -526,7 +526,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           registry-url: 'https://registry.npmjs.org'
 
       - name: Upgrade npm (trusted publishing requires >= 11.5.1)
