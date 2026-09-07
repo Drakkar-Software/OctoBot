@@ -3,10 +3,9 @@
   "private": true,
   "workspaces": [
     "packages/client/octobot_client_ts",
-    "packages/protocol/octobot_protocol_ts",
-    "packages/tentacles/Services/Interfaces/node_web_interface"
+    "packages/protocol/octobot_protocol_ts"
   ],
   "scripts": {
-    "build": "npm run build -w packages/client/octobot_client_ts && npm run build -w packages/tentacles/Services/Interfaces/node_web_interface"
+    "build": "npm run build -w packages/client/octobot_client_ts"
   }
 }
