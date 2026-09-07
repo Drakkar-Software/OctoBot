@@ -82,10 +82,39 @@ def _terminal_workflow_with_output(
     )
     workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
     workflow_status.workflow_id = parent_id
+    workflow_status.status = dbos.WorkflowStatusString.SUCCESS.value
     workflow_status.updated_at = 100
     workflow_status.input = {"args": [encoded_inputs], "kwargs": {}}
     workflow_status.output = json.dumps(
         workflow_params_module.AutomationWorkflowOutput(state=task_content).to_dict(
+            include_default_values=False
+        )
+    )
+    return workflow_status
+
+
+def _terminal_workflow_with_input_only_state(
+    *,
+    parent_id: str = _PARENT_AUTOMATION_ID,
+    stop_automation: bool = True,
+) -> mock.Mock:
+    state_dict = _stopped_automation_state_dict(stop_automation=stop_automation)
+    task_content = json.dumps({"state": state_dict})
+    task = models_module.Task(
+        name="restart-test-automation",
+        content=task_content,
+        type=models_module.TaskType.EXECUTE_ACTIONS.value,
+    )
+    encoded_inputs = workflow_params_module.AutomationWorkflowInputs(task=task).to_dict(
+        include_default_values=False
+    )
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = parent_id
+    workflow_status.status = dbos.WorkflowStatusString.ERROR.value
+    workflow_status.updated_at = 100
+    workflow_status.input = {"args": [encoded_inputs], "kwargs": {}}
+    workflow_status.output = json.dumps(
+        workflow_params_module.AutomationWorkflowOutput(state=None).to_dict(
             include_default_values=False
         )
     )
@@ -159,6 +188,52 @@ class TestRestartAutomationActionExecutor:
         )
         inner = user_action.result.actual_instance
         assert inner.created_automation_id == _PARENT_AUTOMATION_ID
+
+    @pytest.mark.asyncio
+    async def test_execute_restarts_from_terminal_input_when_output_state_missing(self):
+        user_action = _user_action_restart(
+            user_action_id="ua-restart-input-only",
+            automation_parent_id=_PARENT_AUTOMATION_ID,
+        )
+        terminal_workflow = _terminal_workflow_with_input_only_state()
+        executor = restart_automation_executor.RestartAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with (
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.restart_automation.scheduler_module.is_initialized",
+                return_value=True,
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "list_user_actions",
+                new_callable=mock.AsyncMock,
+                return_value=[],
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[],
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_latest_terminal_automation_workflow_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=terminal_workflow,
+            ),
+        ):
+            await executor.execute(user_action)
+
+        scheduled_task = executor.post_actions.to_create_automation_task
+        assert scheduled_task is not None
+        assert scheduled_task.id == f"{_PARENT_AUTOMATION_ID}_1"
+        task_payload = json.loads(scheduled_task.content)
+        assert task_payload["state"]["automation"]["post_actions"]["stop_automation"] is False
+        provider_assertions.assert_user_action_terminal_state(
+            user_action=user_action,
+            expected_status=protocol_models.UserActionStatus.COMPLETED,
+            result_channel="automation",
+            expect_error_details=False,
+        )
 
     @pytest.mark.asyncio
     async def test_raises_unrestartable_when_id_binds_to_user_action(self):

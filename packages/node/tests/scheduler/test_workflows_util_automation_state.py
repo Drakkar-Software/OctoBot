@@ -229,3 +229,21 @@ class TestGetResolvedAutomationTask:
         assert resolved_task is not None
         assert resolved_task.content == output_content
 
+    def test_error_workflow_falls_back_to_input_when_output_state_missing(self):
+        input_content = _automation_task_content(automation_name="from-input")
+        workflow_status = _workflow_status_with_automation_task(
+            status=dbos.WorkflowStatusString.ERROR.value,
+            input_content=input_content,
+            output_content=None,
+        )
+        workflow_status.output = json.dumps(
+            workflow_params.AutomationWorkflowOutput(state=None).to_dict(
+                include_default_values=False
+            )
+        )
+
+        resolved_task = workflows_util.get_resolved_automation_task(workflow_status)
+
+        assert resolved_task is not None
+        assert resolved_task.content == input_content
+
