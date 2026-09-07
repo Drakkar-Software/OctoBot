@@ -25,7 +25,7 @@ SIGNALAUTOMATIONCONFIGURATIONSIGNALPAYLOAD_ONE_OF_SCHEMAS = ["List[object]", "ob
 
 class SignalAutomationConfigurationSignalPayload(BaseModel):
     """
-    Optional payload associated with the signal type
+    Optional payload associated with signal_type. Schema stays generic; see description for wire shapes. When signal_type is actions: a single action object, an array of action objects, or an object with an actions array. Each action object may use signal (param=val string, JSON signal string, or value resolved to DSL), a bare signal dict containing the flow signal key (e.g. SIGNAL), or dsl_script with id for direct DSL passthrough without resolution. Optional fields: id (default generated when using signal), await_execution_result (default true). signal is resolved to DSL; dsl_script is executed as-is. When signal_type is trading_signal: a trading-signal dict or one-element array. forced_trigger ignores payload.
     """
     # data type: object
     oneof_schema_1_validator: Optional[Dict[str, Any]] = None

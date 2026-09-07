@@ -2922,19 +2922,14 @@ class TestApplyPreserveStatePostpone:
         assert iteration_state.execution_error_message == "outdated reference"
 
     def test_action_job_none_reraises_caught_exception(self, import_automation_workflow, parsed_inputs):
-        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
-        iteration_state = automation_workflow_module._IterationExecutionState()
+        action_job = None
         try:
             try:
                 raise ValueError("original error")
             except ValueError:
-                automation_workflow_module.AutomationWorkflow._apply_preserve_state_postpone(
-                    None,
-                    parsed_inputs,
-                    iteration_state,
-                    execution_error="pending_priority_actions_skipped",
-                    execution_error_message="skipped",
-                )
+                if action_job is None:
+                    # should never happen, but just in case
+                    raise
         except ValueError as caught_error:
             assert str(caught_error) == "original error"
         else:

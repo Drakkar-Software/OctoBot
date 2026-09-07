@@ -1313,9 +1313,7 @@
       "sync_interval_without_open_trades_seconds": "number"
     },
     "required": [
-      "configuration_type",
-      "sync_interval_with_open_trades_seconds",
-      "sync_interval_without_open_trades_seconds"
+      "configuration_type"
     ]
   },
   "SignalPriorityActionExecutionResult": {
