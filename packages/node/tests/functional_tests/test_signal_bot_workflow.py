@@ -116,12 +116,12 @@ class TestSignalBotWorkflowEndToEnd:
                 user_action_id="ua-signal-bot-functional",
                 signal_payload=[
                     {
-                        "script": (
+                        "signal": (
                             "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.00001\n"
                             "TAKE_PROFIT_PRICE=10%"
                         ),
                     },
-                    {"script": "SYMBOL=BTC/USDC\nSIGNAL=cancel"},
+                    {"signal": "SYMBOL=BTC/USDC\nSIGNAL=cancel"},
                 ],
             )
             await asyncio.wait_for(

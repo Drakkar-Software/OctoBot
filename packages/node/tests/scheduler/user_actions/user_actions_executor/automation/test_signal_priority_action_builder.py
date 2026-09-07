@@ -50,14 +50,14 @@ def mock_exchange_context_loader():
 
 class TestBuildSignalPriorityActionsNormalizePayload:
     @pytest.mark.asyncio
-    async def test_list_of_two_scripts(self, mock_exchange_context_loader):
+    async def test_list_of_two_signals(self, mock_exchange_context_loader):
         with mock.patch.object(
             signal_script_resolver,
             "resolve_signal_script",
             side_effect=[RESOLVED_DSL, RESOLVED_DSL],
         ) as resolve_mock:
             actions = await _build_payload(
-                [{"script": SIGNAL_SCRIPT}, {"script": SIGNAL_SCRIPT}],
+                [{"signal": SIGNAL_SCRIPT}, {"signal": SIGNAL_SCRIPT}],
             )
 
         assert len(actions) == 2
@@ -73,7 +73,7 @@ class TestBuildSignalPriorityActionsNormalizePayload:
             return_value=RESOLVED_DSL,
         ) as resolve_mock:
             actions = await _build_payload(
-                {"actions": [{"script": SIGNAL_SCRIPT}, {"script": SIGNAL_SCRIPT}]},
+                {"actions": [{"signal": SIGNAL_SCRIPT}, {"signal": SIGNAL_SCRIPT}]},
             )
 
         assert len(actions) == 2
@@ -86,7 +86,7 @@ class TestBuildSignalPriorityActionsNormalizePayload:
             "resolve_signal_script",
             return_value=RESOLVED_DSL,
         ):
-            actions = await _build_payload({"script": SIGNAL_SCRIPT})
+            actions = await _build_payload({"signal": SIGNAL_SCRIPT})
 
         assert len(actions) == 1
 
@@ -103,7 +103,7 @@ class TestBuildSignalPriorityActionsNormalizePayload:
 
 class TestBuildSignalPriorityActionsResolve:
     @pytest.mark.asyncio
-    async def test_signal_dict_without_script_wrapper(self, mock_exchange_context_loader):
+    async def test_signal_dict_without_signal_wrapper(self, mock_exchange_context_loader):
         signal_dict = {"SYMBOL": "BTC/USDC", "SIGNAL": "buy", "VOLUME": 0.01}
         with mock.patch.object(
             signal_script_resolver,
@@ -141,7 +141,7 @@ class TestBuildSignalPriorityActionsResolve:
             return_value=RESOLVED_DSL,
         ):
             actions = await _build_payload(
-                [{"script": SIGNAL_SCRIPT, "await_execution_result": False}],
+                [{"signal": SIGNAL_SCRIPT, "await_execution_result": False}],
             )
 
         assert actions[0].await_execution_result is False
@@ -155,20 +155,20 @@ class TestBuildSignalPriorityActionsResolve:
             return_value=RESOLVED_DSL,
         ) as resolve_mock:
             actions = await _build_payload(
-                [{"script": SIGNAL_SCRIPT}, legacy_action],
+                [{"signal": SIGNAL_SCRIPT}, legacy_action],
             )
 
         assert len(actions) == 2
         resolve_mock.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_custom_id_when_script_and_id(self, mock_exchange_context_loader):
+    async def test_custom_id_when_signal_and_id(self, mock_exchange_context_loader):
         with mock.patch.object(
             signal_script_resolver,
             "resolve_signal_script",
             return_value=RESOLVED_DSL,
         ):
-            actions = await _build_payload([{"id": "custom", "script": SIGNAL_SCRIPT}])
+            actions = await _build_payload([{"id": "custom", "signal": SIGNAL_SCRIPT}])
 
         assert actions[0].id == "custom"
 
@@ -186,7 +186,7 @@ class TestBuildSignalPriorityActionsFailFast:
         ) as resolve_mock:
             with pytest.raises(node_errors.InvalidUserActionPayloadError):
                 await _build_payload(
-                    [{"script": SIGNAL_SCRIPT}, {"script": "bad"}],
+                    [{"signal": SIGNAL_SCRIPT}, {"signal": "bad"}],
                 )
 
         assert resolve_mock.call_count == 2
@@ -199,7 +199,7 @@ class TestBuildSignalPriorityActionsFailFast:
             side_effect=flow_errors.InvalidAutomationActionError("bad signal"),
         ):
             with pytest.raises(node_errors.InvalidUserActionPayloadError, match="bad signal"):
-                await _build_payload([{"script": SIGNAL_SCRIPT}])
+                await _build_payload([{"signal": SIGNAL_SCRIPT}])
 
 
 class TestBuildSignalPriorityActionsExchangeContext:
@@ -213,13 +213,13 @@ class TestBuildSignalPriorityActionsExchangeContext:
             ),
         ):
             with pytest.raises(node_errors.ActiveAutomationWorkflowNotFoundError):
-                await _build_payload([{"script": SIGNAL_SCRIPT}])
+                await _build_payload([{"signal": SIGNAL_SCRIPT}])
 
 
 class TestBuildSignalPriorityActionsResolverIntegration:
     @pytest.mark.asyncio
-    async def test_signal_script_resolved_via_real_resolver(self, mock_exchange_context_loader):
-        actions = await _build_payload([{"script": SIGNAL_BUY_KEYVAL}])
+    async def test_signal_resolved_via_real_resolver(self, mock_exchange_context_loader):
+        actions = await _build_payload([{"signal": SIGNAL_BUY_KEYVAL}])
 
         assert len(actions) == 1
         assert isinstance(actions[0], signal_priority_action_module.SignalPriorityAction)

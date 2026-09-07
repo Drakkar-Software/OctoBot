@@ -207,7 +207,7 @@ class TestExecuteUserActionSignalAutomationExecutionResults:
             signal_user_action = workflow_common_module.build_actions_signal_user_action(
                 automation_id=_GRID_AUTOMATION_CONFIGURATION_ID,
                 user_action_id="ua-signal-not-enough-funds",
-                signal_payload=[{"script": "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.01"}],
+                signal_payload=[{"signal": "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.01"}],
             )
             await _run_user_action_to_completion(user_id, signal_user_action)
 
@@ -328,7 +328,7 @@ class TestExecuteUserActionSignalAutomationExecutionResults:
             signal_user_action = workflow_common_module.build_actions_signal_user_action(
                 automation_id=_GRID_AUTOMATION_CONFIGURATION_ID,
                 user_action_id="ua-signal-timeout",
-                signal_payload=[{"script": "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.01"}],
+                signal_payload=[{"signal": "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.01"}],
             )
             await _run_user_action_to_completion(user_id, signal_user_action)
 

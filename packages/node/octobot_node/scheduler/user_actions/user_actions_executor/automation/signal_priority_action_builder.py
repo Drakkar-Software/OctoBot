@@ -17,6 +17,7 @@ import octobot_flow.parsers.signal_script_resolver as signal_script_resolver
 import octobot_trading.enums as trading_enums
 import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
+import octobot_node.enums as node_enums
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler as scheduler_module
@@ -39,7 +40,9 @@ def normalize_signal_payload(signal_payload: typing.Any) -> list[dict]:
             )
         return signal_payload
     if isinstance(signal_payload, dict):
-        nested_actions = signal_payload.get("actions")
+        nested_actions = signal_payload.get(
+            node_enums.SignalPriorityActionPayloadKeys.ACTIONS.value
+        )
         if nested_actions is not None:
             if not isinstance(nested_actions, list) or not all(
                 isinstance(action, dict) for action in nested_actions
@@ -122,10 +125,16 @@ def _resolve_signal_to_priority_action(
     user_action_id: str,
     exchange_context: signal_exchange_context_module.SignalExchangeContext,
 ) -> signal_priority_action_module.SignalPriorityAction:
-    if "script" in signal:
+    payload_keys = node_enums.SignalPriorityActionPayloadKeys
+    signal_key = payload_keys.SIGNAL.value
+    dsl_script_key = payload_keys.DSL_SCRIPT.value
+    action_id_key = payload_keys.ID.value
+    await_execution_result_key = payload_keys.AWAIT_EXECUTION_RESULT.value
+
+    if signal_key in signal:
         try:
             dsl_script = signal_script_resolver.resolve_signal_script(
-                signal["script"],
+                signal[signal_key],
                 exchange_name=exchange_context.exchange_name,
                 exchange_type=exchange_context.exchange_type,
                 reference_market=exchange_context.reference_market,
@@ -133,11 +142,11 @@ def _resolve_signal_to_priority_action(
             )
         except flow_errors.InvalidAutomationActionError as error:
             raise node_errors.InvalidUserActionPayloadError(str(error)) from error
-        action_id = signal.get("id") or _default_priority_action_id(user_action_id, signal_index)
+        action_id = signal.get(action_id_key) or _default_priority_action_id(user_action_id, signal_index)
         return signal_priority_action_module.SignalPriorityAction(
             id=action_id,
             dsl_script=dsl_script,
-            await_execution_result=signal.get("await_execution_result", True),
+            await_execution_result=signal.get(await_execution_result_key, True),
         )
 
     if signal_script_resolver.signal_key() in signal:
@@ -151,18 +160,19 @@ def _resolve_signal_to_priority_action(
             )
         except flow_errors.InvalidAutomationActionError as error:
             raise node_errors.InvalidUserActionPayloadError(str(error)) from error
-        action_id = signal.get("id") or _default_priority_action_id(user_action_id, signal_index)
+        action_id = signal.get(action_id_key) or _default_priority_action_id(user_action_id, signal_index)
         return signal_priority_action_module.SignalPriorityAction(
             id=action_id,
             dsl_script=dsl_script,
-            await_execution_result=signal.get("await_execution_result", True),
+            await_execution_result=signal.get(await_execution_result_key, True),
         )
 
-    if "dsl_script" in signal and "script" not in signal:
+    if dsl_script_key in signal and signal_key not in signal:
         return signal_priority_action_module.SignalPriorityAction.from_dict(signal)
 
     raise node_errors.InvalidUserActionPayloadError(
-        f"Unsupported signal payload shape at index {signal_index}: {signal!r}"
+        f"Unsupported signal payload shape at index {signal_index} "
+        f"(expected {signal_key!r}, TradingView signal dict, or {dsl_script_key!r}): {signal!r}"
     )
 
 

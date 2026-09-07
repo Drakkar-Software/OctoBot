@@ -84,7 +84,7 @@ class TestSignalAutomationActionExecutorActions:
         user_action = _user_action_signal(
             user_action_id="ua-signal-actions-await",
             signal_type=protocol_models.AutomationSignalType.ACTIONS,
-            signal_payload=_signal_payload_wrapper([{"script": "signal"}]),
+            signal_payload=_signal_payload_wrapper([{"signal": "signal"}]),
         )
         executor = signal_automation_executor.SignalAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with (
@@ -131,8 +131,8 @@ class TestSignalAutomationActionExecutorActions:
             signal_type=protocol_models.AutomationSignalType.ACTIONS,
             signal_payload=_signal_payload_wrapper(
                 [
-                    {"script": "signal0", "await_execution_result": False},
-                    {"script": "signal1", "await_execution_result": False},
+                    {"signal": "signal0", "await_execution_result": False},
+                    {"signal": "signal1", "await_execution_result": False},
                 ],
             ),
         )
@@ -173,7 +173,7 @@ class TestSignalAutomationActionExecutorActions:
         user_action = _user_action_signal(
             user_action_id="ua-signal-actions-built",
             signal_type=protocol_models.AutomationSignalType.ACTIONS,
-            signal_payload=_signal_payload_wrapper([{"script": "signal"}]),
+            signal_payload=_signal_payload_wrapper([{"signal": "signal"}]),
         )
         executor = signal_automation_executor.SignalAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with (
@@ -207,7 +207,7 @@ class TestSignalAutomationActionExecutorActions:
         user_action = _user_action_signal(
             user_action_id="ua-signal-actions-failed",
             signal_type=protocol_models.AutomationSignalType.ACTIONS,
-            signal_payload=_signal_payload_wrapper([{"script": "bad"}]),
+            signal_payload=_signal_payload_wrapper([{"signal": "bad"}]),
         )
         executor = signal_automation_executor.SignalAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with (
@@ -247,7 +247,7 @@ class TestSignalAutomationActionExecutorActions:
             user_action_id="ua-signal-actions-multi",
             signal_type=protocol_models.AutomationSignalType.ACTIONS,
             signal_payload=_signal_payload_wrapper(
-                [{"script": "signal0"}, {"script": "signal1"}],
+                [{"signal": "signal0"}, {"signal": "signal1"}],
             ),
         )
         executor = signal_automation_executor.SignalAutomationActionExecutor(_TEST_WALLET_ADDRESS)
@@ -335,7 +335,7 @@ class TestSignalAutomationActionExecutor_execute:
         user_action = _user_action_signal(
             user_action_id="ua-signal-actions",
             signal_type=protocol_models.AutomationSignalType.ACTIONS,
-            signal_payload=_signal_payload_wrapper([{"script": "signal"}]),
+            signal_payload=_signal_payload_wrapper([{"signal": "signal"}]),
         )
         executor = signal_automation_executor.SignalAutomationActionExecutor(_TEST_WALLET_ADDRESS)
         with (

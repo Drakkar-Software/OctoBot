@@ -41,3 +41,11 @@ class SchedulerQueues(enum.Enum):
     DBOS_CLEANUP_QUEUE = "dbos_cleanup_queue"
     GLOBAL_VIEW_QUEUE = "global_view_queue"
     PORTFOLIO_HISTORY_QUEUE = "portfolio_history_queue"
+
+
+class SignalPriorityActionPayloadKeys(enum.Enum):
+    ACTIONS = "actions"
+    SIGNAL = "signal"
+    DSL_SCRIPT = "dsl_script"
+    ID = "id"
+    AWAIT_EXECUTION_RESULT = "await_execution_result"

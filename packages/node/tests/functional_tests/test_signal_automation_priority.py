@@ -126,8 +126,8 @@ class TestSignalAutomationPriorityEndToEnd:
                 automation_id=parent_automation_id,
                 user_action_id="ua-signal-priority-functional",
                 signal_payload=[
-                    {"script": "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.00001"},
-                    {"script": "SYMBOL=BTC/USDC\nSIGNAL=cancel"},
+                    {"signal": "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.00001"},
+                    {"signal": "SYMBOL=BTC/USDC\nSIGNAL=cancel"},
                 ],
             )
             try:

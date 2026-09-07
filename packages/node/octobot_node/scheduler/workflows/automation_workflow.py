@@ -231,16 +231,13 @@ class AutomationWorkflow:
 
     @staticmethod
     def _apply_preserve_state_postpone(
-        action_job: octobot_flow_client.OctoBotActionsJob | None,
+        action_job: octobot_flow_client.OctoBotActionsJob,
         parsed_inputs: params.AutomationWorkflowInputs,
         iteration_state: _IterationExecutionState,
         *,
         execution_error: str | None,
         execution_error_message: str | None,
     ) -> None:
-        if action_job is None:
-            # should never happen, but just in case
-            raise
         iteration_state.next_step_at = octobot_flow_client.OctoBotActionsJobDescription.get_next_execution_time(
             action_job.description.state
         )
@@ -309,6 +306,9 @@ class AutomationWorkflow:
                 )
                 postpone_execution_error = "pending_priority_actions_skipped"
                 postpone_execution_error_message = str(err)
+            if action_job is None:
+                # should never happen, but just in case
+                raise
             AutomationWorkflow._apply_preserve_state_postpone(
                 action_job,
                 parsed_inputs,
@@ -354,6 +354,9 @@ class AutomationWorkflow:
                 AutomationWorkflow.get_logger(parsed_inputs).error(
                     f"Unsupported DSL operator in priority user action(s): {err}"
                 )
+                if action_job is None:
+                    # should never happen, but just in case
+                    raise
                 AutomationWorkflow._apply_preserve_state_postpone(
                     action_job,
                     parsed_inputs,
