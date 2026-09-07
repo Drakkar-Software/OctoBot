@@ -42,8 +42,6 @@ class TestSignalBotConfiguration(unittest.TestCase):
         else:
             return SignalBotConfiguration(
                 configuration_type = 'market_making',
-                sync_interval_with_open_trades_seconds = 1.337,
-                sync_interval_without_open_trades_seconds = 1.337,
         )
         """
 

@@ -7,8 +7,8 @@ SignalBotConfiguration
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **configuration_type** | [**ActionConfigurationType**](ActionConfigurationType.md) | signal_bot | 
-**sync_interval_with_open_trades_seconds** | **float** | Periodic tick interval when the automation has open trades (open orders and/or open positions). | 
-**sync_interval_without_open_trades_seconds** | **float** | Periodic tick interval when the automation is idle (no open trades). | 
+**sync_interval_with_open_trades_seconds** | **float** | Periodic tick interval when the automation has open trades (open orders and/or open positions). | [optional] [default to 3600]
+**sync_interval_without_open_trades_seconds** | **float** | Periodic tick interval when the automation is idle (no open trades). | [optional] [default to 14400]
 
 ## Example
 

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from octobot_protocol.models.action_configuration_type import ActionConfigurationType
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,8 +29,8 @@ class SignalBotConfiguration(BaseModel):
     SignalBotConfiguration
     """ # noqa: E501
     configuration_type: ActionConfigurationType = Field(description="signal_bot")
-    sync_interval_with_open_trades_seconds: Union[StrictFloat, StrictInt] = Field(description="Periodic tick interval when the automation has open trades (open orders and/or open positions).")
-    sync_interval_without_open_trades_seconds: Union[StrictFloat, StrictInt] = Field(description="Periodic tick interval when the automation is idle (no open trades).")
+    sync_interval_with_open_trades_seconds: Optional[Union[StrictFloat, StrictInt]] = Field(default=3600, description="Periodic tick interval when the automation has open trades (open orders and/or open positions).")
+    sync_interval_without_open_trades_seconds: Optional[Union[StrictFloat, StrictInt]] = Field(default=14400, description="Periodic tick interval when the automation is idle (no open trades).")
     __properties: ClassVar[List[str]] = ["configuration_type", "sync_interval_with_open_trades_seconds", "sync_interval_without_open_trades_seconds"]
 
     model_config = ConfigDict(
@@ -85,8 +85,8 @@ class SignalBotConfiguration(BaseModel):
 
         _obj = cls.model_validate({
             "configuration_type": obj.get("configuration_type"),
-            "sync_interval_with_open_trades_seconds": obj.get("sync_interval_with_open_trades_seconds"),
-            "sync_interval_without_open_trades_seconds": obj.get("sync_interval_without_open_trades_seconds")
+            "sync_interval_with_open_trades_seconds": obj.get("sync_interval_with_open_trades_seconds") if obj.get("sync_interval_with_open_trades_seconds") is not None else 3600,
+            "sync_interval_without_open_trades_seconds": obj.get("sync_interval_without_open_trades_seconds") if obj.get("sync_interval_without_open_trades_seconds") is not None else 14400
         })
         return _obj
 

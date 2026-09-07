@@ -32,6 +32,7 @@ import octobot_trading.constants
 import octobot_trading.errors as octobot_trading_errors
 import octobot_trading.enums as trading_enums
 import octobot_commons.cryptography
+import octobot_commons.errors
 
 import octobot.community.wallet_backend.errors as wallet_backend_errors_module
 
@@ -621,6 +622,12 @@ class TestExecuteAutomation:
                 errors.WorkflowInputError("invalid action config"), # non retryable WorkflowError
                 octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
                 "invalid action config",
+                1, # only 1 attempt: this raises a non retryable error
+            ),
+            (
+                octobot_commons.errors.UnsupportedOperatorError("Unknown operator: dsl_placeholder"),
+                octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+                "Unknown operator: dsl_placeholder",
                 1, # only 1 attempt: this raises a non retryable error
             ),
         ]
@@ -1717,13 +1724,41 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         _assert_skip_postpone_preserves_state(task_content, result)
 
 
-class TestShouldRetryOutdatedReferenceAccountError:
-    def test_should_retry_returns_false_for_outdated_reference_account_error(
-        self, import_automation_workflow
-    ):
+class TestShouldRetry:
+    @pytest.mark.parametrize(
+        "error,expected_should_retry",
+        [
+            pytest.param(
+                copy_errors.OutdatedReferenceAccountError("reference account is outdated"),
+                False,
+                id="outdated_reference_account_error",
+            ),
+            pytest.param(
+                octobot_flow.errors.InvalidAutomationActionError("invalid action config"),
+                False,
+                id="invalid_automation_action_error",
+            ),
+            pytest.param(
+                errors.WorkflowInputError("invalid task type"),
+                False,
+                id="workflow_error",
+            ),
+            pytest.param(
+                octobot_commons.errors.UnsupportedOperatorError("Unknown operator: dsl_placeholder"),
+                False,
+                id="unsupported_operator_error",
+            ),
+            pytest.param(
+                RuntimeError("transient failure"),
+                True,
+                id="generic_runtime_error",
+            ),
+        ],
+    )
+    def test_should_retry(self, import_automation_workflow, error, expected_should_retry):
         assert octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._should_retry(
-            copy_errors.OutdatedReferenceAccountError("reference account is outdated")
-        ) is False
+            error
+        ) is expected_should_retry
 
 
 class TestExecuteAutomationPostponedIteration:

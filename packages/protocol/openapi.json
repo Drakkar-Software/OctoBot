@@ -1733,9 +1733,7 @@
         "description": "SignalBotConfiguration",
         "type": "object",
         "required": [
-          "configuration_type",
-          "sync_interval_with_open_trades_seconds",
-          "sync_interval_without_open_trades_seconds"
+          "configuration_type"
         ],
         "properties": {
           "configuration_type": {
@@ -1744,11 +1742,13 @@
           },
           "sync_interval_with_open_trades_seconds": {
             "type": "number",
-            "description": "Periodic tick interval when the automation has open trades (open orders and/or open positions)."
+            "description": "Periodic tick interval when the automation has open trades (open orders and/or open positions).",
+            "default": 3600
           },
           "sync_interval_without_open_trades_seconds": {
             "type": "number",
-            "description": "Periodic tick interval when the automation is idle (no open trades)."
+            "description": "Periodic tick interval when the automation is idle (no open trades).",
+            "default": 14400
           }
         }
       },
