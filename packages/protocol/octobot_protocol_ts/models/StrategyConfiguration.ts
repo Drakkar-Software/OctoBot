@@ -14,6 +14,7 @@ import { CopyConfiguration } from '../models/CopyConfiguration';
 import { GenericProcessConfiguration } from '../models/GenericProcessConfiguration';
 import { GenericWorkflowConfiguration } from '../models/GenericWorkflowConfiguration';
 import { MarketMakingConfiguration } from '../models/MarketMakingConfiguration';
+import { SignalBotConfiguration } from '../models/SignalBotConfiguration';
 import { TradingTentaclesConfiguration } from '../models/TradingTentaclesConfiguration';
 
 /**
@@ -21,7 +22,7 @@ import { TradingTentaclesConfiguration } from '../models/TradingTentaclesConfigu
  * Type
  * @export
  */
-export type StrategyConfiguration = CopyConfiguration | GenericProcessConfiguration | GenericWorkflowConfiguration | MarketMakingConfiguration | TradingTentaclesConfiguration;
+export type StrategyConfiguration = CopyConfiguration | GenericProcessConfiguration | GenericWorkflowConfiguration | MarketMakingConfiguration | SignalBotConfiguration | TradingTentaclesConfiguration;
 
 /**
 * @type StrategyConfigurationClass
@@ -35,9 +36,11 @@ export class StrategyConfigurationClass {
         "generic_process": "GenericProcessConfiguration",
         "generic_workflow": "GenericWorkflowConfiguration",
         "market_making": "MarketMakingConfiguration",
+        "signal_bot": "SignalBotConfiguration",
         "trading_tentacles": "TradingTentaclesConfiguration",
     };
 }
+
 
 
 

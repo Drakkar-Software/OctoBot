@@ -104,6 +104,8 @@ export * from "./RestartAutomationConfiguration";
 export * from "./Side";
 export * from "./SignalAutomationConfiguration";
 export * from "./SignalAutomationConfigurationSignalPayload";
+export * from "./SignalBotConfiguration";
+export * from "./SignalPriorityActionExecutionResult";
 export * from "./StopAutomationConfiguration";
 export * from "./StrategiesState";
 export * from "./Strategy";

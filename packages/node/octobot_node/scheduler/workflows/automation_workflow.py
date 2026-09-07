@@ -19,6 +19,7 @@ import typing
 import dbos
 
 import octobot_commons.logging
+import octobot_commons.errors
 
 import octobot_trading.errors
 
@@ -121,6 +122,7 @@ class AutomationWorkflow:
             errors.WorkflowError,
             octobot_flow.errors.ConfigurationError,
             copy_errors.OutdatedReferenceAccountError,
+            octobot_commons.errors.UnsupportedOperatorError,
         ))
 
     @staticmethod
