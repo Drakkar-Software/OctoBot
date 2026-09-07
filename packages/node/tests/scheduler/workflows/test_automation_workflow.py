@@ -186,13 +186,10 @@ def _automation_state_with_trade_count(trade_count: int) -> octobot_flow.entitie
 def _octobot_actions_job_mock_class_pending_priority_skipped(
     *,
     automation_inner_state: dict[str, typing.Any],
-    skip_error: typing.Union[
-        "octobot_flow.errors.PendingPriorityActionsSkippedError",
-        copy_errors.OutdatedReferenceAccountError,
-    ],
+    run_error: BaseException,
 ) -> mock.Mock:
     async def run_raises(*args, **kwargs):
-        raise skip_error
+        raise run_error
 
     def mock_job_factory(*args, **kwargs):
         job_mock = mock.Mock()
@@ -1380,7 +1377,7 @@ class TestPersistBeforeTrimTrades:
         skip_error = octobot_flow.errors.PendingPriorityActionsSkippedError("skipped")
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=skip_error,
+            run_error=skip_error,
         )
 
         with mock.patch.object(
@@ -1421,7 +1418,7 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         )
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=skip_error,
+            run_error=skip_error,
         )
         fixed_now = 1000.0
 
@@ -1465,7 +1462,7 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         skip_error = octobot_flow.errors.PendingPriorityActionsSkippedError("stale priority skipped")
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=skip_error,
+            run_error=skip_error,
         )
         mock_logger = mock.Mock()
         automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
@@ -1498,7 +1495,7 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         skip_error = octobot_flow.errors.PendingPriorityActionsSkippedError("stale priority skipped")
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=skip_error,
+            run_error=skip_error,
         )
         mock_logger = mock.Mock()
         automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
@@ -1540,7 +1537,7 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         skip_error = octobot_flow.errors.PendingPriorityActionsSkippedError("stale priority skipped")
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=skip_error,
+            run_error=skip_error,
         )
         actions_update = params.AutomationWorkflowActionUpdate(
             actions_type=octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
@@ -1574,6 +1571,354 @@ class TestExecuteIterationPendingPriorityActionsSkippedError:
         assert execution_result.priority_action_results[0].error_message == str(skip_error)
 
 
+class TestExecuteIterationUnsupportedOperatorErrorPriorityUserActions:
+    @pytest.fixture
+    def unsupported_operator_error(self):
+        return octobot_commons.errors.UnsupportedOperatorError("Unknown operator: dsl_placeholder")
+
+    @pytest.fixture
+    def priority_user_actions_update(self):
+        return params.AutomationWorkflowActionUpdate(
+            actions_type=octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
+            actions_details=[{"id": "action_cdabe58a-f704-4137-ac22-a80cb6fc29d6", "dsl_script": "dsl_placeholder()"}],
+            execution_result_callback=params.AutomationWorkflowExecutionResultCallback(
+                reply_workflow_id="ua-workflow-1",
+                user_action_id="ua-signal-1788789182951",
+            ),
+        ).to_dict(include_default_values=False)
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_postpones_iteration_at_scheduled_to_without_degraded_state(
+        self,
+        import_automation_workflow,
+        task,
+        unsupported_operator_error,
+        priority_user_actions_update,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            run_error=unsupported_operator_error,
+        )
+        fixed_now = 1000.0
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows.automation_workflow.time.time",
+            return_value=fixed_now,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
+            "persist_account_trading_from_iteration_state",
+        ) as persist_account_trading_mock:
+            result = await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs,
+                priority_user_actions_update,
+            )
+
+        persist_account_trading_mock.assert_not_called()
+        parsed_progress_status = params.ProgressStatus.model_validate(result["progress_status"])
+        assert parsed_progress_status.postponed_iteration is True
+        assert parsed_progress_status.next_step_at == scheduled_to
+        assert parsed_progress_status.error == octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value
+        assert parsed_progress_status.error_message == str(unsupported_operator_error)
+        assert result["has_next_actions"] is True
+        _assert_skip_postpone_preserves_state(task_content, result)
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_logs_unsupported_dsl_operator_error(
+        self,
+        import_automation_workflow,
+        task,
+        unsupported_operator_error,
+        priority_user_actions_update,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            run_error=unsupported_operator_error,
+        )
+        mock_logger = mock.Mock()
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            automation_workflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            await automation_workflow.execute_iteration(inputs, priority_user_actions_update)
+
+        mock_logger.error.assert_called_once_with(
+            f"Unsupported DSL operator in priority user action(s): {unsupported_operator_error}"
+        )
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_non_priority_unsupported_operator_still_raises(
+        self,
+        import_automation_workflow,
+        task,
+        unsupported_operator_error,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            run_error=unsupported_operator_error,
+        )
+
+        with mock.patch.object(octobot_flow_client, "OctoBotActionsJob", mock_octobot_actions_job_class):
+            with pytest.raises(octobot_commons.errors.UnsupportedOperatorError):
+                await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                    inputs,
+                    None,
+                )
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_postpone_sends_signal_execution_result_when_callback_present(
+        self,
+        import_automation_workflow,
+        task,
+        unsupported_operator_error,
+        priority_user_actions_update,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            run_error=unsupported_operator_error,
+        )
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.send_async = mock.AsyncMock()
+        with (
+            mock.patch.object(octobot_flow_client, "OctoBotActionsJob", mock_octobot_actions_job_class),
+            mock.patch.object(
+                octobot_node.scheduler.workflows.automation_workflow.SCHEDULER,
+                "INSTANCE",
+                mock_dbos_instance,
+            ),
+        ):
+            await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_iteration(
+                inputs,
+                priority_user_actions_update,
+            )
+
+        mock_dbos_instance.send_async.assert_awaited_once()
+        send_call = mock_dbos_instance.send_async.await_args
+        execution_result = params.AutomationWorkflowSignalExecutionResult.from_dict(send_call.args[1])
+        assert execution_result.iteration_error == octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value
+        assert execution_result.iteration_error_message == str(unsupported_operator_error)
+        assert execution_result.priority_action_results[0].error_status == (
+            octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value
+        )
+        assert execution_result.priority_action_results[0].error_message == str(unsupported_operator_error)
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_postponed_log_includes_internal_error_fields(
+        self,
+        import_automation_workflow,
+        task,
+        unsupported_operator_error,
+        priority_user_actions_update,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
+        task_content = json.dumps({"state": automation_inner_state})
+        task.content = task_content
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            run_error=unsupported_operator_error,
+        )
+        mock_logger = mock.Mock()
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+        fixed_now = 1000.0
+
+        with mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            automation_workflow,
+            "get_logger",
+            return_value=mock_logger,
+        ), mock.patch(
+            "octobot_node.scheduler.workflows.automation_workflow.time.time",
+            return_value=fixed_now,
+        ):
+            await automation_workflow.execute_iteration(inputs, priority_user_actions_update)
+
+        mock_logger.info.assert_any_call(
+            f"Iteration postponed (internal_error: {unsupported_operator_error}), "
+            f"retry scheduled in {scheduled_to - fixed_now:.0f} seconds"
+        )
+
+
+class TestExecuteAutomationUnsupportedOperatorErrorPriorityUserActions:
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_continues_when_priority_user_action_has_unsupported_operator(
+        self,
+        temp_dbos_scheduler,
+        import_automation_workflow,
+        parsed_inputs,
+    ):
+        scheduled_to = 5000.0
+        automation_inner_state = _automation_state_dict_with_scheduled_to(
+            scheduled_to, _sample_postpone_dag_actions()
+        )
+        task_content = json.dumps({"state": automation_inner_state})
+        parsed_inputs.task.content = task_content
+        inputs = parsed_inputs.to_dict(include_default_values=False)
+        unsupported_operator_error = octobot_commons.errors.UnsupportedOperatorError(
+            "Unknown operator: dsl_placeholder"
+        )
+        actions_update = params.AutomationWorkflowActionUpdate(
+            actions_type=octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
+            actions_details=[{"id": "action_cdabe58a-f704-4137-ac22-a80cb6fc29d6", "dsl_script": "dsl_placeholder()"}],
+        ).to_dict(include_default_values=False)
+        mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
+            automation_inner_state=automation_inner_state,
+            run_error=unsupported_operator_error,
+        )
+        mock_process = mock.AsyncMock(return_value=(True, params.AutomationWorkflowIterationResult(
+            progress_status=params.ProgressStatus(
+                latest_step="no action executed",
+                next_step_at=scheduled_to,
+                postponed_iteration=True,
+                error=octobot_flow.enums.ActionErrorStatus.INTERNAL_ERROR.value,
+                error_message=str(unsupported_operator_error),
+            ),
+            next_iteration_description=task_content,
+            has_next_actions=True,
+        )))
+
+        with mock.patch(
+            "asyncio.sleep", mock.AsyncMock()
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_wait_and_trigger_on_actions_update",
+            mock.AsyncMock(return_value=actions_update),
+        ), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_process_pending_priority_actions_and_reschedule",
+            mock_process,
+        ):
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            workflow_result = await handle.get_result()
+
+        assert workflow_result is None
+        mock_process.assert_awaited_once()
+
+
+class TestExecuteAutomationCrashSignalExecutionCallback:
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_execute_automation_sends_signal_execution_result_on_crash(
+        self,
+        temp_dbos_scheduler,
+        import_automation_workflow,
+        parsed_inputs,
+    ):
+        parsed_inputs.execution_time = 0
+        inputs = parsed_inputs.to_dict(include_default_values=False)
+        actions_update = params.AutomationWorkflowActionUpdate(
+            actions_type=octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
+            actions_details=[{"id": "action_signal_priority_ua-1_0", "dsl_script": "noop()"}],
+            execution_result_callback=params.AutomationWorkflowExecutionResultCallback(
+                reply_workflow_id="ua-workflow-1",
+                user_action_id="ua-1",
+            ),
+        ).to_dict(include_default_values=False)
+        workflow_input_error = errors.WorkflowInputError("invalid task type")
+        mock_octobot_actions_job_class, _ = _octobot_actions_job_mock_class(
+            run_side_effect=workflow_input_error,
+        )
+        mock_recv = mock.AsyncMock(return_value=actions_update)
+
+        with mock.patch(
+            "asyncio.sleep", mock.AsyncMock()
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_wait_and_trigger_on_actions_update",
+            mock_recv,
+        ), mock.patch.object(
+            octobot_flow_client,
+            "OctoBotActionsJob",
+            mock_octobot_actions_job_class,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_process_pending_priority_actions_and_reschedule",
+            mock.AsyncMock(),
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE,
+            "send_async",
+            mock.AsyncMock(),
+        ) as send_async_mock:
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            workflow_result = await handle.get_result()
+
+        parsed_output = _parse_automation_workflow_output(workflow_result)
+        assert parsed_output.error == (
+            octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+        )
+        send_async_mock.assert_awaited_once()
+        send_call = send_async_mock.await_args
+        assert send_call.args[0] == "ua-workflow-1"
+        execution_result = params.AutomationWorkflowSignalExecutionResult.from_dict(send_call.args[1])
+        assert execution_result.iteration_error == (
+            octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+        )
+        assert execution_result.iteration_error_message == str(workflow_input_error)
+        assert execution_result.priority_action_results[0].error_status == (
+            octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+        )
+
+
 class TestExecuteIterationOutdatedReferenceAccountError:
     @pytest.mark.asyncio
     @required_imports
@@ -1590,7 +1935,7 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         outdated_error = copy_errors.OutdatedReferenceAccountError("reference account is outdated")
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=outdated_error,
+            run_error=outdated_error,
         )
         fixed_now = 1000.0
 
@@ -1634,7 +1979,7 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         outdated_error = copy_errors.OutdatedReferenceAccountError("reference account is outdated")
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=outdated_error,
+            run_error=outdated_error,
         )
         mock_logger = mock.Mock()
         automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
@@ -1697,7 +2042,7 @@ class TestExecuteIterationOutdatedReferenceAccountError:
         inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(include_default_values=False)
         mock_octobot_actions_job_class = _octobot_actions_job_mock_class_pending_priority_skipped(
             automation_inner_state=automation_inner_state,
-            skip_error=skip_error,
+            run_error=skip_error,
         )
         mock_logger = mock.Mock()
         automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
@@ -2524,6 +2869,283 @@ class TestGetActionsSummary:
         mock_action.get_summary = mock.Mock(return_value="sum")
         octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._get_actions_summary([mock_action], minimal=True)
         mock_action.get_summary.assert_called_once_with(minimal=True)
+
+
+class TestApplyPreserveStatePostpone:
+    def test_sets_postpone_state_from_action_job(self, import_automation_workflow, parsed_inputs):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        parsed_inputs.task.content = '{"state": "preserved"}'
+        parsed_inputs.task.content_metadata = "meta"
+        action_job = mock.Mock()
+        action_job.description.state = {"automation": {}}
+        expected_next_step_at = 12345.0
+        with mock.patch.object(
+            octobot_flow_client.OctoBotActionsJobDescription,
+            "get_next_execution_time",
+            return_value=expected_next_step_at,
+        ) as mock_get_next_execution_time:
+            automation_workflow_module.AutomationWorkflow._apply_preserve_state_postpone(
+                action_job,
+                parsed_inputs,
+                iteration_state,
+                execution_error="pending_priority_actions_skipped",
+                execution_error_message="skipped",
+            )
+        mock_get_next_execution_time.assert_called_once_with(action_job.description.state)
+        assert iteration_state.postponed_iteration is True
+        assert iteration_state.next_step_at == expected_next_step_at
+        assert iteration_state.execution_error == "pending_priority_actions_skipped"
+        assert iteration_state.execution_error_message == "skipped"
+        assert iteration_state.next_iteration_description_override == '{"state": "preserved"}'
+        assert iteration_state.next_iteration_description_metadata_override == "meta"
+
+    def test_allows_none_execution_error(self, import_automation_workflow, parsed_inputs):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        action_job = mock.Mock()
+        action_job.description.state = {"automation": {}}
+        with mock.patch.object(
+            octobot_flow_client.OctoBotActionsJobDescription,
+            "get_next_execution_time",
+            return_value=999.0,
+        ):
+            automation_workflow_module.AutomationWorkflow._apply_preserve_state_postpone(
+                action_job,
+                parsed_inputs,
+                iteration_state,
+                execution_error=None,
+                execution_error_message="outdated reference",
+            )
+        assert iteration_state.postponed_iteration is True
+        assert iteration_state.execution_error is None
+        assert iteration_state.execution_error_message == "outdated reference"
+
+    def test_action_job_none_reraises_caught_exception(self, import_automation_workflow, parsed_inputs):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        try:
+            try:
+                raise ValueError("original error")
+            except ValueError:
+                automation_workflow_module.AutomationWorkflow._apply_preserve_state_postpone(
+                    None,
+                    parsed_inputs,
+                    iteration_state,
+                    execution_error="pending_priority_actions_skipped",
+                    execution_error_message="skipped",
+                )
+        except ValueError as caught_error:
+            assert str(caught_error) == "original error"
+        else:
+            pytest.fail("expected bare re-raise of caught exception")
+
+
+class TestLogActionJobErrorAndRaise:
+    def test_logs_and_reraises_same_exception(self, import_automation_workflow, parsed_inputs):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        test_error = RuntimeError("job failed")
+        mock_logger = mock.Mock()
+        with mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            with pytest.raises(RuntimeError, match="job failed"):
+                automation_workflow_module.AutomationWorkflow._log_action_job_error_and_raise(
+                    parsed_inputs,
+                    test_error,
+                )
+        mock_logger.exception.assert_called_once_with(
+            test_error, True, "Error while running automation job: job failed"
+        )
+
+
+class TestBuildIterationResult:
+    def test_success_path_uses_result_fields(self, import_automation_workflow):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        result = octobot_flow_client.OctoBotActionsJobResult()
+        result.maybe_encrypted_next_actions_description = "encrypted_description"
+        result.next_actions_description_encryption_metadata = "encryption_metadata"
+        result.has_next_actions = True
+        result.should_stop = False
+        built_result = automation_workflow_module.AutomationWorkflow._build_iteration_result(
+            executed_step="executed_step",
+            next_step="next_step",
+            remaining_steps=2,
+            iteration_state=iteration_state,
+            result=result,
+        )
+        assert built_result["progress_status"]["latest_step"] == "executed_step"
+        assert built_result["progress_status"]["next_step"] == "next_step"
+        assert built_result["progress_status"]["remaining_steps"] == 2
+        assert built_result["progress_status"].get("postponed_iteration", False) is False
+        assert built_result["next_iteration_description"] == "encrypted_description"
+        assert built_result["next_iteration_description_metadata"] == "encryption_metadata"
+        assert built_result["has_next_actions"] is True
+
+    def test_postponed_path_uses_iteration_state_overrides(self, import_automation_workflow):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        iteration_state = automation_workflow_module._IterationExecutionState(
+            execution_error="internal_error",
+            execution_error_message="postponed",
+            postponed_iteration=True,
+            next_step_at=42.0,
+            next_iteration_description_override="postponed_description",
+            next_iteration_description_metadata_override="postponed_metadata",
+        )
+        result = octobot_flow_client.OctoBotActionsJobResult()
+        result.maybe_encrypted_next_actions_description = "encrypted_description"
+        result.has_next_actions = False
+        built_result = automation_workflow_module.AutomationWorkflow._build_iteration_result(
+            executed_step="executed_step",
+            next_step=None,
+            remaining_steps=0,
+            iteration_state=iteration_state,
+            result=result,
+        )
+        assert built_result["progress_status"]["postponed_iteration"] is True
+        assert built_result["progress_status"]["error"] == "internal_error"
+        assert built_result["progress_status"]["error_message"] == "postponed"
+        assert built_result["progress_status"]["next_step_at"] == 42.0
+        assert built_result["next_iteration_description"] == "postponed_description"
+        assert built_result["next_iteration_description_metadata"] == "postponed_metadata"
+        assert built_result["has_next_actions"] is True
+
+
+class TestApplyProcessedActionErrors:
+    def test_copies_action_error_into_iteration_state(self, import_automation_workflow, parsed_inputs):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        mock_action = mock.Mock()
+        mock_action.error_status = "action_error"
+        mock_action.error_message = "action failed"
+        mock_action.id = "action_1"
+        mock_action.get_summary.return_value = "action summary"
+        result = octobot_flow_client.OctoBotActionsJobResult()
+        result.processed_actions = [mock_action]
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        with mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "get_logger",
+            return_value=mock.Mock(),
+        ):
+            with mock.patch.object(
+                automation_workflow_module.AutomationWorkflow,
+                "_get_actions_summary",
+                return_value="executed summary",
+            ):
+                executed_step = automation_workflow_module.AutomationWorkflow._apply_processed_action_errors(
+                    parsed_inputs,
+                    result,
+                    iteration_state,
+                    "no action executed",
+                )
+        assert executed_step == "executed summary"
+        assert iteration_state.execution_error == "action_error"
+        assert iteration_state.execution_error_message == "action failed"
+
+    def test_returns_unchanged_executed_step_when_no_processed_actions(
+        self,
+        import_automation_workflow,
+        parsed_inputs,
+    ):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        result = octobot_flow_client.OctoBotActionsJobResult()
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        executed_step = automation_workflow_module.AutomationWorkflow._apply_processed_action_errors(
+            parsed_inputs,
+            result,
+            iteration_state,
+            "no action executed",
+        )
+        assert executed_step == "no action executed"
+        assert iteration_state.execution_error is None
+
+
+class TestSendSignalExecutionResultSafe:
+    @pytest.mark.asyncio
+    async def test_delegates_to_maybe_send_with_explicit_args(
+        self,
+        import_automation_workflow,
+        parsed_inputs,
+    ):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        actions_update = {"actions_type": "user_actions", "actions_details": []}
+        processed_actions = [mock.Mock()]
+        with mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "_maybe_send_signal_execution_result",
+            mock.AsyncMock(),
+        ) as maybe_send_mock:
+            await automation_workflow_module.AutomationWorkflow._send_signal_execution_result_safe(
+                parsed_inputs,
+                actions_update,
+                processed_actions,
+                iteration_error="internal_error",
+                iteration_error_message="something failed",
+            )
+        maybe_send_mock.assert_awaited_once_with(
+            actions_update,
+            processed_actions,
+            iteration_error="internal_error",
+            iteration_error_message="something failed",
+        )
+
+    @pytest.mark.asyncio
+    async def test_swallows_send_failure_when_parsed_inputs_set(
+        self,
+        import_automation_workflow,
+        parsed_inputs,
+    ):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        mock_logger = mock.Mock()
+        with mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "_maybe_send_signal_execution_result",
+            mock.AsyncMock(side_effect=RuntimeError("send failed")),
+        ), mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "get_logger",
+            return_value=mock_logger,
+        ):
+            await automation_workflow_module.AutomationWorkflow._send_signal_execution_result_safe(
+                parsed_inputs,
+                None,
+                [],
+            )
+        mock_logger.exception.assert_called_once_with(
+            "Failed to send signal execution result callback",
+            exc_info=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_swallows_send_failure_uses_class_logger_when_parsed_inputs_none(
+        self,
+        import_automation_workflow,
+    ):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        mock_logger = mock.Mock()
+        with mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "_maybe_send_signal_execution_result",
+            mock.AsyncMock(side_effect=RuntimeError("send failed")),
+        ), mock.patch(
+            "octobot_commons.logging.get_logger",
+            return_value=mock_logger,
+        ) as get_logger_mock:
+            await automation_workflow_module.AutomationWorkflow._send_signal_execution_result_safe(
+                None,
+                None,
+                [],
+                iteration_error="exception_during_iteration",
+                iteration_error_message="crash",
+            )
+        get_logger_mock.assert_called_once_with(automation_workflow_module.AutomationWorkflow.__name__)
+        mock_logger.exception.assert_called_once_with(
+            "Failed to send signal execution result callback",
+            exc_info=True,
+        )
 
 
 class TestGetLogger:

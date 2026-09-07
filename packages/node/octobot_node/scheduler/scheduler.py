@@ -364,7 +364,8 @@ class Scheduler:
     ) -> typing.Optional[dbos.WorkflowStatus]:
         """
         Return the latest terminal (SUCCESS/ERROR) child workflow for ``parent_id`` that has
-        parseable automation output state, or None when no prior execution exists.
+        resolvable automation task content (workflow output state or input fallback), or None
+        when no prior execution exists.
         """
         matching_workflows = await self._get_parent_and_children_automation_workflows(
             user_id,
@@ -383,8 +384,7 @@ class Scheduler:
             reverse=True,
         )
         for workflow_status in sorted_workflows:
-            workflow_output = workflows_util.parse_automation_workflow_output(workflow_status)
-            if workflow_output is not None and workflow_output.state:
+            if workflows_util.get_resolved_automation_task(workflow_status) is not None:
                 return workflow_status
         return None
 
