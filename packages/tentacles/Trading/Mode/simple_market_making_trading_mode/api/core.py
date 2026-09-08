@@ -597,6 +597,14 @@ def get_aggregated_price_sources_by_exchange(
     return aggregated_sources_by_exchange
 
 
+def _is_usable_reference_price(reference_price: decimal.Decimal) -> bool:
+    return (
+        bool(reference_price)
+        and not reference_price.is_nan()
+        and reference_price > octobot_trading.constants.ZERO
+    )
+
+
 async def get_reference_price_by_pair(
     mm_config_by_pair_by_exchange: dict,
     mm_data_by_exchange: dict[str, dict[str, models.MarketMakingData]],
@@ -658,7 +666,7 @@ async def get_reference_price_by_pair(
             error_by_pair[pair] = f"{err}"
             continue
         reference_price = reference_price_by_pair[pair]
-        if (not reference_price or reference_price.is_nan()) and price_by_source:
+        if not _is_usable_reference_price(reference_price) and price_by_source:
             error_by_pair[pair] = (
                 f"{pair} reference price on {mm_exchange} can't be computed from the following "
                 f"price sources: {price_by_source}"
@@ -715,7 +723,7 @@ async def _get_price_and_predicted_order_book(
     )
     books_by_symbol = {}
     for pair, reference_price in reference_price_by_pair.items():
-        if not reference_price or reference_price.is_nan():
+        if not _is_usable_reference_price(reference_price):
             if pair not in error_by_pair:
                 error_by_pair[pair] = _get_unsupported_pair_message(pair, mm_exchange)
             continue
@@ -857,7 +865,7 @@ async def get_minimal_volume_by_symbol(
     )
     volumes_by_symbol = {}
     for pair, reference_price in reference_price_by_pair.items():
-        if not reference_price:
+        if not _is_usable_reference_price(reference_price):
             continue
         mm_data = mm_data_by_exchange[mm_exchange].get(pair)
         _adapt_volume_if_necessary(mm_data, reference_price)

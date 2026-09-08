@@ -478,6 +478,13 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
     REFERENCE_PRICE_INIT_DELAY = 60 # allow 60s before logging missing reference prices as error
     ORDERS_DESC = "market making"
 
+    @staticmethod
+    def _is_usable_reference_price(reference_price: decimal.Decimal) -> bool:
+        return (
+            bool(reference_price)
+            and not reference_price.is_nan()
+            and reference_price > trading_constants.ZERO
+        )
 
     def __init__(self, channel, config, trading_mode, exchange_manager):
         super().__init__(channel, config, trading_mode, exchange_manager)
@@ -676,7 +683,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
     ):
         # 1. get price from external source
         reference_price = await self._get_reference_price()
-        if not reference_price:
+        if not self._is_usable_reference_price(reference_price):
             method = self.logger.info if self.is_first_execution else self.logger.error
             method(
                 f"Skipped trigger: can't compute {self.symbol} reference price for"
@@ -776,7 +783,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         if require_data_refresh:
             # update reference price in case it changed
             reference_price = await self._get_reference_price()
-            if not reference_price:
+            if not self._is_usable_reference_price(reference_price):
                 self.logger.error(
                     f"Can't compute reference price for {self.exchange_manager.exchange_name}: after waiting "
                     f"for previous plan processing: {reference_price=}"
@@ -1298,7 +1305,11 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
 
     async def _on_reference_price_update(self):
         trigger = False
-        if reference_price := await self._get_reference_price():
+        reference_price = await self._get_reference_price()
+        if self._is_usable_reference_price(reference_price):
+            self.logger.warning(
+                f"Reference price update for {self.symbol} [{self.exchange_manager.exchange_name}]: {reference_price}"
+            )
             trigger = await self.on_new_reference_price(reference_price)
         if trigger:
             await self._ensure_market_making_orders(f"reference price update: {float(reference_price)}")
@@ -1426,4 +1437,11 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
                     f"No {exchange_manager.exchange_name} exchange symbol data for {self.symbol}, "
                     f"it's probably initializing"
                 )
+        if not self._is_usable_reference_price(price):
+            method = self.logger.info if self.is_first_execution else self.logger.error
+            method(
+                f"Skipped trigger: can't compute {self.symbol} reference price for"
+                f" {self.exchange_manager.exchange_name}: {price=}"
+            )
+            return trading_constants.ZERO
         return price

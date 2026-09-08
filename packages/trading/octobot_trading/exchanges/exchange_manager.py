@@ -220,7 +220,7 @@ class ExchangeManager(util.Initializable):
         if not ignore_orders_and_trades:
             if exchange_data.trades:
                 self.exchange_personal_data.trades_manager.initialize_from_exchange_data(exchange_data)
-            if exchange_data.orders_details.open_orders:
+            if exchange_data.orders_details.has_valid_open_orders():
                 await self.exchange_personal_data.orders_manager.initialize_from_exchange_data(exchange_data)
             if lock_chained_orders_funds:
                 await self.exchange_personal_data.portfolio_manager.initialize_from_exchange_data(exchange_data)

@@ -6,6 +6,8 @@
 #  License as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 
+import octobot_trading.constants as trading_constants
+import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
 
 
@@ -55,3 +57,40 @@ class TestExchangeAuthDetailsNonCredentialDict:
         assert non_credential_auth_details["incompatible_assets"] == [
             {"symbol": "BTC/USDT", "updated_at": 123.0},
         ]
+
+
+class TestOrdersDetailsHasValidOpenOrders:
+    @staticmethod
+    def _open_order(order_type: str | None = None) -> dict:
+        origin_value = {}
+        if order_type is not None:
+            origin_value[trading_enums.ExchangeConstantsOrderColumns.TYPE.value] = order_type
+        return {
+            trading_constants.STORAGE_ORIGIN_VALUE: origin_value,
+        }
+
+    def test_returns_false_when_no_open_orders(self):
+        orders_details = exchange_data_module.OrdersDetails()
+        assert orders_details.has_valid_open_orders() is False
+
+    def test_returns_false_when_first_order_missing_origin_value(self):
+        orders_details = exchange_data_module.OrdersDetails(open_orders=[{}])
+        assert orders_details.has_valid_open_orders() is False
+
+    def test_returns_false_when_type_missing(self):
+        orders_details = exchange_data_module.OrdersDetails(
+            open_orders=[self._open_order()],
+        )
+        assert orders_details.has_valid_open_orders() is False
+
+    def test_returns_false_when_type_empty(self):
+        orders_details = exchange_data_module.OrdersDetails(
+            open_orders=[self._open_order("")],
+        )
+        assert orders_details.has_valid_open_orders() is False
+
+    def test_returns_true_when_first_order_has_type(self):
+        orders_details = exchange_data_module.OrdersDetails(
+            open_orders=[self._open_order("limit")],
+        )
+        assert orders_details.has_valid_open_orders() is True
