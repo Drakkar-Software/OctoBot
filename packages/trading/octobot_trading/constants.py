@@ -155,6 +155,7 @@ FULL_CANDLE_HISTORY_EXCHANGES = [
     "hollaex",
     "htx",
     "kucoin",
+    "kucoineu",
     "okcoin",
     "okx",
     "myokx",
@@ -171,6 +172,7 @@ DEFAULT_FUTURE_EXCHANGES = ["binanceusdm", "bybit"]
 TESTED_EXCHANGES = [
     "binance",
     "kucoin",
+    "kucoineu",
     "kraken",
 ] + sorted([
     "binanceus",
