@@ -263,21 +263,48 @@ function BotCardBody({
   )
 }
 
+function executionsEqual(
+  prev: Task["executions"],
+  next: Task["executions"],
+): boolean {
+  if (prev === next) return true
+  if ((prev?.length ?? 0) !== (next?.length ?? 0)) return false
+  if (!prev || !next) return true
+  for (let i = 0; i < prev.length; i++) {
+    const a = prev[i]
+    const b = next[i]
+    if (
+      a.id !== b.id ||
+      a.name !== b.name ||
+      a.status !== b.status ||
+      a.actions !== b.actions ||
+      a.scheduled_at !== b.scheduled_at ||
+      a.completed_at !== b.completed_at ||
+      a.error !== b.error ||
+      a.error_message !== b.error_message
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
 function areTaskPropsEqual(
   prev: { task: Task; selected: boolean },
   next: { task: Task; selected: boolean },
 ): boolean {
+  if (prev.selected !== next.selected) return false
+  // react-query reuses unchanged objects, so identity is the common fast path.
+  if (prev.task === next.task) return true
   return (
-    prev.selected === next.selected &&
     prev.task.id === next.task.id &&
     prev.task.name === next.task.name &&
+    prev.task.is_encrypted === next.task.is_encrypted &&
     prev.task.error === next.task.error &&
     prev.task.error_message === next.task.error_message &&
-    prev.task.executions?.length === next.task.executions?.length &&
-    JSON.stringify(prev.task.executions) ===
-      JSON.stringify(next.task.executions) &&
-    JSON.stringify(prev.task.metadata?.child_octobot_process) ===
-      JSON.stringify(next.task.metadata?.child_octobot_process)
+    prev.task.metadata?.child_octobot_process?.web_port ===
+      next.task.metadata?.child_octobot_process?.web_port &&
+    executionsEqual(prev.task.executions, next.task.executions)
   )
 }
 

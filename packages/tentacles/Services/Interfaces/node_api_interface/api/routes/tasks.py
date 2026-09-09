@@ -82,10 +82,18 @@ async def get_tasks(
     current_user: CurrentUser,
     page: int = 1,
     limit: int = 100,
+    include_content: bool = False,
 ) -> typing.Any:
+    """
+    ``include_content`` is off by default: ``Task.content`` duplicates the active execution's
+    ``actions``, which is already returned in ``executions``. Callers that need the duplicate
+    (rather than reading it off the execution) can opt back in.
+    """
     limit = max(1, min(limit, _MAX_PAGE_LIMIT))
     user_id_filter = None if current_user.is_superuser else evm_to_user_id(current_user.email)
-    tasks_data = await octobot_node.scheduler.api.get_all_tasks(user_id=user_id_filter)
+    tasks_data = await octobot_node.scheduler.api.get_all_tasks(
+        user_id=user_id_filter, include_content=include_content
+    )
 
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
@@ -119,7 +127,9 @@ async def delete_tasks(
     requested_ids = [str(t) for t in taskIds]
     if not current_user.is_superuser:
         # Ownership check: only allow deleting own tasks
-        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(user_id=evm_to_user_id(current_user.email))
+        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(
+            user_id=evm_to_user_id(current_user.email), include_content=False
+        )
         owned_ids = {t.id for t in owned_tasks if t.id is not None}
         unauthorized = [tid for tid in requested_ids if tid not in owned_ids]
         if unauthorized:
@@ -144,7 +154,9 @@ async def cancel_tasks(
     current_user: CurrentUser,
 ) -> list[str]:
     if not current_user.is_superuser:
-        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(user_id=evm_to_user_id(current_user.email))
+        owned_tasks = await octobot_node.scheduler.api.get_all_tasks(
+            user_id=evm_to_user_id(current_user.email), include_content=False
+        )
         owned_ids = {t.id for t in owned_tasks if t.id is not None}
         unauthorized = [tid for tid in body.task_ids if tid not in owned_ids]
         if unauthorized:
