@@ -150,6 +150,7 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     def update(self, configuration: commons_configuration.Configuration):
+        self.config = configuration
         self.configuration_storage.set_configuration(configuration)
         self._wallet_backend = wallet_backend.WalletBackend(
             self._get_wallet_sync_storage(), self.logger

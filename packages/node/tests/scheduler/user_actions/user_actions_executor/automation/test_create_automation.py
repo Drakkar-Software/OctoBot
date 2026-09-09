@@ -1180,7 +1180,7 @@ class TestCreateAutomationExecutor:
             strategy_mock.return_value.get_item.return_value = stored
             actions = executor._create_automation_actions(user_action)
 
-        task = asyncio.run(executor._create_automation_task(user_action, actions))
+        resolved_automation_id, task = asyncio.run(executor._create_automation_task(user_action, actions))
         assert task.name == automation_name
         _assert_task_content_matches_actions(
             task=task,
@@ -1308,7 +1308,8 @@ class TestCreateAutomationExecutor:
             protocol_account=account,
             strategy_reference=strat_ref,
         )
-        task = asyncio.run(executor._create_automation_task(user_action, actions))
+        resolved_automation_id, task = asyncio.run(executor._create_automation_task(user_action, actions))
+        assert resolved_automation_id == configuration_automation_id
         assert task.id == configuration_automation_id
         _assert_task_content_matches_actions(
             task=task,
@@ -1381,7 +1382,7 @@ class TestCreateAutomationExecutor:
             protocol_account=_minimal_exchange_account(account_id="acc-1"),
             strategy_reference=strat_ref,
         )
-        task = asyncio.run(executor._create_automation_task(user_action, actions))
+        _resolved_automation_id, task = asyncio.run(executor._create_automation_task(user_action, actions))
         assert task.id != user_action.id
         _assert_task_content_matches_actions(
             task=task,
@@ -1453,4 +1454,37 @@ class TestCreateAutomationExecutor:
             result_channel="automation",
             expect_error_details=True,
             expected_error_message=protocol_models.AutomationActionResultErrorMessage.INVALID_AUTOMATION_ID,
+        )
+
+
+class TestCreateAutomationActionExecutorRecordNewAutomationCreated:
+    @pytest.mark.asyncio
+    async def test_calls_record_new_automation_created_on_success(self):
+        idx = trading_tentacles_test_utils.index_trading_configuration(
+            coins=[("BTC", 1.0)],
+            rebalance_trigger_min_percent=5.0,
+        )
+        strat_ref = _default_strategy_reference()
+        create_payload = protocol_models.CreateAutomationConfiguration(
+            action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
+            configuration=_automation_configuration(
+                name="metrics-automation",
+                strategy_reference=strat_ref,
+                account_id="acc-1",
+            ),
+        )
+        user_action = _user_action_with_context(action_id="ua-metrics", payload=create_payload)
+        executor = create_automation_executor.CreateAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        stored = _stored_strategy_matching_reference(strat_ref, idx)
+        with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
+            _STRATEGY_PROVIDER_INSTANCE_PATCH,
+        ) as strategy_mock, mock.patch(
+            "octobot.community.activity_analysis.record_new_automation_created",
+        ) as record_new_automation_mock:
+            _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
+            strategy_mock.return_value.get_item.return_value = stored
+            await executor.execute(user_action)
+        record_new_automation_mock.assert_called_once_with(
+            user_action.id,
+            stored,
         )

@@ -58,6 +58,8 @@ def test_setup_init_success(client):
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.activity_analysis.record_wallet_configured",
     ):
         with mock.patch("octobot_node.config.settings"):
             resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
@@ -68,6 +70,37 @@ def test_setup_init_success(client):
     )
 
 
+def test_setup_init_emits_node_wallet_configured(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = []
+    auth.create_wallet.return_value = mock.MagicMock(address=ADMIN_ADDRESS)
+    metrics_config = mock.MagicMock()
+    auth.config = metrics_config
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.activity_analysis.record_wallet_configured",
+    ) as record_wallet_configured_mock, mock.patch("octobot_node.config.settings"):
+        resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
+    assert resp.status_code == 200
+    record_wallet_configured_mock.assert_called_once_with()
+
+
+def test_setup_init_skips_wallet_milestone_on_409(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [{"address": ADMIN_ADDRESS, "is_admin": True}]
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.activity_analysis.record_wallet_configured",
+    ) as record_wallet_configured_mock:
+        resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
+    assert resp.status_code == 409
+    record_wallet_configured_mock.assert_not_called()
+
+
 def test_setup_init_with_private_key(client):
     pk = "a" * 64
     auth = mock.MagicMock()
@@ -76,6 +109,8 @@ def test_setup_init_with_private_key(client):
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.activity_analysis.record_wallet_configured",
     ):
         with mock.patch("octobot_node.config.settings"):
             resp = client.post(

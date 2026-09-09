@@ -39,14 +39,18 @@ def _minimal_config(
     *,
     metrics_enabled: bool = True,
     community: dict | None = None,
+    onboarding_state: dict | None = None,
 ) -> configuration.Configuration:
     user_root = tmp_path / commons_constants.USER_FOLDER
     user_root.mkdir()
     config_path = user_root / commons_constants.CONFIG_FILE
+    metrics_section = {
+        commons_constants.CONFIG_ENABLED_OPTION: metrics_enabled,
+    }
+    if onboarding_state is not None:
+        metrics_section[commons_constants.CONFIG_METRICS_ONBOARDING_STATE] = onboarding_state
     config_data = {
-        commons_constants.CONFIG_METRICS: {
-            commons_constants.CONFIG_ENABLED_OPTION: metrics_enabled,
-        },
+        commons_constants.CONFIG_METRICS: metrics_section,
         constants.CONFIG_COMMUNITY: community or {},
     }
     _write_config_file(str(config_path), config_data)
@@ -72,7 +76,7 @@ class TestActivityMetricsInitializeTracker:
     def test_delegates_metrics_enabled_to_tracker(self):
         config = mock.Mock()
         config.get_metrics_enabled.return_value = False
-        with mock.patch.object(activity_metrics_module.tracker, "init_sentry_tracker") as init_mock:
+        with mock.patch.object(activity_metrics_module.metrics_connector, "init_tracker") as init_mock:
             activity_metrics_module.ActivityMetrics.initialize_tracker(config)
         init_mock.assert_called_once_with(metrics_enabled=False)
 
@@ -82,86 +86,77 @@ class TestActivityMetricsSetupActivityTracking:
         config = _minimal_config(tmp_path, metrics_enabled=False)
         manager = _activity_metrics(config)
         with mock.patch.object(activity_metrics_module.bot_id_resolver, "ensure_activity_bot_id") as ensure_mock, \
-                mock.patch.object(activity_metrics_module.tracker, "update_tracker_bot_id") as update_mock, \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
+                mock.patch.object(activity_metrics_module.metrics_connector, "update_tracker_bot_id") as update_mock, \
+                mock.patch.object(activity_metrics_module.usage_metrics, "record_node_process_start") as record_mock:
             manager.setup_activity_tracking(enums.OctoBotDistribution.NODE)
         ensure_mock.assert_not_called()
         update_mock.assert_not_called()
-        track_mock.assert_not_called()
+        record_mock.assert_not_called()
 
-    def test_emits_node_first_start_for_node_distribution_when_bot_id_created(self, tmp_path):
+    def test_calls_record_node_process_start_for_node_distribution_when_bot_id_created(self, tmp_path):
         config = _minimal_config(tmp_path, metrics_enabled=True)
         manager = _activity_metrics(config)
         bot_id_resolution = bot_id_resolver.BotIdResolution("bot-id", True)
         with mock.patch.object(activity_metrics_module.bot_id_resolver, "ensure_activity_bot_id", mock.Mock(return_value=bot_id_resolution)), \
-                mock.patch.object(activity_metrics_module.tracker, "activity_tracking_is_active", mock.Mock(return_value=True)), \
-                mock.patch.object(activity_metrics_module.tracker, "update_tracker_bot_id") as update_mock, \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
+                mock.patch.object(activity_metrics_module.metrics_connector, "activity_tracking_is_active", mock.Mock(return_value=True)), \
+                mock.patch.object(activity_metrics_module.metrics_connector, "update_tracker_bot_id") as update_mock, \
+                mock.patch.object(activity_metrics_module.usage_metrics, "record_node_process_start") as record_mock:
             manager.setup_activity_tracking(enums.OctoBotDistribution.NODE)
         update_mock.assert_called_once_with("bot-id")
-        track_mock.assert_called_once()
-        assert track_mock.call_args.args[0] == "node_first_start"
+        record_mock.assert_called_once()
+        assert record_mock.call_args.kwargs["was_new_install"] is True
+        assert record_mock.call_args.kwargs["config"] is config
 
-    def test_does_not_emit_node_first_start_for_non_node_distribution(self, tmp_path):
+    def test_does_not_emit_node_process_start_for_non_node_distribution(self, tmp_path):
         config = _minimal_config(tmp_path, metrics_enabled=True)
         manager = _activity_metrics(config)
         bot_id_resolution = bot_id_resolver.BotIdResolution("bot-id", True)
         with mock.patch.object(activity_metrics_module.bot_id_resolver, "ensure_activity_bot_id", mock.Mock(return_value=bot_id_resolution)), \
-                mock.patch.object(activity_metrics_module.tracker, "activity_tracking_is_active", mock.Mock(return_value=True)), \
-                mock.patch.object(activity_metrics_module.tracker, "update_tracker_bot_id") as update_mock, \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
+                mock.patch.object(activity_metrics_module.metrics_connector, "activity_tracking_is_active", mock.Mock(return_value=True)), \
+                mock.patch.object(activity_metrics_module.metrics_connector, "update_tracker_bot_id") as update_mock, \
+                mock.patch.object(activity_metrics_module.usage_metrics, "record_node_process_start") as record_mock:
             manager.setup_activity_tracking(enums.OctoBotDistribution.DEFAULT)
         update_mock.assert_called_once_with("bot-id")
-        track_mock.assert_not_called()
+        record_mock.assert_not_called()
 
-    def test_does_not_emit_node_first_start_when_bot_id_already_exists(self, tmp_path):
+    def test_does_not_emit_node_process_start_when_tracker_inactive(self, tmp_path):
         config = _minimal_config(tmp_path, metrics_enabled=True)
         manager = _activity_metrics(config)
         bot_id_resolution = bot_id_resolver.BotIdResolution("bot-id", False)
         with mock.patch.object(activity_metrics_module.bot_id_resolver, "ensure_activity_bot_id", mock.Mock(return_value=bot_id_resolution)), \
-                mock.patch.object(activity_metrics_module.tracker, "activity_tracking_is_active", mock.Mock(return_value=True)), \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
+                mock.patch.object(activity_metrics_module.metrics_connector, "activity_tracking_is_active", mock.Mock(return_value=False)), \
+                mock.patch.object(activity_metrics_module.usage_metrics, "record_node_process_start") as record_mock:
             manager.setup_activity_tracking(enums.OctoBotDistribution.NODE)
-        track_mock.assert_not_called()
+        record_mock.assert_not_called()
 
-    def test_deferred_node_first_start_after_metrics_enabled(self, tmp_path):
+    def test_deferred_node_process_start_after_metrics_enabled(self, tmp_path):
         config = _minimal_config(tmp_path, metrics_enabled=False)
         manager = _activity_metrics(config)
         with mock.patch.object(activity_metrics_module.bot_id_resolver, "ensure_activity_bot_id") as ensure_mock, \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
+                mock.patch.object(activity_metrics_module.usage_metrics, "record_node_process_start") as record_mock:
             manager.setup_activity_tracking(enums.OctoBotDistribution.NODE)
         ensure_mock.assert_not_called()
-        track_mock.assert_not_called()
+        record_mock.assert_not_called()
 
         config.config[commons_constants.CONFIG_METRICS][commons_constants.CONFIG_ENABLED_OPTION] = True
         manager.enabled = True
         bot_id_resolution = bot_id_resolver.BotIdResolution("bot-id", True)
         with mock.patch.object(activity_metrics_module.bot_id_resolver, "ensure_activity_bot_id", mock.Mock(return_value=bot_id_resolution)), \
-                mock.patch.object(activity_metrics_module.tracker, "activity_tracking_is_active", mock.Mock(return_value=True)), \
-                mock.patch.object(activity_metrics_module.tracker, "update_tracker_bot_id"), \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
+                mock.patch.object(activity_metrics_module.metrics_connector, "activity_tracking_is_active", mock.Mock(return_value=True)), \
+                mock.patch.object(activity_metrics_module.metrics_connector, "update_tracker_bot_id"), \
+                mock.patch.object(activity_metrics_module.usage_metrics, "record_node_process_start") as record_mock:
             manager.setup_activity_tracking(enums.OctoBotDistribution.NODE)
-        track_mock.assert_called_once()
-
-
-class TestActivityMetricsReportChildOctobotFirstStart:
-    def test_noop_when_tracker_bot_id_missing(self):
-        with mock.patch.object(activity_metrics_module.tracker, "has_tracker_bot_id", mock.Mock(return_value=False)), \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
-            activity_metrics_module.ActivityMetrics.report_child_octobot_first_start()
-        track_mock.assert_not_called()
-
-    def test_reports_child_start_when_tracker_bot_id_set(self):
-        with mock.patch.object(activity_metrics_module.tracker, "has_tracker_bot_id", mock.Mock(return_value=True)), \
-                mock.patch.object(activity_metrics_module.tracker, "track_usage_event") as track_mock:
-            activity_metrics_module.ActivityMetrics.report_child_octobot_first_start()
-        track_mock.assert_called_once_with("child_octobot_first_start")
+        record_mock.assert_called_once()
 
 
 class TestActivityMetricsStartCommunityTask:
     @pytest.mark.asyncio
-    async def test_runs_authenticated_bot_update_loop(self, tmp_path):
-        config = _minimal_config(tmp_path, metrics_enabled=True)
+    async def test_runs_stuck_evaluator_and_authenticated_bot_update_loop(self, tmp_path):
+        config = _minimal_config(
+            tmp_path,
+            metrics_enabled=True,
+            onboarding_state={"reconcile_automations_pending": False},
+        )
         manager = _activity_metrics(config)
         sleep_calls = 0
 
@@ -171,11 +166,201 @@ class TestActivityMetricsStartCommunityTask:
             if sleep_calls >= 2:
                 manager.keep_running = False
 
-        with mock.patch.object(manager, "_update_authenticated_bot", mock.AsyncMock()) as update_mock, \
+        with mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "ensure_onboarding_state_for_config",
+        ), mock.patch.object(
+            manager,
+            "_update_authenticated_bot",
+            mock.AsyncMock(),
+        ) as update_mock, \
+                mock.patch.object(
+                    activity_metrics_module.usage_metrics,
+                    "complete_reconcile_automations",
+                    mock.AsyncMock(),
+                ) as reconcile_mock, \
+                mock.patch.object(
+                    activity_metrics_module.onboarding_metrics,
+                    "run_stuck_no_external_interface_background_evaluator",
+                ) as stuck_mock, \
                 mock.patch.object(activity_metrics_module.common_constants, "TIMER_BETWEEN_METRICS_UPTIME_UPDATE", 0), \
                 mock.patch.object(activity_metrics_module.asyncio, "sleep", side_effect=sleep_side_effect):
             await manager.start_community_task()
+        assert reconcile_mock.await_count >= 2
+        stuck_mock.assert_called()
         update_mock.assert_called()
+
+
+class TestActivityMetricsOnboardingInit:
+    @pytest.mark.asyncio
+    async def test_calls_ensure_onboarding_state_before_loop(self, tmp_path):
+        config = _minimal_config(tmp_path, metrics_enabled=True)
+        manager = _activity_metrics(config)
+
+        async def sleep_side_effect(*_args, **_kwargs):
+            manager.keep_running = False
+
+        ensure_mock = mock.Mock()
+        reconcile_mock = mock.AsyncMock()
+
+        async def reconcile_side_effect(*_args, **_kwargs):
+            ensure_mock.assert_called_once_with(config)
+
+        reconcile_mock.side_effect = reconcile_side_effect
+
+        with mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "ensure_onboarding_state_for_config",
+            ensure_mock,
+        ), mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "complete_reconcile_automations",
+            reconcile_mock,
+        ), mock.patch.object(
+            activity_metrics_module.asyncio,
+            "sleep",
+            side_effect=sleep_side_effect,
+        ):
+            await manager.start_community_task()
+        ensure_mock.assert_called_once_with(config)
+        reconcile_mock.assert_awaited_once()
+
+
+class TestActivityMetricsReconcileRetry:
+    @pytest.mark.asyncio
+    async def test_uses_short_sleep_while_reconcile_pending(self, tmp_path):
+        config = _minimal_config(
+            tmp_path,
+            metrics_enabled=True,
+            onboarding_state={"reconcile_automations_pending": True},
+        )
+        manager = _activity_metrics(config)
+        sleep_durations: list[float] = []
+
+        async def sleep_side_effect(duration, *_args, **_kwargs):
+            sleep_durations.append(duration)
+            manager.keep_running = False
+
+        with mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "ensure_onboarding_state_for_config",
+        ), mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "complete_reconcile_automations",
+            mock.AsyncMock(),
+        ), mock.patch.object(
+            activity_metrics_module.constants,
+            "METRICS_RECONCILE_RETRY_SECONDS",
+            15.0,
+        ), mock.patch.object(
+            activity_metrics_module.asyncio,
+            "sleep",
+            side_effect=sleep_side_effect,
+        ):
+            await manager.start_community_task()
+        assert sleep_durations == [15.0]
+        assert manager._reconcile_retry_attempts == 1
+
+    @pytest.mark.asyncio
+    async def test_resets_retry_counter_when_pending_clears(self, tmp_path):
+        config = _minimal_config(
+            tmp_path,
+            metrics_enabled=True,
+            onboarding_state={"reconcile_automations_pending": True},
+        )
+        manager = _activity_metrics(config)
+        sleep_durations: list[float] = []
+        reconcile_calls = 0
+
+        async def reconcile_side_effect(*_args, **_kwargs):
+            nonlocal reconcile_calls
+            reconcile_calls += 1
+            if reconcile_calls >= 2:
+                activity_metrics_module.onboarding_metrics.get_onboarding_state(
+                    config,
+                ).reconcile_automations_pending = False
+
+        async def sleep_side_effect(duration, *_args, **_kwargs):
+            sleep_durations.append(duration)
+            if len(sleep_durations) >= 2:
+                manager.keep_running = False
+
+        with mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "ensure_onboarding_state_for_config",
+        ), mock.patch.object(
+            activity_metrics_module.usage_metrics,
+            "complete_reconcile_automations",
+            mock.AsyncMock(side_effect=reconcile_side_effect),
+        ), mock.patch.object(
+            activity_metrics_module.constants,
+            "METRICS_RECONCILE_RETRY_SECONDS",
+            15.0,
+        ), mock.patch.object(
+            activity_metrics_module.common_constants,
+            "TIMER_BETWEEN_METRICS_UPTIME_UPDATE",
+            999.0,
+        ), mock.patch.object(
+            activity_metrics_module.asyncio,
+            "sleep",
+            side_effect=sleep_side_effect,
+        ):
+            await manager.start_community_task()
+        assert sleep_durations[:2] == [15.0, 999.0]
+        assert manager._reconcile_retry_attempts == 0
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_long_sleep_after_max_retries(self, tmp_path):
+        config = _minimal_config(
+            tmp_path,
+            metrics_enabled=True,
+            onboarding_state={"reconcile_automations_pending": True},
+        )
+        manager = _activity_metrics(config)
+        sleep_durations: list[float] = []
+
+        async def sleep_side_effect(duration, *_args, **_kwargs):
+            sleep_durations.append(duration)
+            if len(sleep_durations) >= 3:
+                manager.keep_running = False
+
+        with mock.patch.object(constants, "ENABLE_ACTIVITY_METRICS_DEBUG_LOGS", True), \
+                mock.patch.object(
+                    activity_metrics_module.usage_metrics,
+                    "ensure_onboarding_state_for_config",
+                ), \
+                mock.patch.object(
+                    activity_metrics_module.metrics_debug,
+                    "log_activity",
+                ) as log_mock, \
+                mock.patch.object(
+                    activity_metrics_module.usage_metrics,
+                    "complete_reconcile_automations",
+                    mock.AsyncMock(),
+                ), mock.patch.object(
+                    activity_metrics_module.constants,
+                    "METRICS_RECONCILE_RETRY_SECONDS",
+                    10.0,
+                ), mock.patch.object(
+                    activity_metrics_module.constants,
+                    "METRICS_RECONCILE_MAX_RETRY_ATTEMPTS",
+                    2,
+                ), mock.patch.object(
+                    activity_metrics_module.common_constants,
+                    "TIMER_BETWEEN_METRICS_UPTIME_UPDATE",
+                    500.0,
+                ), mock.patch.object(
+                    activity_metrics_module.asyncio,
+                    "sleep",
+                    side_effect=sleep_side_effect,
+                ):
+            await manager.start_community_task()
+        assert sleep_durations == [10.0, 10.0, 500.0]
+        log_mock.assert_any_call(
+            "reconcile_skipped",
+            reason="max_retries_exceeded",
+            retry_attempts=2,
+        )
 
 
 class TestActivityMetricsStopTask:

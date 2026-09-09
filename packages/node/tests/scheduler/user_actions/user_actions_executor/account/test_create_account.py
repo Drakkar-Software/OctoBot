@@ -229,3 +229,104 @@ class TestCreateAccountActionExecutorExecute:
             expect_error_details=True,
             expected_error_message=protocol_models.AccountActionResultErrorMessage.ACCOUNT_AUTHENTICATION_DETAILS_NOT_FOUND,
         )
+
+
+class TestCreateAccountActionExecutorRecordAccountValidated:
+    @pytest.mark.asyncio
+    async def test_emits_account_validated_via_usage_metrics(self):
+        account_model = account_executor_test_utils.minimal_exchange_account(
+            account_id="validated-acc",
+            is_simulated=False,
+        )
+        validated_account = account_model.model_copy(
+            update={
+                "state": protocol_models.AccountState(
+                    status=protocol_models.AccountStatus.VALID,
+                ),
+            },
+        )
+        inner = protocol_models.CreateAccountConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
+            configuration=account_model,
+        )
+        user_action = protocol_models.UserAction(
+            id="ua-validated",
+            configuration=account_executor_test_utils.wrap_configuration(inner),
+        )
+        provider_mock = mock.Mock()
+        trading_provider_mock = mock.Mock()
+        metrics_config = mock.Mock()
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountTradingProvider.instance",
+                return_value=trading_provider_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module,
+                "update_account_state",
+                new=mock.AsyncMock(return_value=validated_account),
+            ),
+            mock.patch(
+                "octobot.community.activity_analysis.record_account_validated",
+            ) as record_account_validated_mock,
+        ):
+            executor = create_account_executor.CreateAccountActionExecutor(
+                account_executor_test_utils.WALLET_ADDRESS,
+            )
+            await executor.execute(user_action)
+        record_account_validated_mock.assert_called_once_with(
+            validated_account,
+            account_executor_test_utils.WALLET_ADDRESS,
+        )
+
+    @pytest.mark.asyncio
+    async def test_invalid_real_emits_no_account_validated(self):
+        account_model = account_executor_test_utils.minimal_exchange_account(
+            account_id="invalid-acc",
+            is_simulated=False,
+        )
+        invalid_account = account_model.model_copy(
+            update={
+                "state": protocol_models.AccountState(
+                    status=protocol_models.AccountStatus.INVALID,
+                ),
+            },
+        )
+        inner = protocol_models.CreateAccountConfiguration(
+            action_type=protocol_models.UserActionType.ACCOUNT_CREATE,
+            configuration=account_model,
+        )
+        user_action = protocol_models.UserAction(
+            id="ua-invalid",
+            configuration=account_executor_test_utils.wrap_configuration(inner),
+        )
+        provider_mock = mock.Mock()
+        trading_provider_mock = mock.Mock()
+        metrics_config = mock.Mock()
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountTradingProvider.instance",
+                return_value=trading_provider_mock,
+            ),
+            mock.patch.object(
+                account_state_updater_module,
+                "update_account_state",
+                new=mock.AsyncMock(return_value=invalid_account),
+            ),
+            mock.patch(
+                "octobot.community.activity_analysis.record_account_validated",
+            ) as record_account_validated_mock,
+        ):
+            executor = create_account_executor.CreateAccountActionExecutor(
+                account_executor_test_utils.WALLET_ADDRESS,
+            )
+            await executor.execute(user_action)
+        record_account_validated_mock.assert_called_once()

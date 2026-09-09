@@ -1,21 +1,9 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
-#
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  OctoBot is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import mock
 import pytest
 
+import octobot.community.activity_analysis.metric_definitions as metric_definitions
 import octobot.community.errors_upload.sentry_tracker as sentry_tracker
 import octobot.constants as constants
 
@@ -24,11 +12,11 @@ import octobot.constants as constants
 def reset_sentry_tracker_state():
     sentry_tracker._activity_tracking_active = False
     sentry_tracker._sentry_initialized = False
-    sentry_tracker._tracker_bot_id_set = False
+    sentry_tracker._current_bot_id = None
     yield
     sentry_tracker._activity_tracking_active = False
     sentry_tracker._sentry_initialized = False
-    sentry_tracker._tracker_bot_id_set = False
+    sentry_tracker._current_bot_id = None
 
 
 class TestInitSentryTracker:
@@ -59,14 +47,53 @@ class TestInitSentryTracker:
         init_mock.assert_not_called()
 
 
-class TestTrackUsageEvent:
-    def test_emits_metric(self):
+class TestTrackUsageCount:
+    def test_emits_metric_from_dataclass(self):
+        attributes = metric_definitions.NodeProcessStartAttributes(
+            wallet_configured=False,
+            new_install=True,
+            onboarding_complete=False,
+            distribution="node",
+            version="1.0.0",
+        )
         with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "count") as count_mock:
-            sentry_tracker.track_usage_event("node_first_start", distribution="node")
+            sentry_tracker.track_usage_count(attributes)
         count_mock.assert_called_once_with(
-            "octobot.usage",
+            metric_definitions.SentryMetricNames.USAGE.value,
             1,
-            attributes={"event": "node_first_start", "distribution": "node"},
+            attributes=attributes.to_sentry_dict(None),
+        )
+
+    def test_includes_bot_id_when_tracker_set(self):
+        sentry_tracker.update_tracker_bot_id("bot-id")
+        attributes = metric_definitions.NodeProcessStartAttributes(
+            wallet_configured=False,
+            new_install=True,
+            onboarding_complete=False,
+            distribution="node",
+            version="1.0.0",
+        )
+        with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "count") as count_mock:
+            sentry_tracker.track_usage_count(attributes)
+        count_mock.assert_called_once_with(
+            metric_definitions.SentryMetricNames.USAGE.value,
+            1,
+            attributes=attributes.to_sentry_dict("bot-id"),
+        )
+
+
+class TestTrackOnboardingDurationGauge:
+    def test_emits_gauge_with_bot_id(self):
+        sentry_tracker.update_tracker_bot_id("bot-id")
+        attributes = metric_definitions.FirstAutomationStartedAttributes(
+            octobot_kind=metric_definitions.OctobotKind.MANUAL,
+        )
+        with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "gauge") as gauge_mock:
+            sentry_tracker.track_onboarding_duration_gauge(42.5, attributes)
+        gauge_mock.assert_called_once_with(
+            metric_definitions.SentryMetricNames.ONBOARDING_DURATION.value,
+            42.5,
+            attributes=attributes.to_sentry_dict("bot-id"),
         )
 
 
@@ -87,3 +114,12 @@ class TestHasTrackerBotId:
     def test_true_after_update(self):
         sentry_tracker.update_tracker_bot_id("bot-id")
         assert sentry_tracker.has_tracker_bot_id() is True
+
+
+class TestGetTrackerBotId:
+    def test_none_when_not_set(self):
+        assert sentry_tracker.get_tracker_bot_id() is None
+
+    def test_returns_bot_id_after_update(self):
+        sentry_tracker.update_tracker_bot_id("bot-id")
+        assert sentry_tracker.get_tracker_bot_id() == "bot-id"

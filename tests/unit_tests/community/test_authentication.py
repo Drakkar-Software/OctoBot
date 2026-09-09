@@ -87,6 +87,24 @@ def test_constructor():
         assert auth.initialized_event is None
 
 
+class Test_update:
+    def test_sets_config_to_match_storage_configuration(self):
+        original_config = octobot_commons.configuration.Configuration("", "")
+        edited_config = octobot_commons.configuration.Configuration("", "")
+        with mock.patch.object(
+            community.CommunityAuthentication,
+            "_create_client",
+            return_value=mock.Mock(),
+        ):
+            auth = community.CommunityAuthentication(
+                config=original_config,
+                use_as_singleton=False,
+            )
+        auth.update(edited_config)
+        assert auth.config is edited_config
+        assert auth.configuration_storage.sync_storage._configuration is edited_config
+
+
 @pytest.mark.asyncio
 async def test_login(auth):
     resp_mock = mock.Mock()

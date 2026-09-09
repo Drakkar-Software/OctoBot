@@ -26,6 +26,13 @@ from octobot.community.activity_analysis.config_path_binding import (
     get_bound_config_path,
     path_binding_is_stale,
 )
+import octobot.community.activity_analysis.onboarding_metrics as onboarding_metrics_module
+import octobot.community.activity_analysis.usage_metrics as usage_metrics_module
+
+record_user_action_entry = onboarding_metrics_module.record_user_action_entry
+record_wallet_configured = onboarding_metrics_module.record_wallet_configured
+record_account_validated = usage_metrics_module.record_account_validated
+record_new_automation_created = usage_metrics_module.record_new_automation_created
 
 __all__ = [
     "ActivityMetrics",
@@ -36,4 +43,8 @@ __all__ = [
     "fingerprint_config_path",
     "get_bound_config_path",
     "path_binding_is_stale",
+    "record_user_action_entry",
+    "record_wallet_configured",
+    "record_account_validated",
+    "record_new_automation_created",
 ]

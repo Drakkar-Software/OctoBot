@@ -14,13 +14,23 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import octobot_protocol.models as protocol_models
+
+import octobot.community.activity_analysis as activity_analysis
+
+import octobot_node.enums as octobot_node_enums
 import octobot_node.scheduler.tasks as scheduler_tasks
 
 
 async def execute_user_action(
     user_action: protocol_models.UserAction,
     user_id: str,
+    *,
+    source: octobot_node_enums.UserActionSource = octobot_node_enums.UserActionSource.SYNC,
 ) -> None:
+    activity_analysis.record_user_action_entry(
+        user_action,
+        source=source.value,
+    )
     await scheduler_tasks.trigger_user_action_workflow(
         user_action, user_id
     )

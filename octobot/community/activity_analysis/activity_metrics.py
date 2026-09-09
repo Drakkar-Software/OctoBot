@@ -23,7 +23,10 @@ import octobot_commons.constants as common_constants
 import octobot_trading.api as trading_api
 
 import octobot.community.activity_analysis.bot_id_resolver as bot_id_resolver
-import octobot.community.errors_upload.sentry_tracker as tracker
+import octobot.community.activity_analysis.onboarding_metrics as onboarding_metrics
+import octobot.community.activity_analysis.usage_metrics as usage_metrics
+import octobot.community.activity_analysis.metrics_connector as metrics_connector
+import octobot.community.activity_analysis.metrics_debug as metrics_debug
 import octobot.constants as constants
 import octobot.enums as enums
 
@@ -36,10 +39,11 @@ class ActivityMetrics:
         self.enabled = constants.IS_CLOUD_ENV or self.edited_config.get_metrics_enabled()
         self.logger = logging.get_logger(self.__class__.__name__)
         self.keep_running = True
+        self._reconcile_retry_attempts = 0
 
     @staticmethod
     def initialize_tracker(config: configuration.Configuration) -> None:
-        tracker.init_sentry_tracker(metrics_enabled=config.get_metrics_enabled())
+        metrics_connector.init_tracker(metrics_enabled=config.get_metrics_enabled())
 
     @staticmethod
     def clear_activity_bot_id(config: configuration.Configuration) -> None:
@@ -51,35 +55,53 @@ class ActivityMetrics:
         if not self.enabled:
             return
         resolution = bot_id_resolver.ensure_activity_bot_id(self.edited_config)
-        if tracker.activity_tracking_is_active():
-            tracker.update_tracker_bot_id(resolution.bot_id)
-            if distribution is enums.OctoBotDistribution.NODE and resolution.was_created:
-                tracker.track_usage_event(
-                    "node_first_start",
-                    distribution="node",
-                    version=constants.LONG_VERSION,
-                )
-
-    @staticmethod
-    def report_child_octobot_first_start() -> None:
-        if not tracker.has_tracker_bot_id():
-            return
-        tracker.track_usage_event("child_octobot_first_start")
+        if metrics_connector.activity_tracking_is_active():
+            metrics_connector.update_tracker_bot_id(resolution.bot_id)
+        if distribution is enums.OctoBotDistribution.NODE and metrics_connector.activity_tracking_is_active():
+            usage_metrics.record_node_process_start(
+                distribution.value,
+                was_new_install=resolution.was_created,
+                config=self.edited_config,
+            )
 
     async def start_community_task(self):
         if not self.enabled:
             return
+        usage_metrics.ensure_onboarding_state_for_config(self.edited_config)
         try:
             while self.keep_running:
-                await asyncio.sleep(common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE)
+                sleep_seconds = await self._run_reconcile_and_get_loop_sleep_seconds()
+                if self.enabled:
+                    onboarding_metrics.run_stuck_no_external_interface_background_evaluator(
+                        self.edited_config
+                    )
                 try:
                     await self._update_authenticated_bot()
                 except Exception as err:
                     self.logger.debug(f"Exception when handling community data : {err}")
+                await asyncio.sleep(sleep_seconds)
         except asyncio.CancelledError:
             pass
         except Exception as err:
             self.logger.debug(f"Exception when handling community registration: {err}")
+
+    async def _run_reconcile_and_get_loop_sleep_seconds(self) -> float:
+        await usage_metrics.complete_reconcile_automations(self.edited_config)
+        pending = onboarding_metrics.get_onboarding_state(
+            self.edited_config,
+        ).reconcile_automations_pending
+        if not pending:
+            self._reconcile_retry_attempts = 0
+            return common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE
+        if self._reconcile_retry_attempts < constants.METRICS_RECONCILE_MAX_RETRY_ATTEMPTS:
+            self._reconcile_retry_attempts += 1
+            return constants.METRICS_RECONCILE_RETRY_SECONDS
+        metrics_debug.log_activity(
+            "reconcile_skipped",
+            reason="max_retries_exceeded",
+            retry_attempts=self._reconcile_retry_attempts,
+        )
+        return common_constants.TIMER_BETWEEN_METRICS_UPTIME_UPDATE
 
     async def stop_task(self):
         self.logger.debug("Stopping ...")

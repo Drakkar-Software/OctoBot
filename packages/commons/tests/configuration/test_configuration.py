@@ -17,11 +17,13 @@ import os
 import shutil
 import json
 import copy
+import threading
 import pytest
 import mock
 import octobot_commons.errors as errors
 import octobot_commons.json_util
 import octobot_commons.configuration as configuration
+import octobot_commons.configuration.config_file_manager as config_file_manager_module
 import octobot_commons.profiles as profiles
 import octobot_commons.profiles.backends as profile_backends_module
 import octobot_commons.profiles.profile_data as profile_data_module
@@ -766,6 +768,40 @@ def test_get_config_without_profile_elements(config):
         "plip": True,
         next(iter(profiles.Profile.PARTIALLY_MANAGED_ELEMENTS)): "tt"
     }
+
+
+class TestCopyUtilOnSaveFilter:
+    def test_raises_copy_error_when_config_contains_non_deepcopyable_value(self, config):
+        config.config = {"metrics": {"runtime": threading.Lock()}}
+        with pytest.raises(errors.CopyError) as raised_error:
+            config._get_config_without_profile_elements()
+        assert "metrics.runtime" in str(raised_error.value)
+
+
+class TestCopyUtilOnRead:
+    def test_raises_copy_error_when_read_config_contains_non_deepcopyable_value(self, config):
+        loaded_config = {"metrics": {"runtime": threading.Lock()}}
+        with mock.patch.object(
+            config_file_manager_module,
+            "load",
+            mock.Mock(return_value=loaded_config),
+        ):
+            with pytest.raises(errors.CopyError) as raised_error:
+                config.read(activate_profile=False)
+        assert "metrics.runtime" in str(raised_error.value)
+
+
+class TestCopyUtilOnProfileMerge:
+    def test_raises_copy_error_when_profile_managed_element_contains_non_deepcopyable_value(
+        self, config
+    ):
+        config.profile = _load_test_profile(config)
+        managed_element = profiles.Profile.FULLY_MANAGED_ELEMENTS[0]
+        config.profile.config[managed_element] = {"runtime": threading.Lock()}
+        config.config = {}
+        with pytest.raises(errors.CopyError) as raised_error:
+            config._generate_config_from_user_config_and_profile()
+        assert str(managed_element) in str(raised_error.value)
 
 
 class TestConfigurationReadonlyProfileOverlay:

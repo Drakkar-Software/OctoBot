@@ -46,6 +46,7 @@ derive_user_id = auth.derive_user_id
 import octobot_protocol.models as protocol_models
 
 import octobot_node.protocol.user_actions as user_actions_protocol
+import octobot_node.enums as octobot_node_enums
 import octobot_node.protocol.user_data as user_data_protocol
 import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.accounts as accounts_protocol
@@ -147,7 +148,11 @@ async def _user_actions_after_write(event: WriteEvent) -> None:
     if action is None:
         return
     try:
-        await user_actions_protocol.execute_user_action(action, identity)
+        await user_actions_protocol.execute_user_action(
+            action,
+            identity,
+            source=octobot_node_enums.UserActionSource.SYNC,
+        )
     except Exception as exc:
         _get_logger().exception(
             exc, True, f"Unexpected error executing user action: {action.id}: {exc}"

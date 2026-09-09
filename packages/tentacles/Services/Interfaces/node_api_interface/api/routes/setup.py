@@ -23,6 +23,7 @@ from fastapi.security import HTTPBasicCredentials
 import octobot_node.config as node_config
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
+import octobot.community.activity_analysis as activity_analysis
 
 try:
     from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
@@ -119,6 +120,7 @@ def init_setup(body: SetupInit) -> SetupResult:
             detail=str(err),
         ) from err
     node_config.settings.IS_MASTER_MODE = body.node_type == "master"
+    activity_analysis.record_wallet_configured()
     return SetupResult(address=wallet.address)
 
 

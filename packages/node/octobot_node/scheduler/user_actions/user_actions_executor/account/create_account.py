@@ -24,6 +24,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as account_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater
 
+import octobot.community.activity_analysis as activity_analysis
+
 
 def _get_create_account_payload(
     user_action: protocol_models.UserAction,
@@ -66,3 +68,7 @@ class CreateAccountActionExecutor(account_user_action_executor.AccountUserAction
             ),
         )
         self._mark_user_action_completed(user_action)
+        activity_analysis.record_account_validated(
+            checked_account,
+            self._user_id,
+        )
