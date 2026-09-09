@@ -21,6 +21,7 @@ from fastapi import APIRouter, Body, HTTPException, Query, Response, status
 from fastapi.responses import JSONResponse
 
 import octobot_node.models
+import octobot_node.enums as octobot_node_enums
 import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.user_actions as user_actions_protocol
 import octobot_node.scheduler
@@ -190,7 +191,11 @@ async def execute_user_action(
     user_action = _parse_user_action_payload(payload)
     resolved_user_id = await _resolve_execution_user_id(current_user, wallet_address, user_action)
     try:
-        await user_actions_protocol.execute_user_action(user_action, resolved_user_id)
+        await user_actions_protocol.execute_user_action(
+            user_action,
+            resolved_user_id,
+            source=octobot_node_enums.UserActionSource.DEBUG_API,
+        )
     except RuntimeError as error:
         if str(error) == "Scheduler is not initialized":
             raise HTTPException(

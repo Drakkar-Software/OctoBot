@@ -167,9 +167,16 @@ class TestRestartAutomationActionExecutor:
                 new_callable=mock.AsyncMock,
                 return_value=terminal_workflow,
             ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.restart_automation.node_journal.record_automation_restarted",
+            ) as record_automation_restarted_mock,
         ):
             await executor.execute(user_action)
 
+        record_automation_restarted_mock.assert_called_once_with(
+            automation_id=_PARENT_AUTOMATION_ID,
+            user_action_id="ua-restart-1",
+        )
         scheduled_task = executor.post_actions.to_create_automation_task
         assert scheduled_task is not None
         assert scheduled_task.id == f"{_PARENT_AUTOMATION_ID}_1"

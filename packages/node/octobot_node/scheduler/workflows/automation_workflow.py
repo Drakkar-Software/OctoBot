@@ -43,6 +43,8 @@ import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.automations.signal_execution_result_util as signal_execution_result_util
 import octobot_node.errors as errors
 
+import octobot.community.node_journal as node_journal
+
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
 WORKFLOW_NAME = "execute_automation"
@@ -431,6 +433,17 @@ class AutomationWorkflow:
             f"Iteration postponed ({iteration_state.execution_error}: {iteration_state.execution_error_message}), "
             f"retry scheduled in {retry_delay_seconds:.0f} seconds"
         )
+        if iteration_state.execution_error is not None:
+            AutomationWorkflow._record_automation_run_errored(
+                parsed_inputs,
+                error_status=iteration_state.execution_error,
+                error_origin="postponed_iteration",
+                error=Exception(
+                    iteration_state.execution_error_message
+                    or iteration_state.execution_error
+                ),
+                retriable=True,
+            )
 
     @staticmethod
     async def _send_signal_execution_result_safe(
@@ -683,6 +696,13 @@ class AutomationWorkflow:
                 f"Automation stopped: unrecoverable iteration error: {progress_status.error}. "
                 f"Iteration's last step: {progress_status.latest_step}"
             )
+            AutomationWorkflow._record_automation_run_errored(
+                parsed_inputs,
+                error_status=progress_status.error,
+                error_origin="terminal_iteration",
+                error=Exception(progress_status.error_message or progress_status.error),
+                retriable=False,
+            )
             return stop_on_error
         elif progress_status.should_stop:
             AutomationWorkflow.get_logger(parsed_inputs).info(
@@ -694,6 +714,34 @@ class AutomationWorkflow:
     @staticmethod
     def _get_actions_summary(actions: list["octobot_flow.entities.AbstractActionDetails"], minimal: bool = False) -> str:
         return ", ".join([action.get_summary(minimal=minimal) for action in actions]) if actions else ""
+
+    @staticmethod
+    def _resolve_automation_id(parsed_inputs: params.AutomationWorkflowInputs) -> str | None:
+        try:
+            automation_state = automation_states_loader.get_automation_dict(parsed_inputs.task.content)
+            return automation_state.get("automation", {}).get("metadata", {}).get("automation_id")
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _record_automation_run_errored(
+        parsed_inputs: params.AutomationWorkflowInputs,
+        *,
+        error_status: str,
+        error_origin: str,
+        error: BaseException,
+        retriable: bool,
+    ) -> None:
+        automation_id = AutomationWorkflow._resolve_automation_id(parsed_inputs)
+        if automation_id is None:
+            return
+        node_journal.record_automation_run_errored(
+            automation_id=automation_id,
+            error_status=error_status,
+            error_origin=error_origin,
+            error=error,
+            retriable=retriable,
+        )
 
     @staticmethod
     def _get_failed_error_status(error: Exception) -> str:
