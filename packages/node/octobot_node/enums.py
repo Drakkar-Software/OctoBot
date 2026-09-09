@@ -43,6 +43,11 @@ class SchedulerQueues(enum.Enum):
     PORTFOLIO_HISTORY_QUEUE = "portfolio_history_queue"
 
 
+class UserActionSource(enum.Enum):
+    SYNC = "sync"
+    DEBUG_API = "debug_api"
+
+
 class SignalPriorityActionPayloadKeys(enum.Enum):
     ACTIONS = "actions"
     SIGNAL = "signal"

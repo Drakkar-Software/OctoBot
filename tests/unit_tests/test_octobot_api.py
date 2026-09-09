@@ -18,13 +18,11 @@ import mock
 import octobot.octobot_api as octobot_api
 
 
-class TestGetActivityMetrics:
-    def test_returns_octobot_activity_metrics(self):
-        activity_metrics = mock.Mock(name="activity-metrics")
+class TestOctobotAPI:
+    def test_exposes_bot_id(self):
         octobot = mock.Mock()
         octobot.bot_id = "bot-id"
-        octobot.activity_metrics = activity_metrics
         with mock.patch.object(octobot_api.OctoBotAPIProvider, "instance") as provider_mock:
             provider_mock.return_value.register_api = mock.Mock()
             api = octobot_api.OctoBotAPI(octobot)
-        assert api.get_activity_metrics() is activity_metrics
+        assert api.get_bot_id() == "bot-id"

@@ -1,30 +1,20 @@
 import { Link } from "@tanstack/react-router"
 import { ShieldCheck, User } from "lucide-react"
+import type { ReactNode } from "react"
 import { useMemo } from "react"
 
-import useAuth from "@/hooks/useAuth"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import {
+  displayName,
+  getCachedNavbarDisplayName,
+  getStoredIsSuperuser,
+} from "@/lib/user-menu-display"
 
-function displayName(
-  email: string | undefined,
-  fullName: string | null | undefined,
-): string {
-  // Prefer server-sourced name (user.full_name) to avoid showing stale localStorage value
-  if (fullName) return fullName
-  const stored = localStorage.getItem("auth_wallet_name")
-  if (stored) return stored
-  if (!email) return "—"
-  return email.length > 12 ? `${email.slice(0, 6)}…${email.slice(-4)}` : email
+type UserMenuShellProps = {
+  children: ReactNode
 }
 
-export function UserMenu() {
-  const { user } = useAuth()
-  const name = useMemo(
-    () => displayName(user?.email, user?.full_name),
-    [user?.email, user?.full_name],
-  )
-
-  if (!user) return null
-
+function UserMenuShell({ children }: UserMenuShellProps) {
   return (
     <div className="flex items-center gap-2">
       <Link
@@ -35,14 +25,38 @@ export function UserMenu() {
         <span className="flex size-7 items-center justify-center rounded-full bg-surface-strong text-frost">
           <User className="size-4" />
         </span>
-        <span className="hidden sm:flex items-center gap-1.5">
-          {name}
-          {user.is_superuser && (
-            <ShieldCheck className="size-3.5 text-primary" />
-          )}
-        </span>
+        <span className="hidden sm:flex items-center gap-1.5">{children}</span>
       </Link>
     </div>
+  )
+}
+
+export function UserMenu() {
+  const { user, isCurrentUserPending } = useAuth()
+  const name = useMemo(
+    () =>
+      user
+        ? displayName(user.email, user.full_name)
+        : getCachedNavbarDisplayName(),
+    [user?.email, user?.full_name, user],
+  )
+  const showSuperuserBadge = user
+    ? user.is_superuser === true
+    : getStoredIsSuperuser()
+
+  if (!isLoggedIn()) {
+    return null
+  }
+
+  if (!isCurrentUserPending && !user) {
+    return null
+  }
+
+  return (
+    <UserMenuShell>
+      {name}
+      {showSuperuserBadge && <ShieldCheck className="size-3.5 text-primary" />}
+    </UserMenuShell>
   )
 }
 

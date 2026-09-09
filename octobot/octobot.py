@@ -36,6 +36,7 @@ import octobot_trading.api as trading_api
 
 import octobot.logger as logger
 import octobot.community as community
+import octobot.community.node_journal.lifecycle as journal_startup
 import octobot.constants as constants
 import octobot.enums as enums
 import octobot.configuration_manager as configuration_manager
@@ -77,9 +78,6 @@ class OctoBot:
 
         # unique aiohttp session: to be initialized from getter in a task
         self._aiohttp_session = None
-
-        # community if enabled
-        self.activity_metrics = None
 
         # use edited config in community authentication
         community_config = self.get_edited_config(constants.CONFIG_KEY, dict_only=False)
@@ -166,6 +164,10 @@ class OctoBot:
         self.automation = automation.Automation(self.bot_id, self.tentacles_setup_config)
         self._init_metadata_run_task = asyncio.create_task(self._store_run_metadata_when_available())
         await self._init_profile_synchronizer()
+        if configuration_manager.get_distribution(self.config) is enums.OctoBotDistribution.NODE:
+            journal_startup.record_node_startup_succeeded(
+                self.get_edited_config(constants.CONFIG_KEY, dict_only=False)
+            )
 
     async def _wait_for_run_data_init(self, exchange_managers, timeout):
         for exchange_manager in exchange_managers:
@@ -239,13 +241,7 @@ class OctoBot:
 
     async def _start_tools_tasks(self):
         await self._init_aiohttp_session()
-        self._init_community()
         await self.task_manager.start_tools_tasks()
-
-    def _init_community(self):
-        self.activity_metrics = community.ActivityMetrics(self.octobot_api)
-        distribution = configuration_manager.get_distribution(self.config)
-        self.activity_metrics.setup_activity_tracking(distribution)
 
     async def _ensure_clock(self):
         if trading_api.is_trader_enabled_in_config(self.config) and constants.ENABLE_CLOCK_SYNCH:

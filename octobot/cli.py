@@ -57,6 +57,7 @@ try:
     import octobot.logger as octobot_logger
     import octobot.community as octobot_community
     import octobot.community.errors
+    import octobot.community.node_journal.lifecycle as journal_startup
     import octobot.limits as limits
 except ImportError as err:
     traceback.print_exc()
@@ -478,8 +479,33 @@ def _log_startup_distribution_mode(logger, args) -> None:
     logger.info(startup_message)
 
 
+def _record_cli_startup_failure(
+    error: Exception,
+    startup_phase: str,
+    config: configuration.Configuration | None = None,
+) -> None:
+    try:
+        if config is not None:
+            distribution = configuration_manager.get_distribution(config.config)
+        elif constants.FORCED_DISTRIBUTION:
+            distribution = enums.OctoBotDistribution(constants.FORCED_DISTRIBUTION)
+        else:
+            return
+        if distribution is not enums.OctoBotDistribution.NODE:
+            return
+        journal_startup.record_node_startup_failed(
+            error,
+            startup_phase=startup_phase,
+            force_exit=True,
+            config=config,
+        )
+    except Exception:
+        pass
+
+
 def start_octobot(args, default_config_file=None):
     logger = None
+    config = None
     try:
         if args.version:
             print(constants.LONG_VERSION)
@@ -518,8 +544,6 @@ def start_octobot(args, default_config_file=None):
         if not config.is_loaded():
             raise errors.ConfigError
 
-        octobot_community.ActivityMetrics.initialize_tracker(config)
-
         # Handle utility methods before bot initializing if possible
         if args.encrypter:
             commands.exchange_keys_encrypter()
@@ -531,6 +555,7 @@ def start_octobot(args, default_config_file=None):
         community_auth = None if args.backtesting else asyncio.run(
             _get_authenticated_community_if_possible(config, logger)
         )
+        journal_startup.initialize_journal(config)
 
         # Startup order matters: sync user and tentacles/community config must run before
         # profile activation. First boot (empty user/) has no profiles until tentacles
@@ -604,20 +629,23 @@ def start_octobot(args, default_config_file=None):
         force_error_exit = False
     except errors.RemoteConfigError as err:
         logger.exception(err)
+        _record_cli_startup_failure(err, "remote_config", config)
         force_error_exit = True
 
     except errors.ConfigError as err:
         logger.error("OctoBot can't start without a valid " + common_constants.CONFIG_FILE
                      + " configuration file.\nError: " + str(err) + "\nYou can use " +
                      constants.DEFAULT_CONFIG_FILE + " as an example to fix it.")
+        _record_cli_startup_failure(err, "config", config)
         force_error_exit = True
 
-    except errors.NoProfileError:
+    except errors.NoProfileError as err:
         logger.error("Missing default profiles. OctoBot can't start without a valid default profile configuration. "
                      "Please make sure that the {config.profiles_path} "
                      f"folder is accessible. To reinstall default profiles, delete the "
                      f"'{tentacles_manager_constants.TENTACLES_PATH}' "
                      f"folder or start OctoBot with the following arguments: tentacles --install --all")
+        _record_cli_startup_failure(err, "no_profile", config)
         force_error_exit = True
 
     except ModuleNotFoundError as err:
@@ -626,18 +654,21 @@ def start_octobot(args, default_config_file=None):
                          "please use the following command:\nstart.py tentacles --install --all")
         else:
             logger.exception(err)
+        _record_cli_startup_failure(err, "module_not_found", config)
         force_error_exit = True
 
-    except errors.ConfigEvaluatorError:
+    except errors.ConfigEvaluatorError as err:
         logger.error("OctoBot can't start without a valid  configuration file.\n"
                      "This file is generated on tentacle "
                      "installation using the following command:\nstart.py tentacles --install --all")
+        _record_cli_startup_failure(err, "config_evaluator", config)
         force_error_exit = True
 
-    except errors.ConfigTradingError:
+    except errors.ConfigTradingError as err:
         logger.error("OctoBot can't start without a valid configuration file.\n"
                      "This file is generated on tentacle "
                      "installation using the following command:\nstart.py tentacles --install --all")
+        _record_cli_startup_failure(err, "config_trading", config)
         force_error_exit = True
     if force_error_exit:
         octobot_community.flush_tracker()

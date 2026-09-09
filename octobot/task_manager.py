@@ -61,9 +61,6 @@ class TaskManager:
     async def start_tools_tasks(self):
         task_list = []
 
-        if self.octobot.activity_metrics:
-            task_list.append(self.octobot.activity_metrics.start_community_task())
-
         self.octobot.async_loop = self.async_loop
         self.ready = True
         self.tools_task_group = asyncio.gather(*task_list)
@@ -115,10 +112,6 @@ class TaskManager:
         if self._process_bot_state_dump_task is not None and not self._process_bot_state_dump_task.done():
             self._process_bot_state_dump_task.cancel()
         self._process_bot_state_dump_task = None
-
-        # close community session
-        if self.octobot.activity_metrics:
-            stop_coroutines.append(self.octobot.activity_metrics.stop_task())
 
         async def _await_timeouted_gather(tasks):
             # await this gather to be sure to complete each stop call or timeout
