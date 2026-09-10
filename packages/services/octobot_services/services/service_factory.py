@@ -92,14 +92,17 @@ class ServiceFactory:
                 and service.get_type() == constants.CONFIG_NODE_API
             ):
                 import octobot_node.scheduler as scheduler_module
+                import octobot.community.node_journal.enums as journal_enums
+                import octobot.community.node_journal.recording_context as journal_recording_context
                 import octobot.community.node_journal.startup as journal_startup
-                if not scheduler_module.scheduler_init_failure_was_recorded():
-                    journal_startup.record_node_startup_failed(
-                        e,
-                        startup_phase="node_api_start",
-                        force_exit=False,
-                        config=self.config,
-                    )
+                journal_recording_context.node_api_startup_failure(
+                    error=e,
+                    startup_phase=journal_enums.JournalStartupPhase.NODE_API_START,
+                    force_exit=False,
+                    config=self.config,
+                    scheduler_init_failure_was_recorded=scheduler_module.scheduler_init_failure_was_recorded,
+                    record_node_startup_failed=journal_startup.record_node_startup_failed,
+                )
         return False
 
     @staticmethod

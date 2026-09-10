@@ -18,6 +18,7 @@ import enum
 
 
 class NodeJournalEvent(enum.StrEnum):
+    UNKNOWN = "unknown"
     NODE_PROCESS_STARTUP_SUCCEEDED = "node_process_startup_succeeded"
     NODE_PROCESS_STARTUP_FAILED = "node_process_startup_failed"
     NODE_PROCESS_STOP = "node_process_stop"
@@ -102,3 +103,43 @@ FUNNEL_STEP_ORDER: tuple[NodeJournalEvent, ...] = (
 )
 
 FUNNEL_STEP_RANK = {event: index for index, event in enumerate(FUNNEL_STEP_ORDER)}
+
+JOURNEY_MILESTONE_LABELS: dict[NodeJournalEvent, str] = {
+    NodeJournalEvent.WALLET_SETUP_SUCCEEDED: "wallet_setup",
+    NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED: "external_connect",
+    NodeJournalEvent.ACCOUNT_VALIDATED: "account_validated",
+    NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED: "strategy_create",
+    NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED: "strategy_edit",
+    NodeJournalEvent.FIRST_AUTOMATION_STARTED: "first_automation",
+}
+
+JOURNEY_MILESTONE_LABEL_ORDER: tuple[str, ...] = tuple(
+    JOURNEY_MILESTONE_LABELS[event]
+    for event in FUNNEL_STEP_ORDER
+    if event in JOURNEY_MILESTONE_LABELS
+)
+
+JOURNEY_SUCCESS_EVENTS = frozenset({
+    NodeJournalEvent.WALLET_SETUP_SUCCEEDED,
+    NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED,
+    NodeJournalEvent.ACCOUNT_AUTH_CREATE_SUCCEEDED,
+    NodeJournalEvent.ACCOUNT_VALIDATED,
+    NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED,
+    NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED,
+    NodeJournalEvent.FIRST_AUTOMATION_STARTED,
+    NodeJournalEvent.AUTOMATION_CREATE_ATTEMPT,
+})
+
+
+def coerce_node_journal_event(raw_event: NodeJournalEvent | str) -> tuple[NodeJournalEvent, str | None]:
+    if isinstance(raw_event, NodeJournalEvent):
+        if raw_event == NodeJournalEvent.UNKNOWN:
+            return NodeJournalEvent.UNKNOWN, None
+        return raw_event, None
+    event_name = str(raw_event)
+    if event_name in NodeJournalEvent._value2member_map_:
+        parsed_event = NodeJournalEvent(event_name)
+        if parsed_event == NodeJournalEvent.UNKNOWN:
+            return NodeJournalEvent.UNKNOWN, None
+        return parsed_event, None
+    return NodeJournalEvent.UNKNOWN, event_name

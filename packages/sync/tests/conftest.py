@@ -16,6 +16,26 @@
 
 """Shared test fixtures."""
 
+import contextlib
+import os
+
+import mock
+import pytest
+
+import octobot.community.node_journal.constants as journal_constants
+
+
+@contextlib.contextmanager
+def disabled_node_journal_environment():
+    with mock.patch.dict(os.environ, {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"}):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def disable_node_journal():
+    with disabled_node_journal_environment():
+        yield
+
 
 class MemoryObjectStore:
     """Minimal AbstractObjectStore for testing."""

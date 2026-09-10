@@ -14,8 +14,6 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
-
 import octobot_protocol.models as protocol_models
 
 import octobot.community.node_journal.events as journal_events
@@ -34,11 +32,12 @@ class TestRecordAccountValidated:
             account_count=2,
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.ACCOUNT_VALIDATED.value
-        assert events[0]["attributes"]["is_simulated"] is True
-        assert events[0]["attributes"]["exchange_name"] == "binanceus"
-        assert events[0]["attributes"]["user_action_id"] == "ua-validated"
-        assert events[0]["attributes"]["account_count"] == 2
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.ACCOUNT_VALIDATED
+        assert event_line.attributes.is_simulated is True
+        assert event_line.attributes.exchange_name == "binanceus"
+        assert event_line.attributes.user_action_id == "ua-validated"
+        assert event_line.attributes.account_count == 2
 
 
 class TestRecordAccountValidationFailed:
@@ -50,9 +49,10 @@ class TestRecordAccountValidationFailed:
             user_action_id="ua-retry-1",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.ACCOUNT_VALIDATION_FAILED.value
-        assert events[0]["attributes"]["user_action_id"] == "ua-retry-1"
-        assert events[0]["attributes"]["error_category"] == "RuntimeError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.ACCOUNT_VALIDATION_FAILED
+        assert event_line.attributes.user_action_id == "ua-retry-1"
+        assert event_line.attributes.error_category == "RuntimeError"
 
 
 class TestAccountCreateFailureRetryPairing:
@@ -71,9 +71,9 @@ class TestAccountCreateFailureRetryPairing:
 
         events = journal_module.read_events()
         user_action_ids = [
-            event_line["attributes"].get("user_action_id")
+            event_line.attributes.user_action_id
             for event_line in events
-            if "user_action_id" in event_line["attributes"]
+            if event_line.attributes.user_action_id is not None
         ]
         assert user_action_id in user_action_ids
-        assert events[-1]["event"] == journal_events.NodeJournalEvent.ACCOUNT_CREATE_ATTEMPT.value
+        assert events[-1].event == journal_events.NodeJournalEvent.ACCOUNT_CREATE_ATTEMPT

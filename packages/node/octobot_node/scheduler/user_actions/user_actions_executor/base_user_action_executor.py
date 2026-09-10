@@ -96,7 +96,6 @@ class UserActionExecutor(abc.ABC):
             self._apply_execution_failure(user_action, exc)
             node_journal.record_executor_failure(
                 user_action,
-                source=getattr(user_action, "_journal_source", "sync"),
                 error=exc,
             )
             raise

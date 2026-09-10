@@ -37,6 +37,13 @@ class TestNodeJournalEvent:
         for event in journal_events.UI_JOURNAL_EVENTS:
             assert event.value.startswith("ui_")
 
+    def test_unknown_event_is_excluded_from_special_sets(self):
+        assert journal_events.NodeJournalEvent.UNKNOWN not in journal_events.UI_JOURNAL_EVENTS
+        assert journal_events.NodeJournalEvent.UNKNOWN not in journal_events.FAILURE_EVENTS
+        assert journal_events.NodeJournalEvent.UNKNOWN not in journal_events.FUNNEL_STEP_ORDER
+        assert journal_events.NodeJournalEvent.UNKNOWN not in journal_events.JOURNEY_SUCCESS_EVENTS
+        assert journal_events.NodeJournalEvent.UNKNOWN not in journal_events.JOURNEY_MILESTONE_LABELS
+
     def test_funnel_step_rank_matches_order(self):
         assert len(journal_events.FUNNEL_STEP_RANK) == len(journal_events.FUNNEL_STEP_ORDER)
         for rank, event in enumerate(journal_events.FUNNEL_STEP_ORDER):

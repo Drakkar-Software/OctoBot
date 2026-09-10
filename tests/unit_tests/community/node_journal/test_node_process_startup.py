@@ -33,11 +33,12 @@ class TestRecordProcessStartupFailed:
             reconciled=True,
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.NODE_PROCESS_STARTUP_FAILED.value
-        assert events[0]["attributes"]["startup_phase"] == "node_api_start"
-        assert events[0]["attributes"]["force_exit"] is False
-        assert events[0]["attributes"]["wallet_configured"] is True
-        assert events[0]["attributes"]["error_category"] == "RuntimeError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.NODE_PROCESS_STARTUP_FAILED
+        assert event_line.attributes.startup_phase == "node_api_start"
+        assert event_line.attributes.force_exit is False
+        assert event_line.attributes.wallet_configured is True
+        assert event_line.attributes.error_category == "RuntimeError"
 
 
 class TestRecordNodeStartupFailed:
@@ -61,6 +62,7 @@ class TestRecordNodeStartupFailed:
             )
         init_mock.assert_called_once_with(config_mock)
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.NODE_PROCESS_STARTUP_FAILED.value
-        assert events[0]["attributes"]["startup_phase"] == "prepare"
-        assert events[0]["attributes"]["new_install"] is True
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.NODE_PROCESS_STARTUP_FAILED
+        assert event_line.attributes.startup_phase == "prepare"
+        assert event_line.attributes.new_install is True

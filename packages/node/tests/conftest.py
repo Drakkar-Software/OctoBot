@@ -4,6 +4,8 @@ import os
 import mock
 import pytest
 
+import octobot.community.node_journal.constants as journal_constants
+
 _TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS = 2
 _TESTS_RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS = 30.0
 
@@ -26,6 +28,18 @@ def mocked_local_user_configuration():
         "get_user_configuration",
         local_community_auth.get_stateless_configuration,
     ):
+        yield
+
+
+@contextlib.contextmanager
+def disabled_node_journal_environment():
+    with mock.patch.dict(os.environ, {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"}):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def disable_node_journal():
+    with disabled_node_journal_environment():
         yield
 
 

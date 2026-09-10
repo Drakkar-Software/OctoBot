@@ -36,11 +36,12 @@ class TestOnUserDataPullSucceeded:
 
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED.value
-        assert events[0]["attributes"]["collection"] == "user-data"
-        assert events[0]["attributes"]["connection_sequence"] == 1
-        assert events[0]["attributes"]["is_reconnect"] is False
-        assert events[0]["attributes"]["duration_since_install_start"] == 1_000.0
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED
+        assert event_line.attributes.collection == "user-data"
+        assert event_line.attributes.connection_sequence == 1
+        assert event_line.attributes.is_reconnect is False
+        assert event_line.attributes.duration_since_install_start == 1_000.0
 
         persisted_state = journal_state.load_persisted_state()
         assert persisted_state.last_user_data_pull_at == 2_000.0
@@ -71,9 +72,10 @@ class TestOnUserDataPullSucceeded:
 
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["attributes"]["is_reconnect"] is True
-        assert events[0]["attributes"]["prior_gap_seconds"] == journal_constants.SYNC_SESSION_GAP_SECONDS + 10.0
-        assert events[0]["attributes"]["connection_sequence"] == 2
+        event_line = events[0]
+        assert event_line.attributes.is_reconnect is True
+        assert event_line.attributes.prior_gap_seconds == journal_constants.SYNC_SESSION_GAP_SECONDS + 10.0
+        assert event_line.attributes.connection_sequence == 2
 
     def test_startup_reset_forces_reconnect_even_within_gap(self, journal_persisted_state):
         journal_persisted_state.last_user_data_pull_at = 5_000.0
@@ -86,6 +88,7 @@ class TestOnUserDataPullSucceeded:
 
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["attributes"]["is_reconnect"] is True
-        assert events[0]["attributes"]["prior_gap_seconds"] == 100.0
-        assert events[0]["attributes"]["connection_sequence"] == 4
+        event_line = events[0]
+        assert event_line.attributes.is_reconnect is True
+        assert event_line.attributes.prior_gap_seconds == 100.0
+        assert event_line.attributes.connection_sequence == 4

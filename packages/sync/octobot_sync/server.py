@@ -41,6 +41,7 @@ import octobot_sync.errors as errors
 import octobot_sync.sync.collection_backend.errors as collection_errors
 
 import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.recording_context as journal_recording_context
 
 # Re-exported for callers (e.g. node_api) that build the userId allowlist from
 # the node's own wallet keys — must use the same derivation as the client.
@@ -201,7 +202,10 @@ def _sync_read_failure_collection(context: StoreContext | None) -> str:
 
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
-    try:
+    with journal_recording_context.sync_read_operation(
+        resolve_collection=lambda: _sync_read_failure_collection(context),
+        resolve_failure_reason=_sync_read_failure_reason,
+    ):
         collection = _get_collection(context)
         plaintext = None
         already_encrypted_payload = None
@@ -286,13 +290,6 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 collection=collection,
             )
         return result
-    except Exception as exc:
-        node_journal.record_sync_read_failed(
-            collection=_sync_read_failure_collection(context),
-            failure_reason=_sync_read_failure_reason(exc),
-            error=exc,
-        )
-        raise
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     # Opaque storage: persist the client ciphertext as-is. The node never

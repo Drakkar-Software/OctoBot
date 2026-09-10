@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import dataclasses
+import logging
 import time
 import typing
 import uuid
@@ -23,6 +24,9 @@ import octobot_commons.configuration as configuration
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 import octobot.community.node_journal.constants as journal_constants
+import octobot.community.node_journal.safe as journal_safe
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -44,7 +48,11 @@ _config: configuration.Configuration | None = None
 def _get_journal_section(config: configuration.Configuration) -> dict:
     journal_section = config.config.setdefault(journal_constants.CONFIG_JOURNAL_SECTION, {})
     if not isinstance(journal_section, dict):
-        raise ValueError(f"{journal_constants.CONFIG_JOURNAL_SECTION} must be a mapping in config")
+        logger.error(
+            "%s must be a mapping in config",
+            journal_constants.CONFIG_JOURNAL_SECTION,
+        )
+        return {}
     return journal_section
 
 
@@ -76,13 +84,42 @@ def get_journal_directory() -> str:
 
 
 def load_persisted_state(config: configuration.Configuration | None = None) -> JournalPersistedState:
+    return journal_safe.run_journal_operation(
+        "load_persisted_state",
+        lambda: _load_persisted_state(config),
+        default=_default_persisted_state(),
+    )
+
+
+def save_persisted_state(state: JournalPersistedState, config: configuration.Configuration | None = None) -> None:
+    journal_safe.run_journal_operation(
+        "save_persisted_state",
+        lambda: _save_persisted_state(state, config),
+        default=None,
+    )
+
+
+def mark_first_automation_started(now: float | None = None) -> None:
+    journal_safe.run_journal_operation(
+        "mark_first_automation_started",
+        lambda: _mark_first_automation_started(now),
+        default=None,
+    )
+
+
+def _default_persisted_state() -> JournalPersistedState:
+    global _persisted_state
+    if _persisted_state is not None:
+        return _persisted_state
+    _persisted_state = JournalPersistedState(install_id=str(uuid.uuid4()))
+    return _persisted_state
+
+
+def _load_persisted_state(config: configuration.Configuration | None) -> JournalPersistedState:
     global _persisted_state
     resolved_config = config if config is not None else _config
     if resolved_config is None:
-        if _persisted_state is not None:
-            return _persisted_state
-        _persisted_state = JournalPersistedState(install_id=str(uuid.uuid4()))
-        return _persisted_state
+        return _default_persisted_state()
     if _persisted_state is not None and config is None:
         return _persisted_state
     journal_section = _get_journal_section(resolved_config)
@@ -107,7 +144,10 @@ def load_persisted_state(config: configuration.Configuration | None = None) -> J
     return _persisted_state
 
 
-def save_persisted_state(state: JournalPersistedState, config: configuration.Configuration | None = None) -> None:
+def _save_persisted_state(
+    state: JournalPersistedState,
+    config: configuration.Configuration | None = None,
+) -> None:
     global _persisted_state
     resolved_config = config if config is not None else _config
     if resolved_config is None:
@@ -127,14 +167,14 @@ def save_persisted_state(state: JournalPersistedState, config: configuration.Con
     _persisted_state = state
 
 
-def mark_first_automation_started(now: float | None = None) -> None:
-    state = load_persisted_state()
+def _mark_first_automation_started(now: float | None) -> None:
+    state = _load_persisted_state(None)
     if state.first_automation_started_at is not None:
         return
     emit_now = time.time() if now is None else now
     state.first_automation_started_at = emit_now
     state.onboarding_complete = True
-    save_persisted_state(state)
+    _save_persisted_state(state)
 
 
 def _optional_float(value: typing.Any) -> float | None:

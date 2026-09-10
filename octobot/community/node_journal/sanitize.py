@@ -14,30 +14,37 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import re
+import typing
 
-import octobot.community.node_journal.constants as journal_constants
+import octobot.community.node_journal.events as journal_events
+import octobot.community.node_journal.models as journal_models
 
-_ETH_ADDRESS_PATTERN = re.compile(r"0x[a-fA-F0-9]{40}")
-_BECH32_PATTERN = re.compile(r"\b(bc1|tb1)[a-z0-9]{25,90}\b", re.IGNORECASE)
-_API_KEY_LIKE_PATTERN = re.compile(
-    r"\b(?:api[_-]?key|secret|token|passphrase|password|private[_-]?key)\s*[:=]\s*\S+",
-    re.IGNORECASE,
-)
-_EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-_HOME_PATH_PATTERN = re.compile(r"(?i)(?:/[Uu]sers/|/home/)[^\s]+")
+_ERROR_CATEGORY_FIELD = "error_category"
+_ERROR_MESSAGE_FIELD = "error_message"
 
 
-def sanitize_error_message(raw_message: str | None) -> str:
-    if not raw_message:
-        return ""
-    sanitized = str(raw_message)
-    sanitized = _ETH_ADDRESS_PATTERN.sub("[redacted-address]", sanitized)
-    sanitized = _BECH32_PATTERN.sub("[redacted-address]", sanitized)
-    sanitized = _API_KEY_LIKE_PATTERN.sub("[redacted-secret]", sanitized)
-    sanitized = _EMAIL_PATTERN.sub("[redacted-email]", sanitized)
-    sanitized = _HOME_PATH_PATTERN.sub("[redacted-path]", sanitized)
-    if len(sanitized) > journal_constants.ERROR_MESSAGE_MAX_LENGTH:
-        truncated_length = journal_constants.ERROR_MESSAGE_MAX_LENGTH - 1
-        sanitized = sanitized[:truncated_length] + "…"
-    return sanitized
+def sanitize_attribute_value(value: typing.Any) -> typing.Any:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float, str)):
+        return value
+    if isinstance(value, list):
+        return value
+    return str(value)
+
+
+def sanitize_event_attributes(
+    event: journal_events.NodeJournalEvent,
+    attributes: journal_models.JournalEventAttributes,
+) -> journal_models.JournalEventAttributes:
+    sanitized_attributes = {}
+    for field_name, value in attributes.to_dict().items():
+        if value is None:
+            continue
+        sanitized_attributes[field_name] = sanitize_attribute_value(value)
+    if event in journal_events.FAILURE_EVENTS:
+        if _ERROR_CATEGORY_FIELD not in sanitized_attributes:
+            return journal_models.JournalEventAttributes.from_dict(sanitized_attributes)
+        if _ERROR_MESSAGE_FIELD not in sanitized_attributes:
+            sanitized_attributes[_ERROR_MESSAGE_FIELD] = ""
+    return journal_models.JournalEventAttributes.from_dict(sanitized_attributes)

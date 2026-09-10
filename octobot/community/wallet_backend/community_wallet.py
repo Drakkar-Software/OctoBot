@@ -45,6 +45,11 @@ _PBKDF2_ALG = "sha256"
 
 
 def _record_wallet_operation_failure(*, operation: str, error: WalletError) -> None:
+    if isinstance(
+        error,
+        (InvalidPrivateKeyError, WalletAlreadyExistsError, InvalidPassphraseError),
+    ):
+        return
     import octobot.community.node_journal as node_journal
     node_journal.record_wallet_operation_failed(operation=operation, error=error)
 

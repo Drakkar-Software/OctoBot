@@ -46,15 +46,11 @@ class DeleteAccountActionExecutor(account_user_action_executor.AccountUserAction
     ) -> None:
         delete_payload = _get_delete_account_payload(user_action)
         account_provider = collection_providers.AccountProvider.instance()
-        deleted_account = account_provider.get_item(self._user_id, delete_payload.id)
         account_provider.delete_item(
             self._user_id,
             delete_payload.id,
         )
         self._mark_user_action_completed(user_action)
-        import octobot.community.node_journal.classify as journal_classify
         node_journal.record_account_deleted(
-            is_simulated=deleted_account.is_simulated,
-            exchange_name=journal_classify.resolve_account_exchange_name(deleted_account, self._user_id),
-            account_count=len(account_provider.list_items(self._user_id)),
+            account_id=delete_payload.id or "",
         )

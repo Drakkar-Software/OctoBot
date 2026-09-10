@@ -175,7 +175,6 @@ class TestRestartAutomationActionExecutor:
 
         record_automation_restarted_mock.assert_called_once_with(
             automation_id=_PARENT_AUTOMATION_ID,
-            automation_count=0,
         )
         scheduled_task = executor.post_actions.to_create_automation_task
         assert scheduled_task is not None

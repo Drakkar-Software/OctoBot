@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import time
 
 import octobot.constants as octobot_constants
@@ -21,44 +22,29 @@ import octobot.constants as octobot_constants
 import octobot.community.node_journal.constants as journal_constants
 import octobot.community.node_journal.enabled as journal_enabled
 import octobot.community.node_journal.events as journal_events
+import octobot.community.node_journal.models as journal_models
+import octobot.community.node_journal.safe as journal_safe
 import octobot.community.node_journal.sanitize as journal_sanitize
 import octobot.community.node_journal.state as journal_state
 import octobot.community.node_journal.store as journal_store
+
+logger = logging.getLogger(__name__)
 
 
 def record(
     event: journal_events.NodeJournalEvent | str,
     *,
-    attributes: dict | None = None,
+    attributes: journal_models.JournalEventAttributes | dict | None = None,
     timestamp: float | None = None,
-) -> dict:
-    event_name = event.value if isinstance(event, journal_events.NodeJournalEvent) else str(event)
-    if event_name not in journal_events.NodeJournalEvent._value2member_map_:
-        raise ValueError(f"Unknown journal event: {event_name}")
-    parsed_event = journal_events.NodeJournalEvent(event_name)
-    if not journal_enabled.is_journal_enabled():
-        return _build_disabled_event_stub(parsed_event, attributes or {})
-    sanitized_attributes = _sanitize_attributes(parsed_event, attributes or {})
-    emit_timestamp = time.time() if timestamp is None else timestamp
-    persisted_state = journal_state.load_persisted_state()
-    event_line = {
-        "event": parsed_event.value,
-        "timestamp": emit_timestamp,
-        "session_id": journal_state.get_session_id(),
-        "install_id": persisted_state.install_id,
-        "app_version": octobot_constants.LONG_VERSION,
-        "distribution": journal_constants.DISTRIBUTION_NODE,
-        "onboarding_complete": persisted_state.onboarding_complete,
-        "attributes": sanitized_attributes,
-    }
-    is_onboarding_segment = not persisted_state.onboarding_complete
-    journal_store.get_store().append(event_line, is_onboarding_segment=is_onboarding_segment)
-    if parsed_event == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED:
-        journal_state.mark_first_automation_started(emit_timestamp)
-    return event_line
+) -> journal_models.JournalEventLine:
+    return journal_safe.run_journal_operation(
+        "record",
+        lambda: _record(event, attributes=attributes, timestamp=timestamp),
+        default=_build_disabled_event_stub_for_input(event, attributes),
+    )
 
 
-def read_events() -> list[dict]:
+def read_events() -> list[journal_models.JournalEventLine]:
     if not journal_enabled.is_journal_enabled():
         return []
     return journal_store.get_store().read_all_events()
@@ -75,59 +61,113 @@ def is_journal_enabled() -> bool:
     return journal_enabled.is_journal_enabled()
 
 
-def _build_disabled_event_stub(
-    parsed_event: journal_events.NodeJournalEvent,
-    attributes: dict,
-) -> dict:
-    return {
-        "event": parsed_event.value,
-        "timestamp": time.time(),
-        "session_id": "",
-        "install_id": "",
-        "app_version": octobot_constants.LONG_VERSION,
-        "distribution": journal_constants.DISTRIBUTION_NODE,
-        "onboarding_complete": False,
-        "attributes": attributes,
-        "recorded": False,
-    }
-
-
-def _sanitize_attributes(event: journal_events.NodeJournalEvent, attributes: dict) -> dict:
-    sanitized = {}
-    for key, value in attributes.items():
-        if value is None:
-            continue
-        if key == "error_message" and isinstance(value, str):
-            sanitized[key] = journal_sanitize.sanitize_error_message(value)
-        elif isinstance(value, bool):
-            sanitized[key] = value
-        elif isinstance(value, (int, float, str)):
-            sanitized[key] = value
-        else:
-            sanitized[key] = str(value)
-    if event in journal_events.FAILURE_EVENTS:
-        if "error_category" not in sanitized:
-            raise ValueError(f"{event.value} requires error_category")
-        if "error_message" not in sanitized:
-            sanitized["error_message"] = ""
-    return sanitized
-
-
 def record_failure(
     event: journal_events.NodeJournalEvent,
     *,
     error: BaseException | None = None,
     error_message: str | None = None,
     error_category: str | None = None,
-    attributes: dict | None = None,
-) -> dict:
-    failure_attributes = dict(attributes or {})
+    attributes: journal_models.JournalEventAttributes | dict | None = None,
+) -> journal_models.JournalEventLine:
+    failure_attributes = journal_models.JournalEventAttributes.merge(
+        _coerce_attributes(attributes),
+        {},
+    )
     if error_category is None and error is not None:
-        failure_attributes["error_category"] = error.__class__.__name__
+        failure_attributes.error_category = error.__class__.__name__
     elif error_category is not None:
-        failure_attributes["error_category"] = error_category
-    if error_message is None and error is not None:
-        failure_attributes["error_message"] = str(error)
-    elif error_message is not None:
-        failure_attributes["error_message"] = error_message
+        failure_attributes.error_category = error_category
+    if error_message is not None:
+        failure_attributes.error_message = error_message
     return record(event, attributes=failure_attributes)
+
+
+def _record(
+    event: journal_events.NodeJournalEvent | str,
+    *,
+    attributes: journal_models.JournalEventAttributes | dict | None,
+    timestamp: float | None,
+) -> journal_models.JournalEventLine:
+    parsed_event, raw_event_name = journal_events.coerce_node_journal_event(event)
+    coerced_attributes = _merge_raw_event_name(_coerce_attributes(attributes), raw_event_name)
+    if parsed_event == journal_events.NodeJournalEvent.UNKNOWN:
+        logger.error("Unknown journal event: %s", raw_event_name or event)
+        return _build_disabled_event_stub(parsed_event, coerced_attributes, recorded=False)
+    if not journal_enabled.is_journal_enabled():
+        return _build_disabled_event_stub(parsed_event, coerced_attributes)
+    sanitized_attributes = journal_sanitize.sanitize_event_attributes(parsed_event, coerced_attributes)
+    if (
+        parsed_event in journal_events.FAILURE_EVENTS
+        and sanitized_attributes.error_category is None
+    ):
+        logger.error("%s requires error_category", parsed_event.value)
+        return _build_disabled_event_stub(parsed_event, sanitized_attributes, recorded=False)
+    emit_timestamp = time.time() if timestamp is None else timestamp
+    persisted_state = journal_state.load_persisted_state()
+    event_line = journal_models.JournalEventLine(
+        event=parsed_event,
+        timestamp=emit_timestamp,
+        session_id=journal_state.get_session_id(),
+        install_id=persisted_state.install_id,
+        app_version=octobot_constants.LONG_VERSION,
+        distribution=journal_constants.DISTRIBUTION_NODE,
+        onboarding_complete=persisted_state.onboarding_complete,
+        attributes=sanitized_attributes,
+    )
+    is_onboarding_segment = not persisted_state.onboarding_complete
+    journal_store.get_store().append(event_line, is_onboarding_segment=is_onboarding_segment)
+    if parsed_event == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED:
+        journal_state.mark_first_automation_started(emit_timestamp)
+    return event_line
+
+
+def _coerce_attributes(
+    attributes: journal_models.JournalEventAttributes | dict | None,
+) -> journal_models.JournalEventAttributes:
+    if attributes is None:
+        return journal_models.JournalEventAttributes()
+    if isinstance(attributes, journal_models.JournalEventAttributes):
+        return attributes
+    return journal_models.JournalEventAttributes.from_dict(attributes)
+
+
+def _merge_raw_event_name(
+    attributes: journal_models.JournalEventAttributes,
+    raw_event_name: str | None,
+) -> journal_models.JournalEventAttributes:
+    if raw_event_name is None:
+        return attributes
+    return journal_models.JournalEventAttributes.merge(
+        attributes,
+        {"raw_event_name": raw_event_name},
+    )
+
+
+def _build_disabled_event_stub_for_input(
+    event: journal_events.NodeJournalEvent | str,
+    attributes: journal_models.JournalEventAttributes | dict | None,
+    *,
+    recorded: bool = False,
+) -> journal_models.JournalEventLine:
+    parsed_event, raw_event_name = journal_events.coerce_node_journal_event(event)
+    coerced_attributes = _merge_raw_event_name(_coerce_attributes(attributes), raw_event_name)
+    return _build_disabled_event_stub(parsed_event, coerced_attributes, recorded=recorded)
+
+
+def _build_disabled_event_stub(
+    parsed_event: journal_events.NodeJournalEvent,
+    attributes: journal_models.JournalEventAttributes,
+    *,
+    recorded: bool = False,
+) -> journal_models.JournalEventLine:
+    return journal_models.JournalEventLine(
+        event=parsed_event,
+        timestamp=time.time(),
+        session_id="",
+        install_id="",
+        app_version=octobot_constants.LONG_VERSION,
+        distribution=journal_constants.DISTRIBUTION_NODE,
+        onboarding_complete=False,
+        attributes=attributes,
+        recorded=recorded,
+    )

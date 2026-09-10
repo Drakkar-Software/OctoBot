@@ -19,9 +19,12 @@ import pytest
 
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
+import octobot.community.node_journal.safe as journal_safe_module
 import octobot.community.node_journal.state as journal_state
 import octobot.community.node_journal.store as journal_store
 import octobot.community.node_journal.sync_session as sync_session_module
+
+from test_utils.journal_test_support import enabled_node_journal_environment
 
 
 def reset_journal_state() -> None:
@@ -38,6 +41,12 @@ def journal_user_root(tmp_path):
 
 
 @pytest.fixture(autouse=True)
+def re_enable_node_journal():
+    with enabled_node_journal_environment():
+        yield
+
+
+@pytest.fixture(autouse=True)
 def isolated_journal_environment(journal_user_root):
     journal_store.reset_default_store()
     reset_journal_state()
@@ -51,6 +60,24 @@ def isolated_journal_environment(journal_user_root):
     journal_store.reset_default_store()
     reset_journal_state()
     sync_session_module._tracker_reset_after_startup = False
+
+
+@pytest.fixture(autouse=True)
+def surface_journal_errors(request):
+    if request.node.path.name == "test_safe.py":
+        yield
+        return
+
+    def run_without_swallowing(operation_name, operation, *, default):
+        del operation_name, default
+        return operation()
+
+    with mock.patch.object(
+        journal_safe_module,
+        "run_journal_operation",
+        side_effect=run_without_swallowing,
+    ):
+        yield
 
 
 @pytest.fixture

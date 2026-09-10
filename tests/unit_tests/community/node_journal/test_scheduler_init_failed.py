@@ -27,7 +27,8 @@ class TestRecordSchedulerInitFailed:
             error=RuntimeError("dbos unavailable"),
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.SCHEDULER_INIT_FAILED.value
-        assert events[0]["attributes"]["init_phase"] == "dbos_create"
-        assert events[0]["attributes"]["backend"] == "sqlite"
-        assert events[0]["attributes"]["error_category"] == "RuntimeError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.SCHEDULER_INIT_FAILED
+        assert event_line.attributes.init_phase == "dbos_create"
+        assert event_line.attributes.backend == "sqlite"
+        assert event_line.attributes.error_category == "RuntimeError"

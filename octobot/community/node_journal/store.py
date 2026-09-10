@@ -15,11 +15,16 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import logging
 import os
 import threading
 
 import octobot.community.node_journal.constants as journal_constants
+import octobot.community.node_journal.models as journal_models
+import octobot.community.node_journal.safe as journal_safe
 import octobot.community.node_journal.state as journal_state
+
+logger = logging.getLogger(__name__)
 
 
 class JournalStore:
@@ -38,8 +43,22 @@ class JournalStore:
         self._lock = threading.Lock()
         os.makedirs(self._journal_directory, exist_ok=True)
 
-    def append(self, event_line: dict, *, is_onboarding_segment: bool) -> None:
-        serialized = json.dumps(event_line, separators=(",", ":"), sort_keys=True)
+    def append(self, event_line: journal_models.JournalEventLine, *, is_onboarding_segment: bool) -> None:
+        journal_safe.run_journal_operation(
+            "store.append",
+            lambda: self._append(event_line, is_onboarding_segment=is_onboarding_segment),
+            default=None,
+        )
+
+    def read_all_events(self) -> list[journal_models.JournalEventLine]:
+        return journal_safe.run_journal_operation(
+            "store.read_all_events",
+            self._read_all_events,
+            default=[],
+        )
+
+    def _append(self, event_line: journal_models.JournalEventLine, *, is_onboarding_segment: bool) -> None:
+        serialized = json.dumps(event_line.to_dict(), separators=(",", ":"), sort_keys=True)
         with self._lock:
             with open(self._events_path, "a", encoding="utf-8") as events_file:
                 events_file.write(serialized + "\n")
@@ -48,7 +67,7 @@ class JournalStore:
                     onboarding_file.write(serialized + "\n")
             self._enforce_cap(is_onboarding_segment=is_onboarding_segment)
 
-    def read_all_events(self) -> list[dict]:
+    def _read_all_events(self) -> list[journal_models.JournalEventLine]:
         with self._lock:
             pinned_onboarding = self._read_jsonl_file(self._onboarding_path)
             main_events = self._read_jsonl_file(self._events_path)
@@ -57,7 +76,7 @@ class JournalStore:
         merged_by_key = {}
         for event_line in pinned_onboarding + main_events:
             merged_by_key[self._event_dedup_key(event_line)] = event_line
-        return sorted(merged_by_key.values(), key=lambda line: line.get("timestamp", 0))
+        return sorted(merged_by_key.values(), key=lambda line: line.timestamp)
 
     def _enforce_cap(self, *, is_onboarding_segment: bool) -> None:
         del is_onboarding_segment
@@ -69,7 +88,7 @@ class JournalStore:
         protected_events = []
         evictable_events = []
         for event_line in main_events:
-            if onboarding_cutoff is None or event_line.get("timestamp", 0) <= onboarding_cutoff:
+            if onboarding_cutoff is None or event_line.timestamp <= onboarding_cutoff:
                 protected_events.append(event_line)
             else:
                 evictable_events.append(event_line)
@@ -86,16 +105,16 @@ class JournalStore:
         self._write_jsonl_file(self._events_path, kept_events)
 
     @staticmethod
-    def _event_dedup_key(event_line: dict) -> tuple:
+    def _event_dedup_key(event_line: journal_models.JournalEventLine) -> tuple:
         return (
-            event_line.get("timestamp"),
-            event_line.get("event"),
-            event_line.get("session_id"),
-            json.dumps(event_line.get("attributes", {}), sort_keys=True),
+            event_line.timestamp,
+            event_line.event.value,
+            event_line.session_id,
+            json.dumps(event_line.attributes.to_dict(), sort_keys=True),
         )
 
     @staticmethod
-    def _read_jsonl_file(path: str) -> list[dict]:
+    def _read_jsonl_file(path: str) -> list[journal_models.JournalEventLine]:
         if not os.path.isfile(path):
             return []
         parsed_lines = []
@@ -104,14 +123,17 @@ class JournalStore:
                 stripped_line = raw_line.strip()
                 if not stripped_line:
                     continue
-                parsed_lines.append(json.loads(stripped_line))
+                try:
+                    parsed_lines.append(journal_models.JournalEventLine.from_dict(json.loads(stripped_line)))
+                except (json.JSONDecodeError, KeyError, ValueError) as exc:
+                    logger.exception("Failed to parse journal line in %s: %s", path, exc)
         return parsed_lines
 
     @staticmethod
-    def _write_jsonl_file(path: str, events: list[dict]) -> None:
+    def _write_jsonl_file(path: str, events: list[journal_models.JournalEventLine]) -> None:
         with open(path, "w", encoding="utf-8") as jsonl_file:
             for event_line in events:
-                jsonl_file.write(json.dumps(event_line, separators=(",", ":"), sort_keys=True) + "\n")
+                jsonl_file.write(json.dumps(event_line.to_dict(), separators=(",", ":"), sort_keys=True) + "\n")
 
 
 _default_store: JournalStore | None = None

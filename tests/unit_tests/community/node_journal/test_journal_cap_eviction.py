@@ -49,8 +49,8 @@ class TestJournalCapEviction:
 
         events = journal_module.read_events()
         assert len(events) == 10
-        protected_timestamps = {event_line["timestamp"] for event_line in events if event_line["timestamp"] < 100.0}
-        evictable_timestamps = {event_line["timestamp"] for event_line in events if event_line["timestamp"] >= 100.0}
+        protected_timestamps = {event_line.timestamp for event_line in events if event_line.timestamp < 100.0}
+        evictable_timestamps = {event_line.timestamp for event_line in events if event_line.timestamp >= 100.0}
         assert protected_timestamps == {10.0, 11.0, 12.0, 13.0, 14.0}
         assert evictable_timestamps == {205.0, 206.0, 207.0, 208.0, 209.0}
 

@@ -27,10 +27,11 @@ class TestRecordStrategyCreateSucceeded:
             user_action_id="ua-create-strategy",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED.value
-        assert events[0]["attributes"]["strategy_id"] == "strategy-create-1"
-        assert events[0]["attributes"]["configuration_type"] == "generic_process"
-        assert events[0]["attributes"]["user_action_id"] == "ua-create-strategy"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED
+        assert event_line.attributes.strategy_id == "strategy-create-1"
+        assert event_line.attributes.configuration_type == "generic_process"
+        assert event_line.attributes.user_action_id == "ua-create-strategy"
 
 
 class TestRecordStrategyEditSucceeded:
@@ -41,7 +42,8 @@ class TestRecordStrategyEditSucceeded:
             user_action_id="ua-edit-strategy",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED.value
-        assert events[0]["attributes"]["strategy_id"] == "strategy-edit-1"
-        assert events[0]["attributes"]["configuration_type"] == "market_making"
-        assert events[0]["attributes"]["user_action_id"] == "ua-edit-strategy"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED
+        assert event_line.attributes.strategy_id == "strategy-edit-1"
+        assert event_line.attributes.configuration_type == "market_making"
+        assert event_line.attributes.user_action_id == "ua-edit-strategy"

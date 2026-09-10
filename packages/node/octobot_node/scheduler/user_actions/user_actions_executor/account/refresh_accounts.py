@@ -58,11 +58,6 @@ class RefreshAccountsActionExecutor(account_user_action_executor.AccountUserActi
             checked_account = await account_state_updater.update_account_state(account, self._user_id)
             account_provider.update_item(self._user_id, checked_account)
         self._mark_user_action_completed(user_action)
-        if cached_all_accounts is None:
-            account_count = len(account_provider.list_items(self._user_id))
-        else:
-            account_count = len(cached_all_accounts)
         node_journal.record_accounts_refreshed(
-            account_count=account_count,
-            refreshed_count=len(account_ids_to_refresh),
+            account_ids=list(account_ids_to_refresh),
         )

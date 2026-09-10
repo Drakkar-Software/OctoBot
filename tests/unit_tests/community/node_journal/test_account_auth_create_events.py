@@ -46,9 +46,10 @@ class TestRecordAccountAuthCreateSucceeded:
         )
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_SUCCEEDED.value
-        assert events[0]["attributes"]["exchange_name"] == "binanceus"
-        assert events[0]["attributes"]["user_action_id"] == "ua-auth-create"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_SUCCEEDED
+        assert event_line.attributes.exchange_name == "binanceus"
+        assert event_line.attributes.user_action_id == "ua-auth-create"
 
 
 class TestRecordExternalActionReceivedAccountAuthCreate:
@@ -57,11 +58,11 @@ class TestRecordExternalActionReceivedAccountAuthCreate:
         journal_recording.record_external_action_received(user_action, source="sync")
 
         events = journal_module.read_events()
-        event_names = [event_line["event"] for event_line in events]
-        assert journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_ATTEMPT.value in event_names
+        event_names = [event_line.event for event_line in events]
+        assert journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_ATTEMPT in event_names
         attempt_event = next(
             event_line
             for event_line in events
-            if event_line["event"] == journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_ATTEMPT.value
+            if event_line.event == journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_ATTEMPT
         )
-        assert attempt_event["attributes"]["user_action_id"] == user_action.id
+        assert attempt_event.attributes.user_action_id == user_action.id

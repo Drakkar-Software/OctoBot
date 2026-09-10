@@ -33,17 +33,19 @@ class TestRecordExistingConfigDetected:
             automation_count=0,
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.EXISTING_CONFIG_DETECTED.value
-        assert events[0]["attributes"]["wallet_configured"] is True
-        assert events[0]["attributes"]["account_count"] == 2
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.EXISTING_CONFIG_DETECTED
+        assert event_line.attributes.wallet_configured is True
+        assert event_line.attributes.account_count == 2
 
 
 class TestRecordReconcileCompleted:
     def test_records_automation_count(self, journal_persisted_state):
         journal_recording.record_reconcile_completed(automation_count=3)
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.RECONCILE_COMPLETED.value
-        assert events[0]["attributes"]["automation_count"] == 3
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.RECONCILE_COMPLETED
+        assert event_line.attributes.automation_count == 3
 
 
 class TestCompleteReconcileAutomations:
@@ -85,5 +87,6 @@ class TestCompleteReconcileAutomations:
         ):
             await journal_startup.complete_reconcile_automations()
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.RECONCILE_COMPLETED.value
-        assert events[0]["attributes"]["automation_count"] == 2
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.RECONCILE_COMPLETED
+        assert event_line.attributes.automation_count == 2

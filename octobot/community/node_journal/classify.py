@@ -14,58 +14,58 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import typing
-
 import octobot_protocol.models as protocol_models
 import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
 import octobot.constants as constants
 import octobot_sync.sync.collection_backend.errors as collection_errors
 
+import octobot.community.node_journal.enums as journal_enums
+
 
 def classify_octobot_kind(
     strategy: protocol_models.Strategy,
-) -> tuple[str, str | None]:
+) -> tuple[journal_enums.OctobotKind, str | None]:
     configuration_wrapper = strategy.configuration
     if configuration_wrapper is None or configuration_wrapper.actual_instance is None:
-        return "manual", None
+        return journal_enums.OctobotKind.MANUAL, None
     inner_configuration = configuration_wrapper.actual_instance
     if isinstance(inner_configuration, protocol_models.GenericProcessConfiguration):
-        return "manual", None
+        return journal_enums.OctobotKind.MANUAL, None
     if isinstance(inner_configuration, protocol_models.MarketMakingConfiguration):
-        return "market_making", None
+        return journal_enums.OctobotKind.MARKET_MAKING, None
     if isinstance(inner_configuration, protocol_models.CopyConfiguration):
-        return "flow", "copy"
+        return journal_enums.OctobotKind.FLOW, journal_enums.FlowSubtype.COPY.value
     if isinstance(inner_configuration, protocol_models.SignalBotConfiguration):
-        return "flow", "signal_bot"
+        return journal_enums.OctobotKind.FLOW, journal_enums.FlowSubtype.SIGNAL_BOT.value
     if isinstance(inner_configuration, protocol_models.GenericWorkflowConfiguration):
-        return "flow", "ai_agents"
+        return journal_enums.OctobotKind.FLOW, journal_enums.FlowSubtype.AI_AGENTS.value
     if isinstance(inner_configuration, protocol_models.TradingTentaclesConfiguration):
         tentacle_name = inner_configuration.name or ""
         if not tentacle_name:
-            return "flow", "other"
-        return "flow", tentacle_name
-    return "flow", "other"
+            return journal_enums.OctobotKind.FLOW, journal_enums.FlowSubtype.OTHER.value
+        return journal_enums.OctobotKind.FLOW, tentacle_name
+    return journal_enums.OctobotKind.FLOW, journal_enums.FlowSubtype.OTHER.value
 
 
-def configuration_type_from_strategy(strategy: protocol_models.Strategy) -> str:
+def configuration_type_from_strategy(strategy: protocol_models.Strategy) -> journal_enums.ConfigurationType:
     configuration_wrapper = strategy.configuration
     if configuration_wrapper is None or configuration_wrapper.actual_instance is None:
-        return "generic_process"
+        return journal_enums.ConfigurationType.GENERIC_PROCESS
     inner_configuration = configuration_wrapper.actual_instance
     if isinstance(inner_configuration, protocol_models.GenericProcessConfiguration):
-        return "generic_process"
+        return journal_enums.ConfigurationType.GENERIC_PROCESS
     if isinstance(inner_configuration, protocol_models.MarketMakingConfiguration):
-        return "market_making"
+        return journal_enums.ConfigurationType.MARKET_MAKING
     if isinstance(inner_configuration, protocol_models.CopyConfiguration):
-        return "copy"
+        return journal_enums.ConfigurationType.COPY
     if isinstance(inner_configuration, protocol_models.SignalBotConfiguration):
-        return "signal_bot"
+        return journal_enums.ConfigurationType.SIGNAL_BOT
     if isinstance(inner_configuration, protocol_models.GenericWorkflowConfiguration):
-        return "generic_workflow"
+        return journal_enums.ConfigurationType.GENERIC_WORKFLOW
     if isinstance(inner_configuration, protocol_models.TradingTentaclesConfiguration):
-        return "trading_tentacles"
-    return "generic_process"
+        return journal_enums.ConfigurationType.TRADING_TENTACLES
+    return journal_enums.ConfigurationType.GENERIC_PROCESS
 
 
 def resolve_account_exchange_name(

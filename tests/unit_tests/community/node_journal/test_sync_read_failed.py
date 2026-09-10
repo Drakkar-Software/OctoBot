@@ -86,10 +86,11 @@ class TestGetData:
 
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.SYNC_READ_FAILED.value
-        assert events[0]["attributes"]["collection"] == sync_enums.Collections.USER_DATA.value
-        assert events[0]["attributes"]["failure_reason"] == "wallet_not_found"
-        assert events[0]["attributes"]["error_category"] == "OctobotSyncWalletNotFoundError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.SYNC_READ_FAILED
+        assert event_line.attributes.collection == sync_enums.Collections.USER_DATA.value
+        assert event_line.attributes.failure_reason == "wallet_not_found"
+        assert event_line.attributes.error_category == "OctobotSyncWalletNotFoundError"
 
     @pytest.mark.asyncio
     async def test_successful_user_data_pull_does_not_record_sync_read_failed(self, journal_persisted_state):
@@ -111,6 +112,6 @@ class TestGetData:
         sync_read_failures = [
             event_line
             for event_line in journal_module.read_events()
-            if event_line["event"] == journal_events.NodeJournalEvent.SYNC_READ_FAILED.value
+            if event_line.event == journal_events.NodeJournalEvent.SYNC_READ_FAILED
         ]
         assert sync_read_failures == []

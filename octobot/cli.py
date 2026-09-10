@@ -544,8 +544,6 @@ def start_octobot(args, default_config_file=None):
         if not config.is_loaded():
             raise errors.ConfigError
 
-        journal_startup.initialize_journal(config)
-
         # Handle utility methods before bot initializing if possible
         if args.encrypter:
             commands.exchange_keys_encrypter()
@@ -557,6 +555,7 @@ def start_octobot(args, default_config_file=None):
         community_auth = None if args.backtesting else asyncio.run(
             _get_authenticated_community_if_possible(config, logger)
         )
+        journal_startup.initialize_journal(config)
 
         # Startup order matters: sync user and tentacles/community config must run before
         # profile activation. First boot (empty user/) has no profiles until tentacles

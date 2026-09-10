@@ -72,8 +72,7 @@ class TestRefreshAccountsActionExecutorExecute:
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
         record_accounts_refreshed_mock.assert_called_once_with(
-            account_count=2,
-            refreshed_count=2,
+            account_ids=["acc-1", "acc-2"],
         )
         provider_mock.list_items.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS)
         assert provider_mock.get_item.call_count == 2
@@ -123,7 +122,7 @@ class TestRefreshAccountsActionExecutorExecute:
         ):
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
-        provider_mock.list_items.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS)
+        provider_mock.list_items.assert_not_called()
         provider_mock.get_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "acc-1")
         provider_mock.update_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, checked_account)
         provider_assertions.assert_user_action_terminal_state(

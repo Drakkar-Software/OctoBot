@@ -20,6 +20,7 @@ import uuid
 import octobot.community.node_journal.constants as journal_constants
 import octobot.community.node_journal.events as journal_events
 import octobot.community.node_journal.journal as journal_module
+import octobot.community.node_journal.models as journal_models
 import octobot.community.node_journal.state as journal_state
 
 
@@ -50,15 +51,14 @@ def on_user_data_pull_succeeded(*, sync_user_id: str, collection: str) -> None:
             prior_gap_seconds = round(gap_seconds, 3)
     if is_first_ever or is_reconnect or _tracker_reset_after_startup:
         persisted_state.connection_sequence += 1
-        attributes = {
-            "collection": collection,
-            "sync_session_id": str(uuid.uuid4()),
-            "connection_sequence": persisted_state.connection_sequence,
-            "is_reconnect": not is_first_ever,
-            "duration_since_install_start": _duration_since_install_start(now),
-        }
-        if prior_gap_seconds is not None:
-            attributes["prior_gap_seconds"] = prior_gap_seconds
+        attributes = journal_models.JournalEventAttributes(
+            collection=collection,
+            sync_session_id=str(uuid.uuid4()),
+            connection_sequence=persisted_state.connection_sequence,
+            is_reconnect=not is_first_ever,
+            duration_since_install_start=_duration_since_install_start(now),
+            prior_gap_seconds=prior_gap_seconds,
+        )
         journal_module.record(
             journal_events.NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED,
             attributes=attributes,

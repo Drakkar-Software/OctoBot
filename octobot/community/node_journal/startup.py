@@ -19,6 +19,8 @@ import typing
 
 import octobot_commons.configuration as configuration
 
+import octobot.configuration_manager as configuration_manager
+import octobot.enums as octobot_enums
 import octobot_protocol.models as protocol_models
 import octobot_sync.sync.collection_providers as collection_providers
 
@@ -61,6 +63,9 @@ def initialize_journal(config: configuration.Configuration) -> None:
     sentry_tracker.init_sentry_tracker(metrics_enabled=False)
     import octobot.community.node_journal.enabled as journal_enabled_module
     if not journal_enabled_module.is_journal_enabled():
+        return
+    distribution = configuration_manager.get_distribution(config.config)
+    if distribution is not octobot_enums.OctoBotDistribution.NODE:
         return
     journal_module.initialize_for_config(config)
     snapshot = build_existing_config_snapshot()

@@ -30,10 +30,11 @@ class TestRecordSyncStorageEvent:
             error=sync_errors.OctobotSyncCryptoDecryptError("bad key"),
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.SYNC_STORAGE_DECRYPT_FAILED.value
-        assert events[0]["attributes"]["collection"] == "user-accounts"
-        assert events[0]["attributes"]["provider"] == "local"
-        assert events[0]["attributes"]["error_category"] == "OctobotSyncCryptoDecryptError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.SYNC_STORAGE_DECRYPT_FAILED
+        assert event_line.attributes.collection == "user-accounts"
+        assert event_line.attributes.provider == "local"
+        assert event_line.attributes.error_category == "OctobotSyncCryptoDecryptError"
 
     def test_records_format_error(self, journal_persisted_state):
         journal_recording.record_sync_storage_event(
@@ -43,7 +44,7 @@ class TestRecordSyncStorageEvent:
             error=ValueError("invalid json"),
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR.value
+        assert events[0].event == journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR
 
     def test_records_schema_recovery_without_error(self, journal_persisted_state):
         journal_recording.record_sync_storage_event(
@@ -53,6 +54,7 @@ class TestRecordSyncStorageEvent:
             recovery_action="drop_invalid_items",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.SYNC_STORAGE_SCHEMA_RECOVERY.value
-        assert events[0]["attributes"]["recovery_action"] == "drop_invalid_items"
-        assert "error_category" not in events[0]["attributes"]
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.SYNC_STORAGE_SCHEMA_RECOVERY
+        assert event_line.attributes.recovery_action == "drop_invalid_items"
+        assert event_line.attributes.error_category is None

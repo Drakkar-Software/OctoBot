@@ -26,16 +26,18 @@ class TestRecordWalletSetupAttempt:
         journal_recording.record_wallet_setup_attempt(node_type="node", setup_method="api")
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.WALLET_SETUP_ATTEMPT.value
-        assert events[0]["attributes"] == {"node_type": "node", "setup_method": "api"}
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.WALLET_SETUP_ATTEMPT
+        assert event_line.attributes.to_dict() == {"node_type": "node", "setup_method": "api"}
 
 
 class TestRecordWalletSetupSucceeded:
     def test_records_configured_flag(self, journal_persisted_state):
         journal_recording.record_wallet_setup_succeeded()
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED.value
-        assert events[0]["attributes"] == {"configured": True}
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED
+        assert event_line.attributes.to_dict() == {"configured": True}
 
 
 class TestRecordWalletSetupFailed:
@@ -47,11 +49,13 @@ class TestRecordWalletSetupFailed:
             setup_method="api",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.WALLET_SETUP_FAILED.value
-        assert events[0]["attributes"]["http_status"] == 400
-        assert events[0]["attributes"]["failure_reason"] == "invalid_passphrase"
-        assert events[0]["attributes"]["error_category"] == "ValueError"
-        assert events[0]["attributes"]["setup_method"] == "api"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.WALLET_SETUP_FAILED
+        assert event_line.attributes.http_status == 400
+        assert event_line.attributes.failure_reason == "invalid_passphrase"
+        assert event_line.attributes.error_category == "ValueError"
+        assert event_line.attributes.setup_method == "api"
+        assert event_line.attributes.error_message == ""
 
     def test_records_422_wallet_error(self, journal_persisted_state):
         journal_recording.record_wallet_setup_failed(
@@ -61,8 +65,10 @@ class TestRecordWalletSetupFailed:
             setup_method="create",
         )
         events = journal_module.read_events()
-        assert events[0]["attributes"]["http_status"] == 422
-        assert events[0]["attributes"]["failure_reason"] == "wallet_error"
+        event_line = events[0]
+        assert event_line.attributes.http_status == 422
+        assert event_line.attributes.failure_reason == "wallet_error"
+        assert event_line.attributes.error_message == ""
 
     def test_records_409_already_configured(self, journal_persisted_state):
         journal_recording.record_wallet_setup_failed(
@@ -72,8 +78,10 @@ class TestRecordWalletSetupFailed:
             setup_method="create",
         )
         events = journal_module.read_events()
-        assert events[0]["attributes"]["http_status"] == 409
-        assert events[0]["attributes"]["failure_reason"] == "already_configured"
+        event_line = events[0]
+        assert event_line.attributes.http_status == 409
+        assert event_line.attributes.failure_reason == "already_configured"
+        assert event_line.attributes.error_message == ""
 
     def test_records_503_service_unavailable(self, journal_persisted_state):
         journal_recording.record_wallet_setup_failed(
@@ -83,9 +91,11 @@ class TestRecordWalletSetupFailed:
             setup_method="import",
         )
         events = journal_module.read_events()
-        assert events[0]["attributes"]["http_status"] == 503
-        assert events[0]["attributes"]["failure_reason"] == "service_unavailable"
-        assert events[0]["attributes"]["setup_method"] == "import"
+        event_line = events[0]
+        assert event_line.attributes.http_status == 503
+        assert event_line.attributes.failure_reason == "service_unavailable"
+        assert event_line.attributes.setup_method == "import"
+        assert event_line.attributes.error_message == ""
 
 
 class TestRecordWalletOperationFailed:
@@ -96,10 +106,12 @@ class TestRecordWalletOperationFailed:
             http_status=409,
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.WALLET_OPERATION_FAILED.value
-        assert events[0]["attributes"]["operation"] == "delete_wallet"
-        assert events[0]["attributes"]["http_status"] == 409
-        assert events[0]["attributes"]["error_category"] == "RuntimeError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.WALLET_OPERATION_FAILED
+        assert event_line.attributes.operation == "delete_wallet"
+        assert event_line.attributes.http_status == 409
+        assert event_line.attributes.error_category == "RuntimeError"
+        assert event_line.attributes.error_message == ""
 
 
 class TestRecordProcessStartupSucceeded:
@@ -114,7 +126,8 @@ class TestRecordProcessStartupSucceeded:
             )
         reset_tracker_mock.assert_called_once_with()
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.NODE_PROCESS_STARTUP_SUCCEEDED.value
-        assert events[0]["attributes"]["wallet_configured"] is False
-        assert events[0]["attributes"]["new_install"] is True
-        assert events[0]["attributes"]["reconciled"] is False
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.NODE_PROCESS_STARTUP_SUCCEEDED
+        assert event_line.attributes.wallet_configured is False
+        assert event_line.attributes.new_install is True
+        assert event_line.attributes.reconciled is False

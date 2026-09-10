@@ -46,5 +46,5 @@ class TestRecordWhenJournalDisabled:
                 journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED,
                 attributes={"configured": True},
             )
-            assert event_line["recorded"] is False
+            assert event_line.recorded is False
             assert journal_module.read_events() == []

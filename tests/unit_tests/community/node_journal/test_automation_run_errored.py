@@ -29,9 +29,10 @@ class TestRecordAutomationRunErrored:
             retriable=True,
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.AUTOMATION_RUN_ERRORED.value
-        assert events[0]["attributes"]["automation_id"] == "auto-error-1"
-        assert events[0]["attributes"]["error_status"] == "action_execution_error"
-        assert events[0]["attributes"]["error_origin"] == "workflow"
-        assert events[0]["attributes"]["retriable"] is True
-        assert events[0]["attributes"]["error_category"] == "RuntimeError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.AUTOMATION_RUN_ERRORED
+        assert event_line.attributes.automation_id == "auto-error-1"
+        assert event_line.attributes.error_status == "action_execution_error"
+        assert event_line.attributes.error_origin == "workflow"
+        assert event_line.attributes.retriable is True
+        assert event_line.attributes.error_category == "RuntimeError"

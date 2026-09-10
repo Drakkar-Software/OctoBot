@@ -45,13 +45,13 @@ class TestRecordExecutorFailure:
         )
         journal_recording.record_executor_failure(
             user_action,
-            source="sync",
             error=RuntimeError("auth create failed"),
         )
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_FAILED.value
-        assert events[0]["attributes"]["user_action_id"] == user_action.id
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.ACCOUNT_AUTH_CREATE_FAILED
+        assert event_line.attributes.user_action_id == user_action.id
 
     def test_maps_strategy_edit_to_strategy_edit_failed(self, journal_persisted_state):
         strategy_configuration = protocol_models.GenericProcessConfiguration(
@@ -78,8 +78,7 @@ class TestRecordExecutorFailure:
         )
         journal_recording.record_executor_failure(
             user_action,
-            source="debug_api",
             error=ValueError("invalid profile"),
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.STRATEGY_EDIT_FAILED.value
+        assert events[0].event == journal_events.NodeJournalEvent.STRATEGY_EDIT_FAILED

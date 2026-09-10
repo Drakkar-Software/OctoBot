@@ -1,0 +1,34 @@
+import { getUiBuild, reportUiJournalEvent } from "@/lib/journal-client-event"
+
+export function reportShellFatalError(error: Error): void {
+  void reportUiJournalEvent("ui_fatal_render_error", {
+    error_name: error.name,
+    error_category: error.constructor.name,
+    route_path: window.location.pathname,
+    ui_build: getUiBuild(),
+  })
+}
+
+export function reportBootFailed(error: Error): void {
+  void reportUiJournalEvent("ui_boot_failed", {
+    error_name: error.name,
+    error_category: error.constructor.name,
+    route_path: window.location.pathname,
+    ui_build: getUiBuild(),
+  })
+}
+
+export function reportSessionAborted(priorSessionId: string | null): void {
+  void reportUiJournalEvent("ui_session_aborted", {
+    prior_session_id: priorSessionId,
+    ui_build: getUiBuild(),
+  })
+}
+
+export function reportAuthStateBroken(): void {
+  void reportUiJournalEvent("ui_auth_state_broken", {
+    has_username: true,
+    has_password_record: false,
+    ui_build: getUiBuild(),
+  })
+}

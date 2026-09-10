@@ -126,7 +126,7 @@ _JOURNAL_PATCH = "octobot.community.node_journal.record_wallet_operation_failed"
 
 
 class TestImportWalletFromSeedJournal:
-    def test_records_journal_on_invalid_seed(self):
+    def test_does_not_record_journal_on_invalid_seed(self):
         backend, _ = _make_backend()
         with mock.patch(_JOURNAL_PATCH) as record_mock:
             with pytest.raises(InvalidPrivateKeyError):
@@ -135,10 +135,7 @@ class TestImportWalletFromSeedJournal:
                     passphrase="passphrase123",
                     name=None,
                 )
-        record_mock.assert_called_once()
-        assert record_mock.call_args.kwargs["operation"] == "import"
-        assert isinstance(record_mock.call_args.kwargs["error"], InvalidPrivateKeyError)
-        assert "http_status" not in record_mock.call_args.kwargs
+        record_mock.assert_not_called()
 
 
 class TestCreateWalletJournal:
@@ -162,7 +159,7 @@ class TestCreateWalletJournal:
 
 
 class TestDecryptWalletJournal:
-    def test_records_journal_on_invalid_passphrase(self):
+    def test_does_not_record_journal_on_invalid_passphrase(self):
         from octobot.community.wallet_backend.errors import InvalidPassphraseError
 
         backend, _ = _make_backend()
@@ -170,10 +167,7 @@ class TestDecryptWalletJournal:
         with mock.patch(_JOURNAL_PATCH) as record_mock:
             with pytest.raises(InvalidPassphraseError):
                 backend.decrypt_wallet_entry_by_address(_TEST_MNEMONIC_ADDRESS, "wrong-passphrase")
-        record_mock.assert_called_once()
-        assert record_mock.call_args.kwargs["operation"] == "decrypt"
-        assert isinstance(record_mock.call_args.kwargs["error"], InvalidPassphraseError)
-        assert "http_status" not in record_mock.call_args.kwargs
+        record_mock.assert_not_called()
 
 
 class TestRemoveWalletJournal:

@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import os
 
 import octobot.community.node_journal.constants as journal_constants
@@ -75,8 +76,35 @@ class TestOnboardingSegmentPreserved:
 
         events = journal_module.read_events()
         setup_methods = [
-            event_line["attributes"]["setup_method"]
+            event_line.attributes.setup_method
             for event_line in events
-            if event_line["event"] == journal_events.NodeJournalEvent.WALLET_SETUP_ATTEMPT.value
+            if event_line.event == journal_events.NodeJournalEvent.WALLET_SETUP_ATTEMPT
         ]
         assert setup_methods == ["method-0", "method-1", "method-2", "method-3", "method-4"]
+
+
+class TestLegacyJsonlEventRead:
+    def test_reads_obsolete_event_name_as_unknown(self, journal_persisted_state, journal_user_root):
+        events_path = os.path.join(
+            str(journal_user_root),
+            journal_constants.JOURNAL_DIR_NAME,
+            journal_constants.EVENTS_FILE_NAME,
+        )
+        os.makedirs(os.path.dirname(events_path), exist_ok=True)
+        legacy_event_line = {
+            "event": "legacy_custom_event",
+            "timestamp": 12.0,
+            "session_id": "session-1",
+            "install_id": journal_persisted_state.install_id,
+            "app_version": "1.0.0",
+            "distribution": journal_constants.DISTRIBUTION_NODE,
+            "onboarding_complete": False,
+            "attributes": {},
+        }
+        with open(events_path, "w", encoding="utf-8") as events_file:
+            events_file.write(json.dumps(legacy_event_line) + "\n")
+        events = journal_module.read_events()
+        assert len(events) == 1
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.UNKNOWN
+        assert event_line.attributes.raw_event_name == "legacy_custom_event"

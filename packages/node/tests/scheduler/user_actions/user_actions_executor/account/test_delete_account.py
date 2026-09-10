@@ -51,7 +51,7 @@ class TestDeleteAccountActionExecutorExecute:
             executor = delete_account_executor.DeleteAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
         record_account_deleted_mock.assert_called_once()
-        assert record_account_deleted_mock.call_args.kwargs["account_count"] == 0
+        assert record_account_deleted_mock.call_args.kwargs["account_id"] == "del-1"
         provider_mock.delete_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "del-1")
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,

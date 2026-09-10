@@ -31,10 +31,11 @@ class TestRecordFirstAutomationStarted:
             user_action_id="ua-first",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED.value
-        assert events[0]["attributes"]["automation_id"] == "auto-1"
-        assert events[0]["attributes"]["octobot_kind"] == "flow"
-        assert events[0]["attributes"]["user_action_id"] == "ua-first"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED
+        assert event_line.attributes.automation_id == "auto-1"
+        assert event_line.attributes.octobot_kind == "flow"
+        assert event_line.attributes.user_action_id == "ua-first"
 
 
 class TestRecordNewAutomationCreated:
@@ -48,7 +49,7 @@ class TestRecordNewAutomationCreated:
         )
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED.value
+        assert events[0].event == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED
 
     def test_second_automation_emits_automation_started(self, journal_persisted_state):
         journal_recording.record_new_automation_created(
@@ -61,9 +62,10 @@ class TestRecordNewAutomationCreated:
         )
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.AUTOMATION_STARTED.value
-        assert events[0]["attributes"]["automation_count"] == 2
-        assert events[0]["attributes"]["source"] == "sync"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.AUTOMATION_STARTED
+        assert event_line.attributes.automation_count == 2
+        assert event_line.attributes.source == "sync"
 
 
 class TestRecordNewAutomationCreatedFromStrategy:
@@ -75,7 +77,7 @@ class TestRecordNewAutomationCreatedFromStrategy:
             user_action_id="ua-create-auto",
         )
         events = journal_module.read_events()
-        assert events[0]["event"] == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED.value
+        assert events[0].event == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED
         persisted_state = journal_state.load_persisted_state()
         assert persisted_state.tracked_automation_ids == ["auto-from-strategy"]
 
@@ -88,3 +90,16 @@ class TestRecordNewAutomationCreatedFromStrategy:
             strategy=strategy_model,
         )
         assert journal_module.read_events() == []
+
+    def test_does_not_repeat_first_started_when_milestone_already_set(self, journal_persisted_state):
+        journal_persisted_state.first_automation_started_at = 100.0
+        journal_persisted_state.tracked_automation_ids = []
+        journal_state.save_persisted_state(journal_persisted_state)
+        strategy_model = _minimal_strategy(strategy_id="strategy-restart")
+        journal_recording.record_new_automation_created_from_strategy(
+            automation_id="auto-after-reset",
+            strategy=strategy_model,
+        )
+        events = journal_module.read_events()
+        assert len(events) == 1
+        assert events[0].event == journal_events.NodeJournalEvent.AUTOMATION_STARTED

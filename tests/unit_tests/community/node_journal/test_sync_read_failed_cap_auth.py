@@ -35,10 +35,11 @@ class TestBuildRoleResolverCapAuth:
             await gated_resolver(mock.Mock())
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.SYNC_READ_FAILED.value
-        assert events[0]["attributes"]["collection"] == "user-data"
-        assert events[0]["attributes"]["failure_reason"] == "cap_auth"
-        assert events[0]["attributes"]["error_category"] == "CapAuthError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.SYNC_READ_FAILED
+        assert event_line.attributes.collection == "user-data"
+        assert event_line.attributes.failure_reason == "cap_auth"
+        assert event_line.attributes.error_category == "CapAuthError"
 
     @pytest.mark.asyncio
     async def test_records_sync_read_failed_when_identity_not_allowed(self, journal_persisted_state):
@@ -51,4 +52,4 @@ class TestBuildRoleResolverCapAuth:
             await gated_resolver(mock.Mock())
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["attributes"]["failure_reason"] == "cap_auth"
+        assert events[0].attributes.failure_reason == "cap_auth"

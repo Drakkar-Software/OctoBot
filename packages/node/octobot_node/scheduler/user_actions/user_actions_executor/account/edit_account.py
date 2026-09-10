@@ -63,16 +63,7 @@ class EditAccountActionExecutor(account_user_action_executor.AccountUserActionEx
             checked_account,
         )
         self._mark_user_action_completed(user_action)
-        import octobot.community.node_journal.classify as journal_classify
-        account_state = (
-            checked_account.state.status.value
-            if checked_account.state is not None
-            else protocol_models.AccountStatus.UNKNOWN.value
-        )
         node_journal.record_account_edit_succeeded(
-            account_id=checked_account.id,
-            is_simulated=checked_account.is_simulated,
-            exchange_name=journal_classify.resolve_account_exchange_name(checked_account, self._user_id),
-            account_state=account_state,
+            account_id=checked_account.id or "",
             user_action_id=user_action.id,
         )

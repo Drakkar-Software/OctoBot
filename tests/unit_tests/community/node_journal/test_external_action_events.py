@@ -91,14 +91,14 @@ class TestRecordExternalActionReceived:
         journal_recording.record_external_action_received(user_action, source="sync")
 
         events = journal_module.read_events()
-        event_names = [event_line["event"] for event_line in events]
+        event_names = [event_line.event for event_line in events]
         assert event_names == [
-            journal_events.NodeJournalEvent.EXTERNAL_ACTION_RECEIVED.value,
-            journal_events.NodeJournalEvent.STRATEGY_CREATE_ATTEMPT.value,
+            journal_events.NodeJournalEvent.EXTERNAL_ACTION_RECEIVED,
+            journal_events.NodeJournalEvent.STRATEGY_CREATE_ATTEMPT,
         ]
-        assert events[0]["attributes"]["source"] == "sync"
-        assert events[0]["attributes"]["action_type"] == protocol_models.UserActionType.STRATEGY_CREATE.value
-        assert events[0]["attributes"]["user_action_id"] == "ua-create"
+        assert events[0].attributes.source == "sync"
+        assert events[0].attributes.action_type == protocol_models.UserActionType.STRATEGY_CREATE.value
+        assert events[0].attributes.user_action_id == "ua-create"
 
 
 class TestRecordExternalActionFailed:
@@ -114,13 +114,13 @@ class TestRecordExternalActionFailed:
         )
 
         events = journal_module.read_events()
-        event_names = [event_line["event"] for event_line in events]
+        event_names = [event_line.event for event_line in events]
         assert event_names == [
-            journal_events.NodeJournalEvent.EXTERNAL_ACTION_FAILED.value,
-            journal_events.NodeJournalEvent.STRATEGY_CREATE_FAILED.value,
+            journal_events.NodeJournalEvent.EXTERNAL_ACTION_FAILED,
+            journal_events.NodeJournalEvent.STRATEGY_CREATE_FAILED,
         ]
-        assert events[0]["attributes"]["error_category"] == "RuntimeError"
-        assert events[1]["attributes"]["user_action_id"] == "ua-fail"
+        assert events[0].attributes.error_category == "RuntimeError"
+        assert events[1].attributes.user_action_id == "ua-fail"
 
 
 class TestRecordExecutorFailure:
@@ -131,15 +131,14 @@ class TestRecordExecutorFailure:
         )
         journal_recording.record_executor_failure(
             user_action,
-            source="sync",
             error=ValueError("bad account"),
         )
 
         events = journal_module.read_events()
         assert len(events) == 1
-        assert events[0]["event"] == journal_events.NodeJournalEvent.ACCOUNT_EDIT_FAILED.value
-        assert events[0]["attributes"]["source"] == "sync"
-        assert events[0]["attributes"]["error_category"] == "ValueError"
+        event_line = events[0]
+        assert event_line.event == journal_events.NodeJournalEvent.ACCOUNT_EDIT_FAILED
+        assert event_line.attributes.error_category == "ValueError"
 
 
 class TestRecordExternalActionAccountCreateFailure:
@@ -158,7 +157,7 @@ class TestRecordExternalActionAccountCreateFailure:
         validation_failures = [
             event_line
             for event_line in events
-            if event_line["event"] == journal_events.NodeJournalEvent.ACCOUNT_VALIDATION_FAILED.value
+            if event_line.event == journal_events.NodeJournalEvent.ACCOUNT_VALIDATION_FAILED
         ]
         assert len(validation_failures) == 1
-        assert validation_failures[0]["attributes"]["user_action_id"] == "ua-account"
+        assert validation_failures[0].attributes.user_action_id == "ua-account"
