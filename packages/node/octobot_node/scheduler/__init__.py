@@ -16,16 +16,30 @@
 
 import logging
 
+import octobot_node.config
 import octobot_node.constants
 import octobot_node.scheduler.scheduler as scheduler_lib
 import octobot_node.scheduler.workflows
 import octobot_node.scheduler.workflows_version_migration as workflows_version_migration
+
+import octobot.community.node_journal as node_journal
 
 scheduler_logger = logging.getLogger(__name__)
 
 SCHEDULER: scheduler_lib.Scheduler = scheduler_lib.Scheduler()
 
 _shutdown_done = False
+_scheduler_init_failure_recorded = False
+
+
+def scheduler_init_failure_was_recorded() -> bool:
+    return _scheduler_init_failure_recorded
+
+
+def _record_scheduler_init_failed(**kwargs) -> None:
+    global _scheduler_init_failure_recorded
+    _scheduler_init_failure_recorded = True
+    node_journal.record_scheduler_init_failed(**kwargs)
 
 
 def is_enabled() -> bool:
@@ -36,20 +50,68 @@ def is_initialized() -> bool:
     return SCHEDULER.is_initialized()
 
 
+def _scheduler_backend() -> str:
+    if octobot_node.config.settings.SCHEDULER_POSTGRES_URL:
+        return "postgres"
+    return "sqlite"
+
+
 async def initialize_scheduler():
-    global _shutdown_done
+    global _shutdown_done, _scheduler_init_failure_recorded
     _shutdown_done = False
+    _scheduler_init_failure_recorded = False
     scheduler_logger.info("Initializing scheduler")
-    SCHEDULER.create()
-    octobot_node.scheduler.workflows.register_workflows()
-    if octobot_node.constants.ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION:
-        workflows_version_migration.migrate_stranded_workflow_versions(
-            target_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
+    backend = _scheduler_backend()
+    try:
+        SCHEDULER.create()
+    except Exception as exc:
+        _record_scheduler_init_failed(
+            init_phase="dbos_create",
+            backend=backend,
+            error=exc,
         )
+        raise
+    try:
+        octobot_node.scheduler.workflows.register_workflows()
+    except Exception as exc:
+        _record_scheduler_init_failed(
+            init_phase="register_workflows",
+            backend=backend,
+            error=exc,
+        )
+        raise
+    if octobot_node.constants.ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION:
+        try:
+            workflows_version_migration.migrate_stranded_workflow_versions(
+                target_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
+            )
+        except Exception as exc:
+            _record_scheduler_init_failed(
+                init_phase="version_migration",
+                backend=backend,
+                error=exc,
+            )
+            raise
     import octobot_node.scheduler.schedules as schedules
-    SCHEDULER.start()
+    try:
+        SCHEDULER.start()
+    except Exception as exc:
+        _record_scheduler_init_failed(
+            init_phase="dbos_launch",
+            backend=backend,
+            error=exc,
+        )
+        raise
     # apply_schedules requires DBOS launch (sys_db); must run after start().
-    await schedules.register_schedules(SCHEDULER)
+    try:
+        await schedules.register_schedules(SCHEDULER)
+    except Exception as exc:
+        _record_scheduler_init_failed(
+            init_phase="register_schedules",
+            backend=backend,
+            error=exc,
+        )
+        raise
 
 
 async def shutdown_scheduler_and_trading_signal_channel() -> None:

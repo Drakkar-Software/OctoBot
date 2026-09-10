@@ -40,14 +40,24 @@ class TestCreateStrategyActionExecutorExecute:
             configuration=strategy_executor_test_utils.wrap_configuration(inner),
         )
         provider_mock = mock.Mock()
-        with mock.patch(
-            "octobot_sync.sync.collection_providers.StrategyProvider.instance",
-            return_value=provider_mock,
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.StrategyProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.strategy.create_strategy.node_journal.record_strategy_create_succeeded",
+            ) as record_strategy_create_succeeded_mock,
         ):
             executor = create_strategy_executor.CreateStrategyActionExecutor(
                 strategy_executor_test_utils.WALLET_ADDRESS,
             )
             await executor.execute(user_action)
+        record_strategy_create_succeeded_mock.assert_called_once_with(
+            strategy_id="new-strategy",
+            configuration_type="generic_process",
+            user_action_id="ua-create-strategy",
+        )
         provider_mock.create_item.assert_called_once_with(
             strategy_executor_test_utils.WALLET_ADDRESS,
             strategy_model,

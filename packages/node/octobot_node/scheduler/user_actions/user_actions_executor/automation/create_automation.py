@@ -26,7 +26,7 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
 
-import octobot.community.activity_analysis as activity_analysis
+import octobot.community.node_journal as node_journal
 
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers as collection_providers
@@ -130,9 +130,10 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
             self._user_id,
             automation_configuration.strategy,
         )
-        activity_analysis.record_new_automation_created(
+        node_journal.record_new_automation_created_from_strategy(
             automation_id,
             stored_strategy,
+            user_action_id=user_action.id,
         )
 
     async def _create_automation_task(self, user_action, actions: list[flow_entities.AbstractActionDetails]) -> tuple[str, models.Task]:

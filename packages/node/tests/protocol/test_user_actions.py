@@ -36,8 +36,8 @@ class Test_execute_user_action:
             "trigger_user_action_workflow",
             new_callable=mock.AsyncMock,
         ) as trigger_workflow_mock, mock.patch.object(
-            user_actions_module.activity_analysis,
-            "record_user_action_entry",
+            user_actions_module.node_journal,
+            "record_external_action_received",
         ):
             await user_actions_module.execute_user_action(user_action_payload, _TEST_WALLET_ADDRESS)
         trigger_workflow_mock.assert_awaited_once_with(user_action_payload, _TEST_WALLET_ADDRESS)
@@ -46,8 +46,8 @@ class Test_execute_user_action:
     async def test_sync_source_emits_entry_onboarding_milestones(self):
         user_action_payload = _minimal_user_action(action_identifier="ua-entry-check")
         with mock.patch.object(
-            user_actions_module.activity_analysis,
-            "record_user_action_entry",
+            user_actions_module.node_journal,
+            "record_external_action_received",
         ) as entry_mock, mock.patch.object(
             user_actions_module.scheduler_tasks,
             "trigger_user_action_workflow",
@@ -67,8 +67,8 @@ class Test_execute_user_action:
     async def test_debug_api_emits_entry_onboarding_milestones_with_source(self):
         user_action_payload = _minimal_user_action(action_identifier="ua-debug-check")
         with mock.patch.object(
-            user_actions_module.activity_analysis,
-            "record_user_action_entry",
+            user_actions_module.node_journal,
+            "record_external_action_received",
         ) as entry_mock, mock.patch.object(
             user_actions_module.scheduler_tasks,
             "trigger_user_action_workflow",

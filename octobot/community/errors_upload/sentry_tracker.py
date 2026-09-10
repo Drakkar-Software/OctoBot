@@ -21,8 +21,16 @@ import sentry_sdk
 import octobot_commons.constants
 import octobot_commons.logging
 
-import octobot.community.activity_analysis.metric_definitions as metric_definitions
 import octobot.constants
+
+
+_USAGE_METRIC_NAME = "octobot.usage"
+_ONBOARDING_DURATION_METRIC_NAME = "octobot.onboarding.duration"
+
+
+class MetricAttributes(typing.Protocol):
+    def to_sentry_dict(self, bot_id: typing.Optional[str]) -> dict[str, str]:
+        ...
 
 
 _sentry_initialized = False
@@ -130,10 +138,10 @@ def update_tracker_bot_id(bot_id: str) -> None:
     sentry_sdk.set_tag("bot_id", bot_id)
 
 
-def track_usage_count(attributes: metric_definitions.MetricAttributes) -> None:
+def track_usage_count(attributes: MetricAttributes) -> None:
     metric_attributes = attributes.to_sentry_dict(_current_bot_id)
     sentry_sdk.metrics.count(
-        metric_definitions.SentryMetricNames.USAGE.value,
+        _USAGE_METRIC_NAME,
         1,
         attributes=metric_attributes,
     )
@@ -141,11 +149,11 @@ def track_usage_count(attributes: metric_definitions.MetricAttributes) -> None:
 
 def track_onboarding_duration_gauge(
     seconds: float,
-    attributes: metric_definitions.MetricAttributes,
+    attributes: MetricAttributes,
 ) -> None:
     metric_attributes = attributes.to_sentry_dict(_current_bot_id)
     sentry_sdk.metrics.gauge(
-        metric_definitions.SentryMetricNames.ONBOARDING_DURATION.value,
+        _ONBOARDING_DURATION_METRIC_NAME,
         seconds,
         attributes=metric_attributes,
     )

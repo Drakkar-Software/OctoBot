@@ -1,11 +1,28 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+import dataclasses
 import mock
 import pytest
 
-import octobot.community.activity_analysis.metric_definitions as metric_definitions
 import octobot.community.errors_upload.sentry_tracker as sentry_tracker
 import octobot.constants as constants
+
+
+@dataclasses.dataclass(frozen=True)
+class _SampleMetricAttributes:
+    event: str
+    wallet_configured: bool
+    new_install: bool
+
+    def to_sentry_dict(self, bot_id: str | None) -> dict[str, str]:
+        attributes = {
+            "event": self.event,
+            "wallet_configured": str(self.wallet_configured),
+            "new_install": str(self.new_install),
+        }
+        if bot_id is not None:
+            attributes["bot_id"] = bot_id
+        return attributes
 
 
 @pytest.fixture(autouse=True)
@@ -49,34 +66,30 @@ class TestInitSentryTracker:
 
 class TestTrackUsageCount:
     def test_emits_metric_from_dataclass(self):
-        attributes = metric_definitions.NodeProcessStartAttributes(
+        attributes = _SampleMetricAttributes(
+            event="node_process_start",
             wallet_configured=False,
             new_install=True,
-            onboarding_complete=False,
-            distribution="node",
-            version="1.0.0",
         )
         with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "count") as count_mock:
             sentry_tracker.track_usage_count(attributes)
         count_mock.assert_called_once_with(
-            metric_definitions.SentryMetricNames.USAGE.value,
+            "octobot.usage",
             1,
             attributes=attributes.to_sentry_dict(None),
         )
 
     def test_includes_bot_id_when_tracker_set(self):
         sentry_tracker.update_tracker_bot_id("bot-id")
-        attributes = metric_definitions.NodeProcessStartAttributes(
+        attributes = _SampleMetricAttributes(
+            event="node_process_start",
             wallet_configured=False,
             new_install=True,
-            onboarding_complete=False,
-            distribution="node",
-            version="1.0.0",
         )
         with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "count") as count_mock:
             sentry_tracker.track_usage_count(attributes)
         count_mock.assert_called_once_with(
-            metric_definitions.SentryMetricNames.USAGE.value,
+            "octobot.usage",
             1,
             attributes=attributes.to_sentry_dict("bot-id"),
         )
@@ -85,13 +98,15 @@ class TestTrackUsageCount:
 class TestTrackOnboardingDurationGauge:
     def test_emits_gauge_with_bot_id(self):
         sentry_tracker.update_tracker_bot_id("bot-id")
-        attributes = metric_definitions.FirstAutomationStartedAttributes(
-            octobot_kind=metric_definitions.OctobotKind.MANUAL,
+        attributes = _SampleMetricAttributes(
+            event="first_automation_started",
+            wallet_configured=True,
+            new_install=False,
         )
         with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "gauge") as gauge_mock:
             sentry_tracker.track_onboarding_duration_gauge(42.5, attributes)
         gauge_mock.assert_called_once_with(
-            metric_definitions.SentryMetricNames.ONBOARDING_DURATION.value,
+            "octobot.onboarding.duration",
             42.5,
             attributes=attributes.to_sentry_dict("bot-id"),
         )

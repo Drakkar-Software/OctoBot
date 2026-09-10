@@ -1479,7 +1479,7 @@ class TestCreateAutomationActionExecutorRecordNewAutomationCreated:
         with mock.patch(_ACCOUNT_PROVIDER_INSTANCE_PATCH) as account_mock, mock.patch(
             _STRATEGY_PROVIDER_INSTANCE_PATCH,
         ) as strategy_mock, mock.patch(
-            "octobot.community.activity_analysis.record_new_automation_created",
+            "octobot.community.node_journal.record_new_automation_created_from_strategy",
         ) as record_new_automation_mock:
             _stub_account_provider(account_mock, _minimal_exchange_account(account_id="acc-1"))
             strategy_mock.return_value.get_item.return_value = stored
@@ -1487,4 +1487,5 @@ class TestCreateAutomationActionExecutorRecordNewAutomationCreated:
         record_new_automation_mock.assert_called_once_with(
             user_action.id,
             stored,
+            user_action_id="ua-metrics",
         )

@@ -38,6 +38,9 @@ import octobot_sync.auth as auth
 import octobot_sync.crypto as sync_crypto
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
+import octobot_sync.sync.collection_backend.errors as collection_errors
+
+import octobot.community.node_journal as node_journal
 
 # Re-exported for callers (e.g. node_api) that build the userId allowlist from
 # the node's own wallet keys — must use the same derivation as the client.
@@ -180,85 +183,116 @@ def _get_opaque_store() -> FilesystemObjectStore:
     return _opaque_store
 
 
+def _sync_read_failure_reason(error: BaseException) -> str:
+    if isinstance(error, errors.OctobotSyncWalletNotFoundError):
+        return "wallet_not_found"
+    if isinstance(error, errors.OctobotSyncIdentityMissingError):
+        return "identity_missing"
+    if isinstance(error, collection_errors.CollectionStorageError):
+        return "storage_error"
+    return "other"
+
+
+def _sync_read_failure_collection(context: StoreContext | None) -> str:
+    if context and context.collection:
+        return context.collection
+    return "unknown"
+
+
 async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     # called when client pulls
-    collection = _get_collection(context)
-    plaintext = None
-    already_encrypted_payload = None
-    match collection:
-        case enums.Collections.USER_DATA.value:
-            user_data_state = await user_data_protocol.get_user_data_state(
-                _get_identity(context)
+    try:
+        collection = _get_collection(context)
+        plaintext = None
+        already_encrypted_payload = None
+        match collection:
+            case enums.Collections.USER_DATA.value:
+                user_data_state = await user_data_protocol.get_user_data_state(
+                    _get_identity(context)
+                )
+                plaintext = user_data_state.to_json()
+            case enums.Collections.USER_ACCOUNTS.value:
+                encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
+                    _get_identity(context)
+                )
+                already_encrypted_payload = json.dumps(encrypted_blob)
+            case enums.Collections.USER_ACCOUNTS_AUTH.value:
+                encrypted_blob = accounts_auth_protocol.get_accounts_authentication_state_encrypted(
+                    _get_identity(context)
+                )
+                already_encrypted_payload = json.dumps(encrypted_blob)
+            case enums.Collections.USER_ACCOUNTS_TRADING.value:
+                encrypted_blob = accounts_trading_protocol.get_account_trading_state_encrypted(
+                    _get_identity(context),
+                    _get_account_id(context),
+                )
+                already_encrypted_payload = json.dumps(encrypted_blob)
+            case enums.Collections.USER_ACCOUNTS_HISTORY.value:
+                history_state = await accounts_history_protocol.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                    _get_identity(context),
+                    _get_account_id(context),
+                )
+                plaintext = history_state.to_json()
+            case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_REAL.value:
+                history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                    _get_identity(context),
+                    is_simulated=False,
+                )
+                plaintext = history_state.to_json()
+            case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED.value:
+                history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                    _get_identity(context),
+                    is_simulated=True,
+                )
+                plaintext = history_state.to_json()
+            case enums.TemporaryCollections.TEMP_USER_STRATEGIES.value:
+                encrypted_blob = strategies_protocol.get_strategies_state_encrypted(
+                    _get_identity(context)
+                )
+                already_encrypted_payload = json.dumps(encrypted_blob)
+            case enums.Collections.USER_ACTIONS.value:
+                # reading user actions should always return an empty list
+                actions_state = protocol_models.UserActionsState(
+                    version=sync_constants.USER_ACTIONS_STATE_VERSION,
+                    user_actions=[]
+                )
+                plaintext = actions_state.to_json()
+            case enums.Collections.DEBUG.value:
+                debug_state = await debug_protocol.get_debug_state(
+                    _get_identity(context)
+                )
+                plaintext = debug_state.to_json()
+            case _:
+                # Opaque storage: collections with no protocol bridge are persisted
+                # as client-encrypted ciphertext and the node never decrypts them.
+                ciphertext = await _get_opaque_store().get_string(key)
+                if ciphertext is None:
+                    return None
+                # Stored bytes are already the client's ciphertext — hash them
+                # directly so it stays stable until the next push overwrites it.
+                return _wrap_as_stored_document(ciphertext, ciphertext)
+        if already_encrypted_payload is not None:
+            # Pre-encrypted payload (USER_ACCOUNTS): hash the encrypted JSON itself —
+            # it is deterministic (read from disk) so the hash stays stable.
+            result = _wrap_as_stored_document(already_encrypted_payload, already_encrypted_payload)
+        elif plaintext is None:
+            return None
+        else:
+            encrypted = _encrypt(plaintext, _get_identity(context), collection)
+            result = _wrap_as_stored_document(encrypted, plaintext)
+        if collection == enums.Collections.USER_DATA.value:
+            node_journal.on_user_data_pull_succeeded(
+                sync_user_id=_get_identity(context),
+                collection=collection,
             )
-            plaintext = user_data_state.to_json()
-        case enums.Collections.USER_ACCOUNTS.value:
-            encrypted_blob = accounts_protocol.get_accounts_state_encrypted(
-                _get_identity(context)
-            )
-            already_encrypted_payload = json.dumps(encrypted_blob)
-        case enums.Collections.USER_ACCOUNTS_AUTH.value:
-            encrypted_blob = accounts_auth_protocol.get_accounts_authentication_state_encrypted(
-                _get_identity(context)
-            )
-            already_encrypted_payload = json.dumps(encrypted_blob)
-        case enums.Collections.USER_ACCOUNTS_TRADING.value:
-            encrypted_blob = accounts_trading_protocol.get_account_trading_state_encrypted(
-                _get_identity(context),
-                _get_account_id(context),
-            )
-            already_encrypted_payload = json.dumps(encrypted_blob)
-        case enums.Collections.USER_ACCOUNTS_HISTORY.value:
-            history_state = await accounts_history_protocol.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
-                _get_identity(context),
-                _get_account_id(context),
-            )
-            plaintext = history_state.to_json()
-        case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_REAL.value:
-            history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
-                _get_identity(context),
-                is_simulated=False,
-            )
-            plaintext = history_state.to_json()
-        case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED.value:
-            history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
-                _get_identity(context),
-                is_simulated=True,
-            )
-            plaintext = history_state.to_json()
-        case enums.TemporaryCollections.TEMP_USER_STRATEGIES.value:
-            encrypted_blob = strategies_protocol.get_strategies_state_encrypted(
-                _get_identity(context)
-            )
-            already_encrypted_payload = json.dumps(encrypted_blob)
-        case enums.Collections.USER_ACTIONS.value:
-            # reading user actions should always return an empty list
-            actions_state = protocol_models.UserActionsState(
-                version=sync_constants.USER_ACTIONS_STATE_VERSION,
-                user_actions=[]
-            )
-            plaintext = actions_state.to_json()
-        case enums.Collections.DEBUG.value:
-            debug_state = await debug_protocol.get_debug_state(
-                _get_identity(context)
-            )
-            plaintext = debug_state.to_json()
-        case _:
-            # Opaque storage: collections with no protocol bridge are persisted
-            # as client-encrypted ciphertext and the node never decrypts them.
-            ciphertext = await _get_opaque_store().get_string(key)
-            if ciphertext is None:
-                return None
-            # Stored bytes are already the client's ciphertext — hash them
-            # directly so it stays stable until the next push overwrites it.
-            return _wrap_as_stored_document(ciphertext, ciphertext)
-    if already_encrypted_payload is not None:
-        # Pre-encrypted payload (USER_ACCOUNTS): hash the encrypted JSON itself —
-        # it is deterministic (read from disk) so the hash stays stable.
-        return _wrap_as_stored_document(already_encrypted_payload, already_encrypted_payload)
-    if plaintext is None:
-        return None
-    encrypted = _encrypt(plaintext, _get_identity(context), collection)
-    return _wrap_as_stored_document(encrypted, plaintext)
+        return result
+    except Exception as exc:
+        node_journal.record_sync_read_failed(
+            collection=_sync_read_failure_collection(context),
+            failure_reason=_sync_read_failure_reason(exc),
+            error=exc,
+        )
+        raise
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
     # Opaque storage: persist the client ciphertext as-is. The node never

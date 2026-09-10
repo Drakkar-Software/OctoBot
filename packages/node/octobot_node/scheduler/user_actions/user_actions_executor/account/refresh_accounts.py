@@ -21,6 +21,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as account_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater
 
+import octobot.community.node_journal as node_journal
+
 
 def _get_refresh_accounts_payload(
     user_action: protocol_models.UserAction,
@@ -45,11 +47,22 @@ class RefreshAccountsActionExecutor(account_user_action_executor.AccountUserActi
     ) -> None:
         refresh_payload = _get_refresh_accounts_payload(user_action)
         account_provider = collection_providers.AccountProvider.instance()
-        account_ids_to_refresh = refresh_payload.account_ids or [
-            account.id for account in account_provider.list_items(self._user_id)
-        ]
+        if refresh_payload.account_ids:
+            account_ids_to_refresh = refresh_payload.account_ids
+            cached_all_accounts = None
+        else:
+            cached_all_accounts = account_provider.list_items(self._user_id)
+            account_ids_to_refresh = [account.id for account in cached_all_accounts]
         for account_id in account_ids_to_refresh:
             account = account_provider.get_item(self._user_id, account_id)
             checked_account = await account_state_updater.update_account_state(account, self._user_id)
             account_provider.update_item(self._user_id, checked_account)
         self._mark_user_action_completed(user_action)
+        if cached_all_accounts is None:
+            account_count = len(account_provider.list_items(self._user_id))
+        else:
+            account_count = len(cached_all_accounts)
+        node_journal.record_accounts_refreshed(
+            account_count=account_count,
+            refreshed_count=len(account_ids_to_refresh),
+        )

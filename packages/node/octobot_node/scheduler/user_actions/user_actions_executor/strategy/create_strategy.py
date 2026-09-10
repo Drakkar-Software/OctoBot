@@ -21,6 +21,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_user_action_executor as strategy_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.strategy.strategy_profile_validation as strategy_profile_validation
 
+import octobot.community.node_journal as node_journal
+
 
 def _get_create_strategy_payload(
     user_action: protocol_models.UserAction,
@@ -55,3 +57,9 @@ class CreateStrategyActionExecutor(
             create_payload.configuration,
         )
         self._mark_user_action_completed(user_action)
+        import octobot.community.node_journal.classify as journal_classify
+        node_journal.record_strategy_create_succeeded(
+            strategy_id=create_payload.configuration.id,
+            configuration_type=journal_classify.configuration_type_from_strategy(create_payload.configuration),
+            user_action_id=user_action.id,
+        )

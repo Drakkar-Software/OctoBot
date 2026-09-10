@@ -32,6 +32,9 @@ import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_backend.state_model as state_model
 import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading
 
+import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.events as journal_events
+
 
 _MISSING_FILE_CHECKSUM = ""
 
@@ -131,10 +134,22 @@ class BaseLocalCollectionStorage:
                 self.collection,
             )
         except sync_errors.OctobotSyncCryptoFormatError as err:
+            node_journal.record_sync_storage_event(
+                journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR,
+                collection=self.collection,
+                provider="local",
+                error=err,
+            )
             raise collection_errors.CollectionFileFormatError(
                 f"{self.collection} blob: {err}"
             ) from err
         except sync_errors.OctobotSyncCryptoDecryptError as err:
+            node_journal.record_sync_storage_event(
+                journal_events.NodeJournalEvent.SYNC_STORAGE_DECRYPT_FAILED,
+                collection=self.collection,
+                provider="local",
+                error=err,
+            )
             raise collection_errors.CollectionDecryptionError(
                 f"Failed to decrypt {self.collection} data"
             ) from err
@@ -150,6 +165,12 @@ class BaseLocalCollectionStorage:
                     model_fallbacks=model_fallbacks,
                 ).from_json(plaintext_bytes.decode("utf-8"))
         except Exception as err:
+            node_journal.record_sync_storage_event(
+                journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR,
+                collection=self.collection,
+                provider="local",
+                error=err,
+            )
             raise collection_errors.CollectionFileFormatError(
                 f"Decrypted {self.collection} payload is not valid JSON: {err}"
             ) from err
@@ -201,9 +222,16 @@ class BaseLocalCollectionStorage:
             with open(path, "r", encoding="utf-8") as handle:
                 raw = json.load(handle)
         if not isinstance(raw, dict):
-            raise collection_errors.CollectionFileFormatError(
+            format_error = collection_errors.CollectionFileFormatError(
                 f"{self.collection} file must contain an encrypted blob object"
             )
+            node_journal.record_sync_storage_event(
+                journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR,
+                collection=self.collection,
+                provider="local",
+                error=format_error,
+            )
+            raise format_error
         return raw
 
     def load_items_encrypted(self, storage_key: str) -> dict[str, str]:

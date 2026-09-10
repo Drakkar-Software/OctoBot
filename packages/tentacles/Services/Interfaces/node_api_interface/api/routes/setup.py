@@ -23,7 +23,7 @@ from fastapi.security import HTTPBasicCredentials
 import octobot_node.config as node_config
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
-import octobot.community.activity_analysis as activity_analysis
+import octobot.community.node_journal as node_journal
 
 try:
     from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
@@ -85,15 +85,32 @@ def get_vpn_network_address() -> VPNNetworkAddress:
 def init_setup(body: SetupInit) -> SetupResult:
     auth = community_auth.CommunityAuthentication.instance()
     if auth is None:
+        node_journal.record_wallet_setup_failed(
+            http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            failure_reason="service_unavailable",
+            error_message="Service not initialized",
+            setup_method="import" if body.private_key else "create",
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service not initialized",
         )
     if auth.list_wallets():
+        node_journal.record_wallet_setup_failed(
+            http_status=status.HTTP_409_CONFLICT,
+            failure_reason="already_configured",
+            error_message="Node is already configured",
+            setup_method="import" if body.private_key else "create",
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Node is already configured",
         )
+    setup_method = "import" if body.private_key else "create"
+    node_journal.record_wallet_setup_attempt(
+        node_type=body.node_type,
+        setup_method=setup_method,
+    )
     try:
         if body.private_key:
             wallet = auth.import_wallet(
@@ -109,18 +126,29 @@ def init_setup(body: SetupInit) -> SetupResult:
                 is_admin=True,
             )
     except (wallet_backend.WalletAlreadyExistsError, wallet_backend.AdminWalletAlreadyExistsError) as err:
-        # A concurrent request already configured the node — surface 409.
+        node_journal.record_wallet_setup_failed(
+            http_status=status.HTTP_409_CONFLICT,
+            failure_reason="concurrent_race",
+            error=err,
+            setup_method=setup_method,
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(err),
         ) from err
     except wallet_backend.WalletError as err:
+        node_journal.record_wallet_setup_failed(
+            http_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            failure_reason="wallet_error",
+            error=err,
+            setup_method=setup_method,
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
         ) from err
     node_config.settings.IS_MASTER_MODE = body.node_type == "master"
-    activity_analysis.record_wallet_configured()
+    node_journal.record_wallet_setup_succeeded()
     return SetupResult(address=wallet.address)
 
 

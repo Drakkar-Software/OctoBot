@@ -25,6 +25,7 @@ import octobot_services.constants as services_constants
 import octobot_services.services as services
 import octobot_node.scheduler
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
+import octobot.community.node_journal.startup as journal_startup
 
 
 class NodeApiService(services.AbstractService):
@@ -142,6 +143,8 @@ class NodeApiService(services.AbstractService):
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
             await octobot_node.scheduler.initialize_scheduler()
             await internal_trading_signals.subscribe_internal_trading_signal_consumer()
+        if octobot_node.scheduler.is_initialized():
+            await journal_startup.complete_reconcile_automations()
 
     def _sync_config(self):
         defaults = self.get_default_value()

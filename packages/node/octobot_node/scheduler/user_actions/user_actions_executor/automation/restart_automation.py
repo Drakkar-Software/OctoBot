@@ -29,6 +29,9 @@ import octobot_node.scheduler.user_actions.user_actions_executor.util.action_det
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
 
+import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.state as journal_state
+
 
 def _get_restart_automation_payload(
     user_action: protocol_models.UserAction,
@@ -165,4 +168,8 @@ class RestartAutomationActionExecutor(automation_user_action_executor.Automation
         self._mark_user_action_completed(
             user_action,
             created_automation_id=parent_automation_id,
+        )
+        node_journal.record_automation_restarted(
+            automation_id=parent_automation_id,
+            automation_count=len(journal_state.load_persisted_state().tracked_automation_ids),
         )

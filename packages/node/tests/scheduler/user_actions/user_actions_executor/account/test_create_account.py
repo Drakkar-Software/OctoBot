@@ -271,7 +271,7 @@ class TestCreateAccountActionExecutorRecordAccountValidated:
                 new=mock.AsyncMock(return_value=validated_account),
             ),
             mock.patch(
-                "octobot.community.activity_analysis.record_account_validated",
+                "octobot.community.node_journal.record_account_validated_from_account",
             ) as record_account_validated_mock,
         ):
             executor = create_account_executor.CreateAccountActionExecutor(
@@ -281,6 +281,7 @@ class TestCreateAccountActionExecutorRecordAccountValidated:
         record_account_validated_mock.assert_called_once_with(
             validated_account,
             account_executor_test_utils.WALLET_ADDRESS,
+            user_action_id="ua-validated",
         )
 
     @pytest.mark.asyncio
@@ -322,7 +323,7 @@ class TestCreateAccountActionExecutorRecordAccountValidated:
                 new=mock.AsyncMock(return_value=invalid_account),
             ),
             mock.patch(
-                "octobot.community.activity_analysis.record_account_validated",
+                "octobot.community.node_journal.record_account_validated_from_account",
             ) as record_account_validated_mock,
         ):
             executor = create_account_executor.CreateAccountActionExecutor(

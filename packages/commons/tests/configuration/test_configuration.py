@@ -449,27 +449,6 @@ class TestGetTentaclesSetupConfigForPackageOperations:
         assert config._get_master_reference_tentacles_config_file_path() == expected_path
 
 
-def test_get_metrics_enabled(config):
-    config.config = {}
-    assert config.get_metrics_enabled() is True
-    config.config = {
-        constants.CONFIG_METRICS: {}
-    }
-    assert config.get_metrics_enabled() is True
-    config.config = {
-        constants.CONFIG_METRICS: {
-            constants.CONFIG_ENABLED_OPTION: True
-        }
-    }
-    assert config.get_metrics_enabled() is True
-    config.config = {
-        constants.CONFIG_METRICS: {
-            constants.CONFIG_ENABLED_OPTION: False
-        }
-    }
-    assert config.get_metrics_enabled() is False
-
-
 def test_accepted_terms(config):
     config.config = {}
     assert config.accepted_terms() is False

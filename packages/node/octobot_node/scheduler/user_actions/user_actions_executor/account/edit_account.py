@@ -21,6 +21,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as account_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater
 
+import octobot.community.node_journal as node_journal
+
 
 def _get_edit_account_payload(
     user_action: protocol_models.UserAction,
@@ -61,3 +63,16 @@ class EditAccountActionExecutor(account_user_action_executor.AccountUserActionEx
             checked_account,
         )
         self._mark_user_action_completed(user_action)
+        import octobot.community.node_journal.classify as journal_classify
+        account_state = (
+            checked_account.state.status.value
+            if checked_account.state is not None
+            else protocol_models.AccountStatus.UNKNOWN.value
+        )
+        node_journal.record_account_edit_succeeded(
+            account_id=checked_account.id,
+            is_simulated=checked_account.is_simulated,
+            exchange_name=journal_classify.resolve_account_exchange_name(checked_account, self._user_id),
+            account_state=account_state,
+            user_action_id=user_action.id,
+        )

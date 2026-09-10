@@ -333,17 +333,6 @@ class Configuration:
             )
         return self.get_active_tentacles_setup_config()
 
-    def get_metrics_enabled(self) -> bool:
-        """
-        Check if metrics are enabled
-        :return: True if metrics are enabled
-        """
-        return bool(
-            self.config.get(commons_constants.CONFIG_METRICS, {}).get(
-                commons_constants.CONFIG_ENABLED_OPTION, True
-            )
-        )
-
     def accepted_terms(self) -> bool:
         """
         Check if terms has been accepted

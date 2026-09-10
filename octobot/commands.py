@@ -38,6 +38,8 @@ import octobot.logger as octobot_logger
 import octobot.constants as constants
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.configuration_manager as configuration_manager
+import octobot.enums as enums
+import octobot.community.node_journal.startup as journal_startup
 
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
@@ -340,6 +342,18 @@ def run_bot(bot, logger):
     bot.task_manager.run_forever(start_bot(bot, logger))
 
 
+def _record_bot_initialize_failure(bot, error: Exception, *, catch: bool) -> None:
+    if configuration_manager.get_distribution(bot.config) is not enums.OctoBotDistribution.NODE:
+        return
+    edited_config = bot.get_edited_config(constants.CONFIG_KEY, dict_only=False)
+    journal_startup.record_node_startup_failed(
+        error,
+        startup_phase="bot_initialize",
+        force_exit=not catch,
+        config=edited_config,
+    )
+
+
 async def start_bot(bot, logger, catch=False):
     try:
         # load tentacles details
@@ -354,6 +368,7 @@ async def start_bot(bot, logger, catch=False):
 
     except Exception as e:
         logger.exception(e)
+        _record_bot_initialize_failure(bot, e, catch=catch)
         if not catch:
             raise
         stop_bot(bot)

@@ -578,17 +578,3 @@ class StopReason(enum.Enum):
     MISSING_MINIMAL_FUNDS = "missing_minimal_funds"
     INVALID_CONFIG = "invalid_config"
     UNKNOWN = "unknown"
-
-
-class MetricEvents(enum.Enum):
-    # usage_metrics (counters + ongoing usage / retention)
-    NODE_PROCESS_START = "node_process_start"
-    ACCOUNT_VALIDATED = "account_validated"
-    AUTOMATION_STARTED = "automation_started"
-    USER_CONVERTED_24H_RETURN = "user_converted_24h_return"
-    # onboarding_metrics (funnel once milestones)
-    NODE_WALLET_CONFIGURED = "node_wallet_configured"
-    EXTERNAL_INTERFACE_CONNECTED = "external_interface_connected"
-    FIRST_ACCOUNT_CREATE_ATTEMPT = "first_account_create_attempt"
-    FIRST_AUTOMATION_STARTED = "first_automation_started"
-    STUCK_NO_EXTERNAL_INTERFACE = "stuck_no_external_interface"

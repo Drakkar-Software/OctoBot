@@ -21,6 +21,8 @@ import octobot_node.scheduler.user_actions.user_actions_executor.automation.auto
 import octobot_node.scheduler as scheduler_module
 import octobot_node.scheduler.tasks as scheduler_tasks
 
+import octobot.community.node_journal as node_journal
+
 
 def _get_stop_automation_payload(
     user_action: protocol_models.UserAction,
@@ -71,3 +73,7 @@ class StopAutomationActionExecutor(automation_user_action_executor.AutomationUse
             actions,
         )
         self._mark_user_action_completed(user_action)
+        node_journal.record_automation_stopped(
+            automation_id=stop_payload.id,
+            cancel_orders=bool(stop_payload.cancel_orders),
+        )
