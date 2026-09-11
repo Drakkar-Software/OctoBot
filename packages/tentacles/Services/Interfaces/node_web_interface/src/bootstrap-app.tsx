@@ -16,6 +16,7 @@ import type { RecoveryFailureKind } from "@/components/Common/RecoveryScreen"
 import { isWebCryptoAvailable } from "@/lib/secure-context"
 import {
   reportAuthStateBroken,
+  reportInsecureContext,
   reportShellFatalError,
 } from "@/lib/shell-error-reporting"
 import { routeTree } from "@/routeTree.gen"
@@ -70,9 +71,13 @@ function renderRecovery(
   rootElement: HTMLElement,
   failureKind: RecoveryFailureKind,
 ): void {
+  const queryClient = new QueryClient()
+
   createRoot(rootElement).render(
     <StrictMode>
-      <RecoveryScreen failureKind={failureKind} />
+      <QueryClientProvider client={queryClient}>
+        <RecoveryScreen failureKind={failureKind} />
+      </QueryClientProvider>
     </StrictMode>,
   )
   markBootSucceeded()
@@ -91,6 +96,13 @@ export function handleShellRenderError(error: unknown): void {
 function renderApp(rootElement: HTMLElement): void {
   const queryClient = new QueryClient()
   const router = createAppRouter()
+
+  if (!isWebCryptoAvailable()) {
+    reportInsecureContext({
+      isSecureContext: window.isSecureContext,
+      hostname: window.location.hostname,
+    })
+  }
 
   createRoot(rootElement).render(
     <StrictMode>

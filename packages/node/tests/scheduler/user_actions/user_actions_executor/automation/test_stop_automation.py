@@ -104,6 +104,7 @@ class TestStopAutomationActionExecutor:
         record_automation_stopped_mock.assert_called_once_with(
             automation_id="00000000-0000-4000-8000-000000000001",
             cancel_orders=False,
+            user_action_id="ua-stop-1",
         )
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,

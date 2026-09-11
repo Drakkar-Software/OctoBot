@@ -261,6 +261,12 @@ class WalletBackend:
             raise wallet_error
         return self._wallet_from_entry(entry)
 
+    def has_wallet_for_user_id(self, user_id: str) -> bool:
+        for entry in self._get_node_wallets_list():
+            if sync_auth.derive_user_id(entry.private_key) == user_id:
+                return True
+        return False
+
     def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
         """Return the wallet whose derived Starfish ``user_id`` matches *user_id*.
 

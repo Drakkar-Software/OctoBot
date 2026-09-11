@@ -24,6 +24,8 @@ import octobot_node.config as node_config
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
 import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.enums as journal_enums
+import octobot.community.node_journal.recording_context as journal_recording_context
 
 try:
     from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
@@ -84,29 +86,23 @@ def get_vpn_network_address() -> VPNNetworkAddress:
 @router.post("/setup/init", response_model=SetupResult)
 def init_setup(body: SetupInit) -> SetupResult:
     auth = community_auth.CommunityAuthentication.instance()
+    setup_method = journal_enums.WalletSetupMethod.IMPORT if body.private_key else journal_enums.WalletSetupMethod.CREATE
     if auth is None:
-        node_journal.record_wallet_setup_failed(
+        journal_recording_context.raise_wallet_setup_http_error(
             http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            failure_reason="service_unavailable",
-            error_message="Service not initialized",
-            setup_method="import" if body.private_key else "create",
-        )
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            failure_reason=journal_enums.WalletSetupFailureReason.SERVICE_UNAVAILABLE,
+            setup_method=setup_method,
             detail="Service not initialized",
+            error_message="Service not initialized",
         )
     if auth.list_wallets():
-        node_journal.record_wallet_setup_failed(
+        journal_recording_context.raise_wallet_setup_http_error(
             http_status=status.HTTP_409_CONFLICT,
-            failure_reason="already_configured",
-            error_message="Node is already configured",
-            setup_method="import" if body.private_key else "create",
-        )
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+            failure_reason=journal_enums.WalletSetupFailureReason.ALREADY_CONFIGURED,
+            setup_method=setup_method,
             detail="Node is already configured",
+            error_message="Node is already configured",
         )
-    setup_method = "import" if body.private_key else "create"
     node_journal.record_wallet_setup_attempt(
         node_type=body.node_type,
         setup_method=setup_method,
@@ -126,27 +122,21 @@ def init_setup(body: SetupInit) -> SetupResult:
                 is_admin=True,
             )
     except (wallet_backend.WalletAlreadyExistsError, wallet_backend.AdminWalletAlreadyExistsError) as err:
-        node_journal.record_wallet_setup_failed(
+        journal_recording_context.raise_wallet_setup_http_error(
             http_status=status.HTTP_409_CONFLICT,
-            failure_reason="concurrent_race",
-            error=err,
+            failure_reason=journal_enums.WalletSetupFailureReason.CONCURRENT_RACE,
             setup_method=setup_method,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
             detail=str(err),
-        ) from err
+            error=err,
+        )
     except wallet_backend.WalletError as err:
-        node_journal.record_wallet_setup_failed(
+        journal_recording_context.raise_wallet_setup_http_error(
             http_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            failure_reason="wallet_error",
-            error=err,
+            failure_reason=journal_enums.WalletSetupFailureReason.WALLET_ERROR,
             setup_method=setup_method,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
-        ) from err
+            error=err,
+        )
     node_config.settings.IS_MASTER_MODE = body.node_type == "master"
     node_journal.record_wallet_setup_succeeded()
     return SetupResult(address=wallet.address)

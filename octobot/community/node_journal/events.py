@@ -21,7 +21,6 @@ class NodeJournalEvent(enum.StrEnum):
     UNKNOWN = "unknown"
     NODE_PROCESS_STARTUP_SUCCEEDED = "node_process_startup_succeeded"
     NODE_PROCESS_STARTUP_FAILED = "node_process_startup_failed"
-    NODE_PROCESS_STOP = "node_process_stop"
     WALLET_SETUP_ATTEMPT = "wallet_setup_attempt"
     WALLET_SETUP_SUCCEEDED = "wallet_setup_succeeded"
     WALLET_SETUP_FAILED = "wallet_setup_failed"
@@ -55,7 +54,6 @@ class NodeJournalEvent(enum.StrEnum):
     AUTOMATION_STOPPED = "automation_stopped"
     AUTOMATION_RESTARTED = "automation_restarted"
     AUTOMATION_RUN_ERRORED = "automation_run_errored"
-    AUTOMATION_RUN_RECOVERED = "automation_run_recovered"
     ACCOUNT_DELETED = "account_deleted"
     ACCOUNT_AUTH_DELETED = "account_auth_deleted"
     ACCOUNTS_REFRESHED = "accounts_refreshed"
@@ -66,6 +64,7 @@ class NodeJournalEvent(enum.StrEnum):
     UI_AUTH_STATE_BROKEN = "ui_auth_state_broken"
     UI_FATAL_RENDER_ERROR = "ui_fatal_render_error"
     UI_CLIENT_STORAGE_RESET = "ui_client_storage_reset"
+    UI_INSECURE_CONTEXT = "ui_insecure_context"
     SYNC_STORAGE_DECRYPT_FAILED = "sync_storage_decrypt_failed"
     SYNC_STORAGE_FORMAT_ERROR = "sync_storage_format_error"
     SYNC_STORAGE_SCHEMA_RECOVERY = "sync_storage_schema_recovery"
@@ -79,56 +78,18 @@ UI_JOURNAL_EVENTS = frozenset({
     NodeJournalEvent.UI_AUTH_STATE_BROKEN,
     NodeJournalEvent.UI_FATAL_RENDER_ERROR,
     NodeJournalEvent.UI_CLIENT_STORAGE_RESET,
+    NodeJournalEvent.UI_INSECURE_CONTEXT,
 })
 
-FAILURE_EVENTS = frozenset(event for event in NodeJournalEvent if event.value.endswith("_failed") or event.value.endswith("_errored"))
-
-FUNNEL_STEP_ORDER: tuple[NodeJournalEvent, ...] = (
-    NodeJournalEvent.NODE_PROCESS_STARTUP_SUCCEEDED,
-    NodeJournalEvent.NODE_PROCESS_STARTUP_FAILED,
-    NodeJournalEvent.WALLET_SETUP_SUCCEEDED,
-    NodeJournalEvent.WALLET_SETUP_FAILED,
-    NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED,
-    NodeJournalEvent.ACCOUNT_AUTH_CREATE_SUCCEEDED,
-    NodeJournalEvent.ACCOUNT_AUTH_CREATE_FAILED,
-    NodeJournalEvent.ACCOUNT_VALIDATED,
-    NodeJournalEvent.ACCOUNT_VALIDATION_FAILED,
-    NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED,
-    NodeJournalEvent.STRATEGY_CREATE_FAILED,
-    NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED,
-    NodeJournalEvent.STRATEGY_EDIT_FAILED,
-    NodeJournalEvent.AUTOMATION_CREATE_ATTEMPT,
-    NodeJournalEvent.AUTOMATION_CREATE_FAILED,
-    NodeJournalEvent.FIRST_AUTOMATION_STARTED,
+UI_BLOCKING_JOURNAL_EVENTS = frozenset(
+    event for event in UI_JOURNAL_EVENTS if event != NodeJournalEvent.UI_CLIENT_STORAGE_RESET
 )
 
-FUNNEL_STEP_RANK = {event: index for index, event in enumerate(FUNNEL_STEP_ORDER)}
-
-JOURNEY_MILESTONE_LABELS: dict[NodeJournalEvent, str] = {
-    NodeJournalEvent.WALLET_SETUP_SUCCEEDED: "wallet_setup",
-    NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED: "external_connect",
-    NodeJournalEvent.ACCOUNT_VALIDATED: "account_validated",
-    NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED: "strategy_create",
-    NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED: "strategy_edit",
-    NodeJournalEvent.FIRST_AUTOMATION_STARTED: "first_automation",
-}
-
-JOURNEY_MILESTONE_LABEL_ORDER: tuple[str, ...] = tuple(
-    JOURNEY_MILESTONE_LABELS[event]
-    for event in FUNNEL_STEP_ORDER
-    if event in JOURNEY_MILESTONE_LABELS
+FAILURE_EVENTS = frozenset(
+    event
+    for event in NodeJournalEvent
+    if event.value.endswith("_failed") or event.value.endswith("_errored")
 )
-
-JOURNEY_SUCCESS_EVENTS = frozenset({
-    NodeJournalEvent.WALLET_SETUP_SUCCEEDED,
-    NodeJournalEvent.EXTERNAL_INTERFACE_CONNECTED,
-    NodeJournalEvent.ACCOUNT_AUTH_CREATE_SUCCEEDED,
-    NodeJournalEvent.ACCOUNT_VALIDATED,
-    NodeJournalEvent.STRATEGY_CREATE_SUCCEEDED,
-    NodeJournalEvent.STRATEGY_EDIT_SUCCEEDED,
-    NodeJournalEvent.FIRST_AUTOMATION_STARTED,
-    NodeJournalEvent.AUTOMATION_CREATE_ATTEMPT,
-})
 
 
 def coerce_node_journal_event(raw_event: NodeJournalEvent | str) -> tuple[NodeJournalEvent, str | None]:

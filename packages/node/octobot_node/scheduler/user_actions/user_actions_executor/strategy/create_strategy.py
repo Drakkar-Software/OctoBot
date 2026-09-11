@@ -57,9 +57,8 @@ class CreateStrategyActionExecutor(
             create_payload.configuration,
         )
         self._mark_user_action_completed(user_action)
-        import octobot.community.node_journal.classify as journal_classify
         node_journal.record_strategy_create_succeeded(
             strategy_id=create_payload.configuration.id,
-            configuration_type=journal_classify.configuration_type_from_strategy(create_payload.configuration),
+            strategy=create_payload.configuration,
             user_action_id=user_action.id,
         )

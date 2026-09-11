@@ -39,7 +39,7 @@ import octobot.constants as constants
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.configuration_manager as configuration_manager
 import octobot.enums as enums
-import octobot.community.node_journal.startup as journal_startup
+import octobot.community.node_journal.lifecycle as journal_startup
 
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]

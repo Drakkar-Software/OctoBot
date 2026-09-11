@@ -722,6 +722,9 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
         return self._wallet_backend.get_wallet_by_user_id(user_id)
 
+    def has_wallet_for_user_id(self, user_id: str) -> bool:
+        return self._wallet_backend.has_wallet_for_user_id(user_id)
+
     async def get_session_for_address(self, address: str) -> starfish_spaces.Session:
         """Build (and cache) a dk-namespace starfish_spaces Session for the given wallet.
 

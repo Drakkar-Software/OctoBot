@@ -246,3 +246,26 @@ export async function hasStoredClientKeys(): Promise<boolean> {
   const keys = await loadClientKeys()
   return keys !== null && Object.values(keys).every((v) => v.trim().length > 0)
 }
+
+export async function clearAllDeviceRecords(): Promise<void> {
+  const database = await openDB()
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(STORE_NAME, "readwrite")
+    const store = transaction.objectStore(STORE_NAME)
+    const cursorRequest = store.openCursor()
+
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result
+      if (!cursor) {
+        return
+      }
+      cursor.delete()
+      cursor.continue()
+    }
+
+    cursorRequest.onerror = () => reject(cursorRequest.error)
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error)
+  })
+}

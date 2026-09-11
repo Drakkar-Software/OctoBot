@@ -32,3 +32,14 @@ export function reportAuthStateBroken(): void {
     ui_build: getUiBuild(),
   })
 }
+
+export function reportInsecureContext(context: {
+  isSecureContext: boolean
+  hostname: string
+}): void {
+  void reportUiJournalEvent("ui_insecure_context", {
+    is_secure_context: context.isSecureContext,
+    hostname: context.hostname,
+    ui_build: getUiBuild(),
+  })
+}

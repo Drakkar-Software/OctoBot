@@ -1,7 +1,8 @@
-{"event":"wallet_setup_succeeded","timestamp":1010.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":false,"attributes":{"configured":true}}
-{"event":"external_interface_connected","timestamp":1020.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":false,"attributes":{"collection":"user-data","sync_session_id":"sync-1","connection_sequence":1,"is_reconnect":false,"prior_gap_seconds":5.0}}
-{"event":"account_validation_failed","timestamp":1025.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":false,"attributes":{"error_category":"ValueError","error_message":"invalid account","is_simulated":false,"exchange_name":"binance"}}
-{"event":"external_interface_connected","timestamp":1030.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":false,"attributes":{"collection":"user-data","sync_session_id":"sync-2","connection_sequence":2,"is_reconnect":true}}
-{"event":"account_validated","timestamp":1040.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":false,"attributes":{"is_simulated":false,"exchange_name":"binance"}}
-{"event":"strategy_create_succeeded","timestamp":1050.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":false,"attributes":{"user_action_id":"ua-strategy"}}
-{"event":"first_automation_started","timestamp":1060.0,"session_id":"golden-session","install_id":"golden-install","app_version":"test","distribution":"node","onboarding_complete":true,"attributes":{"automation_id":"auto-1","octobot_kind":"default","flow_subtype":null}}
+{"_ctx":{"session_id":"golden-session","app_version":"test"}}
+{"event":"wallet_setup_succeeded","timestamp":1010.0,"attributes":{"configured":true}}
+{"event":"external_interface_connected","timestamp":1020.0,"attributes":{"collection":"user-data","sync_session_id":"sync-1","connection_sequence":1,"is_reconnect":false,"prior_gap_seconds":5.0}}
+{"event":"account_validation_failed","timestamp":1025.0,"attributes":{"error_category":"ValueError","error_message":"invalid account","is_simulated":false,"exchange_name":"binance"}}
+{"event":"external_interface_connected","timestamp":1030.0,"attributes":{"collection":"user-data","sync_session_id":"sync-2","connection_sequence":2,"is_reconnect":true}}
+{"event":"account_validated","timestamp":1040.0,"attributes":{"is_simulated":false,"exchange_name":"binance"}}
+{"event":"strategy_create_succeeded","timestamp":1050.0,"attributes":{"user_action_id":"ua-strategy"}}
+{"event":"first_automation_started","timestamp":1060.0,"attributes":{"automation_id":"auto-1","octobot_kind":"default"}}

@@ -14,13 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import octobot.community.node_journal.enums as journal_enums
+
 JOURNAL_MAX_EVENTS = 50_000
+JOURNAL_SCHEMA_VERSION = 2
 SYNC_SESSION_GAP_SECONDS = 14_400
 JOURNAL_DIR_NAME = "node_journal"
+MANIFEST_FILE_NAME = "manifest.json"
+STORAGE_CTX_KEY = "_ctx"
 EVENTS_FILE_NAME = "events.jsonl"
 ONBOARDING_SEGMENT_FILE_NAME = "onboarding_segment.jsonl"
 CONFIG_JOURNAL_SECTION = "journal"
-CONFIG_INSTALL_ID = "install_id"
+CONFIG_INSTALL_ID = journal_enums.JournalManifestField.INSTALL_ID.value
 CONFIG_ONBOARDING_STARTED_AT = "onboarding_started_at"
 CONFIG_FIRST_AUTOMATION_STARTED_AT = "first_automation_started_at"
 CONFIG_CONNECTION_SEQUENCE = "connection_sequence"

@@ -170,4 +170,5 @@ class RestartAutomationActionExecutor(automation_user_action_executor.Automation
         )
         node_journal.record_automation_restarted(
             automation_id=parent_automation_id,
+            user_action_id=user_action.id,
         )

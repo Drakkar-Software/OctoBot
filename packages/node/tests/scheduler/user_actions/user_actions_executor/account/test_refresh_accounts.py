@@ -73,6 +73,7 @@ class TestRefreshAccountsActionExecutorExecute:
             await executor.execute(user_action)
         record_accounts_refreshed_mock.assert_called_once_with(
             account_ids=["acc-1", "acc-2"],
+            user_action_id="ua-refresh-all",
         )
         provider_mock.list_items.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS)
         assert provider_mock.get_item.call_count == 2

@@ -78,16 +78,30 @@ def record_journal_client_event(body: JournalClientEventRequest) -> JournalClien
     parsed_event = _validate_client_event(body.event)
     attributes = _build_client_event_attributes(body)
     event_line = node_journal.record(parsed_event, attributes=attributes)
-    if event_line.get("recorded") is False:
+    response_attributes = dict(attributes)
+    if event_line.attributes.raw_event_name is not None:
+        response_attributes["raw_event_name"] = event_line.attributes.raw_event_name
+    event_value = event_line.event.value
+    if event_line.recorded is False:
         return JournalClientEventResponse(
-            event=parsed_event.value,
-            timestamp=event_line["timestamp"],
-            session_id=event_line["session_id"],
-            install_id=event_line["install_id"],
-            app_version=event_line["app_version"],
-            distribution=event_line["distribution"],
-            onboarding_complete=event_line["onboarding_complete"],
-            attributes=event_line["attributes"],
+            event=event_value,
+            timestamp=event_line.timestamp,
+            session_id=event_line.session_id,
+            install_id=event_line.install_id,
+            app_version=event_line.app_version,
+            distribution=event_line.distribution,
+            onboarding_complete=event_line.onboarding_complete,
+            attributes=response_attributes,
             recorded=False,
         )
-    return JournalClientEventResponse(**event_line, recorded=True)
+    return JournalClientEventResponse(
+        event=event_value,
+        timestamp=event_line.timestamp,
+        session_id=event_line.session_id,
+        install_id=event_line.install_id,
+        app_version=event_line.app_version,
+        distribution=event_line.distribution,
+        onboarding_complete=event_line.onboarding_complete,
+        attributes=response_attributes,
+        recorded=True,
+    )

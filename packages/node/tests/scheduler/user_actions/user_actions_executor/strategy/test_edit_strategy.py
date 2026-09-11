@@ -59,7 +59,7 @@ class TestEditStrategyActionExecutorExecute:
             await executor.execute(user_action)
         record_strategy_edit_succeeded_mock.assert_called_once_with(
             strategy_id="edit-strategy",
-            configuration_type="generic_process",
+            strategy=strategy_model,
             user_action_id="ua-edit-strategy",
         )
         provider_mock.update_item.assert_called_once_with(

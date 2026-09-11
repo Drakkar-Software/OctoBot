@@ -61,8 +61,8 @@ def _build_feedback_preview() -> FeedbackPreviewResponse:
         app_version=octobot.constants.LONG_VERSION,
     )
     return FeedbackPreviewResponse(
-        journey_summary=journey_summary,
-        upload_envelope=FeedbackUploadEnvelope(**upload_envelope),
+        journey_summary=journey_summary.to_dict(),
+        upload_envelope=FeedbackUploadEnvelope(**upload_envelope.to_dict()),
     )
 
 
@@ -73,7 +73,7 @@ def _build_feedback_upload_envelope(note: str | None = None) -> FeedbackUploadEn
         app_version=octobot.constants.LONG_VERSION,
         note=note,
     )
-    return FeedbackUploadEnvelope(**upload_envelope)
+    return FeedbackUploadEnvelope(**upload_envelope.to_dict())
 
 
 @router.get("/preview", response_model=FeedbackPreviewResponse)

@@ -1,10 +1,15 @@
 import contextlib
-import os
-
 import mock
+import os
 import pytest
+import sys
 
-import octobot.community.node_journal.constants as journal_constants
+_OCTOBOT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_TESTS_ROOT = os.path.join(_OCTOBOT_ROOT, "tests")
+if _TESTS_ROOT not in sys.path:
+    sys.path.insert(0, _TESTS_ROOT)
+
+from test_utils.journal_test_support import disabled_node_journal_environment
 
 _TESTS_RUN_OCTOBOT_PROCESS_WAITING_TIME_SECONDS = 2
 _TESTS_RUN_OCTOBOT_PROCESS_PING_TIMEOUT_SECONDS = 30.0
@@ -28,12 +33,6 @@ def mocked_local_user_configuration():
         "get_user_configuration",
         local_community_auth.get_stateless_configuration,
     ):
-        yield
-
-
-@contextlib.contextmanager
-def disabled_node_journal_environment():
-    with mock.patch.dict(os.environ, {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"}):
         yield
 
 

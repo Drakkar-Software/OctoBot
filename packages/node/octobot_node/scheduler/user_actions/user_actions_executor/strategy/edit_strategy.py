@@ -65,9 +65,8 @@ class EditStrategyActionExecutor(
             edit_payload.configuration,
         )
         self._mark_user_action_completed(user_action)
-        import octobot.community.node_journal.classify as journal_classify
         node_journal.record_strategy_edit_succeeded(
             strategy_id=edit_payload.configuration.id,
-            configuration_type=journal_classify.configuration_type_from_strategy(edit_payload.configuration),
+            strategy=edit_payload.configuration,
             user_action_id=user_action.id,
         )

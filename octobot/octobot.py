@@ -35,7 +35,8 @@ import octobot_services.api as service_api
 import octobot_trading.api as trading_api
 
 import octobot.logger as logger
-import octobot.community.node_journal.startup as journal_startup
+import octobot.community as community
+import octobot.community.node_journal.lifecycle as journal_startup
 import octobot.constants as constants
 import octobot.enums as enums
 import octobot.configuration_manager as configuration_manager

@@ -26,9 +26,10 @@ export function ClientStorageResetCard() {
           Local browser data
         </CardTitle>
         <CardDescription>
-          Clear all OctoBot Node data stored in this browser (login, templates,
-          encryption keys). Use this if the app behaves incorrectly and recovery
-          from the error screen did not help.
+          Clear all local data for this app on this device, including sign-in,
+          wallet encryption keys, templates, and UI cache. You will need to sign
+          in again. Use this if the app behaves incorrectly and recovery from
+          the error screen did not help.
         </CardDescription>
       </CardHeader>
       <CardContent>

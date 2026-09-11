@@ -138,6 +138,14 @@ class TestImportWalletFromSeedJournal:
         record_mock.assert_not_called()
 
 
+class TestHasWalletForUserIdJournal:
+    def test_does_not_record_journal_when_user_id_is_unknown(self):
+        backend, _ = _make_backend()
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            assert backend.has_wallet_for_user_id("unknown-user-id") is False
+        record_mock.assert_not_called()
+
+
 class TestCreateWalletJournal:
     def test_records_journal_on_passphrase_too_short(self):
         from octobot.community.wallet_backend.errors import PassphraseTooShortError

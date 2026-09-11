@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 
 import { type ApiError, LoginService, type User, UsersService } from "@/client"
 import { clearPassword, savePassword } from "@/lib/device-key"
+import { setStoredIsSuperuser } from "@/lib/user-menu-display"
 
 export const clearAuth = async () => {
   localStorage.removeItem("auth_username")
   localStorage.removeItem("auth_wallet_name")
+  setStoredIsSuperuser(false)
   await clearPassword()
 }
 
@@ -27,11 +30,23 @@ const useAuth = () => {
   const queryClient = useQueryClient()
   const { showErrorToast } = useCustomToast()
 
-  const { data: user } = useQuery<User | null, Error>({
+  const { data: user, isPending } = useQuery<User | null, Error>({
     queryKey: ["currentUser"],
     queryFn: UsersService.readUserMe,
     enabled: isLoggedIn(),
   })
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+    setStoredIsSuperuser(user.is_superuser === true)
+    if (user.full_name) {
+      localStorage.setItem("auth_wallet_name", user.full_name)
+    } else {
+      localStorage.removeItem("auth_wallet_name")
+    }
+  }, [user])
 
   const login = async (data: LoginCredentials) => {
     try {
@@ -50,6 +65,7 @@ const useAuth = () => {
       } else {
         localStorage.removeItem("auth_wallet_name")
       }
+      setStoredIsSuperuser(loggedInUser.is_superuser === true)
     } catch (err) {
       // Clean up before propagating so isLoggedIn() never returns true for failed logins
       await clearAuth()
@@ -78,6 +94,7 @@ const useAuth = () => {
     loginMutation,
     logout,
     user,
+    isCurrentUserPending: isLoggedIn() && isPending,
   }
 }
 

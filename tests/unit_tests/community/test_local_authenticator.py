@@ -105,6 +105,79 @@ class TestGetUserConfiguration:
         with pytest.raises(wallet_backend_module.WalletNotFoundError):
             wallet_backend.get_wallet_by_user_id("not-a-known-user-id")
 
+
+class TestHasWalletForUserId:
+    def test_returns_true_for_known_derived_user_id(self, tmp_path):
+        private_key = "bb" * 32
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "community": {
+                        "wallets": {
+                            octobot_constants.CHAIN_TYPE: {
+                                octobot_constants.CHAIN_NETWORK: [
+                                    {
+                                        "address": "0xd9eeee68cb71d51f74ee1e5c3c78770ed5a2f1c3",
+                                        "private_key": private_key,
+                                        "passphrase_hash": "salt:hash",
+                                        "is_admin": True,
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with mock.patch(
+            "octobot_commons.configuration.config_file_manager.get_user_config",
+            return_value=str(config_path),
+        ):
+            configuration = local_authenticator_module.get_user_configuration()
+
+        sync_storage = configuration_storage_module.SyncConfigurationStorage(configuration)
+        wallet_backend = wallet_backend_module.WalletBackend(sync_storage, mock.Mock())
+        user_id = sync_auth.derive_user_id(private_key)
+        assert wallet_backend.has_wallet_for_user_id(user_id) is True
+
+    def test_returns_false_for_unknown_user_id(self, tmp_path):
+        private_key = "cc" * 32
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "community": {
+                        "wallets": {
+                            octobot_constants.CHAIN_TYPE: {
+                                octobot_constants.CHAIN_NETWORK: [
+                                    {
+                                        "address": "0xd9eeee68cb71d51f74ee1e5c3c78770ed5a2f1c3",
+                                        "private_key": private_key,
+                                        "passphrase_hash": "salt:hash",
+                                        "is_admin": True,
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with mock.patch(
+            "octobot_commons.configuration.config_file_manager.get_user_config",
+            return_value=str(config_path),
+        ):
+            configuration = local_authenticator_module.get_user_configuration()
+
+        sync_storage = configuration_storage_module.SyncConfigurationStorage(configuration)
+        wallet_backend = wallet_backend_module.WalletBackend(sync_storage, mock.Mock())
+        assert wallet_backend.has_wallet_for_user_id("not-a-known-user-id") is False
+
+
+class TestGetUserConfigurationSaveDisabled:
     def test_save_is_disabled(self, tmp_path):
         config_path = tmp_path / "config.json"
         config_path.write_text("{}", encoding="utf-8")

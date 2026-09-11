@@ -94,7 +94,7 @@ class ServiceFactory:
                 import octobot_node.scheduler as scheduler_module
                 import octobot.community.node_journal.enums as journal_enums
                 import octobot.community.node_journal.recording_context as journal_recording_context
-                import octobot.community.node_journal.startup as journal_startup
+                import octobot.community.node_journal.lifecycle as journal_startup
                 journal_recording_context.node_api_startup_failure(
                     error=e,
                     startup_phase=journal_enums.JournalStartupPhase.NODE_API_START,

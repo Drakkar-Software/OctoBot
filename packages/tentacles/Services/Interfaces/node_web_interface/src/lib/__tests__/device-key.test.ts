@@ -2,6 +2,7 @@ import "fake-indexeddb/auto"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
+  clearAllDeviceRecords,
   clearClientKeys,
   clearPassword,
   derivePassphraseKey,
@@ -326,6 +327,77 @@ describe("hasStoredClientKeys", () => {
 })
 
 // ─── wallet switch restores keys ───────────────────────────────────────────
+
+async function writeRawIdbRecord(recordKey: string, value: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const openRequest = indexedDB.open("octobot_device", 1)
+    openRequest.onupgradeneeded = () => {
+      openRequest.result.createObjectStore("secure_storage")
+    }
+    openRequest.onsuccess = () => {
+      const database = openRequest.result
+      const transaction = database.transaction("secure_storage", "readwrite")
+      const putRequest = transaction
+        .objectStore("secure_storage")
+        .put(value, recordKey)
+      putRequest.onsuccess = () => {
+        database.close()
+        resolve()
+      }
+      putRequest.onerror = () => reject(putRequest.error)
+    }
+    openRequest.onerror = () => reject(openRequest.error)
+  })
+}
+
+async function readRawIdbRecord(recordKey: string): Promise<unknown> {
+  return await new Promise((resolve, reject) => {
+    const openRequest = indexedDB.open("octobot_device", 1)
+    openRequest.onupgradeneeded = () => {
+      openRequest.result.createObjectStore("secure_storage")
+    }
+    openRequest.onsuccess = () => {
+      const database = openRequest.result
+      const transaction = database.transaction("secure_storage", "readonly")
+      const getRequest = transaction.objectStore("secure_storage").get(recordKey)
+      getRequest.onsuccess = () => {
+        database.close()
+        resolve(getRequest.result)
+      }
+      getRequest.onerror = () => reject(getRequest.error)
+    }
+    openRequest.onerror = () => reject(openRequest.error)
+  })
+}
+
+describe("clearAllDeviceRecords", () => {
+  it("deletes all secure storage records including auth", async () => {
+    setWallet(WALLET_A)
+    await writeRawIdbRecord("device_key", "device-key")
+    await writeRawIdbRecord("auth_password", "password")
+    await writeRawIdbRecord("octochat_device_keys", "octochat")
+    await writeRawIdbRecord(`client_keys:${WALLET_A.toLowerCase()}`, "active")
+    await writeRawIdbRecord(`client_keys:${WALLET_B.toLowerCase()}`, "stale")
+    await writeRawIdbRecord("orphan_record", "delete-me")
+
+    await clearAllDeviceRecords()
+
+    expect(await readRawIdbRecord("device_key")).toBeUndefined()
+    expect(await readRawIdbRecord("auth_password")).toBeUndefined()
+    expect(await readRawIdbRecord("octochat_device_keys")).toBeUndefined()
+    expect(
+      await readRawIdbRecord(`client_keys:${WALLET_A.toLowerCase()}`),
+    ).toBeUndefined()
+    expect(
+      await readRawIdbRecord(`client_keys:${WALLET_B.toLowerCase()}`),
+    ).toBeUndefined()
+    expect(await readRawIdbRecord("orphan_record")).toBeUndefined()
+  })
+
+  it("handles an empty secure storage store", async () => {
+    await expect(clearAllDeviceRecords()).resolves.toBeUndefined()
+  })
+})
 
 describe("wallet switch restores keys on login", () => {
   it("switching back to a wallet restores its keys when passphrase matches", async () => {

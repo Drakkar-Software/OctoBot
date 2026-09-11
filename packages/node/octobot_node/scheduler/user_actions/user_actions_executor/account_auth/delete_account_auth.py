@@ -53,4 +53,7 @@ class DeleteAccountAuthActionExecutor(
             delete_payload.id,
         )
         self._mark_user_action_completed(user_action)
-        node_journal.record_account_auth_deleted(exchange_name=None)
+        node_journal.record_account_auth_deleted(
+            exchange_name=None,
+            user_action_id=user_action.id,
+        )

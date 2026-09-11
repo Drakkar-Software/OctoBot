@@ -17,6 +17,28 @@
 import enum
 
 
+class JournalEventLineField(enum.StrEnum):
+    EVENT = "event"
+    TIMESTAMP = "timestamp"
+    SESSION_ID = "session_id"
+    INSTALL_ID = "install_id"
+    APP_VERSION = "app_version"
+    DISTRIBUTION = "distribution"
+    ONBOARDING_COMPLETE = "onboarding_complete"
+    ATTRIBUTES = "attributes"
+    RECORDED = "recorded"
+
+
+class JournalStorageContextField(enum.StrEnum):
+    SESSION_ID = "session_id"
+    APP_VERSION = "app_version"
+
+
+class JournalManifestField(enum.StrEnum):
+    SCHEMA = "schema"
+    INSTALL_ID = "install_id"
+
+
 class JournalInitPhase(enum.StrEnum):
     DBOS_CREATE = "dbos_create"
     REGISTER_WORKFLOWS = "register_workflows"

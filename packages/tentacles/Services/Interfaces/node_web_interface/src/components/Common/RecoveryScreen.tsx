@@ -1,3 +1,4 @@
+import { ShareFeedbackButton } from "@/components/Common/ShareFeedbackButton"
 import { resetClientStorage } from "@/lib/client-storage-reset"
 import {
   RECOVERY_EXPLANATION,
@@ -55,6 +56,9 @@ export function RecoveryScreen({ failureKind }: RecoveryScreenProps) {
           <Button type="button" variant="outline" onClick={handleReloadClick}>
             Reload page
           </Button>
+          <ShareFeedbackButton
+            context={{ source: "recovery", failureKind }}
+          />
         </div>
       </div>
     </div>

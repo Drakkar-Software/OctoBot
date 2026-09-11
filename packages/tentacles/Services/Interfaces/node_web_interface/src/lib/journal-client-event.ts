@@ -6,6 +6,7 @@ export type UiJournalEvent =
   | "ui_auth_state_broken"
   | "ui_fatal_render_error"
   | "ui_client_storage_reset"
+  | "ui_insecure_context"
 
 export type UiJournalEventAttributes = Record<
   string,

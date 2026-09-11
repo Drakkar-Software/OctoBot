@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 
 import { Logo } from "@/components/Common/Logo"
+import { ShareFeedbackButton } from "@/components/Common/ShareFeedbackButton"
 import UserMenu from "@/components/Common/UserMenu"
 import { Button } from "@/components/ui/button"
 
@@ -11,6 +12,11 @@ export function AppHeader() {
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-4">
         <Logo variant="full" />
         <div className="ml-auto flex items-center gap-3">
+          <ShareFeedbackButton
+            context={{ source: "navbar" }}
+            variant="outline"
+            size="sm"
+          />
           <Button asChild size="sm">
             <Link to="/octobots/new">
               <Plus className="size-4" />

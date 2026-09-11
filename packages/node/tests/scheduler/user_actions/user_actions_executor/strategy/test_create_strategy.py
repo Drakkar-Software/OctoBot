@@ -55,7 +55,7 @@ class TestCreateStrategyActionExecutorExecute:
             await executor.execute(user_action)
         record_strategy_create_succeeded_mock.assert_called_once_with(
             strategy_id="new-strategy",
-            configuration_type="generic_process",
+            strategy=strategy_model,
             user_action_id="ua-create-strategy",
         )
         provider_mock.create_item.assert_called_once_with(

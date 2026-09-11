@@ -18,6 +18,8 @@ import dataclasses
 
 import octobot_commons.dataclasses as commons_dataclasses
 
+import octobot.community.node_journal.constants as journal_constants
+import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.events as journal_events
 
 
@@ -36,6 +38,7 @@ class JournalEventAttributes(_NodeJournalMinimizableDataclass):
     action_type: str | None = None
     automation_count: int | None = None
     automation_id: str | None = None
+    running_automation_count: int | None = None
     backend: str | None = None
     cancel_orders: bool | None = None
     collection: str | None = None
@@ -99,18 +102,43 @@ class JournalEventLine(_NodeJournalMinimizableDataclass):
 
     def to_dict(self, include_default_values: bool = False) -> dict:
         serialized = super().to_dict(include_default_values=include_default_values)
-        serialized["event"] = self.event.value
-        serialized["attributes"] = self.attributes.to_dict(include_default_values=include_default_values)
+        event_line_field = journal_enums.JournalEventLineField
+        serialized[event_line_field.EVENT.value] = self.event.value
+        if self.attributes is not None:
+            serialized[event_line_field.ATTRIBUTES.value] = self.attributes.to_dict(
+                include_default_values=include_default_values,
+            )
+        else:
+            serialized[event_line_field.ATTRIBUTES.value] = {}
         if not self.recorded:
-            serialized["recorded"] = False
-        elif not include_default_values and serialized.get("recorded") is True:
-            serialized.pop("recorded", None)
+            serialized[event_line_field.RECORDED.value] = False
+        elif not include_default_values and serialized.get(event_line_field.RECORDED.value) is True:
+            serialized.pop(event_line_field.RECORDED.value, None)
+        return serialized
+
+    def to_storage_dict(self) -> dict:
+        event_line_field = journal_enums.JournalEventLineField
+        serialized = {
+            event_line_field.EVENT.value: self.event.value,
+            event_line_field.TIMESTAMP.value: self.timestamp,
+        }
+        if self.attributes is not None:
+            attributes_dict = self.attributes.to_dict()
+            if attributes_dict:
+                serialized[event_line_field.ATTRIBUTES.value] = attributes_dict
+        if not self.recorded:
+            serialized[event_line_field.RECORDED.value] = False
         return serialized
 
     @classmethod
     def from_dict(cls, event_line: dict) -> "JournalEventLine":
-        parsed_event, coerced_raw_event_name = journal_events.coerce_node_journal_event(event_line["event"])
-        attributes = JournalEventAttributes.from_dict(event_line.get("attributes"))
+        event_line_field = journal_enums.JournalEventLineField
+        parsed_event, coerced_raw_event_name = journal_events.coerce_node_journal_event(
+            event_line[event_line_field.EVENT.value],
+        )
+        attributes = JournalEventAttributes.from_dict(event_line.get(event_line_field.ATTRIBUTES.value))
+        if attributes is None:
+            attributes = JournalEventAttributes()
         if coerced_raw_event_name is not None:
             attributes = JournalEventAttributes.merge(
                 attributes,
@@ -118,14 +146,14 @@ class JournalEventLine(_NodeJournalMinimizableDataclass):
             )
         return cls(
             event=parsed_event,
-            timestamp=float(event_line["timestamp"]),
-            session_id=str(event_line.get("session_id", "")),
-            install_id=str(event_line.get("install_id", "")),
-            app_version=str(event_line.get("app_version", "")),
-            distribution=str(event_line.get("distribution", "")),
-            onboarding_complete=bool(event_line.get("onboarding_complete", False)),
+            timestamp=float(event_line[event_line_field.TIMESTAMP.value]),
+            session_id=str(event_line.get(event_line_field.SESSION_ID.value, "")),
+            install_id=str(event_line.get(event_line_field.INSTALL_ID.value, "")),
+            app_version=str(event_line.get(event_line_field.APP_VERSION.value, "")),
+            distribution=str(event_line.get(event_line_field.DISTRIBUTION.value, "")),
+            onboarding_complete=bool(event_line.get(event_line_field.ONBOARDING_COMPLETE.value, False)),
             attributes=attributes,
-            recorded=event_line.get("recorded", True),
+            recorded=event_line.get(event_line_field.RECORDED.value, True),
         )
 
 
@@ -156,6 +184,7 @@ class JourneySummary(_NodeJournalMinimizableDataclass):
     first_external_connect_at: float | None
     last_external_connect_at: float | None
     longest_connect_gap_seconds: float | None
+    ui_blocking_issues_count: int = 0
 
 
 @dataclasses.dataclass
@@ -170,3 +199,11 @@ class UploadEnvelope(_NodeJournalMinimizableDataclass):
     ready: bool
     event_count: int
     note: str | None = None
+
+    def to_dict(self, include_default_values: bool = False) -> dict:
+        serialized = super().to_dict(include_default_values=include_default_values)
+        serialized["events"] = [event_line.to_storage_dict() for event_line in self.events]
+        serialized["journey_summary"] = self.journey_summary.to_dict(
+            include_default_values=include_default_values,
+        )
+        return serialized

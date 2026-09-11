@@ -25,7 +25,7 @@ import octobot_services.constants as services_constants
 import octobot_services.services as services
 import octobot_node.scheduler
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
-import octobot.community.node_journal.startup as journal_startup
+import octobot.community.node_journal.lifecycle as journal_startup
 
 
 class NodeApiService(services.AbstractService):

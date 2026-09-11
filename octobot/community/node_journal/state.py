@@ -16,15 +16,18 @@
 
 import dataclasses
 import logging
+import os
 import time
 import typing
 import uuid
 
 import octobot_commons.configuration as configuration
+import octobot_commons.json_util as json_util
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
 import octobot.community.node_journal.constants as journal_constants
-import octobot.community.node_journal.safe as journal_safe
+import octobot.community.node_journal.enums as journal_enums
+import octobot.community.node_journal.journal as journal_module
 
 logger = logging.getLogger(__name__)
 
@@ -80,11 +83,42 @@ def reset_session_id() -> str:
 
 
 def get_journal_directory() -> str:
-    return user_root_folder_provider.get_user_root_folder() + f"/{journal_constants.JOURNAL_DIR_NAME}"
+    user_root = user_root_folder_provider.get_user_root_folder()
+    return os.path.join(user_root, journal_constants.JOURNAL_DIR_NAME)
+
+
+def _is_valid_manifest(manifest: typing.Any) -> bool:
+    manifest_field = journal_enums.JournalManifestField
+    if not isinstance(manifest, dict):
+        return False
+    if manifest.get(manifest_field.SCHEMA.value) != journal_constants.JOURNAL_SCHEMA_VERSION:
+        return False
+    install_id = manifest.get(manifest_field.INSTALL_ID.value)
+    return isinstance(install_id, str) and bool(install_id)
+
+
+def ensure_journal_manifest(journal_directory: str | None = None) -> dict:
+    journal_dir = journal_directory or get_journal_directory()
+    os.makedirs(journal_dir, exist_ok=True)
+    manifest_path = os.path.join(journal_dir, journal_constants.MANIFEST_FILE_NAME)
+    manifest = None
+    if os.path.isfile(manifest_path):
+        manifest = json_util.read_file(manifest_path, raise_errors=False, on_error_value={})
+    if manifest is not None and _is_valid_manifest(manifest):
+        return manifest
+    logger.warning("Recreating journal manifest at %s", manifest_path)
+    persisted_state = load_persisted_state()
+    manifest_field = journal_enums.JournalManifestField
+    recreated_manifest = {
+        manifest_field.SCHEMA.value: journal_constants.JOURNAL_SCHEMA_VERSION,
+        manifest_field.INSTALL_ID.value: persisted_state.install_id,
+    }
+    json_util.safe_dump(recreated_manifest, manifest_path)
+    return recreated_manifest
 
 
 def load_persisted_state(config: configuration.Configuration | None = None) -> JournalPersistedState:
-    return journal_safe.run_journal_operation(
+    return journal_module.run_journal_operation(
         "load_persisted_state",
         lambda: _load_persisted_state(config),
         default=_default_persisted_state(),
@@ -92,7 +126,7 @@ def load_persisted_state(config: configuration.Configuration | None = None) -> J
 
 
 def save_persisted_state(state: JournalPersistedState, config: configuration.Configuration | None = None) -> None:
-    journal_safe.run_journal_operation(
+    journal_module.run_journal_operation(
         "save_persisted_state",
         lambda: _save_persisted_state(state, config),
         default=None,
@@ -100,7 +134,7 @@ def save_persisted_state(state: JournalPersistedState, config: configuration.Con
 
 
 def mark_first_automation_started(now: float | None = None) -> None:
-    journal_safe.run_journal_operation(
+    journal_module.run_journal_operation(
         "mark_first_automation_started",
         lambda: _mark_first_automation_started(now),
         default=None,
@@ -175,6 +209,14 @@ def _mark_first_automation_started(now: float | None) -> None:
     state.first_automation_started_at = emit_now
     state.onboarding_complete = True
     _save_persisted_state(state)
+
+
+def duration_since_install_start(now: float | None = None) -> float | None:
+    persisted_state = load_persisted_state()
+    if persisted_state.onboarding_started_at is None:
+        return None
+    emit_now = time.time() if now is None else now
+    return round(max(0.0, emit_now - persisted_state.onboarding_started_at), 3)
 
 
 def _optional_float(value: typing.Any) -> float | None:

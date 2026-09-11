@@ -60,4 +60,5 @@ class RefreshAccountsActionExecutor(account_user_action_executor.AccountUserActi
         self._mark_user_action_completed(user_action)
         node_journal.record_accounts_refreshed(
             account_ids=list(account_ids_to_refresh),
+            user_action_id=user_action.id,
         )

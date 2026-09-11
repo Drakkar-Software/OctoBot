@@ -53,4 +53,5 @@ class DeleteAccountActionExecutor(account_user_action_executor.AccountUserAction
         self._mark_user_action_completed(user_action)
         node_journal.record_account_deleted(
             account_id=delete_payload.id or "",
+            user_action_id=user_action.id,
         )

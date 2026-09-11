@@ -14,21 +14,66 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+"""Core write/read pipeline for the node journal."""
+
 import logging
+import os
 import time
+import typing
 
 import octobot.constants as octobot_constants
 
 import octobot.community.node_journal.constants as journal_constants
-import octobot.community.node_journal.enabled as journal_enabled
 import octobot.community.node_journal.events as journal_events
 import octobot.community.node_journal.models as journal_models
-import octobot.community.node_journal.safe as journal_safe
-import octobot.community.node_journal.sanitize as journal_sanitize
 import octobot.community.node_journal.state as journal_state
 import octobot.community.node_journal.store as journal_store
 
 logger = logging.getLogger(__name__)
+
+_DISABLED_VALUES = frozenset({"0", "false", "no", "off"})
+
+
+def is_journal_enabled() -> bool:
+    raw_value = os.environ.get(journal_constants.JOURNAL_ENABLED_ENV_VAR)
+    if raw_value is None:
+        return True
+    return raw_value.strip().lower() not in _DISABLED_VALUES
+
+
+def run_journal_operation(
+    operation_name: str,
+    operation: typing.Callable[[], typing.Any],
+    *,
+    default: typing.Any,
+) -> typing.Any:
+    try:
+        return operation()
+    except Exception as exc:
+        logger.exception("Journal %s failed: %s", operation_name, exc)
+        return default
+
+
+def sanitize_attribute_value(value: typing.Any) -> typing.Any:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float, str)):
+        return value
+    if isinstance(value, list):
+        return value
+    return str(value)
+
+
+def sanitize_event_attributes(
+    event: journal_events.NodeJournalEvent,
+    attributes: journal_models.JournalEventAttributes,
+) -> journal_models.JournalEventAttributes:
+    sanitized_attributes = {}
+    for field_name, value in attributes.to_dict().items():
+        if value is None:
+            continue
+        sanitized_attributes[field_name] = sanitize_attribute_value(value)
+    return journal_models.JournalEventAttributes.from_dict(sanitized_attributes)
 
 
 def record(
@@ -37,7 +82,7 @@ def record(
     attributes: journal_models.JournalEventAttributes | dict | None = None,
     timestamp: float | None = None,
 ) -> journal_models.JournalEventLine:
-    return journal_safe.run_journal_operation(
+    return run_journal_operation(
         "record",
         lambda: _record(event, attributes=attributes, timestamp=timestamp),
         default=_build_disabled_event_stub_for_input(event, attributes),
@@ -45,20 +90,16 @@ def record(
 
 
 def read_events() -> list[journal_models.JournalEventLine]:
-    if not journal_enabled.is_journal_enabled():
+    if not is_journal_enabled():
         return []
     return journal_store.get_store().read_all_events()
 
 
 def initialize_for_config(config) -> None:
-    if not journal_enabled.is_journal_enabled():
+    if not is_journal_enabled():
         return
     journal_state.bind_config(config)
     journal_state.load_persisted_state(config)
-
-
-def is_journal_enabled() -> bool:
-    return journal_enabled.is_journal_enabled()
 
 
 def record_failure(
@@ -93,9 +134,9 @@ def _record(
     if parsed_event == journal_events.NodeJournalEvent.UNKNOWN:
         logger.error("Unknown journal event: %s", raw_event_name or event)
         return _build_disabled_event_stub(parsed_event, coerced_attributes, recorded=False)
-    if not journal_enabled.is_journal_enabled():
+    if not is_journal_enabled():
         return _build_disabled_event_stub(parsed_event, coerced_attributes)
-    sanitized_attributes = journal_sanitize.sanitize_event_attributes(parsed_event, coerced_attributes)
+    sanitized_attributes = sanitize_event_attributes(parsed_event, coerced_attributes)
     if (
         parsed_event in journal_events.FAILURE_EVENTS
         and sanitized_attributes.error_category is None

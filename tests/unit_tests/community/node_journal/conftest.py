@@ -19,10 +19,10 @@ import pytest
 
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
 
-import octobot.community.node_journal.safe as journal_safe_module
+import octobot.community.node_journal.journal as journal_module
 import octobot.community.node_journal.state as journal_state
 import octobot.community.node_journal.store as journal_store
-import octobot.community.node_journal.sync_session as sync_session_module
+import octobot.community.node_journal.recording.sync as sync_module
 
 from test_utils.journal_test_support import enabled_node_journal_environment
 
@@ -50,7 +50,7 @@ def re_enable_node_journal():
 def isolated_journal_environment(journal_user_root):
     journal_store.reset_default_store()
     reset_journal_state()
-    sync_session_module._tracker_reset_after_startup = False
+    sync_module._tracker_reset_after_startup = False
     with mock.patch.object(
         user_root_folder_provider,
         "get_user_root_folder",
@@ -59,12 +59,13 @@ def isolated_journal_environment(journal_user_root):
         yield journal_user_root
     journal_store.reset_default_store()
     reset_journal_state()
-    sync_session_module._tracker_reset_after_startup = False
+    sync_module._tracker_reset_after_startup = False
 
 
 @pytest.fixture(autouse=True)
 def surface_journal_errors(request):
-    if request.node.path.name == "test_safe.py":
+    node_path = request.node.path
+    if node_path.name == "test_record.py" and node_path.parent.name == "pipeline":
         yield
         return
 
@@ -73,7 +74,7 @@ def surface_journal_errors(request):
         return operation()
 
     with mock.patch.object(
-        journal_safe_module,
+        journal_module,
         "run_journal_operation",
         side_effect=run_without_swallowing,
     ):

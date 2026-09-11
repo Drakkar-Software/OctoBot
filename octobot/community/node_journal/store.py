@@ -14,17 +14,27 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import dataclasses
 import json
 import logging
 import os
 import threading
 
+import octobot.constants as octobot_constants
+
 import octobot.community.node_journal.constants as journal_constants
+import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.models as journal_models
-import octobot.community.node_journal.safe as journal_safe
+import octobot.community.node_journal.journal as journal_module
+import octobot.community.node_journal.storage_hydration as journal_storage_hydration
 import octobot.community.node_journal.state as journal_state
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class _FileWriteState:
+    last_ctx: dict | None = None
 
 
 class JournalStore:
@@ -41,36 +51,38 @@ class JournalStore:
             self._journal_directory, journal_constants.ONBOARDING_SEGMENT_FILE_NAME
         )
         self._lock = threading.Lock()
+        self._file_write_states: dict[str, _FileWriteState] = {}
         os.makedirs(self._journal_directory, exist_ok=True)
+        journal_state.ensure_journal_manifest(self._journal_directory)
 
     def append(self, event_line: journal_models.JournalEventLine, *, is_onboarding_segment: bool) -> None:
-        journal_safe.run_journal_operation(
+        journal_module.run_journal_operation(
             "store.append",
             lambda: self._append(event_line, is_onboarding_segment=is_onboarding_segment),
             default=None,
         )
 
     def read_all_events(self) -> list[journal_models.JournalEventLine]:
-        return journal_safe.run_journal_operation(
+        return journal_module.run_journal_operation(
             "store.read_all_events",
             self._read_all_events,
             default=[],
         )
 
     def _append(self, event_line: journal_models.JournalEventLine, *, is_onboarding_segment: bool) -> None:
-        serialized = json.dumps(event_line.to_dict(), separators=(",", ":"), sort_keys=True)
+        journal_state.ensure_journal_manifest(self._journal_directory)
         with self._lock:
-            with open(self._events_path, "a", encoding="utf-8") as events_file:
-                events_file.write(serialized + "\n")
             if is_onboarding_segment:
-                with open(self._onboarding_path, "a", encoding="utf-8") as onboarding_file:
-                    onboarding_file.write(serialized + "\n")
-            self._enforce_cap(is_onboarding_segment=is_onboarding_segment)
+                self._append_to_file(self._onboarding_path, event_line)
+            else:
+                self._append_to_file(self._events_path, event_line)
+                self._enforce_cap()
 
     def _read_all_events(self) -> list[journal_models.JournalEventLine]:
+        manifest = journal_state.ensure_journal_manifest(self._journal_directory)
         with self._lock:
-            pinned_onboarding = self._read_jsonl_file(self._onboarding_path)
-            main_events = self._read_jsonl_file(self._events_path)
+            pinned_onboarding = self._parse_jsonl_file(self._onboarding_path, manifest=manifest)
+            main_events = self._parse_jsonl_file(self._events_path, manifest=manifest)
         if not pinned_onboarding:
             return main_events
         merged_by_key = {}
@@ -78,9 +90,9 @@ class JournalStore:
             merged_by_key[self._event_dedup_key(event_line)] = event_line
         return sorted(merged_by_key.values(), key=lambda line: line.timestamp)
 
-    def _enforce_cap(self, *, is_onboarding_segment: bool) -> None:
-        del is_onboarding_segment
-        main_events = self._read_jsonl_file(self._events_path)
+    def _enforce_cap(self) -> None:
+        manifest = journal_state.ensure_journal_manifest(self._journal_directory)
+        main_events = self._parse_jsonl_file(self._events_path, manifest=manifest)
         if len(main_events) <= self._max_events:
             return
         persisted_state = journal_state.load_persisted_state()
@@ -104,6 +116,49 @@ class JournalStore:
         kept_events = protected_events + kept_evictable
         self._write_jsonl_file(self._events_path, kept_events)
 
+    def _get_write_state(self, path: str) -> _FileWriteState:
+        if path not in self._file_write_states:
+            self._file_write_states[path] = _FileWriteState()
+        return self._file_write_states[path]
+
+    def _current_ctx(self) -> dict[str, str]:
+        context_field = journal_enums.JournalStorageContextField
+        return {
+            context_field.SESSION_ID.value: journal_state.get_session_id(),
+            context_field.APP_VERSION.value: octobot_constants.LONG_VERSION,
+        }
+
+    def _should_write_ctx(self, path: str, current_ctx: dict[str, str], write_state: _FileWriteState) -> bool:
+        context_field = journal_enums.JournalStorageContextField
+        if not os.path.isfile(path) or os.path.getsize(path) == 0:
+            return True
+        if write_state.last_ctx is None:
+            return True
+        return (
+            write_state.last_ctx.get(context_field.SESSION_ID.value) != current_ctx[context_field.SESSION_ID.value]
+            or write_state.last_ctx.get(context_field.APP_VERSION.value) != current_ctx[context_field.APP_VERSION.value]
+        )
+
+    def _append_to_file(self, path: str, event_line: journal_models.JournalEventLine) -> None:
+        current_ctx = self._current_ctx()
+        write_state = self._get_write_state(path)
+        lines_to_write = []
+        if self._should_write_ctx(path, current_ctx, write_state):
+            lines_to_write.append(self._serialize_ctx_line(current_ctx))
+        lines_to_write.append(json.dumps(event_line.to_storage_dict(), separators=(",", ":"), sort_keys=True))
+        with open(path, "a", encoding="utf-8") as jsonl_file:
+            for serialized_line in lines_to_write:
+                jsonl_file.write(serialized_line + "\n")
+        write_state.last_ctx = current_ctx
+
+    @staticmethod
+    def _serialize_ctx_line(ctx: dict[str, str]) -> str:
+        return json.dumps(
+            {journal_constants.STORAGE_CTX_KEY: ctx},
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
     @staticmethod
     def _event_dedup_key(event_line: journal_models.JournalEventLine) -> tuple:
         return (
@@ -113,27 +168,126 @@ class JournalStore:
             json.dumps(event_line.attributes.to_dict(), sort_keys=True),
         )
 
-    @staticmethod
-    def _read_jsonl_file(path: str) -> list[journal_models.JournalEventLine]:
+    def _parse_jsonl_file(
+        self,
+        path: str,
+        *,
+        manifest: dict,
+    ) -> list[journal_models.JournalEventLine]:
         if not os.path.isfile(path):
             return []
+        persisted_state = journal_state.load_persisted_state()
         parsed_lines = []
+        running_ctx: dict = {}
+        missing_data_warnings: set[str] = set()
         with open(path, encoding="utf-8") as jsonl_file:
-            for raw_line in jsonl_file:
+            for line_number, raw_line in enumerate(jsonl_file, start=1):
                 stripped_line = raw_line.strip()
                 if not stripped_line:
                     continue
                 try:
-                    parsed_lines.append(journal_models.JournalEventLine.from_dict(json.loads(stripped_line)))
-                except (json.JSONDecodeError, KeyError, ValueError) as exc:
-                    logger.exception("Failed to parse journal line in %s: %s", path, exc)
+                    parsed_line = json.loads(stripped_line)
+                except json.JSONDecodeError as exc:
+                    logger.warning(
+                        "Skipping invalid journal line %s:%s (%s: %s)",
+                        path,
+                        line_number,
+                        type(exc).__name__,
+                        exc,
+                    )
+                    continue
+                if journal_constants.STORAGE_CTX_KEY in parsed_line:
+                    ctx_payload = parsed_line[journal_constants.STORAGE_CTX_KEY]
+                    if isinstance(ctx_payload, dict):
+                        running_ctx = ctx_payload
+                    else:
+                        logger.warning(
+                            "Skipping invalid journal context line %s:%s",
+                            path,
+                            line_number,
+                        )
+                    continue
+                if journal_enums.JournalEventLineField.EVENT.value not in parsed_line:
+                    logger.warning(
+                        "Skipping unrecognized journal line %s:%s",
+                        path,
+                        line_number,
+                    )
+                    continue
+                try:
+                    parsed_lines.append(
+                        journal_storage_hydration.hydrate_storage_event(
+                            parsed_line,
+                            running_ctx,
+                            manifest,
+                            persisted_state,
+                            missing_data_warnings=missing_data_warnings,
+                        )
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Skipping invalid journal line %s:%s (%s: %s)",
+                        path,
+                        line_number,
+                        type(exc).__name__,
+                        exc,
+                    )
         return parsed_lines
 
-    @staticmethod
-    def _write_jsonl_file(path: str, events: list[journal_models.JournalEventLine]) -> None:
+    def _write_jsonl_file(self, path: str, events: list[journal_models.JournalEventLine]) -> None:
+        write_state = self._get_write_state(path)
+        if not events:
+            with open(path, "w", encoding="utf-8"):
+                pass
+            write_state.last_ctx = None
+            return
+
+        grouped_lines: list[str] = []
+        current_group_key: tuple[str, str] | None = None
+        current_group_events: list[journal_models.JournalEventLine] = []
+        for event_line in events:
+            group_key = (event_line.session_id, event_line.app_version)
+            if group_key != current_group_key:
+                if current_group_events and current_group_key is not None:
+                    grouped_lines.extend(
+                        self._serialize_event_group(current_group_key, current_group_events)
+                    )
+                current_group_key = group_key
+                current_group_events = [event_line]
+            else:
+                current_group_events.append(event_line)
+        if current_group_events and current_group_key is not None:
+            grouped_lines.extend(self._serialize_event_group(current_group_key, current_group_events))
+
         with open(path, "w", encoding="utf-8") as jsonl_file:
-            for event_line in events:
-                jsonl_file.write(json.dumps(event_line.to_dict(), separators=(",", ":"), sort_keys=True) + "\n")
+            jsonl_file.write("\n".join(grouped_lines) + "\n")
+
+        if current_group_key is not None:
+            last_session_id, last_app_version = current_group_key
+            context_field = journal_enums.JournalStorageContextField
+            write_state.last_ctx = {
+                context_field.SESSION_ID.value: last_session_id,
+                context_field.APP_VERSION.value: last_app_version,
+            }
+
+    def _serialize_event_group(
+        self,
+        group_key: tuple[str, str],
+        group_events: list[journal_models.JournalEventLine],
+    ) -> list[str]:
+        session_id, app_version = group_key
+        context_field = journal_enums.JournalStorageContextField
+        serialized_lines = [
+            self._serialize_ctx_line({
+                context_field.SESSION_ID.value: session_id,
+                context_field.APP_VERSION.value: app_version,
+            }),
+        ]
+        for event_line in group_events:
+            serialized_lines.append(
+                json.dumps(event_line.to_storage_dict(), separators=(",", ":"), sort_keys=True)
+            )
+        return serialized_lines
 
 
 _default_store: JournalStore | None = None

@@ -57,7 +57,7 @@ try:
     import octobot.logger as octobot_logger
     import octobot.community as octobot_community
     import octobot.community.errors
-    import octobot.community.node_journal.startup as journal_startup
+    import octobot.community.node_journal.lifecycle as journal_startup
     import octobot.limits as limits
 except ImportError as err:
     traceback.print_exc()

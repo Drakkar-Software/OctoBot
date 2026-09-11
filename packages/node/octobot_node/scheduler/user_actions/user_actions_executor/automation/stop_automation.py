@@ -76,4 +76,5 @@ class StopAutomationActionExecutor(automation_user_action_executor.AutomationUse
         node_journal.record_automation_stopped(
             automation_id=stop_payload.id,
             cancel_orders=bool(stop_payload.cancel_orders),
+            user_action_id=user_action.id,
         )

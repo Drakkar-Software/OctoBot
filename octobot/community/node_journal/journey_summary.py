@@ -17,6 +17,7 @@
 import collections
 
 import octobot.community.node_journal.events as journal_events
+import octobot.community.node_journal.events_metadata as journal_events_metadata
 import octobot.community.node_journal.models as journal_models
 import octobot.community.node_journal.state as journal_state
 
@@ -24,7 +25,7 @@ def build_journey_summary(events: list[journal_models.JournalEventLine]) -> jour
     persisted_state = journal_state.load_persisted_state()
     install_start = persisted_state.onboarding_started_at
     parsed_events = _parse_events(events)
-    onboarding_complete = any(
+    onboarding_complete = persisted_state.onboarding_complete or any(
         event == journal_events.NodeJournalEvent.FIRST_AUTOMATION_STARTED for event, _ in parsed_events
     )
     external_stats = _get_external_connect_stats(parsed_events)
@@ -40,6 +41,7 @@ def build_journey_summary(events: list[journal_models.JournalEventLine]) -> jour
         first_external_connect_at=external_stats["first_external_connect_at"],
         last_external_connect_at=external_stats["last_external_connect_at"],
         longest_connect_gap_seconds=external_stats["longest_connect_gap_seconds"],
+        ui_blocking_issues_count=_get_ui_blocking_issues_count(parsed_events),
     )
 
 
@@ -63,7 +65,7 @@ def _get_furthest_step(
     for event, _ in parsed_events:
         if event is None:
             continue
-        rank = journal_events.FUNNEL_STEP_RANK.get(event)
+        rank = journal_events_metadata.FUNNEL_STEP_RANK.get(event)
         if rank is not None and rank >= best_rank:
             best_rank = rank
             best_event_name = event.value
@@ -75,7 +77,7 @@ def _get_last_successful_step(
 ) -> str | None:
     last_success = None
     for event, _ in parsed_events:
-        if event in journal_events.JOURNEY_SUCCESS_EVENTS:
+        if event in journal_events_metadata.JOURNEY_SUCCESS_EVENTS:
             last_success = event.value
     return last_success
 
@@ -96,6 +98,16 @@ def _get_first_failure(
     return None
 
 
+def _get_ui_blocking_issues_count(
+    parsed_events: list[tuple[journal_events.NodeJournalEvent | None, journal_models.JournalEventLine]],
+) -> int:
+    blocking_issue_count = 0
+    for event, _ in parsed_events:
+        if event is not None and event in journal_events.UI_BLOCKING_JOURNAL_EVENTS:
+            blocking_issue_count += 1
+    return blocking_issue_count
+
+
 def _get_retry_counts(
     parsed_events: list[tuple[journal_events.NodeJournalEvent | None, journal_models.JournalEventLine]],
 ) -> dict[str, int]:
@@ -114,7 +126,7 @@ def _get_step_durations(
         return {}
     step_durations: dict[str, float] = {}
     for event, event_line in parsed_events:
-        label = journal_events.JOURNEY_MILESTONE_LABELS.get(event) if event is not None else None
+        label = journal_events_metadata.JOURNEY_MILESTONE_LABELS.get(event) if event is not None else None
         if label is None:
             continue
         event_timestamp = float(event_line.timestamp)
@@ -123,7 +135,7 @@ def _get_step_durations(
 
 
 def _get_step_deltas(step_durations_seconds: dict[str, float]) -> dict[str, float]:
-    ordered_labels = journal_events.JOURNEY_MILESTONE_LABEL_ORDER
+    ordered_labels = journal_events_metadata.JOURNEY_MILESTONE_LABEL_ORDER
     deltas: dict[str, float] = {}
     previous_label = None
     previous_duration = None

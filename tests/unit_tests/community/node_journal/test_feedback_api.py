@@ -19,8 +19,11 @@ import mock
 import octobot.constants as octobot_constants
 
 import octobot.community.node_journal.constants as journal_constants
+import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.events as journal_events
 import octobot.community.node_journal.journal as journal_module
+
+_EVENT = journal_enums.JournalEventLineField
 
 from tentacles.Services.Interfaces.node_api_interface.api.routes import feedback as feedback_routes
 
@@ -45,6 +48,22 @@ class TestBuildFeedbackPreview:
         assert preview.upload_envelope.uploaded is False
 
 
+class TestBuildFeedbackPreviewAttributeLessEvent:
+    def test_serializes_ui_client_storage_reset_without_attributes(self, journal_persisted_state):
+        journal_module.record(
+            journal_events.NodeJournalEvent.UI_CLIENT_STORAGE_RESET,
+            timestamp=10.0,
+        )
+
+        preview = feedback_routes._build_feedback_preview()
+
+        assert preview.upload_envelope.event_count == 1
+        assert preview.upload_envelope.events[0][_EVENT.EVENT.value] == (
+            journal_events.NodeJournalEvent.UI_CLIENT_STORAGE_RESET.value
+        )
+        assert _EVENT.ATTRIBUTES.value not in preview.upload_envelope.events[0]
+
+
 class TestBuildFeedbackUploadEnvelope:
     def test_includes_optional_note(self, journal_persisted_state):
         journal_module.record(
@@ -57,6 +76,18 @@ class TestBuildFeedbackUploadEnvelope:
 
         assert envelope.note == "manual upload"
         assert envelope.event_count == 1
+
+    def test_upload_events_use_storage_shape(self, journal_persisted_state):
+        journal_module.record(
+            journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED,
+            attributes={"configured": True},
+            timestamp=1.0,
+        )
+        envelope = feedback_routes._build_feedback_upload_envelope()
+        assert len(envelope.events) == 1
+        assert _EVENT.INSTALL_ID.value not in envelope.events[0]
+        assert _EVENT.SESSION_ID.value not in envelope.events[0]
+        assert envelope.events[0][_EVENT.EVENT.value] == journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED.value
 
 
 class TestBuildFeedbackPreviewWhenJournalDisabled:

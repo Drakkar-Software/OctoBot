@@ -18,6 +18,16 @@ import octobot.community.node_journal as node_journal_module
 import octobot.community.node_journal.recording as journal_recording_module
 
 
+class TestPackageExports:
+    def test_every_all_name_resolves_on_package(self):
+        for export_name in node_journal_module.__all__:
+            assert hasattr(node_journal_module, export_name), export_name
+
+    def test_internal_modules_are_not_package_attributes(self):
+        assert not hasattr(node_journal_module, "journal_state")
+        assert not hasattr(node_journal_module, "journal_store")
+
+
 class TestRecordAccountDeletedExport:
     def test_package_export_is_recording_function(self):
         assert node_journal_module.record_account_deleted is journal_recording_module.record_account_deleted
