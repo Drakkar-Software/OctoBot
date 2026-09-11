@@ -16,7 +16,6 @@
 #  License along with this library.
 import os
 import functools
-import copy
 import typing
 
 import octobot_commons.logging as logging
@@ -28,6 +27,7 @@ import octobot_commons.json_util as json_util
 import octobot_commons.configuration.config_file_manager as config_file_manager
 import octobot_commons.configuration.config_operations as config_operations
 import octobot_commons.user_root_folder_provider as user_root_folder_provider
+import octobot_commons.copy_util as copy_util
 
 
 class Configuration:
@@ -90,7 +90,7 @@ class Configuration:
             should_raise=should_raise,
             fill_missing_fields=fill_missing_fields,
         )
-        self.config = copy.deepcopy(self._read_config)
+        self.config = copy_util.deepcopy(self._read_config, "read config")
         if activate_profile:
             self.load_profiles_if_possible_and_necessary()
 
@@ -144,8 +144,10 @@ class Configuration:
 
     def _generate_config_from_user_config_and_profile(self):
         for profile_managed_element in self.profile.FULLY_MANAGED_ELEMENTS:
-            self.config[profile_managed_element] = copy.deepcopy(
-                self.profile.config[profile_managed_element]
+            self.config[profile_managed_element] = copy_util.deepcopy(
+                self.profile.config[profile_managed_element],
+                f"profile element {profile_managed_element!r}",
+                str(profile_managed_element),
             )
         for partially_managed_element in self.profile.PARTIALLY_MANAGED_ELEMENTS:
             self.profile.merge_partially_managed_element_into_config(
@@ -331,17 +333,6 @@ class Configuration:
             )
         return self.get_active_tentacles_setup_config()
 
-    def get_metrics_enabled(self) -> bool:
-        """
-        Check if metrics are enabled
-        :return: True if metrics are enabled
-        """
-        return bool(
-            self.config.get(commons_constants.CONFIG_METRICS, {}).get(
-                commons_constants.CONFIG_ENABLED_OPTION, True
-            )
-        )
-
     def accepted_terms(self) -> bool:
         """
         Check if terms has been accepted
@@ -505,7 +496,7 @@ class Configuration:
                 self.profile = refreshed_profile
 
     def _get_config_without_profile_elements(self) -> dict:
-        filtered_config = copy.deepcopy(self.config)
+        filtered_config = copy_util.deepcopy(self.config, "save config filter")
         # do not include profile fully managed elements into filtered config
         for profile_managed_element in profiles.Profile.FULLY_MANAGED_ELEMENTS:
             filtered_config.pop(profile_managed_element, None)

@@ -20,6 +20,8 @@ import octobot_protocol.models as protocol_models
 import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as account_user_action_executor
 
+import octobot.community.node_journal as node_journal
+
 
 def _get_delete_account_payload(
     user_action: protocol_models.UserAction,
@@ -43,8 +45,13 @@ class DeleteAccountActionExecutor(account_user_action_executor.AccountUserAction
         user_action: protocol_models.UserAction,
     ) -> None:
         delete_payload = _get_delete_account_payload(user_action)
-        collection_providers.AccountProvider.instance().delete_item(
+        account_provider = collection_providers.AccountProvider.instance()
+        account_provider.delete_item(
             self._user_id,
             delete_payload.id,
         )
         self._mark_user_action_completed(user_action)
+        node_journal.record_account_deleted(
+            account_id=delete_payload.id or "",
+            user_action_id=user_action.id,
+        )

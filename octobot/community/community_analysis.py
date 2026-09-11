@@ -86,7 +86,7 @@ async def get_community_metrics():
 
 
 def can_read_metrics(config):
-    return constants.IS_CLOUD_ENV or config.get_metrics_enabled()
+    return False
 
 
 def _format_top_elements(top_elements):

@@ -36,12 +36,23 @@ class TestDeleteAccountActionExecutorExecute:
         )
         user_action = protocol_models.UserAction(id="ua-del", configuration=account_executor_test_utils.wrap_configuration(inner))
         provider_mock = mock.Mock()
-        with mock.patch(
-            "octobot_sync.sync.collection_providers.AccountProvider.instance",
-            return_value=provider_mock,
+        deleted_account = account_executor_test_utils.minimal_exchange_account(account_id="del-1")
+        provider_mock.get_item.return_value = deleted_account
+        provider_mock.list_items.return_value = []
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.account.delete_account.node_journal.record_account_deleted",
+            ) as record_account_deleted_mock,
         ):
             executor = delete_account_executor.DeleteAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
+        record_account_deleted_mock.assert_called_once()
+        assert record_account_deleted_mock.call_args.kwargs["account_id"] == "del-1"
+        assert record_account_deleted_mock.call_args.kwargs["user_action_id"] == "ua-del"
         provider_mock.delete_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, "del-1")
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,

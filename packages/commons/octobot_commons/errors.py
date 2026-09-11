@@ -27,6 +27,12 @@ class RemoteConfigError(ConfigError):
     """
 
 
+class CopyError(Exception):
+    """
+    Copy related Exception
+    """
+
+
 class NoProfileError(Exception):
     """
     Profile related Exception: raised when the current profile can't be found and default profile can't be loaded

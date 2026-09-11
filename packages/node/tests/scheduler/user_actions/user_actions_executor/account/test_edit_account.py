@@ -48,9 +48,15 @@ class TestEditAccountActionExecutorExecute:
                 "update_account_state",
                 new=mock.AsyncMock(return_value=account_model),
             ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.account.edit_account.node_journal.record_account_edit_succeeded",
+            ) as record_account_edit_succeeded_mock,
         ):
             executor = edit_account_executor.EditAccountActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
+        record_account_edit_succeeded_mock.assert_called_once()
+        assert record_account_edit_succeeded_mock.call_args.kwargs["account_id"] == "edit-acc"
+        assert record_account_edit_succeeded_mock.call_args.kwargs["user_action_id"] == "ua-edit"
         provider_mock.update_item.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS, account_model)
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,

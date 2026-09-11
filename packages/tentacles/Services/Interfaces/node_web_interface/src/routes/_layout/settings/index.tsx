@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 
 import { ClientEncryptionKeysCard } from "@/components/Settings/ClientEncryptionKeysCard"
+import { ClientStorageResetCard } from "@/components/Settings/ClientStorageResetCard"
 import { NodeConfigurationCard } from "@/components/Settings/NodeConfigurationCard"
 import { WalletManagementCard } from "@/components/Settings/WalletManagementCard"
 import { SupportCard } from "@/components/Support/SupportCard"
@@ -20,6 +21,7 @@ function Settings() {
         <SupportCard />
         <WalletManagementCard />
         <ClientEncryptionKeysCard />
+        <ClientStorageResetCard />
       </div>
     </div>
   )

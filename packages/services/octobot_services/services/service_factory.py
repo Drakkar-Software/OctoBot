@@ -18,6 +18,8 @@ import typing
 
 import octobot_commons.logging as logging
 
+import octobot.configuration_manager as configuration_manager
+import octobot.enums as octobot_enums
 import octobot_services.constants as constants
 import octobot_services.services as services
 
@@ -85,6 +87,22 @@ class ServiceFactory:
                 self.logger.warning(f"{service.get_name()} initial checkup failed.")
         except Exception as e:
             self.logger.exception(e, True, f"{service.get_name()} preparation produced the following error: {e}")
+            if (
+                configuration_manager.get_distribution(self.config) is octobot_enums.OctoBotDistribution.NODE
+                and service.get_type() == constants.CONFIG_NODE_API
+            ):
+                import octobot_node.scheduler as scheduler_module
+                import octobot.community.node_journal.enums as journal_enums
+                import octobot.community.node_journal.recording_context as journal_recording_context
+                import octobot.community.node_journal.lifecycle as journal_startup
+                journal_recording_context.node_api_startup_failure(
+                    error=e,
+                    startup_phase=journal_enums.JournalStartupPhase.NODE_API_START,
+                    force_exit=False,
+                    config=self.config,
+                    scheduler_init_failure_was_recorded=scheduler_module.scheduler_init_failure_was_recorded,
+                    record_node_startup_failed=journal_startup.record_node_startup_failed,
+                )
         return False
 
     @staticmethod

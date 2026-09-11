@@ -24,9 +24,18 @@ import octobot_commons.logging
 import octobot.constants
 
 
+_USAGE_METRIC_NAME = "octobot.usage"
+_ONBOARDING_DURATION_METRIC_NAME = "octobot.onboarding.duration"
+
+
+class MetricAttributes(typing.Protocol):
+    def to_sentry_dict(self, bot_id: typing.Optional[str]) -> dict[str, str]:
+        ...
+
+
 _sentry_initialized = False
 _activity_tracking_active = False
-_tracker_bot_id_set: bool = False
+_current_bot_id: typing.Optional[str] = None
 
 
 def init_sentry_tracker(metrics_enabled: bool) -> None:
@@ -76,7 +85,7 @@ def init_sentry_tracker(metrics_enabled: bool) -> None:
     if use_activity_dsn:
         init_kwargs["sample_rate"] = 0
         # Activity-only: no default integrations (especially LoggingIntegration).
-        # Only explicit track_usage_event calls send data.
+        # Only explicit track_usage_count calls send data.
         init_kwargs["default_integrations"] = False
         init_kwargs["integrations"] = []
     else:
@@ -115,26 +124,38 @@ def activity_tracking_is_active() -> bool:
 
 
 def has_tracker_bot_id() -> bool:
-    return _tracker_bot_id_set
+    return _current_bot_id is not None
+
+
+def get_tracker_bot_id() -> typing.Optional[str]:
+    return _current_bot_id
 
 
 def update_tracker_bot_id(bot_id: str) -> None:
-    global _tracker_bot_id_set
-    _tracker_bot_id_set = True
+    global _current_bot_id
+    _current_bot_id = bot_id
     sentry_sdk.set_user({"id": bot_id})
     sentry_sdk.set_tag("bot_id", bot_id)
 
 
-def track_usage_event(event_name: str, **attributes: typing.Any) -> None:
-    metric_attributes = {"event": event_name}
-    for attribute_key, attribute_value in attributes.items():
-        if attribute_value is not None:
-            metric_attributes[attribute_key] = str(attribute_value)
-    sentry_sdk.metrics.count("octobot.usage", 1, attributes=metric_attributes)
-    octobot_commons.logging.get_logger("sentry_tracker").debug(
-        "Tracked usage event %s with attributes %s",
-        event_name,
-        metric_attributes,
+def track_usage_count(attributes: MetricAttributes) -> None:
+    metric_attributes = attributes.to_sentry_dict(_current_bot_id)
+    sentry_sdk.metrics.count(
+        _USAGE_METRIC_NAME,
+        1,
+        attributes=metric_attributes,
+    )
+
+
+def track_onboarding_duration_gauge(
+    seconds: float,
+    attributes: MetricAttributes,
+) -> None:
+    metric_attributes = attributes.to_sentry_dict(_current_bot_id)
+    sentry_sdk.metrics.gauge(
+        _ONBOARDING_DURATION_METRIC_NAME,
+        seconds,
+        attributes=metric_attributes,
     )
 
 

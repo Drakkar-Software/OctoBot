@@ -58,6 +58,8 @@ def test_setup_init_success(client):
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_succeeded",
     ):
         with mock.patch("octobot_node.config.settings"):
             resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
@@ -68,6 +70,37 @@ def test_setup_init_success(client):
     )
 
 
+def test_setup_init_emits_wallet_setup_succeeded(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = []
+    auth.create_wallet.return_value = mock.MagicMock(address=ADMIN_ADDRESS)
+    metrics_config = mock.MagicMock()
+    auth.config = metrics_config
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_succeeded",
+    ) as record_wallet_setup_succeeded_mock, mock.patch("octobot_node.config.settings"):
+        resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
+    assert resp.status_code == 200
+    record_wallet_setup_succeeded_mock.assert_called_once_with()
+
+
+def test_setup_init_skips_wallet_milestone_on_409(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [{"address": ADMIN_ADDRESS, "is_admin": True}]
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_succeeded",
+    ) as record_wallet_setup_succeeded_mock:
+        resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
+    assert resp.status_code == 409
+    record_wallet_setup_succeeded_mock.assert_not_called()
+
+
 def test_setup_init_with_private_key(client):
     pk = "a" * 64
     auth = mock.MagicMock()
@@ -76,6 +109,8 @@ def test_setup_init_with_private_key(client):
     with mock.patch(
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_succeeded",
     ):
         with mock.patch("octobot_node.config.settings"):
             resp = client.post(
@@ -99,6 +134,36 @@ def test_setup_init_already_configured_returns_409(client):
     assert resp.status_code == 409
 
 
+def test_setup_init_records_wallet_setup_failed_on_409(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [{"address": ADMIN_ADDRESS, "is_admin": True}]
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_failed",
+    ) as record_wallet_setup_failed_mock:
+        resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
+    assert resp.status_code == 409
+    record_wallet_setup_failed_mock.assert_called_once()
+    assert record_wallet_setup_failed_mock.call_args.kwargs["http_status"] == 409
+    assert record_wallet_setup_failed_mock.call_args.kwargs["failure_reason"] == "already_configured"
+
+
+def test_setup_init_records_wallet_setup_failed_on_503(client):
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=None,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_failed",
+    ) as record_wallet_setup_failed_mock:
+        resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
+    assert resp.status_code == 503
+    record_wallet_setup_failed_mock.assert_called_once()
+    assert record_wallet_setup_failed_mock.call_args.kwargs["http_status"] == 503
+    assert record_wallet_setup_failed_mock.call_args.kwargs["failure_reason"] == "service_unavailable"
+
+
 def test_setup_init_invalid_passphrase_returns_422(client):
     auth = mock.MagicMock()
     auth.list_wallets.return_value = []
@@ -113,6 +178,26 @@ def test_setup_init_invalid_passphrase_returns_422(client):
                 json={**_INIT_BODY, "passphrase": "short"},
             )
     assert resp.status_code == 422
+
+
+def test_setup_init_records_wallet_setup_failed_on_422(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = []
+    auth.create_wallet.side_effect = wallet_backend.WalletError("Passphrase must be at least 8 characters")
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ), mock.patch(
+        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_failed",
+    ) as record_wallet_setup_failed_mock, mock.patch("octobot_node.config.settings"):
+        resp = client.post(
+            "/api/v1/setup/init",
+            json={**_INIT_BODY, "passphrase": "short"},
+        )
+    assert resp.status_code == 422
+    record_wallet_setup_failed_mock.assert_called_once()
+    assert record_wallet_setup_failed_mock.call_args.kwargs["http_status"] == 422
+    assert record_wallet_setup_failed_mock.call_args.kwargs["failure_reason"] == "wallet_error"
 
 
 def test_wallet_export_success(admin_client, mock_auth):

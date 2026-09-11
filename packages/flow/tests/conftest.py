@@ -2,10 +2,25 @@
 
 import dotenv
 import os
+import sys
+
 dotenv.load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 import mock
 import pytest
+
+_OCTOBOT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_TESTS_ROOT = os.path.join(_OCTOBOT_ROOT, "tests")
+if _TESTS_ROOT not in sys.path:
+    sys.path.insert(0, _TESTS_ROOT)
+
+from test_utils.journal_test_support import disabled_node_journal_environment
+
+
+@pytest.fixture(autouse=True)
+def disable_node_journal():
+    with disabled_node_journal_environment():
+        yield
 
 
 @pytest.fixture(autouse=True)

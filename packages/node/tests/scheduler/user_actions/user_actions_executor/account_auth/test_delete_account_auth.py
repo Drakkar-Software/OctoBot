@@ -39,14 +39,23 @@ class TestDeleteAccountAuthActionExecutorExecute:
             configuration=account_auth_executor_test_utils.wrap_configuration(inner),
         )
         provider_mock = mock.Mock()
-        with mock.patch(
-            "octobot_sync.sync.collection_providers.AccountAuthenticationProvider.instance",
-            return_value=provider_mock,
+        with (
+            mock.patch(
+                "octobot_sync.sync.collection_providers.AccountAuthenticationProvider.instance",
+                return_value=provider_mock,
+            ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.account_auth.delete_account_auth.node_journal.record_account_auth_deleted",
+            ) as record_account_auth_deleted_mock,
         ):
             executor = delete_account_auth_executor.DeleteAccountAuthActionExecutor(
                 account_auth_executor_test_utils.WALLET_ADDRESS,
             )
             await executor.execute(user_action)
+        record_account_auth_deleted_mock.assert_called_once_with(
+            exchange_name=None,
+            user_action_id="ua-del-auth",
+        )
         provider_mock.delete_item.assert_called_once_with(
             account_auth_executor_test_utils.WALLET_ADDRESS,
             "del-auth-1",

@@ -85,6 +85,9 @@ class TestStopAutomationActionExecutor:
                 "octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation.scheduler_tasks.send_actions_to_active_automation",
                 new_callable=mock.AsyncMock,
             ) as send_actions_mock,
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation.node_journal.record_automation_stopped",
+            ) as record_automation_stopped_mock,
         ):
             await executor.execute(user_action)
 
@@ -97,6 +100,11 @@ class TestStopAutomationActionExecutor:
                     "dsl_script": "stop_automation()",
                 }
             ],
+        )
+        record_automation_stopped_mock.assert_called_once_with(
+            automation_id="00000000-0000-4000-8000-000000000001",
+            cancel_orders=False,
+            user_action_id="ua-stop-1",
         )
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,

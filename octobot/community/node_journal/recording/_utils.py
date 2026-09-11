@@ -14,26 +14,8 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.activity_analysis.activity_metrics import ActivityMetrics
-from octobot.community.activity_analysis.bot_id_resolver import (
-    BotIdResolution,
-    ensure_activity_bot_id,
-)
-from octobot.community.activity_analysis.config_path_binding import (
-    PathBoundValueResolution,
-    ensure_config_path_fingerprint,
-    fingerprint_config_path,
-    get_bound_config_path,
-    path_binding_is_stale,
-)
+import enum
 
-__all__ = [
-    "ActivityMetrics",
-    "BotIdResolution",
-    "ensure_activity_bot_id",
-    "PathBoundValueResolution",
-    "ensure_config_path_fingerprint",
-    "fingerprint_config_path",
-    "get_bound_config_path",
-    "path_binding_is_stale",
-]
+
+def enum_value(value: enum.StrEnum) -> str:
+    return value.value if isinstance(value, enum.StrEnum) else str(value)

@@ -16,12 +16,10 @@
 import json
 import os
 
-import pytest
-
 import octobot_commons.constants as commons_constants
 import octobot_commons.configuration as configuration
 
-import octobot.community.activity_analysis.config_path_binding as config_path_binding
+import octobot.community.config_path_binding as config_path_binding
 import octobot.constants as constants
 
 
@@ -34,16 +32,12 @@ def _write_config_file(config_path: str, config_data: dict) -> None:
 def _minimal_configuration(
     tmp_path,
     *,
-    metrics_enabled: bool = True,
     community: dict | None = None,
 ) -> configuration.Configuration:
     user_root = tmp_path / commons_constants.USER_FOLDER
     user_root.mkdir()
     config_path = user_root / commons_constants.CONFIG_FILE
     config_data = {
-        commons_constants.CONFIG_METRICS: {
-            commons_constants.CONFIG_ENABLED_OPTION: metrics_enabled,
-        },
         constants.CONFIG_COMMUNITY: community or {},
     }
     _write_config_file(str(config_path), config_data)

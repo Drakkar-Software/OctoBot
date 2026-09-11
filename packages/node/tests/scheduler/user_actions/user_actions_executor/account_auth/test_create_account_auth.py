@@ -56,11 +56,18 @@ class TestCreateAccountAuthActionExecutorExecute:
                 "octobot_node.scheduler.user_actions.user_actions_executor.account_auth.account_auth_user_action_executor.timestamp_util.utc_now_datetime",
                 return_value=_FIXED_TIMESTAMP,
             ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.account_auth.create_account_auth.node_journal.record_account_auth_create_succeeded",
+            ) as record_account_auth_create_succeeded_mock,
         ):
             executor = create_account_auth_executor.CreateAccountAuthActionExecutor(
                 account_auth_executor_test_utils.WALLET_ADDRESS,
             )
             await executor.execute(user_action)
+        record_account_auth_create_succeeded_mock.assert_called_once_with(
+            exchange_name=None,
+            user_action_id="ua-create-auth",
+        )
         provider_mock.create_item.assert_called_once_with(
             account_auth_executor_test_utils.WALLET_ADDRESS,
             authentication_model.model_copy(update={"updated_at": _FIXED_TIMESTAMP}),

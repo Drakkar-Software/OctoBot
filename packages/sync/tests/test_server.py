@@ -11,6 +11,8 @@ import octobot_sync.server as server
 import octobot_sync.enums as enums
 import octobot_sync.errors as errors
 
+import octobot_node.enums as octobot_node_enums
+
 from starfish_server.storage.base import StoreContext
 from starfish_server.storage.s3 import S3ObjectStore
 from starfish_server.storage.filesystem import FilesystemObjectStore
@@ -370,7 +372,11 @@ class TestUserActionsAfterWrite:
             mock_proto.execute_user_action = mock.AsyncMock()
             await server._user_actions_after_write(event)
         mock_pm.UserAction.from_json.assert_called_once_with(plain_body)
-        mock_proto.execute_user_action.assert_awaited_once_with(action, "0xwallet")
+        mock_proto.execute_user_action.assert_awaited_once_with(
+            action,
+            "0xwallet",
+            source=octobot_node_enums.UserActionSource.SYNC,
+        )
 
     @pytest.mark.asyncio
     async def test_user_actions_logs_exception_on_failure(self):

@@ -120,3 +120,91 @@ class TestDecryptWalletEntryByAddress:
         backend.import_wallet(wallet.private_key, "passphrase123", name=None)
         entry = backend.decrypt_wallet_entry_by_address(wallet.address, "passphrase123")
         assert entry.seed is None
+
+
+_JOURNAL_PATCH = "octobot.community.node_journal.record_wallet_operation_failed"
+
+
+class TestImportWalletFromSeedJournal:
+    def test_does_not_record_journal_on_invalid_seed(self):
+        backend, _ = _make_backend()
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            with pytest.raises(InvalidPrivateKeyError):
+                backend.import_wallet_from_seed(
+                    seed="not a valid mnemonic at all xyz",
+                    passphrase="passphrase123",
+                    name=None,
+                )
+        record_mock.assert_not_called()
+
+
+class TestHasWalletForUserIdJournal:
+    def test_does_not_record_journal_when_user_id_is_unknown(self):
+        backend, _ = _make_backend()
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            assert backend.has_wallet_for_user_id("unknown-user-id") is False
+        record_mock.assert_not_called()
+
+
+class TestCreateWalletJournal:
+    def test_records_journal_on_passphrase_too_short(self):
+        from octobot.community.wallet_backend.errors import PassphraseTooShortError
+
+        backend, _ = _make_backend()
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            with pytest.raises(PassphraseTooShortError):
+                backend.create_wallet(name="Alice", passphrase="short")
+        record_mock.assert_called_once()
+        assert record_mock.call_args.kwargs["operation"] == "create"
+        assert isinstance(record_mock.call_args.kwargs["error"], PassphraseTooShortError)
+        assert "http_status" not in record_mock.call_args.kwargs
+
+    def test_success_does_not_record_wallet_operation_failed(self):
+        backend, _ = _make_backend()
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            backend.create_wallet(name="Alice", passphrase="passphrase123")
+        record_mock.assert_not_called()
+
+
+class TestDecryptWalletJournal:
+    def test_does_not_record_journal_on_invalid_passphrase(self):
+        from octobot.community.wallet_backend.errors import InvalidPassphraseError
+
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            with pytest.raises(InvalidPassphraseError):
+                backend.decrypt_wallet_entry_by_address(_TEST_MNEMONIC_ADDRESS, "wrong-passphrase")
+        record_mock.assert_not_called()
+
+
+class TestRemoveWalletJournal:
+    def test_records_journal_on_unknown_address(self):
+        from octobot_sync.chain.evm import create_evm_wallet
+        from octobot.community.wallet_backend.errors import WalletNotFoundError
+
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name="primary")
+        second_wallet = create_evm_wallet()
+        backend.import_wallet(second_wallet.private_key, "passphrase123", name="secondary")
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            with pytest.raises(WalletNotFoundError):
+                backend.remove_wallet("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+        record_mock.assert_called_once()
+        assert record_mock.call_args.kwargs["operation"] == "delete"
+        assert isinstance(record_mock.call_args.kwargs["error"], WalletNotFoundError)
+        assert "http_status" not in record_mock.call_args.kwargs
+
+
+class TestRenameWalletJournal:
+    def test_records_journal_on_unknown_address(self):
+        from octobot.community.wallet_backend.errors import WalletNotFoundError
+
+        backend, _ = _make_backend()
+        with mock.patch(_JOURNAL_PATCH) as record_mock:
+            with pytest.raises(WalletNotFoundError):
+                backend.rename_wallet("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", name="ghost")
+        record_mock.assert_called_once()
+        assert record_mock.call_args.kwargs["operation"] == "rename"
+        assert isinstance(record_mock.call_args.kwargs["error"], WalletNotFoundError)
+        assert "http_status" not in record_mock.call_args.kwargs

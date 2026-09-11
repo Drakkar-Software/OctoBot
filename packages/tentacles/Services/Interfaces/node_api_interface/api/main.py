@@ -36,10 +36,28 @@ try:
         logs,
         octobots,
         dsl,
+        feedback,
+        journal_client_event,
     )
 except ImportError:
     from api.route_provider import register_all_provider_routes  # type: ignore[no-redef]
-    from api.routes import login, nodes, users, tasks, setup, exchanges, wallets, accounts, debug, config, logs, octobots, dsl  # type: ignore[no-redef]
+    from api.routes import (  # type: ignore[no-redef]
+        login,
+        nodes,
+        users,
+        tasks,
+        setup,
+        exchanges,
+        wallets,
+        accounts,
+        debug,
+        config,
+        logs,
+        octobots,
+        dsl,
+        feedback,
+        journal_client_event,
+    )
 
 
 def build_api_router() -> APIRouter:
@@ -58,4 +76,6 @@ def build_api_router() -> APIRouter:
     api_router.include_router(config.router, prefix="/config")
     api_router.include_router(logs.router, prefix="/logs")
     api_router.include_router(dsl.router, prefix="/dsl")
+    api_router.include_router(feedback.router, prefix="/feedback")
+    api_router.include_router(journal_client_event.router, prefix="/journal")
     return api_router

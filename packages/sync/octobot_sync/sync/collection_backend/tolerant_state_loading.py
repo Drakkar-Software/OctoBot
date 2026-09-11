@@ -21,6 +21,9 @@ import octobot_commons.logging as commons_logging
 
 import octobot_sync.sync.collection_backend.state_model as state_model
 
+import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.events as journal_events
+
 
 logger = commons_logging.get_logger("TolerantStateLoading")
 
@@ -49,6 +52,14 @@ class TolerantStateLoader:
         self.collection = collection
         self.model_sanitizers = model_sanitizers or {}
         self.model_fallbacks = model_fallbacks or {}
+
+    def _record_schema_recovery(self, recovery_action: str) -> None:
+        node_journal.record_sync_storage_event(
+            journal_events.NodeJournalEvent.SYNC_STORAGE_SCHEMA_RECOVERY,
+            collection=self.collection,
+            provider="local",
+            recovery_action=recovery_action,
+        )
 
     def from_json(self, json_str: str) -> state_model.StateModel:
         if self.state_class is None:
@@ -98,9 +109,11 @@ class TolerantStateLoader:
                 parsed_state_dict,
             )
             try:
-                return _parse_model_strict(self.state_class, sanitized_state_dict)
+                healed_state = _parse_model_strict(self.state_class, sanitized_state_dict)
             except Exception as retry_error:
                 raise retry_error from strict_error
+            self._record_schema_recovery("sanitize_state")
+            return healed_state
 
     def model_from_dict_lenient(
         self,
@@ -118,6 +131,7 @@ class TolerantStateLoader:
                     context,
                     type(raw_dict).__name__,
                 )
+                self._record_schema_recovery("skip_item")
                 return None
             raise ValueError(
                 f"Expected dict for {model_class.__name__} in {context}, "
@@ -133,13 +147,16 @@ class TolerantStateLoader:
                 return _parse_model_strict(model_class, sanitized_dict)
             except Exception as retry_error:
                 try:
-                    return self._rebuild_model_from_sanitized_dict(
+                    rebuilt_model = self._rebuild_model_from_sanitized_dict(
                         model_class,
                         sanitized_dict,
                         context=context,
                     )
                 except Exception as rebuild_error:
                     retry_error = rebuild_error
+                else:
+                    self._record_schema_recovery("rebuild_item")
+                    return rebuilt_model
                 fallback_factory = self.model_fallbacks.get(model_class)
                 if fallback_factory is not None:
                     logger.warning(
@@ -149,6 +166,7 @@ class TolerantStateLoader:
                         context,
                         retry_error,
                     )
+                    self._record_schema_recovery("fallback_item")
                     return fallback_factory()
                 if allow_skip:
                     logger.warning(
@@ -158,6 +176,7 @@ class TolerantStateLoader:
                         context,
                         retry_error,
                     )
+                    self._record_schema_recovery("skip_item")
                     return None
                 raise retry_error from strict_error
 
