@@ -8,13 +8,11 @@ import { Button } from "@/components/ui/button"
 
 export type RecoveryFailureKind =
   | "boot_failed"
-  | "session_aborted"
   | "auth_broken"
   | "fatal_render"
 
 const FAILURE_HEADINGS: Record<RecoveryFailureKind, string> = {
   boot_failed: "OctoBot Node failed to start",
-  session_aborted: "Previous session ended unexpectedly",
   auth_broken: "Sign-in data is inconsistent",
   fatal_render: "OctoBot Node encountered a fatal error",
 }

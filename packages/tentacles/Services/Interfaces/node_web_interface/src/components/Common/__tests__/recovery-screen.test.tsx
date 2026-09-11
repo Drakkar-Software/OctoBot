@@ -14,6 +14,10 @@ vi.mock("@/lib/client-storage-reset", () => ({
   resetClientStorage: mocks.resetClientStorage,
 }))
 
+vi.mock("@/components/Common/ShareFeedbackButton", () => ({
+  ShareFeedbackButton: () => null,
+}))
+
 describe("RecoveryScreen", () => {
   beforeEach(() => {
     mocks.resetClientStorage.mockClear()

@@ -10,7 +10,6 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { clearAuth } from "@/hooks/useAuth"
 import { probeAuthState } from "@/lib/auth-state-probe"
-import { markBootSucceeded } from "@/lib/boot-watchdog"
 import { loadPassword } from "@/lib/device-key"
 import type { RecoveryFailureKind } from "@/components/Common/RecoveryScreen"
 import { isWebCryptoAvailable } from "@/lib/secure-context"
@@ -80,7 +79,6 @@ function renderRecovery(
       </QueryClientProvider>
     </StrictMode>,
   )
-  markBootSucceeded()
 }
 
 export function ShellErrorFallback() {
@@ -123,7 +121,6 @@ function renderApp(rootElement: HTMLElement): void {
       </ErrorBoundary>
     </StrictMode>,
   )
-  markBootSucceeded()
 }
 
 export async function bootstrapApp(): Promise<void> {

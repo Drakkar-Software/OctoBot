@@ -6,7 +6,6 @@ import {
 
 export type ShareFeedbackFailureKind =
   | "boot_failed"
-  | "session_aborted"
   | "auth_broken"
   | "fatal_render"
 

@@ -60,6 +60,7 @@ class TestCoinRabbitAuthenticatedExchange(
     MARKET_FILL_TIMEOUT = 600  # 10 min provisional for first live run; tune after observing fill duration
 
     def check_raw_closed_orders(self, closed_orders):
+        print(f"{len(closed_orders)} closed orders: {closed_orders}")
         for raw_order in closed_orders:
             order_info = raw_order.get("info", {})
             assert raw_order.get("status") == "closed"
@@ -87,6 +88,7 @@ class TestCoinRabbitAuthenticatedExchange(
         assert created_order_id in open_order_ids, (
             f"market order {created_order_id} must appear in fetch_open_orders while converting"
         )
+        print(f"{created_order_id} in {len(open_order_ids)} open_order_ids: {open_order_ids}")
 
     async def test_get_portfolio(self):
         async with self.local_exchange_manager():

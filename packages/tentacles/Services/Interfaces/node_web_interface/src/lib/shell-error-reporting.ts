@@ -18,13 +18,6 @@ export function reportBootFailed(error: Error): void {
   })
 }
 
-export function reportSessionAborted(priorSessionId: string | null): void {
-  void reportUiJournalEvent("ui_session_aborted", {
-    prior_session_id: priorSessionId,
-    ui_build: getUiBuild(),
-  })
-}
-
 export function reportAuthStateBroken(): void {
   void reportUiJournalEvent("ui_auth_state_broken", {
     has_username: true,

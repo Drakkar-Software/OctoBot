@@ -2,7 +2,6 @@ import { OpenAPI } from "@/client"
 
 export type UiJournalEvent =
   | "ui_boot_failed"
-  | "ui_session_aborted"
   | "ui_auth_state_broken"
   | "ui_fatal_render_error"
   | "ui_client_storage_reset"

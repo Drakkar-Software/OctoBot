@@ -14,8 +14,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/shell-error-reporting", () => ({
   reportShellFatalError: mocks.reportShellFatalError,
   reportBootFailed: vi.fn(),
-  reportSessionAborted: vi.fn(),
   reportAuthStateBroken: vi.fn(),
+}))
+
+vi.mock("@/components/Common/ShareFeedbackButton", () => ({
+  ShareFeedbackButton: () => null,
 }))
 
 describe("shell error boundary wiring", () => {

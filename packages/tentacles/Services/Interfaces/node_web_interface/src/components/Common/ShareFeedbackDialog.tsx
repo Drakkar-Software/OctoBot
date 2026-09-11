@@ -44,7 +44,6 @@ type ShareFeedbackDialogProps = {
 
 const RECOVERY_CONTEXT_LABELS: Record<ShareFeedbackFailureKind, string> = {
   boot_failed: "Recovery: boot failed",
-  session_aborted: "Recovery: session aborted",
   auth_broken: "Recovery: sign-in data broken",
   fatal_render: "Recovery: fatal render error",
 }
