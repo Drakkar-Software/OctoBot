@@ -56,7 +56,39 @@ class TestCoinRabbitAuthenticatedExchange(
     TOP_UP_CODE = "usdt"
     TOP_UP_NETWORK = "eth"
     TOP_UP_AMOUNT = "0"
+    ENABLE_MARKET_ORDER_CONVERSION_CHECKS = True
+    MARKET_FILL_TIMEOUT = 600  # 10 min provisional for first live run; tune after observing fill duration
 
+    def check_raw_closed_orders(self, closed_orders):
+        print(f"{len(closed_orders)} closed orders: {closed_orders}")
+        for raw_order in closed_orders:
+            order_info = raw_order.get("info", {})
+            assert raw_order.get("status") == "closed"
+            assert order_info.get("status", "").lower() == "closed"
+            if order_info.get("updated_at"):
+                last_update_timestamp = raw_order.get("lastUpdateTimestamp")
+                created_at_timestamp = raw_order.get("timestamp")
+                assert last_update_timestamp, "closed order with updated_at must expose lastUpdateTimestamp"
+                assert created_at_timestamp and last_update_timestamp >= created_at_timestamp
+        super().check_raw_closed_orders(closed_orders)
+
+    async def after_market_order_created(self, market_order) -> None:
+        client = self.exchange_manager.exchange.connector.client
+        open_orders = await client.fetch_open_orders(self.SYMBOL)
+        assert isinstance(open_orders, list)
+        for open_order in open_orders:
+            assert open_order["status"] == "open"
+        active_orders = await client.fetch_orders(self.SYMBOL, params={"status": "active"})
+        assert isinstance(active_orders, list)
+        for active_order in active_orders:
+            assert active_order["status"] == "open"
+            assert active_order["info"]["status"].lower() == "active"
+        created_order_id = str(market_order.exchange_order_id)
+        open_order_ids = {str(open_order.get("id")) for open_order in open_orders}
+        assert created_order_id in open_order_ids, (
+            f"market order {created_order_id} must appear in fetch_open_orders while converting"
+        )
+        print(f"{created_order_id} in {len(open_order_ids)} open_order_ids: {open_order_ids}")
 
     async def test_get_portfolio(self):
         async with self.local_exchange_manager():
@@ -115,8 +147,7 @@ class TestCoinRabbitAuthenticatedExchange(
     async def test_create_and_cancel_limit_orders(self):
         await super().test_create_and_cancel_limit_orders()
 
-    # TODO: wait for portfolio settlement (not only order fill) before check_portfolio_changed; fetchOrder closed
-    # status from the ccxt fee heuristic does not mean balances have settled (used→free can lag).
+    # Portfolio settlement (used→free) can lag behind order closed status; sleep_before_checking_portfolio handles this.
     async def test_create_and_fill_market_orders(self):
         await super().test_create_and_fill_market_orders()
 
