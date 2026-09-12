@@ -362,6 +362,116 @@ class AbstractAuthenticatedExchangeTester:
         async with self.local_exchange_manager(http_proxy_callback_factory=_http_proxy_callback_factory):
             await self.inner_is_authenticated_request(rest_exchange_data)
 
+    def _is_authenticated_request_assert_empty_inputs_false(self):
+        assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, None) is False
+        assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, "") is False
+        assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, b"") is False
+        assert self.exchange_manager.exchange.is_authenticated_request(None, None, None, b"") is False
+
+    def _is_authenticated_request_assert_calls_public(self, latest_calls):
+        for latest_call in latest_calls:
+            if self.exchange_manager.exchange.get_option_value(
+                trading_enums.ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION
+            ):
+                assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
+            else:
+                assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
+
+    def _is_authenticated_request_assert_url_changed(self, rest_exchange_data, latest_calls):
+        assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]  # assert latest call's url changed
+
+    async def _assert_is_authenticated_request_full_exchange(
+        self, rest_exchange_data, get_latest_calls, assert_has_at_least_one_authenticated_call
+    ):
+        assert await self.exchange_manager.exchange.get_symbol_prices(
+            self.SYMBOL, commons_enums.TimeFrames.ONE_HOUR
+        )
+        latest_calls = get_latest_calls()
+        self._is_authenticated_request_assert_calls_public(latest_calls)
+        ticker = await self.exchange_manager.exchange.get_price_ticker(self.SYMBOL)
+        assert ticker
+        last_price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        self._is_authenticated_request_assert_calls_public(latest_calls)
+
+        portfolio = await self.get_portfolio()
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert portfolio == {}
+        else:
+            assert portfolio
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        assert_has_at_least_one_authenticated_call(latest_calls)
+        price = decimal.Decimal(str(last_price)) * decimal.Decimal("0.7")
+        amount = self.get_order_size(
+            portfolio, price, symbol=self.SYMBOL, settlement_currency=self.SETTLEMENT_CURRENCY
+        ) * 100000
+        if amount == 0:
+            amount = 100000
+        if self.CHECK_EMPTY_ACCOUNT:
+            amount = 10
+        with pytest.raises(ccxt.ExchangeError):
+            await self.exchange_manager.exchange.connector.create_limit_buy_order(
+                self.SYMBOL, amount, price=price, params={}
+            )
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        assert_has_at_least_one_authenticated_call(latest_calls)
+        with pytest.raises(ccxt.BaseError):
+            await self.exchange_manager.exchange.connector.client.cancel_order(self.VALID_ORDER_ID, self.SYMBOL)
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        assert_has_at_least_one_authenticated_call(latest_calls)
+
+    async def _assert_is_authenticated_request_market_only_swap(
+        self, rest_exchange_data, get_latest_calls, assert_has_at_least_one_authenticated_call
+    ):
+        markets = await self.exchange_manager.exchange.connector.client.fetch_markets()
+        assert markets
+        latest_calls = get_latest_calls()
+        self._is_authenticated_request_assert_calls_public(latest_calls)
+        ticker = await self.exchange_manager.exchange.get_price_ticker(self.SYMBOL)
+        assert ticker
+        last_price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        self._is_authenticated_request_assert_calls_public(latest_calls)
+
+        portfolio = await self.get_portfolio()
+        if self.CHECK_EMPTY_ACCOUNT:
+            assert portfolio == {}
+        else:
+            assert portfolio
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        assert_has_at_least_one_authenticated_call(latest_calls)
+        price = decimal.Decimal(str(last_price)) * decimal.Decimal("0.7")
+        amount = self.get_order_size(
+            portfolio, price, symbol=self.SYMBOL, settlement_currency=self.SETTLEMENT_CURRENCY
+        ) * 100000
+        if amount == 0:
+            amount = 100000
+        if self.CHECK_EMPTY_ACCOUNT:
+            amount = 10
+        with pytest.raises((ccxt.ExchangeError, ccxt.NotSupported, trading_errors.NotSupported)):
+            await self.exchange_manager.exchange.connector.create_limit_buy_order(
+                self.SYMBOL, amount, price=price, params={}
+            )
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        assert_has_at_least_one_authenticated_call(latest_calls)
+        client = self.exchange_manager.exchange.connector.client
+        if client.has.get("cancelOrder"):
+            with pytest.raises(ccxt.BaseError):
+                await client.cancel_order(self.VALID_ORDER_ID, self.SYMBOL)
+        else:
+            open_orders = await client.fetch_open_orders(self.SYMBOL)
+            assert isinstance(open_orders, list)
+        self._is_authenticated_request_assert_url_changed(rest_exchange_data, latest_calls)
+        latest_calls = get_latest_calls()
+        assert_has_at_least_one_authenticated_call(latest_calls)
+
     async def inner_is_authenticated_request(self, rest_exchange_data):
         if self.IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE:
             latest_call_indexes = [len(rest_exchange_data["calls"])]
@@ -373,76 +483,21 @@ class AbstractAuthenticatedExchangeTester:
             def assert_has_at_least_one_authenticated_call(calls):
                 has_authenticated_call = False
                 for latest_call in calls:
-                    # should be at least 1 authenticated call
                     if latest_call[1] is True:
                         has_authenticated_call = True
                 assert has_authenticated_call, f"{calls} should contain at last 1 authenticated call"  # authenticated request
 
-            # 1. test using different values
-            assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, None) is False
-            assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, "") is False
-            assert self.exchange_manager.exchange.is_authenticated_request("", "", {}, b"") is False
-            assert self.exchange_manager.exchange.is_authenticated_request(None, None, None, b"") is False
-
-            # 2. make public requests
-            assert await self.exchange_manager.exchange.get_symbol_prices(
-                self.SYMBOL, commons_enums.TimeFrames.ONE_HOUR
-            )
-            latest_calls = get_latest_calls()
-            for latest_call in latest_calls:
-                if self.exchange_manager.exchange.get_option_value(
-                    trading_enums.ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION
-                ):
-                    assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
-                else:
-                    assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
-            ticker = await self.exchange_manager.exchange.get_price_ticker(self.SYMBOL)
-            assert ticker
-            last_price = ticker[trading_enums.ExchangeConstantsTickersColumns.CLOSE.value]
-            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]  # assert latest call's url changed
-            latest_calls = get_latest_calls()
-            for latest_call in latest_calls:
-                if self.exchange_manager.exchange.get_option_value(
-                    trading_enums.ExchangeClientOptions.ALWAYS_REQUIRES_AUTHENTICATION
-                ):
-                    assert latest_call[1] is True, f"{latest_call} should be authenticated"  # authenticated request
-                else:
-                    assert latest_call[1] is False, f"{latest_call} should be NOT authenticated"  # authenticated request
-
-            # 3. make private requests
-            # balance (usually a GET)
-            portfolio = await self.get_portfolio()
-            if self.CHECK_EMPTY_ACCOUNT:
-                assert portfolio == {}
-            else:
-                assert portfolio
-            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]   # assert latest call's url changed
-            latest_calls = get_latest_calls()
-            assert_has_at_least_one_authenticated_call(latest_calls)
-            # create order (usually a POST)
-            price = decimal.Decimal(str(last_price)) * decimal.Decimal("0.7")
-            amount = self.get_order_size(
-                portfolio, price, symbol=self.SYMBOL, settlement_currency=self.SETTLEMENT_CURRENCY
-            ) * 100000
-            if amount == 0:
-                amount = 100000
-            if self.CHECK_EMPTY_ACCOUNT:
-                amount = 10
-            # (amount is too large, creating buy order will fail)
-            with pytest.raises(ccxt.ExchangeError):
-                await self.exchange_manager.exchange.connector.create_limit_buy_order(
-                    self.SYMBOL, amount, price=price, params={}
+            self._is_authenticated_request_assert_empty_inputs_false()
+            client = self.exchange_manager.exchange.connector.client
+            trading_type = trading_enums.ExchangeTypes(self.EXCHANGE_TYPE)
+            if ccxt_client_util.supports_order_type(client, trading_type, trading_enums.TradeOrderType.LIMIT):
+                await self._assert_is_authenticated_request_full_exchange(
+                    rest_exchange_data, get_latest_calls, assert_has_at_least_one_authenticated_call
                 )
-            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]   # assert latest call's url changed
-            latest_calls = get_latest_calls()
-            assert_has_at_least_one_authenticated_call(latest_calls)
-            # cancel order (usually a DELETE)
-            with pytest.raises(ccxt.BaseError):
-                # use client call directly to avoid any octobot error conversion
-                await self.exchange_manager.exchange.connector.client.cancel_order(self.VALID_ORDER_ID, self.SYMBOL)
-            assert rest_exchange_data["calls"][-1][0][0] != latest_calls[-1][0][0]   # assert latest call's url changed
-            latest_calls = get_latest_calls()
-            assert_has_at_least_one_authenticated_call(latest_calls)
+            else:
+                await self._assert_is_authenticated_request_market_only_swap(
+                    rest_exchange_data, get_latest_calls, assert_has_at_least_one_authenticated_call
+                )
         else:
             with pytest.raises(trading_errors.NotSupported):
                 self.exchange_manager.exchange.is_authenticated_request("", "", {}, None)
