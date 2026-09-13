@@ -68,15 +68,6 @@
             </a>
             first !
         </div>
-        {% if not IS_CLOUD %}
-        <div class="custom-control custom-switch">
-            <input type="checkbox" class="custom-control-input" id="metricsCheckbox" update-url="{{ url_for('metrics_settings') }}" {{ 'checked' if metrics_enabled else ''}}>
-            <label class="custom-control-label" for="metricsCheckbox">Share</label> metrics to help the OctoBot Community
-            <p>
-                This will greatly help the OctoBot team to figure out the best ways to improve OctoBot and won't slow your OctoBot down.
-            </p>
-        </div>
-        {% endif %}
         <hr>
         <div>
             <p>
