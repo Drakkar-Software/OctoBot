@@ -1307,9 +1307,6 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         trigger = False
         reference_price = await self._get_reference_price()
         if self._is_usable_reference_price(reference_price):
-            self.logger.warning(
-                f"Reference price update for {self.symbol} [{self.exchange_manager.exchange_name}]: {reference_price}"
-            )
             trigger = await self.on_new_reference_price(reference_price)
         if trigger:
             await self._ensure_market_making_orders(f"reference price update: {float(reference_price)}")
