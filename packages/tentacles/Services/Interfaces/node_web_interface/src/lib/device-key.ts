@@ -10,15 +10,37 @@ interface EncryptedRecord {
   ciphertext: ArrayBuffer
 }
 
+// One connection per tab. An IndexedDB connection stays alive until it is closed,
+// and openDB() runs on every API request (OpenAPI.PASSWORD is resolved per
+// request), so opening a fresh one each time leaks a connection each time.
+let dbPromise: Promise<IDBDatabase> | null = null
+
 function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise
+  dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1)
     req.onupgradeneeded = () => {
       req.result.createObjectStore(STORE_NAME)
     }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
+    req.onsuccess = () => {
+      const db = req.result
+      // Forget the handle if it dies so the next call reopens instead of
+      // reusing a dead connection.
+      db.onclose = () => {
+        dbPromise = null
+      }
+      db.onversionchange = () => {
+        db.close()
+        dbPromise = null
+      }
+      resolve(db)
+    }
+    req.onerror = () => {
+      dbPromise = null
+      reject(req.error)
+    }
   })
+  return dbPromise
 }
 
 function idbGet<T>(store: IDBObjectStore, key: string): Promise<T | undefined> {
@@ -49,10 +71,24 @@ function idbDelete(store: IDBObjectStore, key: string): Promise<void> {
   })
 }
 
-async function getOrCreateDeviceKey(): Promise<CryptoKey> {
-  const readDb = await openDB()
+// The device key never changes for a given browser profile, so resolve it once
+// instead of reading and re-reading it on every encrypt/decrypt.
+let deviceKeyPromise: Promise<CryptoKey> | null = null
+
+function getOrCreateDeviceKey(): Promise<CryptoKey> {
+  if (!deviceKeyPromise) {
+    deviceKeyPromise = loadOrCreateDeviceKey().catch((err) => {
+      deviceKeyPromise = null
+      throw err
+    })
+  }
+  return deviceKeyPromise
+}
+
+async function loadOrCreateDeviceKey(): Promise<CryptoKey> {
+  const db = await openDB()
   const existing = await idbGet<CryptoKey>(
-    readDb.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME),
+    db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME),
     DEVICE_KEY_RECORD,
   )
   if (existing) return existing
@@ -62,9 +98,9 @@ async function getOrCreateDeviceKey(): Promise<CryptoKey> {
     false,
     ["encrypt", "decrypt"],
   )
-  const writeDb = await openDB()
+  // A new transaction: the generateKey() await above ends the previous one.
   await idbPut(
-    writeDb.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME),
+    db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME),
     DEVICE_KEY_RECORD,
     key,
   )
@@ -141,15 +177,25 @@ async function idbClearRecord(recordKey: string): Promise<void> {
   )
 }
 
+// Kept in memory for the tab lifetime: loadPassword() is called for every API
+// request, and re-reading plus AES-GCM decrypting it each time is pure overhead.
+let cachedPassword: string | null = null
+
 export async function savePassword(password: string): Promise<void> {
   await idbSaveRecord(AUTH_PASSWORD_RECORD, password)
+  cachedPassword = password
 }
 
 export async function loadPassword(): Promise<string | null> {
-  return idbLoadRecord(AUTH_PASSWORD_RECORD)
+  if (cachedPassword !== null) return cachedPassword
+  cachedPassword = await idbLoadRecord(AUTH_PASSWORD_RECORD)
+  return cachedPassword
 }
 
 export async function clearPassword(): Promise<void> {
+  // Drop the cache first so a concurrent loadPassword() cannot repopulate it
+  // from the record before the delete lands.
+  cachedPassword = null
   await idbClearRecord(AUTH_PASSWORD_RECORD)
 }
 

@@ -132,7 +132,13 @@ def _get_active_execution(
 
 def _build_tasks_from_executions(
     executions: list[octobot_node.models.Execution],
+    include_content: bool = True,
 ) -> list[octobot_node.models.Task]:
+    """
+    ``Task.content`` is a copy of the active execution's ``actions``, which is already
+    part of the returned executions. List callers don't read it, so ``include_content=False``
+    drops that duplicate: on a polled list endpoint it is the largest string in the payload.
+    """
     grouped: dict[str, list[octobot_node.models.Execution]] = {}
     for execution in executions:
         parent_id = execution.id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
@@ -142,7 +148,7 @@ def _build_tasks_from_executions(
     for parent_id, group in grouped.items():
         active = _get_active_execution(group)
         active_name = active.name if active else None
-        active_content = active.actions if active else None
+        active_content = (active.actions if active else None) if include_content else None
         error = active.error if active else None
         active_wallet = active.user_id if active else None
         is_encrypted = any(e.is_encrypted for e in group)
@@ -208,6 +214,7 @@ async def _enrich_tasks_with_child_octobot_process(
 
 async def get_all_tasks(
     user_id: typing.Optional[str] = None,
+    include_content: bool = True,
 ) -> list[octobot_node.models.Task]:
     executions: list[octobot_node.models.Execution] = []
     try:
@@ -225,7 +232,7 @@ async def get_all_tasks(
         logger.error("Failed to retrieve tasks from scheduler: %s", e)
         return []
 
-    tasks = _build_tasks_from_executions(executions)
+    tasks = _build_tasks_from_executions(executions, include_content=include_content)
     await _enrich_tasks_with_child_octobot_process(tasks, user_id)
     logger.debug("Returning %d total tasks from %d executions", len(tasks), len(executions))
     return tasks
