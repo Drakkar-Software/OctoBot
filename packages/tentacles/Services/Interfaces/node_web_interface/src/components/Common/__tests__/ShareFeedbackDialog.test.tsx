@@ -1,10 +1,39 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ApiError } from "@/client"
 import { ShareFeedbackDialogContent } from "@/components/Common/ShareFeedbackDialog"
 import { Dialog } from "@/components/ui/dialog"
+
+const shareFeedbackDialogTestState = vi.hoisted(() => ({
+  noteOverride: "",
+  useStateCallIndex: 0,
+}))
+
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>()
+  return {
+    ...actual,
+    useState: <State,>(
+      initialState: State | (() => State),
+    ): [State, React.Dispatch<React.SetStateAction<State>>] => {
+      shareFeedbackDialogTestState.useStateCallIndex += 1
+      if (
+        shareFeedbackDialogTestState.useStateCallIndex === 1 &&
+        shareFeedbackDialogTestState.noteOverride !== "" &&
+        initialState === ""
+      ) {
+        return [
+          shareFeedbackDialogTestState.noteOverride as State,
+          vi.fn(),
+        ]
+      }
+      return actual.useState(initialState)
+    },
+  }
+})
 
 const useQueryMock = vi.fn()
 
@@ -112,6 +141,8 @@ function renderDialog(
 describe("ShareFeedbackDialogContent", () => {
   beforeEach(() => {
     useQueryMock.mockReset()
+    shareFeedbackDialogTestState.noteOverride = ""
+    shareFeedbackDialogTestState.useStateCallIndex = 0
   })
 
   it("recovery + preview 401: no sign-in prompt, no activity history, send enabled", () => {
@@ -135,7 +166,40 @@ describe("ShareFeedbackDialogContent", () => {
     expect(markup).not.toMatch(/Send feedback[\s\S]*disabled=""/)
   })
 
-  it("recovery + preview 200: activity history and send disabled when journal empty", () => {
+  it("navbar + preview loading: activity history reserves space with empty counts", () => {
+    useQueryMock.mockReturnValue({
+      data: undefined,
+      error: null,
+      isLoading: true,
+      isError: false,
+      isSuccess: false,
+    })
+
+    const markup = renderDialog({ source: "navbar" })
+
+    expect(markup).toContain("Activity history")
+    expect(markup).toContain("Check file content")
+    expect(markup).toMatch(/disabled=""[^>]*>Check file content/)
+  })
+
+  it("navbar + preview 200 empty journal: send enabled when note is present", () => {
+    shareFeedbackDialogTestState.noteOverride = "Something went wrong"
+
+    useQueryMock.mockReturnValue({
+      data: createPreviewResponse(0),
+      error: null,
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+    })
+
+    const markup = renderDialog({ source: "navbar" })
+
+    expect(markup).toContain('type="button">Send feedback</button>')
+    expect(markup).not.toContain('disabled="" type="button">Send feedback')
+  })
+
+  it("recovery + preview 200: send disabled when journal empty and note empty", () => {
     useQueryMock.mockReturnValue({
       data: createPreviewResponse(0),
       error: null,
@@ -151,7 +215,8 @@ describe("ShareFeedbackDialogContent", () => {
 
     expect(markup).toContain("Activity history")
     expect(markup).not.toContain("Sign in to send feedback")
-    expect(markup).toContain('disabled="" type="button">Send feedback')
+    expect(markup).toContain('type="button">Send feedback</button>')
+    expect(markup).not.toContain('disabled="" type="button">Send feedback')
   })
 
   it("recovery + preview 200: send enabled when journal has events", () => {

@@ -14,6 +14,13 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+"""Journal client-event route for the Node API.
+
+Security model:
+- ``POST /client-event`` is intentionally unauthenticated; only allowlisted ``UI_JOURNAL_EVENTS`` are accepted.
+  Assumes a trusted network / same-origin UI (not a public internet-facing write API).
+"""
+
 import json
 import typing
 

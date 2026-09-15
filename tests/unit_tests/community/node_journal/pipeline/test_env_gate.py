@@ -27,12 +27,20 @@ class TestIsJournalEnabled:
             assert journal_module.is_journal_enabled() is True
 
     def test_disabled_for_false_values(self):
-        for disabled_value in ("0", "false", "no", "off", "FALSE"):
+        for disabled_value in ("false", "FALSE", "0", "no", "off"):
             with mock.patch.dict(
                 "os.environ",
                 {journal_constants.JOURNAL_ENABLED_ENV_VAR: disabled_value},
             ):
                 assert journal_module.is_journal_enabled() is False
+
+    def test_enabled_for_true_values(self):
+        for enabled_value in ("true", "True"):
+            with mock.patch.dict(
+                "os.environ",
+                {journal_constants.JOURNAL_ENABLED_ENV_VAR: enabled_value},
+            ):
+                assert journal_module.is_journal_enabled() is True
 
 
 class TestRecordWhenJournalDisabled:

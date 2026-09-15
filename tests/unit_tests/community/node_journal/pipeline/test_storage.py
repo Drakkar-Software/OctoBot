@@ -108,7 +108,7 @@ class TestHydrateStorageEvent:
         event_line = journal_storage_hydration.hydrate_storage_event(
             {_EVENT.EVENT.value: "wallet_setup_succeeded", _EVENT.TIMESTAMP.value: 1050.0},
             {_CTX.SESSION_ID.value: "s", _CTX.APP_VERSION.value: "v"},
-            {_MANIFEST.SCHEMA.value: 2, _MANIFEST.INSTALL_ID.value: "test-install-id"},
+            {_MANIFEST.SCHEMA.value: journal_constants.JOURNAL_SCHEMA_VERSION, _MANIFEST.INSTALL_ID.value: "test-install-id"},
             persisted_state,
         )
         assert event_line.onboarding_complete is False
@@ -118,7 +118,7 @@ class TestHydrateStorageEvent:
         event_line = journal_storage_hydration.hydrate_storage_event(
             {_EVENT.EVENT.value: "first_automation_started", _EVENT.TIMESTAMP.value: 1060.0},
             {_CTX.SESSION_ID.value: "s", _CTX.APP_VERSION.value: "v"},
-            {_MANIFEST.SCHEMA.value: 2, _MANIFEST.INSTALL_ID.value: "test-install-id"},
+            {_MANIFEST.SCHEMA.value: journal_constants.JOURNAL_SCHEMA_VERSION, _MANIFEST.INSTALL_ID.value: "test-install-id"},
             persisted_state,
         )
         assert event_line.onboarding_complete is False
@@ -128,7 +128,7 @@ class TestHydrateStorageEvent:
         event_line = journal_storage_hydration.hydrate_storage_event(
             {_EVENT.EVENT.value: "automation_started", _EVENT.TIMESTAMP.value: 1061.0},
             {_CTX.SESSION_ID.value: "s", _CTX.APP_VERSION.value: "v"},
-            {_MANIFEST.SCHEMA.value: 2, _MANIFEST.INSTALL_ID.value: "test-install-id"},
+            {_MANIFEST.SCHEMA.value: journal_constants.JOURNAL_SCHEMA_VERSION, _MANIFEST.INSTALL_ID.value: "test-install-id"},
             persisted_state,
         )
         assert event_line.onboarding_complete is True
@@ -140,7 +140,7 @@ class TestHydrateMissingData:
         event_line = journal_storage_hydration.hydrate_storage_event(
             {_EVENT.EVENT.value: "wallet_setup_succeeded", _EVENT.TIMESTAMP.value: 1.0},
             {},
-            {_MANIFEST.SCHEMA.value: 2, _MANIFEST.INSTALL_ID.value: "install-1"},
+            {_MANIFEST.SCHEMA.value: journal_constants.JOURNAL_SCHEMA_VERSION, _MANIFEST.INSTALL_ID.value: "install-1"},
             persisted_state,
         )
         assert event_line.session_id == ""

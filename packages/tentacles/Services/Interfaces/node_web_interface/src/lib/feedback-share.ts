@@ -8,6 +8,7 @@ export type ShareFeedbackFailureKind =
   | "boot_failed"
   | "auth_broken"
   | "fatal_render"
+  | "insecure_context"
 
 export type ShareFeedbackContext =
   | { source: "navbar" }
@@ -37,6 +38,80 @@ export async function fetchFeedbackPreview(): Promise<FeedbackPreviewResponse> {
 
 export function getPreviewEventCount(preview: FeedbackPreviewResponse): number {
   return preview.upload_envelope.event_count
+}
+
+export function computeShareFeedbackSendDisabled({
+  submitPending,
+  useDegradedRecoveryFeedback,
+  hasUiErrorContext,
+  showSignInPrompt,
+  previewLoading,
+  previewError,
+  hasPreview,
+  eventCount,
+  note,
+}: {
+  submitPending: boolean
+  useDegradedRecoveryFeedback: boolean
+  hasUiErrorContext: boolean
+  showSignInPrompt: boolean
+  previewLoading: boolean
+  previewError: boolean
+  hasPreview: boolean
+  eventCount: number | null
+  note: string
+}): boolean {
+  if (submitPending) {
+    return true
+  }
+  if (useDegradedRecoveryFeedback) {
+    return false
+  }
+  if (showSignInPrompt) {
+    return true
+  }
+  if (previewLoading) {
+    return true
+  }
+  if (previewError) {
+    return true
+  }
+  if (!hasPreview) {
+    return true
+  }
+  const isEmptyJournal = eventCount === 0
+  if (isEmptyJournal && note.trim() === "") {
+    return !hasUiErrorContext
+  }
+  return false
+}
+
+export function getShareFeedbackUiErrorName(
+  context: ShareFeedbackContext,
+): string | null {
+  if (context.source === "recovery") {
+    return context.failureKind
+  }
+  if (context.source === "route_error") {
+    return "route_error"
+  }
+  return null
+}
+
+export type ShareFeedbackPageLocation = Pick<Location, "pathname">
+
+export function resolveShareFeedbackUiErrorRoute(
+  context: ShareFeedbackContext,
+  location?: ShareFeedbackPageLocation | null,
+): string | null {
+  if (context.source === "route_error") {
+    const routePath = context.routePath?.trim()
+    if (routePath) {
+      return routePath
+    }
+  }
+  const pathname = location?.pathname?.trim()
+  return pathname ? pathname : null
 }
 
 export function getPreviewAutomationCount(
@@ -101,7 +176,10 @@ export function buildFeedbackNote({
   contactMethod?: ShareFeedbackContactMethod
   contactValue?: string
 }): string {
-  const noteParts = [buildContextNotePrefix(context)]
+  const noteParts: string[] = []
+  if (getShareFeedbackUiErrorName(context) === null) {
+    noteParts.push(buildContextNotePrefix(context))
+  }
   const trimmedNote = note?.trim() ?? ""
   if (trimmedNote) {
     noteParts.push(trimmedNote)
@@ -112,6 +190,9 @@ export function buildFeedbackNote({
   })
   if (contactSuffix) {
     noteParts.push(contactSuffix)
+  }
+  if (noteParts.length === 0) {
+    return ""
   }
   return noteParts.join("\n\n")
 }
@@ -202,34 +283,14 @@ export function downloadPreviewEnvelope(preview: FeedbackPreviewResponse): void 
   downloadFeedbackEnvelope(preview.upload_envelope)
 }
 
-export function buildRecoveryFeedbackPrefill(
-  failureKind: ShareFeedbackFailureKind,
-): string {
-  if (failureKind === "auth_broken") {
-    return (
-      "OctoBot showed a recovery screen because local sign-in data is inconsistent. " +
-      "Diagnostic activity history could not be loaded from the node because authentication failed. " +
-      "Please add any extra details below."
-    )
-  }
-  if (failureKind === "boot_failed") {
-    return (
-      "OctoBot could not finish starting (boot failed). " +
-      "Server diagnostics were unavailable or could not be loaded. " +
-      "Please add any extra details below."
-    )
-  }
-  return (
-    "OctoBot hit a fatal render error and showed a recovery screen. " +
-    "Server diagnostics were unavailable or could not be loaded. " +
-    "Please add any extra details below."
-  )
-}
-
 export function buildRecoveryFeedbackFallbackEnvelope({
   note,
+  uiErrorName,
+  uiErrorRoute,
 }: {
   note: string
+  uiErrorName: string | null
+  uiErrorRoute: string | null
 }): FeedbackUploadEnvelope {
   return {
     install_id: "recovery-client-fallback",
@@ -244,15 +305,25 @@ export function buildRecoveryFeedbackFallbackEnvelope({
     ready: false,
     event_count: 0,
     note,
+    ui_error_name: uiErrorName,
+    ui_error_route: uiErrorRoute,
   }
 }
 
 export function downloadRecoveryFeedbackFallback({
   note,
+  uiErrorName,
+  uiErrorRoute,
 }: {
   note: string
+  uiErrorName: string | null
+  uiErrorRoute: string | null
 }): FeedbackUploadEnvelope {
-  const envelope = buildRecoveryFeedbackFallbackEnvelope({ note })
+  const envelope = buildRecoveryFeedbackFallbackEnvelope({
+    note,
+    uiErrorName,
+    uiErrorRoute,
+  })
   downloadFeedbackEnvelope(envelope)
   return envelope
 }
@@ -268,6 +339,10 @@ export async function submitFeedbackDownload({
   contactMethod?: ShareFeedbackContactMethod
   contactValue?: string
 }): Promise<FeedbackUploadEnvelope> {
+  const pageLocation =
+    typeof window !== "undefined" ? window.location : undefined
+  const uiErrorName = getShareFeedbackUiErrorName(context)
+  const uiErrorRoute = resolveShareFeedbackUiErrorRoute(context, pageLocation)
   const composedNote = buildFeedbackNote({
     note,
     context,
@@ -277,8 +352,10 @@ export async function submitFeedbackDownload({
   try {
     const envelope = await FeedbackService.uploadFeedback({
       requestBody: {
-        note: composedNote,
+        note: composedNote || null,
         issue_url: null,
+        ui_error_name: uiErrorName,
+        ui_error_route: uiErrorRoute,
       },
     })
     downloadFeedbackEnvelope(envelope)
@@ -287,6 +364,10 @@ export async function submitFeedbackDownload({
     if (context.source !== "recovery") {
       throw uploadError
     }
-    return downloadRecoveryFeedbackFallback({ note: composedNote })
+    return downloadRecoveryFeedbackFallback({
+      note: composedNote,
+      uiErrorName,
+      uiErrorRoute,
+    })
   }
 }

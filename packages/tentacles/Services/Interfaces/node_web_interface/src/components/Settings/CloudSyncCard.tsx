@@ -64,7 +64,11 @@ export function CloudSyncSection() {
             : [],
         )
         setStatus("ready")
-      } catch {
+      } catch (error) {
+        console.error(
+          "CloudSyncSection: failed to load cloud sync configuration",
+          error,
+        )
         setStatus("error")
         setError("Failed to load cloud sync configuration.")
       }
@@ -84,6 +88,7 @@ export function CloudSyncSection() {
       )
       setStatus("ready")
     } catch (e) {
+      console.error("CloudSyncSection: failed to update cloud sync", e)
       setStatus("error")
       setError(e instanceof Error ? e.message : "Failed to update cloud sync")
     }
@@ -107,6 +112,7 @@ export function CloudSyncSection() {
       setStatus("ready")
       setConfigureOpen(false)
     } catch (e) {
+      console.error("CloudSyncSection: failed to save collections", e)
       setStatus("error")
       setError(e instanceof Error ? e.message : "Failed to save collections")
     }

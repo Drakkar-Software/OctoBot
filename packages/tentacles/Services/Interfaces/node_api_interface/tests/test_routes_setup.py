@@ -20,6 +20,11 @@ import octobot.community.wallet_backend as wallet_backend
 
 from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE
 
+_WALLET_SETUP_FAILED_PATCH = (
+    "tentacles.Services.Interfaces.node_api_interface.api.routes.setup."
+    "journal_recording_context.journal_recording.record_wallet_setup_failed"
+)
+
 _INIT_BODY = {
     "passphrase": "strongpass123",
     "node_type": "standalone",
@@ -141,7 +146,7 @@ def test_setup_init_records_wallet_setup_failed_on_409(client):
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
     ), mock.patch(
-        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_failed",
+        _WALLET_SETUP_FAILED_PATCH,
     ) as record_wallet_setup_failed_mock:
         resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
     assert resp.status_code == 409
@@ -155,7 +160,7 @@ def test_setup_init_records_wallet_setup_failed_on_503(client):
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=None,
     ), mock.patch(
-        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_failed",
+        _WALLET_SETUP_FAILED_PATCH,
     ) as record_wallet_setup_failed_mock:
         resp = client.post("/api/v1/setup/init", json=_INIT_BODY)
     assert resp.status_code == 503
@@ -188,7 +193,7 @@ def test_setup_init_records_wallet_setup_failed_on_422(client):
         "octobot.community.authentication.CommunityAuthentication.instance",
         return_value=auth,
     ), mock.patch(
-        "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.node_journal.record_wallet_setup_failed",
+        _WALLET_SETUP_FAILED_PATCH,
     ) as record_wallet_setup_failed_mock, mock.patch("octobot_node.config.settings"):
         resp = client.post(
             "/api/v1/setup/init",

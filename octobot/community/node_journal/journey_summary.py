@@ -185,6 +185,8 @@ def build_upload_envelope(
     *,
     app_version: str,
     note: str | None = None,
+    ui_error_name: str | None = None,
+    ui_error_route: str | None = None,
 ) -> journal_models.UploadEnvelope:
     persisted_state = journal_state.load_persisted_state()
     journey_summary = build_journey_summary(events)
@@ -199,4 +201,6 @@ def build_upload_envelope(
         ready=True,
         event_count=len(events),
         note=note,
+        ui_error_name=ui_error_name,
+        ui_error_route=ui_error_route,
     )
