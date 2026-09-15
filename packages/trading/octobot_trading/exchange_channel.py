@@ -76,6 +76,19 @@ class ExchangeChannelProducer(producers.Producer):
                 return False
         return True
 
+    async def pause(self) -> None:
+        if self.channel.exchange_manager.should_log_exchange_lifecycle_debug():
+            self.logger.debug("Pausing...")
+        self.is_running = False
+        if not self.channel.is_paused:
+            self.channel.is_paused = True
+
+    async def resume(self) -> None:
+        if self.channel.exchange_manager.should_log_exchange_lifecycle_debug():
+            self.logger.debug("Resuming...")
+        if self.channel.is_paused:
+            self.channel.is_paused = False
+
 
 class IndirectExchangeChannelProducer(ExchangeChannelProducer):
     """

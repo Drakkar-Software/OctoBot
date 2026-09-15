@@ -82,7 +82,8 @@ class ValueConverter:
     def update_last_price(self, symbol, price):
         if symbol not in self.last_prices_by_trading_pair:
             self.reset_missing_price_bridges()
-            self.logger.debug(f"Initialized last price for {symbol}")
+            if self.portfolio_manager.exchange_manager.should_log_exchange_lifecycle_debug():
+                self.logger.debug(f"Initialized last price for {symbol}")
         self.last_prices_by_trading_pair[symbol] = price
 
     def evaluate_value(self, currency, quantity, raise_error=True, target_currency=None, init_price_fetchers=True):

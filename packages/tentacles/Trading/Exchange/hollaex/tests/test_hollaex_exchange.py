@@ -33,3 +33,8 @@ class TestGetTentaclesDataExchangeConfig:
         )
         assert tentacles_data.name == "HollaexAutofilled"
         assert tentacles_data.config == custom_config
+
+
+class TestGetExchangeAvailabilities:
+    def test_returns_empty_list(self):
+        assert hollaex_exchange_class.get_exchange_availabilities() == []

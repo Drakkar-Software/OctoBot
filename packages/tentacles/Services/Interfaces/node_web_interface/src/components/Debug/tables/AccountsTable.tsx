@@ -1,4 +1,4 @@
-import { Eye, Pencil, Play } from "lucide-react"
+import { Eye, History, Pencil, Play } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import type {
@@ -12,9 +12,9 @@ import { ColumnFilterInput } from "@/components/Common/Tables/ColumnFilterInput"
 import { CopyableIdCell } from "@/components/Common/Tables/CopyableIdCell"
 import { SortableTableHead } from "@/components/Common/Tables/SortableTableHead"
 import { AssetsPortfolioCell } from "@/components/Debug/cells/AssetsPortfolioCell"
+import { AccountDetailDialog } from "@/components/Debug/dialogs/AccountDetailDialog"
 import { AutomationTradingCountCell } from "@/components/Debug/cells/AutomationTradingCountCell"
 import { DebugStatusCell } from "@/components/Debug/cells/DebugStatusCell"
-import { JsonDetailDialog } from "@/components/Debug/dialogs/JsonDetailDialog"
 import {
   Table,
   TableBody,
@@ -47,16 +47,22 @@ type AccountsTableProps = {
   rows: Account[]
   exchangeConfigs: ExchangeConfig[]
   accountTradings: AccountTradingWithAccountId[]
+  walletQueryParam?: string
+  isImportedMode?: boolean
   onEdit?: (account: Account) => void
   onStartAutomation?: (account: Account) => void
+  onUpdateHistory?: (account: Account) => void
 }
 
 export function AccountsTable({
   rows,
   exchangeConfigs,
   accountTradings,
+  walletQueryParam,
+  isImportedMode = false,
   onEdit,
   onStartAutomation,
+  onUpdateHistory,
 }: AccountsTableProps) {
   const [detail, setDetail] = useState<Account | null>(null)
   const [sort, setSort] = useState<SortState<AccountSortKey>>({
@@ -91,7 +97,7 @@ export function AccountsTable({
   ]
 
   const accountColumnCount = accountColumns.length + 1
-  const actionsHeadClass = "w-24"
+  const actionsHeadClass = "w-32"
 
   if (rows.length === 0) {
     return (
@@ -298,6 +304,14 @@ export function AccountsTable({
                     <button
                       type="button"
                       className="text-muted-foreground hover:text-foreground"
+                      aria-label="Update history"
+                      onClick={() => onUpdateHistory?.(row)}
+                    >
+                      <History className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
                       aria-label="Edit account"
                       onClick={() => onEdit?.(row)}
                     >
@@ -310,13 +324,15 @@ export function AccountsTable({
           )}
         </TableBody>
       </Table>
-      <JsonDetailDialog
-        title="Account"
-        data={detail}
+      <AccountDetailDialog
+        account={detail}
         open={detail !== null}
         onOpenChange={(open) => {
           if (!open) setDetail(null)
         }}
+        walletQueryParam={walletQueryParam}
+        isImportedMode={isImportedMode}
+        exchangeConfigs={exchangeConfigs}
       />
     </>
   )

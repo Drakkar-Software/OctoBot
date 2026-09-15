@@ -26,7 +26,6 @@ import octobot_trading.constants as constants
 import octobot_trading.enums as enums
 import octobot_trading.api as trading_api
 import octobot_trading.exchanges as exchanges
-import octobot_trading.errors as errors
 import octobot_trading.exchange_data as trading_exchange_data
 import octobot_tentacles_manager.api as tentacles_manager_api
 
@@ -179,53 +178,17 @@ async def get_portfolio(exchange_manager, as_float=False, clear_empty=True) -> d
 def _parse_order_dict(
     exchange_manager, order: dict, force_open_or_pending_creation: bool
 ) -> typing.Optional[personal_data.Order]:
-    if not order:
-        return None
-    try:
-        return personal_data.create_order_instance_from_raw(
-            exchange_manager.trader, order, force_open_or_pending_creation=force_open_or_pending_creation
-        )
-    except Exception as err:
-        logging.get_logger("_parse_order_dict").exception(
-            err,
-            True,
-            f"Unexpected error when parsing [{exchange_manager.exchange_name}] "
-            f"order ({err} {err.__class__.__name__}), order ignored: {logging.get_private_minimized_message_if_necessary(order)}"
-        )
-    return None
+    return personal_data.OrdersUpdater.parse_order_instance(
+        exchange_manager, order, force_open_or_pending_creation
+    )
 
 
 def parse_order_into_dict(
     exchange_manager, order: dict, force_open_or_pending_creation: bool, ignore_unsupported_orders: bool
 ) -> typing.Optional[dict]:
-    if (
-        ignore_unsupported_orders and
-        order[enums.ExchangeConstantsOrderColumns.TYPE.value] == enums.TradeOrderType.UNSUPPORTED.value
-    ):
-        logging.get_logger("_parse_order_into_dict").warning(
-            f"Ignored unsupported [{exchange_manager.exchange_name}] order: {logging.get_private_minimized_message_if_necessary(order)}"
-        )
-        return None
-    if parsed_order := _parse_order_dict(exchange_manager, order, force_open_or_pending_creation):
-        try:
-            return parsed_order.to_dict()
-        except AttributeError as err:
-            if exchange_manager.trader is None:
-                # exchange manager has been stopped, don't continue
-                logging.get_logger("_parse_order_dict").error(
-                    f"[{exchange_manager.exchange_name}] exchange manager has been stopped, skipping order parsing ({err})"
-                )
-                raise errors.StoppedExchangeManagerError() from err
-            # unexpected error, raise
-            raise
-        except Exception as err:
-            logging.get_logger("_parse_order_dict").exception(
-                err,
-                True,
-                f"Unexpected error when converting [{exchange_manager.exchange_name}] order to dict" 
-                f"({err}. {err.__class__.__name__}), order: {logging.get_private_minimized_message_if_necessary(order)}"
-            )
-    return None
+    return personal_data.OrdersUpdater.ensure_parsing(
+        exchange_manager, order, force_open_or_pending_creation, ignore_unsupported_orders
+    )
 
 
 @exchanges.retried_failed_network_request(
@@ -313,17 +276,10 @@ async def get_cancelled_orders(
 async def _get_trades(exchange_manager, symbol: str, trades: list):
     row_trades = await exchange_manager.exchange.get_my_recent_trades(symbol=symbol)
     for raw_trade in row_trades:
-        try:
-            trades.append(
-                personal_data.create_trade_instance_from_raw(exchange_manager.trader, raw_trade).to_dict()
-            )
-        except Exception as err:
-            logging.get_logger("get_trades").exception(
-                err,
-                True,
-                f"Unexpected error when parsing [{exchange_manager.exchange_name}] trade "
-                f"({err} {err.__class__.__name__}), trade: {raw_trade}. Ignored trade."
-            )
+        if parsed_trade := personal_data.TradesUpdater.ensure_parsing(
+            exchange_manager, raw_trade
+        ):
+            trades.append(parsed_trade)
 
 
 async def get_trades(

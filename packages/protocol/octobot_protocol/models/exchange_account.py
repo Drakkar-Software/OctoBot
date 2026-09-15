@@ -26,7 +26,7 @@ from pydantic_core import to_jsonable_python
 
 class ExchangeAccount(BaseModel):
     """
-    ExchangeAccount
+    A centralized or DEX trading account, live-synced via a provider connection.
     """ # noqa: E501
     account_type: AccountType = Field(description="exchange")
     remote_account_id: StrictStr

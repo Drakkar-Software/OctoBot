@@ -35,7 +35,8 @@ export interface MetaTemplateDef {
 /**
  * Resolve a MetaTemplateDef into a flat ActionTemplate.
  *
- * - Params are merged in step order; first-occurrence-wins on duplicate keys.
+ * - Params are merged in step order; first-occurrence-wins on duplicate keys,
+ *   but later-step overrides still update defaultValue (last-wins).
  * - overrides are applied as defaultValue on the matching param.
  * - hiddenParams sets hidden:true; a hidden+required param without a
  *   defaultValue/override is an error (it would silently block submission).
@@ -60,7 +61,18 @@ export function resolveMetaTemplate(def: MetaTemplateDef): ActionTemplate {
     }
 
     for (const param of base.params) {
-      if (seenKeys.has(param.key)) continue
+      if (seenKeys.has(param.key)) {
+        const duplicateOverride = step.overrides?.[param.key]
+        if (duplicateOverride !== undefined) {
+          const existingParam = mergedParams.find(
+            (mergedParam) => mergedParam.key === param.key,
+          )
+          if (existingParam) {
+            existingParam.defaultValue = duplicateOverride
+          }
+        }
+        continue
+      }
       seenKeys.add(param.key)
 
       const override = step.overrides?.[param.key]

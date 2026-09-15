@@ -134,6 +134,21 @@ def is_usd_like_coin(coin: str) -> bool:
     return coin in constants.USD_LIKE_COINS
 
 
+def is_usd_like_to_usd_like_pair(symbol: str) -> bool:
+    """
+    :return: True if both base and quote of the symbol are USD-like coins
+    """
+    if not is_symbol(symbol):
+        return False
+    base_asset, quote_asset = parse_symbol(symbol).base_and_quote()
+    return (
+        bool(base_asset)
+        and bool(quote_asset)
+        and is_usd_like_coin(base_asset)
+        and is_usd_like_coin(quote_asset)
+    )
+
+
 def get_most_common_usd_like_symbol(pairs: list[str]) -> str:
     """
     :return: The most common USD like symbol from the given pairs

@@ -59,6 +59,8 @@ class ActionsExecutor:
                     if should_stop_processing:
                         break
         self._sync_after_execution(synchronized_exchange_account_elements)
+        if synchronized_exchange_account_elements:
+            self._clear_post_iteration_after_merge_from_action_results()
         if self._update_execution_details:
             await self._update_actions_history()
         await self._insert_execution_bot_logs(dsl_executor.pending_bot_logs)
@@ -131,7 +133,6 @@ class ActionsExecutor:
         if post_iteration_actions_details.stop_automation:
             self._get_logger().info(f"Stopping automation: {self._automation.metadata.automation_id}")
             self._automation.post_actions.stop_automation = True
-            # todo cancel open orders and sell assets if required in action config
             await self._await_recallable_operator_signal(
                 dsl_executor,
                 octobot_commons.dsl_interpreter.OperatorSignal.STOP.value,
@@ -365,6 +366,16 @@ class ActionsExecutor:
                 exchange_account_elements
             )
             self._sync_exchange_account_elements(exchange_account_elements, new_transactions)
+
+    def _clear_post_iteration_after_merge_from_action_results(self) -> None:
+        for action in self._actions:
+            if not isinstance(action, octobot_flow.entities.DSLScriptActionDetails):
+                continue
+            for result_candidate in (action.result, action.previous_execution_result):
+                if isinstance(result_candidate, dict):
+                    octobot_flow.entities.PostIterationActionsDetails.post_iteration_clear_from_action_result(
+                        result_candidate
+                    )
 
     def _get_new_transactions_from_actions_results(
         self,

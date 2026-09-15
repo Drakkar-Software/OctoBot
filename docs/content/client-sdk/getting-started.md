@@ -39,7 +39,7 @@ npm install @drakkar.software/octobot-client
 Deno/Bun. React Native needs a crypto polyfill (`react-native-quick-crypto` or similar) — this
 package does not bundle one.
 
-**License: GPL-3.0** — worth knowing before week three, not after.
+**License: LGPL-3.0** — worth knowing before week three, not after.
 
 ## Find your node's address
 

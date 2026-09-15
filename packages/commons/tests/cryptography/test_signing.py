@@ -117,8 +117,11 @@ def test_verify_signature_invalid_signature():
     data = b"Test data"
 
     signature = cryptography.sign_data(data, private_key_pem)
-    # Corrupt the signature
-    corrupted_signature = signature[:-1] + b"\x00"
+    # Corrupt the signature (always change a byte)
+    corrupted_bytes = bytearray(signature)
+    corruption_index = len(corrupted_bytes) // 2
+    corrupted_bytes[corruption_index] ^= 0x01
+    corrupted_signature = bytes(corrupted_bytes)
 
     is_valid = cryptography.verify_signature(data, public_key_pem, corrupted_signature)
 

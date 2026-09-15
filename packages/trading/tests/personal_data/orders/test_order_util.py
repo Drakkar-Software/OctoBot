@@ -1170,3 +1170,23 @@ class TestGetSymbolsFromOrders:
             "BTC/USDC",
             "ETH/USDC",
         ]
+
+
+class TestOpenOrderExchangeIdsFromOpenOrders:
+    def test_extracts_exchange_ids_from_open_orders(self):
+        open_orders = [
+            {
+                constants.STORAGE_ORIGIN_VALUE: {
+                    enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value: "order-1",
+                    enums.ExchangeConstantsOrderColumns.FILLED.value: 0,
+                }
+            },
+            {
+                constants.STORAGE_ORIGIN_VALUE: {
+                    enums.ExchangeConstantsOrderColumns.ID.value: "order-2",
+                    enums.ExchangeConstantsOrderColumns.FILLED.value: 0,
+                }
+            },
+        ]
+        exchange_ids = order_util.open_order_exchange_ids_from_open_orders(open_orders)
+        assert exchange_ids == {"order-1", "order-2"}

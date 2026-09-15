@@ -26,7 +26,7 @@ from pydantic_core import to_jsonable_python
 
 class GenericAccount(BaseModel):
     """
-    GenericAccount
+    A placeholder account created before its real kind is known (e.g. mid-onboarding), not a semantic category of its own.
     """ # noqa: E501
     account_type: AccountType = Field(description="generic")
     __properties: ClassVar[List[str]] = ["account_type"]

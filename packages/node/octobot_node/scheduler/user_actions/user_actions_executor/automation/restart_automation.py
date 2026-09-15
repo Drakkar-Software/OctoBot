@@ -26,6 +26,7 @@ import octobot_node.scheduler as scheduler_module
 import octobot_node.scheduler.task_context as task_context
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
 
 
@@ -113,21 +114,16 @@ class RestartAutomationActionExecutor(automation_user_action_executor.Automation
             raise node_errors.UnrestartableAutomationError(
                 f"No prior terminal execution found for automation {parent_automation_id!r}."
             )
-        workflow_output = workflows_util.parse_automation_workflow_output(latest_workflow)
-        if workflow_output is None or not workflow_output.state:
+        resolved_task = workflows_util.get_resolved_automation_task(latest_workflow)
+        if resolved_task is None or not resolved_task.content:
             raise node_errors.UnrestartableAutomationError(
-                f"Latest execution for automation {parent_automation_id!r} has no usable output state."
+                f"Latest execution for automation {parent_automation_id!r} has no usable state."
             )
         input_task = workflows_util.get_automation_input_task(latest_workflow)
         task_name = input_task.name if input_task is not None else None
-        with task_context.encrypted_task(
-            models.Task(
-                content=workflow_output.state,
-                content_metadata=workflow_output.state_metadata,
-            )
-        ):
-            automation_state_dict = workflows_util.get_automation_dict(workflow_output.state)[
-                workflows_util.STATE_KEY
+        with task_context.encrypted_task(resolved_task):
+            automation_state_dict = automation_states_loader.get_automation_dict(resolved_task.content)[
+                automation_states_loader.STATE_KEY
             ]
             automation_state = flow_entities.AutomationState.from_dict(automation_state_dict)
             prepared_state = prepare_automation_state_for_restart(automation_state)
@@ -145,7 +141,7 @@ class RestartAutomationActionExecutor(automation_user_action_executor.Automation
             id=next_workflow_id,
             name=task_name,
             content=task_content,
-            content_metadata=workflow_output.state_metadata,
+            content_metadata=resolved_task.content_metadata,
             type=models.TaskType.EXECUTE_ACTIONS.value,
             user_id=self._user_id,
         )

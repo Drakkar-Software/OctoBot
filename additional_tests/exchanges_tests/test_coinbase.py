@@ -33,12 +33,13 @@ class TestCoinbaseAuthenticatedExchange(
     SETTLEMENT_CURRENCY = "USDC"
     SYMBOL = f"{ORDER_CURRENCY}/{SETTLEMENT_CURRENCY}"
     ORDER_SIZE = 70  # % of portfolio to include in test orders
-    MIN_TRADE_USD_VALUE = decimal.Decimal("0.0004")
+    MIN_TRADE_USD_VALUE = decimal.Decimal("0.000003")
     CONVERTS_ORDER_SIZE_BEFORE_PUSHING_TO_EXCHANGES = True
     VALID_ORDER_ID = "8bb80a81-27f7-4415-aa50-911ea46d841c"
     USE_ORDER_OPERATION_TO_CHECK_API_KEY_RIGHTS = True    # set True when api key rights can't be checked using a
     EXPECT_MISSING_FEE_IN_CANCELLED_ORDERS = False
     IS_AUTHENTICATED_REQUEST_CHECK_AVAILABLE = True    # set True when is_authenticated_request is implemented
+    REQUIRES_CURRENCIES_FOR_TRANSACTIONS = True
     SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO = 8
 
     SPECIAL_ORDER_TYPES_BY_EXCHANGE_ID: dict[
@@ -127,6 +128,15 @@ class TestCoinbaseAuthenticatedExchange(
 
     async def test_get_my_recent_trades(self):
         await super().test_get_my_recent_trades()
+
+    async def test_get_my_recent_trades_exhaust_history(self):
+        await super().test_get_my_recent_trades_exhaust_history()
+
+    async def test_get_deposits(self):
+        await super().test_get_deposits()
+
+    async def test_get_withdrawals(self):
+        await super().test_get_withdrawals()
 
     async def test_get_closed_orders(self):
         await super().test_get_closed_orders()

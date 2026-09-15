@@ -633,7 +633,7 @@ class TestSchedulerGetPendingTasks:
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        with mock.patch("octobot_node.scheduler.workflows_util.get_automation_state_reader", return_value=None):
+        with mock.patch("octobot_node.scheduler.automations.automation_states_loader.get_automation_state_reader", return_value=None):
             executions = await sched.get_pending_tasks()
 
         assert len(executions) == 1
@@ -653,76 +653,13 @@ class TestSchedulerGetPendingTasks:
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
 
-        with mock.patch("octobot_node.scheduler.workflows_util.get_automation_state_reader", return_value=None):
+        with mock.patch("octobot_node.scheduler.automations.automation_states_loader.get_automation_state_reader", return_value=None):
             executions = await sched.get_pending_tasks()
 
         assert len(executions) == 1
         assert executions[0].name is None
 
 
-def _running_automation_task_content() -> str:
-    state_dict = {
-        "automation": {
-            "metadata": {"automation_id": "automation_1"},
-            "actions_dag": {
-                "actions": [{"id": "a1", "dsl_script": "True"}],
-            },
-            "execution": {
-                "current_execution": {"scheduled_to": 1, "triggered_at": 2},
-            },
-        },
-    }
-    return json.dumps({"state": state_dict})
-
-
-class TestSchedulerGetAutomationStates:
-
-    @pytest.mark.asyncio
-    async def test_error_workflow_reports_failed_not_running(self):
-        """DBOS ERROR with input-only task content must not surface as running in protocol state."""
-        task = octobot_node.models.Task(
-            id=PARENT_ID,
-            name="failed-automation",
-            content=_running_automation_task_content(),
-            type="execute_actions",
-        )
-        error_ws = _build_mock_workflow_status_error(task, RuntimeError("DBOSUnexpectedStepError"), workflow_id=PARENT_ID)
-
-        sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[error_ws])
-
-        automation_states = await sched.get_automation_states(None)
-
-        assert len(automation_states) == 1
-        assert automation_states[0].id == PARENT_ID
-        assert automation_states[0].status == protocol_models.WorkflowStatus.FAILED
-        assert "DBOSUnexpectedStepError" in (automation_states[0].error or "")
-        assert automation_states[0].error_message is None
-
-    @pytest.mark.asyncio
-    async def test_success_workflow_with_output_preserves_metadata_name(self):
-        """Completed automation with workflow output must keep task.name in protocol metadata."""
-        task = octobot_node.models.Task(
-            id=PARENT_ID,
-            name="my-automation",
-            content=_running_automation_task_content(),
-            type="execute_actions",
-        )
-        success_ws = _build_mock_workflow_status(
-            task,
-            encrypted_state=_running_automation_task_content(),
-            state_metadata="",
-            workflow_id=PARENT_ID,
-        )
-
-        sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[success_ws])
-
-        automation_states = await sched.get_automation_states(None)
-
-        assert len(automation_states) == 1
-        assert automation_states[0].id == PARENT_ID
-        assert automation_states[0].metadata.name == "my-automation"
 
 
 class TestSchedulerListUserActions:
@@ -1105,6 +1042,66 @@ class TestResolveAutomationOwnerUserId:
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
 
         result = await sched.resolve_automation_owner_user_id("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+
+        assert result is None
+
+
+class TestResolveLatestTerminalAutomationWorkflowForParentId:
+    @pytest.mark.asyncio
+    async def test_returns_latest_terminal_when_only_input_state_is_usable(self):
+        from tests.scheduler.test_workflows_util_automation_state import (
+            _automation_task_content,
+            _child_workflow_id,
+            _workflow_status_with_automation_task,
+        )
+
+        parent_id = _child_workflow_id(0)
+        input_content = _automation_task_content(automation_name="from-input")
+        input_only_workflow = _workflow_status_with_automation_task(
+            status=dbos.WorkflowStatusString.ERROR.value,
+            input_content=input_content,
+            output_content=None,
+        )
+        input_only_workflow.workflow_id = _child_workflow_id(2)
+        input_only_workflow.updated_at = 200
+        input_only_workflow.output = json.dumps(
+            params.AutomationWorkflowOutput(state=None).to_dict(include_default_values=False)
+        )
+
+        sched, _mock_instance = _make_scheduler_with_mock_instance()
+        with mock.patch.object(
+            sched,
+            "_get_parent_and_children_automation_workflows",
+            new_callable=mock.AsyncMock,
+            return_value=[input_only_workflow],
+        ):
+            result = await sched.resolve_latest_terminal_automation_workflow_for_parent_id(
+                "0xw1",
+                parent_id,
+            )
+
+        assert result is input_only_workflow
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_no_terminal_workflow_has_resolvable_task(self):
+        sched, _mock_instance = _make_scheduler_with_mock_instance()
+        unresolvable_workflow = mock.Mock(spec=dbos.WorkflowStatus)
+        unresolvable_workflow.workflow_id = f"{PARENT_ID}_1"
+        unresolvable_workflow.updated_at = 1
+        unresolvable_workflow.status = dbos.WorkflowStatusString.ERROR.value
+        unresolvable_workflow.input = None
+        unresolvable_workflow.output = None
+
+        with mock.patch.object(
+            sched,
+            "_get_parent_and_children_automation_workflows",
+            new_callable=mock.AsyncMock,
+            return_value=[unresolvable_workflow],
+        ):
+            result = await sched.resolve_latest_terminal_automation_workflow_for_parent_id(
+                "0xw1",
+                PARENT_ID,
+            )
 
         assert result is None
 

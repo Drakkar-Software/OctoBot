@@ -14,6 +14,9 @@
 #  You should have received a copy of the GNU General Public License along
 #  with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import datetime
+
+import octobot_sync.constants as sync_constants
 import octobot_sync.sync.collection_providers as collection_providers
 import octobot_protocol.models as protocol_models
 
@@ -51,5 +54,15 @@ class CreateAccountActionExecutor(account_user_action_executor.AccountUserAction
         collection_providers.AccountProvider.instance().create_item(
             self._user_id,
             checked_account,
+        )
+        collection_providers.AccountTradingProvider.instance().save_state(
+            self._user_id,
+            checked_account.id,
+            protocol_models.AccountTradingState(
+                version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+                account_trading=protocol_models.AccountTrading(
+                    updated_at=datetime.datetime.now(datetime.UTC),
+                ),
+            ),
         )
         self._mark_user_action_completed(user_action)

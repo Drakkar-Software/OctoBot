@@ -148,6 +148,7 @@ async def assert_user_action_selector_completed_automation_signal(
     *,
     user_action_id: str,
     user_id: str,
+    expected_signal_execution_result_count: int | None = None,
 ) -> None:
     listed = await octobot_node.scheduler.SCHEDULER.list_user_actions(user_id)
     by_id = merge_user_actions_latest_per_id(listed)
@@ -160,3 +161,11 @@ async def assert_user_action_selector_completed_automation_signal(
     assert inner.result_type == protocol_models_module.UserActionResultType.AUTOMATION
     assert inner.error_details is None
     assert inner.error_message is None
+    if inner.signal_execution_results is not None:
+        assert len(inner.signal_execution_results) >= 1
+        if expected_signal_execution_result_count is not None:
+            assert len(inner.signal_execution_results) == expected_signal_execution_result_count
+        for priority_action_result in inner.signal_execution_results:
+            assert priority_action_result.priority_action_id is not None
+            assert priority_action_result.priority_action_id.startswith("action_signal_priority_")
+            assert priority_action_result.error_status in (None, "no_error")

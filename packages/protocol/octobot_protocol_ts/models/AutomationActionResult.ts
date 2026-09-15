@@ -11,6 +11,7 @@
  */
 
 import { AutomationActionResultErrorMessage } from '../models/AutomationActionResultErrorMessage';
+import { SignalPriorityActionExecutionResult } from '../models/SignalPriorityActionExecutionResult';
 import { UserActionResultType } from '../models/UserActionResultType';
 
 /**
@@ -22,6 +23,7 @@ export class AutomationActionResult {
     'error_details'?: string;
     'created_automation_id'?: string;
     'result_type': UserActionResultType;
+    'signal_execution_results'?: Array<SignalPriorityActionExecutionResult>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -56,6 +58,12 @@ export class AutomationActionResult {
             "name": "result_type",
             "baseName": "result_type",
             "type": "UserActionResultType",
+            "format": ""
+        },
+        {
+            "name": "signal_execution_results",
+            "baseName": "signal_execution_results",
+            "type": "Array<SignalPriorityActionExecutionResult>",
             "format": ""
         }    ];
 

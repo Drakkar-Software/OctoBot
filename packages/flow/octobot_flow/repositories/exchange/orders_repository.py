@@ -1,15 +1,22 @@
 import typing
 
 import octobot_flow.repositories.exchange.base_exchange_repository as base_exchange_repository_import
-import octobot_trading.util.test_tools.exchanges_test_tools as exchanges_test_tools_import
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
+import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.storage as orders_storage
-import octobot_trading.constants as trading_constants
 import octobot_trading.personal_data as trading_personal_data
 
 
 class OrdersRepository(base_exchange_repository_import.BaseExchangeRepository):
+
+    @classmethod
+    async def ensure_temporary_orders_channel(cls, exchange_manager) -> None:
+        await trading_exchanges.create_producers(
+            exchange_manager,
+            [trading_personal_data.OrdersUpdater],
+            start_producers=False,
+        )
 
     async def fetch_open_orders(
         self, symbols: list[str], ignore_unsupported_orders: bool = True
@@ -22,7 +29,7 @@ class OrdersRepository(base_exchange_repository_import.BaseExchangeRepository):
         )
         open_orders = await updater.fetch_open_orders(symbols)
         return [
-            exchanges_test_tools_import.parse_order_into_dict(
+            trading_personal_data.OrdersUpdater.ensure_parsing(
                 self.exchange_manager, order, True, ignore_unsupported_orders
             )
             for order in open_orders

@@ -61,6 +61,16 @@ class BaseLocalCollectionStorage:
         filename = f"{self._sanitize_storage_key(storage_key)}.json"
         return self._root / filename
 
+    def list_wallet_storage_keys(self) -> list[str]:
+        """Return wallet user ids that have a persisted state file at the collection root."""
+        if not self._root.exists():
+            return []
+        return sorted(
+            storage_path.stem
+            for storage_path in self._root.glob("*.json")
+            if storage_path.is_file()
+        )
+
     def _missing_data_error(self, storage_key: str) -> collection_errors.CollectionNoDataError:
         return collection_errors.CollectionNoDataError(
             f"{self.collection} file does not exist for user_id {storage_key}"

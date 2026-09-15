@@ -318,6 +318,23 @@ class TestCopyActionFactory:
         )
 
 
+class TestSignalBotActionFactory:
+    def test_builds_init_and_recall_when_relevant_for_context_dsl(self):
+        signal_bot_configuration = protocol_models.SignalBotConfiguration(
+            configuration_type=protocol_models.ActionConfigurationType.SIGNAL_BOT,
+            sync_interval_with_open_trades_seconds=5.0,
+            sync_interval_without_open_trades_seconds=10.0,
+        )
+        signal_bot_action = action_details_factory_module.signal_bot_action_factory(
+            _init_action(),
+            signal_bot_configuration,
+        )
+        assert signal_bot_action.dsl_script == (
+            "recall_when_relevant_for_context(with_open_trades_seconds=5.0, without_open_trades_seconds=10.0, return_remaining_time=True)"
+        )
+        assert signal_bot_action.dependencies[0].action_id == "action_init"
+
+
 class TestGenericProcessMetadataInitActionFactory:
     def test_builds_metadata_only_apply_configuration(self):
         strategy_reference = protocol_models.StrategyReference(

@@ -27,6 +27,7 @@ import octobot_commons.tests.test_config as test_config
 import octobot_tentacles_manager.api as tentacles_manager_api
 import octobot_backtesting.api as backtesting_api
 import octobot_trading.api as trading_api
+import octobot_trading.constants as trading_constants
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as exchanges
@@ -371,3 +372,72 @@ async def test_register_on_reference_exchanges_if_required():
             assert result is False
             assert is_registered_mock.call_count == 2
             register_mock.assert_awaited_once()
+
+
+class TestMarketMakingTradingModeProducerIsUsableReferencePrice:
+    pytestmark = pytest.mark.asyncio(False)
+
+    def test_valid_positive_price(self):
+        assert market_making_trading.MarketMakingTradingModeProducer._is_usable_reference_price(
+            decimal.Decimal("1000")
+        ) is True
+
+    def test_zero(self):
+        assert market_making_trading.MarketMakingTradingModeProducer._is_usable_reference_price(
+            trading_constants.ZERO
+        ) is False
+
+    def test_nan(self):
+        assert market_making_trading.MarketMakingTradingModeProducer._is_usable_reference_price(
+            decimal.Decimal("NaN")
+        ) is False
+
+    def test_negative(self):
+        assert market_making_trading.MarketMakingTradingModeProducer._is_usable_reference_price(
+            decimal.Decimal("-100")
+        ) is False
+
+
+class TestMarketMakingTradingModeProducerHandleMarketMakingOrdersInvalidReferencePrice:
+    @pytest.mark.parametrize(
+        "invalid_reference_price",
+        [
+            trading_constants.ZERO,
+            decimal.Decimal("NaN"),
+            decimal.Decimal("-100"),
+        ],
+    )
+    async def test_skips_order_update(self, invalid_reference_price):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            current_price = decimal.Decimal("1000")
+            with mock.patch.object(
+                producer, "_get_reference_price", mock.AsyncMock(return_value=invalid_reference_price)
+            ), mock.patch.object(
+                producer, "submit_trading_evaluation", mock.AsyncMock()
+            ) as submit_trading_evaluation_mock:
+                assert await producer._handle_market_making_orders(
+                    current_price, SYMBOL_MARKET, "ref_price", False
+                ) is False
+                submit_trading_evaluation_mock.assert_not_called()
+
+
+class TestMarketMakingTradingModeProducerOnReferencePriceUpdateInvalid:
+    @pytest.mark.parametrize(
+        "invalid_reference_price",
+        [
+            trading_constants.ZERO,
+            decimal.Decimal("NaN"),
+            decimal.Decimal("-100"),
+        ],
+    )
+    async def test_does_not_refresh_orders(self, invalid_reference_price):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            with mock.patch.object(
+                producer, "_get_reference_price", mock.AsyncMock(return_value=invalid_reference_price)
+            ), mock.patch.object(
+                producer, "_ensure_market_making_orders", mock.AsyncMock()
+            ) as ensure_market_making_orders_mock:
+                await producer._on_reference_price_update()
+                ensure_market_making_orders_mock.assert_not_called()

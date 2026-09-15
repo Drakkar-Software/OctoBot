@@ -25,16 +25,18 @@ import { EditAutomationConfiguration } from '../models/EditAutomationConfigurati
 import { EditExchangeConfigConfiguration } from '../models/EditExchangeConfigConfiguration';
 import { EditStrategyConfiguration } from '../models/EditStrategyConfiguration';
 import { RefreshAccountsConfiguration } from '../models/RefreshAccountsConfiguration';
+import { ResetAccountTradingDataConfiguration } from '../models/ResetAccountTradingDataConfiguration';
 import { RestartAutomationConfiguration } from '../models/RestartAutomationConfiguration';
 import { SignalAutomationConfiguration } from '../models/SignalAutomationConfiguration';
 import { StopAutomationConfiguration } from '../models/StopAutomationConfiguration';
+import { UpdateHistoricalExchangesDataConfiguration } from '../models/UpdateHistoricalExchangesDataConfiguration';
 
 /**
  * @type UserActionConfiguration
  * Type
  * @export
  */
-export type UserActionConfiguration = CreateAccountAuthConfiguration | CreateAccountConfiguration | CreateAutomationConfiguration | CreateExchangeConfigConfiguration | CreateStrategyConfiguration | DeleteAccountAuthConfiguration | DeleteAccountConfiguration | DeleteExchangeConfigConfiguration | DeleteStrategyConfiguration | EditAccountAuthConfiguration | EditAccountConfiguration | EditAutomationConfiguration | EditExchangeConfigConfiguration | EditStrategyConfiguration | RefreshAccountsConfiguration | RestartAutomationConfiguration | SignalAutomationConfiguration | StopAutomationConfiguration;
+export type UserActionConfiguration = CreateAccountAuthConfiguration | CreateAccountConfiguration | CreateAutomationConfiguration | CreateExchangeConfigConfiguration | CreateStrategyConfiguration | DeleteAccountAuthConfiguration | DeleteAccountConfiguration | DeleteExchangeConfigConfiguration | DeleteStrategyConfiguration | EditAccountAuthConfiguration | EditAccountConfiguration | EditAutomationConfiguration | EditExchangeConfigConfiguration | EditStrategyConfiguration | RefreshAccountsConfiguration | ResetAccountTradingDataConfiguration | RestartAutomationConfiguration | SignalAutomationConfiguration | StopAutomationConfiguration | UpdateHistoricalExchangesDataConfiguration;
 
 /**
 * @type UserActionConfigurationClass
@@ -59,11 +61,15 @@ export class UserActionConfigurationClass {
         "exchange_config_create": "CreateExchangeConfigConfiguration",
         "exchange_config_delete": "DeleteExchangeConfigConfiguration",
         "exchange_config_edit": "EditExchangeConfigConfiguration",
+        "reset_account_trading_data": "ResetAccountTradingDataConfiguration",
         "strategy_create": "CreateStrategyConfiguration",
         "strategy_delete": "DeleteStrategyConfiguration",
         "strategy_edit": "EditStrategyConfiguration",
+        "update_historical_exchanges_data": "UpdateHistoricalExchangesDataConfiguration",
     };
 }
+
+
 
 
 

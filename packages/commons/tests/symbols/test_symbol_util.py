@@ -144,6 +144,20 @@ class TestTradingTypeFromTradedSymbols:
             octobot_commons.symbols.trading_type_from_traded_symbols(["BTC/USDT", "BTC/USDT:USDT"])
 
 
+class TestIsUsdLikeToUsdLikePair:
+    def test_returns_true_for_usdc_usd(self):
+        assert octobot_commons.symbols.is_usd_like_to_usd_like_pair("USDC/USD")
+
+    def test_returns_true_for_usdc_usdt(self):
+        assert octobot_commons.symbols.is_usd_like_to_usd_like_pair("USDC/USDT")
+
+    def test_returns_false_for_btc_usdt(self):
+        assert not octobot_commons.symbols.is_usd_like_to_usd_like_pair("BTC/USDT")
+
+    def test_returns_false_for_usdc_eur(self):
+        assert not octobot_commons.symbols.is_usd_like_to_usd_like_pair("USDC/EUR")
+
+
 class TestMergeSymbolNetworkDex:
     def test_strips_network_and_dex_suffix(self):
         assert octobot_commons.symbols.merge_symbol("SOL/USDT@solana!raydium") == "SOLUSDT"

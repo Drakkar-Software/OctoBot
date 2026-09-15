@@ -19,6 +19,7 @@ import octobot_commons.constants as common_constants
 import octobot_commons.errors as common_errors
 import octobot_commons.databases as databases
 
+import octobot_backtesting.databases as backtesting_databases
 import octobot_backtesting.constants as constants
 import octobot_backtesting.data as data
 import octobot_backtesting.enums as enums
@@ -103,9 +104,9 @@ class SocialDataImporter(importers.DataImporter):
         if enums.SocialDataTables.SOCIAL_EVENTS in self.available_data_types:
             try:
                 min_timestamp = (await self.database.select_min(enums.SocialDataTables.SOCIAL_EVENTS,
-                                                                 [databases.SQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
+                                                                 [backtesting_databases.BacktestingDataSQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
                 max_timestamp = (await self.database.select_max(enums.SocialDataTables.SOCIAL_EVENTS,
-                                                                [databases.SQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
+                                                                [backtesting_databases.BacktestingDataSQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
                 if min_timestamp and max_timestamp:
                     minimum_timestamp = min_timestamp
                     maximum_timestamp = max_timestamp
@@ -123,7 +124,7 @@ class SocialDataImporter(importers.DataImporter):
             self, service_name, table,
             channel=None,
             symbol=None,
-            limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+            limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
             timestamps=None,
             operations=None
     ):
@@ -146,7 +147,7 @@ class SocialDataImporter(importers.DataImporter):
         )
 
     async def get_social_events(self, service_name=None, channel=None, symbol=None,
-                                limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                 timestamps=None,
                                 operations=None):
         """
@@ -181,7 +182,7 @@ class SocialDataImporter(importers.DataImporter):
         return result
 
     async def get_social_events_from_timestamps(self, service_name=None, channel=None, symbol=None,
-                                                 limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                                 limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                                  inferior_timestamp=-1, superior_timestamp=-1):
         """
         Reads social events history from database and populates a local ChronologicalReadDatabaseCache.
@@ -203,7 +204,7 @@ class SocialDataImporter(importers.DataImporter):
             # initializer without time_frame args are not expecting the time_frame argument, remove it
             # ignore the limit param as it might reduce the available cache and give false later select results
             init_cache_method_args = (
-                service_name, channel, symbol, databases.SQLiteDatabase.DEFAULT_SIZE, timestamps, operations
+                service_name, channel, symbol, backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE, timestamps, operations
             )
             self.chronological_cache.set(
                 await set_cache_method(*init_cache_method_args),

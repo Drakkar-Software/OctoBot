@@ -2,12 +2,13 @@ import type {
   Account as ProtocolAccount,
   AccountAuthentication,
   ExchangeConfig,
+  DetailedAsset,
   DetailedAssetsForTradingType,
   UserActionConfiguration,
 } from '@drakkar.software/octobot-protocol'
 import type { ClientSession } from '../core/session.js'
 import type { CallOptions } from '../core/options.js'
-import { accountViewOf, type AccountView, type Holding } from '../core/views.js'
+import { accountViewOf, type AccountView } from '../core/views.js'
 import { createActionHandle, type ActionHandle } from './actionHandle.js'
 import { pullDocument } from '../../transport/documents.js'
 import {
@@ -37,19 +38,16 @@ export type AccountInput =
       exchange: string
       credentials: { apiKey: string; apiSecret: string; passphrase?: string }
       simulated?: boolean
-      holdings?: Holding[]
+      holdings?: DetailedAsset[]
     }
-  | { id?: string; name: string; type: 'wallet'; address: string; chain?: string; holdings?: Holding[] }
-  | { id?: string; name: string; type: 'generic'; description?: string; holdings?: Holding[] }
+  | { id?: string; name: string; type: 'wallet'; address: string; chain?: string; holdings?: DetailedAsset[] }
+  | { id?: string; name: string; type: 'generic'; description?: string; holdings?: DetailedAsset[] }
 
 const SPOT_TRADING_TYPE = 'spot' as const
 
-function holdingsToAssets(holdings: Holding[] | undefined): DetailedAssetsForTradingType[] | undefined {
+function holdingsToAssets(holdings: DetailedAsset[] | undefined): DetailedAssetsForTradingType[] | undefined {
   if (!holdings?.length) return undefined
-  return [{
-    trading_type: SPOT_TRADING_TYPE,
-    assets: holdings.map((h) => ({ symbol: h.symbol, total: h.total, available: h.free })),
-  }]
+  return [{ trading_type: SPOT_TRADING_TYPE, assets: holdings }]
 }
 
 function newAccountId(): string {

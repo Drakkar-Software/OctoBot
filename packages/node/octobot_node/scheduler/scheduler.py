@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import contextlib
 import datetime
 import asyncio
 import dbos
@@ -31,13 +30,13 @@ import octobot_node.config
 import octobot_node.enums
 import octobot_node.models
 import octobot_node.constants
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows_retention as workflows_retention
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.user_actions.user_action_util as user_action_util
 import octobot_node.scheduler.encryption as encryption
 import octobot_node.scheduler.task_context as task_context
-import octobot_node.protocol.automations as automations_protocol
 import octobot_node.protocol.util.privacy_filter as privacy_filter
 
 DEFAULT_NAME = "octobot_node"
@@ -67,6 +66,8 @@ class Scheduler:
     AUTOMATION_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
     USER_ACTION_QUEUE: dbos.Queue = None # type: ignore
     DBOS_CLEANUP_QUEUE: dbos.Queue = None # type: ignore
+    GLOBAL_VIEW_QUEUE: dbos.Queue = None # type: ignore
+    PORTFOLIO_HISTORY_QUEUE: dbos.Queue = None # type: ignore
 
     @staticmethod
     def _wallet_filter_queue(queue_names: typing.Optional[list[str]]) -> octobot_node.enums.SchedulerQueues:
@@ -111,7 +112,9 @@ class Scheduler:
         """Register DBOS workflow ID provider and add workflow file handler for per-workflow log files."""
         octobot_commons.logging.add_context_based_file_handler(
             octobot_node.constants.AUTOMATION_LOGS_FOLDER,
-            self._get_dbos_workflow_id
+            self._get_dbos_workflow_id,
+            max_file_bytes=octobot_node.constants.AUTOMATION_LOG_FILE_MAX_BYTES,
+            trim_lines_fraction=octobot_node.constants.AUTOMATION_LOG_FILE_TRIM_LINES_FRACTION,
         )
 
     @staticmethod
@@ -151,6 +154,8 @@ class Scheduler:
         Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
         Scheduler.USER_ACTION_QUEUE = None
         Scheduler.DBOS_CLEANUP_QUEUE = None
+        Scheduler.GLOBAL_VIEW_QUEUE = None
+        Scheduler.PORTFOLIO_HISTORY_QUEUE = None
 
     def create_queues(self):
         self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
@@ -158,6 +163,14 @@ class Scheduler:
         self.DBOS_CLEANUP_QUEUE = dbos.Queue(
             name=octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
             # only one cleanup workflow can run at a time
+            concurrency=1,
+        )
+        self.GLOBAL_VIEW_QUEUE = dbos.Queue(
+            name=octobot_node.enums.SchedulerQueues.GLOBAL_VIEW_QUEUE.value,
+            concurrency=1,
+        )
+        self.PORTFOLIO_HISTORY_QUEUE = dbos.Queue(
+            name=octobot_node.enums.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value,
             concurrency=1,
         )
 
@@ -181,7 +194,7 @@ class Scheduler:
             for pending_workflow_status in pending_workflow_statuses:
                 try:
                     task = workflows_util.get_automation_input_task(pending_workflow_status)
-                    if reader := workflows_util.get_automation_state_reader(pending_workflow_status):
+                    if reader := automation_states_loader.get_automation_state_reader(pending_workflow_status):
                         next_step = ", ".join([
                             action.get_summary()
                             for action in reader.get_executable_actions()
@@ -351,7 +364,8 @@ class Scheduler:
     ) -> typing.Optional[dbos.WorkflowStatus]:
         """
         Return the latest terminal (SUCCESS/ERROR) child workflow for ``parent_id`` that has
-        parseable automation output state, or None when no prior execution exists.
+        resolvable automation task content (workflow output state or input fallback), or None
+        when no prior execution exists.
         """
         matching_workflows = await self._get_parent_and_children_automation_workflows(
             user_id,
@@ -370,8 +384,7 @@ class Scheduler:
             reverse=True,
         )
         for workflow_status in sorted_workflows:
-            workflow_output = workflows_util.parse_automation_workflow_output(workflow_status)
-            if workflow_output is not None and workflow_output.state:
+            if workflows_util.get_resolved_automation_task(workflow_status) is not None:
                 return workflow_status
         return None
 
@@ -624,25 +637,7 @@ class Scheduler:
         user_id: typing.Optional[str],
         statuses: typing.Optional[list[dbos.WorkflowStatusString]] = None,
     ) -> list[protocol_models.AutomationState]:
-        workflows = await self._get_latest_workflow_for_each_automation(
-            user_id, statuses, load_output=True
-        )
-        sources: list[automations_protocol.AutomationStateSource] = []
-        for workflow in workflows:
-            workflow_output = workflows_util.parse_automation_workflow_output(workflow)
-            task = workflows_util.get_resolved_automation_task(workflow)
-            if task:
-                task.id = workflows_util.normalize_parent_automation_id(workflow.workflow_id)
-                sources.append(automations_protocol.AutomationStateSource(
-                    task=task,
-                    workflow_status=workflow.status,
-                    workflow_output=workflow_output,
-                    workflow_error=str(workflow.error) if workflow.error else None,
-                ))
-        with contextlib.ExitStack() as exit_stack:
-            for source in sources:
-                exit_stack.enter_context(task_context.encrypted_task(source.task))
-            return automations_protocol.to_protocol_automations_state(sources)
+        return await automation_states_loader.load_protocol_automation_states(user_id, statuses)
 
     @staticmethod
     def _user_action_list_sort_key(

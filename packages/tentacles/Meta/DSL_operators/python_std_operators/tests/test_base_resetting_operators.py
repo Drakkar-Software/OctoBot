@@ -406,3 +406,244 @@ class TestLoopUntilOperator:
             1000.0,
             None
         ) is None
+
+
+class TestRecallWhenRelevantForContextOperator:
+    @pytest.fixture
+    def exchange_manager(self):
+        exchange_manager_mock = mock.Mock()
+        exchange_manager_mock.is_future = False
+        return exchange_manager_mock
+
+    @pytest.fixture
+    def recall_when_relevant_for_context_interpreter(self, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+
+        return dsl_interpreter.Interpreter(
+            dsl_interpreter.get_all_operators()
+            + recall_when_relevant_for_context_operators_module.create_recall_when_relevant_for_context_operators(exchange_manager)
+        )
+
+    @pytest.mark.asyncio
+    async def test_with_open_trades_schedules_with_open_trades_seconds(self, recall_when_relevant_for_context_interpreter, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+        import octobot_trading.api as trading_api_module
+
+        open_order = mock.Mock()
+        open_order.is_cancelled.return_value = False
+        open_order.is_closed.return_value = False
+        with (
+            mock.patch.object(trading_api_module, "get_open_orders", return_value=[open_order]),
+            mock.patch.object(time, "time", return_value=1000.0),
+        ):
+            result = await recall_when_relevant_for_context_interpreter.interprete(
+                "recall_when_relevant_for_context(with_open_trades_seconds=5, without_open_trades_seconds=10, return_remaining_time=True)"
+            )
+        inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 5
+
+    @pytest.mark.asyncio
+    async def test_without_open_trades_schedules_without_open_trades_seconds(
+        self, recall_when_relevant_for_context_interpreter, exchange_manager
+    ):
+        import octobot_trading.api as trading_api_module
+
+        with (
+            mock.patch.object(trading_api_module, "get_open_orders", return_value=[]),
+            mock.patch.object(time, "time", return_value=1000.0),
+        ):
+            result = await recall_when_relevant_for_context_interpreter.interprete(
+                "recall_when_relevant_for_context(with_open_trades_seconds=5, without_open_trades_seconds=10, return_remaining_time=True)"
+            )
+        inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 10
+
+    @pytest.mark.asyncio
+    async def test_recall_switches_interval_when_open_trades_appear(self, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+        import octobot_trading.api as trading_api_module
+
+        recall_when_relevant_for_context_operator_class = recall_when_relevant_for_context_operators_module.create_recall_when_relevant_for_context_operators(
+            exchange_manager,
+        )[0]
+        operator = recall_when_relevant_for_context_operator_class(5, 10, return_remaining_time=True)
+        previous = {
+            dsl_interpreter.ReCallingOperatorResult.__name__: {
+                "last_execution_result": {
+                    dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
+                },
+            },
+        }
+        with (
+            mock.patch.object(
+                trading_api_module,
+                "get_open_orders",
+                return_value=[mock.Mock(is_cancelled=lambda: False, is_closed=lambda: False)],
+            ),
+            mock.patch.object(time, "time", return_value=1000.0),
+        ):
+            param_by_name = {
+                "with_open_trades_seconds": 5,
+                "without_open_trades_seconds": 10,
+                "return_remaining_time": True,
+                dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous,
+            }
+            wait_params = operator._wait_operator_params_after_interval_change(param_by_name)
+            result = operator._compute_remaining_time(param_by_name, wait_params)
+        inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 5
+        assert result[dsl_interpreter.ReCallingOperatorResult.__name__]["keyword"] == "recall_when_relevant_for_context"
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.SCRIPT_OVERRIDE.value].startswith(
+            "recall_when_relevant_for_context("
+        )
+
+    @pytest.mark.asyncio
+    async def test_recall_preserves_recall_when_relevant_for_context_script_override(self, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+        import octobot_trading.api as trading_api_module
+
+        recall_when_relevant_for_context_operator_class = recall_when_relevant_for_context_operators_module.create_recall_when_relevant_for_context_operators(
+            exchange_manager,
+        )[0]
+        operator = recall_when_relevant_for_context_operator_class(5, 10, return_remaining_time=True)
+        previous = {
+            dsl_interpreter.ReCallingOperatorResult.__name__: {
+                "keyword": "recall_when_relevant_for_context",
+                "last_execution_result": {
+                    dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.SCRIPT_OVERRIDE.value: (
+                        "recall_when_relevant_for_context(with_open_trades_seconds=5, without_open_trades_seconds=10, "
+                        "return_remaining_time=True)"
+                    ),
+                },
+            },
+        }
+        with (
+            mock.patch.object(trading_api_module, "get_open_orders", return_value=[]),
+            mock.patch.object(time, "time", return_value=1000.0),
+        ):
+            param_by_name = {
+                "with_open_trades_seconds": 5,
+                "without_open_trades_seconds": 10,
+                "return_remaining_time": True,
+                dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous,
+            }
+            wait_params = operator._wait_operator_params_after_interval_change(param_by_name)
+            result = operator._compute_remaining_time(param_by_name, wait_params)
+        assert result[dsl_interpreter.ReCallingOperatorResult.__name__]["keyword"] == "recall_when_relevant_for_context"
+        script_override = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"][
+            dsl_interpreter.ReCallingOperatorResultKeys.SCRIPT_OVERRIDE.value
+        ]
+        assert script_override.startswith("recall_when_relevant_for_context(")
+        assert "return_remaining_time=True" in script_override
+
+    @pytest.mark.asyncio
+    async def test_recall_decrements_remaining_time(self, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+        import octobot_trading.api as trading_api_module
+
+        recall_when_relevant_for_context_operator_class = recall_when_relevant_for_context_operators_module.create_recall_when_relevant_for_context_operators(exchange_manager)[0]
+        operator = recall_when_relevant_for_context_operator_class(5, 10, return_remaining_time=True)
+        previous = {
+            dsl_interpreter.ReCallingOperatorResult.__name__: {
+                "last_execution_result": {
+                    dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
+                },
+            },
+        }
+        with (
+            mock.patch.object(trading_api_module, "get_open_orders", return_value=[]),
+            mock.patch.object(time, "time", return_value=1002.0),
+        ):
+            wait_params = operator._wait_operator_params({
+                "with_open_trades_seconds": 5,
+                "without_open_trades_seconds": 10,
+                "return_remaining_time": True,
+                dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous,
+            })
+            wait_operator = base_resetting_operators.WaitOperator(1)
+            result = wait_operator._compute_remaining_time(wait_params)
+        inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 8.0
+
+    @pytest.mark.asyncio
+    async def test_recall_restarts_interval_when_wait_expires(self, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+        import octobot_trading.api as trading_api_module
+
+        recall_when_relevant_for_context_operator_class = recall_when_relevant_for_context_operators_module.create_recall_when_relevant_for_context_operators(
+            exchange_manager,
+        )[0]
+        operator = recall_when_relevant_for_context_operator_class(5, 10, return_remaining_time=True)
+        previous = {
+            dsl_interpreter.ReCallingOperatorResult.__name__: {
+                "last_execution_result": {
+                    dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 10.0,
+                },
+            },
+        }
+        with (
+            mock.patch.object(trading_api_module, "get_open_orders", return_value=[]),
+            mock.patch.object(time, "time", return_value=1011.0),
+        ):
+            param_by_name = {
+                "with_open_trades_seconds": 5,
+                "without_open_trades_seconds": 10,
+                "return_remaining_time": True,
+                dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous,
+            }
+            wait_params = operator._wait_operator_params_after_interval_change(param_by_name)
+            result = operator._compute_remaining_time(param_by_name, wait_params)
+        assert result is not None
+        inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 10.0
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 1011.0
+
+    @pytest.mark.asyncio
+    async def test_recall_restarts_with_open_trades_interval_when_wait_expires(self, exchange_manager):
+        import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as recall_when_relevant_for_context_operators_module
+        import octobot_trading.api as trading_api_module
+
+        recall_when_relevant_for_context_operator_class = recall_when_relevant_for_context_operators_module.create_recall_when_relevant_for_context_operators(
+            exchange_manager,
+        )[0]
+        operator = recall_when_relevant_for_context_operator_class(5, 10, return_remaining_time=True)
+        previous = {
+            dsl_interpreter.ReCallingOperatorResult.__name__: {
+                "last_execution_result": {
+                    dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                    dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+                },
+            },
+        }
+        open_order = mock.Mock()
+        open_order.is_cancelled.return_value = False
+        open_order.is_closed.return_value = False
+        with (
+            mock.patch.object(trading_api_module, "get_open_orders", return_value=[open_order]),
+            mock.patch.object(time, "time", return_value=1006.0),
+        ):
+            param_by_name = {
+                "with_open_trades_seconds": 5,
+                "without_open_trades_seconds": 10,
+                "return_remaining_time": True,
+                dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: previous,
+            }
+            wait_params = operator._wait_operator_params_after_interval_change(param_by_name)
+            result = operator._compute_remaining_time(param_by_name, wait_params)
+        assert result is not None
+        inner = result[dsl_interpreter.ReCallingOperatorResult.__name__]["last_execution_result"]
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 5.0
+        assert inner[dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value] == 1006.0
+
+    @pytest.mark.asyncio
+    async def test_negative_seconds_raise_invalid_parameters(self, recall_when_relevant_for_context_interpreter):
+        with pytest.raises(octobot_commons.errors.InvalidParametersError, match="non-negative"):
+            await recall_when_relevant_for_context_interpreter.interprete(
+                "recall_when_relevant_for_context(with_open_trades_seconds=-1, without_open_trades_seconds=10, return_remaining_time=True)"
+            )
+

@@ -1,6 +1,6 @@
 # BlockchainAccount
 
-BlockchainAccount
+A wallet address tracked read-only on-chain.
 
 ## Properties
 

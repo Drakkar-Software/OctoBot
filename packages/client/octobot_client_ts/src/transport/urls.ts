@@ -1,9 +1,7 @@
 import { API_PREFIX, DEFAULT_NODE_PORT } from './constants.js'
+import type { NodeEndpoint } from '@drakkar.software/octobot-protocol'
 
-/** The minimal address triple every node-facing call needs. Deliberately
- *  structural (not the caller's own "list of paired nodes" document type) —
- *  any `{ host, port, secure? }` works. */
-export type NodeEndpoint = { host: string; port: number; secure?: boolean }
+export type { NodeEndpoint }
 
 export function nodeBaseUrl(node: NodeEndpoint): string {
   return `${node.secure ? 'https' : 'http'}://${node.host}:${node.port}${API_PREFIX}`

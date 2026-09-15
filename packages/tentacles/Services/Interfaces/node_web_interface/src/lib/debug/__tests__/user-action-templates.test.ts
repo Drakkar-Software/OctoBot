@@ -8,8 +8,10 @@ import {
   buildAutomationRestartUserActionJson,
   buildAutomationSignalUserActionJson,
   buildAutomationStopUserActionJson,
+  buildResetAccountTradingDataUserActionJson,
   buildExchangeConfigEditUserActionJson,
   buildStrategyEditUserActionJson,
+  buildUpdateHistoricalExchangesDataUserActionJson,
   buildUserActionTemplate,
   buildUserActionTemplateJson,
   defaultSignalPayloadText,
@@ -24,7 +26,16 @@ const CANONICAL_UUID_V4_PATTERN =
 
 describe("defaultSignalPayloadText", () => {
   it("returns sample payloads for payload signal types", () => {
-    expect(defaultSignalPayloadText("actions")).toContain("dsl_script")
+    const actionsPayload = defaultSignalPayloadText("actions")
+    expect(actionsPayload).toContain("dsl_script")
+    expect(actionsPayload).toContain("dsl_placeholder()")
+    const parsedActions = JSON.parse(actionsPayload) as Array<{
+      id: string
+      dsl_script: string
+    }>
+    expect(parsedActions[0].id).toMatch(
+      /^action_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    )
     expect(defaultSignalPayloadText("trading_signal")).toContain("strategy_id")
     expect(defaultSignalPayloadText("forced_trigger")).toBe("")
   })
@@ -42,6 +53,7 @@ describe("buildUserActionTemplate", () => {
     expect(action.configuration).toMatchObject({
       action_type: "automation_stop",
       id: TEMPLATE_AUTOMATION_ID,
+      cancel_orders: false,
     })
   })
 
@@ -310,6 +322,47 @@ describe("buildUserActionTemplate", () => {
     expect(genericProcessConfiguration.configuration_type).toBe("generic_process")
     expect(genericProcessConfiguration).not.toHaveProperty("profile_data")
   })
+
+  it("builds a signal bot strategy create template", () => {
+    const action = buildUserActionTemplate("strategy_create_signal_bot")
+    expect(action.id).toBe("ua-manual-strategy_create_signal_bot")
+    expect(action.configuration).toMatchObject({
+      action_type: "strategy_create",
+    })
+
+    const strategy = (
+      action.configuration as { configuration: Record<string, unknown> }
+    ).configuration
+    expect(strategy.reference_market).toBe("USDC")
+    expect(strategy.id).toMatch(CANONICAL_UUID_V4_PATTERN)
+
+    const signalBotConfiguration = strategy.configuration as Record<
+      string,
+      unknown
+    >
+    expect(signalBotConfiguration.configuration_type).toBe("signal_bot")
+    expect(signalBotConfiguration.sync_interval_with_open_trades_seconds).toBe(3600)
+    expect(signalBotConfiguration.sync_interval_without_open_trades_seconds).toBe(
+      14400,
+    )
+  })
+
+  it("builds an update historical exchanges data template", () => {
+    const action = buildUserActionTemplate("update_historical_exchanges_data")
+    expect(action.id).toContain("update_historical_exchanges_data")
+    expect(action.configuration).toMatchObject({
+      action_type: "update_historical_exchanges_data",
+    })
+  })
+
+  it("builds a reset account trading data template", () => {
+    const action = buildUserActionTemplate("reset_account_trading_data")
+    expect(action.id).toContain("reset_account_trading_data")
+    expect(action.configuration).toMatchObject({
+      action_type: "reset_account_trading_data",
+      account_ids: [TEMPLATE_ACCOUNT_ID],
+    })
+  })
 })
 
 describe("buildUserActionTemplateJson", () => {
@@ -341,6 +394,30 @@ describe("buildAccountEditUserActionJson", () => {
   })
 })
 
+describe("buildUpdateHistoricalExchangesDataUserActionJson", () => {
+  it("includes the account id in account_ids", () => {
+    const json = JSON.parse(
+      buildUpdateHistoricalExchangesDataUserActionJson("acc-history-1"),
+    )
+    expect(json.configuration).toMatchObject({
+      action_type: "update_historical_exchanges_data",
+      account_ids: ["acc-history-1"],
+    })
+  })
+})
+
+describe("buildResetAccountTradingDataUserActionJson", () => {
+  it("includes the account id in account_ids", () => {
+    const json = JSON.parse(
+      buildResetAccountTradingDataUserActionJson("acc-reset-1"),
+    )
+    expect(json.configuration).toMatchObject({
+      action_type: "reset_account_trading_data",
+      account_ids: ["acc-reset-1"],
+    })
+  })
+})
+
 describe("buildExchangeConfigEditUserActionJson", () => {
   it("embeds the exchange config", () => {
     const config: ExchangeConfig = {
@@ -351,6 +428,21 @@ describe("buildExchangeConfigEditUserActionJson", () => {
     }
     const json = JSON.parse(buildExchangeConfigEditUserActionJson(config))
     expect(json.configuration.id).toBe("cfg-1")
+  })
+
+  it("preserves historical_trade_symbols when present", () => {
+    const config: ExchangeConfig = {
+      id: "cfg-1",
+      name: "Kraken",
+      exchange: "kraken",
+      sandboxed: false,
+      historical_trade_symbols: ["BTC/USDT", "ADA/USDT"],
+    }
+    const json = JSON.parse(buildExchangeConfigEditUserActionJson(config))
+    expect(json.configuration.configuration.historical_trade_symbols).toEqual([
+      "BTC/USDT",
+      "ADA/USDT",
+    ])
   })
 })
 
@@ -380,6 +472,7 @@ describe("buildAutomationStopUserActionJson", () => {
     expect(firstJson.configuration).toEqual({
       action_type: "automation_stop",
       id: "auto-1",
+      cancel_orders: false,
     })
   })
 })

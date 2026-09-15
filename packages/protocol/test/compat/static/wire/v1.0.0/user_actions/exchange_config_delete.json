@@ -1,0 +1,7 @@
+{
+  "configuration": {
+    "action_type": "exchange_config_delete",
+    "id": "id-1"
+  },
+  "id": "user-action-exchange_config_delete"
+}

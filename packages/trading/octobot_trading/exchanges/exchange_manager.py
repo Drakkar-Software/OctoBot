@@ -220,12 +220,7 @@ class ExchangeManager(util.Initializable):
         if not ignore_orders_and_trades:
             if exchange_data.trades:
                 self.exchange_personal_data.trades_manager.initialize_from_exchange_data(exchange_data)
-            if (
-                exchange_data.orders_details.open_orders
-                and exchange_data.orders_details.open_orders[0]
-                .get(constants.STORAGE_ORIGIN_VALUE, {})
-                .get(enums.ExchangeConstantsOrderColumns.TYPE.value)
-            ):
+            if exchange_data.orders_details.has_valid_open_orders():
                 await self.exchange_personal_data.orders_manager.initialize_from_exchange_data(exchange_data)
             if lock_chained_orders_funds:
                 await self.exchange_personal_data.portfolio_manager.initialize_from_exchange_data(exchange_data)
@@ -377,6 +372,9 @@ class ExchangeManager(util.Initializable):
     def get_exchange_sub_account_id(self, exchange_name):
         config_exchange = self.config[common_constants.CONFIG_EXCHANGES][exchange_name]
         return config_exchange.get(common_constants.CONFIG_EXCHANGE_SUB_ACCOUNT, None)
+
+    def should_log_exchange_lifecycle_debug(self) -> bool:
+        return not self.exchange_only
 
     def is_storage_enabled(self):
         return self.enable_storage and not self.exchange_only and self.bot_id is not None

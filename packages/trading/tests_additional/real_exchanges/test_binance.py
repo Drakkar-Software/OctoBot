@@ -23,11 +23,10 @@ pytestmark = pytest.mark.asyncio
 
 
 class TestBinanceRealExchangeTester(real_exchange_tester.RealExchangeTester):
-    EXCHANGE_NAME = "binanceus"  # use binanceus for tests as binance is blocked in the us
-    SYMBOL = "BTC/USDT"
+    EXCHANGE_NAME = "binance"
+    SYMBOL = "BTC/USDC"
     SYMBOL_2 = "ETH/BTC"
     SYMBOL_3 = "XRP/BTC"
-    INACTIVE_MARKETS = [SYMBOL_3]
 
     async def test_time_frames(self):
         await self.assert_time_frames([
@@ -52,7 +51,7 @@ class TestBinanceRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type()
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(200, 500)
+        await self.inner_test_active_symbols(2100, 4100)
 
     async def test_get_market_status(self):
         await self.assert_get_market_status()

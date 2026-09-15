@@ -129,7 +129,7 @@ Full detail: [Escape hatches](https://docs.octobot.cloud/client-sdk/escape-hatch
 
 | This package | `@drakkar.software/octobot-protocol` | Minimum node |
 |---|---|---|
-| `0.3.0` | `^0.6.0` | protocol 0.4.0 |
+| `0.5.0` | `^0.6.0` | protocol 0.4.0 |
 
 ## More
 

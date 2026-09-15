@@ -2,6 +2,7 @@ import dataclasses
 import typing
 
 import octobot_commons.dataclasses
+import octobot_commons.dsl_interpreter
 
 
 @dataclasses.dataclass
@@ -35,6 +36,36 @@ class PostIterationActionsDetails(octobot_commons.dataclasses.MinimizableDatacla
 
     def has_automation_actions(self) -> bool:
         return bool(self.stop_automation)
+
+    @classmethod
+    def post_iteration_clear(cls, post_iteration_payload: dict) -> None:
+        post_iteration_payload.pop("updated_exchange_account_elements", None)
+
+    @classmethod
+    def post_iteration_clear_from_action_result(cls, action_result: dict) -> None:
+        """
+        Remove merge-consumed PostIteration fields from persisted action-result dicts.
+        Mutates ``action_result`` in place (top-level and recall-nested blobs).
+        """
+        post_iter_name = cls.__name__
+        # Top-level PostIteration (e.g. stop_automation / update_automation_configuration).
+        top_level_payload = action_result.get(post_iter_name)
+        if isinstance(top_level_payload, dict):
+            cls.post_iteration_clear(top_level_payload)
+        # Nested PostIteration inside a re-calling operator recall payload (e.g. run_octobot_process).
+        if not octobot_commons.dsl_interpreter.ReCallingOperatorResult.is_re_calling_operator_result(
+            action_result
+        ):
+            return
+        recall_wrapper = octobot_commons.dsl_interpreter.ReCallingOperatorResult.from_dict(
+            action_result[octobot_commons.dsl_interpreter.ReCallingOperatorResult.__name__]
+        )
+        inner_last_result = recall_wrapper.last_execution_result
+        if not isinstance(inner_last_result, dict):
+            return
+        nested_payload = inner_last_result.get(post_iter_name)
+        if isinstance(nested_payload, dict):
+            cls.post_iteration_clear(nested_payload)
 
     def should_cancel_iteration(self) -> bool:
         # cancelled if global view refresh is triggered, otherwise proceed 

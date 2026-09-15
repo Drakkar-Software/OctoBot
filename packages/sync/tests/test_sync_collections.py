@@ -87,8 +87,7 @@ def test_fallback_to_default_config():
     assert config.version == 1
     assert config.namespaces is not None
     ns_collections = config.namespaces["octobot"].collections
-    # 8 standard user collections + 1 temporary product-scoped append-only log.
-    assert len(ns_collections) == 10
+    assert len(ns_collections) == 11
     by_name = {c.name: c for c in ns_collections}
     assert set(by_name) == {
         "user-data",
@@ -96,38 +95,36 @@ def test_fallback_to_default_config():
         "user-accounts-auth",
         "user-accounts-trading",
         "user-accounts-history",
+        "user-accounts-history-aggregated-real",
+        "user-accounts-history-aggregated-simulated",
         "user-settings",
         "user-strategies",
         "user-actions",
         "debug",
-        "product-signals",
     }
     assert by_name["user-data"].storage_path == "users/{identity}/data"
     assert by_name["user-accounts"].storage_path == "users/{identity}/accounts"
     assert by_name["user-accounts-auth"].storage_path == "users/{identity}/accounts/auth"
     assert by_name["user-accounts-trading"].storage_path == "users/{identity}/accounts/{account_id}/trading"
     assert by_name["user-accounts-history"].storage_path == "users/{identity}/accounts/{account_id}/history"
+    assert by_name["user-accounts-history-aggregated-real"].storage_path == "users/{identity}/accounts/history/real"
+    assert by_name["user-accounts-history-aggregated-simulated"].storage_path == (
+        "users/{identity}/accounts/history/simulated"
+    )
     assert by_name["user-settings"].storage_path == "users/{identity}/settings"
     assert by_name["user-strategies"].storage_path == "users/{identity}/strategies"
     assert by_name["user-actions"].storage_path == "users/{identity}/actions"
     assert by_name["debug"].storage_path == "users/{identity}/debug"
-    # The 8 standard user collections are "self"-scoped and "delegated"; the
-    # temporary product-signals log is a product-scoped (device:root) plaintext
-    # append-only by_timestamp collection.
-    for name, col in by_name.items():
-        if name == "product-signals":
-            continue
+    for col in by_name.values():
         assert col.read_roles == ["self"]
         assert col.write_roles == ["self"]
         assert col.encryption == "delegated"
-    signals = by_name["product-signals"]
-    assert signals.storage_path == "products/{product_id}/{version}/signals"
-    assert signals.read_roles == ["device:root"]
-    assert signals.write_roles == ["device:root"]
-    assert signals.encryption == "none"
-    assert signals.append_only is not None
-    assert signals.append_only.type == "by_timestamp"
-    assert signals.append_only.require_author_signature is False
+    for history_collection_name in (
+        "user-accounts-history",
+        "user-accounts-history-aggregated-real",
+        "user-accounts-history-aggregated-simulated",
+    ):
+        assert by_name[history_collection_name].pull_only is True
     actions = by_name["user-actions"]
     assert actions.append_only is not None
     assert actions.append_only.type == "by_timestamp"

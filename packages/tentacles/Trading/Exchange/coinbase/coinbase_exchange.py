@@ -327,3 +327,90 @@ class Coinbase(exchanges.RestExchange):
                 f"market_status_info: {market_status_info}"
             )
         return True
+
+    def _uses_single_transaction_currency_request(self, currency: str, kwargs: dict) -> bool:
+        return currency is not None or kwargs.get("account_id") or kwargs.get("accountId")
+
+    async def _fetch_transactions_for_currencies(
+        self,
+        fetch_method_name: str,
+        currencies: list[str],
+        since: int = None,
+        limit: int = None,
+        kwargs: dict = None,
+    ) -> list[dict]:
+        fetch_method = getattr(self.connector, fetch_method_name)
+        merged_transactions = []
+        seen_transaction_ids = set()
+        transaction_columns = trading_enums.ExchangeConstantsTransactionColumns
+        kwargs = kwargs or {}
+
+        for wallet_currency in currencies:
+            for currency_type in (None, "crypto"):
+                local_kwargs = dict(kwargs)
+                if currency_type is not None:
+                    local_kwargs["currencyType"] = currency_type
+                try:
+                    currency_transactions = await fetch_method(
+                        currency=wallet_currency,
+                        since=since,
+                        limit=limit,
+                        **local_kwargs,
+                    )
+                except octobot_trading.errors.OctoBotTradingError as error:
+                    self.logger.warning(
+                        f"Skipping {self.get_name()} {fetch_method_name} for {wallet_currency} "
+                        f"({currency_type or 'fiat'}): {error}"
+                    )
+                    continue
+                for transaction in currency_transactions:
+                    transaction_id = (
+                        transaction.get(transaction_columns.ID.value)
+                        or transaction.get(transaction_columns.TXID.value)
+                    )
+                    if transaction_id and transaction_id in seen_transaction_ids:
+                        continue
+                    if transaction_id:
+                        seen_transaction_ids.add(transaction_id)
+                    merged_transactions.append(transaction)
+        return merged_transactions
+
+    async def get_deposits(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
+        if self._uses_single_transaction_currency_request(currency, kwargs):
+            return await self.connector.get_deposits(
+                currency=currency, since=since, limit=limit, **kwargs
+            )
+        if not currencies:
+            raise octobot_trading.errors.FailedRequest(
+                f"{self.get_name()} get_deposits requires a currency, account_id, or non-empty currencies list"
+            )
+        return await self._fetch_transactions_for_currencies(
+            "get_deposits", currencies, since=since, limit=limit, kwargs=kwargs
+        )
+
+    async def get_withdrawals(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
+        if self._uses_single_transaction_currency_request(currency, kwargs):
+            return await self.connector.get_withdrawals(
+                currency=currency, since=since, limit=limit, **kwargs
+            )
+        if not currencies:
+            raise octobot_trading.errors.FailedRequest(
+                f"{self.get_name()} get_withdrawals requires a currency, account_id, or non-empty currencies list"
+            )
+        return await self._fetch_transactions_for_currencies(
+            "get_withdrawals", currencies, since=since, limit=limit, kwargs=kwargs
+        )

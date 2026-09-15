@@ -21,6 +21,7 @@ import mock
 import pytest
 
 import octobot_commons.logging.context_based_file_handler as context_based_file_handler
+import octobot_commons.logging.capped_file_handler as capped_file_handler_module
 
 
 @pytest.fixture
@@ -176,3 +177,97 @@ def test_context_based_file_handler_creates_logs_folder_if_missing(temp_info_log
     logger.info("msg")
     handler.flush()
     assert os.path.isfile(f"{nested}/ctx.log")
+
+
+def test_uses_capped_handler_when_max_bytes_set(temp_info_logs_and_cleanup_folder):
+    file_name_provider = mock.Mock(return_value="capped_ctx")
+    handler = context_based_file_handler.ContextBasedFileHandler(
+        temp_info_logs_and_cleanup_folder,
+        file_name_provider,
+        max_file_bytes=120,
+        trim_lines_fraction=0.2,
+    )
+    handler.setLevel(logging.INFO)
+    logging.getLogger().addHandler(handler)
+    logger = logging.getLogger("test_capped_logger")
+    logger.setLevel(logging.INFO)
+
+    with open(
+        f"{temp_info_logs_and_cleanup_folder}/capped_ctx.log",
+        "w",
+        encoding="utf-8",
+    ) as log_file:
+        log_file.write("\n".join(f"seed-{line_index}" for line_index in range(20)) + "\n")
+
+    logger.info("overflow-message")
+    handler.flush()
+
+    file_handler = handler._custom_handlers["capped_ctx"]
+    assert isinstance(file_handler, capped_file_handler_module.CappedFileHandler)
+    with open(f"{temp_info_logs_and_cleanup_folder}/capped_ctx.log", encoding="utf-8") as log_file:
+        content = log_file.read()
+    assert "seed-0" not in content
+    assert "overflow-message" in content
+    handler.close()
+
+
+def test_uses_plain_file_handler_when_max_bytes_none(temp_info_logs_and_cleanup_folder):
+    file_name_provider = mock.Mock(return_value="plain_ctx")
+    handler = context_based_file_handler.ContextBasedFileHandler(
+        temp_info_logs_and_cleanup_folder,
+        file_name_provider,
+        max_file_bytes=None,
+    )
+    handler.setLevel(logging.INFO)
+    logging.getLogger().addHandler(handler)
+    logger = logging.getLogger("test_plain_logger")
+    logger.setLevel(logging.INFO)
+    logger.info("plain-message")
+    handler.flush()
+
+    file_handler = handler._custom_handlers["plain_ctx"]
+    assert type(file_handler) is logging.FileHandler
+    handler.close()
+
+
+def test_per_context_files_trim_independently(temp_info_logs_and_cleanup_folder):
+    contexts = []
+
+    def rotating_provider():
+        return contexts[0] if contexts else None
+
+    handler = context_based_file_handler.ContextBasedFileHandler(
+        temp_info_logs_and_cleanup_folder,
+        rotating_provider,
+        max_file_bytes=120,
+        trim_lines_fraction=0.2,
+    )
+    handler.setLevel(logging.INFO)
+    logging.getLogger().addHandler(handler)
+    logger = logging.getLogger("test_independent_logger")
+    logger.setLevel(logging.INFO)
+
+    with open(
+        f"{temp_info_logs_and_cleanup_folder}/ctx_a.log",
+        "w",
+        encoding="utf-8",
+    ) as log_file:
+        log_file.write("\n".join(f"a-{line_index}" for line_index in range(20)) + "\n")
+
+    contexts.append("ctx_a")
+    logger.info("overflow-a")
+    handler.flush()
+
+    contexts[0] = "ctx_b"
+    logger.info("fresh-b")
+    handler.flush()
+
+    with open(f"{temp_info_logs_and_cleanup_folder}/ctx_a.log", encoding="utf-8") as log_file:
+        ctx_a_content = log_file.read()
+    with open(f"{temp_info_logs_and_cleanup_folder}/ctx_b.log", encoding="utf-8") as log_file:
+        ctx_b_content = log_file.read()
+
+    assert "a-0" not in ctx_a_content
+    assert "overflow-a" in ctx_a_content
+    assert "fresh-b" in ctx_b_content
+    handler.close()

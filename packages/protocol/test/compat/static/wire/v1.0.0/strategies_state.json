@@ -1,0 +1,19 @@
+{
+  "strategies": [
+    {
+      "configuration": {
+        "config": {
+          "trading_pairs": [
+            "BTC/USDC"
+          ]
+        },
+        "configuration_type": "trading_tentacles",
+        "name": "DCATradingMode"
+      },
+      "id": "strat-valid",
+      "reference_market": "USDC",
+      "version": "1"
+    }
+  ],
+  "version": "1.0.0"
+}

@@ -136,3 +136,7 @@ def is_simulator_grid_baseline_exactly_one_trade(buy_count: int, sell_count: int
 
 def is_simulator_grid_baseline_at_least_one_trade(buy_count: int, sell_count: int, trade_count: int) -> bool:
     return buy_count == 2 and sell_count == 2 and trade_count >= 1
+
+
+def is_simulator_grid_stopped_with_one_trade(buy_count: int, sell_count: int, trade_count: int) -> bool:
+    return buy_count == 0 and sell_count == 0 and trade_count == 1

@@ -1139,9 +1139,24 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
                         f"No {exchange_manager.exchange_name} exchange symbol data for {reference_price_spec.pair}, "
                         f"it's probably initializing"
                     )
-        reference_price = await advanced_reference_price_import.compute_reference_price(
-            price_by_pair_by_exchange, self.reference_prices_by_exchange
-        )
+        try:
+            reference_price = await advanced_reference_price_import.compute_reference_price(
+                price_by_pair_by_exchange, self.reference_prices_by_exchange
+            )
+        except (ValueError, TypeError, NotImplementedError) as err:
+            method = self.logger.info if self.is_first_execution else self.logger.error
+            method(
+                f"Skipped trigger: can't compute {self.symbol} reference price for"
+                f" {self.exchange_manager.exchange_name}: {err}"
+            )
+            return trading_constants.ZERO
+        if not self._is_usable_reference_price(reference_price):
+            method = self.logger.info if self.is_first_execution else self.logger.error
+            method(
+                f"Skipped trigger: can't compute {self.symbol} reference price for"
+                f" {self.exchange_manager.exchange_name} from price sources: {price_by_pair_by_exchange}"
+            )
+            return trading_constants.ZERO
         self._log_on_too_different_price_sources(reference_price, price_by_pair_by_exchange)
         return reference_price
 
@@ -1149,7 +1164,7 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
         self, reference_price: decimal.Decimal, 
         price_by_pair_by_exchange: dict[str, dict[str, decimal.Decimal]]
     ):
-        if not reference_price:
+        if not self._is_usable_reference_price(reference_price):
             return
         for source, price_by_pair in price_by_pair_by_exchange.items():
             if self.trading_mode.symbol in price_by_pair:

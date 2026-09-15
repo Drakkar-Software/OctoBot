@@ -34,6 +34,7 @@ import octobot.community.authentication as community_authentication_module
 import octobot_flow.entities as octobot_flow_entities
 import octobot_node.config
 import octobot_node.scheduler
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_flow.repositories.exchange as octobot_flow_repositories_exchange_module
 
@@ -41,12 +42,12 @@ from tests.scheduler import temp_dbos_scheduler
 
 
 _T_ENQUEUE_SECONDS = 5.0
-_T_GRID_SECONDS = 20.0
+_T_GRID_SECONDS = workflow_common_module.functional_timeout_seconds(20.0)
 _T_SIGNAL_SECONDS = 5.0
 _T_STOP_SEND_SECONDS = 5.0
-_T_STOP_COMPLETE_SECONDS = 10.0
+_T_STOP_COMPLETE_SECONDS = workflow_common_module.functional_timeout_seconds(10.0)
 _T_RESTART_ENQUEUE_SECONDS = 10.0
-_T_RESTART_RUNNING_SECONDS = 30.0
+_T_RESTART_RUNNING_SECONDS = workflow_common_module.functional_timeout_seconds(30.0)
 # Fast poll after stop/signal send; protocol status may flip RUNNING→COMPLETED quickly on CI.
 _POST_STOP_PROTOCOL_POLL_SECONDS = 0.05
 
@@ -129,6 +130,8 @@ class TestTriggerTaskGridDbosIntegration:
             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None),
             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None),
         ):
+            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+            workflow_common_module.seed_empty_account_trading_state(user_id, _GRID_ACCOUNT_ID)
             # Step 1 — Enqueue AUTOMATION_CREATE user action; expect a COMPLETED create result and a running workflow.
             try:
                 await asyncio.wait_for(
@@ -159,10 +162,10 @@ class TestTriggerTaskGridDbosIntegration:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 grid_predicate_met = False
                 for workflow_row in workflow_rows:
-                    workflow_automation_id = workflows_util_module.get_automation_id(workflow_row)
+                    workflow_automation_id = automation_states_loader_module.get_automation_id(workflow_row)
                     if workflow_automation_id != metadata_automation_id:
                         continue
-                    state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                    state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if state_reader is None:
                         continue
                     elements = state_reader.state.automation.exchange_account_elements
@@ -258,9 +261,9 @@ class TestTriggerTaskGridDbosIntegration:
             signal_deadline = time.monotonic() + _T_SIGNAL_SECONDS
             while time.monotonic() < signal_deadline:
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_signal = workflows_util_module.get_automation_state_reader(
+                    reader_after_signal = automation_states_loader_module.get_automation_state_reader(
                         workflow_row
                     )
                     if reader_after_signal is None:
@@ -300,6 +303,7 @@ class TestTriggerTaskGridDbosIntegration:
             stop_user_action = workflow_common_module.build_stop_user_action(
                 automation_id=parent_automation_id,
                 user_action_id="ua-stop-grid-functional",
+                cancel_orders=True,
             )
             try:
                 await asyncio.wait_for(
@@ -318,8 +322,7 @@ class TestTriggerTaskGridDbosIntegration:
                 user_action_id=stop_user_action.id,
             )
 
-            # Step 4 (continued) — Right after stop is sent, ladder counts should still match baseline while
-            # protocol status may already be RUNNING or COMPLETED depending on CI timing.
+            # Step 4 (continued) — After stop is sent, protocol status may already be RUNNING or COMPLETED.
             workflow_row_after_stop_send: typing.Any = None
             elements_after_stop_send: typing.Any = None
             stop_send_deadline = time.monotonic() + _T_STOP_SEND_SECONDS
@@ -329,23 +332,13 @@ class TestTriggerTaskGridDbosIntegration:
                     key=lambda workflow_status: workflow_status.updated_at or 0,
                     reverse=True,
                 ):
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    reader_after_send = workflows_util_module.get_automation_state_reader(workflow_row)
+                    reader_after_send = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if reader_after_send is None:
                         continue
-                    candidate_elements = reader_after_send.state.automation.exchange_account_elements
-                    candidate_buys, candidate_sells, candidate_trades = (
-                        workflow_common_module.buy_sell_trade_counts_from_exchange_elements(candidate_elements)
-                    )
-                    if not grid_sim_util.is_simulator_grid_baseline_exactly_one_trade(
-                        candidate_buys,
-                        candidate_sells,
-                        candidate_trades,
-                    ):
-                        continue
                     workflow_row_after_stop_send = workflow_row
-                    elements_after_stop_send = candidate_elements
+                    elements_after_stop_send = reader_after_send.state.automation.exchange_account_elements
                     break
                 if workflow_row_after_stop_send is not None:
                     break
@@ -383,7 +376,7 @@ class TestTriggerTaskGridDbosIntegration:
                 _T_STOP_COMPLETE_SECONDS,
             )
 
-            # Step 5 (continued) — Final job output: no error, stop flag, preserved 2/2/1 ladder, wallet in auth.
+            # Step 5 (continued) — Final job output: no error, stop flag, cancelled orders, wallet in auth.
             assert final_output_text is not None
             parsed_final = workflow_common_module.parse_automation_workflow_output(final_output_text)
             assert parsed_final.error is None
@@ -402,18 +395,19 @@ class TestTriggerTaskGridDbosIntegration:
             final_buys, final_sells, final_trades = workflow_common_module.buy_sell_trade_counts_from_exchange_elements(
                 final_elements
             )
-            assert grid_sim_util.is_simulator_grid_baseline_exactly_one_trade(
+            assert grid_sim_util.is_simulator_grid_stopped_with_one_trade(
                 final_buys,
                 final_sells,
                 final_trades,
             )
+            workflow_common_module.assert_account_trading_has_no_open_orders(user_id, _GRID_ACCOUNT_ID)
 
             # Step 6 — Latest SUCCESS workflow row exposes COMPLETED protocol AutomationState matching final output.
             success_rows = [
                 workflow_row
                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 if workflow_row.status == dbos.WorkflowStatusString.SUCCESS.value
-                and workflows_util_module.get_automation_id(workflow_row) == metadata_automation_id
+                and automation_states_loader_module.get_automation_id(workflow_row) == metadata_automation_id
             ]
             assert success_rows, "expected at least one SUCCESS workflow for automation after stop"
             final_workflow_row = max(success_rows, key=lambda workflow_status: workflow_status.updated_at or 0)
@@ -453,42 +447,15 @@ class TestTriggerTaskGridDbosIntegration:
                 user_action_id=restart_user_action.id,
             )
 
-            restart_running_deadline = time.monotonic() + _T_RESTART_RUNNING_SECONDS
-            workflow_row_after_restart = None
-            protocol_state_after_restart = None
-            while time.monotonic() < restart_running_deadline:
-                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async():
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
-                        continue
-                    if workflow_row.status not in (
-                        dbos.WorkflowStatusString.PENDING.value,
-                        dbos.WorkflowStatusString.ENQUEUED.value,
-                    ):
-                        continue
-                    workflow_row_after_restart = workflow_row
-                    protocol_state_after_restart = (
-                        await workflow_common_module.load_protocol_automation_state_for_workflow(
-                            user_id,
-                            workflow_row_after_restart,
-                        )
-                    )
-                    if protocol_state_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING:
-                        break
-                if (
-                    workflow_row_after_restart is not None
-                    and protocol_state_after_restart is not None
-                    and protocol_state_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING
-                ):
-                    break
-                await asyncio.sleep(workflow_common_module.DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS)
-            else:
-                pytest.fail(
-                    f"Timed out waiting for restarted grid automation {metadata_automation_id!r} to reach RUNNING"
-                )
-
-            assert workflow_row_after_restart is not None
-            assert protocol_state_after_restart.status == octobot_protocol_models.WorkflowStatus.RUNNING
-            protocol_assertions_module.assert_protocol_automation_metadata_name(
-                protocol_state_after_restart,
-                _GRID_AUTOMATION_DISPLAY_NAME,
+            await workflow_common_module.wait_for_latest_automation_exchange_elements_until(
+                temp_dbos_scheduler,
+                metadata_automation_id,
+                lambda elements: grid_sim_util.is_simulator_grid_baseline_at_least_one_trade(
+                    *workflow_common_module.buy_sell_trade_counts_from_exchange_elements(elements)
+                ),
+                _T_RESTART_RUNNING_SECONDS,
+                "restarted grid ladder (2 buy, 2 sell, >=1 trade) with AccountTrading open orders",
+                user_id=user_id,
+                account_id=_GRID_ACCOUNT_ID,
+                require_account_trading_open_orders=True,
             )

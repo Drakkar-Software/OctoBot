@@ -10,6 +10,7 @@ import { TableSelectionCell } from "@/components/Common/Tables/TableSelectionCel
 import { TableSelectionHeader } from "@/components/Common/Tables/TableSelectionHeader"
 import { TruncatedTextWithTooltip } from "@/components/Common/Tables/TruncatedTextWithTooltip"
 import { DebugStatusCell } from "@/components/Debug/cells/DebugStatusCell"
+import { SignalExecutionResultsCell } from "@/components/Debug/cells/SignalExecutionResultsCell"
 import { JsonDetailDialog } from "@/components/Debug/dialogs/JsonDetailDialog"
 import {
   Table,
@@ -81,7 +82,7 @@ export function UserActionsTable({
   ]
 
   const columnCount =
-    userActionColumns.length + 1 + (selectionMode ? 1 : 0)
+    userActionColumns.length + 2 + (selectionMode ? 1 : 0)
 
   if (rows.length === 0) {
     return (
@@ -139,6 +140,7 @@ export function UserActionsTable({
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
             />
+            <TableHead>Signal results</TableHead>
             <SortableTableHead
               label="Error details"
               sortKey="errorDetails"
@@ -149,7 +151,21 @@ export function UserActionsTable({
           </TableRow>
           <TableRow className="hover:bg-transparent">
             {selectionMode && <TableHead className="w-10" />}
-            {userActionColumns.map(({ key, placeholder }) => (
+            {userActionColumns.slice(0, 5).map(({ key, placeholder }) => (
+              <TableHead key={key} className="align-top pb-2 pt-0">
+                <ColumnFilterInput
+                  value={filters[key] ?? ""}
+                  placeholder={placeholder}
+                  onChange={(value) =>
+                    setFilters((current) =>
+                      setColumnFilter(current, key, value),
+                    )
+                  }
+                />
+              </TableHead>
+            ))}
+            <TableHead className="align-top pb-2 pt-0" />
+            {userActionColumns.slice(5).map(({ key, placeholder }) => (
               <TableHead key={key} className="align-top pb-2 pt-0">
                 <ColumnFilterInput
                   value={filters[key] ?? ""}
@@ -206,6 +222,9 @@ export function UserActionsTable({
                 </TableCell>
                 <TableCell className={debugTableCellClass("left")}>
                   {getUserActionResultErrorMessage(row.result)}
+                </TableCell>
+                <TableCell className={debugTableCellClass("left")}>
+                  <SignalExecutionResultsCell result={row.result} />
                 </TableCell>
                 <TableCell
                   className={debugTableCellClass("left", "font-mono text-xs")}

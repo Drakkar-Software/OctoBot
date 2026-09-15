@@ -26,6 +26,13 @@ from octobot_trading.util.initialization_util import (
 
 from octobot_trading.util import simulator_updater_utils
 from octobot_trading.util import config_util
+from octobot_trading.util import protocol_trading_mapping
+
+from octobot_trading.util.protocol_trading_mapping import (
+    OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED,
+    TRADING_TYPE_TO_EXCHANGE_TYPE,
+    API_KEY_RIGHT_TO_ACCOUNT_PERMISSION,
+)
 
 from octobot_trading.util.simulator_updater_utils import (
     stop_and_pause,
@@ -76,4 +83,7 @@ __all__ = [
     "get_current_bot_live_id",
     "get_config",
     "get_formatted_portfolio",
+    "TRADING_TYPE_TO_EXCHANGE_TYPE",
+    "API_KEY_RIGHT_TO_ACCOUNT_PERMISSION",
+    "OPTIMISTIC_API_KEY_RIGHTS_WHEN_PERMISSIONS_UNSUPPORTED",
 ]

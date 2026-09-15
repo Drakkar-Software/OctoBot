@@ -23,6 +23,7 @@ import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors as commons_errors
+import octobot_commons.logging as commons_logging
 
 import octobot_commons.symbols.symbol_util as symbol_util
 
@@ -33,6 +34,7 @@ import octobot_trading.modes
 import octobot_protocol.models as protocol_models
 
 import octobot_copy.copiers
+import octobot_copy.copiers.formatter as copy_formatter
 import octobot_copy.entities
 import octobot_copy.constants
 
@@ -197,6 +199,10 @@ def create_copy_exchange_account_operators(
                 copy_settings,
                 copier_exchange_manager,
                 copier_trading_mode,
+            )
+            commons_logging.get_logger("copy_exchange_account_operator").info(
+                f"Copying account for strategy {strategy_id!r}, account: "
+                f"{copy_formatter.format_reference_account_summary(reference_account)}"
             )
             copy_result = await account_copier.copy_account()
             self.value = self.create_re_callable_result_dict(

@@ -18,6 +18,8 @@ import logging
 import os
 import typing
 
+import octobot_commons.logging.capped_file_handler as capped_file_handler
+
 
 MAX_CONTEXT_BASED_FILE_HANDLERS_PER_CATEGORY = 30
 DEFAULT_CONTEXT_BASED_FILE_FORMATTER = "%(asctime)s %(levelname)-8s %(name)-20s %(message)s"
@@ -25,14 +27,21 @@ DEFAULT_CONTEXT_BASED_FILE_FORMATTER = "%(asctime)s %(levelname)-8s %(name)-20s 
 
 def add_context_based_file_handler(
     logs_folder: str,
-    file_name_provider: typing.Callable[[], typing.Optional[str]]
+    file_name_provider: typing.Callable[[], typing.Optional[str]],
+    max_file_bytes: int | None = None,
+    trim_lines_fraction: float = 0.2,
 ) -> None:
     """
     Add the ContextBasedFileHandler to the root logger. Logs will
     additionally be written to a file named after the file name provided by the file_name_provider.
     """
     logging.getLogger().addHandler(
-        ContextBasedFileHandler(logs_folder, file_name_provider)
+        ContextBasedFileHandler(
+            logs_folder,
+            file_name_provider,
+            max_file_bytes=max_file_bytes,
+            trim_lines_fraction=trim_lines_fraction,
+        )
     )
 
 
@@ -45,11 +54,15 @@ class ContextBasedFileHandler(logging.Handler):
         self,
         logs_folder: str,
         file_name_provider: typing.Callable[[], typing.Optional[str]],
+        max_file_bytes: int | None = None,
+        trim_lines_fraction: float = 0.2,
     ):
         super().__init__()
         self._custom_handlers: dict[str, logging.FileHandler] = {}
         self._file_name_provider = file_name_provider
         self._logs_folder = logs_folder
+        self._max_file_bytes = max_file_bytes
+        self._trim_lines_fraction = trim_lines_fraction
         os.makedirs(self._logs_folder, exist_ok=True)
 
     def emit(self, record: logging.LogRecord) -> None:
@@ -60,6 +73,11 @@ class ContextBasedFileHandler(logging.Handler):
                 self._custom_handlers[file_name] = self._create_file_handler(file_name)
             self._custom_handlers[file_name].emit(record)
 
+    def close(self) -> None:
+        for file_handler in self._custom_handlers.values():
+            file_handler.close()
+        super().close()
+
     def _remove_oldest_handler(self) -> None:
         oldest_key = next(iter(self._custom_handlers))
         oldest_handler = self._custom_handlers.pop(oldest_key)
@@ -68,7 +86,16 @@ class ContextBasedFileHandler(logging.Handler):
 
     def _create_file_handler(self, file_name: str) -> logging.FileHandler:
         log_path = os.path.join(self._logs_folder, f"{file_name}.log")
-        file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+        if self._max_file_bytes is not None:
+            file_handler = capped_file_handler.CappedFileHandler(
+                log_path,
+                max_bytes=self._max_file_bytes,
+                trim_lines_fraction=self._trim_lines_fraction,
+                mode="a",
+                encoding="utf-8",
+            )
+        else:
+            file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
         file_handler.setLevel(self.level)
         root_logger = logging.getLogger()
         for handler in root_logger.handlers:

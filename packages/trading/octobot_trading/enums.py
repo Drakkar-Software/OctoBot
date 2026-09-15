@@ -701,6 +701,16 @@ class ExchangeFeatureKeys(enum.Enum):
     SUPPORTED_BUNDLED_ORDERS = "supported_bundled_orders"
 
 
+class DailyPricesCacheKeys(enum.StrEnum):
+    SYMBOLS = "symbols"
+    SOURCES = "sources"
+
+
+class LatestTickersCacheKeys(enum.StrEnum):
+    UPDATED_AT = "updated_at"
+    CLOSES = "closes"
+
+
 class ExchangeClientOptions(enum.StrEnum):
     FIX_MARKET_STATUS = "fixMarketStatus"
     REMOVE_MARKET_STATUS_PRICE_LIMITS = "removeMarketStatusPriceLimits"
@@ -748,6 +758,10 @@ class ExchangeClientOptions(enum.StrEnum):
     SUPPORTS_FORCED_SIGNING_ALL_REQUESTS = "supportsForcedSigningAllRequests"
     ENABLE_FORCED_SIGNING_ALL_REQUESTS = "enableForcedSigningAllRequests"
     SUPPORTED_ELEMENTS = "supportedElements"
+    MY_TRADES_SYMBOL_FILTER_IS_CLIENT_SIDE = "myTradesSymbolFilterIsClientSide"
+    MY_TRADES_FETCH_PAGINATION_OFFSET = "myTradesFetchPaginationOffset"
+    MY_TRADES_FETCH_USE_CCXT_PAGINATE = "myTradesFetchUseCcxtPaginate"
+    CLOSED_ORDERS_FETCH_USE_CCXT_PAGINATE = "closedOrdersFetchUseCcxtPaginate"
 
 
 class ExchangeSupportedElements(enum.StrEnum):
@@ -853,6 +867,10 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.SUPPORTS_FORCED_SIGNING_ALL_REQUESTS: False,
     # set True when the exchange requires signing all requests (when supported)
     ExchangeClientOptions.ENABLE_FORCED_SIGNING_ALL_REQUESTS: False,
+    ExchangeClientOptions.MY_TRADES_SYMBOL_FILTER_IS_CLIENT_SIDE: False,
+    ExchangeClientOptions.MY_TRADES_FETCH_PAGINATION_OFFSET: None,
+    ExchangeClientOptions.MY_TRADES_FETCH_USE_CCXT_PAGINATE: False,
+    ExchangeClientOptions.CLOSED_ORDERS_FETCH_USE_CCXT_PAGINATE: False,
     ExchangeClientOptions.SUPPORTED_ELEMENTS: {
         ExchangeSupportedElements.FUTURES: {
             ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],

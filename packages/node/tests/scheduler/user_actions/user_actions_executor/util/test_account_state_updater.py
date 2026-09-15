@@ -550,23 +550,6 @@ class TestAccountStateUpdaterFetchApiKeyRights:
         ]
 
 
-class TestAccountStateUpdaterAccountPermissionsFromApiKeyRights:
-    def test_maps_known_api_key_rights_to_account_permissions(self):
-        account_permissions = account_state_updater_module._account_permissions_from_api_key_rights([
-            trading_enums.APIKeyRights.READING,
-            trading_enums.APIKeyRights.SPOT_TRADING,
-            trading_enums.APIKeyRights.FUTURES_TRADING,
-            trading_enums.APIKeyRights.WITHDRAWALS,
-            trading_enums.APIKeyRights.MARGIN_TRADING,
-        ])
-        assert account_permissions == [
-            protocol_models.AccountPermission.READ,
-            protocol_models.AccountPermission.SPOT_TRADING,
-            protocol_models.AccountPermission.FUTURES_TRADING,
-            protocol_models.AccountPermission.WITHDRAW,
-        ]
-
-
 class TestAccountStateUpdaterAssetsFromBalance:
     def test_maps_non_zero_holdings_to_detailed_assets(self):
         balance = {

@@ -19,6 +19,8 @@ import decimal
 
 import octobot_commons.dataclasses
 import octobot_commons.enums as common_enums
+import octobot_trading.constants as trading_constants
+import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util.symbol_details as symbol_details_import
 
 @dataclasses.dataclass
@@ -126,6 +128,15 @@ class MarketDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commo
 class OrdersDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot_commons.dataclasses.UpdatableDataclass):
     open_orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
     missing_orders: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
+
+    def has_valid_open_orders(self) -> bool:
+        if not self.open_orders:
+            return False
+        return bool(
+            self.open_orders[0]
+            .get(trading_constants.STORAGE_ORIGIN_VALUE, {})
+            .get(trading_enums.ExchangeConstantsOrderColumns.TYPE.value)
+        )
 
 
 @dataclasses.dataclass

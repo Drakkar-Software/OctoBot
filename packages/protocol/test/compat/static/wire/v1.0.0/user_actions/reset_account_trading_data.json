@@ -1,0 +1,9 @@
+{
+  "configuration": {
+    "account_ids": [
+      "x"
+    ],
+    "action_type": "reset_account_trading_data"
+  },
+  "id": "user-action-reset_account_trading_data"
+}

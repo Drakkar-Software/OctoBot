@@ -18,6 +18,7 @@ import octobot_commons.enums as common_enums
 import octobot_commons.errors as common_errors
 import octobot_commons.databases as databases
 
+import octobot_backtesting.databases as backtesting_databases
 import octobot_backtesting.data as data
 import octobot_backtesting.enums as enums
 import octobot_backtesting.errors as errors
@@ -68,12 +69,12 @@ class ExchangeDataImporter(importers.DataImporter):
             if table in self.available_data_types:
                 try:
                     min_timestamp = (await self.database.select_min(table,
-                                                                    [databases.SQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
+                                                                    [backtesting_databases.BacktestingDataSQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
                     if not minimum_timestamp or minimum_timestamp > min_timestamp:
                         minimum_timestamp = min_timestamp
 
                     max_timestamp = (await self.database.select_max(table,
-                                                                    [databases.SQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
+                                                                    [backtesting_databases.BacktestingDataSQLiteDatabase.TIMESTAMP_COLUMN]))[0][0]
                     if not maximum_timestamp or maximum_timestamp < max_timestamp:
                         maximum_timestamp = max_timestamp
                 except (IndexError, common_errors.DatabaseNotFoundError):
@@ -83,7 +84,7 @@ class ExchangeDataImporter(importers.DataImporter):
         try:
             ohlcv_kwargs = {"time_frame": time_frame} if time_frame else {}
             ohlcv_min_timestamps = (await self.database.select_min(enums.ExchangeDataTables.OHLCV,
-                                                                   [databases.SQLiteDatabase.TIMESTAMP_COLUMN],
+                                                                   [backtesting_databases.BacktestingDataSQLiteDatabase.TIMESTAMP_COLUMN],
                                                                    [common_constants.CONFIG_TIME_FRAME],
                                                                    group_by=common_constants.CONFIG_TIME_FRAME,
                                                                    **ohlcv_kwargs
@@ -93,7 +94,7 @@ class ExchangeDataImporter(importers.DataImporter):
                 # if the required time frame is not included in this database, ohlcv_min_timestamps is empty: ignore it
                 min_ohlcv_timestamp = max(ohlcv_min_timestamps)[0]
                 max_ohlcv_timestamp = (await self.database.select_max(enums.ExchangeDataTables.OHLCV,
-                                                                      [databases.SQLiteDatabase.TIMESTAMP_COLUMN],
+                                                                      [backtesting_databases.BacktestingDataSQLiteDatabase.TIMESTAMP_COLUMN],
                                                                       **ohlcv_kwargs))[0][0]
             elif time_frame:
                 raise errors.MissingTimeFrame(f"Missing time frame in data file: {time_frame}")
@@ -113,7 +114,7 @@ class ExchangeDataImporter(importers.DataImporter):
     async def _get_from_db(
             self, exchange_name, symbol, table,
             time_frame=None,
-            limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+            limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
             timestamps=None,
             operations=None
     ):
@@ -135,7 +136,7 @@ class ExchangeDataImporter(importers.DataImporter):
 
     async def get_ohlcv(self, exchange_name=None, symbol=None,
                         time_frame=common_enums.TimeFrames.ONE_HOUR,
-                        limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                        limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                         timestamps=None,
                         operations=None):
         return importers.import_ohlcvs(await self._get_from_db(
@@ -148,7 +149,7 @@ class ExchangeDataImporter(importers.DataImporter):
 
     async def get_ohlcv_from_timestamps(self, exchange_name=None, symbol=None,
                                         time_frame=common_enums.TimeFrames.ONE_HOUR,
-                                        limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                        limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                         inferior_timestamp=-1, superior_timestamp=-1) -> list:
         """
         Reads OHLCV history from database and populates a local ChronologicalReadDatabaseCache.
@@ -158,7 +159,7 @@ class ExchangeDataImporter(importers.DataImporter):
                                           inferior_timestamp, superior_timestamp, self.get_ohlcv, limit)
 
     async def get_ticker(self, exchange_name=None, symbol=None,
-                         limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                         limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                          timestamps=None,
                          operations=None):
         return importers.import_tickers(await self._get_from_db(
@@ -169,7 +170,7 @@ class ExchangeDataImporter(importers.DataImporter):
         ))
 
     async def get_ticker_from_timestamps(self, exchange_name=None, symbol=None,
-                                         limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                         limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                          inferior_timestamp=-1, superior_timestamp=-1):
         """
         Reads ticker history from database and populates a local ChronologicalReadDatabaseCache.
@@ -179,7 +180,7 @@ class ExchangeDataImporter(importers.DataImporter):
                                           inferior_timestamp, superior_timestamp, self.get_ticker, limit)
 
     async def get_order_book(self, exchange_name=None, symbol=None,
-                             limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                             limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                              timestamps=None,
                              operations=None):
         return importers.import_order_books(await self._get_from_db(
@@ -190,7 +191,7 @@ class ExchangeDataImporter(importers.DataImporter):
         ))
 
     async def get_order_book_from_timestamps(self, exchange_name=None, symbol=None,
-                                             limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                             limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                              inferior_timestamp=-1, superior_timestamp=-1):
         """
         Reads order book history from database and populates a local ChronologicalReadDatabaseCache.
@@ -200,7 +201,7 @@ class ExchangeDataImporter(importers.DataImporter):
                                           inferior_timestamp, superior_timestamp, self.get_order_book, limit)
 
     async def get_recent_trades(self, exchange_name=None, symbol=None,
-                                limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                 timestamps=None,
                                 operations=None):
         return importers.import_recent_trades(await self._get_from_db(
@@ -211,7 +212,7 @@ class ExchangeDataImporter(importers.DataImporter):
         ))
 
     async def get_recent_trades_from_timestamps(self, exchange_name=None, symbol=None,
-                                                limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                                limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                                 inferior_timestamp=-1, superior_timestamp=-1):
         """
         Reads recent trades history from database and populates a local ChronologicalReadDatabaseCache.
@@ -222,7 +223,7 @@ class ExchangeDataImporter(importers.DataImporter):
 
     async def get_kline(self, exchange_name=None, symbol=None,
                         time_frame=common_enums.TimeFrames.ONE_HOUR,
-                        limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                        limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                         timestamps=None,
                         operations=None):
         return importers.import_klines(await self._get_from_db(
@@ -235,7 +236,7 @@ class ExchangeDataImporter(importers.DataImporter):
 
     async def get_kline_from_timestamps(self, exchange_name=None, symbol=None,
                                         time_frame=common_enums.TimeFrames.ONE_HOUR,
-                                        limit=databases.SQLiteDatabase.DEFAULT_SIZE,
+                                        limit=backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE,
                                         inferior_timestamp=-1, superior_timestamp=-1):
         """
         Reads kline history from database and populates a local ChronologicalReadDatabaseCache.
@@ -256,9 +257,9 @@ class ExchangeDataImporter(importers.DataImporter):
             # initializer without time_frame args are not expecting the time_frame argument, remove it
             # ignore the limit param as it might reduce the available cache and give false later select results
             init_cache_method_args = \
-                (exchange_name, symbol, databases.SQLiteDatabase.DEFAULT_SIZE, timestamps, operations) \
+                (exchange_name, symbol, backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE, timestamps, operations) \
                 if time_frame is None \
-                else (exchange_name, symbol, time_frame, databases.SQLiteDatabase.DEFAULT_SIZE, timestamps, operations)
+                else (exchange_name, symbol, time_frame, backtesting_databases.BacktestingDataSQLiteDatabase.DEFAULT_SIZE, timestamps, operations)
             self.chronological_cache.set(
                 await set_cache_method(*init_cache_method_args),
                 0,

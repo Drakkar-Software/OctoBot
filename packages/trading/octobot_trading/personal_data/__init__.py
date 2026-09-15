@@ -243,6 +243,29 @@ from octobot_trading.personal_data.trades import (
     trade_identity_key,
     merge_trades_deduped,
 )
+from octobot_trading.personal_data.orders.order_util import (
+    open_order_exchange_ids_from_open_orders,
+)
+from octobot_trading.personal_data.orders.protocol import (
+    open_order_exchange_ids_from_protocol_orders,
+)
+from octobot_trading.personal_data.portfolios.history.daily_portfolio_value_history import (
+    compute_daily_portfolio_values,
+    utc_day_start,
+)
+from octobot_trading.personal_data.portfolios.history.aggregate_portfolio_historical_values import (
+    aggregate_portfolio_historical_values,
+)
+from octobot_trading.personal_data.portfolios.refresh.exchange_account_valuation import (
+    valuation_symbols_from_portfolio,
+    refresh_portfolio_valuation,
+    ticker_close_by_symbol_from_tickers,
+)
+from octobot_trading.personal_data.portfolios.aggregation.account_snapshot_aggregation import (
+    sum_numeric_holdings,
+    merge_portfolio_contents,
+    merge_enriched_orders_deduped,
+)
 from octobot_trading.personal_data import transactions
 from octobot_trading.personal_data.transactions import (
     TransactionsManager,
@@ -490,6 +513,17 @@ __all__ = [
     "get_real_or_estimated_trade_fee",
     "trade_identity_key",
     "merge_trades_deduped",
+    "open_order_exchange_ids_from_open_orders",
+    "open_order_exchange_ids_from_protocol_orders",
+    "compute_daily_portfolio_values",
+    "utc_day_start",
+    "aggregate_portfolio_historical_values",
+    "valuation_symbols_from_portfolio",
+    "refresh_portfolio_valuation",
+    "ticker_close_by_symbol_from_tickers",
+    "sum_numeric_holdings",
+    "merge_portfolio_contents",
+    "merge_enriched_orders_deduped",
     "ExchangePersonalData",
     "get_asset_price_from_converter_or_tickers",
     "resolve_sub_portfolios",

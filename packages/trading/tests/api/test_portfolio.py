@@ -14,7 +14,30 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import pytest
+import mock
+import octobot_commons.constants as commons_constants
+import octobot_trading.api.portfolio as portfolio_api
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
+
+class TestResolvePortfolioValuationUnit:
+    @mock.patch("octobot_trading.api.exchange.get_default_exchange_reference_market", return_value="USDC")
+    def test_returns_exchange_default_quote_currency_when_set(self, mock_get_default_reference_market):
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_name = "binance"
+        assert portfolio_api.resolve_portfolio_valuation_unit(exchange_manager) == "USDC"
+        mock_get_default_reference_market.assert_called_once_with("binance")
+
+    @mock.patch(
+        "octobot_trading.api.exchange.get_default_exchange_reference_market",
+        return_value=commons_constants.DEFAULT_REFERENCE_MARKET,
+    )
+    def test_falls_back_to_default_reference_market_when_option_missing(
+        self, mock_get_default_reference_market,
+    ):
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_name = "kraken"
+        assert (
+            portfolio_api.resolve_portfolio_valuation_unit(exchange_manager)
+            == commons_constants.DEFAULT_REFERENCE_MARKET
+        )
+        mock_get_default_reference_market.assert_called_once_with("kraken")

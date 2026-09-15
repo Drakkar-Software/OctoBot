@@ -15,6 +15,13 @@
   `LEGACY_PATH` prose in `identity/evm.ts`, the account-graph derived-id comments in
   `protocol/actions.ts`, and the two-phase race explanation in
   `protocol/orchestration/createAutomation.ts` encode expensive-to-relearn knowledge.
+- **The QR wire format lives here, all of it.** `protocol/qrFrames.ts` is the multi-frame QR
+  transport (`OBQR2|…`), and it belongs next to `protocol/proposal.ts` rather than in whichever app
+  happens to render a code: a client that can decode a single-frame payload but not a framed one is
+  broken in a way nothing here would catch. It is payload-agnostic on purpose, so a reassembled
+  string goes back through `classifyScannedCode` like any other scan. It reaches `keccak_256` by
+  importing `@noble/hashes` directly, never `crypto/`, which is what keeps it inside `protocol/`
+  under the layering rule above. This package still never renders a QR image itself.
 - **Every wire-shared literal is a silent-failure hazard.** Check https://docs.octobot.cloud/client-sdk/wire-contract and
   `tests/wireContract.test.ts` before changing anything in `crypto/wireConstants.ts`,
   `identity/capProvider.ts`'s `BOOTSTRAP_CHALLENGE`, or `collections/nodeCollections.ts`'s

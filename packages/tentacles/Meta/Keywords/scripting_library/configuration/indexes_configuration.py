@@ -24,10 +24,10 @@ import octobot_commons.symbols
 import octobot_evaluators.constants as evaluators_constants
 
 import octobot_trading.constants as trading_constants
+import octobot_trading.api.exchange as exchange_api
 
 import tentacles.Trading.Mode.index_trading_mode.index_trading as index_trading
 import octobot_copy.enums as rebalancer_enums
-import tentacles.Meta.Keywords.scripting_library.configuration.exchanges_configuration as exchanges_configuration
 
 
 def create_index_config_from_tentacles_config(
@@ -36,7 +36,7 @@ def create_index_config_from_tentacles_config(
 ) -> commons_profiles.ProfileData:
     trading_mode_config = tentacles_config[0].config
     distribution = trading_mode_config[index_trading.IndexTradingModeProducer.INDEX_CONTENT]
-    reference_market = exchanges_configuration.get_default_exchange_reference_market(exchange)
+    reference_market = exchange_api.get_default_exchange_reference_market(exchange)
     # replace USD by reference market
     for element in distribution:
         if element[rebalancer_enums.DistributionKeys.NAME] == "USD":

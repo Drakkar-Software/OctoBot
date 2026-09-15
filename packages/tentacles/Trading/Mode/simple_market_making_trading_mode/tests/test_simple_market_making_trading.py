@@ -1673,6 +1673,99 @@ async def test_get_reference_price_skips_output_pair_lookup_when_formula_configu
         assert reference_price == decimal.Decimal("1500")
 
 
+class TestSimpleMarketMakingTradingModeProducerGetReferencePriceInvalid:
+    async def _get_reference_price_with_price_patch(self, producer, exchange_manager, get_price_return_value=None, get_price_side_effect=None):
+        get_price_mock_kwargs = {}
+        if get_price_side_effect is not None:
+            get_price_mock_kwargs["side_effect"] = get_price_side_effect
+        else:
+            get_price_mock_kwargs["return_value"] = get_price_return_value
+        with mock.patch.object(
+            producer, "_register_on_reference_exchanges_if_required", mock.AsyncMock(return_value=True)
+        ), mock.patch.object(
+            trading_api, "get_all_exchange_ids_with_same_matrix_id", mock.Mock(return_value=[exchange_manager.id])
+        ), mock.patch.object(
+            trading_api, "get_exchange_manager_from_exchange_id", mock.Mock(return_value=exchange_manager)
+        ), mock.patch.object(
+            trading_personal_data, "get_potentially_outdated_price", mock.Mock(**get_price_mock_kwargs)
+        ):
+            await _initialize_reference_prices(producer)
+            return await producer._get_reference_price()
+
+    async def test_nan_mark_price_returns_zero(self):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            producer.read_config()
+            await producer._validate_reference_prices()
+            reference_price = await self._get_reference_price_with_price_patch(
+                producer,
+                exchange_manager,
+                get_price_return_value=(decimal.Decimal("NaN"), True),
+            )
+            assert reference_price == trading_constants.ZERO
+
+    async def test_negative_mark_price_returns_zero(self):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            producer.read_config()
+            await producer._validate_reference_prices()
+            reference_price = await self._get_reference_price_with_price_patch(
+                producer,
+                exchange_manager,
+                get_price_return_value=(decimal.Decimal("-1"), True),
+            )
+            assert reference_price == trading_constants.ZERO
+
+    async def test_missing_mark_price_key_error_returns_zero(self):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            producer.read_config()
+            await producer._validate_reference_prices()
+            reference_price = await self._get_reference_price_with_price_patch(
+                producer,
+                exchange_manager,
+                get_price_side_effect=KeyError("no mark price"),
+            )
+            assert reference_price == trading_constants.ZERO
+
+    async def test_missing_price_value_error_returns_zero(self):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            producer.read_config()
+            await producer._validate_reference_prices()
+            with mock.patch.object(
+                producer, "_register_on_reference_exchanges_if_required", mock.AsyncMock(return_value=True)
+            ), mock.patch.object(
+                trading_api, "get_all_exchange_ids_with_same_matrix_id", mock.Mock(return_value=[exchange_manager.id])
+            ), mock.patch.object(
+                trading_api, "get_exchange_manager_from_exchange_id", mock.Mock(return_value=exchange_manager)
+            ), mock.patch.object(
+                trading_personal_data, "get_potentially_outdated_price", mock.Mock(return_value=(decimal.Decimal("1000"), True))
+            ), mock.patch.object(
+                advanced_reference_price_import,
+                "compute_reference_price",
+                mock.AsyncMock(side_effect=ValueError("price is required when no formula is configured")),
+            ):
+                reference_price = await producer._get_reference_price()
+            assert reference_price == trading_constants.ZERO
+
+
+class TestSimpleMarketMakingTradingModeProducerHandleMarketMakingOrdersInvalidReferencePrice:
+    async def test_skips_order_update_on_nan_reference_price(self):
+        symbol = "BTC/USDT"
+        async with _get_tools(symbol) as (producer, consumer, exchange_manager):
+            current_price = decimal.Decimal("1000")
+            with mock.patch.object(
+                producer, "_get_reference_price", mock.AsyncMock(return_value=decimal.Decimal("NaN"))
+            ), mock.patch.object(
+                producer, "submit_trading_evaluation", mock.AsyncMock()
+            ) as submit_trading_evaluation_mock:
+                assert await producer._handle_market_making_orders(
+                    current_price, {}, "ref_price", False
+                ) is False
+                submit_trading_evaluation_mock.assert_not_called()
+
+
 async def test_register_pair_requirement_on_reference_exchange():
     symbol = "BTC/USDT"
     async with _get_tools(symbol) as (producer, consumer, exchange_manager):

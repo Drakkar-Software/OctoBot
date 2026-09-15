@@ -18,10 +18,12 @@ import time
 import typing
 
 import octobot_flow.entities
+import octobot_commons.timestamp_util as timestamp_util
 import octobot_node.constants as node_constants
 import octobot_node.enums
 import octobot_node.errors as node_errors
 import octobot_node.models
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows_util as workflows_util
 import octobot_node.scheduler.workflows.params as params
 import octobot_protocol.models as protocol_models
@@ -42,6 +44,26 @@ async def trigger_user_action_workflow(
         ).to_dict(include_default_values=False)
     )
     return handle.workflow_id
+
+
+async def trigger_portfolio_history_collection(
+    collection_params: typing.Optional["params.PortfolioHistoryCollectionParams"] = None,
+) -> str:
+    import octobot_node.scheduler  # avoid circular import
+    if not octobot_node.scheduler.is_initialized():
+        raise RuntimeError("Scheduler is not initialized")
+    import octobot_node.scheduler.workflows.portfolio_history_workflow as portfolio_history_workflow
+    scheduled_time = timestamp_util.utc_now_datetime()
+    workflow_context = None
+    if collection_params is not None:
+        workflow_context = collection_params.to_dict(include_default_values=False)
+    handle = await octobot_node.scheduler.SCHEDULER.PORTFOLIO_HISTORY_QUEUE.enqueue_async(
+        portfolio_history_workflow.PortfolioHistoryWorkflow.portfolio_history_collection,
+        scheduled_time,
+        workflow_context,
+    )
+    return handle.workflow_id
+
 
 async def trigger_task(
     task: octobot_node.models.Task, target_workflow_id: typing.Optional[str] = None
@@ -71,7 +93,7 @@ async def trigger_task(
 
 
 async def send_actions_to_automation(actions: list[dict], automation_id: str):
-    workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    workflow_status = await automation_states_loader.get_automation_workflow_status(automation_id)
     await send_actions_to_automation_workflow(actions, workflow_status.workflow_id)
 
 
@@ -89,7 +111,7 @@ async def trigger_copier_automation(automation_id: str, trading_signal: octobot_
 
 
 async def send_forced_trigger_to_automation(automation_id: str):
-    workflow_status = await workflows_util.get_automation_workflow_status(automation_id)
+    workflow_status = await automation_states_loader.get_automation_workflow_status(automation_id)
     await send_forced_trigger_to_automation_workflow(workflow_status.workflow_id)
 
 
@@ -97,11 +119,13 @@ async def _send_automation_workflow_action_update(
     target_workflow_id: str,
     actions_type: str,
     actions_details: list[dict],
+    execution_result_callback: typing.Optional[params.AutomationWorkflowExecutionResultCallback] = None,
 ) -> None:
     import octobot_node.scheduler  # avoid circular import
     payload = params.AutomationWorkflowActionUpdate(
         actions_type=actions_type,
         actions_details=actions_details,
+        execution_result_callback=execution_result_callback,
     ).to_dict(include_default_values=False)
     await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
         target_workflow_id,
@@ -131,6 +155,7 @@ async def _send_to_active_automation_workflow(
     wallet_address: str,
     actions_type: str,
     actions_details: list[dict],
+    execution_result_callback: typing.Optional[params.AutomationWorkflowExecutionResultCallback] = None,
 ) -> None:
     """
     Resolve the latest pending/enqueued child workflow and deliver a priority action update.
@@ -153,6 +178,7 @@ async def _send_to_active_automation_workflow(
                 matching_workflow_ids[0],
                 actions_type,
                 actions_details,
+                execution_result_callback,
             )
             return
         await asyncio.sleep(node_constants.AUTOMATION_WORKFLOW_ACTIVE_SEND_POLL_INTERVAL_SECONDS)
@@ -166,12 +192,14 @@ async def send_actions_to_active_automation(
     parent_automation_id: str,
     wallet_address: str,
     actions: list[dict],
+    execution_result_callback: typing.Optional[params.AutomationWorkflowExecutionResultCallback] = None,
 ) -> None:
     await _send_to_active_automation_workflow(
         parent_automation_id,
         wallet_address,
         octobot_node.enums.AutomationWorkflowActionTypes.USER_ACTIONS.value,
         actions,
+        execution_result_callback,
     )
 
 

@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
- * Removes generated artifacts under octobot_protocol / octobot_protocol_ts /
- * octobot_protocol_rs / test (Python model tests) / docs
- * before openapi-generator runs so stale files do not linger.
+ * Removes generated artifacts before openapi-generator runs.
+ * Hand-written compat tests live in test/compat/; test/ only loses root __init__.py and test_*.py.
  */
 
 import fs from "node:fs";
@@ -11,61 +10,45 @@ import url from "node:url";
 
 const protocolDir = path.dirname(path.dirname(url.fileURLToPath(import.meta.url)));
 
-const targets = {
-  python: {
-    dir: path.join(protocolDir, "octobot_protocol"),
-    keep: new Set(),
-  },
-  typescript: {
-    dir: path.join(protocolDir, "octobot_protocol_ts"),
-    keep: new Set(["package.json"]),
-  },
-  rust: {
-    dir: path.join(protocolDir, "octobot_protocol_rs"),
-    keep: new Set(),
-  },
-  test: {
-    dir: path.join(protocolDir, "test"),
-    keep: new Set(),
-    keepPredicate: (name) => name.endsWith(".mjs"),
-  },
-  docs: {
-    dir: path.join(protocolDir, "docs"),
-    keep: new Set(),
-  },
-};
-
-function cleanTarget(key) {
-  const config = targets[key];
-  if (!config) {
-    console.error(
-      "Usage: clean-protocol-codegen-output.mjs <python|typescript|rust|test|docs|all>",
-    );
-    process.exit(1);
-  }
-  const { dir, keep, keepPredicate } = config;
+function cleanDirectory(dir, { keep = [], only = null } = {}) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     return;
   }
+  const keepSet = new Set(keep);
   for (const entryName of fs.readdirSync(dir)) {
-    if (keep.has(entryName)) continue;
-    if (keepPredicate && keepPredicate(entryName)) continue;
+    if (keepSet.has(entryName)) continue;
+    if (only && !only(entryName)) continue;
     fs.rmSync(path.join(dir, entryName), { recursive: true, force: true });
   }
 }
 
-const mode = process.argv[2] ?? "all";
-if (mode === "all") {
-  cleanTarget("python");
-  cleanTarget("typescript");
-  cleanTarget("rust");
-  cleanTarget("test");
-  cleanTarget("docs");
-} else if (mode === "python") {
-  cleanTarget("python");
-  cleanTarget("test");
-  cleanTarget("docs");
+const isGeneratedPythonTest = (entryName) =>
+  entryName === "__init__.py" ||
+  (entryName.startsWith("test_") && entryName.endsWith(".py"));
+
+const cleaners = {
+  python: () => {
+    cleanDirectory(path.join(protocolDir, "octobot_protocol"));
+    cleanDirectory(path.join(protocolDir, "test"), { only: isGeneratedPythonTest, keep: ["compat"] });
+    cleanDirectory(path.join(protocolDir, "docs"));
+  },
+  typescript: () => {
+    cleanDirectory(path.join(protocolDir, "octobot_protocol_ts"), { keep: ["package.json"] });
+  },
+  rust: () => {
+    cleanDirectory(path.join(protocolDir, "octobot_protocol_rs"));
+  },
+};
+
+const mode = process.argv[2];
+if (!mode) {
+  for (const runCleaner of Object.values(cleaners)) {
+    runCleaner();
+  }
+} else if (cleaners[mode]) {
+  cleaners[mode]();
 } else {
-  cleanTarget(mode);
+  console.error("Usage: clean-protocol-codegen-output.mjs [python|typescript|rust]");
+  process.exit(1);
 }

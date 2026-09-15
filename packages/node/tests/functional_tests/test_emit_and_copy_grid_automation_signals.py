@@ -12,8 +12,6 @@
 #
 #  You should have received a copy of the GNU General Public License along with
 #  OctoBot. If not, see https://www.gnu.org/licenses/.
-from __future__ import annotations
-
 import asyncio
 import datetime
 import decimal
@@ -21,6 +19,7 @@ import json
 import logging
 import mock
 import os
+import re
 import tempfile
 import time
 import typing
@@ -31,7 +30,10 @@ import uvicorn
 
 import octobot_protocol.models as octobot_protocol_models
 import starfish_server.config.schema as starfish_server_config_schema
+import starfish_server.storage.filesystem as starfish_filesystem_storage_module
+import starfish_sharing as starfish_sharing_module
 
+from .util import exchange_account_elements_access as exchange_account_elements_access_module
 from .util import grid_workflow as grid_sim_util
 from .util import price_mocks as price_mocks_module
 from .util import user_action_assertions as user_action_assertions_module
@@ -39,11 +41,10 @@ from .util import workflow_common as workflow_common_module
 
 import octobot.community.authentication as community_authentication_module
 import octobot.community.local_authenticator as local_authenticator_module
-import octobot_trading.constants as trading_constants_module
 import octobot_node.config
 import octobot_node.constants as node_constants_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
-import octobot_commons.constants as octobot_commons_constants_module
 import octobot_commons.os_util as commons_os_util_module
 import octobot_copy.constants as octobot_copy_constants_module
 import octobot_flow.entities as octobot_flow_entities
@@ -67,11 +68,11 @@ _MASTER_INIT_USDC = 10000.0
 _COPY_INIT_USDC = 2000.0
 
 _T_ENQUEUE_SECONDS = 5.0
-_T_GRID_SECONDS = 25.0
-_T_BOOTSTRAP_COPY_SECONDS = 25.0
-_T_POST_SHOCK_SECONDS = 55.0
+_T_GRID_SECONDS = workflow_common_module.functional_timeout_seconds(25.0)
+_T_BOOTSTRAP_COPY_SECONDS = workflow_common_module.functional_timeout_seconds(25.0)
+_T_POST_SHOCK_SECONDS = workflow_common_module.functional_timeout_seconds(55.0)
 _T_STOP_SEND_SECONDS = 5.0
-_T_STOP_COMPLETE_SECONDS = 15.0
+_T_STOP_COMPLETE_SECONDS = workflow_common_module.functional_timeout_seconds(15.0)
 
 _D_DECIMAL_INCREMENT = decimal.Decimal(str(grid_sim_util.GRID_INCREMENT))
 
@@ -79,35 +80,84 @@ _D_DECIMAL_INCREMENT = decimal.Decimal(str(grid_sim_util.GRID_INCREMENT))
 _FUNCTIONAL_TEST_SYNC_ENCRYPTION_SECRET = "0123456789abcdef" * 4
 
 
-def _grid_functional_test_sync_config():
-    """Package default sync config plus a collection for ``TradingSignalsRepository`` HTTP paths."""
-    base_config = sync_collections_module.DEFAULT_SYNC_CONFIG
-    sync_namespace_key = sync_collections_module.constants.SYNC_NAMESPACE
-    assert base_config.namespaces is not None
-    assert sync_namespace_key in base_config.namespaces
-    octobot_namespace = base_config.namespaces[sync_namespace_key]
-    trading_signals_collection = sync_collections_module.CollectionConfig(
-        name="trading-signals",
-        storagePath="products/{strategyId}/{version}/signals",
-        readRoles=["public"],
-        writeRoles=["public"],
+_DK_NAMESPACE = "dk"
+
+# Mirrors Infra/sync/server/drakkar_sync/apps/dk_spaces/collections.py's collection set
+# (see octobot_sync.artifacts' module docstring).
+_DK_SIGNAL_COLLECTIONS = [
+    sync_collections_module.CollectionConfig(
+        name="spaces",
+        storagePath="user/{identity}/_spaces",
+        readRoles=["self"],
+        writeRoles=["self"],
         encryption="none",
-        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="spaceregistry",
+        storagePath="spaces/{spaceId}/_access",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="none",
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="spacekeyring",
+        storagePath="spaces/{spaceId}/_keyring",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="none",
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="objindex",
+        storagePath="spaces/{spaceId}/objects/_index",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="none",
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_PRIVATE,
+    ),
+    sync_collections_module.CollectionConfig(
+        name="artifact-events",
+        storagePath="spaces/{spaceId}/artifact/versions/{version}/events",
+        readRoles=["space:member"],
+        writeRoles=["space:owner"],
+        encryption="delegated",
         appendOnly=starfish_server_config_schema.AppendOnlyConfig(
             type="by_timestamp",
-            requireAuthorSignature=False,
+            requireAuthorSignature=True,
         ),
-    )
-    extended_octobot = sync_collections_module.NamespaceConfig(
-        collections=[*octobot_namespace.collections, trading_signals_collection],
-    )
+        maxBodyBytes=octobot_sync_constants_module.MAX_BODY_SIZE_SIGNAL,
+    ),
+]
+
+
+def _grid_functional_test_sync_config():
+    """Package default sync config plus a dk namespace for TradingSignalsRepository's
+    artifact-events publish/pull (see octobot_sync.artifacts)."""
+    base_config = sync_collections_module.DEFAULT_SYNC_CONFIG
+    assert base_config.namespaces is not None
+    dk_namespace = sync_collections_module.NamespaceConfig(collections=_DK_SIGNAL_COLLECTIONS)
     return base_config.model_copy(
         update={
             "namespaces": {
                 **dict(base_config.namespaces),
-                sync_namespace_key: extended_octobot,
+                _DK_NAMESPACE: dk_namespace,
             }
         }
+    )
+
+
+def _grid_functional_test_dk_role_enricher(object_store):
+    """The generic TOFU space-role enricher, matching Infra/sync's make_space_role_enricher."""
+    return starfish_sharing_module.make_registry_role_enricher(
+        object_store,
+        id_param="spaceId",
+        registry_path="spaces/{id}/_access",
+        owner_role="space:owner",
+        member_role="space:member",
+        allow_tofu=True,
+        id_pattern=re.compile(r"^[a-zA-Z0-9_-]+$"),
     )
 
 
@@ -129,72 +179,6 @@ def _account_for_id(
         return copy_account
     raise AssertionError(f"Unexpected account_id lookup: {account_id!r}")
 
-def _d_order_price(raw: typing.Union[int, float, str, decimal.Decimal]) -> decimal.Decimal:
-    if isinstance(raw, decimal.Decimal):
-        return raw
-    return decimal.Decimal(str(raw))
-
-def _sorted_limit_prices_from_elements(
-    exchange_account_elements: typing.Any,
-    *,
-    trade_order_side,
-) -> list[decimal.Decimal]:
-    if exchange_account_elements is None:
-        return []
-    orders_container = getattr(exchange_account_elements, "orders", None)
-    if orders_container is None and isinstance(exchange_account_elements, dict):
-        orders_container = exchange_account_elements.get("orders")
-    if orders_container is None:
-        return []
-    open_orders = getattr(orders_container, "open_orders", None)
-    if open_orders is None and isinstance(orders_container, dict):
-        open_orders = orders_container.get("open_orders", [])
-    open_orders = open_orders or []
-
-    storage_origin = trading_constants_module.STORAGE_ORIGIN_VALUE
-
-    def _open_order_payload(order_row: typing.Any) -> typing.Any:
-        """Exchange rows may nest ccxt fields under ``STORAGE_ORIGIN_VALUE``; protocol orders are flat."""
-        if isinstance(order_row, dict):
-            nested = order_row.get(storage_origin)
-            if isinstance(nested, dict):
-                return nested
-            return order_row
-        nested = getattr(order_row, storage_origin, None)
-        if nested is not None:
-            return nested
-        return order_row
-
-    side_key = trading_enums_module.ExchangeConstantsOrderColumns.SIDE.value
-    price_col = trading_enums_module.ExchangeConstantsOrderColumns.PRICE.value
-    type_col = trading_enums_module.ExchangeConstantsOrderColumns.TYPE.value
-    want_side = trade_order_side.value
-    limit_type = trading_enums_module.TradeOrderType.LIMIT.value
-    prices: list[decimal.Decimal] = []
-    for order in open_orders:
-        payload = _open_order_payload(order)
-        if isinstance(payload, dict):
-            side = payload.get(side_key)
-            price_raw = payload.get(price_col)
-            order_type = payload.get(type_col)
-        else:
-            side = getattr(payload, side_key, None)
-            price_raw = getattr(payload, price_col, None)
-            order_type = getattr(payload, type_col, None)
-        if hasattr(side, "value"):
-            side = side.value
-        if side != want_side:
-            continue
-        if price_raw is None:
-            continue
-        if hasattr(order_type, "value"):
-            order_type = order_type.value
-        if order_type is not None and order_type != limit_type:
-            continue
-        prices.append(_d_order_price(price_raw))
-    prices.sort()
-    return prices
-
 def _assert_open_limit_prices_match_reference(
     reference_elements: typing.Any,
     follower_elements: typing.Any,
@@ -203,30 +187,15 @@ def _assert_open_limit_prices_match_reference(
         trading_enums_module.TradeOrderSide.BUY,
         trading_enums_module.TradeOrderSide.SELL,
     ):
-        ref_prices = _sorted_limit_prices_from_elements(reference_elements, trade_order_side=side)
-        got_prices = _sorted_limit_prices_from_elements(follower_elements, trade_order_side=side)
+        ref_prices = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
+            reference_elements,
+            trade_order_side=side,
+        )
+        got_prices = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
+            follower_elements,
+            trade_order_side=side,
+        )
         assert ref_prices == got_prices, f"side={side!r} ref={ref_prices!s} follower={got_prices!s}"
-
-def _portfolio_content_from_exchange_elements(exchange_account_elements: typing.Any) -> dict[str, typing.Any]:
-    portfolio = getattr(exchange_account_elements, "portfolio", None)
-    if portfolio is None and isinstance(exchange_account_elements, dict):
-        portfolio = exchange_account_elements.get("portfolio")
-    if portfolio is None:
-        return {}
-    content = getattr(portfolio, "content", None)
-    if content is None and isinstance(portfolio, dict):
-        content = portfolio.get("content")
-    return content if isinstance(content, dict) else {}
-
-def _portfolio_row_total(row: typing.Any) -> decimal.Decimal:
-    total_key = octobot_commons_constants_module.PORTFOLIO_TOTAL
-    if isinstance(row, dict):
-        raw = row.get(total_key, row.get("total"))
-    else:
-        raw = getattr(row, total_key, None) or getattr(row, "total", None)
-    if raw is None:
-        raise AssertionError("portfolio row has no total amount")
-    return raw if isinstance(raw, decimal.Decimal) else decimal.Decimal(str(raw))
 
 def _value_weighted_btc_usdc_shares(
     content: dict[str, typing.Any],
@@ -236,8 +205,8 @@ def _value_weighted_btc_usdc_shares(
     """USDC notionals: ``btc_total * btc_usdc_close`` vs USDC total; shares sum to 1."""
     for asset in ("BTC", "USDC"):
         assert asset in content, f"missing portfolio row for {asset}"
-    btc_total = _portfolio_row_total(content["BTC"])
-    usdc_total = _portfolio_row_total(content["USDC"])
+    btc_total = exchange_account_elements_access_module.portfolio_row_total(content["BTC"])
+    usdc_total = exchange_account_elements_access_module.portfolio_row_total(content["USDC"])
     btc_notional_usdc = btc_total * btc_usdc_close
     usdc_notional = usdc_total
     total_notional = btc_notional_usdc + usdc_notional
@@ -253,8 +222,8 @@ def _assert_btc_usdc_value_shares_match_reference(
     *,
     btc_usdc_close: decimal.Decimal,
 ) -> None:
-    ref_content = _portfolio_content_from_exchange_elements(reference_elements)
-    follower_content = _portfolio_content_from_exchange_elements(follower_elements)
+    ref_content = exchange_account_elements_access_module.portfolio_content_from_elements(reference_elements)
+    follower_content = exchange_account_elements_access_module.portfolio_content_from_elements(follower_elements)
     ref_shares = _value_weighted_btc_usdc_shares(ref_content, btc_usdc_close=btc_usdc_close)
     follower_shares = _value_weighted_btc_usdc_shares(follower_content, btc_usdc_close=btc_usdc_close)
     # ~3 percentage points slack (master vs copy notionals / float portfolio totals).
@@ -268,7 +237,7 @@ def _assert_btc_usdc_value_shares_match_reference(
         )
 
 def _first_sell_limit_price(exchange_account_elements: typing.Any) -> decimal.Decimal:
-    sells = _sorted_limit_prices_from_elements(
+    sells = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
         exchange_account_elements,
         trade_order_side=trading_enums_module.TradeOrderSide.SELL,
     )
@@ -288,8 +257,10 @@ def _sorted_limit_prices_from_trading_signal_account(
     *,
     trade_order_side,
 ) -> list[decimal.Decimal]:
-    wrapper = {"orders": {"open_orders": list(trading_signal.account.orders or [])}}
-    return _sorted_limit_prices_from_elements(wrapper, trade_order_side=trade_order_side)
+    return exchange_account_elements_access_module.sorted_open_limit_prices_from_protocol_orders(
+        trading_signal.account.orders,
+        trade_order_side=trade_order_side,
+    )
 
 async def _fetch_strategy_signals_from_sync(evm_address: str) -> list[typing.Any]:
     async with local_authenticator_module.local_user_authenticator() as auth:
@@ -310,7 +281,7 @@ def _ladder_limit_prices_match_reference(
         trading_enums_module.TradeOrderSide.BUY,
         trading_enums_module.TradeOrderSide.SELL,
     ):
-        reference_prices = _sorted_limit_prices_from_elements(
+        reference_prices = exchange_account_elements_access_module.sorted_open_limit_prices_from_elements(
             reference_exchange_account_elements,
             trade_order_side=order_side,
         )
@@ -363,9 +334,9 @@ async def _poll_state_reader_until(
     while time.monotonic() < poll_deadline:
         workflow_rows = await scheduler.INSTANCE.list_workflows_async()
         for workflow_row in workflow_rows:
-            if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                 continue
-            state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+            state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
             if state_reader is None:
                 continue
             last_reader = state_reader
@@ -458,12 +429,19 @@ class TestEmitAndCopyGridAutomationSignals:
                 # ``NamespaceRewriteMiddleware`` is not applied and Starfish paths
                 # ``/octobot/v1/...`` never match (HTTP 404). Use the package default
                 # so the ``octobot`` namespace and rewrite are always active.
+                #
+                # A second FilesystemObjectStore on the same SYNC_DATA_DIR backs the dk
+                # role_enricher, so TOFU role reads see what the server just wrote.
+                dk_role_enricher_store = starfish_filesystem_storage_module.FilesystemObjectStore(
+                    starfish_filesystem_storage_module.FilesystemStorageOptions(base_dir=sync_data_dir)
+                )
                 with mock.patch(
                     "octobot_sync.app.sync.load_sync_config",
                     return_value=_grid_functional_test_sync_config(),
                 ):
                     sync_asgi_app = octobot_sync_server_module.build_default_sync_app(
                         is_allowed_user_id=lambda _address: True,
+                        role_enricher=_grid_functional_test_dk_role_enricher(dk_role_enricher_store),
                     )
                     # StarfishClient builds URLs as ``{base}/sync/v1/{namespace}/...``.
                     # Mount sync_asgi_app under /sync to match the SYNC_MOUNT_PATH prefix.
@@ -572,6 +550,14 @@ class TestEmitAndCopyGridAutomationSignals:
                         ):
                             caplog.set_level(logging.INFO)
 
+                            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+                            workflow_common_module.seed_empty_account_trading_state(
+                                user_id, master_account_id
+                            )
+                            workflow_common_module.seed_empty_account_trading_state(
+                                user_id, copy_account_id
+                            )
+
                             # Step 1 — enqueue master emitting grid signals (pushes to local sync server).
                             try:
                                 await asyncio.wait_for(
@@ -619,7 +605,7 @@ class TestEmitAndCopyGridAutomationSignals:
                             master_workflow_rows_for_user_action_selector = [
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
-                                if workflows_util_module.get_automation_id(workflow_row)
+                                if automation_states_loader_module.get_automation_id(workflow_row)
                                 == user_action_assertions_module.resolve_create_automation_metadata_id(
                                     master_user_action,
                                 )
@@ -714,7 +700,7 @@ class TestEmitAndCopyGridAutomationSignals:
                             copy_workflow_rows_for_user_action_selector = [
                                 workflow_row
                                 for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
-                                if workflows_util_module.get_automation_id(workflow_row)
+                                if automation_states_loader_module.get_automation_id(workflow_row)
                                 == _COPY_AUTOMATION_ID
                             ]
                             assert copy_workflow_rows_for_user_action_selector
@@ -802,7 +788,7 @@ class TestEmitAndCopyGridAutomationSignals:
                                     key=lambda workflow_status: workflow_status.updated_at or 0,
                                     reverse=True,
                                 ):
-                                    if workflows_util_module.get_automation_id(workflow_row) != automation_id:
+                                    if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
                                         continue
                                     matching_parent_id = workflow_row.workflow_id[
                                         : node_constants_module.PARENT_WORKFLOW_ID_LENGTH

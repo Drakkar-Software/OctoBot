@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import mock
 import pytest
 
 import octobot_trading.constants as constants
@@ -22,6 +23,7 @@ import octobot_trading.personal_data as trading_personal_data
 
 import octobot_commons.constants as commons_constants
 
+from tests import event_loop
 from tests.exchanges import backtesting_trader, backtesting_config, backtesting_exchange_manager, fake_backtesting
 
 
@@ -182,3 +184,33 @@ def test_can_convert_symbol_to_usd_like():
         f"{commons_constants.USD_LIKE_COINS[4]}/BTC"
     ) is True
     assert trading_personal_data.ValueConverter.can_convert_symbol_to_usd_like("BTC/ETH") is False
+
+
+class TestValueConverterUpdateLastPriceLogging:
+    @pytest.mark.asyncio
+    async def test_does_not_log_initialized_last_price_when_exchange_only(self):
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_name = "kraken"
+        exchange_manager.should_log_exchange_lifecycle_debug = mock.Mock(return_value=False)
+        portfolio_manager = mock.Mock()
+        portfolio_manager.exchange_manager = exchange_manager
+        value_converter = trading_personal_data.ValueConverter(portfolio_manager)
+        value_converter.logger = mock.Mock()
+
+        value_converter.update_last_price("BTC/USDT", decimal.Decimal("100"))
+
+        value_converter.logger.debug.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_logs_initialized_last_price_when_lifecycle_debug_enabled(self):
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_name = "kraken"
+        exchange_manager.should_log_exchange_lifecycle_debug = mock.Mock(return_value=True)
+        portfolio_manager = mock.Mock()
+        portfolio_manager.exchange_manager = exchange_manager
+        value_converter = trading_personal_data.ValueConverter(portfolio_manager)
+        value_converter.logger = mock.Mock()
+
+        value_converter.update_last_price("BTC/USDT", decimal.Decimal("100"))
+
+        value_converter.logger.debug.assert_called_once_with("Initialized last price for BTC/USDT")

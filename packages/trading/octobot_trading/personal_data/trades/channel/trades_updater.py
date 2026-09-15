@@ -15,13 +15,17 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import typing
 
 import octobot_commons.tree as commons_tree
 import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.html_util as html_util
+import octobot_commons.asyncio_tools as asyncio_tools
+import octobot_commons.logging as logging
 
 import octobot_trading.errors as errors
+import octobot_trading.personal_data.trades.trade_factory as trade_factory_module
 import octobot_trading.personal_data.trades.channel as trades_channel
 import octobot_trading.constants as constants
 import octobot_trading.util as util
@@ -63,19 +67,103 @@ class TradesUpdater(trades_channel.TradesProducer):
         except errors.NotSupported:
             self.logger.warning(f"{self.channel.exchange_manager.exchange_name} is not supporting updates")
             await self.pause()
-        except Exception as e:
-            self.logger.error(f"Fail to initialize trade history : {html_util.get_html_summary_if_relevant(e)}")
+        except Exception as error:
+            self.logger.error(f"Fail to initialize trade history : {html_util.get_html_summary_if_relevant(error)}")
+
+    @staticmethod
+    async def _fetch_trades_for_symbol(
+        exchange,
+        symbol: str,
+        *,
+        limit: int | None = None,
+        since: int | None = None,
+        exhaust_history: bool = False,
+    ) -> list:
+        fetch_kwargs: dict = {}
+        if since is not None:
+            fetch_kwargs["since"] = since
+        if exhaust_history:
+            fetch_kwargs["exhaust_history"] = True
+            return await exchange.get_my_recent_trades(symbol=symbol, **fetch_kwargs)
+        if limit is not None:
+            fetch_kwargs["limit"] = limit
+        return await exchange.get_my_recent_trades(symbol=symbol, **fetch_kwargs)
+
+    async def fetch_trades(
+        self,
+        symbols: list[str],
+        limit: int = MAX_OLD_TRADES_TO_FETCH,
+        *,
+        since: int | None = None,
+        exhaust_history: bool = False,
+    ) -> list:
+        """
+        Fetch recent trades from the exchange for the given symbols.
+        This is the only method that calls exchange.get_my_recent_trades.
+        When exhaust_history is True and symbols is empty, fetches account-wide history.
+        """
+        exchange = self.channel.exchange_manager.exchange
+        if exhaust_history and not symbols:
+            account_wide_kwargs: dict = {"exhaust_history": True}
+            if since is not None:
+                account_wide_kwargs["since"] = since
+            trades = await exchange.get_my_recent_trades(
+                symbol=None,
+                **account_wide_kwargs,
+            )
+            return trades or []
+        if not symbols:
+            return []
+
+        if len(symbols) == 1:
+            trades = await TradesUpdater._fetch_trades_for_symbol(
+                exchange,
+                symbols[0],
+                limit=limit,
+                since=since,
+                exhaust_history=exhaust_history,
+            )
+            return trades or []
+
+        trade_batches = await asyncio_tools.gather_waiting_for_all_before_raising(
+            *[
+                TradesUpdater._fetch_trades_for_symbol(
+                    exchange,
+                    trading_symbol,
+                    limit=limit,
+                    since=since,
+                    exhaust_history=exhaust_history,
+                )
+                for trading_symbol in symbols
+            ]
+        )
+        aggregated_trades: list = []
+        for trade_batch in trade_batches:
+            aggregated_trades.extend(trade_batch or [])
+        return aggregated_trades
 
     async def fetch_and_push(self):
         self.logger.debug(
             f"Updating {self.channel.exchange_manager.exchange_config.traded_symbol_pairs} trades history"
         )
-        for symbol in self._get_pairs_to_update():
-            if trades := await self.channel.exchange_manager.exchange.get_my_recent_trades(
-                symbol=symbol,
-                limit=self.MAX_OLD_TRADES_TO_FETCH
-            ):
+        for symbol in self._get_pairs_to_update():            
+            if trades := await self.fetch_trades([symbol], limit=self.MAX_OLD_TRADES_TO_FETCH):
                 await self.push(trades)
+
+    @staticmethod
+    def ensure_parsing(exchange_manager, raw_trade: dict) -> typing.Optional[dict]:
+        try:
+            return trade_factory_module.create_trade_instance_from_raw(
+                exchange_manager.trader, raw_trade
+            ).to_dict()
+        except Exception as error:
+            logging.get_logger("TradesUpdater").exception(
+                error,
+                True,
+                f"Unexpected error when parsing [{exchange_manager.exchange_name}] trade "
+                f"({error} {error.__class__.__name__}), trade: {raw_trade}. Ignored trade.",
+            )
+        return None
 
     def _set_all_initialized(self):
         for symbol in self._get_pairs_to_update():
@@ -110,8 +198,8 @@ class TradesUpdater(trades_channel.TradesProducer):
         while not self.should_stop and not self.channel.is_paused:
             try:
                 await self.fetch_and_push()
-            except Exception as e:
-                self.logger.error(f"Fail to update trades : {html_util.get_html_summary_if_relevant(e)}")
+            except Exception as error:
+                self.logger.error(f"Fail to update trades : {html_util.get_html_summary_if_relevant(error)}")
 
             await asyncio.sleep(self.TRADES_REFRESH_TIME)
 

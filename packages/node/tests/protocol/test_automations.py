@@ -757,6 +757,76 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         assert filled.assets[0].available == 1.0
 
 
+class TestAutomationTradeSummariesFromExchangeElements:
+    def test_union_of_archived_and_full_trades(self):
+        order_columns = octobot_trading_enums.ExchangeConstantsOrderColumns
+        elements = flow_entities.ExchangeAccountElements(
+            trade_summaries={"BTC/USDT": ["old-1", "old-2"]},
+            trades=[
+                {
+                    order_columns.EXCHANGE_TRADE_ID.value: "live-1",
+                    order_columns.SYMBOL.value: "ETH/USDT",
+                },
+            ],
+        )
+        summaries = automations_protocol._automation_trade_summaries(elements)
+        summary_ids = {summary.id for summary in summaries}
+        assert summary_ids == {"old-1", "old-2", "live-1"}
+
+    def test_full_trade_overrides_archived_summary_for_same_id(self):
+        order_columns = octobot_trading_enums.ExchangeConstantsOrderColumns
+        elements = flow_entities.ExchangeAccountElements(
+            trade_summaries={"BTC/USDT": ["shared-id"]},
+            trades=[
+                {
+                    order_columns.EXCHANGE_TRADE_ID.value: "shared-id",
+                    order_columns.SYMBOL.value: "ETH/USDT",
+                },
+            ],
+        )
+        summaries = automations_protocol._automation_trade_summaries(elements)
+        assert len(summaries) == 1
+        assert summaries[0].id == "shared-id"
+        assert summaries[0].symbol == "ETH/USDT"
+
+    def test_only_trade_summaries_dict_populated(self):
+        elements = flow_entities.ExchangeAccountElements(
+            trade_summaries={"BTC/USDT": ["archived-1"]},
+        )
+        summaries = automations_protocol._automation_trade_summaries(elements)
+        assert len(summaries) == 1
+        assert summaries[0].id == "archived-1"
+        assert summaries[0].symbol == "BTC/USDT"
+
+    def test_skips_empty_symbol_or_trade_id_entries(self):
+        elements = flow_entities.ExchangeAccountElements(
+            trade_summaries={"": ["id-1"], "BTC/USDT": ["", "valid-id"]},
+        )
+        summaries = automations_protocol._automation_trade_summaries(elements)
+        assert len(summaries) == 1
+        assert summaries[0].id == "valid-id"
+
+    def test_fill_protocol_state_counts_archived_and_live_trades(self):
+        order_columns = octobot_trading_enums.ExchangeConstantsOrderColumns
+        elements = flow_entities.ExchangeAccountElements(
+            trade_summaries={"BTC/USDT": ["old-1"]},
+            trades=[
+                {
+                    order_columns.EXCHANGE_TRADE_ID.value: "live-1",
+                    order_columns.SYMBOL.value: "ETH/USDT",
+                },
+            ],
+        )
+        automation = _minimal_automation_details()
+        automation.exchange_account_elements = elements
+        flow_state = flow_entities.AutomationState(automation=automation)
+        filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
+        assert filled.trades is not None
+        assert len(filled.trades) == 2
+        trade_ids = {trade.id for trade in filled.trades}
+        assert trade_ids == {"old-1", "live-1"}
+
+
 class TestFillProtocolAutomationStateEmpties:
     def test_no_exchange_elements_yields_empty_protocol_lists(self):
         flow_state = flow_entities.AutomationState(automation=_minimal_automation_details())

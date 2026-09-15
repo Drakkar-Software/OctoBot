@@ -2,11 +2,35 @@ import typing
 
 import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_commons.constants
+import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
+import octobot_trading.api.exchange as exchange_api
+import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
 import octobot_flow.entities
 
-import tentacles.Meta.Keywords.scripting_library as scripting_library
+
+def profile_data_for_account(
+    account: protocol_models.Account,
+    exchange_account: protocol_models.ExchangeAccount,
+    exchange_config: protocol_models.ExchangeConfig,
+    trading_type: protocol_models.TradingType,
+    *,
+    is_simulated: bool,
+) -> profile_data_import.ProfileData:
+    profile_data = profile_data_import.ProfileData(
+        exchanges=[
+            profile_data_import.ExchangeData(
+                internal_name=exchange_config.exchange,
+                exchange_type=protocol_trading_mapping.TRADING_TYPE_TO_EXCHANGE_TYPE.get(trading_type).value,
+                exchange_account_id=exchange_account.remote_account_id or account.id,
+                sandboxed=exchange_config.sandboxed,
+            )
+        ]
+    )
+    profile_data.trader.enabled = not is_simulated
+    profile_data.trader_simulator.enabled = is_simulated
+    return profile_data
 
 
 def _tentacles_for_exchange_account_details(
@@ -65,7 +89,10 @@ def infer_reference_market(
         if exchange_account_details.portfolio.unit:
             # portfolio unit can be used to define the reference market
             return exchange_account_details.portfolio.unit
-        return scripting_library.get_default_exchange_reference_market(exchange_account_details.exchange_details.internal_name)
+        if exchange_account_details.exchange_details.internal_name:
+            return exchange_api.get_default_exchange_reference_market(
+                exchange_account_details.exchange_details.internal_name
+            )
     return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
 
 def _get_crypto_currencies(symbols: set[str]) -> list[profile_data_import.CryptoCurrencyData]:

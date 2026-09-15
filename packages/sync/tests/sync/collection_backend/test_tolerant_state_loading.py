@@ -12,9 +12,10 @@ import octobot_protocol.models as protocol_models
 import octobot_sync.crypto as sync_crypto
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_backend.errors as collection_errors
-import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as strategy_provider_module
 import octobot_protocol.models.strategy_configuration as protocol_strategy_configuration
+
+import tests.sync.collection_backend.tolerant_state_loading_test_support as tolerant_state_loading_test_support
 
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
@@ -78,23 +79,17 @@ def _legacy_grid_strategy_dict() -> dict[str, typing.Any]:
     }
 
 
-def _strategy_tolerant_loading_kwargs() -> dict[str, typing.Any]:
+def _signal_bot_strategy_dict() -> dict[str, typing.Any]:
     return {
-        "model_sanitizers": strategy_provider_module.StrategyProvider.MODEL_SANITIZERS,
-        "model_fallbacks": strategy_provider_module.StrategyProvider.MODEL_FALLBACKS,
+        "id": "strat-signal-bot",
+        "version": "1",
+        "reference_market": "USDC",
+        "configuration": {
+            "configuration_type": "signal_bot",
+            "sync_interval_with_open_trades_seconds": 5.0,
+            "sync_interval_without_open_trades_seconds": 10.0,
+        },
     }
-
-
-def _make_loader(
-    collection: str,
-    state_class: typing.Any = None,
-    **loader_kwargs: typing.Any,
-) -> tolerant_state_loading_module.TolerantStateLoader:
-    return tolerant_state_loading_module.TolerantStateLoader(
-        state_class,
-        collection=collection,
-        **loader_kwargs,
-    )
 
 
 class TestSanitizeStrategyConfigurationDict:
@@ -118,10 +113,27 @@ class TestSanitizeStrategyConfigurationDict:
             "config": {},
         }
 
+    def test_keeps_signal_bot_configuration_type(self):
+        sanitize = strategy_provider_module.StrategyProvider.MODEL_SANITIZERS[
+            protocol_strategy_configuration.StrategyConfiguration
+        ]
+        sanitized = sanitize(
+            {
+                "configuration_type": "signal_bot",
+                "sync_interval_with_open_trades_seconds": 5.0,
+                "sync_interval_without_open_trades_seconds": 10.0,
+            },
+        )
+        assert sanitized["configuration_type"] == "signal_bot"
+        assert sanitized["sync_interval_with_open_trades_seconds"] == 5.0
+
 
 class TestModelFromDictLenient:
     def test_returns_valid_strategy_unchanged(self):
-        loader = _make_loader("test", **_strategy_tolerant_loading_kwargs())
+        loader = tolerant_state_loading_test_support.make_loader(
+            "test",
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
+        )
         parsed_strategy = loader.model_from_dict_lenient(
             protocol_models.Strategy,
             _valid_trading_tentacles_strategy_dict(),
@@ -136,8 +148,33 @@ class TestModelFromDictLenient:
             == protocol_models.ActionConfigurationType.TRADING_TENTACLES
         )
 
+    def test_signal_bot_configuration_round_trips(self):
+        loader = tolerant_state_loading_test_support.make_loader(
+            "test",
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
+        )
+        parsed_strategy = loader.model_from_dict_lenient(
+            protocol_models.Strategy,
+            _signal_bot_strategy_dict(),
+            context="test.strategies",
+            allow_skip=False,
+        )
+        assert parsed_strategy is not None
+        assert parsed_strategy.id == "strat-signal-bot"
+        assert isinstance(
+            parsed_strategy.configuration.actual_instance,
+            protocol_models.SignalBotConfiguration,
+        )
+        assert (
+            parsed_strategy.configuration.actual_instance.configuration_type
+            == protocol_models.ActionConfigurationType.SIGNAL_BOT
+        )
+
     def test_legacy_grid_configuration_uses_empty_shell(self):
-        loader = _make_loader("test", **_strategy_tolerant_loading_kwargs())
+        loader = tolerant_state_loading_test_support.make_loader(
+            "test",
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
+        )
         parsed_strategy = loader.model_from_dict_lenient(
             protocol_models.Strategy,
             _legacy_grid_strategy_dict(),
@@ -149,7 +186,7 @@ class TestModelFromDictLenient:
         assert parsed_strategy.configuration.actual_instance is None
 
     def test_invalid_enum_item_is_skipped_when_allowed(self):
-        loader = _make_loader("test")
+        loader = tolerant_state_loading_test_support.make_loader("test")
         parsed_item = loader.model_from_dict_lenient(
             TestItemModel,
             {"id": "item-1", "status": "unknown-status"},
@@ -165,10 +202,10 @@ class TestStateFromDictLenient:
             "version": "1.0.0",
             "strategies": [_valid_trading_tentacles_strategy_dict()],
         }
-        loader = _make_loader(
+        loader = tolerant_state_loading_test_support.make_loader(
             "user-strategies",
             protocol_models.StrategiesState,
-            **_strategy_tolerant_loading_kwargs(),
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
         )
         parsed_state = loader.from_dict(raw_state)
         assert parsed_state is not None
@@ -183,10 +220,10 @@ class TestStateFromDictLenient:
                 _legacy_grid_strategy_dict(),
             ],
         }
-        loader = _make_loader(
+        loader = tolerant_state_loading_test_support.make_loader(
             "user-strategies",
             protocol_models.StrategiesState,
-            **_strategy_tolerant_loading_kwargs(),
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
         )
         parsed_state = loader.from_dict(raw_state)
         assert parsed_state is not None
@@ -203,7 +240,7 @@ class TestStateFromDictLenient:
                 {"id": "item-invalid", "status": "unknown-status"},
             ],
         }
-        loader = _make_loader("test-items", TestStateModel)
+        loader = tolerant_state_loading_test_support.make_loader("test-items", TestStateModel)
         parsed_state = loader.from_dict(raw_state)
         assert parsed_state is not None
         assert len(parsed_state.items) == 1
@@ -227,7 +264,10 @@ class TestStateFromDictLenient:
                 },
             ],
         }
-        loader = _make_loader("user-accounts", protocol_models.AccountsState)
+        loader = tolerant_state_loading_test_support.make_loader(
+            "user-accounts",
+            protocol_models.AccountsState,
+        )
         parsed_state = loader.from_dict(raw_state)
         assert parsed_state is not None
         assert parsed_state.exchange_configs is not None
@@ -241,10 +281,10 @@ class TestStateFromJsonLenient:
             "version": "1.0.0",
             "strategies": [_legacy_grid_strategy_dict()],
         }
-        loader = _make_loader(
+        loader = tolerant_state_loading_test_support.make_loader(
             "user-strategies",
             protocol_models.StrategiesState,
-            **_strategy_tolerant_loading_kwargs(),
+            **tolerant_state_loading_test_support.strategy_tolerant_loading_kwargs(),
         )
         parsed_state = loader.from_json(json.dumps(raw_state))
         assert parsed_state.strategies[0].configuration.actual_instance is None

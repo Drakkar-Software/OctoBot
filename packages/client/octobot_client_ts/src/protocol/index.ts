@@ -19,11 +19,11 @@ export {
   targetAccountIdsOf,
   actionTargetsAccount,
   automationStrategyRefOf,
+  automationStrategyRefsOf,
   actionDisplayName,
   isRecord,
   cachedByDoc,
   type AutomationRunStatus,
-  type Holding,
   type UserActionDomain,
 } from './state.js'
 export {
@@ -75,6 +75,30 @@ export {
 export {
   encodeActionProposal,
   decodeActionProposal,
+  UnsupportedActionProposalVersionError,
   type ActionProposal,
   type ProposedActionEntry,
 } from './proposal.js'
+export { describeProposedAction } from './proposalSummary.js'
+export {
+  encodeQrFrames,
+  isQrFrame,
+  parseQrFrame,
+  createQrFrameAccumulator,
+  QrPayloadTooLargeError,
+  QR_FRAME_CODEC,
+  QR_FRAME_HEADER_LENGTH,
+  QR_FRAME_MAX_BYTES,
+  QR_FRAME_BODY_MAX_BYTES,
+  QR_SINGLE_FRAME_MAX_BYTES,
+  QR_MAX_FRAMES,
+  QR_FRAME_INTERVAL_MS,
+  QR_FRAME_STALE_MS,
+  QR_FRAME_KIND_UNSPECIFIED,
+  QR_FRAME_KIND_ACTION_PROPOSAL,
+  QR_FRAME_KIND_READ_ONLY_PAIRING,
+  type QrFrame,
+  type QrFrameProgress,
+  type QrFrameAcceptResult,
+  type QrFrameAccumulator,
+} from './qrFrames.js'

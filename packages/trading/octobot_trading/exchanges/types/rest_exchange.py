@@ -27,6 +27,7 @@ import octobot_commons.tree as commons_tree
 import octobot_commons.constants as commons_constants
 import octobot_commons.html_util as html_util
 
+import octobot_protocol.models as protocol_models
 import octobot_trading.enums as enums
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
@@ -184,6 +185,10 @@ class RestExchange(abstract_exchange.AbstractExchange):
         return [enums.ExchangeTypes.SPOT]
 
     @classmethod
+    def get_exchange_availabilities(cls) -> list[protocol_models.ExchangeAvailability]:
+        return []
+
+    @classmethod
     def get_rest_name(cls, exchange_manager):
         return exchange_manager.exchange_class_string
 
@@ -291,6 +296,8 @@ class RestExchange(abstract_exchange.AbstractExchange):
             raise errors.MarketClosedError(f"{symbol} {html_util.get_html_summary_if_relevant(err)}") from err
         except (ccxt.NotSupported, NotImplementedError) as err:
             raise errors.NotSupported(err) from err
+        except errors.NotSupported:
+            raise
         except ccxt.PermissionDenied as err:
             # invalid api key or missing trading rights
             self.connector.set_first_consecutive_authentication_error_at_if_unset()
@@ -860,6 +867,30 @@ class RestExchange(abstract_exchange.AbstractExchange):
 
     async def get_user_recent_trades(self, user_id: str, symbol: str = None, since: int = None, limit: int = None, **kwargs: dict) -> list:
         return await self.connector.get_user_recent_trades(user_id=user_id, symbol=symbol, since=since, limit=limit, **kwargs)
+
+    async def get_deposits(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
+        return await self.connector.get_deposits(
+            currency=currency, since=since, limit=limit, currencies=currencies, **kwargs
+        )
+
+    async def get_withdrawals(
+        self,
+        currency: str = None,
+        since: int = None,
+        limit: int = None,
+        currencies: typing.Optional[list[str]] = None,
+        **kwargs: dict,
+    ) -> list[dict]:
+        return await self.connector.get_withdrawals(
+            currency=currency, since=since, limit=limit, currencies=currencies, **kwargs
+        )
 
     async def cancel_all_orders(self, symbol: str = None, **kwargs: dict) -> None:
         return await self.connector.cancel_all_orders(symbol=symbol, **kwargs)

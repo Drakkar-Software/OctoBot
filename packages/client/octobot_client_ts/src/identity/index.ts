@@ -17,7 +17,14 @@ export {
 } from './secret.js'
 export { WalletCapProvider, deriveRoot, BOOTSTRAP_CHALLENGE, type KeyDerivation } from './capProvider.js'
 export { createReadOnlyPairing, parseReadOnlyPairing, type ReadOnlyPairingPayload } from './pairing.js'
-export { createPairingRequest, parsePairingRequest, type PairingRequestPayload } from './pairingRequest.js'
+export {
+  createPairingRequest,
+  parsePairingRequest,
+  parsePairingCode,
+  PAIRING_CODE_ALPHABET,
+  PAIRING_CODE_LENGTH,
+  type PairingRequestPayload,
+} from './pairingRequest.js'
 export { createKeyCache, type KeyCache } from './keys.js'
 export {
   registerDerivationScheme,

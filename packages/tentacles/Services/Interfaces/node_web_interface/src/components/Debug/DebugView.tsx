@@ -13,6 +13,7 @@ import { DebugTabsPanel } from "@/components/Debug/DebugTabsPanel"
 import { DebugToolbar } from "@/components/Debug/DebugToolbar"
 import { DownloadLogsDialog } from "@/components/Debug/dialogs/DownloadLogsDialog"
 import { ImportDebugStateDialog } from "@/components/Debug/dialogs/ImportDebugStateDialog"
+import { PasteProposalDialog } from "@/components/Debug/dialogs/PasteProposalDialog"
 import { ImportedDebugSnapshotBanner } from "@/components/Debug/ImportedDebugSnapshotBanner"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -37,6 +38,7 @@ export function DebugView() {
   const [walletAddress, setWalletAddress] = useState(currentAddress)
   const [importOpen, setImportOpen] = useState(false)
   const [downloadLogsOpen, setDownloadLogsOpen] = useState(false)
+  const [pasteProposalOpen, setPasteProposalOpen] = useState(false)
   const [importedSnapshot, setImportedSnapshot] = useState<DebugState | null>(
     null,
   )
@@ -172,6 +174,7 @@ export function DebugView() {
               isRefreshPending={!isImportedMode && debugQuery.isFetching}
               onRefresh={refresh}
               onExecute={() => openExecuteAction()}
+              onPasteProposal={() => setPasteProposalOpen(true)}
             />
           </div>
         </div>
@@ -239,6 +242,13 @@ export function DebugView() {
         walletAddress={walletQueryParam}
         onSuccess={refresh}
         copyOnly={isImportedMode}
+      />
+
+      <PasteProposalDialog
+        open={pasteProposalOpen}
+        onOpenChange={setPasteProposalOpen}
+        walletAddress={walletQueryParam}
+        onSuccess={refresh}
       />
     </div>
   )

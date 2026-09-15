@@ -10,7 +10,10 @@
  * Do not edit the class manually.
  */
 
+import { AssetAccount } from '../models/AssetAccount';
+import { BankAccount } from '../models/BankAccount';
 import { BlockchainAccount } from '../models/BlockchainAccount';
+import { BrokerAccount } from '../models/BrokerAccount';
 import { ExchangeAccount } from '../models/ExchangeAccount';
 import { GenericAccount } from '../models/GenericAccount';
 
@@ -19,7 +22,7 @@ import { GenericAccount } from '../models/GenericAccount';
  * Type
  * @export
  */
-export type AccountSpecifics = BlockchainAccount | ExchangeAccount | GenericAccount;
+export type AccountSpecifics = AssetAccount | BankAccount | BlockchainAccount | BrokerAccount | ExchangeAccount | GenericAccount;
 
 /**
 * @type AccountSpecificsClass
@@ -29,10 +32,16 @@ export class AccountSpecificsClass {
     static readonly discriminator: string | undefined = "account_type";
 
     static readonly mapping: {[index: string]: string} | undefined = {
+        "asset": "AssetAccount",
+        "bank": "BankAccount",
         "blockchain": "BlockchainAccount",
+        "broker": "BrokerAccount",
         "exchange": "ExchangeAccount",
         "generic": "GenericAccount",
     };
 }
+
+
+
 
 

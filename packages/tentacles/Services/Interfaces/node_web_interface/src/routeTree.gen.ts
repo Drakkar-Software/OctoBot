@@ -9,33 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
-import { Route as SetupIndexRouteImport } from './routes/setup/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as SetupWelcomeRouteImport } from './routes/setup/welcome'
-import { Route as SetupMobileAppRouteImport } from './routes/setup/mobile-app'
-import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
-import { Route as SetupConnectRouteImport } from './routes/setup/connect'
-import { Route as LayoutSupportRouteImport } from './routes/_layout/support'
-import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
-import { Route as LayoutDslKeywordsRouteImport } from './routes/_layout/dsl-keywords'
 import { Route as LayoutDebugRouteImport } from './routes/_layout/debug'
-import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout/settings/index'
+import { Route as LayoutDslKeywordsRouteImport } from './routes/_layout/dsl-keywords'
+import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
+import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutSupportRouteImport } from './routes/_layout/support'
+import { Route as SetupIndexRouteImport } from './routes/setup/index'
+import { Route as SetupConnectRouteImport } from './routes/setup/connect'
+import { Route as SetupFirstBotRouteImport } from './routes/setup/first-bot'
+import { Route as SetupMobileAppRouteImport } from './routes/setup/mobile-app'
+import { Route as SetupWelcomeRouteImport } from './routes/setup/welcome'
 import { Route as LayoutOctobotsIndexRouteImport } from './routes/_layout/octobots/index'
-import { Route as LayoutSettingsConnectRouteImport } from './routes/_layout/settings/connect'
-import { Route as LayoutOctobotsNewRouteImport } from './routes/_layout/octobots/new'
-import { Route as LayoutOctobotsImportRouteImport } from './routes/_layout/octobots/import'
 import { Route as LayoutOctobotsExportRouteImport } from './routes/_layout/octobots/export'
-import { Route as LayoutOctobotsNewPresetsRouteImport } from './routes/_layout/octobots/new/presets'
-import { Route as LayoutOctobotsNewDefaultsRouteImport } from './routes/_layout/octobots/new/defaults'
+import { Route as LayoutOctobotsImportRouteImport } from './routes/_layout/octobots/import'
+import { Route as LayoutOctobotsNewRouteImport } from './routes/_layout/octobots/new'
+import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout/settings/index'
+import { Route as LayoutSettingsConnectRouteImport } from './routes/_layout/settings/connect'
 import { Route as LayoutOctobotsNewBuilderRouteImport } from './routes/_layout/octobots/new/builder'
+import { Route as LayoutOctobotsNewDefaultsRouteImport } from './routes/_layout/octobots/new/defaults'
+import { Route as LayoutOctobotsNewPresetsRouteImport } from './routes/_layout/octobots/new/presets'
 
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
+const LayoutRoute = LayoutRouteImport.update({
+  id: '/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -43,58 +42,14 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LayoutRoute = LayoutRouteImport.update({
-  id: '/_layout',
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
-} as any)
-const SetupIndexRoute = SetupIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SetupRoute,
 } as any)
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const SetupWelcomeRoute = SetupWelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => SetupRoute,
-} as any)
-const SetupMobileAppRoute = SetupMobileAppRouteImport.update({
-  id: '/mobile-app',
-  path: '/mobile-app',
-  getParentRoute: () => SetupRoute,
-} as any)
-const SetupFirstBotRoute = SetupFirstBotRouteImport.update({
-  id: '/first-bot',
-  path: '/first-bot',
-  getParentRoute: () => SetupRoute,
-} as any)
-const SetupConnectRoute = SetupConnectRouteImport.update({
-  id: '/connect',
-  path: '/connect',
-  getParentRoute: () => SetupRoute,
-} as any)
-const LayoutSupportRoute = LayoutSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutOctobotsRoute = LayoutOctobotsRouteImport.update({
-  id: '/octobots',
-  path: '/octobots',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutDslKeywordsRoute = LayoutDslKeywordsRouteImport.update({
-  id: '/dsl-keywords',
-  path: '/dsl-keywords',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutDebugRoute = LayoutDebugRouteImport.update({
@@ -102,29 +57,54 @@ const LayoutDebugRoute = LayoutDebugRouteImport.update({
   path: '/debug',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
+const LayoutDslKeywordsRoute = LayoutDslKeywordsRouteImport.update({
+  id: '/dsl-keywords',
+  path: '/dsl-keywords',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutOctobotsRoute = LayoutOctobotsRouteImport.update({
+  id: '/octobots',
+  path: '/octobots',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSupportRoute = LayoutSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const SetupIndexRoute = SetupIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LayoutSettingsRoute,
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupConnectRoute = SetupConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupFirstBotRoute = SetupFirstBotRouteImport.update({
+  id: '/first-bot',
+  path: '/first-bot',
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupMobileAppRoute = SetupMobileAppRouteImport.update({
+  id: '/mobile-app',
+  path: '/mobile-app',
+  getParentRoute: () => SetupRoute,
+} as any)
+const SetupWelcomeRoute = SetupWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => SetupRoute,
 } as any)
 const LayoutOctobotsIndexRoute = LayoutOctobotsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LayoutOctobotsRoute,
-} as any)
-const LayoutSettingsConnectRoute = LayoutSettingsConnectRouteImport.update({
-  id: '/connect',
-  path: '/connect',
-  getParentRoute: () => LayoutSettingsRoute,
-} as any)
-const LayoutOctobotsNewRoute = LayoutOctobotsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => LayoutOctobotsRoute,
-} as any)
-const LayoutOctobotsImportRoute = LayoutOctobotsImportRouteImport.update({
-  id: '/import',
-  path: '/import',
   getParentRoute: () => LayoutOctobotsRoute,
 } as any)
 const LayoutOctobotsExportRoute = LayoutOctobotsExportRouteImport.update({
@@ -132,10 +112,30 @@ const LayoutOctobotsExportRoute = LayoutOctobotsExportRouteImport.update({
   path: '/export',
   getParentRoute: () => LayoutOctobotsRoute,
 } as any)
-const LayoutOctobotsNewPresetsRoute =
-  LayoutOctobotsNewPresetsRouteImport.update({
-    id: '/presets',
-    path: '/presets',
+const LayoutOctobotsImportRoute = LayoutOctobotsImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => LayoutOctobotsRoute,
+} as any)
+const LayoutOctobotsNewRoute = LayoutOctobotsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => LayoutOctobotsRoute,
+} as any)
+const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutSettingsRoute,
+} as any)
+const LayoutSettingsConnectRoute = LayoutSettingsConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => LayoutSettingsRoute,
+} as any)
+const LayoutOctobotsNewBuilderRoute =
+  LayoutOctobotsNewBuilderRouteImport.update({
+    id: '/builder',
+    path: '/builder',
     getParentRoute: () => LayoutOctobotsNewRoute,
   } as any)
 const LayoutOctobotsNewDefaultsRoute =
@@ -144,10 +144,10 @@ const LayoutOctobotsNewDefaultsRoute =
     path: '/defaults',
     getParentRoute: () => LayoutOctobotsNewRoute,
   } as any)
-const LayoutOctobotsNewBuilderRoute =
-  LayoutOctobotsNewBuilderRouteImport.update({
-    id: '/builder',
-    path: '/builder',
+const LayoutOctobotsNewPresetsRoute =
+  LayoutOctobotsNewPresetsRouteImport.update({
+    id: '/presets',
+    path: '/presets',
     getParentRoute: () => LayoutOctobotsNewRoute,
   } as any)
 
@@ -303,11 +303,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
+    '/_layout': {
+      id: '/_layout'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -317,81 +317,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_layout': {
-      id: '/_layout'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof LayoutRouteImport
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/setup/': {
-      id: '/setup/'
-      path: '/'
-      fullPath: '/setup/'
-      preLoaderRoute: typeof SetupIndexRouteImport
-      parentRoute: typeof SetupRoute
     }
     '/_layout/': {
       id: '/_layout/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/setup/welcome': {
-      id: '/setup/welcome'
-      path: '/welcome'
-      fullPath: '/setup/welcome'
-      preLoaderRoute: typeof SetupWelcomeRouteImport
-      parentRoute: typeof SetupRoute
-    }
-    '/setup/mobile-app': {
-      id: '/setup/mobile-app'
-      path: '/mobile-app'
-      fullPath: '/setup/mobile-app'
-      preLoaderRoute: typeof SetupMobileAppRouteImport
-      parentRoute: typeof SetupRoute
-    }
-    '/setup/first-bot': {
-      id: '/setup/first-bot'
-      path: '/first-bot'
-      fullPath: '/setup/first-bot'
-      preLoaderRoute: typeof SetupFirstBotRouteImport
-      parentRoute: typeof SetupRoute
-    }
-    '/setup/connect': {
-      id: '/setup/connect'
-      path: '/connect'
-      fullPath: '/setup/connect'
-      preLoaderRoute: typeof SetupConnectRouteImport
-      parentRoute: typeof SetupRoute
-    }
-    '/_layout/support': {
-      id: '/_layout/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof LayoutSupportRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/settings': {
-      id: '/_layout/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof LayoutSettingsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/octobots': {
-      id: '/_layout/octobots'
-      path: '/octobots'
-      fullPath: '/octobots'
-      preLoaderRoute: typeof LayoutOctobotsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/dsl-keywords': {
-      id: '/_layout/dsl-keywords'
-      path: '/dsl-keywords'
-      fullPath: '/dsl-keywords'
-      preLoaderRoute: typeof LayoutDslKeywordsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/debug': {
@@ -401,39 +338,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDebugRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/settings/': {
-      id: '/_layout/settings/'
+    '/_layout/dsl-keywords': {
+      id: '/_layout/dsl-keywords'
+      path: '/dsl-keywords'
+      fullPath: '/dsl-keywords'
+      preLoaderRoute: typeof LayoutDslKeywordsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/octobots': {
+      id: '/_layout/octobots'
+      path: '/octobots'
+      fullPath: '/octobots'
+      preLoaderRoute: typeof LayoutOctobotsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/settings': {
+      id: '/_layout/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof LayoutSettingsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/support': {
+      id: '/_layout/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof LayoutSupportRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/setup/': {
+      id: '/setup/'
       path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof LayoutSettingsIndexRouteImport
-      parentRoute: typeof LayoutSettingsRoute
+      fullPath: '/setup/'
+      preLoaderRoute: typeof SetupIndexRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/connect': {
+      id: '/setup/connect'
+      path: '/connect'
+      fullPath: '/setup/connect'
+      preLoaderRoute: typeof SetupConnectRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/first-bot': {
+      id: '/setup/first-bot'
+      path: '/first-bot'
+      fullPath: '/setup/first-bot'
+      preLoaderRoute: typeof SetupFirstBotRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/mobile-app': {
+      id: '/setup/mobile-app'
+      path: '/mobile-app'
+      fullPath: '/setup/mobile-app'
+      preLoaderRoute: typeof SetupMobileAppRouteImport
+      parentRoute: typeof SetupRoute
+    }
+    '/setup/welcome': {
+      id: '/setup/welcome'
+      path: '/welcome'
+      fullPath: '/setup/welcome'
+      preLoaderRoute: typeof SetupWelcomeRouteImport
+      parentRoute: typeof SetupRoute
     }
     '/_layout/octobots/': {
       id: '/_layout/octobots/'
       path: '/'
       fullPath: '/octobots/'
       preLoaderRoute: typeof LayoutOctobotsIndexRouteImport
-      parentRoute: typeof LayoutOctobotsRoute
-    }
-    '/_layout/settings/connect': {
-      id: '/_layout/settings/connect'
-      path: '/connect'
-      fullPath: '/settings/connect'
-      preLoaderRoute: typeof LayoutSettingsConnectRouteImport
-      parentRoute: typeof LayoutSettingsRoute
-    }
-    '/_layout/octobots/new': {
-      id: '/_layout/octobots/new'
-      path: '/new'
-      fullPath: '/octobots/new'
-      preLoaderRoute: typeof LayoutOctobotsNewRouteImport
-      parentRoute: typeof LayoutOctobotsRoute
-    }
-    '/_layout/octobots/import': {
-      id: '/_layout/octobots/import'
-      path: '/import'
-      fullPath: '/octobots/import'
-      preLoaderRoute: typeof LayoutOctobotsImportRouteImport
       parentRoute: typeof LayoutOctobotsRoute
     }
     '/_layout/octobots/export': {
@@ -443,11 +415,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutOctobotsExportRouteImport
       parentRoute: typeof LayoutOctobotsRoute
     }
-    '/_layout/octobots/new/presets': {
-      id: '/_layout/octobots/new/presets'
-      path: '/presets'
-      fullPath: '/octobots/new/presets'
-      preLoaderRoute: typeof LayoutOctobotsNewPresetsRouteImport
+    '/_layout/octobots/import': {
+      id: '/_layout/octobots/import'
+      path: '/import'
+      fullPath: '/octobots/import'
+      preLoaderRoute: typeof LayoutOctobotsImportRouteImport
+      parentRoute: typeof LayoutOctobotsRoute
+    }
+    '/_layout/octobots/new': {
+      id: '/_layout/octobots/new'
+      path: '/new'
+      fullPath: '/octobots/new'
+      preLoaderRoute: typeof LayoutOctobotsNewRouteImport
+      parentRoute: typeof LayoutOctobotsRoute
+    }
+    '/_layout/settings/': {
+      id: '/_layout/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof LayoutSettingsIndexRouteImport
+      parentRoute: typeof LayoutSettingsRoute
+    }
+    '/_layout/settings/connect': {
+      id: '/_layout/settings/connect'
+      path: '/connect'
+      fullPath: '/settings/connect'
+      preLoaderRoute: typeof LayoutSettingsConnectRouteImport
+      parentRoute: typeof LayoutSettingsRoute
+    }
+    '/_layout/octobots/new/builder': {
+      id: '/_layout/octobots/new/builder'
+      path: '/builder'
+      fullPath: '/octobots/new/builder'
+      preLoaderRoute: typeof LayoutOctobotsNewBuilderRouteImport
       parentRoute: typeof LayoutOctobotsNewRoute
     }
     '/_layout/octobots/new/defaults': {
@@ -457,11 +457,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutOctobotsNewDefaultsRouteImport
       parentRoute: typeof LayoutOctobotsNewRoute
     }
-    '/_layout/octobots/new/builder': {
-      id: '/_layout/octobots/new/builder'
-      path: '/builder'
-      fullPath: '/octobots/new/builder'
-      preLoaderRoute: typeof LayoutOctobotsNewBuilderRouteImport
+    '/_layout/octobots/new/presets': {
+      id: '/_layout/octobots/new/presets'
+      path: '/presets'
+      fullPath: '/octobots/new/presets'
+      preLoaderRoute: typeof LayoutOctobotsNewPresetsRouteImport
       parentRoute: typeof LayoutOctobotsNewRoute
     }
   }

@@ -5,7 +5,7 @@ import type { AppendAction } from './accounts.js'
 import { automationViewOf, type AutomationView } from '../core/views.js'
 import { createActionHandle, type ActionHandle } from './actionHandle.js'
 import { pullDocument } from '../../transport/documents.js'
-import { parseNodeAutomationStates, parseNodeUserActions } from '../../protocol/state.js'
+import { parseNodeAutomationStates, parseNodeUserActions, automationStrategyRefsOf } from '../../protocol/state.js'
 import { buildEditAutomationConfig, buildEditStrategyConfig, buildStopAutomationConfig, type AutomationBuildInput } from '../../protocol/actions.js'
 import { runCreateAutomation, type ActionEmitter, type CreateAutomationProgress } from '../../protocol/orchestration/createAutomation.js'
 import { rethrowAsOctoBotError } from '../core/errors.js'
@@ -41,7 +41,8 @@ export function createAutomationsApi(session: ClientSession, appendAction: Appen
     const { data } = await pullUserData()
     const states = parseNodeAutomationStates(data)
     const actions = parseNodeUserActions(data)
-    return { views: states.map((s) => automationViewOf(s, actions)), actions }
+    const strategyRefs = automationStrategyRefsOf(actions)
+    return { views: states.map((s) => automationViewOf(s, actions, strategyRefs)), actions }
   }
 
   async function list(): Promise<AutomationView[]> {

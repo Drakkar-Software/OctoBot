@@ -16,10 +16,18 @@
 import decimal
 import typing
 
+import octobot_protocol.models as protocol_models
 import octobot_commons.symbols as commons_symbols
+import octobot_trading.api.exchange as exchange_api
+import octobot_trading.personal_data.portfolios.history.history_from_trades_and_transaction_builder as history_builder
+import octobot_trading.exchange_data.prices.daily_prices_cache_types as daily_prices_cache_types
 import octobot_trading.exchange_channel as exchange_channel
 import octobot_trading.constants
 import octobot_trading.personal_data as personal_data
+
+
+def resolve_portfolio_valuation_unit(exchange_manager) -> str:
+    return exchange_api.get_default_exchange_reference_market(exchange_manager.exchange_name)
 
 
 def get_portfolio(exchange_manager, as_decimal=True) -> dict:
@@ -36,6 +44,35 @@ def get_portfolio_historical_values(exchange_manager, currency, time_frame, from
             currency, time_frame, from_timestamp, to_timestamp
         )
     return []
+
+def compute_portfolio_historical_holdings_from_latest_portfolio_trades_and_transations(
+    latest_portfolio: dict[str, dict[str, decimal.Decimal]],
+    trades: list[protocol_models.Trade],
+    transations: list[protocol_models.Transaction],
+) -> dict[float, dict[str, dict[str, decimal.Decimal]]]:
+    """
+    Compute the portfolio historical holdings from the latest portfolio, trades and transations.
+    The latest portfolio is the portfolio at the latest timestamp and trades and transactions are 
+    replayed in antichronological order.
+    """
+    return history_builder.build_historical_holdings(latest_portfolio, trades, transations)
+
+
+def compute_daily_portfolio_values(
+    daily_holdings: dict[float, dict[str, dict[str, decimal.Decimal]]],
+    daily_prices: daily_prices_cache_types.DailyPricesCache,
+    latest_tickers: daily_prices_cache_types.LatestTickersCache,
+    reference_market: str = "USDT",
+) -> list[protocol_models.PortfolioHistoricalValue]:
+    return personal_data.compute_daily_portfolio_values(
+        daily_holdings, daily_prices, latest_tickers, reference_market=reference_market,
+    )
+
+
+def aggregate_portfolio_historical_values(
+    account_histories: list[list[protocol_models.PortfolioHistoricalValue]],
+) -> list[protocol_models.PortfolioHistoricalValue]:
+    return personal_data.aggregate_portfolio_historical_values(account_histories)
 
 
 def get_portfolio_reference_market(exchange_manager) -> str:

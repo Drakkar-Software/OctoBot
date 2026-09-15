@@ -13,7 +13,7 @@
 import { AccountType } from '../models/AccountType';
 
 /**
-* BlockchainAccount
+* A wallet address tracked read-only on-chain.
 */
 export class BlockchainAccount {
     /**

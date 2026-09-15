@@ -232,3 +232,38 @@ class TestSymbolParseNetworkAndDexInvalid:
     def test_raises_when_network_is_empty(self):
         with pytest.raises(ValueError, match="network must be specified"):
             octobot_commons.symbols.Symbol("BTC/USDT@")
+
+
+class TestSymbolTickerWiseNetworks:
+    def test_network_qualified_asset(self):
+        symbol = octobot_commons.symbols.Symbol("USDT@ETH")
+        assert symbol.base == "USDT"
+        assert symbol.quote is None
+        assert symbol.network == "ETH"
+        assert symbol.base_network is None
+        assert symbol.quote_network is None
+        assert symbol.is_network_qualified_asset() is True
+        assert symbol.has_ticker_wise_networks() is False
+        assert symbol.merged_str_symbol() == "USDT@ETH"
+
+    def test_ticker_wise_spot_pair(self):
+        symbol = octobot_commons.symbols.Symbol("ETH@ETH/USDT@BNB")
+        assert symbol.base == "ETH"
+        assert symbol.base_network == "ETH"
+        assert symbol.quote == "USDT"
+        assert symbol.quote_network == "BNB"
+        assert symbol.network is None
+        assert symbol.dex is None
+        assert symbol.has_ticker_wise_networks() is True
+        assert symbol.is_network_qualified_asset() is False
+        assert symbol.is_spot() is True
+        assert symbol.merged_str_symbol() == "ETH@ETH/USDT@BNB"
+
+    def test_ticker_wise_coinrabbit_market_symbol(self):
+        symbol = octobot_commons.symbols.Symbol("BTC@BTC/USDT@ETH")
+        assert symbol.base == "BTC"
+        assert symbol.base_network == "BTC"
+        assert symbol.quote == "USDT"
+        assert symbol.quote_network == "ETH"
+        assert symbol.has_ticker_wise_networks() is True
+        assert symbol.merged_str_symbol() == "BTC@BTC/USDT@ETH"

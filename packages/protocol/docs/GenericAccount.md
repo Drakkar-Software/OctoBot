@@ -1,6 +1,6 @@
 # GenericAccount
 
-GenericAccount
+A placeholder account created before its real kind is known (e.g. mid-onboarding), not a semantic category of its own.
 
 ## Properties
 

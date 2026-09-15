@@ -288,3 +288,75 @@ class TestUpdateAccountTrading:
         assert saved_state.account_trading.trades is not None
         assert len(saved_state.account_trading.trades) == 1
         assert saved_state.account_trading.trades[0].trade_id == "local-trade-1"
+
+
+class TestResetAccountTradingData:
+    """Checks :func:`octobot_node.protocol.accounts_trading.reset_account_trading_data`."""
+
+    def test_creates_empty_state_when_trading_file_is_missing(self):
+        provider_stub = mock.Mock()
+        provider_stub.load_state = mock.Mock(
+            side_effect=collection_errors.CollectionNoDataError("missing trading state"),
+        )
+        with mock.patch.object(
+            accounts_trading_module.trading_provider.AccountTradingProvider,
+            "instance",
+            return_value=provider_stub,
+        ):
+            accounts_trading_module.reset_account_trading_data(
+                _TEST_WALLET_ADDRESS,
+                _TEST_ACCOUNT_ID,
+            )
+        provider_stub.save_state.assert_called_once()
+        saved_state = provider_stub.save_state.call_args[0][2]
+        account_trading = saved_state.account_trading
+        assert account_trading.orders is None
+        assert account_trading.trades is None
+        assert account_trading.transactions is None
+        assert account_trading.positions is None
+
+    def test_clears_existing_orders_trades_transactions_and_positions(self):
+        fixture_time = datetime.datetime(2026, 1, 10, tzinfo=datetime.UTC)
+        existing_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=protocol_models.AccountTrading(
+                updated_at=fixture_time,
+                orders=[_sample_order("ord-old")],
+                trades=[
+                    accounts_trading_module.trades_protocol.to_protocol_trade(
+                        _exchange_trade_dict("trade-existing"),
+                    ),
+                ],
+                positions=[
+                    accounts_trading_module.positions_protocol.to_protocol_position(
+                        _exchange_position_dict("pos-old"),
+                    ),
+                ],
+                transactions=[
+                    protocol_models.Transaction(
+                        id="tx-1",
+                        timestamp=fixture_time,
+                        asset="SOL",
+                        amount=200.0,
+                        type=protocol_models.TransactionType.BLOCKCHAIN_WITHDRAWAL,
+                    ),
+                ],
+            ),
+        )
+        provider_stub = mock.Mock()
+        provider_stub.load_state = mock.Mock(return_value=existing_state)
+        with mock.patch.object(
+            accounts_trading_module.trading_provider.AccountTradingProvider,
+            "instance",
+            return_value=provider_stub,
+        ):
+            accounts_trading_module.reset_account_trading_data(
+                _TEST_WALLET_ADDRESS,
+                _TEST_ACCOUNT_ID,
+            )
+        saved_state = provider_stub.save_state.call_args[0][2]
+        account_trading = saved_state.account_trading
+        assert account_trading.orders is None
+        assert account_trading.trades is None
+        assert account_trading.transactions is None
+        assert account_trading.positions is None

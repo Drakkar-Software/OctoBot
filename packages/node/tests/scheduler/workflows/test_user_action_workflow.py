@@ -72,7 +72,7 @@ class Test_UserActionWorkflow_should_retry:
         )
 
 
-class Test_UserActionWorkflow_execute_user_action_step:
+class Test_UserActionWorkflow_dispatch_user_action_step:
     """Runs the internal step callable with collaborator patching."""
 
     @staticmethod
@@ -127,7 +127,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
             "user_action_executor_factory",
             return_value=StubConstructedExecutorShell,
         ) as patched_factory_resolver:
-            await user_action_workflow_module_loaded.UserActionWorkflow._execute_user_action(step_inputs_document)
+            await user_action_workflow_module_loaded.UserActionWorkflow._dispatch_user_action(step_inputs_document)
 
         patched_factory_resolver.assert_called_once_with(reparsed_placeholder)
         assert async_execute_mock_tracker.await_args.args[0] is reparsed_placeholder
@@ -148,12 +148,12 @@ class Test_UserActionWorkflow_execute_user_action_step:
             return_value=None,
         ):
             with pytest.raises(node_errors.WorkflowInputError, match="No user action found in inputs"):
-                await user_action_workflow_module_loaded.UserActionWorkflow._execute_user_action(
+                await user_action_workflow_module_loaded.UserActionWorkflow._dispatch_user_action(
                     step_inputs_document,
                 )
 
     @pytest.mark.asyncio
-    async def test_execute_user_action_step_retries_on_retriable_failed_request_then_completes(
+    async def test_dispatch_user_action_step_retries_on_retriable_failed_request_then_completes(
         self,
         temp_dbos_scheduler,
     ):
@@ -216,7 +216,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
         assert transient_failure_attempt_tracker["count"] == 2
 
     @pytest.mark.asyncio
-    async def test_execute_user_action_step_skips_retries_when_executor_raises_authentication_error(
+    async def test_dispatch_user_action_step_skips_retries_when_executor_raises_authentication_error(
         self,
         temp_dbos_scheduler,
     ):
@@ -290,7 +290,7 @@ class Test_UserActionWorkflow_execute_user_action_step:
         )
 
     @pytest.mark.asyncio
-    async def test_execute_user_action_step_returns_failed_user_action_on_user_action_error(
+    async def test_dispatch_user_action_step_returns_failed_user_action_on_user_action_error(
         self,
         temp_dbos_scheduler,
     ):
@@ -366,3 +366,227 @@ class Test_UserActionWorkflow_execute_user_action_step:
         result_inner = parsed_output.updated_user_action.result.actual_instance
         assert isinstance(result_inner, protocol_models.AutomationActionResult)
         assert result_inner.error_message == protocol_models.AutomationActionResultErrorMessage.AUTOMATION_NOT_FOUND
+
+
+class Test_UserActionWorkflow_await_signal_execution_result_step:
+    @staticmethod
+    def _await_context_dict(*, user_action_id: str, sent_action_ids: list[str]) -> dict:
+        return workflow_params_module.SignalExecutionAwaitContext(
+            user_action_id=user_action_id,
+            sent_action_ids=sent_action_ids,
+        ).to_dict(include_default_values=False)
+
+    @staticmethod
+    async def _recv_for_await_context(await_context_dict: dict) -> dict:
+        import octobot_node.constants as octobot_node_constants
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        parsed_await_context = workflow_params_module.SignalExecutionAwaitContext.from_dict(
+            await_context_dict,
+        )
+        execution_result = await user_action_workflow_module_loaded._recv_signal_execution_result(
+            user_action_id=parsed_await_context.user_action_id,
+            sent_action_ids=parsed_await_context.sent_action_ids,
+            timeout_seconds=octobot_node_constants.SIGNAL_EXECUTION_RESULT_TIMEOUT_SECONDS,
+        )
+        return execution_result.to_dict(include_default_values=False)
+
+    @staticmethod
+    def _execution_result_payload(
+        *,
+        user_action_id: str,
+        priority_action_ids: list[str],
+    ) -> dict:
+        return workflow_params_module.AutomationWorkflowSignalExecutionResult(
+            user_action_id=user_action_id,
+            priority_action_results=[
+                workflow_params_module.PriorityActionExecutionResult(
+                    priority_action_id=priority_action_id,
+                    error_status=None,
+                )
+                for priority_action_id in priority_action_ids
+            ],
+        ).to_dict(include_default_values=False)
+
+    @pytest.mark.asyncio
+    async def test_await_step_times_out_when_no_message(self, temp_dbos_scheduler):
+        import octobot_node.constants as octobot_node_constants
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.recv_async = mock.AsyncMock(return_value=None)
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(user_action_workflow_module_loaded, "SCHEDULER") as scheduler_patch,
+            mock.patch.object(
+                octobot_node_constants,
+                "SIGNAL_EXECUTION_RESULT_RECV_POLL_INTERVAL_SECONDS",
+                0.01,
+            ),
+            mock.patch.object(
+                octobot_node_constants,
+                "SIGNAL_EXECUTION_RESULT_TIMEOUT_SECONDS",
+                0.05,
+            ),
+        ):
+            scheduler_patch.INSTANCE = mock_dbos_instance
+            with pytest.raises(node_errors.SignalExecutionResultTimeoutError):
+                await self._recv_for_await_context(
+                    self._await_context_dict(
+                        user_action_id="ua-timeout",
+                        sent_action_ids=["action_0"],
+                    ),
+                )
+
+    @pytest.mark.asyncio
+    async def test_await_step_returns_when_all_sent_action_ids_present(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.recv_async = mock.AsyncMock(
+            return_value=self._execution_result_payload(
+                user_action_id="ua-1",
+                priority_action_ids=["action_0", "action_1"],
+            ),
+        )
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(user_action_workflow_module_loaded, "SCHEDULER") as scheduler_patch,
+        ):
+            scheduler_patch.INSTANCE = mock_dbos_instance
+            execution_result_dict = await self._recv_for_await_context(
+                self._await_context_dict(
+                    user_action_id="ua-1",
+                    sent_action_ids=["action_0", "action_1"],
+                ),
+            )
+
+        parsed_result = workflow_params_module.AutomationWorkflowSignalExecutionResult.from_dict(
+            execution_result_dict,
+        )
+        assert parsed_result.user_action_id == "ua-1"
+        assert {result.priority_action_id for result in parsed_result.priority_action_results} == {
+            "action_0",
+            "action_1",
+        }
+
+    @pytest.mark.asyncio
+    async def test_await_step_ignores_wrong_user_action_id(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.recv_async = mock.AsyncMock(
+            side_effect=[
+                self._execution_result_payload(
+                    user_action_id="ua-other",
+                    priority_action_ids=["action_0"],
+                ),
+                self._execution_result_payload(
+                    user_action_id="ua-expected",
+                    priority_action_ids=["action_0"],
+                ),
+            ],
+        )
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(user_action_workflow_module_loaded, "SCHEDULER") as scheduler_patch,
+        ):
+            scheduler_patch.INSTANCE = mock_dbos_instance
+            execution_result_dict = await self._recv_for_await_context(
+                self._await_context_dict(
+                    user_action_id="ua-expected",
+                    sent_action_ids=["action_0"],
+                ),
+            )
+
+        assert workflow_params_module.AutomationWorkflowSignalExecutionResult.from_dict(
+            execution_result_dict,
+        ).user_action_id == "ua-expected"
+        assert mock_dbos_instance.recv_async.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_await_step_ignores_incomplete_action_id_set(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.recv_async = mock.AsyncMock(
+            side_effect=[
+                self._execution_result_payload(
+                    user_action_id="ua-1",
+                    priority_action_ids=["action_0"],
+                ),
+                self._execution_result_payload(
+                    user_action_id="ua-1",
+                    priority_action_ids=["action_0", "action_1"],
+                ),
+            ],
+        )
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(user_action_workflow_module_loaded, "SCHEDULER") as scheduler_patch,
+        ):
+            scheduler_patch.INSTANCE = mock_dbos_instance
+            execution_result_dict = await self._recv_for_await_context(
+                self._await_context_dict(
+                    user_action_id="ua-1",
+                    sent_action_ids=["action_0", "action_1"],
+                ),
+            )
+
+        parsed_result = workflow_params_module.AutomationWorkflowSignalExecutionResult.from_dict(
+            execution_result_dict,
+        )
+        assert len(parsed_result.priority_action_results) == 2
+        assert mock_dbos_instance.recv_async.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_await_step_output_used_by_apply_without_re_recv(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
+
+        user_action = protocol_models.UserAction(
+            id="ua-replay-safe",
+            configuration=protocol_models.UserActionConfiguration.from_json(
+                protocol_models.SignalAutomationConfiguration(
+                    action_type=protocol_models.UserActionType.AUTOMATION_SIGNAL,
+                    automation_id="automation-replay",
+                    signal_type=protocol_models.AutomationSignalType.ACTIONS,
+                ).to_json(),
+            ),
+        )
+        dispatch_output = workflow_params_module.UserActionExecutionResult(
+            updated_user_action=user_action,
+            post_actions=user_action_post_actions_module.UserActionPostActions(),
+            signal_execution_await_context=workflow_params_module.SignalExecutionAwaitContext(
+                user_action_id=user_action.id,
+                sent_action_ids=["action_0"],
+            ),
+        ).to_dict(include_default_values=False)
+        workflow_inputs = workflow_params_module.UserActionWorkflowInputs(
+            user_id="0xwallet-replay",
+            user_action=user_action,
+        ).to_dict(include_default_values=False)
+        execution_result_dict = self._execution_result_payload(
+            user_action_id=user_action.id,
+            priority_action_ids=["action_0"],
+        )
+
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.recv_async = mock.AsyncMock()
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(user_action_workflow_module_loaded, "SCHEDULER") as scheduler_patch,
+        ):
+            scheduler_patch.INSTANCE = mock_dbos_instance
+            updated_dispatch_output = await user_action_workflow_module_loaded.UserActionWorkflow._apply_signal_execution_result(
+                workflow_inputs,
+                dispatch_output,
+                execution_result_dict,
+            )
+
+        mock_dbos_instance.recv_async.assert_not_awaited()
+        parsed_dispatch_output = workflow_params_module.UserActionExecutionResult.from_dict(
+            updated_dispatch_output,
+        )
+        assert parsed_dispatch_output.signal_execution_await_context is None
+        assert parsed_dispatch_output.updated_user_action.status == protocol_models.UserActionStatus.COMPLETED
+

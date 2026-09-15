@@ -21,6 +21,7 @@ import typing
 import octobot_commons.symbols as commons_symbols
 import octobot_commons.enums as commons_enums
 
+import octobot_protocol.models as protocol_models
 import octobot_trading.constants
 import octobot_trading.enums
 import octobot_trading.exchanges as exchanges
@@ -353,6 +354,14 @@ def get_default_exchange_type(exchange_name: str) -> str:
     return exchanges.get_default_exchange_type(exchange_name)
 
 
+def get_default_exchange_reference_market(exchange_name: str) -> str:
+    return exchanges.util.exchange_util.get_default_exchange_reference_market(exchange_name)
+
+
+def get_default_reference_market_per_exchange(exchange_names: list[str]) -> dict[str, str]:
+    return exchanges.util.exchange_util.get_default_reference_market_per_exchange(exchange_names)
+
+
 def is_sponsoring(exchange_name: str) -> bool:
     return exchanges.is_broker_enabled_on_exchange(exchange_name)
 
@@ -411,3 +420,7 @@ def cancel_ccxt_throttle_task():
         # manually cancel ccxt async throttle task since it apparently can't be cancelled otherwise
         if str(task._coro).startswith("<coroutine object Throttler.looper at"):
             task.cancel()
+
+
+def get_exchanges_availability() -> list[protocol_models.ExchangeAvailability]:
+    return exchanges.util.exchange_util.get_exchanges_availability()

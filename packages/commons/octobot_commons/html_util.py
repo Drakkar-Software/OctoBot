@@ -33,6 +33,13 @@ def summarize_page_content(
     """
     :return: a list of (tag, content) tuples representing a html page's useful content
     """
+    # Explicit check: html.parser.HTMLParser.feed used to raise TypeError for many
+    # non-str inputs via str concatenation; Python 3.13.15+ buffers short chunks and
+    # can accept sized non-str objects (e.g. {}) without raising.
+    if not isinstance(html_content, str):
+        raise TypeError(
+            f"html_content must be str, got {type(html_content).__name__}"
+        )
     parser = _SummarizerHTMLParser(max_element_text_size)
     parser.feed(html_content)
     return parser.summary

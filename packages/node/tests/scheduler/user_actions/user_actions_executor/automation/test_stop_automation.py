@@ -20,10 +20,16 @@ def _wrap(configuration_payload) -> protocol_models.UserActionConfiguration:
     return protocol_models.UserActionConfiguration.from_json(configuration_payload.to_json())
 
 
-def _user_action_stop(*, user_action_id: str, automation_parent_id: str) -> protocol_models.UserAction:
+def _user_action_stop(
+    *,
+    user_action_id: str,
+    automation_parent_id: str,
+    cancel_orders: bool = False,
+) -> protocol_models.UserAction:
     stop_payload = protocol_models.StopAutomationConfiguration(
         id=automation_parent_id,
         action_type=protocol_models.UserActionType.AUTOMATION_STOP,
+        cancel_orders=cancel_orders,
     )
     return protocol_models.UserAction(id=user_action_id, configuration=_wrap(stop_payload))
 
@@ -97,6 +103,68 @@ class TestStopAutomationActionExecutor:
             expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="automation",
             expect_error_details=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_sends_cancel_orders_dsl_when_payload_set(self):
+        user_action = _user_action_stop(
+            user_action_id="ua-stop-cancel",
+            automation_parent_id="00000000-0000-4000-8000-000000000002",
+            cancel_orders=True,
+        )
+        executor = stop_automation_executor.StopAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with (
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation.scheduler_module.is_initialized",
+                return_value=True,
+            ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation.scheduler_tasks.send_actions_to_active_automation",
+                new_callable=mock.AsyncMock,
+            ) as send_actions_mock,
+        ):
+            await executor.execute(user_action)
+
+        send_actions_mock.assert_awaited_once_with(
+            "00000000-0000-4000-8000-000000000002",
+            _TEST_WALLET_ADDRESS,
+            [
+                {
+                    "id": "action_stop_priority_ua-stop-cancel",
+                    "dsl_script": "stop_automation(cancel_orders=True)",
+                }
+            ],
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_sends_plain_stop_dsl_when_cancel_orders_false(self):
+        user_action = _user_action_stop(
+            user_action_id="ua-stop-no-cancel",
+            automation_parent_id="00000000-0000-4000-8000-000000000003",
+            cancel_orders=False,
+        )
+        executor = stop_automation_executor.StopAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with (
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation.scheduler_module.is_initialized",
+                return_value=True,
+            ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.stop_automation.scheduler_tasks.send_actions_to_active_automation",
+                new_callable=mock.AsyncMock,
+            ) as send_actions_mock,
+        ):
+            await executor.execute(user_action)
+
+        send_actions_mock.assert_awaited_once_with(
+            "00000000-0000-4000-8000-000000000003",
+            _TEST_WALLET_ADDRESS,
+            [
+                {
+                    "id": "action_stop_priority_ua-stop-no-cancel",
+                    "dsl_script": "stop_automation()",
+                }
+            ],
         )
 
     @pytest.mark.asyncio

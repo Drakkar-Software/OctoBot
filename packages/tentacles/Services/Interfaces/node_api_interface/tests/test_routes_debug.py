@@ -536,6 +536,25 @@ class TestExecuteUserActionCrossWalletAutomation:
         assert response.status_code == 204
         assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
 
+    def test_tenant_can_restart_when_terminal_workflow_has_input_only_state(
+        self,
+        tenant_client,
+        mock_auth,
+    ):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        with mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _terminal_automation_owned_by_caller():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=_restart_automation_user_action_payload(),
+                    )
+        assert response.status_code == 204
+        assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
+
     def test_admin_without_wallet_address_uses_terminal_owner_user_id_for_restart(
         self,
         admin_client,

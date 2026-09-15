@@ -28,18 +28,24 @@ import type {
   MarketMakingConfiguration,
   MarketMakingSymbolConfiguration,
   RefreshAccountsConfiguration,
+  ResetAccountTradingDataConfiguration,
   RestartAutomationConfiguration,
   SignalAutomationConfiguration,
+  SignalBotConfiguration,
   StopAutomationConfiguration,
   Strategy,
   StrategyConfiguration,
   StrategyEvaluatorConfiguration,
   StrategyReference,
   TradingTentaclesConfiguration,
+  UpdateHistoricalExchangesDataConfiguration,
   UserAction,
   UserActionConfiguration,
   UserActionType,
 } from "@/client"
+import { defaultSignalActionsPayloadText } from "@/lib/debug/signal-payload"
+
+export { buildDefaultDslActionsSignalPayload } from "@/lib/debug/signal-payload"
 
 export const DEFAULT_USER_ACTION_TYPE: UserActionType = "automation_stop"
 
@@ -60,6 +66,7 @@ export type UserActionTemplateKey =
   | "strategy_create_dca_time_based"
   | "strategy_create_market_making"
   | "strategy_create_generic_process"
+  | "strategy_create_signal_bot"
 
 export const DEFAULT_USER_ACTION_TEMPLATE_KEY: UserActionTemplateKey =
   DEFAULT_USER_ACTION_TYPE
@@ -80,6 +87,8 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
   { value: "account_auth_edit", label: "Account auth edit" },
   { value: "account_auth_delete", label: "Account auth delete" },
   { value: "accounts_refresh", label: "Accounts refresh" },
+  { value: "update_historical_exchanges_data", label: "Update historical exchanges data" },
+  { value: "reset_account_trading_data", label: "Reset account trading data" },
   { value: "exchange_config_create", label: "Exchange config create" },
   { value: "exchange_config_edit", label: "Exchange config edit" },
   { value: "exchange_config_delete", label: "Exchange config delete" },
@@ -107,16 +116,13 @@ export const USER_ACTION_TEMPLATE_OPTIONS: {
     value: "strategy_create_generic_process",
     label: "Strategy create (generic process OctoBot)",
   },
+  {
+    value: "strategy_create_signal_bot",
+    label: "Strategy create (signal bot)",
+  },
   { value: "strategy_edit", label: "Strategy edit" },
   { value: "strategy_delete", label: "Strategy delete" },
 ]
-
-export const DEFAULT_ACTIONS_SIGNAL_PAYLOAD = `[
-  {
-    "id": "action_1",
-    "dsl_script": "noop()"
-  }
-]`
 
 export const DEFAULT_TRADING_SIGNAL_PAYLOAD = `{
   "strategy_id": "test-strategy-id",
@@ -143,6 +149,8 @@ type DebugUserActionConfiguration =
   | EditAccountAuthConfiguration
   | DeleteAccountAuthConfiguration
   | RefreshAccountsConfiguration
+  | UpdateHistoricalExchangesDataConfiguration
+  | ResetAccountTradingDataConfiguration
   | CreateExchangeConfigConfiguration
   | EditExchangeConfigConfiguration
   | DeleteExchangeConfigConfiguration
@@ -152,6 +160,7 @@ type StrategyConfigurationVariant =
   | CopyConfiguration
   | GenericProcessConfiguration
   | MarketMakingConfiguration
+  | SignalBotConfiguration
 
 function assertNever(value: never): never {
   throw new Error(`Unexpected value: ${String(value)}`)
@@ -189,7 +198,7 @@ export function defaultSignalPayloadText(
 ): string {
   switch (signalType) {
     case "actions":
-      return DEFAULT_ACTIONS_SIGNAL_PAYLOAD
+      return defaultSignalActionsPayloadText("dsl_json")
     case "trading_signal":
       return DEFAULT_TRADING_SIGNAL_PAYLOAD
     default:
@@ -304,6 +313,7 @@ function sampleExchangeConfig(id = TEMPLATE_EXCHANGE_CONFIG_ID): ExchangeConfig 
     name: "binance-main",
     exchange: "binance",
     sandboxed: false,
+    historical_trade_symbols: ["BTC/USDT", "ETH/USDT"],
   } satisfies ExchangeConfig
 }
 
@@ -351,6 +361,21 @@ function sampleGenericProcessOctobotStrategyConfiguration(
     {
       configuration_type: "generic_process",
     } satisfies GenericProcessConfiguration,
+    "USDC",
+  )
+}
+
+function sampleSignalBotStrategyConfiguration(
+  id = TEMPLATE_STRATEGY_ID,
+): Strategy {
+  return sampleStrategyShell(
+    id,
+    "Signal bot strategy",
+    {
+      configuration_type: "signal_bot",
+      sync_interval_with_open_trades_seconds: 3600,
+      sync_interval_without_open_trades_seconds: 14400,
+    } satisfies SignalBotConfiguration,
     "USDC",
   )
 }
@@ -650,6 +675,13 @@ export function buildUserActionTemplate(
     } satisfies CreateStrategyConfiguration)
   }
 
+  if (templateKey === "strategy_create_signal_bot") {
+    return userAction("ua-manual-strategy_create_signal_bot", {
+      action_type: "strategy_create",
+      configuration: sampleSignalBotStrategyConfiguration(newResourceId()),
+    } satisfies CreateStrategyConfiguration)
+  }
+
   const actionType: UserActionType = templateKey
   const id =
     actionType === "automation_stop"
@@ -672,6 +704,7 @@ export function buildUserActionTemplate(
       return userAction(id, {
         action_type: actionType,
         id: TEMPLATE_AUTOMATION_ID,
+        cancel_orders: false,
       } satisfies StopAutomationConfiguration)
     case "automation_restart":
       return userAction(id, {
@@ -724,6 +757,15 @@ export function buildUserActionTemplate(
         action_type: actionType,
         account_ids: [TEMPLATE_ACCOUNT_ID],
       } satisfies RefreshAccountsConfiguration)
+    case "update_historical_exchanges_data":
+      return userAction(id, {
+        action_type: actionType,
+      } satisfies UpdateHistoricalExchangesDataConfiguration)
+    case "reset_account_trading_data":
+      return userAction(id, {
+        action_type: actionType,
+        account_ids: [TEMPLATE_ACCOUNT_ID],
+      } satisfies ResetAccountTradingDataConfiguration)
     case "exchange_config_create":
       return userAction(id, {
         action_type: actionType,
@@ -785,6 +827,28 @@ export function buildAccountEditUserActionJson(account: Account): string {
   )
 }
 
+export function buildUpdateHistoricalExchangesDataUserActionJson(
+  accountId: string,
+): string {
+  return userActionJson(
+    userAction(uniqueUserActionId(`ua-update-historical-${accountId}`), {
+      action_type: "update_historical_exchanges_data",
+      account_ids: [accountId],
+    } satisfies UpdateHistoricalExchangesDataConfiguration),
+  )
+}
+
+export function buildResetAccountTradingDataUserActionJson(
+  accountId: string,
+): string {
+  return userActionJson(
+    userAction(uniqueUserActionId(`ua-reset-account-trading-${accountId}`), {
+      action_type: "reset_account_trading_data",
+      account_ids: [accountId],
+    } satisfies ResetAccountTradingDataConfiguration),
+  )
+}
+
 export function buildExchangeConfigEditUserActionJson(
   config: ExchangeConfig,
 ): string {
@@ -814,6 +878,7 @@ export function buildAutomationStopUserActionJson(
     userAction(uniqueUserActionId(`ua-stop-${automationId}`), {
       action_type: "automation_stop",
       id: automationId,
+      cancel_orders: false,
     } satisfies StopAutomationConfiguration),
   )
 }

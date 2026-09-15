@@ -19,6 +19,31 @@ _TEST_WALLET_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
 _SAMPLE_TIMESTAMP = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
 
 
+def _sample_account(account_id: str, name: str) -> protocol_models.Account:
+    return protocol_models.Account(
+        id=account_id,
+        name=name,
+        is_simulated=False,
+        created_at=_SAMPLE_TIMESTAMP,
+        updated_at=_SAMPLE_TIMESTAMP,
+    )
+
+
+def _empty_accounts_state() -> protocol_models.AccountsState:
+    return protocol_models.AccountsState(
+        version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
+        accounts=[],
+        exchange_configs=[],
+    )
+
+
+def _empty_strategies_state() -> protocol_models.StrategiesState:
+    return protocol_models.StrategiesState(
+        version=sync_constants.USER_STRATEGIES_STATE_VERSION,
+        strategies=[],
+    )
+
+
 class TestGetDebugState:
     """Checks :func:`octobot_node.protocol.debug.get_debug_state`."""
 
@@ -41,13 +66,7 @@ class TestGetDebugState:
             protocol_models.UserAction(id="ua-1"),
         ]
         sample_accounts = [
-            protocol_models.Account(
-                id="acc-a",
-                name="Alpha",
-                is_simulated=False,
-                created_at=_SAMPLE_TIMESTAMP,
-                updated_at=_SAMPLE_TIMESTAMP,
-            ),
+            _sample_account("acc-a", "Alpha"),
         ]
         sample_exchange_configs = [
             protocol_models.ExchangeConfig(
@@ -75,7 +94,7 @@ class TestGetDebugState:
         ]
         sample_trading_summaries = [
             protocol_models.AccountTradingWithAccountId(
-                account_id="acc-bound",
+                account_id="acc-a",
                 account_trading=protocol_models.AccountTrading(
                     updated_at=_SAMPLE_TIMESTAMP,
                 ),
@@ -122,7 +141,7 @@ class TestGetDebugState:
         list_user_actions_mock.assert_awaited_once_with(_TEST_WALLET_ADDRESS, active_only=False)
         get_account_trading_summaries_mock.assert_called_once_with(
             _TEST_WALLET_ADDRESS,
-            ["acc-bound"],
+            ["acc-a"],
         )
         assert debug_state.version == sync_constants.DEBUG_STATE_VERSION
         assert debug_state.debug is not None
@@ -135,15 +154,6 @@ class TestGetDebugState:
 
     @pytest.mark.asyncio
     async def test_empty_collections_when_dependencies_return_empty(self):
-        accounts_state = protocol_models.AccountsState(
-            version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-            accounts=[],
-            exchange_configs=[],
-        )
-        strategies_state = protocol_models.StrategiesState(
-            version=sync_constants.USER_STRATEGIES_STATE_VERSION,
-            strategies=[],
-        )
         with (
             mock.patch.object(
                 debug_module.scheduler_api,
@@ -158,12 +168,12 @@ class TestGetDebugState:
             mock.patch.object(
                 debug_module.accounts_protocol,
                 "get_accounts_state",
-                return_value=accounts_state,
+                return_value=_empty_accounts_state(),
             ),
             mock.patch.object(
                 debug_module.strategies_protocol,
                 "get_strategies_state",
-                return_value=strategies_state,
+                return_value=_empty_strategies_state(),
             ),
             mock.patch.object(
                 debug_module.accounts_trading_protocol,
@@ -182,7 +192,9 @@ class TestGetDebugState:
         assert debug_state.debug.account_tradings == []
 
     @pytest.mark.asyncio
-    async def test_ignores_exchange_account_ids_when_automation_not_running(self):
+    async def test_loads_trading_summaries_for_all_wallet_accounts_even_without_running_automation(
+        self,
+    ):
         completed_automation = protocol_models.AutomationState(
             id="auto-completed",
             status=protocol_models.WorkflowStatus.COMPLETED,
@@ -191,12 +203,11 @@ class TestGetDebugState:
         )
         accounts_state = protocol_models.AccountsState(
             version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
-            accounts=[],
+            accounts=[
+                _sample_account("acc-a", "Alpha"),
+                _sample_account("acc-b", "Beta"),
+            ],
             exchange_configs=[],
-        )
-        strategies_state = protocol_models.StrategiesState(
-            version=sync_constants.USER_STRATEGIES_STATE_VERSION,
-            strategies=[],
         )
         with (
             mock.patch.object(
@@ -217,7 +228,7 @@ class TestGetDebugState:
             mock.patch.object(
                 debug_module.strategies_protocol,
                 "get_strategies_state",
-                return_value=strategies_state,
+                return_value=_empty_strategies_state(),
             ),
             mock.patch.object(
                 debug_module.accounts_trading_protocol,
@@ -226,4 +237,81 @@ class TestGetDebugState:
             ) as get_account_trading_summaries_mock,
         ):
             await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
-        get_account_trading_summaries_mock.assert_called_once_with(_TEST_WALLET_ADDRESS, [])
+        get_account_trading_summaries_mock.assert_called_once_with(
+            _TEST_WALLET_ADDRESS,
+            ["acc-a", "acc-b"],
+        )
+
+    @pytest.mark.asyncio
+    async def test_ignores_running_automation_binding_when_loading_trading_summaries(self):
+        running_automation = protocol_models.AutomationState(
+            id="auto-running",
+            status=protocol_models.WorkflowStatus.RUNNING,
+            metadata=protocol_models.AutomationMetadata(name="auto", description=""),
+            exchange_account_ids=["acc-bound"],
+        )
+        accounts_state = protocol_models.AccountsState(
+            version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
+            accounts=[
+                _sample_account("acc-a", "Alpha"),
+                _sample_account("acc-b", "Beta"),
+            ],
+            exchange_configs=[],
+        )
+        with (
+            mock.patch.object(
+                debug_module.scheduler_api,
+                "get_automation_states",
+                mock.AsyncMock(return_value=[running_automation]),
+            ),
+            mock.patch.object(
+                debug_module.scheduler_api,
+                "list_user_actions",
+                mock.AsyncMock(return_value=[]),
+            ),
+            mock.patch.object(
+                debug_module.accounts_protocol,
+                "get_accounts_state",
+                return_value=accounts_state,
+            ),
+            mock.patch.object(
+                debug_module.strategies_protocol,
+                "get_strategies_state",
+                return_value=_empty_strategies_state(),
+            ),
+            mock.patch.object(
+                debug_module.accounts_trading_protocol,
+                "get_account_trading_summaries",
+                return_value=[],
+            ) as get_account_trading_summaries_mock,
+        ):
+            await debug_module.get_debug_state(_TEST_WALLET_ADDRESS)
+        get_account_trading_summaries_mock.assert_called_once_with(
+            _TEST_WALLET_ADDRESS,
+            ["acc-a", "acc-b"],
+        )
+
+
+class TestWalletAccountIds:
+    def test_returns_empty_list_when_accounts_is_none(self):
+        assert debug_module._wallet_account_ids(None) == []
+
+    def test_returns_all_non_empty_account_ids(self):
+        accounts = [
+            _sample_account("acc-a", "Alpha"),
+            _sample_account("acc-b", "Beta"),
+        ]
+        assert debug_module._wallet_account_ids(accounts) == ["acc-a", "acc-b"]
+
+    def test_skips_accounts_with_empty_id(self):
+        accounts = [
+            _sample_account("acc-a", "Alpha"),
+            protocol_models.Account(
+                id="",
+                name="Missing id",
+                is_simulated=False,
+                created_at=_SAMPLE_TIMESTAMP,
+                updated_at=_SAMPLE_TIMESTAMP,
+            ),
+        ]
+        assert debug_module._wallet_account_ids(accounts) == ["acc-a"]

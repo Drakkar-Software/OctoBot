@@ -32,8 +32,22 @@ import {
 } from "@/lib/debug/automation"
 import { SIGNAL_TYPE_OPTIONS } from "@/lib/debug/constants"
 import { buildSignalUserActionConfiguration } from "@/lib/debug/execute-user-action"
+import {
+  defaultSignalActionsPayloadText,
+  KEY_VAL_SIGNAL_PRESET_BUY,
+  KEY_VAL_SIGNAL_PRESET_CANCEL,
+  type SignalActionsPayloadFormat,
+} from "@/lib/debug/signal-payload"
 import { defaultSignalPayloadText } from "@/lib/debug/user-action-templates"
 import { handleError } from "@/utils"
+
+const SIGNAL_ACTIONS_PAYLOAD_FORMAT_OPTIONS: {
+  value: SignalActionsPayloadFormat
+  label: string
+}[] = [
+  { value: "dsl_json", label: "DSL JSON" },
+  { value: "key_val_script", label: "Key=value script" },
+]
 
 type SignalAutomationDialogProps = {
   automation: AutomationState | null
@@ -52,6 +66,8 @@ export function SignalAutomationDialog({
 }: SignalAutomationDialogProps) {
   const [signalType, setSignalType] =
     useState<AutomationSignalType>("forced_trigger")
+  const [payloadFormat, setPayloadFormat] =
+    useState<SignalActionsPayloadFormat>("dsl_json")
   const [payloadText, setPayloadText] = useState("")
   const [parseError, setParseError] = useState<string | null>(null)
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -59,6 +75,7 @@ export function SignalAutomationDialog({
   useEffect(() => {
     if (open) {
       setSignalType("forced_trigger")
+      setPayloadFormat("dsl_json")
       setPayloadText("")
       setParseError(null)
     }
@@ -84,8 +101,19 @@ export function SignalAutomationDialog({
     setSignalType(value)
     setParseError(null)
     if (signalTypeRequiresPayload(value)) {
+      if (value === "actions") {
+        setPayloadFormat("dsl_json")
+        setPayloadText(defaultSignalActionsPayloadText("dsl_json"))
+        return
+      }
       setPayloadText(defaultSignalPayloadText(value))
     }
+  }
+
+  const handlePayloadFormatChange = (value: SignalActionsPayloadFormat) => {
+    setPayloadFormat(value)
+    setParseError(null)
+    setPayloadText(defaultSignalActionsPayloadText(value))
   }
 
   const handleSend = () => {
@@ -99,6 +127,7 @@ export function SignalAutomationDialog({
       automation.id,
       signalType,
       payloadText,
+      signalType === "actions" ? payloadFormat : "dsl_json",
     )
     if ("error" in buildResult) {
       setParseError(buildResult.error)
@@ -157,11 +186,70 @@ export function SignalAutomationDialog({
               </p>
             )}
           </div>
+          {signalType === "actions" && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-muted-foreground">
+                Payload format
+              </p>
+              <Select
+                value={payloadFormat}
+                onValueChange={(value) =>
+                  handlePayloadFormatChange(value as SignalActionsPayloadFormat)
+                }
+              >
+                <SelectTrigger size="sm" className="w-full max-w-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SIGNAL_ACTIONS_PAYLOAD_FORMAT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {payloadFormat === "key_val_script" && (
+                <p className="text-xs text-muted-foreground">
+                  Enter KEY=value lines. The UI wraps them as{" "}
+                  <span className="font-mono">[{"{ script: ... }"}]</span> unless
+                  you paste JSON directly.
+                </p>
+              )}
+            </div>
+          )}
           {signalTypeRequiresPayload(signalType) && (
             <div className="flex flex-col gap-1.5">
               <p className="text-xs font-medium text-muted-foreground">
-                Signal payload (JSON)
+                {signalType === "actions" && payloadFormat === "key_val_script"
+                  ? "Signal script (KEY=value lines)"
+                  : "Signal payload (JSON)"}
               </p>
+              {signalType === "actions" && payloadFormat === "key_val_script" && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPayloadText(KEY_VAL_SIGNAL_PRESET_BUY)
+                      setParseError(null)
+                    }}
+                  >
+                    Buy example
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPayloadText(KEY_VAL_SIGNAL_PRESET_CANCEL)
+                      setParseError(null)
+                    }}
+                  >
+                    Cancel example
+                  </Button>
+                </div>
+              )}
               <LineNumberTextarea
                 className="min-h-[180px]"
                 textareaClassName="min-h-[180px]"

@@ -227,7 +227,7 @@ def get_config(
     profile = commons_profiles.EphemeralProfile.from_profile_data(profile_data)
     profile_data.backtesting_context = initial_backtesting_context
     config.profile_by_id[profile.profile_id] = profile
-    config.select_profile(profile.profile_id)
+    config.select_profile(profile.profile_id, init_tentacles_setup=False)
     config.config[commons_constants.CONFIG_EXCHANGES][exchange_data.exchange_details.name] = get_exchange_config(
         exchange_data, tentacles_setup_config, profile_data.get_config_by_tentacle(), auth
     )

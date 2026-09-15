@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
+import os
 import time
 import typing
 import uuid
@@ -15,8 +16,9 @@ import dbos
 import pytest
 
 import octobot_sync.chain.evm as sync_evm_module
+import octobot_sync.constants as sync_constants_module
 import octobot_sync.server as sync_server_module
-import octobot_trading.constants as trading_constants_module
+import octobot_sync.sync.collection_providers as collection_providers_module
 import octobot_trading.enums as trading_enums_module
 
 import octobot_node.constants as node_constants_module
@@ -24,9 +26,13 @@ import octobot_node.enums as node_enums_module
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows
 import octobot_node.scheduler.api as scheduler_api_module
+import octobot_node.scheduler.tasks as scheduler_tasks_module
 import octobot_node.scheduler.workflows.params as workflow_params_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_protocol.models as protocol_models_module
+
+from . import exchange_account_elements_access as exchange_account_elements_access_module
 
 # Passphrase for grid functional tests (WalletBackend requires length >= 8).
 SIMULATOR_GRID_TEST_WALLET_PASSPHRASE = "simgridPW1!"
@@ -43,6 +49,34 @@ SIMULATOR_GRID_TEST_COMMUNITY_USER_ID = sync_server_module.derive_user_id(
 
 DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS = 0.5
 DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS = DEFAULT_WORKFLOW_POLL_INTERVAL_SECONDS
+
+_XDIST_FUNCTIONAL_TIMEOUT_SCALE = 2.25
+
+
+def functional_timeout_seconds(base_seconds: float) -> float:
+    """Scale tight poll budgets when pytest-xdist runs concurrent heavy workers."""
+    if os.getenv("PYTEST_XDIST_WORKER"):
+        return base_seconds * _XDIST_FUNCTIONAL_TIMEOUT_SCALE
+    return base_seconds
+
+
+def seed_empty_account_trading_state(user_id: str, account_id: str) -> None:
+    """
+    Mirror CreateAccountActionExecutor: AccountTradingState must exist before
+    automation iterations call persist_account_trading.
+    Call inside auth mock context so encrypted storage can resolve wallet keys.
+    """
+    collection_providers_module.AccountTradingProvider.instance().save_state(
+        user_id,
+        account_id,
+        protocol_models_module.AccountTradingState(
+            version=sync_constants_module.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=protocol_models_module.AccountTrading(
+                updated_at=datetime.datetime.now(datetime.UTC),
+            ),
+        ),
+    )
+
 
 _FUNCTIONAL_PROTOCOL_ACCOUNT_TS = datetime.datetime(2026, 4, 1, 12, 0, 0, tzinfo=datetime.UTC)
 SIMULATOR_FUNCTIONAL_STRATEGY_VERSION = "1.0.0"
@@ -114,14 +148,35 @@ def build_stop_user_action(
     *,
     automation_id: str,
     user_action_id: str,
+    cancel_orders: bool = False,
 ) -> protocol_models_module.UserAction:
     payload = protocol_models_module.StopAutomationConfiguration(
         action_type=protocol_models_module.UserActionType.AUTOMATION_STOP,
         id=automation_id,
+        cancel_orders=cancel_orders,
     )
     return protocol_models_module.UserAction(
         id=user_action_id,
         configuration=wrap_user_action_configuration(payload),
+    )
+
+
+def account_trading_open_orders_count(user_id: str, account_id: str) -> int:
+    trading_state = collection_providers_module.AccountTradingProvider.instance().load_state(
+        user_id,
+        account_id,
+    )
+    account_trading = trading_state.account_trading
+    if account_trading is None or account_trading.orders is None:
+        return 0
+    return len(account_trading.orders)
+
+
+def assert_account_trading_has_no_open_orders(user_id: str, account_id: str) -> None:
+    open_orders_count = account_trading_open_orders_count(user_id, account_id)
+    assert open_orders_count == 0, (
+        f"expected no open orders in AccountTrading for account {account_id!r}, "
+        f"got {open_orders_count}"
     )
 
 
@@ -160,6 +215,26 @@ def build_forced_trigger_signal_user_action(
     )
 
 
+def build_actions_signal_user_action(
+    *,
+    automation_id: str,
+    user_action_id: str,
+    signal_payload: typing.Any,
+) -> protocol_models_module.UserAction:
+    payload = protocol_models_module.SignalAutomationConfiguration(
+        action_type=protocol_models_module.UserActionType.AUTOMATION_SIGNAL,
+        automation_id=automation_id,
+        signal_type=protocol_models_module.AutomationSignalType.ACTIONS,
+        signal_payload=protocol_models_module.SignalAutomationConfigurationSignalPayload(
+            actual_instance=signal_payload,
+        ),
+    )
+    return protocol_models_module.UserAction(
+        id=user_action_id,
+        configuration=wrap_user_action_configuration(payload),
+    )
+
+
 def parse_automation_workflow_output(
     workflow_output: str,
 ) -> workflow_params_module.AutomationWorkflowOutput:
@@ -177,41 +252,29 @@ def job_description_dict_from_output(
 def buy_sell_trade_counts_from_exchange_elements(
     exchange_account_elements: typing.Any,
 ) -> tuple[int, int, int]:
-    if exchange_account_elements is None:
+    resolved = exchange_account_elements_access_module.resolve_exchange_account_elements(
+        exchange_account_elements,
+    )
+    if resolved is None:
         return 0, 0, 0
-    orders_container = getattr(exchange_account_elements, "orders", None)
-    if orders_container is None and isinstance(exchange_account_elements, dict):
-        orders_container = exchange_account_elements.get("orders")
-    if orders_container is None:
-        trades_only = getattr(exchange_account_elements, "trades", None)
-        if trades_only is None and isinstance(exchange_account_elements, dict):
-            trades_only = exchange_account_elements.get("trades", [])
-        return 0, 0, len(trades_only or [])
 
-    open_orders = getattr(orders_container, "open_orders", None)
-    if open_orders is None and isinstance(orders_container, dict):
-        open_orders = orders_container.get("open_orders", [])
-    open_orders = open_orders or []
-
+    open_orders = exchange_account_elements_access_module.open_orders_from_elements(resolved)
     side_key = trading_enums_module.ExchangeConstantsOrderColumns.SIDE.value
-    storage_key = trading_constants_module.STORAGE_ORIGIN_VALUE
     buy_count = 0
     sell_count = 0
-    for order in open_orders:
-        if isinstance(order, dict):
-            inner = order.get(storage_key, {})
-        else:
-            inner = getattr(order, storage_key, {})
-        side = inner.get(side_key) if isinstance(inner, dict) else getattr(inner, side_key, None)
+    for order_row in open_orders:
+        if not isinstance(order_row, dict):
+            raise TypeError(f"expected open order dict, got {type(order_row).__name__}")
+        inner = exchange_account_elements_access_module.order_storage_payload(order_row)
+        side = exchange_account_elements_access_module.normalize_order_column_value(
+            exchange_account_elements_access_module.order_column_value(inner, side_key),
+        )
         if side == trading_enums_module.TradeOrderSide.BUY.value:
             buy_count += 1
         elif side == trading_enums_module.TradeOrderSide.SELL.value:
             sell_count += 1
 
-    trades = getattr(exchange_account_elements, "trades", None)
-    if trades is None and isinstance(exchange_account_elements, dict):
-        trades = exchange_account_elements.get("trades", [])
-    trade_count = len(trades or [])
+    trade_count = len(exchange_account_elements_access_module.trades_from_elements(resolved))
     return buy_count, sell_count, trade_count
 
 
@@ -285,7 +348,7 @@ async def _list_matching_automation_workflow_rows(
     return [
         workflow_row
         for workflow_row in workflow_rows
-        if workflows_util_module.get_automation_id(workflow_row) == automation_id
+        if automation_states_loader_module.get_automation_id(workflow_row) == automation_id
     ]
 
 
@@ -418,6 +481,67 @@ async def wait_for_stop_success_output(
     )
 
 
+async def wait_for_latest_automation_exchange_elements_until(
+    scheduler: typing.Any,
+    automation_id: str,
+    elements_predicate: typing.Callable[[typing.Any], bool],
+    deadline_seconds: float,
+    failure_label: str,
+    *,
+    user_id: str | None = None,
+    account_id: str | None = None,
+    require_account_trading_open_orders: bool = False,
+    poll_interval_seconds: float = DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS,
+) -> typing.Any:
+    if require_account_trading_open_orders and (user_id is None or account_id is None):
+        raise ValueError(
+            "user_id and account_id are required when require_account_trading_open_orders is True"
+        )
+    poll_deadline = time.monotonic() + deadline_seconds
+    latest_workflow_id: str | None = None
+    latest_workflow_status: str | None = None
+    last_buy_count = 0
+    last_sell_count = 0
+    last_trade_count = 0
+    last_account_trading_open_orders = 0
+    while time.monotonic() < poll_deadline:
+        matching_rows = await _list_matching_automation_workflow_rows(scheduler, automation_id)
+        if not matching_rows:
+            await asyncio.sleep(poll_interval_seconds)
+            continue
+        latest_workflow_row = workflows_util_module.get_latest_child_workflow(matching_rows)
+        latest_workflow_id = latest_workflow_row.workflow_id
+        latest_workflow_status = latest_workflow_row.status
+        state_reader = automation_states_loader_module.get_automation_state_reader(latest_workflow_row)
+        if state_reader is None:
+            await asyncio.sleep(poll_interval_seconds)
+            continue
+        elements = state_reader.state.automation.exchange_account_elements
+        last_buy_count, last_sell_count, last_trade_count = buy_sell_trade_counts_from_exchange_elements(
+            elements
+        )
+        elements_predicate_met = elements_predicate(elements)
+        account_trading_predicate_met = True
+        if require_account_trading_open_orders:
+            last_account_trading_open_orders = account_trading_open_orders_count(user_id, account_id)
+            account_trading_predicate_met = last_account_trading_open_orders > 0
+        if elements_predicate_met and account_trading_predicate_met:
+            return elements
+        await asyncio.sleep(poll_interval_seconds)
+    diagnostic_details = [
+        f"latest workflow: {latest_workflow_id!r} status={latest_workflow_status!r}",
+        f"last EAE counts: buys={last_buy_count}, sells={last_sell_count}, trades={last_trade_count}",
+    ]
+    if require_account_trading_open_orders:
+        diagnostic_details.append(
+            f"last AccountTrading open orders: {last_account_trading_open_orders}"
+        )
+    pytest.fail(
+        f"Timed out waiting for {failure_label} for {automation_id!r} "
+        f"within {deadline_seconds}s; {'; '.join(diagnostic_details)}"
+    )
+
+
 async def enqueue_forced_trigger_and_await(
     scheduler: typing.Any,
     *,
@@ -452,8 +576,6 @@ async def enqueue_user_action_workflow_and_await_terminal_result(
     user_id: str,
 ):
     """``execute_user_action`` queues user actions; wait until the USER_ACTION_QUEUE workflow completes."""
-    import octobot_node.scheduler.tasks as scheduler_tasks_module
-
     workflow_identifier_encoded = await scheduler_tasks_module.trigger_user_action_workflow(
         user_action_bundle,
         user_id,

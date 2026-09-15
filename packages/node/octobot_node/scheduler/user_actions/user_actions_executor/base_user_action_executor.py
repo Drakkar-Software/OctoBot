@@ -33,6 +33,7 @@ class UserActionExecutor(abc.ABC):
     def __init__(self, user_id: str):
         self._user_id = user_id
         self.post_actions: user_action_post_actions.UserActionPostActions = user_action_post_actions.UserActionPostActions()
+        self.signal_execution_await_context = None
 
     def _get_error_message(self, exc: BaseException) -> str:
         """

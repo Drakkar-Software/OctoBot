@@ -652,8 +652,10 @@ class GridTradingModeProducer(staggered_orders_trading.StaggeredOrdersTradingMod
 
     def _check_params(self):
         if None not in (self.flat_increment, self.flat_spread) and self.flat_increment >= self.flat_spread:
-            self.logger.error(f"Your flat_spread parameter should always be higher than your flat_increment"
-                              f" parameter: average profit is spread-increment. ({self.symbol})")
+            self.logger.error(
+                f"Your flat_spread ({self.flat_spread}) parameter should always be higher than your flat_increment ({self.flat_increment})"
+                f" parameter: average profit is spread-increment. ({self.symbol})"
+            )
 
     def _create_new_orders_bundle(
         self, lower_bound, upper_bound, side, current_price, allowed_funds, ignore_available_funds, selling,

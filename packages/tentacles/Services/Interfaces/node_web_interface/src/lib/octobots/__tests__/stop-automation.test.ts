@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { ApiError } from "@/client"
+import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 import {
   buildStopAutomationUserAction,
   canStopOctoBot,
@@ -85,6 +86,10 @@ describe("buildStopAutomationUserAction", () => {
       "automation_stop",
     )
     expect(getStopAutomationTargetId(userAction)).toBe("auto-1")
+    const stopConfiguration = resolveOneOfInstance<{ cancel_orders?: boolean }>(
+      userAction.configuration,
+    )
+    expect(stopConfiguration?.cancel_orders).toBe(false)
   })
 })
 

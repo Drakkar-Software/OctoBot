@@ -26,6 +26,22 @@ AutomationActionResultErrorMessage
 
 * `INTERNAL_ERROR` (value: `'internal_error'`)
 
+* `EXECUTION_TIMEOUT` (value: `'execution_timeout'`)
+
+* `EXECUTION_FAILED` (value: `'execution_failed'`)
+
+* `NOT_ENOUGH_FUNDS` (value: `'not_enough_funds'`)
+
+* `ORDER_NOT_FOUND` (value: `'order_not_found'`)
+
+* `INVALID_ORDER` (value: `'invalid_order'`)
+
+* `AUTHENTICATION_ERROR` (value: `'authentication_error'`)
+
+* `MISSING_SYMBOL` (value: `'missing_symbol'`)
+
+* `SYMBOL_INCOMPATIBLE_WITH_ACCOUNT` (value: `'symbol_incompatible_with_account'`)
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

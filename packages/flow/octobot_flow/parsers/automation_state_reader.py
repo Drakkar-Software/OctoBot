@@ -1,6 +1,5 @@
 import octobot_flow.entities
 import octobot_flow.logic.configuration
-import octobot_flow.logic.dsl
 
 
 class AutomationStateReader:
@@ -8,6 +7,9 @@ class AutomationStateReader:
         self.state: octobot_flow.entities.AutomationState = state
 
     def get_automation_copied_strategy_ids(self) -> list[str]:
+        # avoid hard tentacles dependencies
+        import octobot_flow.logic.dsl
+        
         to_execute_actions = self.state.automation.actions_dag.get_executable_actions()
         self._resolve_dsl_scripts_for_actions(to_execute_actions)
         minimal_profile_data = octobot_flow.logic.configuration.create_profile_data(

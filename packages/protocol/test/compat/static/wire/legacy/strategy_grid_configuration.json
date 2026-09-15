@@ -1,0 +1,11 @@
+{
+  "id": "strat-legacy",
+  "version": "1",
+  "reference_market": "USDC",
+  "configuration": {
+    "configuration_type": "grid",
+    "pair_settings": null,
+    "name": null,
+    "config": null
+  }
+}

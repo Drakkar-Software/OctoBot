@@ -23,6 +23,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.order import Order
 from octobot_protocol.models.position import Position
 from octobot_protocol.models.trade import Trade
+from octobot_protocol.models.transaction import Transaction
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -35,7 +36,8 @@ class AccountTrading(BaseModel):
     orders: Optional[List[Order]] = None
     trades: Optional[List[Trade]] = None
     positions: Optional[List[Position]] = None
-    __properties: ClassVar[List[str]] = ["updated_at", "orders", "trades", "positions"]
+    transactions: Optional[List[Transaction]] = None
+    __properties: ClassVar[List[str]] = ["updated_at", "orders", "trades", "positions", "transactions"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -97,6 +99,13 @@ class AccountTrading(BaseModel):
                 if _item_positions:
                     _items.append(_item_positions.to_dict())
             _dict['positions'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in transactions (list)
+        _items = []
+        if self.transactions:
+            for _item_transactions in self.transactions:
+                if _item_transactions:
+                    _items.append(_item_transactions.to_dict())
+            _dict['transactions'] = _items
         return _dict
 
     @classmethod
@@ -112,7 +121,8 @@ class AccountTrading(BaseModel):
             "updated_at": obj.get("updated_at"),
             "orders": [Order.from_dict(_item) for _item in obj["orders"]] if obj.get("orders") is not None else None,
             "trades": [Trade.from_dict(_item) for _item in obj["trades"]] if obj.get("trades") is not None else None,
-            "positions": [Position.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None
+            "positions": [Position.from_dict(_item) for _item in obj["positions"]] if obj.get("positions") is not None else None,
+            "transactions": [Transaction.from_dict(_item) for _item in obj["transactions"]] if obj.get("transactions") is not None else None
         })
         return _obj
 

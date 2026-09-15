@@ -17,10 +17,10 @@
 
 import tentacles.Meta.DSL_operators.automation_operators.automation_management
 from tentacles.Meta.DSL_operators.automation_operators.automation_management import (
-    StopAutomationOperator,
+    create_stop_automation_operators,
     UpdateAutomationConfigurationOperator,
 )
 __all__ = [
-    "StopAutomationOperator",
+    "create_stop_automation_operators",
     "UpdateAutomationConfigurationOperator",
 ]

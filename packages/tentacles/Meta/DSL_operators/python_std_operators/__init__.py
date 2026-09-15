@@ -94,6 +94,10 @@ import tentacles.Meta.DSL_operators.python_std_operators.base_time_operators as 
 from tentacles.Meta.DSL_operators.python_std_operators.base_time_operators import (
     NowMsOperator,
 )
+import tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators as dsl_interpreter_recall_when_relevant_for_context_operators
+from tentacles.Meta.DSL_operators.python_std_operators.recall_when_relevant_for_context_operators import (
+    create_recall_when_relevant_for_context_operators,
+)
 
 __all__ = [
     "AddOperator",
@@ -142,4 +146,5 @@ __all__ = [
     "ListOperator",
     "ErrorOperator",
     "NowMsOperator",
+    "create_recall_when_relevant_for_context_operators",
 ]

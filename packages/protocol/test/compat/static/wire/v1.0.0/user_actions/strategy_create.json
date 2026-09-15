@@ -1,0 +1,15 @@
+{
+  "configuration": {
+    "action_type": "strategy_create",
+    "configuration": {
+      "configuration": {
+        "configuration_type": "copy",
+        "strategy_id": "id-1"
+      },
+      "id": "id-1",
+      "reference_market": "x",
+      "version": "1.0.0"
+    }
+  },
+  "id": "user-action-strategy_create"
+}

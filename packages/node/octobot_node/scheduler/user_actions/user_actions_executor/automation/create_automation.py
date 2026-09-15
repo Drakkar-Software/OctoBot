@@ -68,7 +68,7 @@ def _execute_actions_task_content_json(
 ) -> str:
     """
     Build Task.content for EXECUTE_ACTIONS: JSON envelope with automation state and actions DAG,
-    matching octobot_node.scheduler.workflows_util.get_automation_dict / functional workflow tests.
+    matching octobot_node.scheduler.automations.automation_states_loader.get_automation_dict / functional workflow tests.
     """
     automation_state = flow_entities.AutomationState(
         automation=flow_entities.AutomationDetails(
@@ -229,6 +229,14 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
                         init_action,
                         copy_configuration,
                         reference_market=stored_strategy.reference_market,
+                    ),
+                ]
+            case protocol_models.SignalBotConfiguration() as signal_bot_configuration:
+                return [
+                    init_action,
+                    action_details_factory.signal_bot_action_factory(
+                        init_action,
+                        signal_bot_configuration,
                     ),
                 ]
             case protocol_models.GenericWorkflowConfiguration() as generic_workflow_configuration:

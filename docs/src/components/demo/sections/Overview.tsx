@@ -25,7 +25,7 @@ export function Overview() {
   return (
     <Section
       id="overview"
-      eyebrow="octobot-client · v0.2.0 · GPL-3.0"
+      eyebrow="octobot-client · v0.2.0 · LGPL-3.0"
       title="What this is, and what it costs you"
       weight="compact"
     >
@@ -67,7 +67,7 @@ export function Overview() {
             license
           </p>
           <p className="font-mono text-[12px] text-wire-ink">
-            GPL-3.0
+            LGPL-3.0
             <br />
             <span className="text-wire-muted">
               worth knowing before week three, not after.

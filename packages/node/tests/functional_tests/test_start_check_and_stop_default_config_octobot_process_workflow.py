@@ -27,7 +27,8 @@ import octobot.community.authentication as community_authentication_module
 import octobot_node.config
 import octobot_node.constants as octobot_node_constants_module
 import octobot_node.scheduler
-import octobot_node.scheduler.generic_process_octobot as generic_process_octobot_module
+import octobot_node.scheduler.automations.generic_process_octobot as generic_process_octobot_module
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_sync.sync.collection_providers as collection_providers_module
 import tentacles.Meta.DSL_operators.octobot_process_operators.octobot_process_ops as octobot_process_ops
@@ -46,6 +47,35 @@ _GENERIC_PROCESS_ACCOUNTLESS_AUTOMATION_NAME = "test_generic_process_accountless
 
 # Spawn real OctoBot child processes on fixed local ports; serialize under pytest-xdist.
 pytestmark = pytest.mark.xdist_group("octobot_process_functional")
+
+_SHORT_GRACE_RECV_BEFORE_RESCHEDULE_SECONDS = 0.25
+
+
+@pytest.fixture(autouse=True)
+def _short_grace_recv_before_reschedule(monkeypatch, temp_dbos_scheduler):
+    # Second arg is resume_execution_time (absolute epoch), not a delay. Reschedule path
+    # passes 0 => zero-timeout recv; rewrite to now+grace so stop can land before next child.
+    import importlib
+    automation_workflow_module = importlib.import_module(
+        "octobot_node.scheduler.workflows.automation_workflow"
+    )
+    real_wait = automation_workflow_module.AutomationWorkflow._wait_and_trigger_on_actions_update
+
+    async def wait_with_short_grace(parsed_inputs, resume_execution_time, *args, **kwargs):
+        effective_resume_execution_time = resume_execution_time
+        if resume_execution_time == 0:
+            effective_resume_execution_time = (
+                time.time() + _SHORT_GRACE_RECV_BEFORE_RESCHEDULE_SECONDS
+            )
+        return await real_wait(
+            parsed_inputs, effective_resume_execution_time, *args, **kwargs
+        )
+
+    monkeypatch.setattr(
+        automation_workflow_module.AutomationWorkflow,
+        "_wait_and_trigger_on_actions_update",
+        wait_with_short_grace,
+    )
 
 
 class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
@@ -118,6 +148,10 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_RSA_PRIVATE_KEY", None),
             mock.patch.object(octobot_node.config.settings, "TASKS_SERVER_ECDSA_PRIVATE_KEY", None),
         ):
+            # Seed trading state as CreateAccountActionExecutor would; persist_account_trading requires it.
+            workflow_common_module.seed_empty_account_trading_state(
+                user_id, _GENERIC_PROCESS_ACCOUNT_ID
+            )
             try:
                 await asyncio.wait_for(
                     workflow_common_module.enqueue_user_action_workflow_and_await_terminal_result(
@@ -158,9 +192,9 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
             workflow_row_matching: typing.Any = None
             state_reader_matching: typing.Any = None
             for workflow_row in workflow_rows:
-                if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                     continue
-                state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                 if state_reader is None:
                     continue
                 workflow_row_matching = workflow_row
@@ -263,7 +297,7 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
             workflow_rows_after_restart = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
             workflow_row_after_restart: typing.Any = None
             for workflow_row in workflow_rows_after_restart:
-                if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                     continue
                 if workflow_row.status not in (
                     dbos.WorkflowStatusString.PENDING.value,
@@ -377,9 +411,9 @@ class TestStartCheckAndStopDefaultConfigOctobotProcessWorkflow:
                 workflow_rows = await temp_dbos_scheduler.INSTANCE.list_workflows_async()
                 workflow_row_matching: typing.Any = None
                 for workflow_row in workflow_rows:
-                    if workflows_util_module.get_automation_id(workflow_row) != metadata_automation_id:
+                    if automation_states_loader_module.get_automation_id(workflow_row) != metadata_automation_id:
                         continue
-                    state_reader = workflows_util_module.get_automation_state_reader(workflow_row)
+                    state_reader = automation_states_loader_module.get_automation_state_reader(workflow_row)
                     if state_reader is None:
                         continue
                     workflow_row_matching = workflow_row

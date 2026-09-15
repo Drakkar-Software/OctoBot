@@ -1358,8 +1358,10 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
 
     def _check_params(self):
         if self.increment >= self.spread:
-            self.logger.error(f"Your spread_percent parameter should always be higher than your increment_percent"
-                              f" parameter: average profit is spread-increment. ({self.symbol})")
+            self.logger.error(
+                f"Your spread_percent ({self.spread}) parameter should always be higher than your increment_percent ({self.increment})"
+                f" parameter: average profit is spread-increment. ({self.symbol})"
+            )
         if self.lowest_buy >= self.highest_sell:
             self.logger.error(f"Your lower_bound should always be lower than your upper_bound ({self.symbol})")
 

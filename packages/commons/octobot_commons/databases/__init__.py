@@ -57,8 +57,7 @@ from octobot_commons.databases.implementations import (
 )
 
 from octobot_commons.databases.relational_databases import (
-    SQLiteDatabase,
-    new_sqlite_database,
+    BaseSQLiteDatabase,
 )
 
 from octobot_commons.databases.run_databases import (
@@ -98,8 +97,7 @@ __all__ = [
     "DBWriterReader",
     "CacheDatabase",
     "CacheTimestampDatabase",
-    "SQLiteDatabase",
-    "new_sqlite_database",
+    "BaseSQLiteDatabase",
     "RunDatabasesIdentifier",
     "RunDatabasesProvider",
     "init_bot_storage",

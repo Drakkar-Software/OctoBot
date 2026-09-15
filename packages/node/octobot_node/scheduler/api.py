@@ -28,7 +28,7 @@ import octobot_node.models
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows_util as workflows_util
 
-logger = octobot_commons_logging.get_logger("octobot_node.scheduler.api")
+logger = octobot_commons_logging.get_logger("scheduler_api")
 
 
 def get_node_status() -> dict[str, str | int | None | uuid.UUID]:

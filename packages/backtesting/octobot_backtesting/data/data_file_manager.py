@@ -24,6 +24,8 @@ import octobot_commons.enums as common_enums
 import octobot_commons.time_frame_manager as tmf_manager
 import octobot_commons.errors as commons_errors
 
+import octobot_backtesting.databases as backtesting_databases
+
 import octobot_backtesting.constants as constants
 import octobot_backtesting.enums as enums
 
@@ -140,7 +142,7 @@ async def get_database_description(database):
 async def get_file_description(database_file):
     database = None
     try:
-        database = databases.SQLiteDatabase(database_file)
+        database = backtesting_databases.BacktestingDataSQLiteDatabase(database_file)
         await database.initialize()
         description = await get_database_description(database)
     except (commons_errors.DatabaseNotFoundError, TypeError):

@@ -59,6 +59,38 @@ async def test_handle_balance_update(backtesting_trader):
             portfolio_manager.handle_balance_update({})
             update_portfolio_from_balance_mock.assert_called_once()
             can_trade_if_not_paused_mock.assert_called_once()
+            call_kwargs = update_portfolio_from_balance_mock.call_args.kwargs
+            assert call_kwargs["should_log_update"] == exchange_manager.should_log_exchange_lifecycle_debug()
+
+
+class TestLoadPortfolioLogging:
+    pytestmark = []
+
+    def test_does_not_log_current_portfolio_when_exchange_only(self):
+        portfolio_manager = mock.Mock()
+        portfolio_manager.trader.can_trade_if_not_paused = mock.Mock(return_value=True)
+        portfolio_manager.trader.simulate = True
+        portfolio_manager.exchange_manager.should_log_exchange_lifecycle_debug = mock.Mock(return_value=False)
+        portfolio_manager.historical_portfolio_value_manager = None
+        portfolio_manager.logger = mock.Mock()
+        portfolio_manager.apply_forced_portfolio = mock.Mock()
+
+        personal_data.PortfolioManager._load_portfolio(portfolio_manager, False)
+
+        portfolio_manager.apply_forced_portfolio.assert_called_once()
+        portfolio_manager.logger.debug.assert_not_called()
+
+    def test_logs_current_portfolio_when_lifecycle_debug_enabled(self):
+        portfolio_manager = mock.Mock()
+        portfolio_manager.trader.can_trade_if_not_paused = mock.Mock(return_value=True)
+        portfolio_manager.trader.simulate = False
+        portfolio_manager.exchange_manager.should_log_exchange_lifecycle_debug = mock.Mock(return_value=True)
+        portfolio_manager.portfolio.portfolio = {}
+        portfolio_manager.logger = mock.Mock()
+
+        personal_data.PortfolioManager._load_portfolio(portfolio_manager, False)
+
+        portfolio_manager.logger.debug.assert_called_once()
 
 
 async def test_handle_balance_update_from_order(backtesting_trader):

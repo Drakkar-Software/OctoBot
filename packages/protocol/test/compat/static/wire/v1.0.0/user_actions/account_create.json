@@ -1,0 +1,12 @@
+{
+  "configuration": {
+    "action_type": "account_create",
+    "configuration": {
+      "created_at": "2020-01-01T00:00:00Z",
+      "id": "id-1",
+      "is_simulated": false,
+      "name": "name"
+    }
+  },
+  "id": "user-action-account_create"
+}

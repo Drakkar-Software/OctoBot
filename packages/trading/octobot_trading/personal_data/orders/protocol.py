@@ -35,9 +35,9 @@ def to_protocol_order(
         exchange_id=order_details[enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value],
         side=order_details[enums.ExchangeConstantsOrderColumns.SIDE.value],
         type=order_details[enums.ExchangeConstantsOrderColumns.TYPE.value],
-        trigger_above=order_details[enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value],
-        reduce_only=order_details[enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value],
-        is_active=order_details[enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value],
+        trigger_above=order_details.get(enums.ExchangeConstantsOrderColumns.TRIGGER_ABOVE.value),
+        reduce_only=order_details.get(enums.ExchangeConstantsOrderColumns.REDUCE_ONLY.value, False),
+        is_active=order_details.get(enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value, True),
         status=order_details[enums.ExchangeConstantsOrderColumns.STATUS.value],
         created_at=timestamp_util.utc_datetime_from_timestamp(order_details[enums.ExchangeConstantsOrderColumns.TIMESTAMP.value]),
     )
@@ -90,4 +90,16 @@ def exchange_columns_dict_from_protocol_order(
         enums.ExchangeConstantsOrderColumns.IS_ACTIVE.value: order.is_active,
         enums.ExchangeConstantsOrderColumns.STATUS.value: order.status.value,
         enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: order.created_at.timestamp(),
+    }
+
+
+def open_order_exchange_ids_from_protocol_orders(
+    protocol_orders: list[protocol_models.Order] | None,
+) -> set[str]:
+    if not protocol_orders:
+        return set()
+    return {
+        str(protocol_order.exchange_id)
+        for protocol_order in protocol_orders
+        if protocol_order.exchange_id
     }

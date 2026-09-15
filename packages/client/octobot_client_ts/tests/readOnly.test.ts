@@ -80,6 +80,12 @@ describe('createReadOnlyOctoBotClient — accounts', () => {
     const decoded = decodeActionProposal(proposed.payload)
     expect(decoded.actions).toHaveLength(3)
     expect(decoded.label).toContain('New')
+    // account_create landing before exchange_config_create fails
+    // NON-RETRIABLY on the node — every entry must chain to the one before
+    // it, not just the first pair.
+    expect(decoded.actions[0].after).toBeUndefined()
+    expect(decoded.actions[1].after).toBe('previous-confirmed')
+    expect(decoded.actions[2].after).toBe('previous-confirmed')
   })
 
   it('update() preserves created_at via a read, still never appends', async () => {
@@ -92,15 +98,23 @@ describe('createReadOnlyOctoBotClient — accounts', () => {
     })
     const accountEdit = proposed.actions.find((a) => (a as { action_type: string }).action_type === 'account_edit') as { configuration: { created_at: string } }
     expect(accountEdit.configuration.created_at).toBe(ORIGINAL_CREATED_AT)
+    const decoded = decodeActionProposal(proposed.payload)
+    expect(decoded.actions[0].after).toBeUndefined()
+    expect(decoded.actions[1].after).toBe('previous-confirmed')
+    expect(decoded.actions[2].after).toBe('previous-confirmed')
   })
 
-  it('delete() proposes all three companion deletes', async () => {
+  it('delete() proposes all three companion deletes, each chained to the one before it', async () => {
     const session = fakeReadOnlySession({ accounts: { accounts: [], exchange_configs: [] } })
     const client = createReadOnlyOctoBotClient(session)
     const proposed = await client.accounts.delete('acc1')
     expect(proposed.actions.map((a) => (a as { action_type: string }).action_type)).toEqual([
       'account_delete', 'account_auth_delete', 'exchange_config_delete',
     ])
+    const decoded = decodeActionProposal(proposed.payload)
+    expect(decoded.actions[0].after).toBeUndefined()
+    expect(decoded.actions[1].after).toBe('previous-confirmed')
+    expect(decoded.actions[2].after).toBe('previous-confirmed')
   })
 })
 

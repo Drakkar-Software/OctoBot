@@ -22,22 +22,16 @@ import octobot_node.protocol.strategies as strategies_protocol
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 
 
-def _account_ids_bound_to_running_automations(
-    automations: list[protocol_models.AutomationState],
+def _wallet_account_ids(
+    accounts: list[protocol_models.Account] | None,
 ) -> list[str]:
-    seen_account_ids: set[str] = set()
-    bound_account_ids: list[str] = []
-    for automation in automations:
-        if automation.status != protocol_models.WorkflowStatus.RUNNING:
-            continue
-        if not automation.exchange_account_ids:
-            continue
-        for account_id in automation.exchange_account_ids:
-            if account_id in seen_account_ids:
-                continue
-            seen_account_ids.add(account_id)
-            bound_account_ids.append(account_id)
-    return bound_account_ids
+    if not accounts:
+        return []
+    return [
+        account.id
+        for account in accounts
+        if account.id
+    ]
 
 
 async def get_debug_state(user_id: str) -> protocol_models.DebugState:
@@ -45,10 +39,9 @@ async def get_debug_state(user_id: str) -> protocol_models.DebugState:
     user_actions = await scheduler_api.list_user_actions(user_id, active_only=False)
     account_state = accounts_protocol.get_accounts_state(user_id)
     strategies_state = strategies_protocol.get_strategies_state(user_id)
-    bound_account_ids = _account_ids_bound_to_running_automations(automations)
     account_tradings = accounts_trading_protocol.get_account_trading_summaries(
         user_id,
-        bound_account_ids,
+        _wallet_account_ids(account_state.accounts),
     )
     return protocol_models.DebugState(
         version=sync_constants.DEBUG_STATE_VERSION,

@@ -20,6 +20,7 @@ import json
 from collections.abc import Awaitable, Callable
 
 from starfish_server.config.schema import SyncConfig
+from starfish_server.router.route_builder import RoleEnricher
 from starfish_server.protocol.types import DOCUMENT_VERSION
 from starfish_server.storage.base import AbstractObjectStore, StoreContext
 from starfish_server.storage.s3 import S3ObjectStore, S3StorageOptions
@@ -50,6 +51,7 @@ import octobot_node.protocol.debug as debug_protocol
 import octobot_node.protocol.accounts as accounts_protocol
 import octobot_node.protocol.accounts_authentication as accounts_auth_protocol
 import octobot_node.protocol.accounts_trading as accounts_trading_protocol
+import octobot_node.protocol.accounts_history as accounts_history_protocol
 import octobot_node.protocol.strategies as strategies_protocol
 
 
@@ -200,6 +202,24 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 _get_account_id(context),
             )
             already_encrypted_payload = json.dumps(encrypted_blob)
+        case enums.Collections.USER_ACCOUNTS_HISTORY.value:
+            history_state = await accounts_history_protocol.compute_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                _get_identity(context),
+                _get_account_id(context),
+            )
+            plaintext = history_state.to_json()
+        case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_REAL.value:
+            history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                _get_identity(context),
+                is_simulated=False,
+            )
+            plaintext = history_state.to_json()
+        case enums.Collections.USER_ACCOUNTS_HISTORY_AGGREGATED_SIMULATED.value:
+            history_state = await accounts_history_protocol.compute_aggregated_portfolio_historical_values_from_latest_portfolio_trades_and_transactions(
+                _get_identity(context),
+                is_simulated=True,
+            )
+            plaintext = history_state.to_json()
         case enums.TemporaryCollections.TEMP_USER_STRATEGIES.value:
             encrypted_blob = strategies_protocol.get_strategies_state_encrypted(
                 _get_identity(context)
@@ -217,10 +237,6 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
                 _get_identity(context)
             )
             plaintext = debug_state.to_json()
-        case enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value:
-            # Append-only plaintext log: StoredDocument.data is a dict (items
-            # array), not wallet ciphertext — return the persisted doc as-is.
-            return await _get_opaque_store().get_string(key)
         case _:
             # Opaque storage: collections with no protocol bridge are persisted
             # as client-encrypted ciphertext and the node never decrypts them.
@@ -240,18 +256,11 @@ async def get_data(key: str, context: StoreContext | None = None) -> str | None:
     return _wrap_as_stored_document(encrypted, plaintext)
 
 async def put_data(key: str, body: str, context: StoreContext | None = None) -> None:
-    collection = _get_collection(context)
-    match collection:
-        case enums.TemporaryCollections.TEMP_PRODUCT_SIGNALS.value:
-            # Append-only plaintext log: persist the full StoredDocument body
-            # (data is a dict), not an unwrapped ciphertext string.
-            await _get_opaque_store().put(key, body, content_type="application/json")
-        case _:
-            # Opaque storage: persist the client ciphertext as-is. The node
-            # never decrypts these collections — wallet-key decryption happens
-            # entirely on the client.
-            ciphertext = _unwrap_stored_document_data(body)
-            await _get_opaque_store().put(key, ciphertext, content_type="application/json")
+    # Opaque storage: persist the client ciphertext as-is. The node never
+    # decrypts these collections — wallet-key decryption happens entirely on
+    # the client.
+    ciphertext = _unwrap_stored_document_data(body)
+    await _get_opaque_store().put(key, ciphertext, content_type="application/json")
 
 def set_data_callbacks(
     get_data: Callable[[str, StoreContext | None], Awaitable[str | None]],
@@ -313,6 +322,7 @@ def build_default_sync_app(
     is_allowed_user_id: Callable[[str], bool] | None = None,
     sync_config: SyncConfig | None = None,
     external_host: str | None = None,
+    role_enricher: RoleEnricher | None = None,
 ):
     return sync_app.create_app(
         build_object_store(),
@@ -320,4 +330,5 @@ def build_default_sync_app(
         sync_config=sync_config,
         plugins=[user_actions_plugin],
         external_host=external_host,
+        role_enricher=role_enricher,
     )

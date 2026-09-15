@@ -32,6 +32,25 @@ describe("buildSignalUserActionConfiguration", () => {
     }
   })
 
+  it("wraps key=value script payload for actions signal type", () => {
+    const result = buildSignalUserActionConfiguration(
+      "auto-1",
+      "actions",
+      "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.00001",
+      "key_val_script",
+    )
+    expect("configuration" in result).toBe(true)
+    if ("configuration" in result) {
+      expect(
+        (result.configuration as Record<string, unknown>).signal_payload,
+      ).toEqual([
+        {
+          script: "SYMBOL=BTC/USDC\nSIGNAL=buy\nVOLUME=0.00001",
+        },
+      ])
+    }
+  })
+
   it("returns an error for invalid JSON payload", () => {
     const result = buildSignalUserActionConfiguration(
       "auto-1",

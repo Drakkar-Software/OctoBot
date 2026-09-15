@@ -80,6 +80,7 @@ CONFIG_LEVERAGE = "leverage"
 TRADING_MODE_ACTIVITY_REASON = "reason"
 
 # Exchange
+OB_EXCHANGE_PREFIX = "ob_"
 DEFAULT_EXCHANGE_TIME_LAG = 10
 DEFAULT_BACKTESTING_TIME_LAG = 0
 INFINITE_MAX_HANDLED_PAIRS_WITH_TIMEFRAME = -1
@@ -149,10 +150,12 @@ FULL_CANDLE_HISTORY_EXCHANGES = [
     "bitfinex",
     "bitstamp",
     "bybit",
-    "bingx",
+    "bybiteu",
+    # "bingx",  # not supported: BingX caps daily k-line query range at 380 days
     "hollaex",
     "htx",
     "kucoin",
+    "kucoineu",
     "okcoin",
     "okx",
     "myokx",
@@ -169,6 +172,7 @@ DEFAULT_FUTURE_EXCHANGES = ["binanceusdm", "bybit"]
 TESTED_EXCHANGES = [
     "binance",
     "kucoin",
+    "kucoineu",
     "kraken",
 ] + sorted([
     "binanceus",
@@ -179,6 +183,7 @@ TESTED_EXCHANGES = [
     "okx",
     "gate",
     "bybit",
+    "bybiteu",
     "phemex",
     "hollaex",
     "mexc",
@@ -226,6 +231,8 @@ RETRIABLE_EXCHANGE_ERRORS_DESC: set[str] = set(os.getenv(
     )
 ).split(":"))
 USE_CCXT_SHARED_MARKETS_CACHE = os_util.parse_boolean_environment_var("USE_CCXT_SHARED_MARKETS_CACHE", "True")
+
+EXCHANGE_CACHE_FOLDER = "exchange-cache"
 
 # exchange proxy
 RETRIABLE_EXCHANGE_PROXY_ERRORS_DESC: set[str] = set(os.getenv(

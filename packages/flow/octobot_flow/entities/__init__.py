@@ -35,6 +35,18 @@ from octobot_flow.entities.community import (
     UserAuthentication,
     TradingSignal,
 )
+from octobot_flow.entities.global_view import (
+    GlobalViewAccountContext,
+    ExchangeAccountRefreshResult,
+    GlobalViewAccountRefreshResult,
+)
+from octobot_flow.entities.portfolio_history import (
+    PortfolioHistoryAccountContext,
+    PortfolioHistoryRunResult,
+)
+from octobot_flow.entities.signals import (
+    SignalExchangeContext,
+)
 __all__ = [
     "AccountElements",
     "ExchangeAccountElements",
@@ -65,4 +77,10 @@ __all__ = [
     "AdditionalActions",
     "UserAuthentication",
     "TradingSignal",
+    "GlobalViewAccountContext",
+    "ExchangeAccountRefreshResult",
+    "GlobalViewAccountRefreshResult",
+    "PortfolioHistoryAccountContext",
+    "PortfolioHistoryRunResult",
+    "SignalExchangeContext",
 ]

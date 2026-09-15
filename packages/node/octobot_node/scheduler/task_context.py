@@ -21,7 +21,7 @@ import typing
 import octobot_node.config
 import octobot_node.models
 import octobot_node.scheduler.encryption as encryption
-import octobot_node.scheduler.octobot_flow_client
+import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @contextlib.contextmanager
 def encrypted_task(
     task: octobot_node.models.Task,
-    to_update_result: typing.Optional["octobot_node.scheduler.octobot_flow_client.OctoBotActionsJobResult"] = None
+    to_update_result: typing.Optional["octobot_flow_client.OctoBotActionsJobResult"] = None
 ):
     """
     Context manager for automatically decrypting task content.
@@ -58,7 +58,7 @@ def encrypted_task(
             # ensure maybe_encrypted_next_actions_description is encrypted if needed
             if isinstance(
                 to_update_result.next_actions_description,
-                octobot_node.scheduler.octobot_flow_client.OctoBotActionsJobDescription
+                octobot_flow_client.OctoBotActionsJobDescription
             ):
                 maybe_encrypted_next_actions_description, next_actions_description_encryption_metadata = encryption.get_next_encrypted_if_needed_content_and_metadata(
                     to_update_result.next_actions_description.to_dict(include_default_values=False)

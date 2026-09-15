@@ -31,6 +31,7 @@ from octobot_trading.personal_data.orders import StopLossOrder
 from octobot_trading.personal_data.orders import BuyMarketOrder
 from octobot_trading.personal_data.orders.types.market.sell_market_order import SellMarketOrder
 import octobot_trading.personal_data.orders.groups as order_groups
+import octobot_trading.personal_data as personal_data
 from tests.test_utils.order_util import fill_market_order, fill_limit_or_stop_order
 
 from tests.exchanges import backtesting_trader, backtesting_config, backtesting_exchange_manager, fake_backtesting
@@ -123,6 +124,34 @@ async def test_update_portfolio_from_balance(backtesting_trader):
 
     # should return False when no update made
     assert not portfolio_manager.portfolio.update_portfolio_from_balance(test_portfolio, force_replace=False)
+
+
+class TestUpdatePortfolioFromBalanceLogging:
+    pytestmark = []
+
+    def test_does_not_log_when_should_log_update_false(self):
+        portfolio = personal_data.SpotPortfolio("binance", is_simulated=False)
+        portfolio.logger = mock.Mock()
+        balance = {
+            "BTC": {
+                commons_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("1"),
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+            },
+        }
+        portfolio.update_portfolio_from_balance(balance, should_log_update=False)
+        portfolio.logger.debug.assert_not_called()
+
+    def test_logs_when_should_log_update_true(self):
+        portfolio = personal_data.SpotPortfolio("binance", is_simulated=False)
+        portfolio.logger = mock.Mock()
+        balance = {
+            "BTC": {
+                commons_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("1"),
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("1"),
+            },
+        }
+        portfolio.update_portfolio_from_balance(balance, should_log_update=True)
+        portfolio.logger.debug.assert_called_once()
 
 
 async def test_update_portfolio_from_balance_with_deltas(backtesting_trader):

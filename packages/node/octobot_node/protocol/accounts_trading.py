@@ -101,3 +101,22 @@ def update_account_trading(
     account_trading.updated_at = datetime.datetime.now(datetime.UTC)
     # Step: persist the updated trading state for this account.
     trading_provider.AccountTradingProvider.instance().save_state(user_id, account_id, trading_state)
+
+
+def reset_account_trading_data(user_id: str, account_id: str) -> None:
+    try:
+        trading_state = get_account_trading_state(user_id, account_id)
+    except collection_errors.CollectionNoDataError:
+        trading_state = protocol_models.AccountTradingState(
+            version=sync_constants.USER_ACCOUNTS_TRADING_STATE_VERSION,
+            account_trading=protocol_models.AccountTrading(
+                updated_at=datetime.datetime.now(datetime.UTC),
+            ),
+        )
+    account_trading = trading_state.account_trading
+    account_trading.orders = None
+    account_trading.trades = None
+    account_trading.transactions = None
+    account_trading.positions = None
+    account_trading.updated_at = datetime.datetime.now(datetime.UTC)
+    trading_provider.AccountTradingProvider.instance().save_state(user_id, account_id, trading_state)

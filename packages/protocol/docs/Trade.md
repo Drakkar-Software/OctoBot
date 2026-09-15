@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **side** | [**Side**](Side.md) |  | 
 **quantity** | **float** |  | 
 **price** | **float** |  | 
+**fee** | [**Fee**](Fee.md) |  | [optional] 
 **status** | [**OrderStatus**](OrderStatus.md) |  | 
 **executed_at** | **datetime** |  | 
 

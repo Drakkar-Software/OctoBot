@@ -135,6 +135,7 @@ from octobot_trading.api.exchange import (
     get_exchange_details,
     cancel_ccxt_throttle_task,
     stop_exchange,
+    get_exchanges_availability,
 )
 from octobot_trading.api.modes import (
     get_trading_modes,
@@ -168,6 +169,7 @@ from octobot_trading.api.portfolio import (
     get_portfolio,
     get_portfolio_historical_values,
     get_portfolio_reference_market,
+    resolve_portfolio_valuation_unit,
     get_portfolio_currency,
     get_origin_portfolio,
     set_simulated_portfolio_initial_config,
@@ -187,6 +189,9 @@ from octobot_trading.api.portfolio import (
     get_assets_delta_from_orders,
     get_global_portfolio_currencies_values,
     get_fees_only_asset_deltas_from_orders,
+    compute_portfolio_historical_holdings_from_latest_portfolio_trades_and_transations,
+    compute_daily_portfolio_values,
+    aggregate_portfolio_historical_values,
 )
 from octobot_trading.api.profitability import (
     get_profitability_stats,
@@ -250,6 +255,24 @@ from octobot_trading.api.storage import (
 )
 from octobot_trading.api.blockchain_wallets import (
     blockchain_wallet_context,
+)
+from octobot_trading.api import exchange_data_cache
+from octobot_trading.api.exchange_data_cache import (
+    load_daily_prices,
+    merge_daily_prices,
+    set_daily_close_source,
+    rename_daily_closes_symbol,
+    load_latest_tickers,
+    update_latest_tickers,
+    get_daily_price,
+    get_latest_daily_close_on_or_before,
+    get_latest_ticker_close,
+    get_oldest_daily_price_timestamp,
+    get_latest_daily_price_timestamp,
+    get_daily_close_source,
+    set_daily_close_source_in_memory,
+    merge_daily_prices_in_memory,
+    move_daily_prices_symbol_in_memory,
 )
 __all__ = [
     "get_symbol_data",
@@ -353,6 +376,7 @@ __all__ = [
     "get_exchange_details",
     "cancel_ccxt_throttle_task",
     "stop_exchange",
+    "get_exchanges_availability",
     "get_trading_modes",
     "get_trading_mode_symbol",
     "is_trading_mode_symbol_wildcard",
@@ -380,6 +404,7 @@ __all__ = [
     "get_portfolio",
     "get_portfolio_historical_values",
     "get_portfolio_reference_market",
+    "resolve_portfolio_valuation_unit",
     "get_portfolio_currency",
     "get_origin_portfolio",
     "set_simulated_portfolio_initial_config",
@@ -449,4 +474,19 @@ __all__ = [
     "clear_orders_storage_history",
     "get_fees_only_asset_deltas_from_orders",
     "blockchain_wallet_context",
+    "load_daily_prices",
+    "merge_daily_prices",
+    "set_daily_close_source",
+    "rename_daily_closes_symbol",
+    "load_latest_tickers",
+    "update_latest_tickers",
+    "get_daily_price",
+    "get_latest_daily_close_on_or_before",
+    "get_latest_ticker_close",
+    "get_oldest_daily_price_timestamp",
+    "get_latest_daily_price_timestamp",
+    "get_daily_close_source",
+    "set_daily_close_source_in_memory",
+    "merge_daily_prices_in_memory",
+    "move_daily_prices_symbol_in_memory",
 ]

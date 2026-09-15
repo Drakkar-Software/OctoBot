@@ -13,7 +13,7 @@
 import { AccountType } from '../models/AccountType';
 
 /**
-* ExchangeAccount
+* A centralized or DEX trading account, live-synced via a provider connection.
 */
 export class ExchangeAccount {
     /**

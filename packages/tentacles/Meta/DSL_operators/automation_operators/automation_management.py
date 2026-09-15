@@ -13,37 +13,92 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import typing
+
+import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter as dsl_interpreter
+import octobot_commons.signals
+import octobot_trading.exchanges
+import octobot_trading.modes.abstract_trading_mode
 
 import octobot_flow.entities
 
 
-class StopAutomationOperator(dsl_interpreter.CallOperator):
-    MIN_PARAMS = 0
-    MAX_PARAMS = 0
-    DESCRIPTION = "Signals the automation to stop."
-    EXAMPLE = "stop_automation()"
-    CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
+def create_stop_automation_operators(
+    exchange_manager: typing.Optional[octobot_trading.exchanges.ExchangeManager],
+    trading_mode: typing.Optional[octobot_trading.modes.abstract_trading_mode.AbstractTradingMode] = None,
+    dependencies: typing.Optional[octobot_commons.signals.SignalDependencies] = None,
+    wait_for_cancelling: bool = True,
+) -> list:
 
-    @staticmethod
-    def get_name() -> str:
-        return "stop_automation"
+    class _StopAutomationOperator(dsl_interpreter.CallOperator):
+        DESCRIPTION = "Signals the automation to stop."
+        EXAMPLE = "stop_automation(cancel_orders=True)"
+        CATEGORY = commons_enums.DslKeywordCategory.ACTION.value
 
-    @classmethod
-    def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
-        return cls.result_return_value(
-            commons_enums.DslValueType.DICT.value,
-            description="Automation stop signal",
-        )
+        @staticmethod
+        def get_name() -> str:
+            return "stop_automation"
 
-    def compute(self) -> dict:
-        return {
-            octobot_flow.entities.PostIterationActionsDetails.__name__:
-            octobot_flow.entities.PostIterationActionsDetails(
-                stop_automation=True
-            ).to_dict(include_default_values=False)
-        }
+        @staticmethod
+        def get_library() -> str:
+            return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
+
+        @classmethod
+        def get_parameters(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return [
+                dsl_interpreter.OperatorParameter(
+                    name="cancel_orders",
+                    description="When true, cancel all open orders before stopping (flow automations only).",
+                    required=False,
+                    type=commons_enums.DslValueType.BOOLEAN.value,
+                    default=False,
+                ),
+            ]
+
+        @classmethod
+        def get_return_values(cls) -> list[dsl_interpreter.OperatorParameter]:
+            return cls.result_return_value(
+                commons_enums.DslValueType.DICT.value,
+                description="Automation stop signal",
+            )
+
+        async def pre_compute(self) -> None:
+            await super().pre_compute()
+            param_by_name = self.get_computed_value_by_parameter()
+            if not param_by_name.get("cancel_orders"):
+                return
+            if exchange_manager is None:
+                return
+            to_cancel = [
+                order
+                for order in exchange_manager.exchange_personal_data.orders_manager.get_open_orders(
+                    active=None
+                )
+                if not (order.is_cancelled() or order.is_closed())
+            ]
+            for order in to_cancel:
+                if trading_mode:
+                    await trading_mode.cancel_order(
+                        order, wait_for_cancelling=wait_for_cancelling, dependencies=dependencies
+                    )
+                else:
+                    await exchange_manager.trader.cancel_order(
+                        order, wait_for_cancelling=wait_for_cancelling
+                    )
+
+        def compute(self) -> dict:
+            return {
+                octobot_flow.entities.PostIterationActionsDetails.__name__:
+                octobot_flow.entities.PostIterationActionsDetails(
+                    stop_automation=True
+                ).to_dict(include_default_values=False)
+            }
+
+    return [
+        _StopAutomationOperator,
+    ]
 
 
 class UpdateAutomationConfigurationOperator(dsl_interpreter.CallOperator):

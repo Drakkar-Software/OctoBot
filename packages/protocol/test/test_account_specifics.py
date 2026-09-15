@@ -41,7 +41,12 @@ class TestAccountSpecifics(unittest.TestCase):
                     ''
                     ],
                 blockchain = '',
-                network = ''
+                network = '',
+                provider_id = '',
+                institution = '',
+                currency = '',
+                asset_type = '',
+                cost_basis = 1.337
             )
         else:
             return AccountSpecifics(

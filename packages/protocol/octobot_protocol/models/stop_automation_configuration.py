@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
 from octobot_protocol.models.user_action_type import UserActionType
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,7 +30,8 @@ class StopAutomationConfiguration(BaseModel):
     """ # noqa: E501
     id: StrictStr
     action_type: UserActionType = Field(description="automation_stop")
-    __properties: ClassVar[List[str]] = ["id", "action_type"]
+    cancel_orders: Optional[StrictBool] = False
+    __properties: ClassVar[List[str]] = ["id", "action_type", "cancel_orders"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -84,7 +85,8 @@ class StopAutomationConfiguration(BaseModel):
 
         _obj = cls.model_validate({
             "id": obj.get("id"),
-            "action_type": obj.get("action_type")
+            "action_type": obj.get("action_type"),
+            "cancel_orders": obj.get("cancel_orders") if obj.get("cancel_orders") is not None else False
         })
         return _obj
 

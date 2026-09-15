@@ -42,6 +42,9 @@ class TestTrade(unittest.TestCase):
                 side = 'buy',
                 quantity = 1.337,
                 price = 1.337,
+                fee = octobot_protocol.models.fee.Fee(
+                    amount = 1.337, 
+                    currency = '', ),
                 status = 'pending_creation',
                 executed_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
             )
