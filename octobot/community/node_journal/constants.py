@@ -17,7 +17,7 @@
 import octobot.community.node_journal.enums as journal_enums
 
 JOURNAL_MAX_EVENTS = 50_000
-JOURNAL_SCHEMA_VERSION = 2
+JOURNAL_SCHEMA_VERSION = 1
 SYNC_SESSION_GAP_SECONDS = 14_400
 JOURNAL_DIR_NAME = "node_journal"
 MANIFEST_FILE_NAME = "manifest.json"
@@ -33,3 +33,4 @@ CONFIG_LAST_USER_DATA_PULL_AT = "last_user_data_pull_at"
 CONFIG_TRACKED_AUTOMATION_IDS = "tracked_automation_ids"
 DISTRIBUTION_NODE = "node"
 JOURNAL_ENABLED_ENV_VAR = "OCTOBOT_NODE_JOURNAL_ENABLED"
+JOURNAL_ENABLED_DEFAULT = "true"

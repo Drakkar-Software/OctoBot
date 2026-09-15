@@ -1,4 +1,4 @@
-#  This file is part of OctoBot Node (https://github.com/Drakkar-Software/OctoBot-Node)
+﻿#  This file is part of OctoBot Node (https://github.com/Drakkar-Software/OctoBot-Node)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
@@ -41,6 +41,8 @@ class FeedbackUploadEnvelope(pydantic.BaseModel):
     ready: bool
     event_count: int
     note: str | None = None
+    ui_error_name: str | None = None
+    ui_error_route: str | None = None
 
 
 class FeedbackPreviewResponse(pydantic.BaseModel):
@@ -51,10 +53,18 @@ class FeedbackPreviewResponse(pydantic.BaseModel):
 class FeedbackUploadRequest(pydantic.BaseModel):
     issue_url: str | None = None
     note: str | None = None
+    ui_error_name: str | None = None
+    ui_error_route: str | None = None
+
+
+def _feedback_events() -> list:
+    if not node_journal.is_journal_enabled():
+        return []
+    return node_journal.read_events()
 
 
 def _build_feedback_preview() -> FeedbackPreviewResponse:
-    events = node_journal.read_events()
+    events = _feedback_events()
     journey_summary = node_journal.build_journey_summary(events)
     upload_envelope = node_journal.build_upload_envelope(
         events,
@@ -67,16 +77,24 @@ def _build_feedback_preview() -> FeedbackPreviewResponse:
 
 
 def _forward_feedback_to_remote(envelope: FeedbackUploadEnvelope) -> None:
+    if not node_journal.is_journal_enabled():
+        envelope = envelope.model_copy(update={"events": [], "event_count": 0})
     # TODO: relay envelope to external feedback server when URL/integration is defined.
-    pass
 
 
-def _build_feedback_upload_envelope(note: str | None = None) -> FeedbackUploadEnvelope:
-    events = node_journal.read_events()
+def _build_feedback_upload_envelope(
+    *,
+    note: str | None = None,
+    ui_error_name: str | None = None,
+    ui_error_route: str | None = None,
+) -> FeedbackUploadEnvelope:
+    events = _feedback_events()
     upload_envelope = node_journal.build_upload_envelope(
         events,
         app_version=octobot.constants.LONG_VERSION,
         note=note,
+        ui_error_name=ui_error_name,
+        ui_error_route=ui_error_route,
     )
     return FeedbackUploadEnvelope(**upload_envelope.to_dict())
 
@@ -91,6 +109,8 @@ def upload_feedback(
     body: FeedbackUploadRequest | None = None,
 ) -> FeedbackUploadEnvelope:
     note = None
+    ui_error_name = None
+    ui_error_route = None
     if body is not None:
         note_parts = []
         if body.note:
@@ -99,6 +119,12 @@ def upload_feedback(
             note_parts.append(f"issue_url: {body.issue_url}")
         if note_parts:
             note = "\n".join(note_parts)
-    envelope = _build_feedback_upload_envelope(note=note)
+        ui_error_name = body.ui_error_name
+        ui_error_route = body.ui_error_route
+    envelope = _build_feedback_upload_envelope(
+        note=note,
+        ui_error_name=ui_error_name,
+        ui_error_route=ui_error_route,
+    )
     _forward_feedback_to_remote(envelope)
     return envelope

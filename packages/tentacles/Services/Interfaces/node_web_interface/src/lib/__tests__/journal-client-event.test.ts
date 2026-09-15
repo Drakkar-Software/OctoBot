@@ -4,7 +4,6 @@ import { OpenAPI } from "@/client"
 import {
   buildJournalClientEventUrl,
   getOrCreateClientInstanceId,
-  getUiBuild,
   reportUiJournalEvent,
 } from "@/lib/journal-client-event"
 
@@ -41,12 +40,6 @@ describe("getOrCreateClientInstanceId", () => {
     const secondId = getOrCreateClientInstanceId()
     expect(firstId).toBeTruthy()
     expect(secondId).toBe(firstId)
-  })
-})
-
-describe("getUiBuild", () => {
-  it("returns the app version define", () => {
-    expect(getUiBuild()).toBeTypeOf("string")
   })
 })
 
@@ -103,9 +96,31 @@ describe("reportUiJournalEvent", () => {
   })
 
   it("swallows fetch failures", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
     fetchMock.mockRejectedValue(new Error("network down"))
     await expect(
       reportUiJournalEvent("ui_fatal_render_error"),
     ).resolves.toBeUndefined()
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Journal client-event ui_fatal_render_error request failed",
+      expect.any(Error),
+    )
+    warnSpy.mockRestore()
+  })
+
+  it("logs console warning when response is not ok", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      statusText: "Forbidden",
+    })
+
+    await reportUiJournalEvent("ui_boot_failed")
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Journal client-event ui_boot_failed failed: HTTP 403 Forbidden",
+    )
+    warnSpy.mockRestore()
   })
 })

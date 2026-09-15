@@ -17,11 +17,11 @@
 """Core write/read pipeline for the node journal."""
 
 import logging
-import os
 import time
 import typing
 
 import octobot.constants as octobot_constants
+import octobot_commons.os_util as os_util
 
 import octobot.community.node_journal.constants as journal_constants
 import octobot.community.node_journal.events as journal_events
@@ -31,14 +31,11 @@ import octobot.community.node_journal.store as journal_store
 
 logger = logging.getLogger(__name__)
 
-_DISABLED_VALUES = frozenset({"0", "false", "no", "off"})
-
-
 def is_journal_enabled() -> bool:
-    raw_value = os.environ.get(journal_constants.JOURNAL_ENABLED_ENV_VAR)
-    if raw_value is None:
-        return True
-    return raw_value.strip().lower() not in _DISABLED_VALUES
+    return os_util.parse_boolean_environment_var(
+        journal_constants.JOURNAL_ENABLED_ENV_VAR,
+        journal_constants.JOURNAL_ENABLED_DEFAULT,
+    )
 
 
 def run_journal_operation(

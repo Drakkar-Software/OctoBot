@@ -4,7 +4,6 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { ErrorBoundary } from "react-error-boundary"
 import { OpenAPI } from "@/client"
-import InsecureContextNotice from "@/components/Common/InsecureContextNotice"
 import { RecoveryScreen } from "@/components/Common/RecoveryScreen"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -21,6 +20,7 @@ import {
 } from "@/lib/shell-error-reporting"
 import { routeTree } from "@/routeTree.gen"
 
+// Wire generated API client credentials and session recovery before any route loads.
 export function configureOpenApi(): void {
   OpenAPI.BASE =
     import.meta.env.NODE_API_URL ||
@@ -33,6 +33,8 @@ export function configureOpenApi(): void {
   }
 
   let isRedirectingOnAuthFailure = false
+  // On 401 for a protected page, clear local session and hard-navigate to login so the UI
+  // never keeps calling APIs with a stale username and no usable password.
   OpenAPI.interceptors.response.use((response) => {
     if (
       shouldRedirectToLoginOn401(response, {
@@ -61,6 +63,8 @@ type RecoveryView =
   | { mode: "app" }
 
 async function resolveStartupView(): Promise<RecoveryView> {
+  // probeAuthState: skipped during setup; ok when logged out or password present;
+  // broken when auth_username exists but IndexedDB password is missing/unreadable.
   const authState = await probeAuthState()
   if (authState === "broken") {
     reportAuthStateBroken()
@@ -77,13 +81,17 @@ function renderRecovery(
 
   createRoot(rootElement).render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RecoveryScreen failureKind={failureKind} />
-      </QueryClientProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <RecoveryScreen failureKind={failureKind} />
+          <Toaster richColors closeButton />
+        </QueryClientProvider>
+      </ThemeProvider>
     </StrictMode>,
   )
 }
 
+// Shown when a render error escapes the main app tree (ErrorBoundary fallback).
 export function ShellErrorFallback() {
   return <RecoveryScreen failureKind="fatal_render" />
 }
@@ -98,13 +106,6 @@ function renderApp(rootElement: HTMLElement): void {
   const queryClient = new QueryClient()
   const router = createAppRouter()
 
-  if (!isWebCryptoAvailable()) {
-    reportInsecureContext({
-      isSecureContext: window.isSecureContext,
-      hostname: window.location.hostname,
-    })
-  }
-
   createRoot(rootElement).render(
     <StrictMode>
       <ErrorBoundary
@@ -112,25 +113,32 @@ function renderApp(rootElement: HTMLElement): void {
         onError={handleShellRenderError}
       >
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          {isWebCryptoAvailable() ? (
-            <QueryClientProvider client={queryClient}>
-              <RouterProvider router={router} />
-              <Toaster richColors closeButton />
-            </QueryClientProvider>
-          ) : (
-            <InsecureContextNotice />
-          )}
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+            <Toaster richColors closeButton />
+          </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>
     </StrictMode>,
   )
 }
 
+// Startup: configure API → mount root → require Web Crypto → auth probe → app or RecoveryScreen.
 export async function bootstrapApp(): Promise<void> {
   configureOpenApi()
   const rootElement = document.getElementById("root")
   if (!rootElement) {
     throw new Error("Root element not found")
+  }
+
+  if (!isWebCryptoAvailable()) {
+    // Non-secure context (e.g. HTTP remote UI): crypto.subtle unavailable → insecure_context recovery.
+    reportInsecureContext({
+      isSecureContext: window.isSecureContext,
+      hostname: window.location.hostname,
+    })
+    renderRecovery(rootElement, "insecure_context")
+    return
   }
 
   const startupView = await resolveStartupView()

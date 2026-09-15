@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { ApiError } from "@/client"
 import { AuthLoginRedirectSuppressionProvider } from "@/components/Common/AuthLoginRedirectSuppressionProvider"
@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -27,16 +26,18 @@ import {
 } from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
-  buildRecoveryFeedbackPrefill,
+  computeShareFeedbackSendDisabled,
   downloadPreviewEnvelope,
   fetchFeedbackPreview,
   getPreviewEventCount,
   getPreviewAutomationCount,
+  getShareFeedbackUiErrorName,
+  submitFeedbackDownload,
   type ShareFeedbackContactMethod,
   type ShareFeedbackContext,
   type ShareFeedbackFailureKind,
-  submitFeedbackDownload,
 } from "@/lib/feedback-share"
+import { FEEDBACK_EMPTY_JOURNAL_HINT } from "@/lib/ui-recovery-constants"
 
 type ShareFeedbackDialogProps = {
   open: boolean
@@ -48,6 +49,7 @@ const RECOVERY_CONTEXT_LABELS: Record<ShareFeedbackFailureKind, string> = {
   boot_failed: "Recovery: boot failed",
   auth_broken: "Recovery: sign-in data broken",
   fatal_render: "Recovery: fatal render error",
+  insecure_context: "Recovery: insecure browser context",
 }
 
 const CONTACT_METHOD_OPTIONS: Array<{
@@ -96,46 +98,35 @@ function ActivityHistorySection({
   isEmptyJournal,
   onCheckFileContentClick,
 }: ActivityHistorySectionProps) {
+  const displayEventCount = isLoading ? 0 : eventCount
+  const displayAutomationCount = isLoading ? 0 : automationCount
+
   return (
     <div className="space-y-3 rounded-md border border-border p-3">
       <p className="font-medium">Activity history</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-md border border-border bg-muted/20 px-3 py-4 text-center">
-          {isLoading ? (
-            <Skeleton className="mx-auto h-8 w-10" />
-          ) : (
-            <p className="text-2xl font-semibold tabular-nums">{eventCount}</p>
-          )}
+          <p className="text-2xl font-semibold tabular-nums">{displayEventCount}</p>
           <p className="text-xs text-muted-foreground">Events</p>
         </div>
         <div className="rounded-md border border-border bg-muted/20 px-3 py-4 text-center">
-          {isLoading ? (
-            <Skeleton className="mx-auto h-8 w-10" />
-          ) : (
-            <p className="text-2xl font-semibold tabular-nums">
-              {automationCount ?? "—"}
-            </p>
-          )}
+          <p className="text-2xl font-semibold tabular-nums">
+            {displayAutomationCount ?? "—"}
+          </p>
           <p className="text-xs text-muted-foreground">Created automations</p>
         </div>
       </div>
-      {isLoading ? (
-        <Skeleton className="h-10 w-full" />
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={onCheckFileContentClick}
-        >
-          Check file content
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        disabled={isLoading}
+        onClick={onCheckFileContentClick}
+      >
+        Check file content
+      </Button>
       {!isLoading && isEmptyJournal && (
-        <p className="text-muted-foreground">
-          Nothing has been recorded yet. Use the app or trigger a recovery event,
-          then try again.
-        </p>
+        <p className="text-muted-foreground">{FEEDBACK_EMPTY_JOURNAL_HINT}</p>
       )}
     </div>
   )
@@ -152,7 +143,7 @@ export function ShareFeedbackDialogContent({
     ShareFeedbackContactMethod | ""
   >("")
   const [contactValue, setContactValue] = useState("")
-  const degradedPrefillAppliedRef = useRef(false)
+  const hasUiErrorContext = getShareFeedbackUiErrorName(context) !== null
 
   const previewQuery = useQuery({
     queryKey: ["feedback-preview"],
@@ -166,7 +157,6 @@ export function ShareFeedbackDialogContent({
       setNote("")
       setContactMethod("")
       setContactValue("")
-      degradedPrefillAppliedRef.current = false
     }
   }, [open])
 
@@ -175,19 +165,6 @@ export function ShareFeedbackDialogContent({
   const useDegradedRecoveryFeedback =
     isRecoveryContext && previewAuthBlocked
   const showSignInPrompt = previewAuthBlocked && !isRecoveryContext
-
-  useEffect(() => {
-    if (
-      !open ||
-      !useDegradedRecoveryFeedback ||
-      degradedPrefillAppliedRef.current ||
-      context.source !== "recovery"
-    ) {
-      return
-    }
-    setNote(buildRecoveryFeedbackPrefill(context.failureKind))
-    degradedPrefillAppliedRef.current = true
-  }, [open, useDegradedRecoveryFeedback, context])
 
   const submitMutation = useMutation({
     mutationFn: () =>
@@ -219,37 +196,26 @@ export function ShareFeedbackDialogContent({
     : "Contact detail"
 
   const showActivityHistory =
-    previewQuery.isSuccess && !useDegradedRecoveryFeedback
+    !useDegradedRecoveryFeedback &&
+    !showSignInPrompt &&
+    (previewQuery.isLoading || previewQuery.isSuccess)
   const showPreviewLoadError =
     previewQuery.isError &&
     !previewAuthBlocked &&
     !useDegradedRecoveryFeedback
   const showFeedbackForm = !showSignInPrompt
 
-  const isSendDisabled = (() => {
-    if (submitMutation.isPending) {
-      return true
-    }
-    if (useDegradedRecoveryFeedback) {
-      return false
-    }
-    if (showSignInPrompt) {
-      return true
-    }
-    if (previewQuery.isLoading) {
-      return true
-    }
-    if (previewQuery.isError) {
-      return true
-    }
-    if (!preview) {
-      return true
-    }
-    if (isEmptyJournal) {
-      return true
-    }
-    return false
-  })()
+  const isSendDisabled = computeShareFeedbackSendDisabled({
+    submitPending: submitMutation.isPending,
+    useDegradedRecoveryFeedback,
+    hasUiErrorContext,
+    showSignInPrompt,
+    previewLoading: previewQuery.isLoading,
+    previewError: previewQuery.isError,
+    hasPreview: Boolean(preview),
+    eventCount,
+    note,
+  })
 
   const handleCheckFileContentClick = () => {
     if (!preview) {
@@ -331,7 +297,7 @@ export function ShareFeedbackDialogContent({
                 className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               <Label>How can we contact you? (optional)</Label>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-[9rem_minmax(0,1fr)]">
                 <Select
@@ -340,7 +306,7 @@ export function ShareFeedbackDialogContent({
                     setContactMethod(value as ShareFeedbackContactMethod)
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger size="sm" className="w-full px-3">
                     <SelectValue placeholder="Method" />
                   </SelectTrigger>
                   <SelectContent>
@@ -356,6 +322,7 @@ export function ShareFeedbackDialogContent({
                   value={contactValue}
                   onChange={(event) => setContactValue(event.target.value)}
                   placeholder={contactDetailPlaceholder}
+                  className="h-9 text-sm"
                 />
               </div>
             </div>

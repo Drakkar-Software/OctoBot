@@ -60,7 +60,6 @@ class NodeJournalEvent(enum.StrEnum):
     EXISTING_CONFIG_DETECTED = "existing_config_detected"
     RECONCILE_COMPLETED = "reconcile_completed"
     UI_BOOT_FAILED = "ui_boot_failed"
-    UI_SESSION_ABORTED = "ui_session_aborted"
     UI_AUTH_STATE_BROKEN = "ui_auth_state_broken"
     UI_FATAL_RENDER_ERROR = "ui_fatal_render_error"
     UI_CLIENT_STORAGE_RESET = "ui_client_storage_reset"
@@ -72,9 +71,9 @@ class NodeJournalEvent(enum.StrEnum):
     SCHEDULER_INIT_FAILED = "scheduler_init_failed"
 
 
+# Must match node_web_interface UiJournalEvent union (5 client-emitted events).
 UI_JOURNAL_EVENTS = frozenset({
     NodeJournalEvent.UI_BOOT_FAILED,
-    NodeJournalEvent.UI_SESSION_ABORTED,
     NodeJournalEvent.UI_AUTH_STATE_BROKEN,
     NodeJournalEvent.UI_FATAL_RENDER_ERROR,
     NodeJournalEvent.UI_CLIENT_STORAGE_RESET,

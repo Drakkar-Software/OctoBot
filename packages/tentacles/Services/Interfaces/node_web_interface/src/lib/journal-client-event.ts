@@ -32,10 +32,6 @@ export function getOrCreateClientInstanceId(): string {
   return clientInstanceId
 }
 
-export function getUiBuild(): string {
-  return __APP_VERSION__
-}
-
 export function resolveJournalApiBase(): string {
   return OpenAPI.BASE
 }
@@ -68,14 +64,21 @@ export async function reportUiJournalEvent(
       client_instance_id: getOrCreateClientInstanceId(),
       attributes: attributes ?? {},
     }
-    await fetch(buildJournalClientEventUrl(resolveJournalApiBase()), {
+    const response = await fetch(buildJournalClientEventUrl(resolveJournalApiBase()), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
     })
-  } catch {
+    if (!response.ok) {
+      const logFn = response.status >= 500 ? console.error : console.warn
+      logFn(
+        `Journal client-event ${event} failed: HTTP ${response.status} ${response.statusText}`,
+      )
+    }
+  } catch (error) {
     // Recovery must not depend on journal delivery.
+    console.warn(`Journal client-event ${event} request failed`, error)
   }
 }

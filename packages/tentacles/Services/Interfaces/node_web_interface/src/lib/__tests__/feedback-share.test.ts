@@ -7,31 +7,136 @@ import {
   buildFeedbackFilename,
   buildFeedbackNote,
   buildRecoveryFeedbackFallbackEnvelope,
-  buildRecoveryFeedbackPrefill,
+  computeShareFeedbackSendDisabled,
   downloadFeedbackEnvelope,
   downloadPreviewEnvelope,
   formatJourneySummaryForDisplay,
   getPreviewEventCount,
   getPreviewAutomationCount,
+  getShareFeedbackUiErrorName,
+  resolveShareFeedbackUiErrorRoute,
 } from "@/lib/feedback-share"
 
-describe("buildRecoveryFeedbackPrefill", () => {
-  it("describes auth_broken recovery", () => {
-    const prefill = buildRecoveryFeedbackPrefill("auth_broken")
-    expect(prefill.length).toBeGreaterThan(0)
-    expect(prefill.toLowerCase()).toContain("sign-in")
+describe("computeShareFeedbackSendDisabled", () => {
+  it("allows send with empty journal when note is present", () => {
+    expect(
+      computeShareFeedbackSendDisabled({
+        submitPending: false,
+        useDegradedRecoveryFeedback: false,
+        hasUiErrorContext: false,
+        showSignInPrompt: false,
+        previewLoading: false,
+        previewError: false,
+        hasPreview: true,
+        eventCount: 0,
+        note: "Something broke",
+      }),
+    ).toBe(false)
   })
 
-  it("describes boot_failed recovery", () => {
-    const prefill = buildRecoveryFeedbackPrefill("boot_failed")
-    expect(prefill.length).toBeGreaterThan(0)
-    expect(prefill.toLowerCase()).toContain("boot")
+  it("disables send with empty journal and empty note", () => {
+    expect(
+      computeShareFeedbackSendDisabled({
+        submitPending: false,
+        useDegradedRecoveryFeedback: false,
+        hasUiErrorContext: false,
+        showSignInPrompt: false,
+        previewLoading: false,
+        previewError: false,
+        hasPreview: true,
+        eventCount: 0,
+        note: "",
+      }),
+    ).toBe(true)
   })
 
-  it("describes fatal_render recovery", () => {
-    const prefill = buildRecoveryFeedbackPrefill("fatal_render")
-    expect(prefill.length).toBeGreaterThan(0)
-    expect(prefill.toLowerCase()).toContain("fatal")
+  it("allows send with empty journal and empty note when ui error context is set", () => {
+    expect(
+      computeShareFeedbackSendDisabled({
+        submitPending: false,
+        useDegradedRecoveryFeedback: false,
+        hasUiErrorContext: true,
+        showSignInPrompt: false,
+        previewLoading: false,
+        previewError: false,
+        hasPreview: true,
+        eventCount: 0,
+        note: "",
+      }),
+    ).toBe(false)
+  })
+})
+
+describe("getShareFeedbackUiErrorName", () => {
+  it("returns failure kind for recovery contexts", () => {
+    expect(
+      getShareFeedbackUiErrorName({
+        source: "recovery",
+        failureKind: "boot_failed",
+      }),
+    ).toBe("boot_failed")
+    expect(
+      getShareFeedbackUiErrorName({
+        source: "recovery",
+        failureKind: "insecure_context",
+      }),
+    ).toBe("insecure_context")
+  })
+
+  it("returns route_error for route error context", () => {
+    expect(
+      getShareFeedbackUiErrorName({
+        source: "route_error",
+        routePath: "/app",
+      }),
+    ).toBe("route_error")
+  })
+
+  it("returns null for navbar and settings", () => {
+    expect(getShareFeedbackUiErrorName({ source: "navbar" })).toBeNull()
+    expect(getShareFeedbackUiErrorName({ source: "settings" })).toBeNull()
+  })
+})
+
+describe("resolveShareFeedbackUiErrorRoute", () => {
+  it("uses pathname from location for navbar and settings", () => {
+    expect(
+      resolveShareFeedbackUiErrorRoute(
+        { source: "navbar" },
+        { pathname: "/app/settings" },
+      ),
+    ).toBe("/app/settings")
+  })
+
+  it("uses pathname for recovery context", () => {
+    expect(
+      resolveShareFeedbackUiErrorRoute(
+        { source: "recovery", failureKind: "boot_failed" },
+        { pathname: "/app/setup" },
+      ),
+    ).toBe("/app/setup")
+  })
+
+  it("prefers explicit routePath for route_error", () => {
+    expect(
+      resolveShareFeedbackUiErrorRoute(
+        { source: "route_error", routePath: "/app/x" },
+        { pathname: "/other" },
+      ),
+    ).toBe("/app/x")
+  })
+
+  it("falls back to pathname when route_error has no routePath", () => {
+    expect(
+      resolveShareFeedbackUiErrorRoute(
+        { source: "route_error" },
+        { pathname: "/app/settings" },
+      ),
+    ).toBe("/app/settings")
+  })
+
+  it("returns null when location is missing", () => {
+    expect(resolveShareFeedbackUiErrorRoute({ source: "navbar" })).toBeNull()
   })
 })
 
@@ -39,6 +144,8 @@ describe("buildRecoveryFeedbackFallbackEnvelope", () => {
   it("sets required fields for client download", () => {
     const envelope = buildRecoveryFeedbackFallbackEnvelope({
       note: "composed note",
+      uiErrorName: "auth_broken",
+      uiErrorRoute: null,
     })
     expect(envelope.install_id).toBe("recovery-client-fallback")
     expect(envelope.onboarding_complete).toBe(false)
@@ -47,6 +154,7 @@ describe("buildRecoveryFeedbackFallbackEnvelope", () => {
     })
     expect(envelope.event_count).toBe(0)
     expect(envelope.note).toBe("composed note")
+    expect(envelope.ui_error_name).toBe("auth_broken")
   })
 })
 
@@ -70,6 +178,15 @@ describe("buildContextNotePrefix", () => {
         failureKind: "boot_failed",
       }),
     ).toBe("[ui_context] source=recovery failure_kind=boot_failed")
+  })
+
+  it("formats insecure_context recovery context", () => {
+    expect(
+      buildContextNotePrefix({
+        source: "recovery",
+        failureKind: "insecure_context",
+      }),
+    ).toBe("[ui_context] source=recovery failure_kind=insecure_context")
   })
 
   it("formats route error context with route path", () => {
@@ -117,6 +234,23 @@ describe("buildFeedbackNote", () => {
     ).toBe(
       "[ui_context] source=settings\n\nButton stopped responding\n\n[contact] method=discord value=octotrader",
     )
+  })
+
+  it("omits ui_context prefix for recovery feedback", () => {
+    expect(
+      buildFeedbackNote({
+        note: "Extra detail",
+        context: { source: "recovery", failureKind: "boot_failed" },
+      }),
+    ).toBe("Extra detail")
+  })
+
+  it("omits ui_context prefix for route errors", () => {
+    expect(
+      buildFeedbackNote({
+        context: { source: "route_error", routePath: "/x" },
+      }),
+    ).toBe("")
   })
 })
 
