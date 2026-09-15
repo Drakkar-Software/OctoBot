@@ -852,26 +852,6 @@ def update_global_config(new_config, delete=False):
         return False, str(e)
 
 
-def activate_metrics(enable_metrics):
-    current_edited_config = interfaces_util.get_edited_config(dict_only=False)
-    if commons_constants.CONFIG_METRICS not in current_edited_config.config:
-        current_edited_config.config[commons_constants.CONFIG_METRICS] = {
-            commons_constants.CONFIG_ENABLED_OPTION: enable_metrics}
-    else:
-        current_edited_config.config[commons_constants.CONFIG_METRICS][
-            commons_constants.CONFIG_ENABLED_OPTION] = enable_metrics
-    if enable_metrics:
-        bot_api = interfaces_util.get_bot_api()
-        activity_metrics = bot_api.get_activity_metrics()
-        if activity_metrics is not None and not activity_metrics.enabled:
-            activity_metrics.enabled = True
-            community.ActivityMetrics.initialize_tracker(current_edited_config)
-            distribution = configuration_manager.get_distribution(current_edited_config.config)
-            activity_metrics.setup_activity_tracking(distribution)
-            interfaces_util.run_in_bot_async_executor(activity_metrics.start_community_task())
-    current_edited_config.save()
-
-
 def activate_beta_env(enable_beta):
     new_env = octobot_enums.CommunityEnvironments.Staging if enable_beta \
         else octobot_enums.CommunityEnvironments.Production
@@ -881,10 +861,6 @@ def activate_beta_env(enable_beta):
     current_edited_config.config[octobot_constants.CONFIG_COMMUNITY][
         octobot_constants.CONFIG_COMMUNITY_ENVIRONMENT] = new_env.value
     current_edited_config.save()
-
-
-def get_metrics_enabled():
-    return interfaces_util.get_edited_config(dict_only=False).get_metrics_enabled()
 
 
 def get_beta_env_enabled_in_config():

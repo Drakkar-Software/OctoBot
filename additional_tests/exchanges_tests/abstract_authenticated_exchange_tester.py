@@ -142,6 +142,7 @@ class AbstractAuthenticatedExchangeTester:
     DEFAULT_MAX_DEFAULT_ORDERS_COUNT = trading_constants.DEFAULT_MAX_DEFAULT_ORDERS_COUNT
     DEFAULT_MAX_STOP_ORDERS_COUNT = trading_constants.DEFAULT_MAX_STOP_ORDERS_COUNT
     SLEEP_SECONDS_BEFORE_CHECKING_PORTFOLIO = 0  # used to wait before fetching portfolio after creating/cancelling an order
+    ENABLE_MARKET_ORDER_CONVERSION_CHECKS = False  # set True to run after_market_order_created during market order tests
 
     # Implement all "test_[name]" methods, call super() to run the test, pass to ignore it.
     # Override the "inner_test_[name]" method to override a test content.
@@ -714,6 +715,8 @@ class AbstractAuthenticatedExchangeTester:
         post_buy_portfolio = {}
         try:
             self.check_created_market_order(first_market_order, size, side)
+            if self.ENABLE_MARKET_ORDER_CONVERSION_CHECKS:
+                await self.after_market_order_created(first_market_order)
             filled_order = await self.wait_for_fill(first_market_order)
             parsed_filled_order = personal_data.create_order_instance_from_raw(
                 self.exchange_manager.trader,
@@ -735,6 +738,8 @@ class AbstractAuthenticatedExchangeTester:
             other_side = trading_enums.TradeOrderSide.SELL if side == trading_enums.TradeOrderSide.BUY else trading_enums.TradeOrderSide.BUY
             second_market_order = await self.create_market_order(current_price, mirror_size, other_side)
             self.check_created_market_order(second_market_order, mirror_size, other_side)
+            if self.ENABLE_MARKET_ORDER_CONVERSION_CHECKS:
+                await self.after_market_order_created(second_market_order)
             await self.wait_for_fill(second_market_order)
             await self.sleep_before_checking_portfolio()
             post_sell_portfolio = await self.get_portfolio()
@@ -1701,6 +1706,9 @@ class AbstractAuthenticatedExchangeTester:
             f"Trade not found within {timeout}s and {len(recent_trades)} trades: ({validation_func.__name__}), "
             f"message: {message}"
         )
+
+    async def after_market_order_created(self, market_order) -> None:
+        pass
 
     async def wait_for_fill(self, order):
         def parse_is_filled(raw_order):

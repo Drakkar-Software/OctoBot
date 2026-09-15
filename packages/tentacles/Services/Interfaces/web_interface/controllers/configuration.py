@@ -282,12 +282,6 @@ def register(blueprint):
             return util.get_rest_reply(flask.jsonify(err_message), 500)
 
 
-    @blueprint.route('/metrics_settings', methods=['POST'])
-    @login.login_required_when_activated
-    def metrics_settings():
-        return util.get_rest_reply(flask.jsonify(models.activate_metrics(flask.request.get_json())))
-
-
     @blueprint.route('/beta_env_settings', methods=['POST'])
     @login.login_required_when_activated
     def beta_env_settings():

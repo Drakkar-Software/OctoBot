@@ -24,6 +24,8 @@ if TESTS_ROOT not in sys.path:
 if TEST_UTILS_ROOT not in sys.path:
     sys.path.insert(0, TEST_UTILS_ROOT)
 
+from test_utils.journal_test_support import disabled_node_journal_environment
+
 
 def pytest_configure(config):
     """Change working directory to OctoBot root before any tests run."""
@@ -46,3 +48,9 @@ def pytest_configure(config):
             tm_constants.TENTACLES_PATH = PACKAGES_TENTACLES_ROOT
     except ImportError:
         pass
+
+
+@pytest.fixture(autouse=True)
+def disable_node_journal():
+    with disabled_node_journal_environment():
+        yield

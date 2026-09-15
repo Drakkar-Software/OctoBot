@@ -116,8 +116,7 @@ STAGING_SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "https://beta-sync.drakka
 SYNC_NAMESPACE=os.getenv("SYNC_NAMESPACE", "dk")
 SYNC_CHAIN_ID = os.getenv("SYNC_CHAIN_ID", "evm:8453")
 
-ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")  # has priority over ACTIVITY_TRACKER_DSN if set
-ACTIVITY_TRACKER_DSN = os.getenv("ACTIVITY_TRACKER_DSN", "https://c2d3481420c3d1d5f3017c5508e7802f@o4508733888331776.ingest.de.sentry.io/4508733892132944")
+ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")  # Sentry error reporting only; unset disables Sentry
 
 CONFIG_COMMUNITY = "community"
 CONFIG_COMMUNITY_BOT_ID = "bot_id"
@@ -245,6 +244,9 @@ DEFAULT_METRICS_ID = "UNSET"
 CLOUD_FIRST_METRICS_UPDATE_TIME = float(
     os.getenv("CLOUD_FIRST_METRICS_UPDATE_TIME", 5)
 )
+
+# Metrics — onboarding funnel
+METRICS_GENERIC_EXCHANGE_NAME = "generic"
 
 # config types keys
 CONFIG_KEY = "config"

@@ -24,7 +24,6 @@ import octobot.task_manager as task_manager_module
 class TestStopTasksForceExit:
     def test_force_timeout_calls_os_exit(self):
         octobot_mock = mock.Mock()
-        octobot_mock.activity_metrics = None
 
         task_manager = task_manager_module.TaskManager(octobot_mock)
         task_manager.async_loop = mock.Mock()
@@ -38,7 +37,6 @@ class TestStopTasksForceExit:
 
     def test_non_force_timeout_calls_sys_exit(self):
         octobot_mock = mock.Mock()
-        octobot_mock.activity_metrics = None
 
         task_manager = task_manager_module.TaskManager(octobot_mock)
         task_manager.async_loop = mock.Mock()
@@ -50,3 +48,24 @@ class TestStopTasksForceExit:
                     task_manager.stop_tasks(force=False)
                 os_exit_mock.assert_not_called()
                 assert exit_info.value.code == -1
+
+
+class TestStopTasksCommunityBotStats:
+    def test_awaits_community_bot_stats_stop_when_enabled(self):
+        octobot_mock = mock.Mock()
+        octobot_mock.community_bot_stats.task_enabled = True
+        octobot_mock.community_bot_stats.stop_task = mock.AsyncMock()
+
+        task_manager = task_manager_module.TaskManager(octobot_mock)
+        task_manager.async_loop = mock.Mock()
+
+        async def run_passed_coroutine(awaitable):
+            await awaitable
+
+        with mock.patch(
+            "octobot_commons.asyncio_tools.run_coroutine_in_asyncio_loop",
+            side_effect=lambda coroutine, loop: asyncio.run(run_passed_coroutine(coroutine)),
+        ), mock.patch("asyncio.run_coroutine_threadsafe"):
+            task_manager.stop_tasks(stop_octobot=False)
+
+        octobot_mock.community_bot_stats.stop_task.assert_called_once()

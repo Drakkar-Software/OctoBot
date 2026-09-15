@@ -1,20 +1,9 @@
 #  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
-#
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  OctoBot is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import mock
 import pytest
+
+import octobot_commons.constants as commons_constants
 
 import octobot.community.errors_upload.sentry_tracker as sentry_tracker
 import octobot.constants as constants
@@ -22,68 +11,63 @@ import octobot.constants as constants
 
 @pytest.fixture(autouse=True)
 def reset_sentry_tracker_state():
-    sentry_tracker._activity_tracking_active = False
     sentry_tracker._sentry_initialized = False
-    sentry_tracker._tracker_bot_id_set = False
     yield
-    sentry_tracker._activity_tracking_active = False
     sentry_tracker._sentry_initialized = False
-    sentry_tracker._tracker_bot_id_set = False
 
 
 class TestInitSentryTracker:
-    def test_uses_activity_dsn_when_metrics_enabled(self):
-        with mock.patch.object(constants, "ACTIVITY_TRACKER_DSN", "activity-dsn"), \
-                mock.patch.object(constants, "ERROR_TRACKER_DSN", "error-dsn"), \
+    def test_initializes_when_error_dsn_set(self):
+        with mock.patch.object(constants, "ERROR_TRACKER_DSN", "error-dsn"), \
                 mock.patch.object(sentry_tracker.sentry_sdk, "init") as init_mock:
-            sentry_tracker.init_sentry_tracker(metrics_enabled=True)
+            sentry_tracker.init_sentry_tracker()
         init_mock.assert_called_once()
-        assert init_mock.call_args.kwargs["dsn"] == "activity-dsn"
-        assert init_mock.call_args.kwargs["default_integrations"] is False
-        assert sentry_tracker.activity_tracking_is_active() is True
-
-    def test_uses_error_dsn_when_activity_unavailable(self):
-        with mock.patch.object(constants, "ACTIVITY_TRACKER_DSN", None), \
-                mock.patch.object(constants, "ERROR_TRACKER_DSN", "error-dsn"), \
-                mock.patch.object(sentry_tracker.sentry_sdk, "init") as init_mock:
-            sentry_tracker.init_sentry_tracker(metrics_enabled=True)
         assert init_mock.call_args.kwargs["dsn"] == "error-dsn"
-        assert "before_send" in init_mock.call_args.kwargs
-        assert sentry_tracker.activity_tracking_is_active() is False
+        assert init_mock.call_args.kwargs["before_send"] is sentry_tracker._before_send
 
-    def test_skips_init_when_no_dsn(self):
-        with mock.patch.object(constants, "ACTIVITY_TRACKER_DSN", None), \
-                mock.patch.object(constants, "ERROR_TRACKER_DSN", None), \
+    def test_skips_init_when_error_dsn_unset(self):
+        with mock.patch.object(constants, "ERROR_TRACKER_DSN", None), \
                 mock.patch.object(sentry_tracker.sentry_sdk, "init") as init_mock:
-            sentry_tracker.init_sentry_tracker(metrics_enabled=True)
+            sentry_tracker.init_sentry_tracker()
         init_mock.assert_not_called()
 
 
-class TestTrackUsageEvent:
-    def test_emits_metric(self):
-        with mock.patch.object(sentry_tracker.sentry_sdk.metrics, "count") as count_mock:
-            sentry_tracker.track_usage_event("node_first_start", distribution="node")
-        count_mock.assert_called_once_with(
-            "octobot.usage",
-            1,
-            attributes={"event": "node_first_start", "distribution": "node"},
-        )
+class TestFlushTracker:
+    def test_no_op_when_not_initialized(self):
+        with mock.patch.object(sentry_tracker.sentry_sdk, "flush") as flush_mock:
+            sentry_tracker.flush_tracker()
+        flush_mock.assert_not_called()
+
+    def test_flushes_when_initialized(self):
+        with mock.patch.object(constants, "ERROR_TRACKER_DSN", "error-dsn"), \
+                mock.patch.object(sentry_tracker.sentry_sdk, "init"), \
+                mock.patch.object(sentry_tracker.sentry_sdk, "flush") as flush_mock, \
+                mock.patch.object(sentry_tracker.time, "sleep"):
+            sentry_tracker.init_sentry_tracker()
+            sentry_tracker.flush_tracker()
+        flush_mock.assert_called_once()
 
 
-class TestUpdateTrackerBotId:
-    def test_sets_user_and_tag(self):
-        with mock.patch.object(sentry_tracker.sentry_sdk, "set_user") as set_user_mock, \
-                mock.patch.object(sentry_tracker.sentry_sdk, "set_tag") as set_tag_mock:
-            sentry_tracker.update_tracker_bot_id("bot-id")
-        set_user_mock.assert_called_once_with({"id": "bot-id"})
-        set_tag_mock.assert_called_once_with("bot_id", "bot-id")
-        assert sentry_tracker.has_tracker_bot_id() is True
+class TestBeforeSend:
+    def test_drops_event_when_exception_desc_extra(self):
+        event = {
+            "extra": {commons_constants.IS_EXCEPTION_DESC: True},
+            "logentry": {"message": "ignored"},
+        }
+        assert sentry_tracker._before_send(event, {}) is None
 
+    def test_strips_self_hosted_log_prefix(self):
+        event = {"logentry": {"message": "[self-hosted] something failed"}}
+        with mock.patch.object(sentry_tracker, "_get_log_prefix", return_value="[self-hosted] "):
+            result = sentry_tracker._before_send(event, {})
+        assert result["logentry"]["message"] == "something failed"
 
-class TestHasTrackerBotId:
-    def test_false_when_not_set(self):
-        assert sentry_tracker.has_tracker_bot_id() is False
+    def test_strips_community_bot_log_prefix(self):
+        event = {"logentry": {"message": "[bot-1] trade error"}}
+        with mock.patch.object(sentry_tracker, "_get_log_prefix", return_value="[bot-1] "):
+            result = sentry_tracker._before_send(event, {})
+        assert result["logentry"]["message"] == "trade error"
 
-    def test_true_after_update(self):
-        sentry_tracker.update_tracker_bot_id("bot-id")
-        assert sentry_tracker.has_tracker_bot_id() is True
+    def test_returns_event_when_logentry_missing(self):
+        event = {"extra": {}}
+        assert sentry_tracker._before_send(event, {}) is event

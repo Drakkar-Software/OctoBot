@@ -176,7 +176,7 @@ class TestStartOctobot:
                 mock.patch.object(octobot_cli, "_assert_process_child_folder_overrides", mock.Mock()), \
                 mock.patch.object(octobot_cli.octobot_logger, "init_logger", mock.Mock(return_value=logger)), \
                 mock.patch.object(octobot_cli, "_log_environment", mock.Mock()), \
-                mock.patch.object(octobot_cli.octobot_community.ActivityMetrics, "initialize_tracker", mock.Mock()), \
+                mock.patch.object(octobot_cli.journal_startup, "initialize_journal", mock.Mock()), \
                 mock.patch.object(
                     octobot_cli,
                     "_create_startup_config",
@@ -552,7 +552,7 @@ class TestDefaultCliMode:
             (octobot_cli, "_assert_process_child_folder_overrides", mock.Mock()),
             (octobot_cli.octobot_logger, "init_logger", mock.Mock(return_value=logger)),
             (octobot_cli, "_log_environment", mock.Mock()),
-            (octobot_cli.octobot_community.ActivityMetrics, "initialize_tracker", mock.Mock()),
+            (octobot_cli.journal_startup, "initialize_journal", mock.Mock()),
             (octobot_cli, "_create_startup_config", mock.Mock(return_value=(config, False))),
             (octobot_cli, "_log_terms_if_unaccepted", mock.Mock()),
             (octobot_cli, "_get_authenticated_community_if_possible", mock.AsyncMock(return_value=None)),
@@ -666,3 +666,23 @@ class TestOctobotParser:
         args = parser.parse_args(["--standalone", "--master"])
         with pytest.raises(commons_errors.ConfigError, match="--standalone cannot be used"):
             octobot_cli._validate_startup_mode_args(args)
+
+
+class TestRecordCliStartupFailure:
+    def test_logs_debug_when_journal_record_raises(self):
+        config = mock.Mock()
+        config.config = {}
+        with mock.patch.object(
+            octobot_cli.configuration_manager,
+            "get_distribution",
+            return_value=octobot_enums.OctoBotDistribution.NODE,
+        ), mock.patch.object(
+            octobot_cli.journal_startup,
+            "record_node_startup_failed",
+            side_effect=RuntimeError("journal down"),
+        ), mock.patch("octobot_commons.logging.get_logger") as get_logger_mock:
+            logger_mock = mock.Mock()
+            get_logger_mock.return_value = logger_mock
+            octobot_cli._record_cli_startup_failure(RuntimeError("startup"), "config", config)
+        logger_mock.debug.assert_called_once()
+        assert logger_mock.debug.call_args.kwargs.get("exc_info") is True

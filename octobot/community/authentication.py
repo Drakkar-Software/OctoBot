@@ -20,8 +20,7 @@ import os
 import time
 import threading
 import typing
-import octobot.community.activity_analysis.config_path_binding as config_path_binding
-import octobot.community.activity_analysis.activity_metrics as activity_metrics
+import octobot.community.config_path_binding as config_path_binding
 import decimal
 
 import octobot.constants as constants
@@ -150,6 +149,7 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     def update(self, configuration: commons_configuration.Configuration):
+        self.config = configuration
         self.configuration_storage.set_configuration(configuration)
         self._wallet_backend = wallet_backend.WalletBackend(
             self._get_wallet_sync_storage(), self.logger
@@ -583,7 +583,6 @@ class CommunityAuthentication(authentication.Authenticator):
             "and webhook url will be different on this bot."
         )
         self._save_bot_id("")
-        activity_metrics.ActivityMetrics.clear_activity_bot_id(self.config)
         self.save_tradingview_email("")
         # also reset mqtt id to force a new mqtt id creation
         self._save_mqtt_device_uuid("")
@@ -722,6 +721,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
         return self._wallet_backend.get_wallet_by_user_id(user_id)
+
+    def has_wallet_for_user_id(self, user_id: str) -> bool:
+        return self._wallet_backend.has_wallet_for_user_id(user_id)
 
     async def get_session_for_address(self, address: str) -> starfish_spaces.Session:
         """Build (and cache) a dk-namespace starfish_spaces Session for the given wallet.
