@@ -68,6 +68,10 @@ def surface_journal_errors(request):
     if node_path.name == "test_record.py" and node_path.parent.name == "pipeline":
         yield
         return
+    test_class = getattr(request.node, "cls", None)
+    if test_class is not None and test_class.__name__ == "TestRunJournalStoreOperation":
+        yield
+        return
 
     def run_without_swallowing(operation_name, operation, *, default):
         del operation_name, default
@@ -76,6 +80,10 @@ def surface_journal_errors(request):
     with mock.patch.object(
         journal_module,
         "run_journal_operation",
+        side_effect=run_without_swallowing,
+    ), mock.patch.object(
+        journal_store,
+        "run_journal_store_operation",
         side_effect=run_without_swallowing,
     ):
         yield

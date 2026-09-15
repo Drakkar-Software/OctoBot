@@ -566,3 +566,17 @@ class TestLegacyJsonlEventRead:
         event_line = events[0]
         assert event_line.event == journal_events.NodeJournalEvent.UNKNOWN
         assert event_line.attributes.raw_event_name == "legacy_custom_event"
+
+
+class TestRunJournalStoreOperation:
+    def test_returns_default_on_exception(self):
+        def failing_operation():
+            raise RuntimeError("boom")
+
+        result = journal_store.run_journal_store_operation(
+            "test_op",
+            failing_operation,
+            default="fallback",
+        )
+        assert result == "fallback"
+

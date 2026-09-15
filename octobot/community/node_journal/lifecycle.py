@@ -25,7 +25,6 @@ import octobot_protocol.models as protocol_models
 import octobot_sync.sync.collection_providers as collection_providers
 
 import octobot.community.authentication as community_authentication
-import octobot.community.errors_upload.sentry_tracker as sentry_tracker
 import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.journal as journal_module
 import octobot.community.node_journal.recording as journal_recording
@@ -59,7 +58,6 @@ def build_existing_config_snapshot() -> ExistingConfigSnapshot:
 
 
 def initialize_journal(config: configuration.Configuration) -> None:
-    sentry_tracker.init_sentry_tracker(metrics_enabled=False)
     if not journal_module.is_journal_enabled():
         return
     distribution = configuration_manager.get_distribution(config.config)

@@ -500,7 +500,10 @@ def _record_cli_startup_failure(
             config=config,
         )
     except Exception:
-        pass
+        octobot_commons.logging.get_logger("OctoBot").debug(
+            "Failed to record CLI startup failure in node journal",
+            exc_info=True,
+        )
 
 
 def start_octobot(args, default_config_file=None):
@@ -555,6 +558,7 @@ def start_octobot(args, default_config_file=None):
         community_auth = None if args.backtesting else asyncio.run(
             _get_authenticated_community_if_possible(config, logger)
         )
+        octobot_community.init_sentry_tracker()
         journal_startup.initialize_journal(config)
 
         # Startup order matters: sync user and tentacles/community config must run before
