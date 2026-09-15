@@ -20,7 +20,7 @@ export function reportBootFailed(error: Error): void {
 
 export function reportAuthStateBroken(): void {
   void reportUiJournalEvent("ui_auth_state_broken", {
-    has_username: true,
+    has_username: Boolean(localStorage.getItem("auth_username")),
     has_password_record: false,
     ui_build: getUiBuild(),
   })

@@ -108,4 +108,20 @@ describe("reportUiJournalEvent", () => {
       reportUiJournalEvent("ui_fatal_render_error"),
     ).resolves.toBeUndefined()
   })
+
+  it("logs console warning when response is not ok", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      statusText: "Forbidden",
+    })
+
+    await reportUiJournalEvent("ui_boot_failed")
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Journal client-event ui_boot_failed failed: HTTP 403 Forbidden",
+    )
+    warnSpy.mockRestore()
+  })
 })

@@ -14,90 +14,21 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import mock
 import pytest
 
-import octobot_commons.user_root_folder_provider as user_root_folder_provider
-
-import octobot.community.node_journal.journal as journal_module
-import octobot.community.node_journal.state as journal_state
-import octobot.community.node_journal.store as journal_store
-import octobot.community.node_journal.recording.sync as sync_module
-
-from test_utils.journal_test_support import enabled_node_journal_environment
-
-
-def reset_journal_state() -> None:
-    journal_state.bind_config(None)
-    journal_state._persisted_state = None
-    journal_state._session_id = None
-
-
-@pytest.fixture
-def journal_user_root(tmp_path):
-    user_root = tmp_path / "user"
-    user_root.mkdir()
-    return user_root
+pytest_plugins = ("test_utils.journal_integration_fixtures",)
 
 
 @pytest.fixture(autouse=True)
-def re_enable_node_journal():
-    with enabled_node_journal_environment():
-        yield
+def re_enable_node_journal(node_journal_enabled):
+    yield
 
 
 @pytest.fixture(autouse=True)
-def isolated_journal_environment(journal_user_root):
-    journal_store.reset_default_store()
-    reset_journal_state()
-    sync_module._tracker_reset_after_startup = False
-    with mock.patch.object(
-        user_root_folder_provider,
-        "get_user_root_folder",
-        return_value=str(journal_user_root),
-    ):
-        yield journal_user_root
-    journal_store.reset_default_store()
-    reset_journal_state()
-    sync_module._tracker_reset_after_startup = False
+def autouse_isolated_journal_environment(isolated_journal_environment):
+    yield
 
 
 @pytest.fixture(autouse=True)
-def surface_journal_errors(request):
-    node_path = request.node.path
-    if node_path.name == "test_record.py" and node_path.parent.name == "pipeline":
-        yield
-        return
-    test_class = getattr(request.node, "cls", None)
-    if test_class is not None and test_class.__name__ == "TestRunJournalStoreOperation":
-        yield
-        return
-
-    def run_without_swallowing(operation_name, operation, *, default):
-        del operation_name, default
-        return operation()
-
-    with mock.patch.object(
-        journal_module,
-        "run_journal_operation",
-        side_effect=run_without_swallowing,
-    ), mock.patch.object(
-        journal_store,
-        "run_journal_store_operation",
-        side_effect=run_without_swallowing,
-    ):
-        yield
-
-
-@pytest.fixture
-def journal_persisted_state():
-    state = journal_state.load_persisted_state()
-    state.install_id = "test-install-id"
-    state.onboarding_started_at = 1_000.0
-    state.onboarding_complete = False
-    state.first_automation_started_at = None
-    state.connection_sequence = 0
-    state.last_user_data_pull_at = None
-    state.tracked_automation_ids = []
-    journal_state.save_persisted_state(state)
-    return state
+def autouse_surface_journal_errors(surface_journal_errors):
+    yield

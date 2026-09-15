@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { ApiError } from "@/client"
 import { AuthLoginRedirectSuppressionProvider } from "@/components/Common/AuthLoginRedirectSuppressionProvider"
@@ -27,16 +27,18 @@ import {
 } from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
-  buildRecoveryFeedbackPrefill,
+  computeShareFeedbackSendDisabled,
   downloadPreviewEnvelope,
   fetchFeedbackPreview,
   getPreviewEventCount,
   getPreviewAutomationCount,
+  getShareFeedbackUiErrorName,
+  submitFeedbackDownload,
   type ShareFeedbackContactMethod,
   type ShareFeedbackContext,
   type ShareFeedbackFailureKind,
-  submitFeedbackDownload,
 } from "@/lib/feedback-share"
+import { FEEDBACK_EMPTY_JOURNAL_HINT } from "@/lib/ui-recovery-constants"
 
 type ShareFeedbackDialogProps = {
   open: boolean
@@ -48,6 +50,7 @@ const RECOVERY_CONTEXT_LABELS: Record<ShareFeedbackFailureKind, string> = {
   boot_failed: "Recovery: boot failed",
   auth_broken: "Recovery: sign-in data broken",
   fatal_render: "Recovery: fatal render error",
+  insecure_context: "Recovery: insecure browser context",
 }
 
 const CONTACT_METHOD_OPTIONS: Array<{
@@ -132,10 +135,7 @@ function ActivityHistorySection({
         </Button>
       )}
       {!isLoading && isEmptyJournal && (
-        <p className="text-muted-foreground">
-          Nothing has been recorded yet. Use the app or trigger a recovery event,
-          then try again.
-        </p>
+        <p className="text-muted-foreground">{FEEDBACK_EMPTY_JOURNAL_HINT}</p>
       )}
     </div>
   )
@@ -152,7 +152,7 @@ export function ShareFeedbackDialogContent({
     ShareFeedbackContactMethod | ""
   >("")
   const [contactValue, setContactValue] = useState("")
-  const degradedPrefillAppliedRef = useRef(false)
+  const hasUiErrorContext = getShareFeedbackUiErrorName(context) !== null
 
   const previewQuery = useQuery({
     queryKey: ["feedback-preview"],
@@ -166,7 +166,6 @@ export function ShareFeedbackDialogContent({
       setNote("")
       setContactMethod("")
       setContactValue("")
-      degradedPrefillAppliedRef.current = false
     }
   }, [open])
 
@@ -175,19 +174,6 @@ export function ShareFeedbackDialogContent({
   const useDegradedRecoveryFeedback =
     isRecoveryContext && previewAuthBlocked
   const showSignInPrompt = previewAuthBlocked && !isRecoveryContext
-
-  useEffect(() => {
-    if (
-      !open ||
-      !useDegradedRecoveryFeedback ||
-      degradedPrefillAppliedRef.current ||
-      context.source !== "recovery"
-    ) {
-      return
-    }
-    setNote(buildRecoveryFeedbackPrefill(context.failureKind))
-    degradedPrefillAppliedRef.current = true
-  }, [open, useDegradedRecoveryFeedback, context])
 
   const submitMutation = useMutation({
     mutationFn: () =>
@@ -226,30 +212,17 @@ export function ShareFeedbackDialogContent({
     !useDegradedRecoveryFeedback
   const showFeedbackForm = !showSignInPrompt
 
-  const isSendDisabled = (() => {
-    if (submitMutation.isPending) {
-      return true
-    }
-    if (useDegradedRecoveryFeedback) {
-      return false
-    }
-    if (showSignInPrompt) {
-      return true
-    }
-    if (previewQuery.isLoading) {
-      return true
-    }
-    if (previewQuery.isError) {
-      return true
-    }
-    if (!preview) {
-      return true
-    }
-    if (isEmptyJournal) {
-      return true
-    }
-    return false
-  })()
+  const isSendDisabled = computeShareFeedbackSendDisabled({
+    submitPending: submitMutation.isPending,
+    useDegradedRecoveryFeedback,
+    hasUiErrorContext,
+    showSignInPrompt,
+    previewLoading: previewQuery.isLoading,
+    previewError: previewQuery.isError,
+    hasPreview: Boolean(preview),
+    eventCount,
+    note,
+  })
 
   const handleCheckFileContentClick = () => {
     if (!preview) {

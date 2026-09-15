@@ -1,3 +1,4 @@
+# pylint: disable=broad-exception-caught
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #

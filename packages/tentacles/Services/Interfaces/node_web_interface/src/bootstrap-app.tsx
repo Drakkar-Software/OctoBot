@@ -4,7 +4,6 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { ErrorBoundary } from "react-error-boundary"
 import { OpenAPI } from "@/client"
-import InsecureContextNotice from "@/components/Common/InsecureContextNotice"
 import { RecoveryScreen } from "@/components/Common/RecoveryScreen"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -77,9 +76,12 @@ function renderRecovery(
 
   createRoot(rootElement).render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RecoveryScreen failureKind={failureKind} />
-      </QueryClientProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <RecoveryScreen failureKind={failureKind} />
+          <Toaster richColors closeButton />
+        </QueryClientProvider>
+      </ThemeProvider>
     </StrictMode>,
   )
 }
@@ -98,13 +100,6 @@ function renderApp(rootElement: HTMLElement): void {
   const queryClient = new QueryClient()
   const router = createAppRouter()
 
-  if (!isWebCryptoAvailable()) {
-    reportInsecureContext({
-      isSecureContext: window.isSecureContext,
-      hostname: window.location.hostname,
-    })
-  }
-
   createRoot(rootElement).render(
     <StrictMode>
       <ErrorBoundary
@@ -112,14 +107,10 @@ function renderApp(rootElement: HTMLElement): void {
         onError={handleShellRenderError}
       >
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          {isWebCryptoAvailable() ? (
-            <QueryClientProvider client={queryClient}>
-              <RouterProvider router={router} />
-              <Toaster richColors closeButton />
-            </QueryClientProvider>
-          ) : (
-            <InsecureContextNotice />
-          )}
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+            <Toaster richColors closeButton />
+          </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>
     </StrictMode>,
@@ -131,6 +122,15 @@ export async function bootstrapApp(): Promise<void> {
   const rootElement = document.getElementById("root")
   if (!rootElement) {
     throw new Error("Root element not found")
+  }
+
+  if (!isWebCryptoAvailable()) {
+    reportInsecureContext({
+      isSecureContext: window.isSecureContext,
+      hostname: window.location.hostname,
+    })
+    renderRecovery(rootElement, "insecure_context")
+    return
   }
 
   const startupView = await resolveStartupView()

@@ -17,7 +17,7 @@
 import octobot.community.node_journal.enums as journal_enums
 
 JOURNAL_MAX_EVENTS = 50_000
-JOURNAL_SCHEMA_VERSION = 2
+JOURNAL_SCHEMA_VERSION = 1
 SYNC_SESSION_GAP_SECONDS = 14_400
 JOURNAL_DIR_NAME = "node_journal"
 MANIFEST_FILE_NAME = "manifest.json"

@@ -26,13 +26,41 @@ _TESTS_ROOT = os.path.join(_OCTOBOT_ROOT, "tests")
 if _TESTS_ROOT not in sys.path:
     sys.path.insert(0, _TESTS_ROOT)
 
-from test_utils.journal_test_support import disabled_node_journal_environment
+from test_utils.journal_integration_fixtures import (
+    isolated_journal_environment_context,
+    surface_journal_errors_context,
+)
+from test_utils.journal_test_support import (
+    disabled_node_journal_environment,
+    enabled_node_journal_environment,
+)
+
+pytest_plugins = ("test_utils.journal_integration_fixtures",)
+
+
+def _is_sync_journal_integration_test(request) -> bool:
+    return request.node.path.name.endswith("_journal.py")
 
 
 @pytest.fixture(autouse=True)
-def disable_node_journal():
+def disable_node_journal(request):
+    if _is_sync_journal_integration_test(request):
+        yield
+        return
     with disabled_node_journal_environment():
         yield
+
+
+@pytest.fixture(autouse=True)
+def sync_journal_integration_autouse(request):
+    if not _is_sync_journal_integration_test(request):
+        yield
+        return
+    journal_user_root = request.getfixturevalue("journal_user_root")
+    with enabled_node_journal_environment():
+        with isolated_journal_environment_context(str(journal_user_root)):
+            with surface_journal_errors_context():
+                yield
 
 
 class MemoryObjectStore:

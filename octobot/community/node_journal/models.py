@@ -199,6 +199,8 @@ class UploadEnvelope(_NodeJournalMinimizableDataclass):
     ready: bool
     event_count: int
     note: str | None = None
+    ui_error_name: str | None = None
+    ui_error_route: str | None = None
 
     def to_dict(self, include_default_values: bool = False) -> dict:
         serialized = super().to_dict(include_default_values=include_default_values)

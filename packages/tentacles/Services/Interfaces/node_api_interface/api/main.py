@@ -76,6 +76,7 @@ def build_api_router() -> APIRouter:
     api_router.include_router(config.router, prefix="/config")
     api_router.include_router(logs.router, prefix="/logs")
     api_router.include_router(dsl.router, prefix="/dsl")
+    # See feedback / journal_client_event module docstrings for unauthenticated write endpoints.
     api_router.include_router(feedback.router, prefix="/feedback")
     api_router.include_router(journal_client_event.router, prefix="/journal")
     return api_router

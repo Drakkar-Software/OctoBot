@@ -68,13 +68,19 @@ export async function reportUiJournalEvent(
       client_instance_id: getOrCreateClientInstanceId(),
       attributes: attributes ?? {},
     }
-    await fetch(buildJournalClientEventUrl(resolveJournalApiBase()), {
+    const response = await fetch(buildJournalClientEventUrl(resolveJournalApiBase()), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
     })
+    if (!response.ok) {
+      const logFn = response.status >= 500 ? console.error : console.warn
+      logFn(
+        `Journal client-event ${event} failed: HTTP ${response.status} ${response.statusText}`,
+      )
+    }
   } catch {
     // Recovery must not depend on journal delivery.
   }
