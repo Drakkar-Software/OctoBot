@@ -233,7 +233,7 @@ class TestCreateAccountActionExecutorExecute:
 
 class TestCreateAccountActionExecutorRecordAccountValidated:
     @pytest.mark.asyncio
-    async def test_emits_account_validated_via_usage_metrics(self):
+    async def test_emits_account_validated_via_node_journal(self):
         account_model = account_executor_test_utils.minimal_exchange_account(
             account_id="validated-acc",
             is_simulated=False,
