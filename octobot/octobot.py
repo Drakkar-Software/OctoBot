@@ -36,6 +36,7 @@ import octobot_trading.api as trading_api
 
 import octobot.logger as logger
 import octobot.community as community
+import octobot.community.community_bot_stats as community_bot_stats
 import octobot.community.node_journal.lifecycle as journal_startup
 import octobot.constants as constants
 import octobot.enums as enums
@@ -92,6 +93,8 @@ class OctoBot:
 
         # octobot_api to request the current instance
         self.octobot_api = octobot_api.OctoBotAPI(self)
+
+        self.community_bot_stats = community_bot_stats.CommunityBotStats(self.octobot_api)
 
         # Logger
         self.logger = logging.get_logger(self.__class__.__name__)
@@ -241,7 +244,11 @@ class OctoBot:
 
     async def _start_tools_tasks(self):
         await self._init_aiohttp_session()
+        self._init_community()
         await self.task_manager.start_tools_tasks()
+
+    def _init_community(self):
+        self.community_bot_stats.task_enabled = True
 
     async def _ensure_clock(self):
         if trading_api.is_trader_enabled_in_config(self.config) and constants.ENABLE_CLOCK_SYNCH:

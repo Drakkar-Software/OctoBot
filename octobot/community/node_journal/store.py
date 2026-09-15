@@ -19,17 +19,30 @@ import json
 import logging
 import os
 import threading
+import typing
 
 import octobot.constants as octobot_constants
 
 import octobot.community.node_journal.constants as journal_constants
 import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.models as journal_models
-import octobot.community.node_journal.journal as journal_module
 import octobot.community.node_journal.storage_hydration as journal_storage_hydration
 import octobot.community.node_journal.state as journal_state
 
 logger = logging.getLogger(__name__)
+
+
+def run_journal_store_operation(
+    operation_name: str,
+    operation: typing.Callable[[], typing.Any],
+    *,
+    default: typing.Any,
+) -> typing.Any:
+    try:
+        return operation()
+    except Exception as exc:
+        logger.exception("Journal %s failed: %s", operation_name, exc)
+        return default
 
 
 @dataclasses.dataclass
@@ -56,14 +69,14 @@ class JournalStore:
         journal_state.ensure_journal_manifest(self._journal_directory)
 
     def append(self, event_line: journal_models.JournalEventLine, *, is_onboarding_segment: bool) -> None:
-        journal_module.run_journal_operation(
+        run_journal_store_operation(
             "store.append",
             lambda: self._append(event_line, is_onboarding_segment=is_onboarding_segment),
             default=None,
         )
 
     def read_all_events(self) -> list[journal_models.JournalEventLine]:
-        return journal_module.run_journal_operation(
+        return run_journal_store_operation(
             "store.read_all_events",
             self._read_all_events,
             default=[],
