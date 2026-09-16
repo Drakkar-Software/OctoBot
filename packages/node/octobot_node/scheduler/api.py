@@ -130,6 +130,35 @@ def _get_active_execution(
     return dated[-1] if dated else (executions[-1] if executions else None)
 
 
+def _task_recency_sort_key(task: octobot_node.models.Task) -> tuple[int, str, str]:
+    active_execution = _get_active_execution(task.executions or [])
+    if active_execution is None:
+        return (0, "", task.id or "")
+    sort_at = active_execution.completed_at or active_execution.scheduled_at
+    if sort_at is None:
+        return (0, "", task.id or "")
+    return (1, sort_at.isoformat(), task.id or "")
+
+
+def sort_tasks_by_recency(
+    tasks: list[octobot_node.models.Task],
+) -> list[octobot_node.models.Task]:
+    return sorted(tasks, key=_task_recency_sort_key, reverse=True)
+
+
+def paginate_tasks(
+    tasks: list[octobot_node.models.Task],
+    page: int,
+    limit: int,
+) -> list[octobot_node.models.Task]:
+    page = max(1, page)
+    max_limit = octobot_node.constants.TASKS_LIST_MAX_PAGE_LIMIT
+    limit = max(1, min(limit, max_limit))
+    sorted_tasks = sort_tasks_by_recency(tasks)
+    start_idx = (page - 1) * limit
+    return sorted_tasks[start_idx:start_idx + limit]
+
+
 def _build_tasks_from_executions(
     executions: list[octobot_node.models.Execution],
 ) -> list[octobot_node.models.Task]:
