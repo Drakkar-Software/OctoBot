@@ -198,3 +198,47 @@ class TestCreateDslScriptFromTvFormatActionDetails:
         assert action_details.dsl_script.startswith("cancel_order(")
         assert "BTC/USDC" in action_details.dsl_script
 
+
+class TestParseOrderSymbol:
+    _invalid_order_symbol = "invalid:symbol"
+
+    def test_get_reference_market_raises_invalid_automation_action_error(self):
+        params = actions_dag_parser.ActionsDAGParserParams.from_dict({
+            "ORDER_SYMBOL": self._invalid_order_symbol,
+        })
+        with pytest.raises(octobot_flow.errors.InvalidAutomationActionError) as raised:
+            params.get_reference_market()
+        assert self._invalid_order_symbol in str(raised.value)
+        assert isinstance(raised.value, octobot_flow.errors.ConfigurationError)
+        assert isinstance(raised.value.__cause__, (AttributeError, ValueError))
+
+
+class TestActionsDAGParserParseInvalidOrderSymbol:
+    _invalid_order_symbol = "invalid:symbol"
+
+    def _trade_params_with_invalid_symbol(self) -> dict:
+        return {
+            "ACTIONS": ["trade"],
+            "EXCHANGE_FROM": "binanceus",
+            "ORDER_SYMBOL": self._invalid_order_symbol,
+            "ORDER_AMOUNT": 1,
+            "ORDER_TYPE": "market",
+            "ORDER_SIDE": "BUY",
+            "SIMULATED_PORTFOLIO": {"BTC": 1},
+        }
+
+    def test_parse_raises_invalid_automation_action_error(self):
+        with pytest.raises(octobot_flow.errors.InvalidAutomationActionError) as raised:
+            actions_dag_parser.ActionsDAGParser(
+                self._trade_params_with_invalid_symbol()
+            ).parse()
+        assert self._invalid_order_symbol in str(raised.value)
+
+
+class TestCreateGenericActionUnknownAction:
+    def test_unknown_action_raises_invalid_automation_action_error(self):
+        unknown_action = "not_a_real_action"
+        with pytest.raises(octobot_flow.errors.InvalidAutomationActionError) as raised:
+            actions_dag_parser.ActionsDAGParser({"ACTIONS": [unknown_action]}).parse()
+        assert unknown_action in str(raised.value)
+
