@@ -58,10 +58,13 @@ def to_protocol_automations_state(
                 workflow_error=source.workflow_error,
             ))
         except Exception as exc:
+            # cloud be InvalidAutomationActionError when dag parsing fails
             task = source.task
-            content_preview = (task.content or "")[:80] if isinstance(task.content, str) else repr(task.content)
-            logger.warning(
-                f"Skipping malformed automation task id={task.id!r}: {exc} "
+            content_preview = octobot_commons_logging.get_private_minimized_message_if_necessary(
+                (task.content or "")[:80] if isinstance(task.content, str) else repr(task.content)
+            )
+            logger.debug(
+                f"Skipping malformed automation task id={task.id!r}: {exc} ({exc.__class__.__name__}) "
                 f"(content_metadata={task.content_metadata!r}, content_preview={content_preview!r})"
             )
     return states
