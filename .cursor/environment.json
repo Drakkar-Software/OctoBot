@@ -1,0 +1,7 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "OCTOBOT_CLOUD_PROFILE=ci-tentacles bash .cursor/cloud-install.sh"
+}
