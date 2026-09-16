@@ -139,7 +139,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
 
     def get_reference_market(self) -> typing.Optional[str]:
         if self.ORDER_SYMBOL:
-            parsed_symbol = octobot_commons.symbols.parse_symbol(self.ORDER_SYMBOL)
+            parsed_symbol = _parse_order_symbol(self.ORDER_SYMBOL)
             return parsed_symbol.quote
         return None
 
@@ -430,8 +430,8 @@ class ActionsDAGParser:
             case ActionType.WAIT.value:
                 return self._create_wait_action(index)
             case _:
-                raise ValueError(
-                    f"Unknown action: {action}"
+                raise octobot_flow.errors.InvalidAutomationActionError(
+                    f"Unknown action: {action!r}"
                 )
     
     def _create_order_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
@@ -441,7 +441,7 @@ class ActionsDAGParser:
             ["ORDER_SYMBOL", "ORDER_AMOUNT", "ORDER_TYPE"],
             "trade",
         )
-        parsed_symbol = octobot_commons.symbols.parse_symbol(self.params.ORDER_SYMBOL)
+        parsed_symbol = _parse_order_symbol(self.params.ORDER_SYMBOL)
         if self.params.ORDER_SIDE:
             signal = self.params.ORDER_SIDE.lower()
         elif parsed_symbol.base == self.params.BLOCKCHAIN_FROM_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_TO_ASSET: # type: ignore
@@ -844,6 +844,15 @@ class ActionsDAGParser:
             config=config,
             result=result,
         )
+
+
+def _parse_order_symbol(symbol_str: str) -> octobot_commons.symbols.Symbol:
+    try:
+        return octobot_commons.symbols.parse_symbol(symbol_str)
+    except (AttributeError, ValueError, TypeError) as error:
+        raise octobot_flow.errors.InvalidAutomationActionError(
+            f"Invalid order symbol: {symbol_str!r}"
+        ) from error
 
 
 def _parse_dependency_param_value(
