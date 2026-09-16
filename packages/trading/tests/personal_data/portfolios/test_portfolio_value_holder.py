@@ -721,6 +721,8 @@ async def test_get_open_orders_value_for_symbol_multiple_orders(backtesting_trad
 
 
 class TestSyncPortfolioCurrentValueIfNecessary:
+    pytestmark = []
+
     def _portfolio_value_holder(self, supports_fetching_balance: bool):
         holding = mock.Mock()
         holding.total = constants.ONE
@@ -735,9 +737,13 @@ class TestSyncPortfolioCurrentValueIfNecessary:
             supports_fetching_balance
         )
         portfolio_manager.exchange_manager = exchange_manager
-        holder = personal_data.portfolios.portfolio_value_holder.PortfolioValueHolder(
-            portfolio_manager
-        )
+        with mock.patch(
+            "octobot_trading.personal_data.portfolios.portfolio_value_holder.value_converter.ValueConverter",
+            return_value=mock.Mock(),
+        ):
+            holder = personal_data.portfolios.portfolio_value_holder.PortfolioValueHolder(
+                portfolio_manager
+            )
         holder.logger = mock.Mock()
         return holder
 

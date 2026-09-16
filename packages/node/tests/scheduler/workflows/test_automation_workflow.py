@@ -3057,6 +3057,44 @@ class TestApplyProcessedActionErrors:
         assert executed_step == "no action executed"
         assert iteration_state.execution_error is None
 
+    # When get_next_actions_description returns has_next_actions=False after an upstream
+    # failure (instead of WorkflowDAGDependenciesError), the workflow must still copy
+    # processed_actions errors into iteration_state; locks blockchain_wallet_error (e.g. wallet RPC timeout).
+    def test_copies_blockchain_wallet_error_into_iteration_state(
+        self, import_automation_workflow, parsed_inputs
+    ):
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        mock_action = mock.Mock()
+        mock_action.error_status = octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value
+        mock_action.error_message = (
+            "Timed out while waiting for an idle wallet RPC process in the configured port range"
+        )
+        mock_action.id = "blockchain_wallet_init_2"
+        mock_action.get_summary.return_value = "blockchain wallet init"
+        result = octobot_flow_client.OctoBotActionsJobResult()
+        result.processed_actions = [mock_action]
+        iteration_state = automation_workflow_module._IterationExecutionState()
+        with mock.patch.object(
+            automation_workflow_module.AutomationWorkflow,
+            "get_logger",
+            return_value=mock.Mock(),
+        ):
+            with mock.patch.object(
+                automation_workflow_module.AutomationWorkflow,
+                "_get_actions_summary",
+                return_value="executed summary",
+            ):
+                automation_workflow_module.AutomationWorkflow._apply_processed_action_errors(
+                    parsed_inputs,
+                    result,
+                    iteration_state,
+                    "no action executed",
+                )
+        assert iteration_state.execution_error == (
+            octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value
+        )
+        assert iteration_state.execution_error_message == mock_action.error_message
+
 
 class TestSendSignalExecutionResultSafe:
     @pytest.mark.asyncio
