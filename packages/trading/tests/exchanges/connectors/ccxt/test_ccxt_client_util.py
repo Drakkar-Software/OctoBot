@@ -22,6 +22,7 @@ import ccxt.async_support as ccxt
 import octobot_commons.aiohttp_util as aiohttp_util
 
 import octobot_trading.exchanges as exchanges
+import octobot_trading.exchanges.config.exchange_credentials_data as exchange_credentials_data
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
 import octobot_trading.constants as constants
 
@@ -177,6 +178,74 @@ async def _exchange_with_proxy_config(proxy_config: exchanges.ExchangeProxyConfi
         if exchange:
             exchange.timeout_on_exit = 0    # avoid waiting for the exchange to close
             await exchange.close()
+
+
+class TestExchangeClassRequiresApiCredentials:
+    def test_returns_false_when_no_credentials_required(self):
+        assert ccxt_client_util._exchange_class_requires_api_credentials(ccxt.wizardswap) is False
+
+    def test_returns_true_when_api_key_required(self):
+        assert ccxt_client_util._exchange_class_requires_api_credentials(ccxt.binance) is True
+
+
+class TestCreateClientMissingApiKeyWarning:
+    @staticmethod
+    def _exchange_manager_for_create_client():
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_only = True
+        exchange_manager.is_simulated = False
+        exchange_manager.ignore_config = False
+        exchange_manager.check_config.return_value = True
+        exchange_manager.is_backtesting = True
+        exchange_manager.check_credentials = False
+        exchange_manager.exchange_name = "test-exchange"
+        exchange_manager.get_exchange_credentials.return_value = (
+            exchange_credentials_data.ExchangeCredentialsData()
+        )
+        exchange_manager.proxy_config = None
+        return exchange_manager
+
+    def test_no_warning_when_exchange_requires_no_api_credentials(self):
+        exchange_manager = self._exchange_manager_for_create_client()
+        logger = mock.Mock()
+        mock_client = mock.Mock()
+        mock_client.logger = mock.Mock()
+        with mock.patch.object(
+            ccxt_client_util,
+            "instantiate_exchange",
+            return_value=mock_client,
+        ):
+            ccxt_client_util.create_client(
+                ccxt.wizardswap,
+                exchange_manager,
+                logger,
+                {},
+                {},
+                {},
+                should_authenticate=False,
+            )
+        logger.warning.assert_not_called()
+
+    def test_warning_when_exchange_requires_api_credentials(self):
+        exchange_manager = self._exchange_manager_for_create_client()
+        logger = mock.Mock()
+        mock_client = mock.Mock()
+        mock_client.logger = mock.Mock()
+        with mock.patch.object(
+            ccxt_client_util,
+            "instantiate_exchange",
+            return_value=mock_client,
+        ):
+            ccxt_client_util.create_client(
+                ccxt.binance,
+                exchange_manager,
+                logger,
+                {},
+                {},
+                {},
+                should_authenticate=False,
+            )
+        logger.warning.assert_called_once()
 
 
 class TestSetSandboxMode:

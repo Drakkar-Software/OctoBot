@@ -72,7 +72,12 @@ def create_client(
             )
             if keys_adapter:
                 creds = keys_adapter(creds)
-            if not (creds.has_credentials()) and not exchange_manager.is_simulated and not exchange_manager.ignore_config:
+            if (
+                not creds.has_credentials()
+                and not exchange_manager.is_simulated
+                and not exchange_manager.ignore_config
+                and _exchange_class_requires_api_credentials(exchange_class)
+            ):
                 logger.warning(f"No exchange API key set for {exchange_manager.exchange_name}. "
                                f"Enter your account details to enable real trading on this exchange.")
             if should_be_authenticated_exchange:
@@ -576,6 +581,11 @@ def get_option_value_from_new_ccxt_client(
 ) -> typing.Union[bool, float, int, str, None]:
     ex_class = ccxt_exchange_class_factory(exchange)
     return get_option_value(ex_class(), option_key)
+
+
+@cachetools.cached(cachetools.LRUCache(maxsize=32))
+def _exchange_class_requires_api_credentials(exchange_class: type) -> bool:
+    return any(exchange_class().requiredCredentials.values())
 
 
 def get_option_value(

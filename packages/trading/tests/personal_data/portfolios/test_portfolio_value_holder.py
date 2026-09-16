@@ -719,3 +719,51 @@ async def test_get_open_orders_value_for_symbol_multiple_orders(backtesting_trad
         assert isinstance(result, decimal.Decimal)
         assert result == decimal.Decimal("300")
 
+
+class TestSyncPortfolioCurrentValueIfNecessary:
+    def _portfolio_value_holder(self, supports_fetching_balance: bool):
+        holding = mock.Mock()
+        holding.total = constants.ONE
+        portfolio = mock.Mock()
+        portfolio.portfolio = {"BTC": holding}
+        portfolio_manager = mock.Mock()
+        portfolio_manager.portfolio = portfolio
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_name = "wizardswap"
+        exchange_manager.exchange = mock.Mock()
+        exchange_manager.exchange.supports_fetching_balance.return_value = (
+            supports_fetching_balance
+        )
+        portfolio_manager.exchange_manager = exchange_manager
+        holder = personal_data.portfolios.portfolio_value_holder.PortfolioValueHolder(
+            portfolio_manager
+        )
+        holder.logger = mock.Mock()
+        return holder
+
+    def test_logs_info_when_balance_fetch_not_supported(self):
+        holder = self._portfolio_value_holder(supports_fetching_balance=False)
+        with mock.patch.object(
+            holder,
+            "sync_portfolio_current_value_using_available_currencies_values",
+        ), mock.patch(
+            "octobot_trading.personal_data.portfolios.portfolio_value_holder.exchanges.get_traded_assets",
+            return_value=["BTC"],
+        ):
+            holder._sync_portfolio_current_value_if_necessary()
+        holder.logger.info.assert_called_once()
+        holder.logger.error.assert_not_called()
+
+    def test_logs_error_when_balance_fetch_supported(self):
+        holder = self._portfolio_value_holder(supports_fetching_balance=True)
+        with mock.patch.object(
+            holder,
+            "sync_portfolio_current_value_using_available_currencies_values",
+        ), mock.patch(
+            "octobot_trading.personal_data.portfolios.portfolio_value_holder.exchanges.get_traded_assets",
+            return_value=["BTC"],
+        ):
+            holder._sync_portfolio_current_value_if_necessary()
+        holder.logger.error.assert_called_once()
+        holder.logger.info.assert_not_called()
+
