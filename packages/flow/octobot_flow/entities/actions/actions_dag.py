@@ -4,6 +4,7 @@ import octobot_commons.dataclasses
 
 import octobot_flow.entities.actions.action_details as action_details
 import octobot_flow.entities.actions.actions_dependencies as actions_dependencies
+import octobot_flow.enums
 import octobot_flow.errors
 
 
@@ -53,6 +54,14 @@ class ActionsDAG(octobot_commons.dataclasses.FlexibleDataclass):
             for action in self.actions
             if not action.is_completed()
         ]
+
+    def has_failed_action(self) -> bool:
+        """True if any action completed with a non-success error_status (not NO_ERROR)."""
+        no_error = octobot_flow.enums.ActionErrorStatus.NO_ERROR.value
+        return any(
+            action.is_completed() and action.error_status is not no_error
+            for action in self.actions
+        )
 
     def reset_to(self, action_id: str):
         """

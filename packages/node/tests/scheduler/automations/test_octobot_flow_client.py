@@ -1663,3 +1663,73 @@ class TestOctoBotActionsJobRunLogging:
         mock_logger.info.assert_called_once_with(
             f"Running automation actions: {[executed_action]}"
         )
+
+
+class TestGetNextActionsDescription:
+    pytestmark = []
+
+    @staticmethod
+    def _job_with_automation_state(automation_state: "octobot_flow.entities.AutomationState"):
+        job = octobot_flow_client.OctoBotActionsJob(
+            {"state": {}},
+            [],
+            [],
+            octobot_flow_client.OctoBotActionsJobResult(),
+        )
+        job.after_execution_state = automation_state
+        return job
+
+    @staticmethod
+    def _automation_state_with_dag(actions_dag: "octobot_flow.entities.ActionsDAG"):
+        return octobot_flow.entities.AutomationState(
+            automation=octobot_flow.entities.AutomationDetails(
+                metadata=octobot_flow.entities.AutomationMetadata(automation_id="automation_test"),
+                actions_dag=actions_dag,
+            )
+        )
+
+    def test_returns_has_next_actions_false_when_upstream_action_failed(self):
+        if message := misses_required_octobot_flow_client_import():
+            pytest.skip(reason=message)
+        init_action = octobot_flow.entities.ConfiguredActionDetails(id="action_init")
+        init_action.complete(
+            error_status=octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
+            error_message="connection timed out",
+        )
+        trade_action = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_trade",
+            dsl_script="trade()",
+            dependencies=[{"action_id": "action_init"}],
+        )
+        automation_state = self._automation_state_with_dag(
+            octobot_flow.entities.ActionsDAG(actions=[init_action, trade_action])
+        )
+        job = self._job_with_automation_state(automation_state)
+        post_execution_state = automation_state.to_dict(include_default_values=False)
+        next_description, has_next_actions = job.get_next_actions_description(post_execution_state)
+        assert has_next_actions is False
+        assert next_description is not None
+        assert next_description.state == post_execution_state
+
+    def test_raises_workflow_dag_dependencies_error_on_circular_pending_deps(self):
+        if message := misses_required_octobot_flow_client_import():
+            pytest.skip(reason=message)
+        import octobot_node.errors as node_errors
+
+        action_c = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_c",
+            dsl_script="dma_evaluator()",
+            dependencies=[{"action_id": "action_d"}],
+        )
+        action_d = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_d",
+            dsl_script="dma_evaluator()",
+            dependencies=[{"action_id": "action_c"}],
+        )
+        automation_state = self._automation_state_with_dag(
+            octobot_flow.entities.ActionsDAG(actions=[action_c, action_d])
+        )
+        job = self._job_with_automation_state(automation_state)
+        post_execution_state = automation_state.to_dict(include_default_values=False)
+        with pytest.raises(node_errors.WorkflowDAGDependenciesError):
+            job.get_next_actions_description(post_execution_state)
