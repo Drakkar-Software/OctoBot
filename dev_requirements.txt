@@ -14,3 +14,6 @@ wheel
 pur
 
 pylint
+
+ruff==0.16.7
+PyYAML==6.0.3

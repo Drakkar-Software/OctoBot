@@ -1,0 +1,16 @@
+---
+description: OctoBot Cursor Cloud — env, tentacles, extended_linter, PR workflow
+alwaysApply: true
+---
+
+# OctoBot cloud (always on)
+
+- Work at the **OctoBot git repo root** (this repository). Do not use sibling monorepo paths or workspace-only skills.
+- Before Python, `OctoBot`, or pytest: `source .cursor/env.sh`
+- **Tentacles:** edit only `packages/tentacles/`; after changes run `bash .cursor/reinstall-tentacles.sh`. Never commit repo-root `tentacles/`.
+- **Git:** checkout `dev` (or user base) → feature branch → commit → open PR to **`dev`** unless the user specifies another target.
+- Before handoff: `python -m tools.extended_linter --base origin/dev` (use `origin/<base>` matching the PR target).
+- No `pip install` / `npm install` to fix imports. No edits under `user/` or secret/env files.
+- Cross-package or tentacles work: read root `AGENTS.md` and colocated `AGENTS.md` for every area you touch (`octobot/`, `packages/<name>/`, `packages/tentacles/`).
+- Install success: Build log must contain `OCTOBOT_CLOUD_INSTALL_OK`; optional `bash .cursor/cloud-validate.sh --profile ci-tentacles --json`.
+- Details: skill **octobot-cloud**; policy `tools/extended_linter/config/policy.yaml`; architecture `tools/extended_linter/ARCHITECTURE.md`.

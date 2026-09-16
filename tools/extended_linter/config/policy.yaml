@@ -1,0 +1,73 @@
+policy_version: 1
+
+git_rules:
+  - rule_id: git.merge_base_missing
+    hint: Fetch origin / fix branch name
+
+path_rules:
+  - rule_id: path.deny_repo_tentacles
+    kind: repo_root_tentacles
+    hint: Edit packages/tentacles/; run reinstall-tentacles.sh; never commit install output
+  - rule_id: path.deny_user
+    globs:
+      - "user/**"
+      - "**/user/**"
+    hint: User data is local; not for PRs
+  - rule_id: path.deny_dotenv
+    globs:
+      - ".env"
+      - ".env.*"
+      - "**/.env"
+      - "**/.env.*"
+    hint: No env files in git
+  - rule_id: path.deny_cursor_local
+    globs:
+      - ".cursor/venv/**"
+      - ".cursor/env.sh"
+      - ".cursor/pythonpath.sh"
+    hint: Generated/local; gitignored
+  - rule_id: path.deny_private_keys
+    globs:
+      - "**/*.pem"
+      - "**/*_rsa"
+      - "**/*_dsa"
+      - "**/id_rsa*"
+    hint: No keys in repo
+  - rule_id: path.deny_known_secret_filenames
+    globs:
+      - "**/credentials.json"
+      - "**/secrets.json"
+      - "**/*service-account*.json"
+    hint: Use secrets manager / local only
+
+diff_rules:
+  - rule_id: diff.no_pip_install
+    patterns:
+      - '\bpip3?\s+install\b'
+      - '\buv\s+pip\s+install\b'
+      - '\bpoetry\s+add\b'
+      - '\bconda\s+install\b'
+    hint: Add deps via requirements / BUILD; no install in code or scripts in PR
+  - rule_id: diff.no_npm_install
+    patterns:
+      - '\bnpm\s+install\b'
+      - '\byarn\s+add\b'
+      - '\bpnpm\s+add\b'
+    hint: Use package.json / lockfile workflow
+  - rule_id: diff.no_git_force_push
+    patterns:
+      - 'push\s+--force'
+      - 'push\s+-f\b'
+    hint: No force-push in docs/scripts/commits
+  - rule_id: diff.no_bare_except
+    patterns:
+      - 'except\s*:'
+    hint: Catch specific exceptions
+  - rule_id: diff.no_subprocess_pip
+    kind: subprocess_package_manager
+    hint: No runtime package installs
+  - rule_id: diff.no_disable_verify
+    patterns:
+      - '--no-verify'
+      - '--no-gpg-sign'
+    hint: Do not skip hooks in repo guidance

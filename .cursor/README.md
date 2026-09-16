@@ -39,3 +39,10 @@ Not run from install; use after Build changes or when debugging a broken env.
 | Success install | `OCTOBOT_CLOUD_INSTALL_OK` |
 
 If a dashboard environment snapshot shadows this repo config, remove the saved snapshot so committed `environment.json` wins.
+
+## PRs and policy
+
+- Target branch: **`dev`** (unless release flow to `master`).
+- Before handoff: `python -m tools.extended_linter --base origin/dev` (match PR base ref).
+- CI: **OctoBot-CI** job **`extended_linter`** (lightweight: dev deps + policy vs merge base; no `cloud-install`). Use **`ci-tentacles`** for agents and **`cloud-env-validate`** on `.cursor/` changes.
+- Agent docs: colocated `AGENTS.md` (see root index), skill **octobot-cloud**.

@@ -206,6 +206,54 @@ jobs:
           cd - > /dev/null
         done
 
+  extended_linter:
+    name: extended_linter
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.x"
+
+      - name: Install dev dependencies
+        run: pip install -r dev_requirements.txt
+
+      - name: extended_linter unit tests
+        run: PYTHONPATH=. pytest tools/extended_linter/tests -q
+
+      - name: Fetch base branch
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: PR policy check
+        if: github.event_name == 'pull_request'
+        id: linter
+        run: |
+          PYTHONPATH=. python -m tools.extended_linter \
+            --base origin/${{ github.base_ref }} \
+            --continue \
+            --skip-tentacles-reinstall \
+            --write-report-json extended-linter.json | tee extended-linter.txt
+
+      - name: Upload extended_linter report on failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: extended-linter-report
+          path: |
+            extended-linter.txt
+            extended-linter.json
+
+      - name: Step summary on failure
+        if: failure() && github.event_name == 'pull_request'
+        run: |
+          echo "## extended_linter failed" >> "$GITHUB_STEP_SUMMARY"
+          cat extended-linter.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
   docker:
     name: Build & Push Docker images
     needs: [ build, tests ]
@@ -808,6 +856,7 @@ jobs:
     needs:
       - build
       - tests
+      - extended_linter
       - docker
       - binary
       - tentacles
