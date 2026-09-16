@@ -113,6 +113,9 @@ celerybeat-schedule
 # virtualenv
 .venv
 venv/
+.cursor/venv/
+.cursor/env.sh
+.cursor/pythonpath.sh
 ENV/
 
 # Spyder project settings

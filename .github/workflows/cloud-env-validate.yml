@@ -1,0 +1,54 @@
+name: cloud-env-validate
+
+on:
+  pull_request:
+    paths:
+      - ".cursor/**"
+      - ".github/workflows/cloud-env-validate.yml"
+
+permissions: read-all
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.x"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Cloud install (ci-tentacles)
+        run: OCTOBOT_CLOUD_PROFILE=ci-tentacles bash .cursor/cloud-install.sh
+
+      - name: Cloud validate
+        id: validate
+        run: |
+          source .cursor/env.sh
+          bash .cursor/cloud-validate.sh --profile ci-tentacles --json | tee cloud-validate.json
+
+      - name: Upload validate report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-validate.json
+          path: cloud-validate.json
+
+      - name: Step summary on failure
+        if: failure()
+        run: |
+          echo "## cloud-env-validate failed" >> "$GITHUB_STEP_SUMMARY"
+          grep OCTOBOT_CLOUD_FAILED cloud-validate.json 2>/dev/null || cat cloud-validate.json >> "$GITHUB_STEP_SUMMARY"
+
+  notify:
+    if: ${{ failure() }}
+    needs:
+      - validate
+    uses: Drakkar-Software/.github/.github/workflows/failure_notify_workflow.yml@master
+    secrets:
+      DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
