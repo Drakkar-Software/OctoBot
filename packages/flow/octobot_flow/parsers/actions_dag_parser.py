@@ -117,6 +117,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
     BLOCKCHAIN_BALANCE_ASSET: typing.Optional[str] = None
     BLOCKCHAIN_BALANCE: typing.Optional[str] = None
     LOOP_INTERVAL: typing.Optional[float] = None
+    LOOP_INTERVAL_MAX: typing.Optional[float] = None
     LOOP_TIMEOUT: typing.Optional[float] = None
     LOOP_MAX_ATTEMPTS: typing.Optional[int] = None
     CONTENT: typing.Optional[dict] = None
@@ -136,6 +137,14 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
         if self.EXCHANGE_TO and self.EXCHANGE_FROM:
             if self.EXCHANGE_TO != self.EXCHANGE_FROM:
                 raise octobot_flow.errors.InvalidAutomationActionError("EXCHANGE_TO and EXCHANGE_FROM must be the same")
+        if (
+            self.LOOP_INTERVAL is not None
+            and self.LOOP_INTERVAL_MAX is not None
+            and self.LOOP_INTERVAL_MAX < self.LOOP_INTERVAL
+        ):
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                "LOOP_INTERVAL_MAX must be greater than or equal to LOOP_INTERVAL when set"
+            )
 
     def get_reference_market(self) -> typing.Optional[str]:
         if self.ORDER_SYMBOL:
@@ -617,18 +626,29 @@ class ActionsDAGParser:
             dataclasses.asdict(transfer_details),
         )
 
-    def _get_loop_params(self) -> tuple[typing.Optional[float], typing.Optional[float], int]:
-        loop_interval, loop_timeout, loop_max_attempts = (
-            self.params.LOOP_INTERVAL, self.params.LOOP_TIMEOUT, self.params.LOOP_MAX_ATTEMPTS
+    def _get_loop_params(
+        self,
+    ) -> tuple[float, float, typing.Optional[float], typing.Optional[int]]:
+        loop_interval, loop_interval_max, loop_timeout, loop_max_attempts = (
+            self.params.LOOP_INTERVAL,
+            self.params.LOOP_INTERVAL_MAX,
+            self.params.LOOP_TIMEOUT,
+            self.params.LOOP_MAX_ATTEMPTS,
         )
         if not loop_interval:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 "LOOP_INTERVAL must be provided for the loop_until action"
             )
-        return loop_interval, loop_timeout, loop_max_attempts # type: ignore
+        max_interval = loop_interval_max if loop_interval_max is not None else loop_interval
+        return loop_interval, max_interval, loop_timeout, loop_max_attempts # type: ignore
+
+    def _format_loop_until_interval_args(self, min_interval: float, max_interval: float) -> str:
+        if max_interval > min_interval:
+            return f"{min_interval}, max_retry_interval={max_interval}"
+        return f"{min_interval}"
 
     def _create_loop_until_order_closed_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
-        loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
+        loop_interval, loop_interval_max, loop_timeout, loop_max_attempts = self._get_loop_params()
         self._ensure_params(
             ["ORDER_EXCHANGE_ID", "ORDER_SYMBOL"],
             "loop_until_order_closed",
@@ -644,9 +664,10 @@ class ActionsDAGParser:
             f"\"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', '{trading_enums.OrderStatus.OPEN.value}') "
             f"!= '{trading_enums.OrderStatus.OPEN.value}'\")"
         )
+        interval_args = self._format_loop_until_interval_args(loop_interval, loop_interval_max)
         dsl_script = (
             f"loop_until({selector}, "
-            f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
+            f"{interval_args}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
             f"return_remaining_time=True)"
         )
         action_id = f"action_loop_until_order_closed_{index}"
@@ -655,7 +676,7 @@ class ActionsDAGParser:
 
     def _create_loop_until_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
         tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
-        loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
+        loop_interval, loop_interval_max, loop_timeout, loop_max_attempts = self._get_loop_params()
         amount, asset = self.params.BLOCKCHAIN_BALANCE_AMOUNT, self.params.BLOCKCHAIN_BALANCE_ASSET
         if not amount or not asset:
             raise octobot_flow.errors.InvalidAutomationActionError(
@@ -668,9 +689,10 @@ class ActionsDAGParser:
             wallet_params,
             {"asset": asset},
         )
+        interval_args = self._format_loop_until_interval_args(loop_interval, loop_interval_max)
         dsl_script = (
             f"loop_until(value_if({wallet_check}, ' >= {float(amount)}'), "
-            f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
+            f"{interval_args}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
             f"return_remaining_time=True)"
         )
         action_id = f"action_loop_until_blockchain_balance_{index}"

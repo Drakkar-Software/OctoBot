@@ -242,3 +242,54 @@ class TestCreateGenericActionUnknownAction:
             actions_dag_parser.ActionsDAGParser({"ACTIONS": [unknown_action]}).parse()
         assert unknown_action in str(raised.value)
 
+
+class TestParseLoopUntilOrderClosed:
+    _exchange = "binanceus"
+
+    def _loop_until_order_closed_params(self, **overrides) -> dict:
+        params = {
+            "ACTIONS": [
+                actions_dag_parser.ActionType.TRADE.value,
+                actions_dag_parser.ActionType.LOOP_UNTIL_ORDER_CLOSED.value,
+            ],
+            "EXCHANGE_FROM": self._exchange,
+            "ORDER_SYMBOL": "ETH/BTC",
+            "ORDER_AMOUNT": 1,
+            "ORDER_TYPE": "market",
+            "ORDER_SIDE": "BUY",
+            "SIMULATED_PORTFOLIO": {"BTC": 1},
+            "ORDER_EXCHANGE_ID": "order-123",
+            "LOOP_INTERVAL": 50,
+            "LOOP_TIMEOUT": 100,
+            "LOOP_MAX_ATTEMPTS": 5,
+        }
+        params.update(overrides)
+        return params
+
+    def _loop_action_dsl(self, params: dict) -> str:
+        actions_dag = actions_dag_parser.ActionsDAGParser(params).parse()
+        loop_action = next(
+            action for action in actions_dag.actions if action.id == "action_loop_until_order_closed_2"
+        )
+        assert isinstance(loop_action, octobot_flow.entities.DSLScriptActionDetails)
+        return loop_action.dsl_script
+
+    def test_emits_max_retry_interval_when_loop_interval_max_set(self):
+        dsl_script = self._loop_action_dsl(
+            self._loop_until_order_closed_params(LOOP_INTERVAL_MAX=70)
+        )
+        assert "max_retry_interval=70" in dsl_script
+        assert "return_remaining_time=True" in dsl_script
+        assert ", 50, max_retry_interval=70," in dsl_script
+
+    def test_omits_max_retry_interval_without_loop_interval_max(self):
+        dsl_script = self._loop_action_dsl(self._loop_until_order_closed_params())
+        assert "max_retry_interval" not in dsl_script
+        assert ", 50, timeout=" in dsl_script
+
+    def test_loop_interval_max_less_than_loop_interval_raises(self):
+        with pytest.raises(octobot_flow.errors.InvalidAutomationActionError, match="LOOP_INTERVAL_MAX"):
+            actions_dag_parser.ActionsDAGParserParams.from_dict(
+                self._loop_until_order_closed_params(LOOP_INTERVAL=50, LOOP_INTERVAL_MAX=10)
+            )
+
