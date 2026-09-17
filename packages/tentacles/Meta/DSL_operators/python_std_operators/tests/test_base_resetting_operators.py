@@ -402,10 +402,128 @@ class TestLoopUntilOperator:
     @pytest.mark.asyncio
     async def test_loop_until_compute_remaining_retry_wait_no_previous(self):
         operator = base_resetting_operators.LoopUntilOperator(False, 3, max_attempts=5)
-        assert operator._compute_remaining_retry_wait(
-            1000.0,
-            None
-        ) is None
+        param_by_name = {"retry_interval": 3, "max_retry_interval": None}
+        assert operator._compute_remaining_retry_wait(1000.0, None, param_by_name) is None
+
+    @pytest.mark.asyncio
+    async def test_loop_until_invalid_max_retry_interval(self):
+        operator = base_resetting_operators.LoopUntilOperator(
+            False, 5, max_retry_interval=3, max_attempts=10, return_remaining_time=True
+        )
+        with pytest.raises(octobot_commons.errors.InvalidParametersError, match="max_retry_interval"):
+            await operator.pre_compute()
+
+    @pytest.mark.asyncio
+    async def test_loop_until_jitter_first_schedule_uses_sampled_wait(self):
+        operator = base_resetting_operators.LoopUntilOperator(
+            False,
+            5,
+            max_retry_interval=10,
+            max_attempts=10,
+            return_remaining_time=True,
+        )
+        with mock.patch.object(base_resetting_operators.random, "randrange", return_value=6500):
+            with mock.patch.object(base_resetting_operators.time, "time", return_value=1000.0):
+                await operator.pre_compute()
+        last_result = operator.value[dsl_interpreter.ReCallingOperatorResult.__name__][
+            "last_execution_result"
+        ]
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 6.5
+
+    @pytest.mark.asyncio
+    async def test_loop_until_jitter_resamples_after_wait_elapsed(self):
+        wrapped_previous = {
+            dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: {
+                dsl_interpreter.ReCallingOperatorResult.__name__: {
+                    "last_execution_result": {
+                        dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                        dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+                        base_resetting_operators.LoopUntilOperator.LOOP_START_TIME_KEY: 999.0,
+                        base_resetting_operators.LoopUntilOperator.ATTEMPT_COUNT_KEY: 1,
+                    },
+                },
+            },
+        }
+        operator = base_resetting_operators.LoopUntilOperator(
+            False,
+            5,
+            max_retry_interval=10,
+            max_attempts=10,
+            return_remaining_time=True,
+            **wrapped_previous,
+        )
+        with mock.patch.object(base_resetting_operators.random, "randrange", return_value=7500):
+            with mock.patch.object(base_resetting_operators.time, "time", return_value=1006.0):
+                await operator.pre_compute()
+        last_result = operator.value[dsl_interpreter.ReCallingOperatorResult.__name__][
+            "last_execution_result"
+        ]
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 7.5
+
+    @pytest.mark.asyncio
+    async def test_loop_until_jitter_in_window_decrement_unchanged(self):
+        wrapped_previous = {
+            dsl_interpreter.ReCallableOperatorMixin.LAST_EXECUTION_RESULT_KEY: {
+                dsl_interpreter.ReCallingOperatorResult.__name__: {
+                    "last_execution_result": {
+                        dsl_interpreter.ReCallingOperatorResultKeys.LAST_EXECUTION_TIME.value: 1000.0,
+                        dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value: 5.0,
+                        base_resetting_operators.LoopUntilOperator.LOOP_START_TIME_KEY: 999.0,
+                        base_resetting_operators.LoopUntilOperator.ATTEMPT_COUNT_KEY: 1,
+                    },
+                },
+            },
+        }
+        operator = base_resetting_operators.LoopUntilOperator(
+            False,
+            5,
+            max_retry_interval=10,
+            max_attempts=10,
+            return_remaining_time=True,
+            **wrapped_previous,
+        )
+        with mock.patch.object(base_resetting_operators.random, "randrange") as mock_randrange:
+            with mock.patch.object(base_resetting_operators.time, "time", return_value=1002.0):
+                await operator.pre_compute()
+            mock_randrange.assert_not_called()
+        last_result = operator.value[dsl_interpreter.ReCallingOperatorResult.__name__][
+            "last_execution_result"
+        ]
+        assert last_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value] == 3.0
+
+    def test_loop_until_sample_retry_wait_range_boundaries(self):
+        operator = base_resetting_operators.LoopUntilOperator(False, 1, max_retry_interval=3)
+        param_by_name = {"retry_interval": 1, "max_retry_interval": 3}
+        with mock.patch.object(base_resetting_operators.random, "randrange", return_value=1000):
+            assert operator._sample_retry_wait(param_by_name) == 1.0
+        with mock.patch.object(base_resetting_operators.random, "randrange", return_value=2999):
+            assert operator._sample_retry_wait(param_by_name) == 2.999
+
+    def test_loop_until_re_create_script_includes_max_retry_interval(self):
+        operator = base_resetting_operators.LoopUntilOperator(
+            False, 5, max_retry_interval=7, max_attempts=10, return_remaining_time=True
+        )
+        param_by_name = operator.get_computed_value_by_parameter()
+        script = operator.re_create_script(param_by_name)
+        assert "max_retry_interval=7" in script
+
+    @pytest.mark.asyncio
+    async def test_loop_until_blocking_uses_sampled_sleep(self):
+        operator = base_resetting_operators.LoopUntilOperator(False, 1, max_retry_interval=3, max_attempts=3)
+        with mock.patch.object(
+            operator,
+            "_evaluate_condition_async",
+            new=mock.AsyncMock(side_effect=[False, False, True]),
+        ):
+            with mock.patch.object(
+                operator,
+                "_sample_retry_wait",
+                side_effect=[1.5, 2.0],
+            ) as mock_sample:
+                with mock.patch.object(asyncio, "sleep", new=mock.AsyncMock()) as mock_sleep:
+                    await operator.pre_compute()
+        assert mock_sample.call_count == 2
+        mock_sleep.assert_has_awaits([mock.call(1.5), mock.call(2.0)])
 
 
 class TestRecallWhenRelevantForContextOperator:
