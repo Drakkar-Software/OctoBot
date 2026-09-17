@@ -7,6 +7,8 @@ description: >-
 
 # OctoBot Cloud Agent
 
+Multi-step **roadmap** plans (title or description contains `roadmap`): author with skill **cloud-roadmap** (`.cursor/skills/cloud-roadmap/SKILL.md`); execute with this skill.
+
 ## Workflow
 
 1. `source .cursor/env.sh` before Python tooling.

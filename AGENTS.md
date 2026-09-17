@@ -6,6 +6,7 @@ This repository is the **OctoBot** application and its `packages/*` monorepo. De
 
 - Environment: [`.cursor/README.md`](.cursor/README.md), `environment.json`, `source .cursor/env.sh`
 - Skill (procedures): `.cursor/skills/octobot-cloud/SKILL.md`
+- Roadmap plans: before `CreatePlan`, if the plan title or description contains `roadmap`, follow `.cursor/skills/cloud-roadmap/SKILL.md`
 - Always-on rules: `.cursor/rules/octobot-cloud.mdc`
 
 ## Before you finish
