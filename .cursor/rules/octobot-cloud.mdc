@@ -13,4 +13,5 @@ alwaysApply: true
 - No `pip install` / `npm install` to fix imports. No edits under `user/` or secret/env files.
 - Cross-package or tentacles work: read root `AGENTS.md` and colocated `AGENTS.md` for every area you touch (`octobot/`, `packages/<name>/`, `packages/tentacles/`).
 - Install success: Build log must contain `OCTOBOT_CLOUD_INSTALL_OK`; optional `bash .cursor/cloud-validate.sh --profile ci-tentacles --json`.
+- Before **CreatePlan**, if the plan title or description contains **roadmap** (any case): skill **cloud-roadmap** (`.cursor/skills/cloud-roadmap/SKILL.md`); implement with **octobot-cloud**.
 - Details: skill **octobot-cloud**; policy `tools/extended_linter/config/policy.yaml`; architecture `tools/extended_linter/ARCHITECTURE.md`.

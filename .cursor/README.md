@@ -48,3 +48,4 @@ If a dashboard environment snapshot shadows this repo config, remove the saved s
 - Before handoff: `python -m tools.extended_linter --base origin/dev` (match PR base ref).
 - CI: **OctoBot-CI** job **`extended_linter`** (wheel + tentacles + `pytest tools/tests`; PR policy step uses `--skip-tentacles-reinstall`, no `cloud-install`). Use **`ci-tentacles`** for agents and **`cloud-env-validate`** on `.cursor/` changes.
 - Agent docs: colocated `AGENTS.md` (see root index), skills **octobot-cloud** and **agent-seed** (Node UI QA).
+- Plans whose title or description include **roadmap**: skill **cloud-roadmap** (`.cursor/skills/cloud-roadmap/SKILL.md`) before `CreatePlan`; execution uses **octobot-cloud**.
