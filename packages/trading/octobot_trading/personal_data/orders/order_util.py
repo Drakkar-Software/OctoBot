@@ -280,7 +280,12 @@ async def get_pre_order_data(exchange_manager, symbol: str, timeout: int = None,
 
 
 def get_portfolio_amounts(exchange_manager, symbol, price, portfolio_type=commons_constants.PORTFOLIO_AVAILABLE):
-    currency, market = symbol_util.parse_symbol(symbol).base_and_quote()
+    parsed_symbol = symbol_util.parse_symbol(symbol)
+    if parsed_symbol.has_ticker_wise_networks():
+        currency = parsed_symbol.base_portfolio_asset()
+        market = parsed_symbol.quote_portfolio_asset()
+    else:
+        currency, market = parsed_symbol.base_and_quote()
     portfolio = exchange_manager.exchange_personal_data.portfolio_manager.portfolio
     currency_available = portfolio.get_currency_portfolio(currency).available \
         if portfolio_type == commons_constants.PORTFOLIO_AVAILABLE else portfolio.get_currency_portfolio(currency).total

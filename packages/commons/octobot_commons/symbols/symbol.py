@@ -205,6 +205,28 @@ class Symbol:
         """
         return bool(self.base_network and self.quote_network)
 
+    def base_portfolio_asset(
+        self,
+        network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+    ) -> str:
+        """
+        Portfolio / index asset key for this symbol's base leg (e.g. BTC@BTC).
+        """
+        if self.has_ticker_wise_networks():
+            return f"{self.base}{network_separator}{self.base_network}"
+        return self.base
+
+    def quote_portfolio_asset(
+        self,
+        network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+    ) -> str:
+        """
+        Portfolio / reference asset key for this symbol's quote leg (e.g. USDT@ETH).
+        """
+        if self.has_ticker_wise_networks():
+            return f"{self.quote}{network_separator}{self.quote_network}"
+        return self.quote  # type: ignore[return-value]
+
     def is_network_qualified_asset(self) -> bool:
         """
         return True when this symbol is a single currency on a network (e.g. USDT@ETH)

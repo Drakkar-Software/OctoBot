@@ -523,10 +523,12 @@ class PortfolioValueHolder:
         assets = set()
         additional_traded_symbols = [symbol_util.parse_symbol(symbol) for symbol in self.portfolio_manager.exchange_manager.exchange_config.additional_traded_pairs]
         for symbol in self.portfolio_manager.exchange_manager.exchange_config.traded_symbols + additional_traded_symbols:
-            if coins_whitelist is None or symbol.base in coins_whitelist:
-                assets.add(symbol.base)
-            if coins_whitelist is None or symbol.quote in coins_whitelist:
-                assets.add(symbol.quote)
+            base_asset = symbol.base_portfolio_asset()
+            quote_asset = symbol.quote_portfolio_asset()
+            if coins_whitelist is None or base_asset in coins_whitelist:
+                assets.add(base_asset)
+            if coins_whitelist is None or quote_asset in coins_whitelist:
+                assets.add(quote_asset)
         return self.get_assets_holdings_value(
             assets, unit
         )

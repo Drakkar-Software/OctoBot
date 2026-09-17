@@ -60,7 +60,7 @@ class BaseRebalanceActionsPlanner:
         rebalance_details = self._empty_rebalance_details()
         should_rebalance = False
         available_traded_bases = set(
-            symbol.base
+            symbol.base_portfolio_asset()
             for symbol in self._exchange_interface.market.get_traded_symbols()
         )
 
@@ -400,9 +400,9 @@ class BaseRebalanceActionsPlanner:
     def _get_non_targeted_quote_assets_ratio(self) -> decimal.Decimal:
         total = trading_constants.ZERO
         for quote in set(
-            symbol.quote
+            symbol.quote_portfolio_asset()
             for symbol in self._exchange_interface.market.get_traded_symbols()
-            if symbol.quote not in self._targeted_coins
+            if symbol.quote_portfolio_asset() not in self._targeted_coins
         ):
             ratio = self._exchange_interface.portfolio.get_holdings_ratio(
                 quote,
@@ -450,9 +450,10 @@ class BaseRebalanceActionsPlanner:
 
     def _get_filtered_traded_coins(self) -> list[str]:
         coins = set(
-            symbol.base
+            symbol.base_portfolio_asset()
             for symbol in self._exchange_interface.market.get_traded_symbols()
-            if symbol.base in self.ratio_per_asset and symbol.quote == self._exchange_interface.portfolio.reference_market
+            if symbol.base_portfolio_asset() in self.ratio_per_asset
+            and symbol.quote_portfolio_asset() == self._exchange_interface.portfolio.reference_market
         )
         if self._exchange_interface.portfolio.reference_market in self.ratio_per_asset and coins:
             coins.add(self._exchange_interface.portfolio.reference_market)
@@ -469,7 +470,7 @@ class BaseRebalanceActionsPlanner:
         initial_target_config = self.client.get_config() or {}
         if detailed_distribution := self.client.get_ideal_distribution(initial_target_config):
             traded_bases = set(
-                symbol.base
+                symbol.base_portfolio_asset()
                 for symbol in self._exchange_interface.market.get_traded_symbols()
             )
             traded_bases.add(self._exchange_interface.portfolio.reference_market)
@@ -497,6 +498,6 @@ class BaseRebalanceActionsPlanner:
                 )
             return distribution
         return planner_distributions.get_uniform_distribution([
-            symbol.base
+            symbol.base_portfolio_asset()
             for symbol in self._exchange_interface.market.get_traded_symbols()
         ])

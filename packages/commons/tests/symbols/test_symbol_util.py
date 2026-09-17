@@ -25,6 +25,15 @@ def test_merge_symbol():
     assert octobot_commons.symbols.merge_symbol("BTC/USDT:USDT") == "BTCUSDT_USDT"
 
 
+def test_merge_currencies_ticker_wise_network_legs():
+    merged = octobot_commons.symbols.merge_currencies("BTC@BTC", "USDT@ETH")
+    assert merged == "BTC@BTC/USDT@ETH"
+    parsed = octobot_commons.symbols.parse_symbol(merged)
+    assert parsed.has_ticker_wise_networks() is True
+    assert parsed.base_portfolio_asset() == "BTC@BTC"
+    assert parsed.quote_portfolio_asset() == "USDT@ETH"
+
+
 def test_merge_currencies():
     assert octobot_commons.symbols.merge_currencies("BTC", "USDT") == "BTC/USDT"
     assert octobot_commons.symbols.merge_currencies("BTC", "USDT", "BTC") == "BTC/USDT:BTC"
