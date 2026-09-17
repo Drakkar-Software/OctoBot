@@ -16,9 +16,12 @@
 
 import base64
 import contextlib
+import json
 import mock
 import pytest
 
+import octobot_node.agent_seed.constants as demo_agent_seed_constants
+import octobot_node.agent_seed.demo_wallet as demo_agent_seed_wallet
 import octobot_node.config
 import octobot_node.scheduler
 import octobot_protocol.models as protocol_models
@@ -27,6 +30,8 @@ import octobot_sync.constants as sync_constants
 from datetime import datetime, timezone
 
 from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE, ADMIN_USER_ID, TENANT_ADDRESS, TENANT_USER_ID
+
+_DEBUG_ROUTE_MODULE = "tentacles.Services.Interfaces.node_api_interface.api.routes.debug"
 
 
 def _sample_debug_state() -> protocol_models.DebugState:
@@ -573,3 +578,104 @@ class TestExecuteUserActionCrossWalletAutomation:
                     )
         assert response.status_code == 204
         assert mock_execute_user_action.await_args[0][1] == TENANT_USER_ID
+
+
+def _exchange_config_create_user_action_payload() -> dict:
+    exchange_config = protocol_models.ExchangeConfig(
+        id="extra-exchange-config",
+        name="extra",
+        exchange="binance",
+        sandboxed=False,
+    )
+    inner = protocol_models.CreateExchangeConfigConfiguration(
+        action_type=protocol_models.UserActionType.EXCHANGE_CONFIG_CREATE,
+        configuration=exchange_config,
+    )
+    user_action = protocol_models.UserAction(
+        id="ua-demo-exchange-config-create",
+        configuration=protocol_models.UserActionConfiguration(inner),
+    )
+    return json.loads(user_action.to_json())
+
+
+class TestExecuteUserActionDemoAgentSeedSandbox:
+    def test_validates_with_resolved_user_id_before_execute(self, tenant_client, mock_auth):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        real_validate = demo_agent_seed_wallet.validate_demo_agent_seed_user_action
+        validate_spy = mock.Mock(wraps=real_validate)
+        with mock.patch(
+            f"{_DEBUG_ROUTE_MODULE}.demo_agent_seed_wallet.validate_demo_agent_seed_user_action",
+            validate_spy,
+        ), mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _automation_owned_by_caller():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=_stop_automation_user_action_payload(),
+                    )
+        assert response.status_code == 204
+        validate_spy.assert_called_once()
+        validate_user_id, validate_user_action = validate_spy.call_args[0]
+        assert validate_user_id == TENANT_USER_ID
+        assert validate_user_action.id == "ua-stop-api-test"
+        mock_execute_user_action.assert_awaited_once()
+
+    def test_demo_forbidden_returns_403_and_skips_execute(self, tenant_client, mock_auth):
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        forbidden_detail = demo_agent_seed_constants.DEMO_AGENT_SEED_FORBIDDEN_ACTION_DETAIL
+        with mock.patch(
+            f"{_DEBUG_ROUTE_MODULE}.demo_agent_seed_wallet.validate_demo_agent_seed_user_action",
+            side_effect=demo_agent_seed_wallet.DemoAgentSeedUserActionForbiddenError(
+                forbidden_detail,
+            ),
+        ), mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                with _automation_owned_by_caller():
+                    response = tenant_client.post(
+                        "/api/v1/debug/",
+                        json=_stop_automation_user_action_payload(),
+                    )
+        assert response.status_code == 403
+        assert response.json()["detail"] == forbidden_detail
+        mock_execute_user_action.assert_not_awaited()
+
+    @mock.patch.object(demo_agent_seed_wallet.community_authentication.CommunityAuthentication, "instance")
+    def test_demo_exchange_config_create_returns_403_end_to_end(
+        self,
+        auth_mock,
+        tenant_client,
+        mock_auth,
+    ):
+        wallet_mock = mock.Mock(address=demo_agent_seed_constants.DEMO_AGENT_SEED_WALLET_EVM_ADDRESS)
+        auth_mock.return_value.get_wallet_by_user_id.return_value = wallet_mock
+        auth_mock.return_value.get_wallet_name.return_value = (
+            demo_agent_seed_constants.DEMO_AGENT_SEED_WALLET_DISPLAY_NAME
+        )
+        mock_execute_user_action = mock.AsyncMock(return_value=None)
+        mock_resolve_execution_user_id = mock.AsyncMock(
+            return_value=demo_agent_seed_constants.DEMO_AGENT_SEED_USER_ID,
+        )
+        with mock.patch(
+            f"{_DEBUG_ROUTE_MODULE}._resolve_execution_user_id",
+            new=mock_resolve_execution_user_id,
+        ), mock.patch(
+            "octobot_node.protocol.user_actions.execute_user_action",
+            new=mock_execute_user_action,
+        ):
+            with mock.patch("octobot_node.scheduler.is_initialized", return_value=True):
+                response = tenant_client.post(
+                    "/api/v1/debug/",
+                    json=_exchange_config_create_user_action_payload(),
+                )
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == demo_agent_seed_constants.DEMO_AGENT_SEED_FORBIDDEN_ACTION_DETAIL
+        )
+        mock_execute_user_action.assert_not_awaited()

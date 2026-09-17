@@ -23,15 +23,20 @@ Policy file: [`config/policy.yaml`](config/policy.yaml).
 
 | Context | Install | Tentacles hook |
 |---------|---------|----------------|
-| **OctoBot-CI** job `extended_linter` | `pip install -r dev_requirements.txt` only | **`--skip-tentacles-reinstall`** (policy is git + YAML only) |
+| **OctoBot-CI** job `extended_linter` — **tools tests** | Wheel + `dev_requirements.txt` + tentacles (same as matrix `tests` with `USES_TENTACLES`) | N/A (pytest only) |
+| **OctoBot-CI** job `extended_linter` — **PR policy** | Already installed from tools tests step | **`--skip-tentacles-reinstall`** (policy is git + YAML only) |
 | **Cloud agent / local handoff** | `source .cursor/env.sh` after `cloud-install` | Omit `--skip-tentacles-reinstall` when `packages/tentacles/` may have changed |
 
-Matrix **`tests`** jobs still use wheel + tentacles where required; that is separate from this linter job.
+Matrix **`tests`** jobs still use wheel + tentacles where required; tool unit tests run in **`extended_linter`**, not `pytest tests`.
 
 ## Tests
 
 ```bash
-PYTHONPATH=. pytest tools/extended_linter/tests -q
+# extended_linter only (no tentacles)
+PYTHONPATH=. pytest tools/tests/extended_linter -q
+
+# all tools tests (wheel + tentacles; matches CI tools tests step)
+PYTHONPATH=.:$PYTHONPATH pytest tools/tests -q
 ```
 
 ## Adding a rule
@@ -39,7 +44,7 @@ PYTHONPATH=. pytest tools/extended_linter/tests -q
 1. Read [ARCHITECTURE.md](ARCHITECTURE.md) (layers vs hooks).
 2. Add a `rule_id` entry to `config/policy.yaml`.
 3. If needed, extend `layers/path_policy.py` or `layers/diff_policy.py` (`kind` handler).
-4. Add a test under `tests/layers/` (catalog test covers bundled rules).
+4. Add a test under `tools/tests/extended_linter/layers/` (catalog test covers bundled rules).
 5. Do **not** duplicate enforceable rules in `.cursor/skills/` — YAML is the contract.
 
 See also [CONTRIBUTING-agent.md](../../CONTRIBUTING-agent.md) at repo root.
