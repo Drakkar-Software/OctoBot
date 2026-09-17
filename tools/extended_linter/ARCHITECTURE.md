@@ -61,5 +61,5 @@ flowchart TB
 
 ## Policy contract
 
-- Stable `rule_id` per rule; one test per catalog `rule_id` in `tests/layers/test_policy_rules_catalog.py`.
+- Stable `rule_id` per rule; one test per catalog `rule_id` in `tools/tests/extended_linter/layers/test_policy_rules_catalog.py`.
 - Bump `policy_version` only when YAML schema changes.

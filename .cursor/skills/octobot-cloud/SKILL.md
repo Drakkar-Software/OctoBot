@@ -49,6 +49,12 @@ description: >-
 
 See **[reference-pytest.md](reference-pytest.md)** for cwd and PYTHONPATH per CI matrix package.
 
+## Node UI manual QA (agent seed)
+
+**Not required** for normal pytest / `ci-tentacles` package work — only when the task uses the live Node web UI.
+
+For **`ui-node-web`**: follow skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`). Typical one-shot: `source .cursor/env.sh`, `source .cursor/agent-seed.env`, stop any running node, then `bash .cursor/seed-agent.sh --full`. After startup, log in with passphrase **`demodemo`**; use the full **`/app`** UI as needed, and **`/app/debug`** to send user actions.
+
 ## Out of scope unless asked
 
 - Live bot ports, docker image publish, signed tentacles release pipeline.

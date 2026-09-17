@@ -20,6 +20,7 @@ import typing
 from fastapi import APIRouter, Body, HTTPException, Query, Response, status
 from fastapi.responses import JSONResponse
 
+import octobot_node.agent_seed.demo_wallet as demo_agent_seed_wallet
 import octobot_node.models
 import octobot_node.enums as octobot_node_enums
 import octobot_node.protocol.debug as debug_protocol
@@ -190,6 +191,16 @@ async def execute_user_action(
     ensure_scheduler_initialized()
     user_action = _parse_user_action_payload(payload)
     resolved_user_id = await _resolve_execution_user_id(current_user, wallet_address, user_action)
+    try:
+        demo_agent_seed_wallet.validate_demo_agent_seed_user_action(
+            resolved_user_id,
+            user_action,
+        )
+    except demo_agent_seed_wallet.DemoAgentSeedUserActionForbiddenError as error:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(error),
+        ) from error
     try:
         await user_actions_protocol.execute_user_action(
             user_action,

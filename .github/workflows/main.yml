@@ -210,7 +210,7 @@ jobs:
     name: extended_linter
     needs: [ build ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -219,11 +219,36 @@ jobs:
         with:
           python-version: "3.13.x"
 
-      - name: Install dev dependencies
-        run: pip install -r dev_requirements.txt
+      - name: Download build wheel artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: octobot-wheel
+          path: dist/
 
-      - name: extended_linter unit tests
-        run: PYTHONPATH=. pytest tools/extended_linter/tests -q
+      - name: Install OctoBot
+        run: |
+          pip install -r dev_requirements.txt
+          pip install dist/*.whl
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Build web client SDK
+        run: |
+          npm ci
+          npm run build -w packages/client/octobot_client_ts
+
+      - name: Install tentacles
+        env:
+          ALLOW_UNSIGNED_TENTACLES: "true"
+        run: |
+          mkdir -p output
+          OctoBot tentacles -d packages/tentacles -p any_platform.zip
+          OctoBot tentacles --install --location output/any_platform.zip --all
+
+      - name: tools tests
+        run: PYTHONPATH=.:$PYTHONPATH pytest tools/tests -q
 
       - name: Fetch base branch
         if: github.event_name == 'pull_request'

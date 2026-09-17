@@ -19,6 +19,8 @@ source .cursor/env.sh
 # Python, OctoBot CLI, pytest
 ```
 
+Node web UI demo (seed, debug view): skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`).
+
 After editing `packages/tentacles/`: `bash .cursor/reinstall-tentacles.sh` (do not edit repo-root `tentacles/`).
 
 ## Validate environment (on demand)
@@ -44,5 +46,5 @@ If a dashboard environment snapshot shadows this repo config, remove the saved s
 
 - Target branch: **`dev`** (unless release flow to `master`).
 - Before handoff: `python -m tools.extended_linter --base origin/dev` (match PR base ref).
-- CI: **OctoBot-CI** job **`extended_linter`** (lightweight: dev deps + policy vs merge base; no `cloud-install`). Use **`ci-tentacles`** for agents and **`cloud-env-validate`** on `.cursor/` changes.
-- Agent docs: colocated `AGENTS.md` (see root index), skill **octobot-cloud**.
+- CI: **OctoBot-CI** job **`extended_linter`** (wheel + tentacles + `pytest tools/tests`; PR policy step uses `--skip-tentacles-reinstall`, no `cloud-install`). Use **`ci-tentacles`** for agents and **`cloud-env-validate`** on `.cursor/` changes.
+- Agent docs: colocated `AGENTS.md` (see root index), skills **octobot-cloud** and **agent-seed** (Node UI QA).

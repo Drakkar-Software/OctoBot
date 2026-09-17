@@ -29,6 +29,7 @@ Colocated **`AGENTS.md`** files describe package boundaries (owns, deps, tests).
 | Core app / CLI / config | [`octobot/AGENTS.md`](octobot/AGENTS.md) |
 | Tentacles sources vs install | [`packages/tentacles/AGENTS.md`](packages/tentacles/AGENTS.md) |
 | Cross-package or tentacles | This file + every involved colocated `AGENTS.md` |
+| Node UI demo / agent-seed QA | [`tools/agent_seed/README.md`](tools/agent_seed/README.md) + skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`) |
 
 ### Dependency sketch
 

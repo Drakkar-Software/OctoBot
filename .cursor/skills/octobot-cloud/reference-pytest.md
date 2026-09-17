@@ -24,4 +24,6 @@ Run from **OctoBot repo root** after `source .cursor/env.sh`. `DISABLE_SENTRY=Tr
 
 **Pylint:** `pylint --rcfile=<pkg>/standard.rc <pkg>/` or root `standard.rc` (see CI `main.yml`).
 
-**extended_linter tests:** `PYTHONPATH=. pytest tools/extended_linter/tests -q`
+**tools tests (CI `extended_linter` job):** `PYTHONPATH=.:$PYTHONPATH pytest tools/tests -q`
+
+**extended_linter only (no tentacles):** `PYTHONPATH=. pytest tools/tests/extended_linter -q`
