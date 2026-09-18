@@ -38,9 +38,10 @@ def _auth_header(address: str, passphrase: str) -> dict:
     return {"Authorization": f"Basic {token}"}
 
 
-def _assert_invalid_auth_response(response) -> None:
+def _assert_auth_error_response(response, expected_code: str) -> None:
     assert response.status_code == 401
-    assert response.json() == {"detail": "Incorrect address or passphrase"}
+    detail = response.json()["detail"]
+    assert detail["code"] == expected_code
 
 
 class TestBuildLogsZip:
@@ -141,7 +142,7 @@ class TestExportLogsRequireAuth:
             json={"task_ids": ["task-a"]},
             headers=_auth_header(TENANT_ADDRESS, "wrong"),
         )
-        _assert_invalid_auth_response(response)
+        _assert_auth_error_response(response, "auth_invalid_passphrase")
 
     def test_unknown_wallet_returns_401(self, client, mock_auth):
         response = client.post(
@@ -149,7 +150,7 @@ class TestExportLogsRequireAuth:
             json={"task_ids": ["task-a"]},
             headers=_auth_header("0xdeadbeef", ADMIN_PASSPHRASE),
         )
-        _assert_invalid_auth_response(response)
+        _assert_auth_error_response(response, "auth_wallet_not_found")
 
 
 class TestExportLogs:

@@ -2,12 +2,16 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { ShieldCheck } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { ApiError, type WalletInfo, WalletsService } from "@/client"
+import { type WalletInfo, WalletsService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
+import {
+  LoginAuthErrorDisplay,
+  loginAuthFieldDescribedBy,
+} from "@/components/Common/LoginAuthErrorDisplay"
 import {
   Form,
   FormControl,
@@ -19,6 +23,15 @@ import {
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import {
+  type AuthErrorPresentation,
+  applyLoginAuthPresentation,
+  getAuthErrorPresentation,
+  resolveLoginAuthPresentation,
+  shouldResetMultiWalletSelectionOnLoginError,
+} from "@/lib/auth-error-messages"
+import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
+import { consumeLoginSessionClearedHint } from "@/lib/login-session-hint"
 import { truncateAddress } from "@/lib/wallet-utils"
 
 const formSchema = z.object({
@@ -42,6 +55,15 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { loginMutation } = useAuth()
   const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
+  const [sessionClearedBanner, setSessionClearedBanner] = useState(false)
+  const [loginAuthError, setLoginAuthError] =
+    useState<AuthErrorPresentation | null>(null)
+
+  useEffect(() => {
+    if (consumeLoginSessionClearedHint()) {
+      setSessionClearedBanner(true)
+    }
+  }, [])
 
   const {
     data: wallets = [],
@@ -54,6 +76,9 @@ function Login() {
   })
 
   const multiWallet = !walletsLoading && wallets.length > 1
+  const sessionExpiredCopy = getAuthErrorPresentation(
+    CLIENT_AUTH_ERROR_CODES.SESSION_CLEARED,
+  )
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,6 +91,7 @@ function Login() {
 
   const onSubmit = (data: FormData) => {
     if (loginMutation.isPending) return
+    setLoginAuthError(null)
 
     // Determine which wallet address to use as username
     let username: string
@@ -78,9 +104,13 @@ function Login() {
       // No wallets configured — nothing to authenticate against. The root route
       // guard should have already redirected to /setup/welcome before this can
       // render; bail out rather than sending a fabricated address.
-      form.setError("passphrase", {
-        message: "Service unavailable, please try again",
-      })
+      setLoginAuthError(
+        applyLoginAuthPresentation(
+          CLIENT_AUTH_ERROR_CODES.NETWORK_ERROR,
+          { multiWallet },
+          false,
+        ),
+      )
       return
     }
 
@@ -88,15 +118,14 @@ function Login() {
       { username, password: data.passphrase },
       {
         onError: (err) => {
-          const isAuthError = err instanceof ApiError && err.status === 401
-          form.setError("passphrase", {
-            message: isAuthError
-              ? "Invalid passphrase"
-              : "Service unavailable, please try again",
-          })
-          // Only send user back to wallet picker on auth failure, not network errors
-          if (multiWallet && isAuthError) {
+          setLoginAuthError(
+            resolveLoginAuthPresentation(err, data.passphrase, {
+              multiWallet,
+            }),
+          )
+          if (multiWallet && shouldResetMultiWalletSelectionOnLoginError(err)) {
             setSelectedWallet(null)
+            setLoginAuthError(null)
             form.reset()
           }
         },
@@ -184,6 +213,7 @@ function Login() {
                   type="button"
                   onClick={() => {
                     setSelectedWallet(null)
+                    setLoginAuthError(null)
                     form.reset()
                   }}
                   className="text-xs text-muted-foreground underline underline-offset-2"
@@ -201,6 +231,19 @@ function Login() {
             )}
           </div>
 
+          {sessionClearedBanner ? (
+            <div
+              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+              data-testid="login-session-cleared-banner"
+              role="status"
+            >
+              <p className="font-medium text-foreground">
+                {sessionExpiredCopy.title}
+              </p>
+              <p>{sessionExpiredCopy.explanation}</p>
+            </div>
+          ) : null}
+
           <div className="grid gap-4">
             <FormField
               control={form.control}
@@ -212,10 +255,17 @@ function Login() {
                     <PasswordInput
                       data-testid="passphrase-input"
                       placeholder="Your passphrase"
+                      aria-invalid={loginAuthError ? true : undefined}
+                      aria-describedby={loginAuthFieldDescribedBy(loginAuthError)}
                       {...field}
+                      onChange={(event) => {
+                        setLoginAuthError(null)
+                        field.onChange(event)
+                      }}
                     />
                   </FormControl>
                   <FormMessage className="text-xs" />
+                  <LoginAuthErrorDisplay presentation={loginAuthError} />
                 </FormItem>
               )}
             />

@@ -6,9 +6,10 @@ export const RESET_CONFIRM_MESSAGE =
   "sign in again. Continue?"
 
 export const RECOVERY_EXPLANATION =
-  "Local browser data for this app may be corrupt or inconsistent. Resetting " +
-  "clears all app data on this device, including sign-in. You will return to " +
-  "the sign-in screen."
+  "This browser saved your wallet address but not your passphrase (or it could " +
+  "not be read). That is not the same as a wrong passphrase on the node. " +
+  'Resetting clears local app data on this device; you will return to the sign-in ' +
+  "screen and can unlock again with your wallet passphrase."
 
 export const INSECURE_CONTEXT_HEADING = "Secure context required"
 

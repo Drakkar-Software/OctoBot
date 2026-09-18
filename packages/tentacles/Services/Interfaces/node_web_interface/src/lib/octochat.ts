@@ -50,6 +50,7 @@ import {
 } from "@drakkar.software/octochat-sdk"
 import { kvGet, kvRemove, kvSet } from "@drakkar.software/octochat-sdk/platform"
 
+import { buildBasicAuthorizationHeader } from "@/lib/basic-auth"
 import { loadPassword } from "@/lib/device-key"
 import { getWalletBoundIdentity } from "@/lib/octochat-identity"
 
@@ -191,7 +192,7 @@ async function buildAuthHeader(): Promise<string> {
   if (!username || !password) {
     throw new Error("No active wallet session")
   }
-  return `Basic ${btoa(`${username}:${password}`)}`
+  return buildBasicAuthorizationHeader(username, password)
 }
 
 /** Fetch (and cache) the OctoChat config served by the node API from packages/node settings. */

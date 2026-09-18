@@ -11,6 +11,7 @@ import { clearAuth } from "@/hooks/useAuth"
 import { probeAuthState } from "@/lib/auth-state-probe"
 import { shouldRedirectToLoginOn401 } from "@/lib/open-api-401-login-redirect"
 import { loadPassword } from "@/lib/device-key"
+import { markLoginSessionCleared } from "@/lib/login-session-hint"
 import type { RecoveryFailureKind } from "@/components/Common/RecoveryScreen"
 import { isWebCryptoAvailable } from "@/lib/secure-context"
 import {
@@ -43,6 +44,7 @@ export function configureOpenApi(): void {
       })
     ) {
       isRedirectingOnAuthFailure = true
+      markLoginSessionCleared()
       void clearAuth().finally(() => {
         window.location.href = "/app/login"
       })

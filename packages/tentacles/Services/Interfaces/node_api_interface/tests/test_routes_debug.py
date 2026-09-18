@@ -206,9 +206,10 @@ def _auth_header(address: str, passphrase: str) -> dict:
     return {"Authorization": f"Basic {token}"}
 
 
-def _assert_invalid_auth_response(response) -> None:
+def _assert_auth_error_response(response, expected_code: str) -> None:
     assert response.status_code == 401
-    assert response.json() == {"detail": "Incorrect address or passphrase"}
+    detail = response.json()["detail"]
+    assert detail["code"] == expected_code
 
 
 class TestGetDebug:
@@ -296,14 +297,14 @@ class TestGetDebug:
             "/api/v1/debug/",
             headers=_auth_header(TENANT_ADDRESS, "wrong"),
         )
-        _assert_invalid_auth_response(response)
+        _assert_auth_error_response(response, "auth_invalid_passphrase")
 
     def test_unknown_wallet_returns_401(self, client, mock_auth):
         response = client.get(
             "/api/v1/debug/",
             headers=_auth_header("0xdeadbeef", ADMIN_PASSPHRASE),
         )
-        _assert_invalid_auth_response(response)
+        _assert_auth_error_response(response, "auth_wallet_not_found")
 
     def test_when_scheduler_not_initialized_returns_503(self, tenant_client, mock_auth):
         with mock.patch("octobot_node.scheduler.is_initialized", return_value=False):
@@ -421,7 +422,7 @@ class TestExecuteUserAction:
             json=_minimal_user_action_payload(),
             headers=_auth_header(TENANT_ADDRESS, "wrong"),
         )
-        _assert_invalid_auth_response(response)
+        _assert_auth_error_response(response, "auth_invalid_passphrase")
 
     def test_unknown_wallet_returns_401(self, client, mock_auth):
         response = client.post(
@@ -429,7 +430,7 @@ class TestExecuteUserAction:
             json=_minimal_user_action_payload(),
             headers=_auth_header("0xdeadbeef", ADMIN_PASSPHRASE),
         )
-        _assert_invalid_auth_response(response)
+        _assert_auth_error_response(response, "auth_wallet_not_found")
 
     def test_when_scheduler_not_initialized_returns_503(self, tenant_client, mock_auth):
         with mock.patch("octobot_node.scheduler.is_initialized", return_value=False):
