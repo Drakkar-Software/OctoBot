@@ -9,6 +9,7 @@ flowchart TB
   hook[hooks.tentacles]
   git[layers.git_scope]
   path[layers.path_policy]
+  agentDocs[layers.agent_docs_policy]
   diff[layers.diff_policy]
   report[reporting.format]
   config[config.policy.yaml]
@@ -17,6 +18,7 @@ flowchart TB
   engine --> git
   engine --> hook
   engine --> path
+  engine --> agentDocs
   engine --> diff
   cli --> report
 ```
@@ -25,8 +27,9 @@ flowchart TB
 2. **Git layer** — verify `--base` ref; list changed paths + unified diff
 3. **Tentacles hook** — if `packages/tentacles/**` in diff, run `reinstall-tentacles.sh` (not a policy violation). Requires cloud install / `env.sh`. **CI** passes `--skip-tentacles-reinstall`; agents run the hook by default.
 4. **Path layer** — `layers.path_policy.run(changed_paths, policy)`
-5. **Diff layer** — `layers.diff_policy.run(diff_text, policy)`
-6. **Report** — `reporting.format` in CLI
+5. **Agent docs layer** — `layers.agent_docs_policy.run(...)` for policy `path_globs` (AGENTS.md, `.cursor/skills/**/SKILL.md`, `.cursor/rules/**`, tools README/ARCHITECTURE, etc.): shrink / Last reviewed vs merge-base; uses `git show` like `git_scope`
+6. **Diff layer** — `layers.diff_policy.run(diff_text, policy)`
+7. **Report** — `reporting.format` in CLI
 
 ## RunContext
 
@@ -38,7 +41,7 @@ flowchart TB
 |--------|------------|
 | `cli.py` | `config.loader`, `engine.runner`, `reporting.format` |
 | `engine.runner` | `config`, `layers`, `hooks`, `domain` |
-| `layers/*` | `domain` only (git layer may use `subprocess`) |
+| `layers/*` | `domain` only (`git_scope` and `agent_docs_policy` may use `subprocess` for `git`; `agent_docs_policy` may import `path_policy` for globs) |
 | `hooks/*` | `domain.paths`; `subprocess` for scripts |
 | `reporting/*` | `domain.models` |
 | `config.loader` | PyYAML only |
@@ -54,6 +57,7 @@ flowchart TB
 | Change | Location |
 |--------|----------|
 | New path deny / glob | `config/policy.yaml` + optional `kind` in `layers/path_policy.py` |
+| Agent docs regression vs merge-base | `config/policy.yaml` `agent_docs_rules` + `layers/agent_docs_policy.py` |
 | New diff regex | `config/policy.yaml` `patterns` or `kind` in `layers/diff_policy.py` |
 | New pre-check side effect | `hooks/` + call from `engine/runner.py` only |
 | CLI flags | `cli.py` |

@@ -50,6 +50,19 @@ path_rules:
       - "packages/tentacles/Services/Interfaces/node_web_interface/e2e/**"
     hint: Node UI — use Vitest (npm test) + Python/API tests; no Playwright e2e in repo; manual UI QA via agent-seed
 
+agent_docs_rules:
+  - rule_id: agent_docs.no_regression_vs_merge_base
+    shrink_line_threshold: 5
+    path_globs:
+      - "**/AGENTS.md"
+      - ".cursor/skills/**/SKILL.md"
+      - ".cursor/README.md"
+      - ".cursor/rules/**"
+      - "CONTRIBUTING-agent.md"
+      - "tools/**/README.md"
+      - "tools/**/ARCHITECTURE.md"
+    hint: Do not shrink or backdate agent docs unless this PR owns them; restore from origin/<base> or merge-base
+
 diff_rules:
   - rule_id: diff.no_pip_install
     patterns:

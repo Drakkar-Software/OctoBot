@@ -10,7 +10,8 @@ See [`.cursor/README.md`](.cursor/README.md). Install profile **`ci-tentacles`**
 2. For cross-package work, read root [`AGENTS.md`](AGENTS.md) and each colocated `AGENTS.md` for packages you touch.
 3. Run `python -m tools.extended_linter --base origin/<pr-base>` before handoff.
 4. Do not commit agent session plans (`path.deny_agent_plans`: `PLAN-*.md`, `*.plan.md`, `.cursor/plans/`). Node UI: Vitest + Python/API tests only — no Playwright e2e under `node_web_interface/e2e/` (`path.deny_node_web_playwright_e2e`).
-5. CI: **OctoBot-CI** job **`extended_linter`** (`pytest tools/tests` with wheel + tentacles; PR policy with `--skip-tentacles-reinstall`, no `cloud-install`). Package **`tests`** matrix unchanged.
+5. **Agent docs:** edit `AGENTS.md`, `.cursor/skills/**`, `.cursor/rules/**`, `.cursor/README.md`, `CONTRIBUTING-agent.md`, and `tools/**/README.md` / `tools/**/ARCHITECTURE.md` only when the PR owns them. `extended_linter` blocks shrink/backdated **Last reviewed** (where present) vs merge-base (`agent_docs.no_regression_vs_merge_base`). Large trims need explicit reviewer intent.
+6. CI: **OctoBot-CI** job **`extended_linter`** (`pytest tools/tests` with wheel + tentacles; PR policy with `--skip-tentacles-reinstall`, no `cloud-install`). Package **`tests`** matrix unchanged.
 
 ## Adding a policy rule
 
@@ -21,9 +22,9 @@ See [tools/extended_linter/README.md#adding-a-rule](tools/extended_linter/README
 3. Add tests under `tools/tests/extended_linter/layers/`.
 4. Summarize in `octobot-cloud` skill only for human context; YAML is the contract.
 
-## AGENTS.md hygiene (guidance, not CI in v1)
+## AGENTS.md hygiene
 
-When you change package boundaries (owns, public API, test cwd), update the matching colocated `AGENTS.md` (`octobot/`, `packages/<name>/`, or `packages/tentacles/`) and bump **Last reviewed**. CI does not enforce this yet.
+When you change package boundaries (owns, public API, test cwd), update the matching colocated `AGENTS.md` (`octobot/`, `packages/<name>/`, or `packages/tentacles/`) and bump **Last reviewed**. `extended_linter` enforces no shrink/backdate on agent-doc paths vs merge-base (`agent_docs.no_regression_vs_merge_base`); it does not require updates when boundaries change.
 
 ### AGENTS.md sections (new packages)
 

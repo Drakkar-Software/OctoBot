@@ -5,6 +5,7 @@ import tools.extended_linter.config.loader as config_loader
 import tools.extended_linter.domain.models as domain_models
 import tools.extended_linter.engine.context as engine_context
 import tools.extended_linter.hooks.tentacles as hooks_tentacles
+import tools.extended_linter.layers.agent_docs_policy as layer_agent_docs
 import tools.extended_linter.layers.diff_policy as layer_diff
 import tools.extended_linter.layers.git_scope as layer_git
 import tools.extended_linter.layers.path_policy as layer_path
@@ -39,6 +40,14 @@ def run(config: RunnerConfig) -> list[domain_models.Violation]:
     ):
         hooks_tentacles.run_reinstall(context.repo_root)
     context.violations.extend(layer_path.run(context.changed_paths, context.policy))
+    context.violations.extend(
+        layer_agent_docs.run(
+            context.repo_root,
+            context.merge_base_sha,
+            context.changed_paths,
+            context.policy,
+        )
+    )
     context.diff_text = layer_git.unified_diff(context.repo_root, context.merge_base_sha)
     context.violations.extend(layer_diff.run(context.diff_text, context.policy))
     return context.violations

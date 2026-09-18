@@ -4,6 +4,10 @@ import tools.extended_linter.config.loader as config_loader
 import tools.extended_linter.layers.diff_policy as layer_diff
 import tools.extended_linter.layers.path_policy as layer_path
 
+CATALOG_AGENT_DOCS_RULES = [
+    "agent_docs.no_regression_vs_merge_base",
+]
+
 CATALOG_PATH_RULES = [
     "path.deny_repo_tentacles",
     "path.deny_user",
@@ -64,6 +68,13 @@ class TestCatalogPathRules(unittest.TestCase):
         )
         violations = layer_path.run([e2e_spec], policy)
         self.assertEqual(violations[0].rule_id, "path.deny_node_web_playwright_e2e")
+
+
+class TestCatalogAgentDocsRules(unittest.TestCase):
+    def test_each_agent_docs_rule_id_present(self) -> None:
+        policy = config_loader.load_policy()
+        rule_ids = {rule["rule_id"] for rule in policy.get("agent_docs_rules") or []}
+        self.assertEqual(rule_ids, set(CATALOG_AGENT_DOCS_RULES))
 
 
 class TestCatalogDiffRules(unittest.TestCase):
