@@ -245,7 +245,7 @@ class TradingModeOperator(
         if isinstance(trading_mode.symbol, str):
             manual_trigger_kwargs["cryptocurrency"] = symbols_util.parse_symbol(
                 trading_mode.symbol
-            ).base
+            ).base_portfolio_asset()
         await trading_mode.manual_trigger({
             "trigger_source": common_enums.TriggerSource.MANUAL.value,
             "kwargs": manual_trigger_kwargs,

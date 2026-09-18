@@ -88,7 +88,9 @@ def infer_reference_market(
     if exchange_account_details and exchange_account_details.portfolio.unit:
         return exchange_account_details.portfolio.unit
     if crypto_currencies:
-        return _portfolio_asset_from_trading_pair_symbol(crypto_currencies[0].trading_pairs[0], leg="quote")
+        return commons_symbols.parse_symbol(
+            crypto_currencies[0].trading_pairs[0]
+        ).quote_portfolio_asset()
     if exchange_account_details and exchange_account_details.exchange_details.internal_name:
         return exchange_api.get_default_exchange_reference_market(
             exchange_account_details.exchange_details.internal_name
@@ -96,21 +98,10 @@ def infer_reference_market(
     return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
 
 
-def _portfolio_asset_from_trading_pair_symbol(symbol: str, *, leg: typing.Literal["base", "quote"]) -> str:
-    parsed = commons_symbols.parse_symbol(symbol)
-    if parsed.has_ticker_wise_networks():
-        currency = parsed.base if leg == "base" else parsed.quote
-        network = parsed.base_network if leg == "base" else parsed.quote_network
-        return f"{currency}{octobot_commons.NETWORK_SEPARATOR}{network}"
-    if leg == "base":
-        return parsed.base
-    return parsed.quote  # type: ignore[return-value]
-
-
 def _get_crypto_currencies(symbols: set[str]) -> list[profile_data_import.CryptoCurrencyData]:
     trading_pairs_by_base: dict[str, list[str]] = {}
     for symbol in symbols:
-        base_currency = _portfolio_asset_from_trading_pair_symbol(symbol, leg="base")
+        base_currency = commons_symbols.parse_symbol(symbol).base_portfolio_asset()
         trading_pairs_by_base.setdefault(base_currency, []).append(symbol)
     return [
         profile_data_import.CryptoCurrencyData(trading_pairs=trading_pairs, name=base_currency)

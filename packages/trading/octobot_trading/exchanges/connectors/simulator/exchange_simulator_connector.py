@@ -288,7 +288,7 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
     ):
         if not taker_or_maker:
             taker_or_maker = enums.ExchangeConstantsMarketPropertyColumns.TAKER.value
-        base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
         fee_currency = self._get_fees_currency(base, quote, order_type)
 
         symbol_fees = self.get_fees(symbol)
@@ -323,7 +323,7 @@ class ExchangeSimulatorConnector(abstract_exchange.AbstractExchange):
         return self.backtesting.use_accurate_price_time_frame()
 
     def get_split_pair_from_exchange(self, pair) -> (str, str):
-        return symbol_util.parse_symbol(pair).base_and_quote()
+        return symbol_util.parse_symbol(pair).portfolio_base_and_quote()
 
     def get_pair_cryptocurrency(self, pair) -> str:
         return self.get_split_pair_from_exchange(pair)[0]

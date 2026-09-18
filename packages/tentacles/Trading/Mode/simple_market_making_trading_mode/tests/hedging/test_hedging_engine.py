@@ -2178,3 +2178,49 @@ class TestFillTradeFactory:
             assert result_trade.executed_price == decimal.Decimal("3000")
             assert result_trade.executed_time == filled_time
             assert result_trade.taker_or_maker == trading_enums.ExchangeConstantsOrderColumns.MAKER.value
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestSimpleMarketMakingHedgingNetworkQualifiedPortfolioAssets:
+    pytestmark = []
+
+    def test_fee_summary_compares_fee_currency_to_portfolio_quote(self):
+        fill_trade = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            executed_price=decimal.Decimal("100"),
+        )
+        hedging_fill = hedging_engine_import.HedgingFill(
+            fill_trade=fill_trade,
+            hedging_price=decimal.Decimal("100"),
+        )
+        fee = {
+            trading_enums.FeePropertyColumns.CURRENCY.value: "BTC@BTC",
+            trading_enums.FeePropertyColumns.COST.value: decimal.Decimal("0.01"),
+        }
+        summary = hedging_fill._get_fees_summary(fee, decimal.Decimal("100"), False)
+        assert "USDT@ETH" in summary
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestSimpleMarketMakingHedgingNetworkQualifiedPortfolioAssets:
+    pytestmark = []
+
+    def test_fee_summary_compares_fee_currency_to_portfolio_quote(self):
+        fill_trade = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            executed_price=decimal.Decimal("100"),
+        )
+        hedging_fill = hedging_engine_import.HedgingFill(
+            fill_trade=fill_trade,
+            hedging_price=decimal.Decimal("100"),
+        )
+        fee = {
+            trading_enums.FeePropertyColumns.CURRENCY.value: "BTC@BTC",
+            trading_enums.FeePropertyColumns.COST.value: decimal.Decimal("0.01"),
+        }
+        summary = hedging_fill._get_fees_summary(fee, decimal.Decimal("100"), False)
+        assert "USDT@ETH" in summary

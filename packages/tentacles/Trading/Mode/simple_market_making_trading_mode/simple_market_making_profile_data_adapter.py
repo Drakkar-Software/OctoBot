@@ -105,7 +105,9 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                 profile_data.trading.reference_market = symbols_util.get_most_common_usd_like_symbol(traded_pairs)
             except ValueError:
                 # no common USD-like pair: use 1st pair quote asset
-                profile_data.trading.reference_market = symbols_util.parse_symbol(traded_pairs[0]).quote # type: ignore
+                profile_data.trading.reference_market = symbols_util.parse_symbol(
+                    traded_pairs[0]
+                ).quote_portfolio_asset()  # type: ignore
         # exchanges are taken from exchange_configs and market making reference prices
         if traded_pairs:
             inferred_exchange_type = symbols_util.trading_type_from_traded_symbols(traded_pairs)
@@ -182,21 +184,23 @@ class SimpleMarketMakingProfileDataAdapter(octobot_commons.profiles.TentaclesPro
                 if max_base_funds := pair_config[
                     simple_market_making_trading_mode.SimpleMarketMakingTradingMode.MAX_BASE_BUDGET
                 ]:
-                    max_funds_by_symbol[parsed_pair.base] = max_base_funds
+                    max_funds_by_symbol[parsed_pair.base_portfolio_asset()] = max_base_funds
                 if max_quote_funds := pair_config[
                     simple_market_making_trading_mode.SimpleMarketMakingTradingMode.MAX_QUOTE_BUDGET
                 ]:
-                    max_funds_by_symbol[parsed_pair.quote] = max_quote_funds
+                    max_funds_by_symbol[parsed_pair.quote_portfolio_asset()] = max_quote_funds
             default_value = 100000
             logger = commons_logging.get_logger(self.__class__.__name__)
             for traded_pair in traded_pairs:
                 parsed_pair = symbols_util.parse_symbol(traded_pair)
-                base_funds = max_funds_by_symbol.get(parsed_pair.base, default_value)
-                logger.info(f"Using {base_funds} {parsed_pair.base} in simulated portfolio")
-                profile_data.trader_simulator.starting_portfolio[parsed_pair.base] = (base_funds)
-                quote_funds = max_funds_by_symbol.get(parsed_pair.quote, default_value)
-                logger.info(f"Using {quote_funds} {parsed_pair.quote} in simulated portfolio")
-                profile_data.trader_simulator.starting_portfolio[parsed_pair.quote] = (quote_funds)
+                portfolio_base = parsed_pair.base_portfolio_asset()
+                portfolio_quote = parsed_pair.quote_portfolio_asset()
+                base_funds = max_funds_by_symbol.get(portfolio_base, default_value)
+                logger.info(f"Using {base_funds} {portfolio_base} in simulated portfolio")
+                profile_data.trader_simulator.starting_portfolio[portfolio_base] = (base_funds)
+                quote_funds = max_funds_by_symbol.get(portfolio_quote, default_value)
+                logger.info(f"Using {quote_funds} {portfolio_quote} in simulated portfolio")
+                profile_data.trader_simulator.starting_portfolio[portfolio_quote] = (quote_funds)
         elif self._should_fill_exchange_auth():
             await self._add_exchange_auth(profile_data, auth_data, list(exchange_auth_data_by_name.values()))
 

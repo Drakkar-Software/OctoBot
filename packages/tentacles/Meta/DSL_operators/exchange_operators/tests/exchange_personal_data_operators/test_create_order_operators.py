@@ -37,6 +37,7 @@ from tentacles.Meta.DSL_operators.exchange_operators.tests import (
 )
 
 SYMBOL = "BTC/USDT"
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
 AMOUNT = 0.01
 PRICE = "50000"
 MARK_PRICE = decimal.Decimal("50000")
@@ -157,6 +158,23 @@ def _ensure_sell_order_trading_context(backtesting_trader):
         MARK_PRICE, octobot_trading.enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value
     )
 
+
+def _ensure_ticker_wise_trading_context(backtesting_trader):
+    _ensure_portfolio_config(backtesting_trader, {"BTC@BTC": 0, "USDT@ETH": 100000})
+    _config, exchange_manager, _trader = backtesting_trader
+    if TICKER_WISE_SYMBOL not in exchange_manager.client_symbols:
+        exchange_manager.client_symbols.append(TICKER_WISE_SYMBOL)
+    if TICKER_WISE_SYMBOL not in exchange_manager.exchange_config.traded_symbol_pairs:
+        exchange_manager.exchange_config.traded_symbol_pairs.append(TICKER_WISE_SYMBOL)
+        exchange_manager.exchange_config.traded_symbols.append(
+            commons_symbols.parse_symbol(TICKER_WISE_SYMBOL)
+        )
+    symbol_data = exchange_manager.exchange_symbols_data.get_exchange_symbol_data(
+        TICKER_WISE_SYMBOL, allow_creation=True
+    )
+    symbol_data.handle_mark_price_update(
+        MARK_PRICE, octobot_trading.enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value
+    )
 
 
 class TestCreateOrderOnExchange:
@@ -809,4 +827,41 @@ class TestGetDependencies:
         maybe_exchange_manager_interpreter.prepare(f"market('sell', symbol='{symbol}', amount=0.5)")
         assert maybe_exchange_manager_interpreter.get_dependencies() == [
             octobot_trading.dsl.SymbolDependency(symbol=symbol),
+        ]
+
+
+class TestCreateOrderOperatorsNetworkQualified:
+    @pytest.mark.asyncio
+    async def test_market_dsl_creates_order_with_ticker_wise_symbol(self, interpreter, backtesting_trader):
+        _ensure_ticker_wise_trading_context(backtesting_trader)
+        result = await interpreter.interprete(
+            f"market('buy', '{TICKER_WISE_SYMBOL}', {AMOUNT})"
+        )
+        assert result["created_orders"][0]["symbol"] == TICKER_WISE_SYMBOL
+
+    @pytest.mark.asyncio
+    async def test_limit_dsl_forwards_symbol_to_order_factory(
+        self, create_order_operators_list, backtesting_trader
+    ):
+        _market_op_class, limit_op_class, _stop_loss_op_class = create_order_operators_list
+        mock_order = _create_mock_order(symbol=TICKER_WISE_SYMBOL)
+        factory = limit_op_class("buy", TICKER_WISE_SYMBOL, AMOUNT, PRICE).get_order_factory()
+        with mock.patch.object(
+            factory,
+            "create_base_orders_and_associated_elements",
+            mock.AsyncMock(return_value=[mock_order]),
+        ), mock.patch.object(
+            factory,
+            "create_order_on_exchange",
+            mock.AsyncMock(return_value=mock_order),
+        ):
+            operator = limit_op_class("buy", TICKER_WISE_SYMBOL, AMOUNT, PRICE)
+            await operator.pre_compute()
+            call_kwargs = factory.create_base_orders_and_associated_elements.call_args[1]
+            assert call_kwargs["symbol"] == TICKER_WISE_SYMBOL
+
+    def test_symbol_dependency_uses_ticker_wise_symbol(self, interpreter):
+        interpreter.prepare(f"market('buy', '{TICKER_WISE_SYMBOL}', {AMOUNT})")
+        assert interpreter.get_dependencies() == [
+            octobot_trading.dsl.SymbolDependency(symbol=TICKER_WISE_SYMBOL),
         ]

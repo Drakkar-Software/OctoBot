@@ -28,6 +28,8 @@ import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.list_util as list_util
 import octobot_trading.enums as enums
 import octobot_trading.personal_data as personal_data
+import octobot_trading.personal_data.portfolios.portfolio_util as portfolio_util
+import octobot_trading.personal_data.portfolios.resolved_orders_portfolio_delta as resolved_orders_portfolio_delta
 import octobot_trading.api as trading_api
 import octobot_trading.constants as constants
 import tests
@@ -2243,3 +2245,72 @@ def _locked_amounts_by_asset(amount_by_asset: dict[str, float]) -> dict[str, dec
         asset: decimal.Decimal(str(amount))
         for asset, amount in amount_by_asset.items()
     }
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestGetFilledOrdersTradedAssetsNetworkQualified:
+    def test_traded_asset_set_uses_portfolio_keys(self):
+        order = mock.Mock(symbol=TICKER_WISE_SYMBOL)
+        delta = resolved_orders_portfolio_delta.ResolvedOrdersPortoflioDelta(
+            inferred_filled_orders=[order],
+            unexplained_orders_deltas={},
+        )
+        traded = delta.get_filled_orders_traded_assets([])
+        assert traded == {"BTC@BTC", "USDT@ETH"}
+
+
+class TestGetFeesOnlyAssetDeltasFromOrdersNetworkQualified:
+    def test_order_traded_assets_use_portfolio_keys(self):
+        order = mock.Mock(symbol=TICKER_WISE_SYMBOL, fee=None)
+        with mock.patch.object(
+            portfolio_util,
+            "_get_fees_assets_deltas_from_orders",
+            mock.Mock(return_value={"FEE_TOKEN": decimal.Decimal("-1")}),
+        ):
+            deltas = portfolio_util.get_fees_only_asset_deltas_from_orders([order])
+        assert "FEE_TOKEN" in deltas
+        assert "BTC" not in deltas and "USDT" not in deltas
+
+
+class TestGetAssetsDeltaFromOrdersNetworkQualified:
+    def test_buy_order_delta_uses_portfolio_quote_key(self):
+        order = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            side=enums.TradeOrderSide.BUY,
+            exchange_order_id="1",
+            filled_quantity=decimal.Decimal("0"),
+            origin_quantity=decimal.Decimal("1"),
+            origin_price=decimal.Decimal("10"),
+            fee=None,
+            get_cost=mock.Mock(return_value=decimal.Decimal("10")),
+            get_computed_fee=mock.Mock(return_value={}),
+        )
+        asset_deltas, _, _, _ = personal_data.get_assets_delta_from_orders([order], {}, compute_forecasted_fees=False)
+        assert "BTC@BTC" in asset_deltas
+        assert "USDT@ETH" in asset_deltas
+
+
+class TestGetOtherAssetForecastedFeesNetworkQualified:
+    def test_fee_bridge_matching_uses_portfolio_legs(self):
+        order = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            origin_price=decimal.Decimal("10"),
+        )
+        forecasted_fees = {
+            enums.FeePropertyColumns.CURRENCY.value: "BTC@BTC",
+            enums.FeePropertyColumns.COST.value: decimal.Decimal("0.001"),
+        }
+        exchange_local_fees_currency_price = {
+            "BNB": {TICKER_WISE_SYMBOL: decimal.Decimal("2")},
+        }
+        fees = portfolio_util._get_other_asset_forecasted_fees(
+            order, forecasted_fees, exchange_local_fees_currency_price,
+        )
+        local_fees = [
+            fee for fee in fees
+            if fee.get(enums.FeePropertyColumns.CURRENCY.value) == "BNB"
+        ]
+        assert len(local_fees) == 1
+        assert local_fees[0][enums.FeePropertyColumns.COST.value] == decimal.Decimal("0.005")

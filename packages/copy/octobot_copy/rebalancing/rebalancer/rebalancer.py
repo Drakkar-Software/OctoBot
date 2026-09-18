@@ -237,9 +237,9 @@ class AbstractRebalancer:
             # if rebalance is triggered by removed assets, make sure that the asset can actually be sold
             # otherwise the whole rebalance is useless
             sold_coins = [
-                symbol_util.parse_symbol(order.symbol).base
+                symbol_util.parse_symbol(order.symbol).base_portfolio_asset()
                 if order.side is trading_enums.TradeOrderSide.SELL
-                else symbol_util.parse_symbol(order.symbol).quote
+                else symbol_util.parse_symbol(order.symbol).quote_portfolio_asset()
                 for order in removed_orders
             ]
             if not any(

@@ -39,7 +39,7 @@ async def total_account_balance(context, side=trading_enums.PositionSide.BOTH.va
         ).symbol_contract.is_inverse_contract()
     value = context.exchange_manager.exchange_personal_data.\
         portfolio_manager.portfolio_value_holder.portfolio_current_value
-    base, quote = symbol_util.parse_symbol(context.symbol).base_and_quote()
+    base, quote = symbol_util.parse_symbol(context.symbol).portfolio_base_and_quote()
     reference_market = context.exchange_manager.exchange_personal_data.portfolio_manager.reference_market
     if reference_market == quote:
         return value if on_inverse_contract else value / current_price

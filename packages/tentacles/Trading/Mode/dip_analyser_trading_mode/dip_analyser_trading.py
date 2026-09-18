@@ -234,7 +234,7 @@ class DipAnalyserTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
                     price, False, current_symbol_holding, market_quantity
                 )
 
-            base = symbol_util.parse_symbol(symbol).base
+            base = symbol_util.parse_symbol(symbol).base_portfolio_asset()
             created_orders = []
             orders_should_have_been_created = False
             ctx = script_keywords.get_base_context(self.trading_mode, symbol)
@@ -475,7 +475,7 @@ class DipAnalyserTradingModeProducer(trading_modes.AbstractTradingModeProducer):
         self.first_trigger = True
 
         self.last_buy_candle = None
-        self.base = symbol_util.parse_symbol(self.trading_mode.symbol).base
+        self.base = symbol_util.parse_symbol(self.trading_mode.symbol).base_portfolio_asset()
 
     def on_reload_config(self):
         """

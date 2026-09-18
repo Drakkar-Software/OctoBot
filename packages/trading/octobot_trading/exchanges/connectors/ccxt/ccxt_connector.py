@@ -1448,9 +1448,11 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             parsed_symbol = commons_symbols.parse_symbol(symbol)
             if self.exchange_manager.exchange.get_pair_future_contract(symbol).is_inverse_contract():
                 fees[enums.FeePropertyColumns.COST.value] = decimal.Decimal(str(rate)) * quantity
+                # Market leg (not portfolio asset): ccxt fee currency — use portfolio_base_and_quote() for portfolio[...] / reference_market.
                 fees[enums.FeePropertyColumns.CURRENCY.value] = parsed_symbol.base
             else:
                 fees[enums.FeePropertyColumns.COST.value] = decimal.Decimal(str(rate)) * quantity * price
+                # Market leg (not portfolio asset): ccxt fee currency — use portfolio_base_and_quote() for portfolio[...] / reference_market.
                 fees[enums.FeePropertyColumns.CURRENCY.value] = parsed_symbol.quote
         return fees
 

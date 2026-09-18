@@ -2749,3 +2749,4 @@ class TestWaitForSymbolsInit:
                     price_topic,
                     symbols=[],
                 )
+

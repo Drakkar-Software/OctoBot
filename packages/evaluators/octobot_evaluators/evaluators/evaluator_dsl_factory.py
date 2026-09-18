@@ -113,6 +113,7 @@ def _get_cryptocurrency_from_symbol(
         return cryptocurrency
     if symbol is None:
         return None
+    # Market leg (not portfolio asset): evaluator ticker id — use portfolio_base_and_quote() for portfolio[...] / reference_market.
     return symbols_util.parse_symbol(symbol).base
 
 

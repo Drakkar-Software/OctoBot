@@ -311,6 +311,55 @@ class TestFetchTradesUsesContextTradeSymbols:
         assert results[0].trade_symbols_count == 0
 
 
+class TestSkipTradeFetchForNetworkQualifiedMarkets:
+    @pytest.mark.asyncio
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.collection_providers")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.trade_symbols_discovery_module")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.trading_exchanges")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.tentacles_manager_api")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.trading_history_merge_module")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.daily_price_cache_updater_module")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.trades_repository_module")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.transactions_repository_module")
+    @mock.patch("octobot_flow.jobs.portfolio_history_job.profile_data_factory_module")
+    async def test_skips_fetch_when_markets_use_network_qualified_symbols(
+        self, mock_profile, mock_tx_repo, mock_trades_repo,
+        mock_daily_cache, mock_merge, mock_tentacles, mock_exchanges,
+        mock_discovery, mock_collection_providers,
+    ):
+        import octobot_flow.logic.portfolio_history.trade_symbols_discovery as trade_symbols_discovery
+
+        account = _make_account("acc1")
+        context = _make_context(account, trade_symbols=["BTC@BTC/USDT@ETH"])
+        mock_collection_providers.AccountTradingProvider.instance.return_value.load_state.side_effect = (
+            collection_errors.CollectionNoDataError
+        )
+        mock_discovery.discover_trade_symbols.return_value = ["BTC@BTC/USDT@ETH"]
+        mock_discovery.trade_confirmed_symbols_from_fetched_trades.return_value = set()
+        mock_discovery.persist_trade_confirmed_symbols_to_exchange_config.return_value = []
+
+        mock_exchange_manager = mock.AsyncMock()
+        mock_exchange_manager.client_symbols = ["BTC@BTC/USDT@ETH"]
+        mock_exchanges.exchange_manager_from_exchange_data.return_value.__aenter__ = mock.AsyncMock(
+            return_value=mock_exchange_manager
+        )
+        mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
+            return_value=False
+        )
+        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
+        fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
+        mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
+        mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
+        mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
+        mock_daily_cache.update_daily_prices = mock.AsyncMock()
+
+        job = portfolio_history_job_module.PortfolioHistoryJob("wallet1", [context])
+        await job.run()
+
+        fetch_trades_paginated_mock.assert_not_awaited()
+        mock_daily_cache.update_daily_prices.assert_awaited_once()
+
+
 class TestRunParallelExchangeAccounts:
     @pytest.mark.asyncio
     @mock.patch("octobot_flow.jobs.portfolio_history_job.collection_providers")

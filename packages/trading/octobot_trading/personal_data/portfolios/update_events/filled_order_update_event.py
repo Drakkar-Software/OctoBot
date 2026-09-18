@@ -57,7 +57,7 @@ class FilledOrderUpdateEvent(portfolio_update_event.PortfolioUpdateEvent):
     def _get_checked_asset_available_amount(
         self, portfolio: "octobot_trading.personal_data.Portfolio"
     ) -> decimal.Decimal:
-        base, quote = commons_symbols.parse_symbol(self.symbol).base_and_quote()
+        base, quote = commons_symbols.parse_symbol(self.symbol).portfolio_base_and_quote()
         checked_asset = base if self.side == enums.TradeOrderSide.BUY else quote
         return portfolio.get_currency_portfolio(checked_asset).available
 

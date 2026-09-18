@@ -481,6 +481,7 @@ class SimpleMarketMakingTradingMode(market_making_trading.MarketMakingTradingMod
         cls, symbol: str, quote_volume: decimal.Decimal
     ) -> decimal.Decimal:
         default_volume = cls.DEFAULT_CRYPTO_VOL
+        # Market leg (not portfolio asset): USD-like check on CCXT quote — use portfolio_base_and_quote() for portfolio[...] / reference_market.
         if symbol_util.is_usd_like_coin(symbol_util.parse_symbol(symbol).quote):
              default_volume = cls.DEFAULT_USD_LIKE_VOL
         minimum_default_volume = default_volume / decimal.Decimal("2")
@@ -899,7 +900,7 @@ class SimpleMarketMakingTradingModeProducer(market_making_trading.MarketMakingTr
             ) from err
 
     def _get_available_funds(self) -> (decimal.Decimal, decimal.Decimal):
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         portfolio_available_base = trading_api.get_portfolio_currency(self.exchange_manager, base).available
         portfolio_available_quote = trading_api.get_portfolio_currency(self.exchange_manager, quote).available
         schedule_orders_locked_base = scheduled_volume_import.get_global_locked_funds(

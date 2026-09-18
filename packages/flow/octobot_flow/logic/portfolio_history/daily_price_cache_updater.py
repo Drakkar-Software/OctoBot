@@ -33,20 +33,22 @@ async def update_daily_prices(
     )
 
     for reference_symbol in symbols:
+        parsed_reference = symbol_util.parse_symbol(reference_symbol)
         parsed = _parse_base_quote(reference_symbol)
         if parsed is None:
             continue
-        base_asset, quote = parsed
-        if base_asset in commons_constants.USD_LIKE_COINS:
+        fetch_base, quote = parsed
+        sources_cache_key = parsed_reference.base_portfolio_asset()
+        if fetch_base in commons_constants.USD_LIKE_COINS:
             continue
 
-        sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, base_asset)
+        sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, sources_cache_key)
         if _is_daily_cache_up_to_date(daily_prices, reference_symbol):
             continue
 
         since_ms = _compute_fetch_since_ms(daily_prices, reference_symbol)
         candidates = _build_fetch_candidates(
-            exchange_manager, base_asset, quote, sticky_fetch_symbol,
+            exchange_manager, fetch_base, quote, sticky_fetch_symbol,
         )
 
         fetch_result = await _fetch_daily_candles(
@@ -64,7 +66,7 @@ async def update_daily_prices(
         if sticky_fetch_symbol and fetch_symbol != sticky_fetch_symbol:
             logger.info(
                 "Migrating daily closes for %s on %s from %s to %s",
-                base_asset,
+                sources_cache_key,
                 exchange_name,
                 sticky_fetch_symbol,
                 fetch_symbol,
@@ -95,13 +97,14 @@ async def update_daily_prices(
             exchange_name, exchange_type, sandboxed, fetch_symbol, closes_by_timestamp, data_root,
         )
         await trading_api.set_daily_close_source(
-            exchange_name, exchange_type, sandboxed, base_asset, fetch_symbol, data_root,
+            exchange_name, exchange_type, sandboxed, sources_cache_key, fetch_symbol, data_root,
         )
-        trading_api.set_daily_close_source_in_memory(daily_prices, base_asset, fetch_symbol)
+        trading_api.set_daily_close_source_in_memory(daily_prices, sources_cache_key, fetch_symbol)
         trading_api.merge_daily_prices_in_memory(daily_prices, fetch_symbol, closes_by_timestamp)
 
 
 def _parse_base_quote(symbol: str) -> tuple[str, str] | None:
+    # Market leg (not portfolio asset): CCXT fetch candidates — use portfolio_base_and_quote() for portfolio[...] / reference_market.
     base_asset, quote = symbol_util.parse_symbol(symbol).base_and_quote()
     if not base_asset or not quote or base_asset == quote:
         return None

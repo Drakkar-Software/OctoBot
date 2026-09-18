@@ -118,7 +118,7 @@ class PortfolioValueHolder:
         :param mark_price: the symbol mark price value in decimal.Decimal
         :return: True if the origin portfolio should be recomputed
         """
-        currency, market = symbol_util.parse_symbol(symbol).base_and_quote()
+        currency, market = symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
         # update origin values if this price has relevant data regarding
         # the origin portfolio (using both quote and base)
         origin_crypto_currencies_with_values = set(self.origin_crypto_currencies_values.keys())
@@ -195,9 +195,9 @@ class PortfolioValueHolder:
         assets_in_open_orders = constants.ZERO
         for order in self.portfolio_manager.exchange_manager.exchange_personal_data.orders_manager.get_open_orders():
             symbol = symbol_util.parse_symbol(order.symbol)
-            if order.side is enums.TradeOrderSide.BUY and symbol.base == currency:
+            if order.side is enums.TradeOrderSide.BUY and symbol.base_portfolio_asset() == currency:
                 assets_in_open_orders += order.origin_quantity
-            elif order.side is enums.TradeOrderSide.SELL and symbol.quote == currency:
+            elif order.side is enums.TradeOrderSide.SELL and symbol.quote_portfolio_asset() == currency:
                 assets_in_open_orders += order.total_cost
         return assets_in_open_orders
 
@@ -365,7 +365,7 @@ class PortfolioValueHolder:
         """
         if self.portfolio_manager.exchange_manager.exchange_config.traded_symbols:
             currency, market = \
-                self.portfolio_manager.exchange_manager.exchange_config.traded_symbols[0].base_and_quote()
+                self.portfolio_manager.exchange_manager.exchange_config.traded_symbols[0].portfolio_base_and_quote()
             currency_to_evaluate = currency
             try:
                 if currency not in evaluated_currencies:

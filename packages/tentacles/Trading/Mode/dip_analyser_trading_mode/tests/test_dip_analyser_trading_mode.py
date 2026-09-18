@@ -37,6 +37,7 @@ import octobot_commons.constants as commons_constants
 import tentacles.Evaluator.TA as TA
 import tentacles.Evaluator.Strategies as Strategies
 import tentacles.Trading.Mode as Mode
+import tentacles.Trading.Mode.dip_analyser_trading_mode.dip_analyser_trading as dip_analyser_trading
 import tests.test_utils.memory_check_util as memory_check_util
 import tests.test_utils.config as test_utils_config
 import tests.test_utils.test_exchanges as test_exchanges
@@ -786,6 +787,31 @@ async def test_order_fill_callback_not_in_db(tools):
         trading_personal_data.decimal_trunc_with_n_decimal_digits(price + 2 * increment, 8)
     assert open_orders[2].origin_price == \
         trading_personal_data.decimal_trunc_with_n_decimal_digits(price + 3 * increment, 8)
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_BASE_ASSET = "BTC@BTC"
+
+
+async def test_order_filled_callback_deducts_fees_using_portfolio_base():
+    trading_mode = mock.Mock(symbol=TICKER_WISE_SYMBOL, ignore_exchange_fees=False)
+    producer = dip_analyser_trading.DipAnalyserTradingModeProducer(
+        mock.Mock(), {}, trading_mode, mock.Mock(),
+    )
+    filled_order = {
+        trading_enums.ExchangeConstantsOrderColumns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
+        trading_enums.ExchangeConstantsOrderColumns.FILLED.value: "1",
+        trading_enums.ExchangeConstantsOrderColumns.PRICE.value: "100",
+        trading_enums.ExchangeConstantsOrderColumns.ID.value: "order-1",
+    }
+    with mock.patch.object(
+        dip_analyser_trading.trading_personal_data,
+        "total_fees_from_order_dict",
+        mock.Mock(return_value=decimal.Decimal("0.01")),
+    ) as total_fees_mock, mock.patch.object(
+        producer, "_create_sell_order_if_enabled", new=mock.AsyncMock(),
+    ):
+        await producer.order_filled_callback(filled_order)
+    total_fees_mock.assert_called_once_with(filled_order, PORTFOLIO_BASE_ASSET)
 
 
 async def _check_open_orders_count(trader, count):

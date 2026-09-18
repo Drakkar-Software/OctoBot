@@ -328,3 +328,28 @@ async def test_get_amount_from_input_amount_for_position(null_context):
         is_in_one_way_position_mode_mock.assert_called_once_with(null_context)
         get_position_mock.assert_called_once()
         adapt_amount_to_holdings_mock.assert_called_once()
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestTotalAccountBalanceNetworkQualified:
+    @pytest.mark.asyncio
+    async def test_reference_market_matches_quote_portfolio_asset(self):
+        context = mock.Mock()
+        context.symbol = TICKER_WISE_SYMBOL
+        context.exchange_manager = mock.Mock(
+            is_future=False,
+            exchange_personal_data=mock.Mock(
+                portfolio_manager=mock.Mock(
+                    reference_market="USDT@ETH",
+                    portfolio_value_holder=mock.Mock(portfolio_current_value=decimal.Decimal("100")),
+                ),
+            ),
+        )
+        with mock.patch(
+            "octobot_trading.personal_data.get_up_to_date_price",
+            mock.AsyncMock(return_value=decimal.Decimal("2")),
+        ):
+            result = await account_balance.total_account_balance(context)
+        assert result == decimal.Decimal("50")

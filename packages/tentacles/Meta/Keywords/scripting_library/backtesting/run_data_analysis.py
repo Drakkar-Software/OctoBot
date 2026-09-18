@@ -95,6 +95,7 @@ async def load_historical_values(meta_database, exchange, with_candles=True,
         contracts = metadata[commons_enums.DBRows.FUTURE_CONTRACTS.value][exchange] if trading_type == "future" else {}
         # init data
         for pair in run_global_metadata[commons_enums.DBRows.SYMBOLS.value]:
+            # Market leg (not portfolio asset): backtest analytics grouping — use portfolio_base_and_quote() for portfolio[...] / reference_market.
             symbol = symbol_util.parse_symbol(pair).base
             is_inverse_contract = trading_type == "future" and trading_api.is_inverse_future_contract(
                 trading_enums.FutureContractType(contracts[pair]["contract_type"])
@@ -208,7 +209,7 @@ def _evaluate_portfolio(portfolio, price_data, use_start_value):
             # Ignore symbols without candles to avoid crashing report generation on partial datasets.
             continue
         candle = candles[0 if use_start_value else len(candles) - 1]
-        symbol, ref_market = symbol_util.parse_symbol(pair).base_and_quote()
+        symbol, ref_market = symbol_util.parse_symbol(pair).portfolio_base_and_quote()
         if symbol not in handled_currencies:
             value += portfolio.get(symbol, {}).get(octobot_commons.constants.PORTFOLIO_TOTAL, 0) * candle[
                 commons_enums.PriceIndexes.IND_PRICE_OPEN.value
@@ -289,7 +290,7 @@ async def plot_historical_portfolio_value(
                     continue
                 other_candle = price_data_by_time[pair][candle_time]
                 current_candles[pair] = other_candle
-                symbol, ref_market = symbol_util.parse_symbol(pair).base_and_quote()
+                symbol, ref_market = symbol_util.parse_symbol(pair).portfolio_base_and_quote()
                 moving_portfolio_data[ref_market] = moving_portfolio_data.get(ref_market, 0)
                 moving_portfolio_data[symbol] = moving_portfolio_data.get(symbol, 0)
                 # part 1: compute portfolio total value after trade update when any
@@ -337,7 +338,7 @@ async def plot_historical_portfolio_value(
             # part 2: now that portfolio is up-to-date, compute portfolio total value
             handled_currencies = []
             for pair, other_candle in current_candles.items():
-                symbol, ref_market = symbol_util.parse_symbol(pair).base_and_quote()
+                symbol, ref_market = symbol_util.parse_symbol(pair).portfolio_base_and_quote()
                 if symbol not in handled_currencies:
                     value_data[candle_time] = \
                         value_data[candle_time] + \
@@ -358,6 +359,7 @@ async def plot_historical_portfolio_value(
 
 
 def _read_pnl_from_trades(x_data, pnl_data, cumulative_pnl_data, trades_history, x_as_trade_count):
+    # Market leg (not portfolio asset): backtest analytics grouping — use portfolio_base_and_quote() for portfolio[...] / reference_market.
     buy_order_volume_by_price_by_currency = {
         symbol_util.parse_symbol(symbol).base: {}
         for symbol in trades_history.keys()
@@ -368,7 +370,7 @@ def _read_pnl_from_trades(x_data, pnl_data, cumulative_pnl_data, trades_history,
     for trades in trades_history.values():
         all_trades += trades
     for trade in sorted(all_trades, key=lambda x: x[commons_enums.PlotAttributes.X.value]):
-        currency, ref_market = symbol_util.parse_symbol(trade[commons_enums.DBRows.SYMBOL.value]).base_and_quote()
+        currency, ref_market = symbol_util.parse_symbol(trade[commons_enums.DBRows.SYMBOL.value]).portfolio_base_and_quote()
         trade_volume = trade[commons_enums.PlotAttributes.VOLUME.value]
         buy_order_volume_by_price = buy_order_volume_by_price_by_currency[currency]
         if trade[commons_enums.PlotAttributes.SIDE.value] == trading_enums.TradeOrderSide.BUY.value:
@@ -514,6 +516,7 @@ async def total_paid_fees(meta_database, all_trades):
                 # - because funding fees are stored as negative number when paid (positive when "gained")
                 paid_fees -= transaction["quantity"]
     for trade in all_trades:
+        # Market leg (not portfolio asset): backtest analytics grouping — use portfolio_base_and_quote() for portfolio[...] / reference_market.
         currency = symbol_util.parse_symbol(trade[commons_enums.DBRows.SYMBOL.value]).base
         if trade[commons_enums.DBRows.FEES_CURRENCY.value] == currency:
             if trade[commons_enums.DBRows.FEES_CURRENCY.value] == fees_currency:

@@ -73,7 +73,7 @@ class HedgingFill:
         hedging_exchange_manager: trading_exchanges.ExchangeManager,
     ) -> (decimal.Decimal, str):
         # hedging order fees
-        base, quote = symbols_util.parse_symbol(self.fill_trade.symbol).base_and_quote()
+        base, quote = symbols_util.parse_symbol(self.fill_trade.symbol).portfolio_base_and_quote()
         hedging_fee, is_estimated_hedging_fee = self.get_hedging_order_fee(hedging_exchange_manager, filled_hedging_order)
         hedging_price = decimal.Decimal(str(filled_hedging_order[trading_enums.ExchangeConstantsOrderColumns.PRICE.value]))
         hedging_base_fee_in_quote = decimal.Decimal(str(personal_data.get_fees_for_currency(hedging_fee, base))) * hedging_price
@@ -94,7 +94,7 @@ class HedgingFill:
     
     def _get_fees_summary(self, fee: dict, filled_price: decimal.Decimal, is_estimated: bool) -> str:
         fee_cost = fee[trading_enums.FeePropertyColumns.COST.value]
-        quote = symbols_util.parse_symbol(self.fill_trade.symbol).quote
+        quote = symbols_util.parse_symbol(self.fill_trade.symbol).quote_portfolio_asset()
         current_currency = fee[trading_enums.FeePropertyColumns.CURRENCY.value]
         if current_currency != quote:
             quote_cost = fee_cost * filled_price 
@@ -109,7 +109,7 @@ class HedgingFill:
         hedging_exchange_manager: trading_exchanges.ExchangeManager,
         trading_exchange_manager: trading_exchanges.ExchangeManager,
     ) -> str:
-        base, quote = symbols_util.parse_symbol(self.fill_trade.symbol).base_and_quote()
+        base, quote = symbols_util.parse_symbol(self.fill_trade.symbol).portfolio_base_and_quote()
         hedged_amount = decimal.Decimal(str(filled_hedging_order[trading_enums.ExchangeConstantsOrderColumns.AMOUNT.value]))
         hedged_amount_details = ""
         if hedged_amount < self.fill_trade.executed_quantity:
@@ -263,7 +263,7 @@ class HedgingEngine:
     def _on_hedging_order_filled(self, filled_hedging_order: dict):
         if fill := self._get_order_associated_hedging_fill(filled_hedging_order):
             locked_base, locked_quote = fill.get_locked_base_and_quote()
-            base, quote = symbols_util.parse_symbol(fill.fill_trade.symbol).base_and_quote()
+            base, quote = symbols_util.parse_symbol(fill.fill_trade.symbol).portfolio_base_and_quote()
             self._logger.info(
                 f"Hedging order [{fill.hedging_order.exchange_order_id}] fill: unlocking "
                 f"{locked_base if locked_base else locked_quote} {base if locked_base else quote} on [{self._trading_exchange_manager.exchange_name}]"
@@ -404,9 +404,9 @@ class HedgingEngine:
     def get_locked_base_and_quote(self, symbol: str) -> tuple[decimal.Decimal, decimal.Decimal]:
         # aggregate locked funds for all hedging symbols using this given symbol base or quote asset
         total_locked_base = total_locked_quote = trading_constants.ZERO
-        base, quote = symbols_util.parse_symbol(symbol).base_and_quote()
+        base, quote = symbols_util.parse_symbol(symbol).portfolio_base_and_quote()
         for details in self._hedging_details_by_symbol.values():
-            if details.symbol.base == base or details.symbol.quote == quote:
+            if details.symbol.base_portfolio_asset() == base or details.symbol.quote_portfolio_asset() == quote:
                 symbol_locked_base = symbol_locked_quote = trading_constants.ZERO
                 for hedging_fills in details.hedging_fills_by_order_id.values():
                     for fill in hedging_fills:
@@ -418,9 +418,9 @@ class HedgingEngine:
                         fill_locked_base, fill_locked_quote = fill.get_locked_base_and_quote()
                         symbol_locked_base += fill_locked_base
                         symbol_locked_quote += fill_locked_quote
-                if details.symbol.base == base:
+                if details.symbol.base_portfolio_asset() == base:
                     total_locked_base += symbol_locked_base
-                if details.symbol.quote == quote:
+                if details.symbol.quote_portfolio_asset() == quote:
                     total_locked_quote += symbol_locked_quote
         return total_locked_base, total_locked_quote
 
@@ -499,7 +499,7 @@ class HedgingEngine:
         base_hedging_budget, quote_hedging_budget = self._get_base_and_quote_hedging_budget(details)
         # ensure hedging exchange has enough funds to hedge the trading exchange
         if base_hedging_budget < base_trading_budget or quote_hedging_budget < quote_trading_budget:
-            base, quote = details.symbol.base_and_quote()
+            base, quote = details.symbol.portfolio_base_and_quote()
             raise hedging_errors.MissingHedgingFundsError(
                 f"{details.symbol} [{self._hedging_exchange_manager.exchange_name}] hedging funds are not available. "
                 f"{base} trading budget: {base_trading_budget} hedging budget: {base_hedging_budget}. "
@@ -510,10 +510,10 @@ class HedgingEngine:
         self, details: SymbolHedgingDetails
     ) -> tuple[decimal.Decimal, decimal.Decimal]:
         base_available_holding = trading_api.get_portfolio_currency(
-            self._trading_exchange_manager, details.symbol.base
+            self._trading_exchange_manager, details.symbol.base_portfolio_asset()
         ).available
         quote_available_holding = trading_api.get_portfolio_currency(
-            self._trading_exchange_manager, details.symbol.quote
+            self._trading_exchange_manager, details.symbol.quote_portfolio_asset()
         ).available
         return base_available_holding, quote_available_holding
 

@@ -392,7 +392,7 @@ class MarketMakingTradingModeConsumer(trading_modes.AbstractTradingModeConsumer)
 
     async def create_order(self, order_data, current_price, symbol_market, **kwargs):
         created_order = None
-        currency, market = symbol_util.parse_symbol(order_data.symbol).base_and_quote()
+        currency, market = symbol_util.parse_symbol(order_data.symbol).portfolio_base_and_quote()
         try:
             base_available = trading_api.get_portfolio_currency(self.exchange_manager, currency).available
             quote_available = trading_api.get_portfolio_currency(self.exchange_manager, market).available
@@ -698,7 +698,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
                 f" {self.exchange_manager.exchange_name}: {daily_base_volume=} {daily_quote_volume=}"
             )
             return False
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         self.logger.info(
             f"Trigger for {self.symbol} on {self.exchange_manager.exchange_name}. Ref price: {float(reference_price)} "
             f"daily {base} vol: {octobot_commons.pretty_printer.get_min_string_from_number(daily_base_volume)} "
@@ -950,7 +950,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
         return True
 
     async def _send_missing_funds_critical_notification(self, missing_all_orders_sides) -> str:
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         required_funds = []
         for side in missing_all_orders_sides:
             if side == trading_enums.TradeOrderSide.BUY:
@@ -1225,7 +1225,7 @@ class MarketMakingTradingModeProducer(trading_modes.AbstractTradingModeProducer)
             ) from err
 
     def _get_available_funds(self) -> (decimal.Decimal, decimal.Decimal):
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         return (
             trading_api.get_portfolio_currency(self.exchange_manager, base).available,
             trading_api.get_portfolio_currency(self.exchange_manager, quote).available

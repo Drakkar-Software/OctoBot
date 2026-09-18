@@ -72,7 +72,7 @@ def is_symbol_disabled(config, symbol) -> bool:
     for currency_details in config[commons_constants.CONFIG_CRYPTO_CURRENCIES].values():
         for pair in currency_details[commons_constants.CONFIG_CRYPTO_PAIRS]:
             if (
-                symbol == symbol_util.parse_symbol(pair).base
+                symbol == symbol_util.parse_symbol(pair).base_portfolio_asset()
                 and currency_details.get(commons_constants.CONFIG_ENABLED_OPTION, True) is False
             ):
                 return True
@@ -120,7 +120,7 @@ def get_symbol_types_counts(config, enabled_only) -> dict:
 def get_all_currencies(config, enabled_only=False) -> set:
     currencies = set()
     for symbol in get_symbols(config, enabled_only):
-        base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
         currencies.add(base)
         if quote is not None:
             currencies.add(quote)
@@ -131,7 +131,7 @@ def get_pairs(config, currency, enabled_only=False) -> list:
     return [
         symbol
         for symbol in get_symbols(config, enabled_only)
-        if currency in symbol_util.parse_symbol(symbol).base_and_quote()
+        if currency in symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
     ]
 
 
@@ -139,7 +139,7 @@ def get_market_pair(config, currency, enabled_only=False) -> (str, bool):
     if commons_constants.CONFIG_TRADING in config:
         reference_market = get_reference_market(config)
         for symbol in get_symbols(config, enabled_only):
-            symbol_currency, symbol_market = symbol_util.parse_symbol(symbol).base_and_quote()
+            symbol_currency, symbol_market = symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
             if currency == symbol_currency and reference_market == symbol_market:
                 return symbol, False
             elif reference_market == symbol_currency and currency == symbol_market:

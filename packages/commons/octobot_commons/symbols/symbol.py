@@ -13,6 +13,24 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+"""
+Market legs vs portfolio keys
+
+- ``base`` / ``quote`` and ``base_and_quote()`` return **market legs** (CCXT-style tickers,
+  often bare ``BTC`` / ``USDT``).
+- ``base_portfolio_asset()`` / ``quote_portfolio_asset()`` and ``portfolio_base_and_quote()``
+  return **portfolio dict keys** (network-qualified when applicable, e.g. ``BTC@BTC``, ``USDT@ETH``).
+
+Use portfolio helpers when indexing ``portfolio[...]``, ``reference_market``, holdings, config currency
+sets, or copy ratios.
+Keep market legs for bridge routing, CCXT fee currency, DAG blockchain legs, and persisted contract
+shapes; document those with:
+``# Market leg (not portfolio asset): <reason> — use portfolio_base_and_quote() for portfolio[...] /
+reference_market.``
+
+Ticker-wise example: symbol ``BTC@BTC/USDT@ETH`` → portfolio keys ``BTC@BTC`` (base) and ``USDT@ETH``
+(quote).
+"""
 import re
 import typing
 
@@ -143,9 +161,18 @@ class Symbol:
 
     def base_and_quote(self) -> typing.Tuple[str, str]:
         """
-        return a tuple made of this symbol's base and quote assets
+        Return CCXT market legs (currency codes), e.g. ("BTC", "USDT") even for ticker-wise pairs.
+        For portfolio dict keys, reference_market, and holdings, use portfolio_base_and_quote() instead.
         """
         return self.base, self.quote
+
+    def portfolio_base_and_quote(self) -> typing.Tuple[str, str]:
+        """
+        Return portfolio / balance asset keys for base and quote legs.
+        On ticker-wise pairs (e.g. BTC@BTC/USDT@ETH), returns ("BTC@BTC", "USDT@ETH").
+        On plain spot pairs, equals base_and_quote().
+        """
+        return self.base_portfolio_asset(), self.quote_portfolio_asset()
 
     def merged_str_symbol(
         self,

@@ -59,6 +59,7 @@ class FuturesPortfolioValueHolder(portfolio_value_holder.PortfolioValueHolder):
             # position.margin is in the settlement currency of the position
             # Convert it to the reference market for proper ratio calculation
             parsed_symbol = symbol_util.parse_symbol(symbol)
+            # Market leg (not portfolio asset): futures contract settlement — use portfolio_base_and_quote() for portfolio[...] / reference_market.
             settlement_currency = parsed_symbol.settlement_asset or parsed_symbol.quote
             position_value = self.value_converter.evaluate_value(
                 settlement_currency, position.margin, init_price_fetchers=False

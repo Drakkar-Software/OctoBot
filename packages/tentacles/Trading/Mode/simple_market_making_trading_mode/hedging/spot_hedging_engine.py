@@ -19,8 +19,12 @@ class SpotHedgingEngine(hedging_engine.HedgingEngine):
         self._active_order_swap_timeout = DEFAULT_ACTIVE_ORDER_SWAP_TIMEOUT
 
     def _get_base_and_quote_hedging_budget(self, details: hedging_engine.SymbolHedgingDetails) -> tuple[decimal.Decimal, decimal.Decimal]:
-        base_available_holding = trading_api.get_portfolio_currency(self._hedging_exchange_manager, details.symbol.base).available
-        quote_available_holding = trading_api.get_portfolio_currency(self._hedging_exchange_manager, details.symbol.quote).available
+        base_available_holding = trading_api.get_portfolio_currency(
+            self._hedging_exchange_manager, details.symbol.base_portfolio_asset()
+        ).available
+        quote_available_holding = trading_api.get_portfolio_currency(
+            self._hedging_exchange_manager, details.symbol.quote_portfolio_asset()
+        ).available
         return base_available_holding, quote_available_holding
 
     async def _create_hedging_order(self, fill: hedging_engine.HedgingFill) -> personal_data.Order:

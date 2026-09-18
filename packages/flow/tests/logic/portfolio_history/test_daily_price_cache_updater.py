@@ -9,6 +9,9 @@ import octobot_trading.errors as trading_errors
 import octobot_commons.constants as commons_constants
 import octobot_flow.constants as flow_constants
 import octobot_flow.logic.portfolio_history.daily_price_cache_updater as daily_price_cache_updater_module
+import octobot_flow.logic.portfolio_history.trade_fetch_cursors as trade_fetch_cursors
+
+TICKER_WISE_REFERENCE_SYMBOL = "BTC@BTC/USDT@ETH"
 
 
 def _empty_daily_prices():
@@ -178,6 +181,24 @@ class TestUpdateDailyPrices:
         assert result[trading_enums.DailyPricesCacheKeys.SYMBOLS]["BTC/USDT"][str(day_two)] == 41000
         assert result[trading_enums.DailyPricesCacheKeys.SOURCES]["BTC"] == "BTC/USDT"
         assert "since" not in exchange_manager.exchange.get_symbol_prices.call_args[1]
+
+    @pytest.mark.asyncio
+    async def test_ticker_wise_reference_symbol_keys_sources_by_portfolio_base(self, tmp_path):
+        exchange_manager = _exchange_manager_with_symbols(["BTC/USDT"])
+        day_one = _utc_day_start(1)
+        exchange_manager.exchange.get_symbol_prices.return_value = [
+            _sample_candle(day_one, 40500),
+        ]
+        data_root = str(tmp_path)
+        await daily_price_cache_updater_module.update_daily_prices(
+            exchange_manager, "binance", "spot", False, [TICKER_WISE_REFERENCE_SYMBOL], data_root,
+        )
+
+        result = await trading_api.load_daily_prices("binance", "spot", False, data_root)
+        assert result[trading_enums.DailyPricesCacheKeys.SOURCES]["BTC@BTC"] == "BTC/USDT"
+        assert trade_fetch_cursors.resolve_daily_cache_symbol(
+            result, TICKER_WISE_REFERENCE_SYMBOL,
+        ) == "BTC/USDT"
 
     @pytest.mark.asyncio
     async def test_empty_cache_fetches_without_since(self, tmp_path):

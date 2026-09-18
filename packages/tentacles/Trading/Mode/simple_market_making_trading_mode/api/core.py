@@ -883,7 +883,7 @@ async def get_minimal_volume_by_symbol(
 def _get_ideal_volume_by_symbol(
     pair, distribution, reference_price, mm_data, mm_exchange
 ):
-    base, quote = commons_symbols.parse_symbol(pair).base_and_quote()
+    base, quote = commons_symbols.parse_symbol(pair).portfolio_base_and_quote()
     try:
         return {
             base: distribution.get_ideal_total_volume(

@@ -162,3 +162,19 @@ class TestInferReferenceMarket:
             profile_data_factory_module.infer_reference_market(exchange_account_details, [])
             == commons_constants.DEFAULT_REFERENCE_MARKET
         )
+
+    def test_infers_quote_from_first_trading_pair_when_portfolio_unit_missing(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="coinrabbit"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+        )
+        crypto_currencies = [
+            profile_data_module.CryptoCurrencyData(
+                name="BTC@BTC",
+                trading_pairs=["BTC@BTC/USDT@ETH"],
+            )
+        ]
+        assert (
+            profile_data_factory_module.infer_reference_market(exchange_account_details, crypto_currencies)
+            == "USDT@ETH"
+        )

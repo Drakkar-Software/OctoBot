@@ -172,6 +172,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
     def get_reference_market(self) -> typing.Optional[str]:
         if self.ORDER_SYMBOL:
             parsed_symbol = _parse_order_symbol(self.ORDER_SYMBOL)
+            # Market leg (not portfolio asset): dag blockchain leg — use portfolio_base_and_quote() for portfolio[...] / reference_market.
             return parsed_symbol.quote
         return None
 
@@ -476,6 +477,7 @@ class ActionsDAGParser:
         parsed_symbol = _parse_order_symbol(self.params.ORDER_SYMBOL)
         if self.params.ORDER_SIDE:
             signal = self.params.ORDER_SIDE.lower()
+        # Market leg (not portfolio asset): dag blockchain leg — use portfolio_base_and_quote() for portfolio[...] / reference_market.
         elif parsed_symbol.base == self.params.BLOCKCHAIN_FROM_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_TO_ASSET: # type: ignore
             # sell the first blockchain asset to get the second one
             signal = tv_trading_mode.SELL_SIGNAL

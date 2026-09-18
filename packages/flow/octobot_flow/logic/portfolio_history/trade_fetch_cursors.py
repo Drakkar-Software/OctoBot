@@ -48,7 +48,7 @@ def resolve_daily_cache_symbol(
         return trade_symbol
     if not symbol_util.is_symbol(trade_symbol):
         return None
-    base_asset, _quote_asset = symbol_util.parse_symbol(trade_symbol).base_and_quote()
+    base_asset, _quote_asset = symbol_util.parse_symbol(trade_symbol).portfolio_base_and_quote()
     if not base_asset:
         return None
     sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, base_asset)

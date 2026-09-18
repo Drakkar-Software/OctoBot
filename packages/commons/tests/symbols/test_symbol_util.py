@@ -32,6 +32,14 @@ def test_merge_currencies_ticker_wise_network_legs():
     assert parsed.has_ticker_wise_networks() is True
     assert parsed.base_portfolio_asset() == "BTC@BTC"
     assert parsed.quote_portfolio_asset() == "USDT@ETH"
+    assert parsed.portfolio_base_and_quote() == ("BTC@BTC", "USDT@ETH")
+    assert parsed.base_and_quote() == ("BTC", "USDT")
+
+
+def test_portfolio_base_and_quote_spot_matches_base_and_quote():
+    parsed = octobot_commons.symbols.parse_symbol("BTC/USDT")
+    assert parsed.portfolio_base_and_quote() == parsed.base_and_quote()
+    assert parsed.portfolio_base_and_quote() == ("BTC", "USDT")
 
 
 def test_merge_currencies():

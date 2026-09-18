@@ -98,7 +98,7 @@ class MinimalDataImporter(octobot_backtesting.importers.ExchangeDataImporter):
         candles = self._candles_cache[time_frame][symbol]
         timeframe_sec = octobot_commons.enums.TimeFramesMinutes[octobot_commons.enums.TimeFrames(time_frame)] * \
             octobot_commons.constants.MINUTE_TO_SECONDS
-        currency = octobot_commons.symbols.parse_symbol(symbol).base
+        currency = octobot_commons.symbols.parse_symbol(symbol).base_portfolio_asset()
         candles_data = [
             [
                 candle[octobot_commons.enums.PriceIndexes.IND_PRICE_TIME.value] + timeframe_sec,

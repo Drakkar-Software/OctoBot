@@ -374,7 +374,7 @@ class StaggeredOrdersTradingMode(trading_modes.AbstractTradingMode):
                          f"{self.exchange_manager.exchange_config.traded_symbol_pairs}")
         for symbol in self.exchange_manager.exchange_config.traded_symbol_pairs:
             if producer.get_symbol_trading_config(symbol) is not None:
-                pair_bases.add(symbol_util.parse_symbol(symbol).base)
+                pair_bases.add(symbol_util.parse_symbol(symbol).base_portfolio_asset())
                 for order in self.exchange_manager.exchange_personal_data.orders_manager.get_open_orders(
                     symbol=symbol
                 ):
@@ -487,7 +487,7 @@ class StaggeredOrdersTradingModeConsumer(trading_modes.AbstractTradingModeConsum
         dependencies: typing.Optional[commons_signals.SignalDependencies]
     ):
         created_order = None
-        currency, market = symbol_util.parse_symbol(order_data.symbol).base_and_quote()
+        currency, market = symbol_util.parse_symbol(order_data.symbol).portfolio_base_and_quote()
         try:
             base_available = trading_api.get_portfolio_currency(self.exchange_manager, currency).available
             quote_available = trading_api.get_portfolio_currency(self.exchange_manager, market).available
@@ -918,10 +918,14 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         parsed_symbol = symbol_util.parse_symbol(self.symbol)
         try:
             if selling:
-                available_funds = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.base).available
+                available_funds = trading_api.get_portfolio_currency(
+                    self.exchange_manager, parsed_symbol.base_portfolio_asset()
+                ).available
                 return min(available_funds, volume)
             else:
-                available_funds = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.quote).available
+                available_funds = trading_api.get_portfolio_currency(
+                    self.exchange_manager, parsed_symbol.quote_portfolio_asset()
+                ).available
                 required_cost = price * volume
                 return min(available_funds, required_cost) / price
         except decimal.DecimalException as err:
@@ -950,7 +954,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
             return new_order_quantity
         # remove exchange fees
         if paid_fees:
-            base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+            base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
             fees_in_base = trading_personal_data.get_fees_for_currency(paid_fees, base)
             fees_in_base += trading_personal_data.get_fees_for_currency(paid_fees, quote) / filled_price
             if fees_in_base == trading_constants.ZERO:
@@ -1211,7 +1215,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         return buy_orders, sell_orders, state, (orders_dependencies or None)
 
     def _reset_available_funds(self):
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         self._set_initially_available_funds(
             base,
             trading_api.get_portfolio_currency(self.exchange_manager, base).available,
@@ -1248,7 +1252,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         ) if self.flat_increment else 0
 
     def _ensure_full_funds_usage(self, orders, existing_buy_orders_count, existing_sell_orders_count):
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         total_locked_base, total_locked_quote = self._get_locked_funds(orders)
         max_buy_funds = trading_api.get_portfolio_currency(self.exchange_manager, quote).available + total_locked_quote
         if self.buy_funds:
@@ -1346,12 +1350,12 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
                 or (self.buy_volume_per_order > 0 and self.sell_volume_per_order > 0):
             return []
         else:
-            current_base, current_quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+            current_base, current_quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
             interfering_pairs = set()
             for order in orders:
                 order_symbol = order.symbol
                 if order_symbol != self.symbol:
-                    base, quote = symbol_util.parse_symbol(order_symbol).base_and_quote()
+                    base, quote = symbol_util.parse_symbol(order_symbol).portfolio_base_and_quote()
                     if current_base == base or current_base == quote or current_quote == base or current_quote == quote:
                         interfering_pairs.add(order_symbol)
             return interfering_pairs
@@ -1374,7 +1378,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         await self._pack_and_balance_missing_orders(trades_with_missing_mirror_order_fills, current_price)
 
     async def _pack_and_balance_missing_orders(self, trades_with_missing_mirror_order_fills, current_price):
-        base, quote = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         self.logger.info(
             f"Packing {len(trades_with_missing_mirror_order_fills)} missed [{self.exchange_manager.exchange_name}] "
             f"mirror orders, trades {[trade.to_dict() for trade in trades_with_missing_mirror_order_fills]}"
@@ -1662,7 +1666,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
     async def _convert_order_funds(
         self, to_convert_order, current_price, convert_dependencies, log_header
     ) -> list[trading_personal_data.Order]:
-        base, quote = symbol_util.parse_symbol(to_convert_order.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(to_convert_order.symbol).portfolio_base_and_quote()
         base_amount_to_convert = to_convert_order.quantity if isinstance(to_convert_order, OrderData) \
             else to_convert_order.get_remaining_quantity()
         if to_convert_order.side is trading_enums.TradeOrderSide.BUY:
@@ -1715,15 +1719,24 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
                 trailed_order_side = trading_enums.TradeOrderSide.SELL if is_trailing_up else trading_enums.TradeOrderSide.BUY
                 ideal_base_quantity = to_convert_order.total_cost / trailed_price 
                 parsed_symbol = symbol_util.parse_symbol(to_convert_order.symbol)
-                other_side_currency = parsed_symbol.quote if trailed_order_side is trading_enums.TradeOrderSide.BUY else parsed_symbol.base
+                other_side_currency = (
+                    parsed_symbol.quote_portfolio_asset()
+                    if trailed_order_side is trading_enums.TradeOrderSide.BUY
+                    else parsed_symbol.base_portfolio_asset()
+                )
                 available_amount = trading_api.get_portfolio_currency(self.exchange_manager, other_side_currency).available
-                available_amount_in_base = available_amount if other_side_currency == parsed_symbol.base else available_amount / trailed_price
+                base_portfolio_asset = parsed_symbol.base_portfolio_asset()
+                available_amount_in_base = (
+                    available_amount if other_side_currency == base_portfolio_asset else available_amount / trailed_price
+                )
                 if available_amount_in_base < ideal_base_quantity:
                     trailing_order_quantity = available_amount_in_base
                     self.logger.warning(
-                        f"Not enough available funds to create a full {ideal_base_quantity} {parsed_symbol.base} {to_convert_order.symbol} {trailed_order_side.name} trailing "
+                        f"Not enough available funds to create a full {ideal_base_quantity} "
+                        f"{parsed_symbol.base_portfolio_asset()} {to_convert_order.symbol} {trailed_order_side.name} trailing "
                         f"order: available: {available_amount} {other_side_currency} < {ideal_base_quantity} "
-                        f"(={available_amount_in_base} {parsed_symbol.base}). Using {trailing_order_quantity} instead."
+                        f"(={available_amount_in_base} {parsed_symbol.base_portfolio_asset()}). "
+                        f"Using {trailing_order_quantity} instead."
                     )
                 else:
                     trailing_order_quantity = ideal_base_quantity
@@ -1846,8 +1859,12 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         orders = []
         try:
             parsed_symbol = symbol_util.parse_symbol(self.symbol)
-            available_base_amount = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.base).available
-            available_quote_amount = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.quote).available
+            available_base_amount = trading_api.get_portfolio_currency(
+                self.exchange_manager, parsed_symbol.base_portfolio_asset()
+            ).available
+            available_quote_amount = trading_api.get_portfolio_currency(
+                self.exchange_manager, parsed_symbol.quote_portfolio_asset()
+            ).available
             usable_amount_in_quote = available_quote_amount + (available_base_amount * current_price)
             config_max_amount = self.buy_funds + (self.sell_funds * current_price)
             if config_max_amount > trading_constants.ZERO:
@@ -1862,8 +1879,8 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
             to_sell = to_buy = None
             if available_base_amount < target_base:
                 # buy order
-                to_buy = parsed_symbol.base
-                to_sell = parsed_symbol.quote
+                to_buy = parsed_symbol.base_portfolio_asset()
+                to_sell = parsed_symbol.quote_portfolio_asset()
                 amount = (target_base - available_base_amount) * current_price
             if available_quote_amount < target_quote:
                 if amount != trading_constants.ZERO:
@@ -1871,8 +1888,8 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
                     self.logger.error(f"{log_header}can't buy and sell {parsed_symbol} at the same time.")
                 else:
                     # sell order
-                    to_buy = parsed_symbol.quote
-                    to_sell = parsed_symbol.base
+                    to_buy = parsed_symbol.quote_portfolio_asset()
+                    to_sell = parsed_symbol.base_portfolio_asset()
                     amount = (target_quote - available_quote_amount) / current_price
 
             if amount > trading_constants.ZERO:
@@ -1936,7 +1953,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
 
         selling = side == trading_enums.TradeOrderSide.SELL
 
-        currency, market = symbol_util.parse_symbol(self.symbol).base_and_quote()
+        currency, market = symbol_util.parse_symbol(self.symbol).portfolio_base_and_quote()
         order_limiting_currency = currency if selling else market
 
         order_limiting_currency_amount = trading_api.get_portfolio_currency(self.exchange_manager, order_limiting_currency).available
@@ -2723,7 +2740,7 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
             is_completing_trailing = triggering_trailing and (index == len(orders_to_create) - 1)
             await self._create_order(order, current_price, is_completing_trailing, dependencies)
             if locks_available_funds:
-                base, quote = symbol_util.parse_symbol(order.symbol).base_and_quote()
+                base, quote = symbol_util.parse_symbol(order.symbol).portfolio_base_and_quote()
                 # keep track of the required funds
                 volume = order.quantity if order.side is trading_enums.TradeOrderSide.SELL \
                     else order.price * order.quantity

@@ -1,20 +1,22 @@
 #  Drakkar-Software OctoBot-Trading
-#  Copyright (c) Drakkar-Software, All rights reserved.
-#
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
-#  version 3.0 of the License, or (at your option) any later version.
-#
-#  This library is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public
-#  License along with this library.
-
+import decimal
+import mock
 import pytest
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
+import octobot_trading.api.trades as trades_api
+import octobot_trading.enums as enums
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestTradeFilterNetworkQualified:
+    def test_quote_filter_uses_portfolio_quote_asset(self):
+        trade = mock.Mock()
+        trade.status = enums.OrderStatus.CLOSED
+        trade.symbol = TICKER_WISE_SYMBOL
+        trade.timestamp = 1
+        exchange_manager = mock.Mock()
+        exchange_manager.exchange_personal_data.trades_manager.get_trades = mock.Mock(return_value=[trade])
+
+        assert trades_api.get_trade_history(exchange_manager, quote="USDT@ETH") == [trade]
+        assert trades_api.get_trade_history(exchange_manager, quote="USDT") == []

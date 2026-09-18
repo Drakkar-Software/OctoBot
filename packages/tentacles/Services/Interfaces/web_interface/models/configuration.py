@@ -1496,6 +1496,7 @@ def change_reference_market_on_config_currencies(old_base_currency: str, new_quo
 
 def _change_base(pair, new_quote_currency):
     parsed_symbol = commons_symbols.parse_symbol(pair)
+    # Market leg (not portfolio asset): rebuild pair string for UI — reference_market config uses quote_portfolio_asset().
     parsed_symbol.quote = new_quote_currency
     return parsed_symbol.merged_str_symbol()
 
@@ -1696,7 +1697,7 @@ def _save_distribution_user_config(
     if trading_pair:
         # only update the reference market
         updated_trading_config[commons_constants.CONFIG_TRADER_REFERENCE_MARKET] = (
-            symbol_utils.parse_symbol(trading_pair).quote
+            symbol_utils.parse_symbol(trading_pair).quote_portfolio_asset()
         )
 
     update = {

@@ -22,6 +22,7 @@ import octobot_commons.constants as commons_constants
 from octobot_trading.enums import FeePropertyColumns, ExchangeConstantsMarketPropertyColumns, TraderOrderType
 from octobot_trading.api.exchange import cancel_ccxt_throttle_task
 import octobot_trading.exchanges.util as exchange_util
+import octobot_trading.exchanges.connectors.simulator.exchange_simulator_connector as exchange_simulator_connector
 
 # Import required fixtures
 from tests import event_loop
@@ -160,3 +161,14 @@ async def test_init_exchange_tentacle(backtesting_trader):
             init_adapter
         )
         get_rest_exchange_class_mock.assert_called_once()
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestExchangeSimulatorConnectorNetworkQualified:
+    def test_split_pair_returns_portfolio_legs(self):
+        connector = exchange_simulator_connector.ExchangeSimulatorConnector.__new__(
+            exchange_simulator_connector.ExchangeSimulatorConnector
+        )
+        assert connector.get_split_pair_from_exchange(TICKER_WISE_SYMBOL) == ("BTC@BTC", "USDT@ETH")

@@ -875,3 +875,30 @@ def test_decimal_adapt_order_quantity_because_fees_with_existing_orders():
 
     # can't create order
     assert result == constants.ZERO
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestDecimalAdaptOrderQuantityBecauseFeesNetworkQualified:
+    def test_uses_quote_portfolio_asset_for_portfolio_lookup(self):
+        exchange_manager = mock.Mock()
+        exchange_manager.is_future = False
+        portfolio = mock.Mock()
+        portfolio.get_currency_portfolio = mock.Mock(
+            return_value=mock.Mock(total=decimal.Decimal("1000"))
+        )
+        exchange_manager.exchange_personal_data.portfolio_manager.portfolio = portfolio
+        exchange_manager.exchange.get_trade_fee = mock.Mock(return_value={})
+        exchange_manager.exchange_personal_data.orders_manager.get_open_orders = mock.Mock(return_value=[])
+
+        personal_data.decimal_adapt_order_quantity_because_fees(
+            exchange_manager,
+            TICKER_WISE_SYMBOL,
+            enums.TraderOrderType.BUY_LIMIT,
+            decimal.Decimal("1"),
+            decimal.Decimal("10"),
+            enums.TradeOrderSide.BUY,
+        )
+
+        portfolio.get_currency_portfolio.assert_called_once_with("USDT@ETH")
