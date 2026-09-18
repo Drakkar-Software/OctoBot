@@ -24,6 +24,19 @@ import octobot_node.models
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
 
+try:
+    from api.auth_errors import (  # type: ignore[no-redef]
+        AuthErrorCode,
+        auth_http_exception,
+        node_not_configured_exception,
+    )
+except ImportError:
+    from tentacles.Services.Interfaces.node_api_interface.api.auth_errors import (
+        AuthErrorCode,
+        auth_http_exception,
+        node_not_configured_exception,
+    )
+
 security_basic = HTTPBasic(auto_error=False)
 
 
@@ -32,39 +45,48 @@ def get_current_user(
 ) -> octobot_node.models.User:
     auth = community_auth.CommunityAuthentication.instance()
     if auth is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Node not configured",
-        )
+        raise node_not_configured_exception()
 
     # Multi-wallet path: username = wallet address, password = passphrase
     if credentials is None or not credentials.username:
         # Check whether the node is configured at all (no credentials → can't auth anyway)
         if not auth.list_wallets():
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Node not configured",
-            )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Wallet address required as username",
+            raise node_not_configured_exception()
+        raise auth_http_exception(
+            status.HTTP_401_UNAUTHORIZED,
+            AuthErrorCode.AUTH_WALLET_ADDRESS_REQUIRED,
+            message="Wallet address required as username",
         )
 
     # Normalize to lowercase so wallet_address == task.wallet_address always
     wallet_address = credentials.username.lower()
     passphrase = credentials.password
     if not passphrase:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Passphrase required",
+        raise auth_http_exception(
+            status.HTTP_401_UNAUTHORIZED,
+            AuthErrorCode.AUTH_PASSPHRASE_REQUIRED,
+            message="Passphrase required",
         )
 
     try:
         wallet_info = auth.authenticate_wallet(wallet_address, passphrase)
-    except wallet_backend.WalletError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect address or passphrase",
+    except wallet_backend.WalletNotFoundError:
+        raise auth_http_exception(
+            status.HTTP_401_UNAUTHORIZED,
+            AuthErrorCode.AUTH_WALLET_NOT_FOUND,
+            message="Wallet address is not configured on this node",
+        )
+    except wallet_backend.InvalidPassphraseError:
+        raise auth_http_exception(
+            status.HTTP_401_UNAUTHORIZED,
+            AuthErrorCode.AUTH_INVALID_PASSPHRASE,
+            message="Passphrase verification failed",
+        )
+    except wallet_backend.WalletError as err:
+        raise auth_http_exception(
+            status.HTTP_401_UNAUTHORIZED,
+            AuthErrorCode.AUTH_INVALID_PASSPHRASE,
+            message=str(err),
         )
 
     auth.init_sync_client_for_wallet(wallet_address)

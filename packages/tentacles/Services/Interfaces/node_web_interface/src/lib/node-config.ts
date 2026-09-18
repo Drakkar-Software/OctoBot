@@ -1,3 +1,4 @@
+import { buildBasicAuthorizationHeader } from "@/lib/basic-auth"
 import { loadPassword } from "@/lib/device-key"
 
 export async function buildAuthHeader() {
@@ -6,7 +7,7 @@ export async function buildAuthHeader() {
   if (!username || !password) {
     throw new Error("No active wallet session")
   }
-  return `Basic ${btoa(`${username}:${password}`)}`
+  return buildBasicAuthorizationHeader(username, password)
 }
 
 export async function fetchNodeConfig() {

@@ -4,6 +4,7 @@ vi.mock("@/lib/device-key", () => ({
   loadPassword: vi.fn(),
 }))
 
+import { encodeBasicCredentials } from "@/lib/basic-auth"
 import { loadPassword } from "@/lib/device-key"
 import { buildAuthHeader, fetchNodeConfig } from "@/lib/node-config"
 
@@ -43,7 +44,13 @@ describe("buildAuthHeader", () => {
   it("builds a Basic header from the stored wallet address and password", async () => {
     vi.stubGlobal("localStorage", { getItem: vi.fn(() => "0xwallet") })
     const header = await buildAuthHeader()
-    expect(header).toBe(`Basic ${btoa("0xwallet:pw")}`)
+    expect(header).toBe(`Basic ${encodeBasicCredentials("0xwallet", "pw")}`)
+  })
+
+  it("encodes non-ASCII passphrases for Basic auth", () => {
+    const encoded = encodeBasicCredentials("0xwallet", "päss")
+    expect(encoded).toBeTruthy()
+    expect(atob(encoded)).toBe("0xwallet:päss")
   })
 })
 
