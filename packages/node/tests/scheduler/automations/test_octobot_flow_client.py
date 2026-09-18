@@ -935,7 +935,7 @@ class TestOctoBotActionsJob:
         )
         assert loop_dsl.startswith("loop_until(")
         assert "max_retry_interval=70" in loop_dsl
-        assert "3, max_retry_interval=70, timeout=10, max_attempts=4, return_remaining_time=True)" in loop_dsl
+        assert "3.0, max_retry_interval=70.0, timeout=10.0, max_attempts=4, return_remaining_time=True)" in loop_dsl
 
     async def test_run_trade_and_loop_until_order_closed(self, trade_and_loop_until_order_closed):
         # Step 1 — Apply automation config (ACTIONS: trade, loop_until_order_closed).
@@ -998,7 +998,7 @@ class TestOctoBotActionsJob:
         assert loop_dsl.startswith("loop_until(")
         assert "fetch_order" in loop_dsl
         assert f"!= '{trading_enums.OrderStatus.OPEN.value}'" in loop_dsl
-        assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in loop_dsl
+        assert "3.0, timeout=10.0, max_attempts=4, return_remaining_time=True)" in loop_dsl
         assert "max_retry_interval" not in loop_dsl
         job3 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
@@ -1253,7 +1253,7 @@ class TestOctoBotActionsJob:
         assert next_actions[0].dsl_script.startswith("loop_until(")
         assert "blockchain_wallet_balance" in next_actions[0].dsl_script
         assert "123_balance_address" in next_actions[0].dsl_script
-        assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
+        assert "3.0, timeout=10.0, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
         job5 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
