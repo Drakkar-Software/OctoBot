@@ -10,6 +10,7 @@
 - **Scheduled work:** automation iterations as child DBOS workflows (`execute_iteration` as a DBOS step); portfolio history, global view, and cleanup under `scheduler/workflows/`.
 - **Bridge to flow:** `octobot_flow_client` runs `octobot_flow` jobs inside steps; optional `encrypted_task` wrapper—flow stays encryption-agnostic.
 - **Not here:** DAG action bodies, ccxt plumbing, evaluator tentacles. Tentacle HTTP routes live in **`packages/tentacles`** but must delegate to node protocol and scheduler APIs.
+- **OpenAPI:** Node **REST** spec is owned by tentacles (`node_api_interface` → `node_web_interface/openapi.json` — do not hand-edit); shared **wire** types live in **`packages/protocol/openapi.json`** (`npm run generate:all`). See [`../tentacles/AGENTS.md`](../tentacles/AGENTS.md#node-rest-openapi-node_api_interface--node_web_interface) and [`../protocol/AGENTS.md`](../protocol/AGENTS.md).
 
 ## Owns
 
@@ -58,4 +59,4 @@ Only when driving the **live Node web UI** or debug view — not for routine `py
 
 ## Last reviewed
 
-- 2026-09-17
+- 2026-09-18
