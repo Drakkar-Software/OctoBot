@@ -39,6 +39,16 @@ path_rules:
       - "**/secrets.json"
       - "**/*service-account*.json"
     hint: Use secrets manager / local only
+  - rule_id: path.deny_agent_plans
+    globs:
+      - "**/PLAN-*.md"
+      - "**/*.plan.md"
+      - ".cursor/plans/**"
+    hint: Agent/session plans are not product code; keep in Cursor Plan UI or chat; never commit
+  - rule_id: path.deny_node_web_playwright_e2e
+    globs:
+      - "packages/tentacles/Services/Interfaces/node_web_interface/e2e/**"
+    hint: Node UI — use Vitest (npm test) + Python/API tests; no Playwright e2e in repo; manual UI QA via agent-seed
 
 diff_rules:
   - rule_id: diff.no_pip_install

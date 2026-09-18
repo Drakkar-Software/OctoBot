@@ -9,7 +9,8 @@ See [`.cursor/README.md`](.cursor/README.md). Install profile **`ci-tentacles`**
 1. Branch from `dev` (or user-specified base).
 2. For cross-package work, read root [`AGENTS.md`](AGENTS.md) and each colocated `AGENTS.md` for packages you touch.
 3. Run `python -m tools.extended_linter --base origin/<pr-base>` before handoff.
-4. CI: **OctoBot-CI** job **`extended_linter`** (`pytest tools/tests` with wheel + tentacles; PR policy with `--skip-tentacles-reinstall`, no `cloud-install`). Package **`tests`** matrix unchanged.
+4. Do not commit agent session plans (`path.deny_agent_plans`: `PLAN-*.md`, `*.plan.md`, `.cursor/plans/`). Node UI: Vitest + Python/API tests only — no Playwright e2e under `node_web_interface/e2e/` (`path.deny_node_web_playwright_e2e`).
+5. CI: **OctoBot-CI** job **`extended_linter`** (`pytest tools/tests` with wheel + tentacles; PR policy with `--skip-tentacles-reinstall`, no `cloud-install`). Package **`tests`** matrix unchanged.
 
 ## Adding a policy rule
 

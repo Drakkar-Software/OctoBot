@@ -197,3 +197,8 @@ installer/
 
 # ai
 analysis/
+
+# Agent session plans (never commit; see path.deny_agent_plans in extended_linter)
+**/PLAN-*.md
+**/*.plan.md
+.cursor/plans/
