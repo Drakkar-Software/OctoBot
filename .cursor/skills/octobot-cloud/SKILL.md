@@ -15,9 +15,10 @@ Multi-step **roadmap** plans (title or description contains `roadmap`): author w
 1. `source .cursor/env.sh` before Python tooling.
 2. Checkout **`dev`** (or user base) → create feature branch → implement → commit → PR to **`dev`** (match `--base` on extended_linter to PR target).
 3. After `packages/tentacles/` edits: `bash .cursor/reinstall-tentacles.sh`.
-4. Before commit: remove any scratch plan files (`PLAN-*.md`, `*.plan.md`, `.cursor/plans/`) from the tree; do not stage them (`path.deny_agent_plans`).
-5. Before handoff: `python -m tools.extended_linter --base origin/dev` (or `origin/<base_ref>`).
-6. Run targeted pytest per [reference-pytest.md](reference-pytest.md) (CI matrix). **If any test fails,** start with [step 1 — visible logs](reference-pytest.md#1-re-run-with-visible-logs), then follow [When tests fail](reference-pytest.md#when-tests-fail) **before** changing production code or the harness.
+4. Before commit: remove any scratch plan files (`PLAN-*.md`, `*.plan.md`, `.cursor/plans/`) from the tree; do not stage them (`path.deny_agent_plans`). Do not change agent docs (see `octobot-cloud.mdc` path list) unless the task owns them — otherwise restore from `origin/<base>` (`agent_docs.no_regression_vs_merge_base`).
+5. After `git rebase` or fast-forward onto `origin/dev`, re-checkout unrelated agent-doc paths from `origin/dev` if the working tree still has stale copies. Squash commits must reflect the **current** branch tip, not an old cloud workspace snapshot.
+6. Before handoff: `python -m tools.extended_linter --base origin/dev` (or `origin/<base_ref>`).
+7. Run targeted pytest per [reference-pytest.md](reference-pytest.md) (CI matrix). **If any test fails,** start with [step 1 — visible logs](reference-pytest.md#1-re-run-with-visible-logs), then follow [When tests fail](reference-pytest.md#when-tests-fail) **before** changing production code or the harness.
 
 ## Install and env
 
