@@ -7,6 +7,7 @@ alwaysApply: true
 
 - Work at the **OctoBot git repo root** (this repository). Do not use sibling monorepo paths or workspace-only skills.
 - Before Python, `OctoBot`, or pytest: `source .cursor/env.sh`
+- **Pytest failure:** follow [When tests fail](.cursor/skills/octobot-cloud/reference-pytest.md#when-tests-fail) in `reference-pytest.md`, starting with [step 1 — visible logs](.cursor/skills/octobot-cloud/reference-pytest.md#1-re-run-with-visible-logs); do not patch symptoms (mocks, seeds, timeouts) until the failure boundary is identified.
 - **Tentacles:** edit only `packages/tentacles/`; after changes run `bash .cursor/reinstall-tentacles.sh`. Never commit repo-root `tentacles/`.
 - **Git:** checkout `dev` (or user base) → feature branch → commit → open PR to **`dev`** unless the user specifies another target.
 - Before handoff: `python -m tools.extended_linter --base origin/dev` (use `origin/<base>` matching the PR target).

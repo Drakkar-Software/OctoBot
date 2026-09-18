@@ -10,7 +10,7 @@ Canonical operator guide for `tools.agent_seed`. Short agent procedure: skill **
 
 ## When you need this
 
-**Most agent work does not use agent-seed.** `pytest`, linters, and package/backend tests do not require `user/agent-seed` or `seed-agent.sh`. Use [`.cursor/skills/octobot-cloud/reference-pytest.md`](../../.cursor/skills/octobot-cloud/reference-pytest.md) (after `source .cursor/env.sh`) and colocated `AGENTS.md` **Tests** sections.
+**Most agent work does not use agent-seed.** `pytest`, linters, and package/backend tests do not require `user/agent-seed` or `seed-agent.sh`. Use [`.cursor/skills/octobot-cloud/reference-pytest.md`](../../.cursor/skills/octobot-cloud/reference-pytest.md) (after `source .cursor/env.sh`; on failure see [When tests fail](../../.cursor/skills/octobot-cloud/reference-pytest.md#when-tests-fail)) and colocated `AGENTS.md` **Tests** sections.
 
 Use agent-seed **only when the task needs the live Node web UI** (browser or debug view), for example Cloud profile **`ui-node-web`**, manual QA, or driving `/app/debug`.
 

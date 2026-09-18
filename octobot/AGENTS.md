@@ -29,7 +29,7 @@ Top-level OctoBot app: CLI entry, configuration, community features, orchestrati
 
 - **cwd:** repo root
 - **Tentacles:** required (install via `ci-tentacles` / `reinstall-tentacles.sh`)
-- **Example:** `pytest tests -n auto --dist loadfile` and tentacles test pass per `reference-pytest.md`
+- **Example:** `pytest tests -n auto --dist loadfile` and tentacles test pass per [reference-pytest.md](../.cursor/skills/octobot-cloud/reference-pytest.md) ([When tests fail](../.cursor/skills/octobot-cloud/reference-pytest.md#when-tests-fail) for red tests)
 
 ## Related human doc
 
