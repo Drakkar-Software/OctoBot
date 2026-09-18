@@ -24,18 +24,11 @@ import octobot_node.models
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
 
-try:
-    from api.auth_errors import (  # type: ignore[no-redef]
-        AuthErrorCode,
-        auth_http_exception,
-        node_not_configured_exception,
-    )
-except ImportError:
-    from tentacles.Services.Interfaces.node_api_interface.api.auth_errors import (
-        AuthErrorCode,
-        auth_http_exception,
-        node_not_configured_exception,
-    )
+from api.auth_errors import (
+    AuthErrorCode,
+    auth_http_exception,
+    node_not_configured_exception,
+)
 
 security_basic = HTTPBasic(auto_error=False)
 
