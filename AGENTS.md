@@ -16,7 +16,7 @@ source .cursor/env.sh
 python -m tools.extended_linter --base origin/dev
 ```
 
-Use `origin/<base>` matching your PR target. Policy: `tools/extended_linter/config/policy.yaml` — see `tools/extended_linter/ARCHITECTURE.md`.
+Use `origin/<base>` matching your PR target. Policy: `tools/extended_linter/config/policy.yaml` — see `tools/extended_linter/ARCHITECTURE.md`. No agent plan files or Node UI Playwright e2e in the diff (`path.deny_agent_plans`, `path.deny_node_web_playwright_e2e`).
 
 ## Architecture for agents
 

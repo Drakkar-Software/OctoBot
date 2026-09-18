@@ -15,8 +15,9 @@ Multi-step **roadmap** plans (title or description contains `roadmap`): author w
 1. `source .cursor/env.sh` before Python tooling.
 2. Checkout **`dev`** (or user base) → create feature branch → implement → commit → PR to **`dev`** (match `--base` on extended_linter to PR target).
 3. After `packages/tentacles/` edits: `bash .cursor/reinstall-tentacles.sh`.
-4. Before handoff: `python -m tools.extended_linter --base origin/dev` (or `origin/<base_ref>`).
-5. Run targeted pytest per [reference-pytest.md](reference-pytest.md) (CI matrix). **If any test fails,** start with [step 1 — visible logs](reference-pytest.md#1-re-run-with-visible-logs), then follow [When tests fail](reference-pytest.md#when-tests-fail) **before** changing production code or the harness.
+4. Before commit: remove any scratch plan files (`PLAN-*.md`, `*.plan.md`, `.cursor/plans/`) from the tree; do not stage them (`path.deny_agent_plans`).
+5. Before handoff: `python -m tools.extended_linter --base origin/dev` (or `origin/<base_ref>`).
+6. Run targeted pytest per [reference-pytest.md](reference-pytest.md) (CI matrix). **If any test fails,** start with [step 1 — visible logs](reference-pytest.md#1-re-run-with-visible-logs), then follow [When tests fail](reference-pytest.md#when-tests-fail) **before** changing production code or the harness.
 
 ## Install and env
 
@@ -58,6 +59,11 @@ See **[reference-pytest.md](reference-pytest.md)** for cwd and PYTHONPATH per CI
 2. State the **invariant** (one sentence: what must be true when the test passes).
 3. Find the **failure boundary** (last good layer vs first bad layer); do not widen mocks, seeds, or timeouts until that boundary is clear.
 4. Apply the full protocol in [When tests fail](reference-pytest.md#when-tests-fail) before editing production code or the harness.
+
+## Node UI tests (agents)
+
+- **In PRs:** Vitest in `packages/tentacles/Services/Interfaces/node_web_interface/` (`npm test`) plus Python/API tests (`node_api_interface`, `packages/node`, tentacles pytest as needed). **Do not** add Playwright e2e under `e2e/` or `test:e2e` scripts (`path.deny_node_web_playwright_e2e`).
+- CI runs Vitest for tentacles `package.json` projects; e2e is not in the matrix.
 
 ## Node UI manual QA (agent seed)
 

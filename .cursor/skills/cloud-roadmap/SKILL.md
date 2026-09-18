@@ -25,7 +25,7 @@ Also when the user invokes **cloud-roadmap** or asks for a **cloud-safe multi-st
 2. Skim root `AGENTS.md` and every colocated `AGENTS.md` for packages in scope.
 3. If not in Plan mode but the user wants a roadmap-style plan, use the same rules in the reply or switch to Plan + `CreatePlan`.
 
-**Output:** submit via **CreatePlan** only. Do **not** write `.cursor/roadmaps/*.md` unless the user asks to persist a file.
+**Output:** submit via **CreatePlan** only. Do **not** write `.cursor/roadmaps/*.md` unless the user asks to persist a file. Never commit plan artifacts in the repo (`PLAN-*.md`, `*.plan.md`, `.cursor/plans/`) — `path.deny_agent_plans`.
 
 ## Clarify first; never guess
 
@@ -97,7 +97,7 @@ Pytest matrix: [reference-pytest.md](../octobot-cloud/reference-pytest.md) (skil
 | Unit (Python) | Test path + enumerated behaviors | Package `tests/` or `tools/tests/…` per `AGENTS.md` **Tests** |
 | Unit (Node UI) | TS under `packages/tentacles/Services/Interfaces/node_web_interface/` | `src/**/__tests__`; cwd that directory; `npm test` (vitest). Profile **`ui-node-web`** if build env needed. |
 | Functional / integration | Cross-package or I/O flows | `tools/tests`, integration dirs, tentacles-dependent pytest |
-| UI functional | Browser / seeded grid | **agent-seed** after vitest on logic |
+| UI functional | Browser / seeded grid | Default **N/A — Vitest + API tests**; **agent-seed** only when the user explicitly wants manual `/app` QA — **not** new Playwright `e2e/` files in git (`path.deny_node_web_playwright_e2e`) |
 
 **Milestone catalog**
 

@@ -9,7 +9,8 @@ alwaysApply: true
 - Before Python, `OctoBot`, or pytest: `source .cursor/env.sh`
 - **Pytest failure:** follow [When tests fail](.cursor/skills/octobot-cloud/reference-pytest.md#when-tests-fail) in `reference-pytest.md`, starting with [step 1 — visible logs](.cursor/skills/octobot-cloud/reference-pytest.md#1-re-run-with-visible-logs); do not patch symptoms (mocks, seeds, timeouts) until the failure boundary is identified.
 - **Tentacles:** edit only `packages/tentacles/`; after changes run `bash .cursor/reinstall-tentacles.sh`. Never commit repo-root `tentacles/`.
-- **Git:** checkout `dev` (or user base) → feature branch → commit → open PR to **`dev`** unless the user specifies another target.
+- **Git:** checkout `dev` (or user base) → feature branch → commit → open PR to **`dev`** unless the user specifies another target. Do not commit agent plan files (`PLAN-*.md`, `*.plan.md`, `.cursor/plans/`); use Plan mode or chat only — delete scratch plans before staging (`path.deny_agent_plans`).
+- **Node UI tests:** Vitest (`npm test`) + Python/API tests; do not add `node_web_interface/e2e/` or Playwright specs (`path.deny_node_web_playwright_e2e`). Optional live UI QA via skill **agent-seed**, not committed e2e.
 - Before handoff: `python -m tools.extended_linter --base origin/dev` (use `origin/<base>` matching the PR target).
 - No `pip install` / `npm install` to fix imports. No edits under `user/` or secret/env files.
 - Cross-package or tentacles work: read root `AGENTS.md` and colocated `AGENTS.md` for every area you touch (`octobot/`, `packages/<name>/`, `packages/tentacles/`).

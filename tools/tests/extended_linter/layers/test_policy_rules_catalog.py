@@ -11,6 +11,8 @@ CATALOG_PATH_RULES = [
     "path.deny_cursor_local",
     "path.deny_private_keys",
     "path.deny_known_secret_filenames",
+    "path.deny_agent_plans",
+    "path.deny_node_web_playwright_e2e",
 ]
 
 CATALOG_DIFF_RULES = [
@@ -43,6 +45,25 @@ class TestCatalogPathRules(unittest.TestCase):
         policy = config_loader.load_policy()
         violations = layer_path.run(["config/credentials.json"], policy)
         self.assertEqual(violations[0].rule_id, "path.deny_known_secret_filenames")
+
+    def test_agent_plan_paths(self) -> None:
+        policy = config_loader.load_policy()
+        plan_scratch = (
+            "packages/tentacles/Services/Interfaces/node_web_interface/"
+            "PLAN-login-error-display.md"
+        )
+        violations = layer_path.run([plan_scratch, ".cursor/plans/foo.plan.md"], policy)
+        rule_ids = {violation.rule_id for violation in violations}
+        self.assertEqual(rule_ids, {"path.deny_agent_plans"})
+
+    def test_node_web_playwright_e2e_path(self) -> None:
+        policy = config_loader.load_policy()
+        e2e_spec = (
+            "packages/tentacles/Services/Interfaces/node_web_interface/"
+            "e2e/login-auth-errors.spec.ts"
+        )
+        violations = layer_path.run([e2e_spec], policy)
+        self.assertEqual(violations[0].rule_id, "path.deny_node_web_playwright_e2e")
 
 
 class TestCatalogDiffRules(unittest.TestCase):
