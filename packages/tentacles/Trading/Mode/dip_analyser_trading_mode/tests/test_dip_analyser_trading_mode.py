@@ -793,10 +793,14 @@ PORTFOLIO_BASE_ASSET = "BTC@BTC"
 
 
 async def test_order_filled_callback_deducts_fees_using_portfolio_base():
-    trading_mode = mock.Mock(symbol=TICKER_WISE_SYMBOL, ignore_exchange_fees=False)
+    trading_mode = mock.Mock(
+        symbol=TICKER_WISE_SYMBOL,
+        trading_config={dip_analyser_trading.DipAnalyserTradingModeProducer.IGNORE_EXCHANGE_FEES: False},
+    )
     producer = dip_analyser_trading.DipAnalyserTradingModeProducer(
         mock.Mock(), {}, trading_mode, mock.Mock(),
     )
+    assert producer.base == PORTFOLIO_BASE_ASSET
     filled_order = {
         trading_enums.ExchangeConstantsOrderColumns.SIDE.value: trading_enums.TradeOrderSide.BUY.value,
         trading_enums.ExchangeConstantsOrderColumns.FILLED.value: "1",

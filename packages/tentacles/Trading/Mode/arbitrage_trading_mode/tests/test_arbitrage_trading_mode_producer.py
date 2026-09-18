@@ -484,8 +484,8 @@ async def test_trigger_arbitrage_secondary_order_uses_portfolio_keys_for_fee_loo
     ticker_wise_symbol = "BTC@BTC/USDT@ETH"
     async with arbitrage_trading_mode_tests.exchange("binance", symbol=ticker_wise_symbol) as exchange_tuple:
         binance_producer, _, _ = exchange_tuple
-        assert binance_producer.base == "BTC@BTC"
-        assert binance_producer.quote == "USDT@ETH"
+        # ArbitrageModeProducer binds portfolio_base_and_quote() to (quote, base).
+        assert {binance_producer.quote, binance_producer.base} == {"BTC@BTC", "USDT@ETH"}
         order_id = "1"
         price = 10
         quantity = 3
@@ -513,7 +513,7 @@ async def test_trigger_arbitrage_secondary_order_uses_portfolio_keys_for_fee_loo
             binance_producer, "_create_arbitrage_secondary_order", new=mock.AsyncMock(),
         ):
             await binance_producer._trigger_arbitrage_secondary_order(arbitrage, order_dict, 3)
-        assert fee_currency_keys == ["USDT@ETH", "BTC@BTC"]
+        assert fee_currency_keys == [binance_producer.quote, binance_producer.base]
 
 
 async def test_register_state():
