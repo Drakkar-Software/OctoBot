@@ -24,7 +24,7 @@ import octobot_node.models
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
 
-from api.auth_errors import (
+from .auth_errors import (
     AuthErrorCode,
     auth_http_exception,
     node_not_configured_exception,
