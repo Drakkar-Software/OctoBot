@@ -2,7 +2,8 @@
 name: octobot-cloud
 description: >-
   OctoBot git repo on Cursor Cloud Agent: bash, cloud-install, tentacles reinstall,
-  pytest/pylint, extended_linter, changes under octobot/, packages/, packages/tentacles/.
+  pytest/pylint, debugging failing pytest (integration/functional, cross-package),
+  extended_linter, changes under octobot/, packages/, packages/tentacles/.
 ---
 
 # OctoBot Cloud Agent
@@ -15,7 +16,7 @@ Multi-step **roadmap** plans (title or description contains `roadmap`): author w
 2. Checkout **`dev`** (or user base) → create feature branch → implement → commit → PR to **`dev`** (match `--base` on extended_linter to PR target).
 3. After `packages/tentacles/` edits: `bash .cursor/reinstall-tentacles.sh`.
 4. Before handoff: `python -m tools.extended_linter --base origin/dev` (or `origin/<base_ref>`).
-5. Run targeted pytest per [reference-pytest.md](reference-pytest.md).
+5. Run targeted pytest per [reference-pytest.md](reference-pytest.md) (CI matrix). **If any test fails,** start with [step 1 — visible logs](reference-pytest.md#1-re-run-with-visible-logs), then follow [When tests fail](reference-pytest.md#when-tests-fail) **before** changing production code or the harness.
 
 ## Install and env
 
@@ -50,6 +51,13 @@ Multi-step **roadmap** plans (title or description contains `roadmap`): author w
 ## Pytest
 
 See **[reference-pytest.md](reference-pytest.md)** for cwd and PYTHONPATH per CI matrix package.
+
+### When a test fails
+
+1. **Re-run** the failing node with log-cli per [step 1](reference-pytest.md#1-re-run-with-visible-logs) (single process; omit `-n auto`).
+2. State the **invariant** (one sentence: what must be true when the test passes).
+3. Find the **failure boundary** (last good layer vs first bad layer); do not widen mocks, seeds, or timeouts until that boundary is clear.
+4. Apply the full protocol in [When tests fail](reference-pytest.md#when-tests-fail) before editing production code or the harness.
 
 ## Node UI manual QA (agent seed)
 

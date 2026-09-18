@@ -90,7 +90,7 @@ Rules:
 
 ## Testing in milestones
 
-Pytest matrix: [reference-pytest.md](../octobot-cloud/reference-pytest.md) (skill **octobot-cloud**).
+Pytest matrix: [reference-pytest.md](../octobot-cloud/reference-pytest.md) (skill **octobot-cloud**); on failure see [When tests fail](../octobot-cloud/reference-pytest.md#when-tests-fail).
 
 | Layer | Requirement | Where |
 |-------|-------------|--------|
