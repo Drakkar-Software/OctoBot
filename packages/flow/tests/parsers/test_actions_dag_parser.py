@@ -280,12 +280,25 @@ class TestParseLoopUntilOrderClosed:
         )
         assert "max_retry_interval=70" in dsl_script
         assert "return_remaining_time=True" in dsl_script
-        assert ", 50, max_retry_interval=70," in dsl_script
+        assert ", 50.0, max_retry_interval=70.0," in dsl_script
+
+    def test_emits_max_retry_interval_when_loop_interval_max_is_string(self):
+        # JSON / task templates pass numeric params as strings; lexicographic "30" > "5" is False.
+        dsl_script = self._loop_action_dsl(
+            self._loop_until_order_closed_params(LOOP_INTERVAL="5", LOOP_INTERVAL_MAX="30")
+        )
+        assert ", 5.0, max_retry_interval=30.0," in dsl_script
+
+    def test_emits_max_retry_interval_when_template_style_string_intervals(self):
+        dsl_script = self._loop_action_dsl(
+            self._loop_until_order_closed_params(LOOP_INTERVAL="30", LOOP_INTERVAL_MAX="120")
+        )
+        assert ", 30.0, max_retry_interval=120.0," in dsl_script
 
     def test_omits_max_retry_interval_without_loop_interval_max(self):
         dsl_script = self._loop_action_dsl(self._loop_until_order_closed_params())
         assert "max_retry_interval" not in dsl_script
-        assert ", 50, timeout=" in dsl_script
+        assert ", 50.0, timeout=" in dsl_script
 
     def test_loop_interval_max_less_than_loop_interval_raises(self):
         with pytest.raises(octobot_flow.errors.InvalidAutomationActionError, match="LOOP_INTERVAL_MAX"):

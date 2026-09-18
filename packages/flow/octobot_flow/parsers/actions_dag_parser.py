@@ -137,13 +137,36 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
         if self.EXCHANGE_TO and self.EXCHANGE_FROM:
             if self.EXCHANGE_TO != self.EXCHANGE_FROM:
                 raise octobot_flow.errors.InvalidAutomationActionError("EXCHANGE_TO and EXCHANGE_FROM must be the same")
+        self._normalize_loop_params()
+
+    def _normalize_loop_params(self) -> None:
+        if (
+            self.LOOP_INTERVAL is None
+            and self.LOOP_INTERVAL_MAX is None
+            and self.LOOP_TIMEOUT is None
+            and self.LOOP_MAX_ATTEMPTS is None
+        ):
+            return
+        try:
+            if self.LOOP_INTERVAL is not None:
+                self.LOOP_INTERVAL = float(self.LOOP_INTERVAL)
+            if self.LOOP_INTERVAL_MAX is not None:
+                self.LOOP_INTERVAL_MAX = float(self.LOOP_INTERVAL_MAX)
+            if self.LOOP_TIMEOUT is not None:
+                self.LOOP_TIMEOUT = float(self.LOOP_TIMEOUT)
+            if self.LOOP_MAX_ATTEMPTS is not None:
+                self.LOOP_MAX_ATTEMPTS = int(self.LOOP_MAX_ATTEMPTS)
+        except (TypeError, ValueError):
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"LOOP_INTERVAL {self.LOOP_INTERVAL} and LOOP_INTERVAL_MAX {self.LOOP_INTERVAL_MAX} must be numbers"
+            )
         if (
             self.LOOP_INTERVAL is not None
             and self.LOOP_INTERVAL_MAX is not None
             and self.LOOP_INTERVAL_MAX < self.LOOP_INTERVAL
         ):
             raise octobot_flow.errors.InvalidAutomationActionError(
-                "LOOP_INTERVAL_MAX must be greater than or equal to LOOP_INTERVAL when set"
+                f"LOOP_INTERVAL_MAX {self.LOOP_INTERVAL_MAX} must be greater than or equal to LOOP_INTERVAL {self.LOOP_INTERVAL} when set"
             )
 
     def get_reference_market(self) -> typing.Optional[str]:
@@ -629,18 +652,17 @@ class ActionsDAGParser:
     def _get_loop_params(
         self,
     ) -> tuple[float, float, typing.Optional[float], typing.Optional[int]]:
-        loop_interval, loop_interval_max, loop_timeout, loop_max_attempts = (
-            self.params.LOOP_INTERVAL,
-            self.params.LOOP_INTERVAL_MAX,
-            self.params.LOOP_TIMEOUT,
-            self.params.LOOP_MAX_ATTEMPTS,
-        )
-        if not loop_interval:
+        if not self.params.LOOP_INTERVAL:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 "LOOP_INTERVAL must be provided for the loop_until action"
             )
-        max_interval = loop_interval_max if loop_interval_max is not None else loop_interval
-        return loop_interval, max_interval, loop_timeout, loop_max_attempts # type: ignore
+        loop_interval = self.params.LOOP_INTERVAL
+        max_interval = (
+            self.params.LOOP_INTERVAL_MAX
+            if self.params.LOOP_INTERVAL_MAX is not None
+            else loop_interval
+        )
+        return loop_interval, max_interval, self.params.LOOP_TIMEOUT, self.params.LOOP_MAX_ATTEMPTS
 
     def _format_loop_until_interval_args(self, min_interval: float, max_interval: float) -> str:
         if max_interval > min_interval:
