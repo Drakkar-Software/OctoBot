@@ -48,10 +48,11 @@ def resolve_daily_cache_symbol(
         return trade_symbol
     if not symbol_util.is_symbol(trade_symbol):
         return None
-    base_asset, _quote_asset = symbol_util.parse_symbol(trade_symbol).base_and_quote()
-    if not base_asset:
+    parsed_trade_symbol = symbol_util.parse_symbol(trade_symbol)
+    sources_cache_key = parsed_trade_symbol.base
+    if not sources_cache_key:
         return None
-    sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, base_asset)
+    sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, sources_cache_key)
     if sticky_fetch_symbol is None:
         return None
     if trading_api.get_latest_daily_price_timestamp(daily_prices, sticky_fetch_symbol) is None:

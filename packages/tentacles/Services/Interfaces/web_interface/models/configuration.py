@@ -1496,6 +1496,7 @@ def change_reference_market_on_config_currencies(old_base_currency: str, new_quo
 
 def _change_base(pair, new_quote_currency):
     parsed_symbol = commons_symbols.parse_symbol(pair)
+    # Rebuild pair string for UI (quote leg assigned as provided by the user).
     parsed_symbol.quote = new_quote_currency
     return parsed_symbol.merged_str_symbol()
 

@@ -566,3 +566,29 @@ def _check_historical_value(historical_value, timestamp, value_by_currency):
         historical_value.TIMESTAMP_KEY: timestamp,
         historical_value.VALUES_KEY: value_by_currency,
     }
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestConvertHistoricalValueNetworkQualified:
+    def test_convert_historical_value_uses_qualified_legs(self):
+        manager = personal_data.HistoricalPortfolioValueManager(mock.Mock())
+        historical_value = mock.Mock()
+        historical_value.get_currencies.return_value = ["BTC@BTC"]
+        historical_value.get.return_value = decimal.Decimal("1")
+        value_converter = mock.Mock()
+        value_converter.last_prices_by_trading_pair = {TICKER_WISE_SYMBOL: decimal.Decimal("50000")}
+        value_converter.convert_currency_value_using_last_prices = mock.Mock(
+            return_value=decimal.Decimal("50000"),
+        )
+        value_converter.try_convert_currency_value_using_multiple_pairs = mock.Mock(return_value=None)
+        manager.portfolio_manager = mock.Mock(
+            portfolio_value_holder=mock.Mock(value_converter=value_converter),
+        )
+
+        manager._convert_historical_value(historical_value, "USDT@ETH")
+
+        value_converter.convert_currency_value_using_last_prices.assert_called_once_with(
+            decimal.Decimal("1"), "BTC@BTC", "USDT@ETH",
+        )

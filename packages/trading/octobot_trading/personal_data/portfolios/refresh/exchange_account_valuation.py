@@ -17,6 +17,7 @@
 import decimal
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges.util.exchange_util as exchange_util_module
 import octobot_trading.personal_data.portfolios.portfolio_util as portfolio_util_module
@@ -81,7 +82,7 @@ def valuation_symbols_from_portfolio(
 ) -> list[str]:
     valuation_symbols: set[str] = set()
     bridge_quote_currencies = []
-    if valuation_unit in commons_constants.USD_LIKE_COINS:
+    if symbol_util.is_usd_like_coin(valuation_unit):
         bridge_quote_currencies = [
             quote_currency
             for quote_currency in commons_constants.USD_LIKE_COINS

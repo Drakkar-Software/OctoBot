@@ -773,3 +773,63 @@ class TestSyncPortfolioCurrentValueIfNecessary:
         holder.logger.error.assert_called_once()
         holder.logger.info.assert_not_called()
 
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+def _portfolio_value_holder_without_value_converter(portfolio_manager=None):
+    if portfolio_manager is None:
+        portfolio_manager = mock.Mock()
+        portfolio_manager.exchange_manager = mock.Mock(exchange_name="binance")
+    value_converter_mock = mock.Mock(update_last_price=mock.Mock())
+    with mock.patch(
+        "octobot_trading.personal_data.portfolios.portfolio_value_holder.value_converter.ValueConverter",
+        return_value=value_converter_mock,
+    ):
+        holder = personal_data.portfolios.portfolio_value_holder.PortfolioValueHolder(portfolio_manager)
+    holder.logger = mock.Mock()
+    return holder, value_converter_mock
+
+
+class TestPortfolioValueHolderOriginValuesNetworkQualified:
+    pytestmark = []
+
+    def test_update_origin_crypto_currencies_values_uses_qualified_legs(self):
+        portfolio_manager = mock.Mock(reference_market="USDT@ETH")
+        portfolio_manager.exchange_manager = mock.Mock(exchange_name="binance")
+        holder, value_converter_mock = _portfolio_value_holder_without_value_converter(portfolio_manager)
+        holder.origin_crypto_currencies_values = {}
+        assert holder.update_origin_crypto_currencies_values(
+            TICKER_WISE_SYMBOL, decimal.Decimal("1")
+        ) is True
+        value_converter_mock.update_last_price.assert_called_once_with(
+            TICKER_WISE_SYMBOL, decimal.Decimal("1")
+        )
+
+
+class TestPortfolioValueHolderOrdersDeltaNetworkQualified:
+    pytestmark = []
+
+    def test_get_orders_delta_counts_buy_against_qualified_base(self):
+        portfolio_manager = mock.Mock()
+        portfolio_manager.exchange_manager = mock.Mock(
+            exchange_name="binance",
+            exchange_personal_data=mock.Mock(
+                orders_manager=mock.Mock(
+                    get_open_orders=mock.Mock(
+                        return_value=[
+                            mock.Mock(
+                                symbol=TICKER_WISE_SYMBOL,
+                                side=enums.TradeOrderSide.BUY,
+                                origin_quantity=decimal.Decimal("2"),
+                                total_cost=decimal.Decimal("0"),
+                            )
+                        ]
+                    )
+                )
+            ),
+        )
+        holder, _value_converter_mock = _portfolio_value_holder_without_value_converter(portfolio_manager)
+        delta = holder._get_orders_delta("BTC@BTC")
+        assert delta == decimal.Decimal("2")
+

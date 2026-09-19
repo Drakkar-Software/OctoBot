@@ -637,9 +637,10 @@ def apply_trades_fees(raw_order, raw_trades_by_exchange_order_id):
 def get_common_traded_quote(exchange_manager) -> typing.Union[str, None]:
     quote = None
     for symbol in exchange_manager.exchange_config.traded_symbols:
+        symbol_quote = symbol.quote
         if quote is None:
-            quote = symbol.quote
-        elif quote != symbol.quote:
+            quote = symbol_quote
+        elif quote != symbol_quote:
             return None
     return quote
 
@@ -669,10 +670,12 @@ def get_traded_assets(exchange_manager: "octobot_trading.exchanges.exchange_mana
     # use list to maintain order
     assets = []
     for symbol in exchange_manager.exchange_config.traded_symbols:
-        if symbol.base not in assets:
-            assets.append(symbol.base)
-        if symbol.quote not in assets:
-            assets.append(symbol.quote)
+        base_asset = symbol.base
+        quote_asset = symbol.quote
+        if base_asset not in assets:
+            assets.append(base_asset)
+        if quote_asset not in assets:
+            assets.append(quote_asset)
     return assets
 
 

@@ -69,6 +69,21 @@ async def test_get_historical_pnl(default_price_data, default_trades_data, defau
                                                   "spot", default_spot_metadata)
 
 
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+async def test_total_paid_fees_network_qualified_base_fee_currency():
+    trade = {
+        commons_enums.DBRows.SYMBOL.value: TICKER_WISE_SYMBOL,
+        commons_enums.DBRows.FEES_CURRENCY.value: "BTC@BTC",
+        commons_enums.DBRows.FEES_AMOUNT.value: 0.01,
+        commons_enums.PlotAttributes.Y.value: 50000.0,
+    }
+    with mock.patch.object(run_data_analysis, "get_transactions", mock.AsyncMock(return_value=[])):
+        paid_fees = await run_data_analysis.total_paid_fees(None, [trade])
+    assert paid_fees == 0.01 * 50000.0
+
+
 async def test_total_paid_fees(default_trades_data):
     usdt_fees = sum(trade[commons_enums.DBRows.FEES_AMOUNT.value]
                     for trade in default_trades_data["BTC/USDT"]

@@ -36,9 +36,9 @@ def _resolve_asset_unit_price(
     latest_tickers: daily_prices_cache_types.LatestTickersCache,
     reference_market: str,
 ) -> decimal.Decimal | None:
-    if asset == reference_market:
+    if commons_symbols_module.is_same_coin(asset, reference_market):
         return decimal.Decimal(1)
-    if asset in commons_constants.USD_LIKE_COINS:
+    if commons_symbols_module.is_usd_like_coin(asset):
         return decimal.Decimal(1)
 
     symbol = commons_symbols_module.merge_currencies(asset, reference_market)
@@ -93,7 +93,7 @@ def _collect_required_valuation_symbols(
             asset_total = amounts.get("total", decimal.Decimal(0))
             if asset_total == 0:
                 continue
-            if asset == reference_market or asset in commons_constants.USD_LIKE_COINS:
+            if commons_symbols_module.is_same_coin(asset, reference_market) or commons_symbols_module.is_usd_like_coin(asset):
                 continue
             required_symbols.add(f"{asset}/{reference_market}")
     return required_symbols

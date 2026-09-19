@@ -33,20 +33,23 @@ async def update_daily_prices(
     )
 
     for reference_symbol in symbols:
-        parsed = _parse_base_quote(reference_symbol)
+        parsed_reference = symbol_util.parse_symbol(reference_symbol)
+        parsed = _parse_bare_base_quote(reference_symbol)
         if parsed is None:
             continue
-        base_asset, quote = parsed
-        if base_asset in commons_constants.USD_LIKE_COINS:
+        fetch_bare_base, fetch_bare_quote = parsed
+        # Qualified base leg keys SOURCES (e.g. BTC@BTC); CCXT fetch uses bare tickers from _parse_bare_base_quote only.
+        sources_cache_key = parsed_reference.base
+        if symbol_util.is_usd_like_coin(fetch_bare_base):
             continue
 
-        sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, base_asset)
+        sticky_fetch_symbol = trading_api.get_daily_close_source(daily_prices, sources_cache_key)
         if _is_daily_cache_up_to_date(daily_prices, reference_symbol):
             continue
 
         since_ms = _compute_fetch_since_ms(daily_prices, reference_symbol)
         candidates = _build_fetch_candidates(
-            exchange_manager, base_asset, quote, sticky_fetch_symbol,
+            exchange_manager, fetch_bare_base, fetch_bare_quote, sticky_fetch_symbol,
         )
 
         fetch_result = await _fetch_daily_candles(
@@ -64,7 +67,7 @@ async def update_daily_prices(
         if sticky_fetch_symbol and fetch_symbol != sticky_fetch_symbol:
             logger.info(
                 "Migrating daily closes for %s on %s from %s to %s",
-                base_asset,
+                sources_cache_key,
                 exchange_name,
                 sticky_fetch_symbol,
                 fetch_symbol,
@@ -95,14 +98,17 @@ async def update_daily_prices(
             exchange_name, exchange_type, sandboxed, fetch_symbol, closes_by_timestamp, data_root,
         )
         await trading_api.set_daily_close_source(
-            exchange_name, exchange_type, sandboxed, base_asset, fetch_symbol, data_root,
+            exchange_name, exchange_type, sandboxed, sources_cache_key, fetch_symbol, data_root,
         )
-        trading_api.set_daily_close_source_in_memory(daily_prices, base_asset, fetch_symbol)
+        trading_api.set_daily_close_source_in_memory(daily_prices, sources_cache_key, fetch_symbol)
         trading_api.merge_daily_prices_in_memory(daily_prices, fetch_symbol, closes_by_timestamp)
 
 
-def _parse_base_quote(symbol: str) -> tuple[str, str] | None:
-    base_asset, quote = symbol_util.parse_symbol(symbol).base_and_quote()
+def _parse_bare_base_quote(symbol: str) -> tuple[str, str] | None:
+    # Bare tickers for exchange fetch (base_asset_ticker / quote_asset_ticker), not qualified .base/.quote legs.
+    parsed_symbol = symbol_util.parse_symbol(symbol)
+    base_asset = parsed_symbol.base_asset_ticker()
+    quote = parsed_symbol.quote_asset_ticker()
     if not base_asset or not quote or base_asset == quote:
         return None
     return base_asset, quote
@@ -119,18 +125,18 @@ def _ordered_usd_like_quotes(quote: str) -> list[str]:
     return quotes
 
 
-def _is_reversed_fetch_symbol(base_asset: str, fetch_symbol: str) -> bool:
-    parsed = _parse_base_quote(fetch_symbol)
+def _is_reversed_fetch_symbol(bare_base_asset: str, fetch_symbol: str) -> bool:
+    parsed = _parse_bare_base_quote(fetch_symbol)
     if parsed is None:
         return False
-    fetch_base, _fetch_quote = parsed
-    return fetch_base != base_asset
+    fetch_bare_base, _fetch_bare_quote = parsed
+    return fetch_bare_base != bare_base_asset
 
 
 def _build_fetch_candidates(
     exchange_manager,
-    base_asset: str,
-    quote: str,
+    bare_base_asset: str,
+    bare_quote: str,
     sticky_fetch_symbol: str | None,
 ) -> list[tuple[str, bool]]:
     candidates: list[tuple[str, bool]] = []
@@ -145,18 +151,18 @@ def _build_fetch_candidates(
     if sticky_fetch_symbol:
         add_candidate(
             sticky_fetch_symbol,
-            _is_reversed_fetch_symbol(base_asset, sticky_fetch_symbol),
+            _is_reversed_fetch_symbol(bare_base_asset, sticky_fetch_symbol),
         )
 
     direct_symbol, is_reversed = exchange_util.get_associated_symbol(
-        exchange_manager, base_asset, quote,
+        exchange_manager, bare_base_asset, bare_quote,
     )
     add_candidate(direct_symbol, is_reversed)
 
-    if quote in commons_constants.USD_LIKE_COINS:
-        for alt_quote in _ordered_usd_like_quotes(quote):
+    if symbol_util.is_usd_like_coin(bare_quote):
+        for alt_quote in _ordered_usd_like_quotes(bare_quote):
             alt_symbol, alt_is_reversed = exchange_util.get_associated_symbol(
-                exchange_manager, base_asset, alt_quote,
+                exchange_manager, bare_base_asset, alt_quote,
             )
             add_candidate(alt_symbol, alt_is_reversed)
 

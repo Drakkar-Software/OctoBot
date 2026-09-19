@@ -24,6 +24,8 @@ from octobot_trading.exchanges.exchange_manager import ExchangeManager
 from octobot_trading.api.exchange import cancel_ccxt_throttle_task
 import octobot_trading.exchange_channel as exchange_channel
 import octobot_trading.constants as trading_constants
+import octobot_commons.symbols as commons_symbols
+import octobot_trading.exchanges.config.exchange_config_data as exchange_config_module
 
 pytestmark = pytest.mark.asyncio
 
@@ -419,3 +421,28 @@ class TestExchangeConfig:
         for channel in unmodified_channels:
             channel_instance = exchange_channel.get_chan(channel, exchange_config.exchange_manager.id)
             assert channel_instance.modify.call_count == 0, f"{channel} should not have been modified"
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestIsTradableWithCryptocurrencyNetworkQualified:
+    def test_matches_qualified_quote(self):
+        from octobot_trading.exchanges.config.exchange_config_data import ExchangeConfig
+
+        assert ExchangeConfig._is_tradable_with_cryptocurrency(
+            "BTC@BTC/USDT@ETH", "USDT@ETH"
+        ) == "BTC@BTC/USDT@ETH"
+        assert ExchangeConfig._is_tradable_with_cryptocurrency(
+            "BTC@BTC/USDT@ETH", "USDT"
+        ) is None
+
+
+class TestGetAllTradedCurrenciesNetworkQualified:
+    def test_includes_qualified_symbol_legs(self):
+        exchange_manager = mock.Mock(exchange_name="test", config={})
+        config = exchange_config_module.ExchangeConfig(exchange_manager)
+        config.traded_symbols = [commons_symbols.parse_symbol(TICKER_WISE_SYMBOL)]
+        currencies = config.get_all_traded_currencies()
+        assert "BTC@BTC" in currencies
+        assert "USDT@ETH" in currencies

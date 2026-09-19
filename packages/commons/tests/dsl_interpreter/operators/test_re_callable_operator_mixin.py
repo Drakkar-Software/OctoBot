@@ -21,6 +21,8 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.dsl_interpreter.operator_parameter as operator_parameter
 import octobot_commons.dsl_interpreter.operators.re_callable_operator_mixin as re_callable_operator_mixin
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
+
 
 class TestReCallingOperatorResult:
     def test_is_re_calling_operator_result_with_reset_to_id(self):
@@ -100,7 +102,11 @@ class _TestReCallableOperator(dsl_interpreter.ReCallableOperatorMixin):
 
 
 
-class _ReCreateScriptTestOperator(dsl_interpreter.Operator, dsl_interpreter.ReCallableOperatorMixin):
+class _ReCreateScriptTestOperator(
+    dsl_test_keyword_support.TestKeywordMixin,
+    dsl_interpreter.Operator,
+    dsl_interpreter.ReCallableOperatorMixin,
+):
     """Operator with parameters so re_create_script can call resove_operator_params."""
 
     @staticmethod

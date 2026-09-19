@@ -47,10 +47,12 @@ class TestCoinrabbitRealExchangeTester(real_exchange_tester.RealExchangeTester):
     async def test_ticker_wise_symbol_parsing(self):
         symbol = commons_symbols.parse_symbol(self.SYMBOL)
         assert symbol.has_ticker_wise_networks() is True
-        assert symbol.base == "BTC"
+        assert symbol.base == "BTC@BTC"
         assert symbol.base_network == "BTC"
-        assert symbol.quote == "USDT"
+        assert symbol.quote == "USDT@ETH"
         assert symbol.quote_network == "ETH"
+        assert symbol.base_asset_ticker() == "BTC"
+        assert symbol.quote_asset_ticker() == "USDT"
 
     async def test_get_market_status(self):
         def extra_checks(market_status: dict) -> None:

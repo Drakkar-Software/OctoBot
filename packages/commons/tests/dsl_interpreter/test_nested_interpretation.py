@@ -20,8 +20,10 @@ import pytest
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
 
-class AddOperator(dsl_interpreter.BinaryOperator):
+
+class AddOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Add.__name__
@@ -32,6 +34,7 @@ class AddOperator(dsl_interpreter.BinaryOperator):
 
 
 class NestedEchoOperator(
+    dsl_test_keyword_support.TestKeywordMixin,
     dsl_interpreter.CallOperator,
     dsl_interpreter.NestedInterpretationMixin,
 ):
