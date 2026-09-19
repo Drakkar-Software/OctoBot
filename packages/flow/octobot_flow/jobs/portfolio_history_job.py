@@ -153,28 +153,37 @@ class PortfolioHistoryJob:
                 self.data_root,
             )
             fetched_trades_count = 0
-            trades = await trades_repo.fetch_trades_paginated(
-                discovered_symbols,
-                existing_config_symbols=existing_config_symbols,
-                exchange_name=exchange_config.exchange,
-                account_id=account.id,
-                exchange_config_id=exchange_config.id,
-                exchange_config_name=exchange_config.name,
-                symbol_since_ms=symbol_since_ms or None,
-            )
-            fetched_trades_count = len(trades)
-            trades, dropped_trade_symbols = _filter_trades_on_live_markets(
-                exchange_manager,
-                trades,
-            )
-            if dropped_trade_symbols:
+            dropped_trade_symbols: set[str] = set()
+            if exchange_api.exchange_uses_network_qualified_markets(exchange_manager):
                 logger.info(
-                    "Dropped %d trades on delisted/unknown markets for %s account %s: %s",
-                    fetched_trades_count - len(trades),
+                    "Skipping historical trade fetch for %s account %s: exchange markets use network-qualified symbols",
                     exchange_config.exchange,
                     account.id,
-                    ", ".join(sorted(dropped_trade_symbols)),
                 )
+                trades = []
+            else:
+                trades = await trades_repo.fetch_trades_paginated(
+                    discovered_symbols,
+                    existing_config_symbols=existing_config_symbols,
+                    exchange_name=exchange_config.exchange,
+                    account_id=account.id,
+                    exchange_config_id=exchange_config.id,
+                    exchange_config_name=exchange_config.name,
+                    symbol_since_ms=symbol_since_ms or None,
+                )
+                fetched_trades_count = len(trades)
+                trades, dropped_trade_symbols = _filter_trades_on_live_markets(
+                    exchange_manager,
+                    trades,
+                )
+                if dropped_trade_symbols:
+                    logger.info(
+                        "Dropped %d trades on delisted/unknown markets for %s account %s: %s",
+                        fetched_trades_count - len(trades),
+                        exchange_config.exchange,
+                        account.id,
+                        ", ".join(sorted(dropped_trade_symbols)),
+                    )
 
             live_discovered_symbols = _filter_symbols_on_live_markets(
                 exchange_manager,
@@ -424,6 +433,7 @@ def _derive_price_symbols(
     for trading_symbol in trade_symbols:
         if not symbol_util.is_symbol(trading_symbol):
             continue
+        # Market leg (not portfolio asset): merged valuation pair for daily cache — use portfolio_base_and_quote() for portfolio[...] / reference_market.
         base_currency, _quote_currency = symbol_util.parse_symbol(trading_symbol).base_and_quote()
         if symbol_util.is_usd_like_coin(base_currency):
             continue
@@ -452,6 +462,7 @@ def _derive_price_symbols(
 def _is_valid_trading_symbol(symbol: str) -> bool:
     if not symbol_util.is_symbol(symbol):
         return False
+    # Market leg (not portfolio asset): validate merged valuation symbol legs — use portfolio_base_and_quote() for portfolio[...] / reference_market.
     base_currency, quote_currency = symbol_util.parse_symbol(symbol).base_and_quote()
     if symbol_util.is_usd_like_coin(base_currency):
         return False

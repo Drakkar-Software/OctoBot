@@ -343,3 +343,76 @@ class TestMirrorScaleFailureContext:
         assert context["copier_total"] == decimal.Decimal("0.5")
         assert context["scaled_quantity"] is None
         exchange_interface.portfolio.get_currency_portfolio_total.assert_called_once_with("ETH")
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestMirrorScaleFailureContextNetworkQualified:
+    def test_buy_uses_quote_portfolio_asset(self):
+        order = _reference_limit_order(symbol=TICKER_WISE_SYMBOL, quantity=0.002)
+        reference_account = protocol_models.CopiedAccount(
+            version=copy_constants.COPIED_ACCOUNT_VERSION,
+            updated_at=time.time(),
+            copied_assets=[
+                protocol_models.CopiedAsset(
+                    name="USDT@ETH", total=500.0, available=500.0, ratio=0.5
+                ),
+                protocol_models.CopiedAsset(
+                    name="BTC@BTC", total=1.0, available=1.0, ratio=0.5
+                ),
+            ],
+            orders=[],
+        )
+        exchange_interface = mock.MagicMock()
+        exchange_interface.portfolio.get_currency_portfolio_total = mock.Mock(
+            return_value=decimal.Decimal("169")
+        )
+
+        context = mirrored_order_replication_failure_util.mirror_scale_failure_context(
+            order,
+            TICKER_WISE_SYMBOL,
+            trading_enums.TradeOrderSide.BUY,
+            decimal.Decimal("0.001"),
+            reference_account,
+            exchange_interface,
+        )
+
+        assert context["scale_currency"] == "USDT@ETH"
+        exchange_interface.portfolio.get_currency_portfolio_total.assert_called_once_with("USDT@ETH")
+
+    def test_sell_uses_base_portfolio_asset(self):
+        order = _reference_limit_order(
+            symbol=TICKER_WISE_SYMBOL,
+            quantity=0.003,
+            side=protocol_models.Side.SELL,
+        )
+        reference_account = protocol_models.CopiedAccount(
+            version=copy_constants.COPIED_ACCOUNT_VERSION,
+            updated_at=time.time(),
+            copied_assets=[
+                protocol_models.CopiedAsset(
+                    name="BTC@BTC", total=2.0, available=2.0, ratio=0.5
+                ),
+                protocol_models.CopiedAsset(
+                    name="USDT@ETH", total=100.0, available=100.0, ratio=0.5
+                ),
+            ],
+            orders=[],
+        )
+        exchange_interface = mock.MagicMock()
+        exchange_interface.portfolio.get_currency_portfolio_total = mock.Mock(
+            return_value=decimal.Decimal("0.5")
+        )
+
+        context = mirrored_order_replication_failure_util.mirror_scale_failure_context(
+            order,
+            TICKER_WISE_SYMBOL,
+            trading_enums.TradeOrderSide.SELL,
+            None,
+            reference_account,
+            exchange_interface,
+        )
+
+        assert context["scale_currency"] == "BTC@BTC"
+        exchange_interface.portfolio.get_currency_portfolio_total.assert_called_once_with("BTC@BTC")

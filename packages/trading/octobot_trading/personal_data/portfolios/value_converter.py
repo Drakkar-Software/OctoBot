@@ -109,6 +109,7 @@ class ValueConverter:
         if symbol_util.is_usd_like_coin(currency):
             return quantity
         if symbol := self.get_usd_like_symbol_from_symbols(currency, self.last_prices_by_trading_pair):
+            # Market leg (not portfolio asset): bridge routing — use portfolio_base_and_quote() for portfolio[...] / reference_market.
             base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
             usd_like_currency = base if symbol_util.is_usd_like_coin(base) else quote
             return self.evaluate_value(
@@ -133,6 +134,7 @@ class ValueConverter:
         usd_like_symbols = []
         for usd_like_coin in commons_constants.USD_LIKE_COINS:
             for symbol in symbols:
+                # Market leg (not portfolio asset): bridge routing — use portfolio_base_and_quote() for portfolio[...] / reference_market.
                 base_and_quote = symbol_util.parse_symbol(symbol).base_and_quote()
                 if currency in base_and_quote and usd_like_coin in base_and_quote:
                     usd_like_symbols.append(symbol)
@@ -140,6 +142,7 @@ class ValueConverter:
 
     @staticmethod
     def can_convert_symbol_to_usd_like(symbol: str) -> bool:
+        # Market leg (not portfolio asset): bridge routing — use portfolio_base_and_quote() for portfolio[...] / reference_market.
         base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
         for usd_like_coins in commons_constants.USD_LIKE_COINS:
             if usd_like_coins == base or usd_like_coins == quote:
@@ -307,6 +310,7 @@ class ValueConverter:
         # look into available symbols to find pair bridges
         for bridge_part_1_symbol in self._get_priced_pairs():
             parsed_bridge_part_1_symbol = symbol_util.parse_symbol(bridge_part_1_symbol)
+            # Market leg (not portfolio asset): bridge routing — walk CCXT pair legs to link conversions.
             if (parsed_bridge_part_1_symbol.base, parsed_bridge_part_1_symbol.quote) in base_bridge\
                or (parsed_bridge_part_1_symbol.quote, parsed_bridge_part_1_symbol.base) in base_bridge:
                 # avoid looping in symbols

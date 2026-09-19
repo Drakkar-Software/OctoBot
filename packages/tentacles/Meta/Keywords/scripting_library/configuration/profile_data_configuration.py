@@ -295,10 +295,10 @@ def merge_profile_data(
                 # add pair
                 to_add_pairs.add(previous_traded_pair)
             parsed_symbol = octobot_commons.symbols.parse_symbol(previous_traded_pair)
-            if parsed_symbol.quote != profile_data.trading.reference_market:
+            if parsed_symbol.quote_portfolio_asset() != profile_data.trading.reference_market:
                 # reference market changed: also include the base of this pair within the traded pairs
                 ref_market_pair = octobot_commons.symbols.merge_currencies(
-                    parsed_symbol.base, profile_data.trading.reference_market
+                    parsed_symbol.base_portfolio_asset(), profile_data.trading.reference_market
                 )
                 if ref_market_pair not in current_traded_pairs:
                     to_add_pairs.add(ref_market_pair)
@@ -347,7 +347,7 @@ def get_traded_coins(
     # 3. stablecoins if include_stablecoins is True
     coins = [profile_data.trading.reference_market, ]
     for symbol in profile_data.get_traded_symbols():
-        base, quote = octobot_commons.symbols.parse_symbol(symbol).base_and_quote()
+        base, quote = octobot_commons.symbols.parse_symbol(symbol).portfolio_base_and_quote()
         if base not in coins:
             coins.append(base)
         if quote not in coins:
@@ -417,7 +417,7 @@ def can_convert_ref_market_to_usd_like_from_symbols(
         return True
     for symbol in symbols:
         if (
-            reference_market in octobot_commons.symbols.parse_symbol(symbol).base_and_quote()
+            reference_market in octobot_commons.symbols.parse_symbol(symbol).portfolio_base_and_quote()
             and octobot_trading.api.can_convert_symbol_to_usd_like(symbol)
         ):
             return True

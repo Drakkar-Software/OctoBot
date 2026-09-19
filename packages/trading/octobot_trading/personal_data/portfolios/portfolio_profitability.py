@@ -158,6 +158,6 @@ class PortfolioProfitability:
         Use exchange_config.traded_symbols to take every config pair into account except disabled ones
         """
         self.traded_currencies_without_market_specific = set(
-            symbol_util.parse_symbol(pair).base
+            symbol_util.parse_symbol(pair).base_portfolio_asset()
             for pair in self.portfolio_manager.exchange_manager.exchange_config.traded_symbol_pairs
         )

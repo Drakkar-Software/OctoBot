@@ -1190,3 +1190,28 @@ class TestOpenOrderExchangeIdsFromOpenOrders:
         ]
         exchange_ids = order_util.open_order_exchange_ids_from_open_orders(open_orders)
         assert exchange_ids == {"order-1", "order-2"}
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestGetPortfolioAmountsNetworkQualified:
+    def test_uses_portfolio_keys(self):
+        portfolio = mock.Mock()
+        portfolio.get_currency_portfolio = mock.Mock(
+            return_value=mock.Mock(available=decimal.Decimal("1"), total=decimal.Decimal("1"))
+        )
+        exchange_manager = mock.Mock(
+            is_future=False,
+            exchange_personal_data=mock.Mock(
+                portfolio_manager=mock.Mock(portfolio=portfolio),
+            ),
+        )
+        currency_available, market_available, market_quantity = order_util.get_portfolio_amounts(
+            exchange_manager, TICKER_WISE_SYMBOL, decimal.Decimal("50000")
+        )
+        assert currency_available is not None
+        assert market_available is not None
+        assert market_quantity is not None
+        portfolio.get_currency_portfolio.assert_any_call("BTC@BTC")
+        portfolio.get_currency_portfolio.assert_any_call("USDT@ETH")

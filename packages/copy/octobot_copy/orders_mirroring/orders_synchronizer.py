@@ -189,8 +189,8 @@ class OrdersSynchronizer:
     ) -> typing.Optional[decimal.Decimal]:
         reference_account = reference_state or self._reference_account
         parsed = symbol_util.parse_symbol(symbol)
-        base_currency = parsed.base
-        quote_currency = parsed.quote
+        base_currency = parsed.base_portfolio_asset()
+        quote_currency = parsed.quote_portfolio_asset()
         if not base_currency or not quote_currency:
             return None
         ratios = copy_entities.copied_asset_ratio_by_name(reference_account)
@@ -266,8 +266,8 @@ class OrdersSynchronizer:
         symbol: str,
     ) -> typing.Optional[tuple[str, str, decimal.Decimal, decimal.Decimal]]:
         parsed = symbol_util.parse_symbol(symbol)
-        base_currency = parsed.base
-        quote_currency = parsed.quote
+        base_currency = parsed.base_portfolio_asset()
+        quote_currency = parsed.quote_portfolio_asset()
         if not base_currency or not quote_currency:
             return None
         base_total = self._exchange_interface.portfolio.get_currency_portfolio_total(base_currency)
@@ -311,8 +311,8 @@ class OrdersSynchronizer:
         reference_account = reference_state or self._reference_account
         symbol = order.symbol
         parsed = symbol_util.parse_symbol(symbol)
-        base_currency = parsed.base
-        quote_currency = parsed.quote
+        base_currency = parsed.base_portfolio_asset()
+        quote_currency = parsed.quote_portfolio_asset()
         if not base_currency or not quote_currency:
             return None
         raw = trading_personal_data.exchange_columns_dict_from_protocol_order(order)
@@ -994,7 +994,9 @@ class OrdersSynchronizer:
         # Spot: sells spend base, buys spend quote — scale the reference order amount by the same leg's
         # holdings ratio. This will need to be adapted for futures (margin/position sizing, not spot wallets).
         parsed = symbol_util.parse_symbol(symbol)
-        scale_currency = parsed.quote if side is trading_enums.TradeOrderSide.BUY else parsed.base
+        scale_currency = (
+            parsed.quote_portfolio_asset() if side is trading_enums.TradeOrderSide.BUY else parsed.base_portfolio_asset()
+        )
         values = copy_entities.copied_asset_total_by_name(self._reference_account)
         reference_total = values.get(scale_currency, trading_constants.ZERO)
         if reference_total <= trading_constants.ZERO:
@@ -1392,7 +1394,7 @@ class OrdersSynchronizer:
         exclude_order: typing.Optional[trading_personal_data.Order] = None,
     ) -> decimal.Decimal:
         parsed = symbol_util.parse_symbol(symbol)
-        base_currency = parsed.base
+        base_currency = parsed.base_portfolio_asset()
         exclude_order_id = str(exclude_order.order_id) if exclude_order is not None else None
         locked_base = trading_constants.ZERO
         for order in self._exchange_interface.orders.get_open_orders():

@@ -147,7 +147,7 @@ class Trade:
         trade.exchange_trade_id = trade_dict.get(enums.ExchangeConstantsOrderColumns.EXCHANGE_TRADE_ID.value)
         trade.exchange_order_id = trade_dict.get(enums.ExchangeConstantsOrderColumns.EXCHANGE_ID.value)
         trade.symbol = trade_dict.get(enums.ExchangeConstantsOrderColumns.SYMBOL.value)
-        trade.currency, trade.market = commons_symbols.parse_symbol(trade.symbol).base_and_quote()
+        trade.currency, trade.market = commons_symbols.parse_symbol(trade.symbol).portfolio_base_and_quote()
         trade.market = trade_dict.get(enums.ExchangeConstantsOrderColumns.MARKET.value)
         trade.executed_price = decimal.Decimal(str(trade_dict.get(enums.ExchangeConstantsOrderColumns.PRICE.value)))
         trade.status = enums.OrderStatus(trade_dict.get(enums.ExchangeConstantsOrderColumns.STATUS.value,

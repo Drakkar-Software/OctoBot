@@ -143,8 +143,8 @@ class ResolvedOrdersPortoflioDelta:
         traded_assets = set()
         for filled_order in self.inferred_filled_orders + additional_filled_orders:
             order_symbol = commons_symbols.parse_symbol(filled_order.symbol)
-            traded_assets.add(order_symbol.base)
-            traded_assets.add(order_symbol.quote)
+            traded_assets.add(order_symbol.base_portfolio_asset())
+            traded_assets.add(order_symbol.quote_portfolio_asset())
         return traded_assets
 
 

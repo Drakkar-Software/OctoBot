@@ -595,7 +595,7 @@ class DailyTradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
             else:
                 increasing_position = spot_increasing_position
 
-            base = symbol_util.parse_symbol(symbol).base
+            base = symbol_util.parse_symbol(symbol).base_portfolio_asset()
             created_orders = []
             # use stop loss when reducing the position and stop are enabled or when the user explicitly asks for one
             user_take_profit_price = trading_personal_data.decimal_adapt_price(

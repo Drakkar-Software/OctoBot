@@ -93,8 +93,8 @@ class ExchangeConfig(util.Initializable):
     def get_all_traded_currencies(self):
         currencies = []
         for symbol in self.traded_symbols:
-            currencies.append(symbol.base)
-            currencies.append(symbol.quote)
+            currencies.append(symbol.base_portfolio_asset())
+            currencies.append(symbol.quote_portfolio_asset())
         return list(set(currencies))
 
     def set_config_traded_pairs(self):
@@ -433,7 +433,7 @@ class ExchangeConfig(util.Initializable):
 
     @staticmethod
     def _is_tradable_with_cryptocurrency(symbol, cryptocurrency):
-        return symbol if octobot_commons.symbols.parse_symbol(symbol).quote == cryptocurrency else None
+        return symbol if octobot_commons.symbols.parse_symbol(symbol).quote_portfolio_asset() == cryptocurrency else None
 
     def _add_tradable_symbols_from_config(self, cryptocurrency, filtered_symbols):
         return [

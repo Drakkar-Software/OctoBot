@@ -211,7 +211,9 @@ def mirror_scale_failure_context(
     exchange_interface: copy_exchange.ExchangeInterface,
 ) -> dict[str, typing.Any]:
     parsed = symbol_util.parse_symbol(symbol)
-    scale_currency = parsed.quote if side is trading_enums.TradeOrderSide.BUY else parsed.base
+    scale_currency = (
+        parsed.quote_portfolio_asset() if side is trading_enums.TradeOrderSide.BUY else parsed.base_portfolio_asset()
+    )
     values = copy_entities.copied_asset_total_by_name(reference_account)
     reference_total = values.get(scale_currency, trading_constants.ZERO)
     copier_total = exchange_interface.portfolio.get_currency_portfolio_total(scale_currency)

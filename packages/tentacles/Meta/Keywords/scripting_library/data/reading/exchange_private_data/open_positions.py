@@ -36,7 +36,7 @@ def open_position_size(
     symbol = symbol or context.symbol
     if context.exchange_manager.is_future:
         return script_keywords.get_position(context, symbol, side).size
-    currency = symbol_util.parse_symbol(context.symbol).base
+    currency = symbol_util.parse_symbol(context.symbol).base_portfolio_asset()
     portfolio = context.exchange_manager.exchange_personal_data.portfolio_manager.portfolio
     return portfolio.get_currency_portfolio(currency).total if amount_type == commons_constants.PORTFOLIO_TOTAL \
         else portfolio.get_currency_portfolio(currency).available

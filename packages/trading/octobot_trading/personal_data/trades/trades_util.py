@@ -171,7 +171,7 @@ def get_real_or_estimated_trade_fee(trade: "personal_data.Trade") -> tuple[dict,
                 trading_order_fee_rate = other_trade.fee[trading_enums.FeePropertyColumns.RATE.value]
 
     if trading_order_fee_currency and trading_order_fee_rate:
-        base, quote = symbols_util.parse_symbol(trade.symbol).base_and_quote()
+        base, quote = symbols_util.parse_symbol(trade.symbol).portfolio_base_and_quote()
         if trading_order_fee_currency == base:
             trading_order_fee_cost = trading_order_fee_rate * trade.executed_quantity
         elif trading_order_fee_currency == quote:

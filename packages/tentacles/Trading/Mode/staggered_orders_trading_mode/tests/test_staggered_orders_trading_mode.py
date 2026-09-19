@@ -3212,3 +3212,127 @@ def _get_multi_symbol_staggered_config():
             }
         ]
     }
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_BASE_ASSET = "BTC@BTC"
+PORTFOLIO_QUOTE_ASSET = "USDT@ETH"
+
+
+def _get_ticker_wise_staggered_config():
+    return {
+        "required_strategies": [],
+        "pair_settings": [
+            {
+                "pair": TICKER_WISE_SYMBOL,
+                "mode": "neutral",
+                "spread_percent": 6,
+                "increment_percent": 4,
+                "lower_bound": 500,
+                "upper_bound": 2000,
+                "allow_instant_fill": True,
+                "operational_depth": 4,
+            }
+        ],
+    }
+
+
+def _register_ticker_wise_symbol_on_exchange(exchange_manager, mark_price):
+    if TICKER_WISE_SYMBOL not in exchange_manager.client_symbols:
+        exchange_manager.client_symbols.append(TICKER_WISE_SYMBOL)
+    if TICKER_WISE_SYMBOL not in exchange_manager.exchange_config.traded_symbol_pairs:
+        exchange_manager.exchange_config.traded_symbol_pairs.append(TICKER_WISE_SYMBOL)
+        exchange_manager.exchange_config.traded_symbols.append(symbol_util.parse_symbol(TICKER_WISE_SYMBOL))
+    symbol_data = exchange_manager.exchange_symbols_data.get_exchange_symbol_data(
+        TICKER_WISE_SYMBOL, allow_creation=True
+    )
+    symbol_data.handle_mark_price_update(
+        mark_price, trading_enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value
+    )
+
+
+def _assert_ticker_wise_portfolio_bounds(exchange_manager, buy_orders, sell_orders):
+    quote_holdings = trading_api.get_portfolio_currency(exchange_manager, PORTFOLIO_QUOTE_ASSET).available
+    assert sum(order.price * order.quantity for order in buy_orders) <= quote_holdings
+    base_holdings = trading_api.get_portfolio_currency(exchange_manager, PORTFOLIO_BASE_ASSET).available
+    assert sum(order.quantity for order in sell_orders) <= base_holdings
+
+
+@contextlib.asynccontextmanager
+async def _get_ticker_wise_tools(btc_holdings=10, quote_funds=1000, price=1000):
+    tentacles_manager_api.reload_tentacle_info()
+    exchange_manager = None
+    try:
+        symbol = TICKER_WISE_SYMBOL
+        config = test_config.load_test_config()
+        starting_portfolio = config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_STARTING_PORTFOLIO]
+        starting_portfolio[PORTFOLIO_QUOTE_ASSET] = quote_funds
+        starting_portfolio[PORTFOLIO_BASE_ASSET] = btc_holdings
+        exchange_manager = test_exchanges.get_test_exchange_manager(config, "binance")
+        exchange_manager.tentacles_setup_config = test_utils_config.load_test_tentacles_config()
+        exchange_manager.is_simulated = True
+        exchange_manager.is_backtesting = True
+        exchange_manager.use_cached_markets = False
+        backtesting = await backtesting_api.initialize_backtesting(
+            config,
+            exchange_ids=[exchange_manager.id],
+            matrix_id=None,
+            data_files=[
+                os.path.join(test_config.TEST_CONFIG_FOLDER, "AbstractExchangeHistoryCollector_1586017993.616272.data")
+            ],
+        )
+        exchange_manager.exchange = exchanges.ExchangeSimulator(exchange_manager.config, exchange_manager, backtesting)
+        await exchange_manager.exchange.initialize()
+        for exchange_channel_class_type in [exchanges_channel.ExchangeChannel, exchanges_channel.TimeFrameExchangeChannel]:
+            await channel_util.create_all_subclasses_channel(
+                exchange_channel_class_type, exchanges_channel.set_chan, exchange_manager=exchange_manager
+            )
+        trader = exchanges.TraderSimulator(config, exchange_manager)
+        await trader.initialize()
+        mark_price = decimal.Decimal(str(price))
+        _register_ticker_wise_symbol_on_exchange(exchange_manager, mark_price)
+        trading_api.force_set_mark_price(exchange_manager, symbol, price)
+        staggered_orders_trading.StaggeredOrdersTradingModeProducer.SCHEDULE_ORDERS_CREATION_ON_START = False
+        mode = staggered_orders_trading.StaggeredOrdersTradingMode(config, exchange_manager)
+        mode.symbol = symbol
+        await mode.initialize()
+        mode.trading_config = _get_ticker_wise_staggered_config()
+        exchange_manager.trading_modes.append(mode)
+        producer = mode.producers[0]
+        producer.PRICE_FETCHING_TIMEOUT = 0.5
+        producer.allow_order_funds_redispatch = True
+        test_trading_modes.set_ready_to_start(producer)
+        assert producer._load_symbol_trading_config()
+        producer.read_config()
+        producer.mode = staggered_orders_trading.StrategyModes.NEUTRAL
+        yield producer, mode.get_trading_mode_consumers()[0], exchange_manager
+    finally:
+        if exchange_manager:
+            await _stop(exchange_manager)
+
+
+class TestStaggeredOrdersNetworkQualifiedOrderCreation:
+    async def test_ensure_staggered_orders_creates_open_orders_with_ticker_wise_symbol(self):
+        price = 1000
+        async with _get_ticker_wise_tools(price=price) as tools:
+            producer, _, exchange_manager = tools
+            _, _, _, _, symbol_market = await trading_personal_data.get_pre_order_data(
+                exchange_manager, symbol=TICKER_WISE_SYMBOL, timeout=1
+            )
+            producer.symbol_market = symbol_market
+            producer.current_price = decimal.Decimal(str(price))
+            producer._refresh_symbol_data(symbol_market)
+            decimal_price = decimal.Decimal(str(price))
+            buy_orders, sell_orders, _, _ = await producer._generate_staggered_orders(
+                decimal_price, False, False
+            )
+            staggered_orders = producer._merged_and_sort_not_virtual_orders(buy_orders, sell_orders)
+            if not staggered_orders:
+                raise AssertionError("Ticker-wise staggered setup produced no orders to create")
+            _assert_ticker_wise_portfolio_bounds(exchange_manager, buy_orders, sell_orders)
+            expected_count = min(len(staggered_orders), producer.operational_depth)
+            await producer._ensure_staggered_orders()
+            await asyncio.create_task(_wait_for_orders_creation(expected_count))
+            open_orders = trading_api.get_open_orders(exchange_manager)
+            assert len(open_orders) == expected_count
+            assert all(order.symbol == TICKER_WISE_SYMBOL for order in open_orders)

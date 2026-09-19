@@ -142,7 +142,7 @@ def decimal_adapt_order_quantity_because_fees(
     if not exchange_manager.is_future and side == enums.TradeOrderSide.BUY:
         # only buy orders are affected
         # consider worse case: simulate all total buying funds with taker fees locked into buy orders
-        quote = commons_symbols.parse_symbol(symbol).quote
+        quote = commons_symbols.parse_symbol(symbol).quote_portfolio_asset()
         total_quote_amount = exchange_manager.exchange_personal_data.portfolio_manager.portfolio.get_currency_portfolio(
             quote
         ).total
@@ -160,7 +160,7 @@ def decimal_adapt_order_quantity_because_fees(
                 for order in exchange_manager.exchange_personal_data.orders_manager.get_open_orders(active=True)
                 if (
                     order.side == side
-                    and commons_symbols.parse_symbol(order.symbol).quote == quote
+                    and commons_symbols.parse_symbol(order.symbol).quote_portfolio_asset() == quote
                     and order.is_counted_in_available_funds()
                 )
             )

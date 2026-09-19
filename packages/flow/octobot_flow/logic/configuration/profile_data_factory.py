@@ -1,7 +1,9 @@
 import typing
 
+import octobot_commons
 import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_commons.constants
+import octobot_commons.symbols as commons_symbols
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
 import octobot_trading.api.exchange as exchange_api
@@ -83,20 +85,25 @@ def infer_reference_market(
         and exchange_account_details.exchange_details.exchange_type == trading_enums.ExchangeTypes.FUTURE
     ):
         return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
+    if exchange_account_details and exchange_account_details.portfolio.unit:
+        return exchange_account_details.portfolio.unit
     if crypto_currencies:
-        return octobot_commons.symbols.parse_symbol(crypto_currencies[0].trading_pairs[0]).quote # type: ignore
-    elif exchange_account_details:
-        if exchange_account_details.portfolio.unit:
-            # portfolio unit can be used to define the reference market
-            return exchange_account_details.portfolio.unit
-        if exchange_account_details.exchange_details.internal_name:
-            return exchange_api.get_default_exchange_reference_market(
-                exchange_account_details.exchange_details.internal_name
-            )
+        return commons_symbols.parse_symbol(
+            crypto_currencies[0].trading_pairs[0]
+        ).quote_portfolio_asset()
+    if exchange_account_details and exchange_account_details.exchange_details.internal_name:
+        return exchange_api.get_default_exchange_reference_market(
+            exchange_account_details.exchange_details.internal_name
+        )
     return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
 
+
 def _get_crypto_currencies(symbols: set[str]) -> list[profile_data_import.CryptoCurrencyData]:
+    trading_pairs_by_base: dict[str, list[str]] = {}
+    for symbol in symbols:
+        base_currency = commons_symbols.parse_symbol(symbol).base_portfolio_asset()
+        trading_pairs_by_base.setdefault(base_currency, []).append(symbol)
     return [
-        profile_data_import.CryptoCurrencyData(trading_pairs=[symbol], name=symbol)
-        for symbol in symbols
+        profile_data_import.CryptoCurrencyData(trading_pairs=trading_pairs, name=base_currency)
+        for base_currency, trading_pairs in sorted(trading_pairs_by_base.items())
     ]

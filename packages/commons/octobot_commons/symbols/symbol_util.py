@@ -140,6 +140,8 @@ def is_usd_like_to_usd_like_pair(symbol: str) -> bool:
     """
     if not is_symbol(symbol):
         return False
+    # Market leg (not portfolio asset): USD-like pair detection —
+    # use portfolio_base_and_quote() for portfolio[...] / reference_market.
     base_asset, quote_asset = parse_symbol(symbol).base_and_quote()
     return (
         bool(base_asset)
@@ -158,6 +160,8 @@ def get_most_common_usd_like_symbol(pairs: list[str]) -> str:
     symbols = []
     for pair in pairs:
         parsed = octobot_commons.symbols.symbol.Symbol(pair)
+        # Market leg (not portfolio asset): most common USD-like ticker —
+        # use portfolio_base_and_quote() for portfolio[...] / reference_market.
         symbols.append(parsed.quote)
         symbols.append(parsed.base)
     counter = collections.Counter(symbols)

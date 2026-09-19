@@ -110,7 +110,7 @@ class AbstractTradingModeConsumer(modes_channel.ModeChannelConsumer):
         else:
             market_status = self.exchange_manager.exchange.get_market_status(symbol, price_example=None, with_fixer=False)
             try:
-                base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
+                base, quote = symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
                 portfolio = self.exchange_manager.exchange_personal_data.portfolio_manager.portfolio
                 funds = {
                     base: portfolio.get_currency_portfolio(base),
@@ -181,7 +181,7 @@ class AbstractTradingModeConsumer(modes_channel.ModeChannelConsumer):
         if symbol is None or self.skip_portfolio_available_check_before_creating_orders():
             # should not check
             return True
-        currency, market = symbol_util.parse_symbol(symbol).base_and_quote()
+        currency, market = symbol_util.parse_symbol(symbol).portfolio_base_and_quote()
         portfolio = self.exchange_manager.exchange_personal_data.portfolio_manager.portfolio
 
         # get symbol min amount when creating order

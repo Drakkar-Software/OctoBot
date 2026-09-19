@@ -340,8 +340,8 @@ class HistoricalPortfolioValueManager(util.Initializable):
             quantity = historical_value.get(currency)
             # 1. try from pairs with price
             for pair in self.portfolio_manager.portfolio_value_holder.value_converter.last_prices_by_trading_pair:
-                base_and_quote = symbol_util.parse_symbol(pair).base_and_quote()
-                if currency in base_and_quote and target_currency in base_and_quote:
+                pair_portfolio_legs = symbol_util.parse_symbol(pair).portfolio_base_and_quote()
+                if currency in pair_portfolio_legs and target_currency in pair_portfolio_legs:
                     return self.portfolio_manager.portfolio_value_holder.value_converter\
                         .convert_currency_value_using_last_prices(
                             historical_value.get(currency), currency, target_currency

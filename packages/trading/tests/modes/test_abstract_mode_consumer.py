@@ -30,6 +30,8 @@ from octobot_trading.modes import AbstractTradingMode, AbstractTradingModeProduc
 from octobot_trading.exchanges.traders.trader_simulator import TraderSimulator
 import octobot_trading.personal_data as personal_data
 import octobot_trading.enums
+import octobot_trading.enums as trading_enums
+import octobot_trading.modes.channel.abstract_mode_consumer as abstract_mode_consumer
 import octobot_trading.errors
 from tests import event_loop
 
@@ -585,3 +587,45 @@ async def _create_initialized_open_order(exchange_manager, symbol):
     await open_order.initialize()
     await exchange_manager.exchange_personal_data.orders_manager.upsert_order_instance(open_order)
     return open_order
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestAbstractModeConsumerNetworkQualified:
+    @pytest.mark.asyncio
+    async def test_can_create_order_uses_portfolio_legs(self):
+        portfolio = mock.Mock()
+        portfolio.get_currency_portfolio = mock.Mock(
+            return_value=mock.Mock(available=decimal.Decimal("1000"), total=decimal.Decimal("1000"))
+        )
+        exchange_manager = mock.Mock(
+            is_future=False,
+            exchange=mock.Mock(
+                get_market_status=mock.Mock(
+                    return_value={
+                        trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS.value: {
+                            trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT.value: {
+                                trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_AMOUNT_MIN.value: 0,
+                            },
+                            trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_COST.value: {
+                                trading_enums.ExchangeConstantsMarketStatusColumns.LIMITS_COST_MIN.value: 0,
+                            },
+                        }
+                    }
+                )
+            ),
+            exchange_personal_data=mock.Mock(
+                portfolio_manager=mock.Mock(portfolio=portfolio),
+            ),
+        )
+        trading_mode = mock.Mock(exchange_manager=exchange_manager)
+        consumer = abstract_mode_consumer.AbstractTradingModeConsumer(trading_mode)
+        assert await consumer.can_create_order(
+            TICKER_WISE_SYMBOL, trading_enums.EvaluatorStates.LONG.value
+        ) is True
+        portfolio.get_currency_portfolio.assert_called_with("USDT@ETH")
+        assert await consumer.can_create_order(
+            TICKER_WISE_SYMBOL, trading_enums.EvaluatorStates.SHORT.value
+        ) is True
+        portfolio.get_currency_portfolio.assert_any_call("BTC@BTC")

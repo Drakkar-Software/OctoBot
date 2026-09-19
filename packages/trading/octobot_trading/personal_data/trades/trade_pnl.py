@@ -113,10 +113,11 @@ class TradePnl:
         if not trade.fee:
             return constants.ZERO
         symbol = symbols.parse_symbol(trade.symbol)
+        portfolio_base, portfolio_quote = symbol.portfolio_base_and_quote()
         # return fees denominated in quote
-        fees = order_util.get_fees_for_currency(trade.fee, symbol.quote)
+        fees = order_util.get_fees_for_currency(trade.fee, portfolio_quote)
         return fees \
-            + order_util.get_fees_for_currency(trade.fee, symbol.base) * trade.executed_price
+            + order_util.get_fees_for_currency(trade.fee, portfolio_base) * trade.executed_price
 
     def get_paid_special_fees_by_currency(self) -> dict:
         """
@@ -127,11 +128,11 @@ class TradePnl:
             return {}
         try:
             fees = {}
-            base_and_quote = symbols.parse_symbol(self.entries[0].symbol).base_and_quote()
+            portfolio_legs = symbols.parse_symbol(self.entries[0].symbol).portfolio_base_and_quote()
             for trade in (*self.entries, *self.closes):
                 if trade.fee:
                     currency = trade.fee[enums.FeePropertyColumns.CURRENCY.value]
-                    if currency in base_and_quote:
+                    if currency in portfolio_legs:
                         # not a special fee
                         continue
                     if currency in fees:

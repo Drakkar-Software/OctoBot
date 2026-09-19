@@ -436,7 +436,7 @@ class AIIndexTradingModeProducer(index_trading.IndexTradingModeProducer):
         # Extract both base and quote currencies (cryptocurrencies) from symbols
         traded_cryptocurrencies = list(set(
             currency for symbol in traded_symbols 
-            for currency in [symbol.base, symbol.quote]
+            for currency in [symbol.base_portfolio_asset(), symbol.quote_portfolio_asset()]
         ))
         # Combine with indexed_coins to ensure all configured coins are included
         indexed_cryptocurrencies = list(self.trading_mode.indexed_coins) if self.trading_mode.indexed_coins else []

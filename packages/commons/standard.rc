@@ -57,6 +57,7 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=too-few-public-methods,
+        too-many-public-methods,
         missing-module-docstring,
         missing-class-docstring,
         raise-missing-from,

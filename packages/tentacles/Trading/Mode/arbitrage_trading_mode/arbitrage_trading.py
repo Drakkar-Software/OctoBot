@@ -285,7 +285,7 @@ class ArbitrageModeProducer(trading_modes.AbstractTradingModeProducer):
         self.other_exchanges_mark_prices = {}
         self.state = trading_enums.EvaluatorStates.NEUTRAL
         self.final_eval = ""
-        self.quote, self.base = symbol_util.parse_symbol(self.trading_mode.symbol).base_and_quote()
+        self.quote, self.base = symbol_util.parse_symbol(self.trading_mode.symbol).portfolio_base_and_quote()
         self.lock = asyncio.Lock()
         self.enable_shorts = self.enable_longs = True
 

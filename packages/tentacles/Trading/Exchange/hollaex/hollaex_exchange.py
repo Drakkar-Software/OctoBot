@@ -263,6 +263,7 @@ class hollaexConnector(exchanges.CCXTConnector):
         parsed_symbol = symbols_utils.parse_symbol(symbol)
         if use_quote:
             cost = quantity * price
+            # Market leg (not portfolio asset): exchange-native fee currency — use portfolio_base_and_quote() for portfolio[...] / reference_market.
             fee_currency = parsed_symbol.quote
         else:
             cost = quantity

@@ -20,6 +20,7 @@ import decimal
 import octobot_commons.pretty_printer as pretty_printer
 import octobot_trading.enums as trading_enums
 import tentacles.Trading.Mode.arbitrage_trading_mode.arbitrage_container as arbitrage_container_import
+import tentacles.Trading.Mode.arbitrage_trading_mode.arbitrage_trading as arbitrage_trading_mode
 import tentacles.Trading.Mode.arbitrage_trading_mode.tests as arbitrage_trading_mode_tests
 import octobot_tentacles_manager.api as tentacles_manager_api
 
@@ -477,6 +478,42 @@ async def test_get_open_arbitrages():
         assert kraken_consumer.open_arbitrages == []
         assert binance_producer._get_open_arbitrages() is binance_consumer.open_arbitrages
         assert kraken_producer._get_open_arbitrages() is kraken_consumer.open_arbitrages
+
+
+async def test_trigger_arbitrage_secondary_order_uses_portfolio_keys_for_fee_lookup():
+    ticker_wise_symbol = "BTC@BTC/USDT@ETH"
+    async with arbitrage_trading_mode_tests.exchange("binance", symbol=ticker_wise_symbol) as exchange_tuple:
+        binance_producer, _, _ = exchange_tuple
+        # ArbitrageModeProducer binds portfolio_base_and_quote() to (quote, base).
+        assert {binance_producer.quote, binance_producer.base} == {"BTC@BTC", "USDT@ETH"}
+        order_id = "1"
+        price = 10
+        quantity = 3
+        fees = 0.1
+        order_dict = get_order_dict(
+            order_id, ticker_wise_symbol, price, quantity,
+            trading_enums.OrderStatus.FILLED.value,
+            trading_enums.TradeOrderType.STOP_LOSS.value, fees, "USDT",
+        )
+        arbitrage = arbitrage_container_import.ArbitrageContainer(
+            decimal.Decimal(str(price)), decimal.Decimal(str(7)),
+            trading_enums.EvaluatorStates.SHORT,
+        )
+        fee_currency_keys = []
+
+        def record_fee_currency(_filled_order, fee_currency_key):
+            fee_currency_keys.append(fee_currency_key)
+            return decimal.Decimal(str(fees))
+
+        with mock.patch.object(
+            arbitrage_trading_mode.trading_personal_data,
+            "total_fees_from_order_dict",
+            side_effect=record_fee_currency,
+        ), mock.patch.object(
+            binance_producer, "_create_arbitrage_secondary_order", new=mock.AsyncMock(),
+        ):
+            await binance_producer._trigger_arbitrage_secondary_order(arbitrage, order_dict, 3)
+        assert fee_currency_keys == [binance_producer.quote, binance_producer.base]
 
 
 async def test_register_state():

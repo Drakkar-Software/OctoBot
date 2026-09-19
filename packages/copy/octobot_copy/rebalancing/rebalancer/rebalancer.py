@@ -237,9 +237,9 @@ class AbstractRebalancer:
             # if rebalance is triggered by removed assets, make sure that the asset can actually be sold
             # otherwise the whole rebalance is useless
             sold_coins = [
-                symbol_util.parse_symbol(order.symbol).base
+                symbol_util.parse_symbol(order.symbol).base_portfolio_asset()
                 if order.side is trading_enums.TradeOrderSide.SELL
-                else symbol_util.parse_symbol(order.symbol).quote
+                else symbol_util.parse_symbol(order.symbol).quote_portfolio_asset()
                 for order in removed_orders
             ]
             if not any(
@@ -415,7 +415,8 @@ class AbstractRebalancer:
 
     def _get_symbol_and_base_asset(self, coin_or_symbol: str) -> tuple[str, str]:
         if symbol_util.is_symbol(coin_or_symbol):
-            return coin_or_symbol, symbol_util.parse_symbol(coin_or_symbol).base # type: ignore
+            parsed_symbol = symbol_util.parse_symbol(coin_or_symbol)
+            return coin_or_symbol, parsed_symbol.base_portfolio_asset()
         return symbol_util.merge_currencies(coin_or_symbol, self._exchange_interface.portfolio.reference_market), coin_or_symbol
 
     def _get_logger(self):

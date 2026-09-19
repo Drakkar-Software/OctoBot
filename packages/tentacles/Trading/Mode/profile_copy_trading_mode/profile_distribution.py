@@ -60,7 +60,7 @@ def get_positions_to_consider(
         parsed_symbol = symbols_util.parse_symbol(
             position.get(trading_enums.ExchangeConstantsPositionColumns.SYMBOL.value, "")
         )
-        if parsed_symbol.base == parsed_symbol.quote:
+        if parsed_symbol.base_portfolio_asset() == parsed_symbol.quote_portfolio_asset():
             continue
         if new_position_only and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value) is not None and position.get(trading_enums.ExchangeConstantsPositionColumns.TIMESTAMP.value, 0) <= started_at.timestamp():
             # skip positions with timestamp at or before started_at (only include strictly after)

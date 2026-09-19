@@ -71,7 +71,7 @@ def register_context_processor(web_interface_instance):
                 symbol_type: [
                     s
                     for s in symbols
-                    if symbol in symbol_util.parse_symbol(s).base_and_quote()
+                    if symbol in symbol_util.parse_symbol(s).portfolio_base_and_quote()
                 ]
                 for symbol_type, symbols in symbol_list_by_type.items()
             }

@@ -22,6 +22,15 @@ import tentacles.Meta.Keywords.scripting_library as scripting_library
 
 
 
+def test_get_traded_coins_includes_network_qualified_portfolio_legs():
+    profile = scripting_library.minimal_profile_data()
+    profile.trading.reference_market = "USDT@ETH"
+    scripting_library.add_traded_symbols(profile, ["BTC@BTC/USDT@ETH"])
+    coins = scripting_library.get_traded_coins(profile, include_stablecoins=False)
+    assert "USDT@ETH" in coins
+    assert "BTC@BTC" in coins
+
+
 def test_register_historical_configs_adds_traded_pairs():
     # Master has no traded pairs, historical has one
     master = scripting_library.minimal_profile_data()

@@ -97,6 +97,7 @@ class TradesStorage(abstract_storage.AbstractStorage):
     def _get_trade_dict_with_usd_like_volume(self, trade) -> dict:
         trade_dict = trade.to_dict()
         parsed_symbol = commons_symbols.parse_symbol(trade.symbol)
+        # Market leg (not portfolio asset): parse / contract model — use portfolio_base_and_quote() for portfolio[...] / reference_market.
         cost_currency = parsed_symbol.quote if parsed_symbol.is_linear() else parsed_symbol.base
         try:
             usd_volume = self.exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder.\

@@ -104,7 +104,7 @@ class ScheduledVolume:
             to_add_amount = quote_locked_funds - self._get_total_locked_funds_quote_value(current_price)
             if to_add_amount > trading_constants.ZERO:
                 remaining_to_add_quote_value = to_add_amount
-                base, quote = commons_symbols.parse_symbol(self.symbol).base_and_quote()
+                base, quote = commons_symbols.parse_symbol(self.symbol).portfolio_base_and_quote()
                 available_base = trading_api.get_portfolio_currency(self.exchange_manager, base).available - (
                     get_global_locked_funds(self.exchange_manager.id, base, "")
                 )
@@ -252,7 +252,7 @@ class ScheduledVolume:
         return
 
     def _update_locked_funds(self, locked_base: decimal.Decimal, locked_quote: decimal.Decimal):
-        base, quote = commons_symbols.parse_symbol(self.symbol).base_and_quote()
+        base, quote = commons_symbols.parse_symbol(self.symbol).portfolio_base_and_quote()
         self.logger.info(
             f"Updated [{self.exchange_manager.exchange_name}] {self.symbol} "
             f"locked funds: {float(locked_base)} {base} & {float(locked_quote)} {quote}"
@@ -374,7 +374,7 @@ class ScheduledVolume:
                 trades_or_orders.append(order)
         base_delta = trading_constants.ZERO
         quote_delta = trading_constants.ZERO
-        base, quote = commons_symbols.parse_symbol(self.symbol).base_and_quote()
+        base, quote = commons_symbols.parse_symbol(self.symbol).portfolio_base_and_quote()
         for trade_or_order in trades_or_orders:
             quantity = (
                 trade_or_order.executed_quantity if (
@@ -446,7 +446,8 @@ class ScheduledVolume:
         potential_next_quote_quantity = max(candidate_next_quote_quantity, min_cost * _MIN_COST_ORDER_MULTIPLIER)
         available_amount = trading_api.get_portfolio_currency(
             self.exchange_manager,
-            self.parsed_symbol.quote if side is trading_enums.TradeOrderSide.BUY else self.parsed_symbol.base
+            self.parsed_symbol.quote_portfolio_asset() if side is trading_enums.TradeOrderSide.BUY
+            else self.parsed_symbol.base_portfolio_asset()
         ).available
         try:
             locked_base, locked_quote = self._get_locked_base_and_quote()
@@ -456,7 +457,7 @@ class ScheduledVolume:
                 if available_amount < locked_funds_adapted_quote_quantity:
                     self.logger.info(
                         f"Adapting {side.value} order size of {locked_funds_adapted_quote_quantity} to comply with "
-                        f"{available_amount} available {self.parsed_symbol.quote} "
+                        f"{available_amount} available {self.parsed_symbol.quote_portfolio_asset()} "
                         f"on {self.exchange_manager.exchange_name}"
                     )
                     next_quote_quantity = available_amount
@@ -470,7 +471,7 @@ class ScheduledVolume:
                 if available_amount < locked_funds_adapted_base_quantity:
                     self.logger.info(
                         f"Adapting {side.value} order size of {locked_funds_adapted_base_quantity} to comply "
-                        f"with {available_amount} available {self.parsed_symbol.base} "
+                        f"with {available_amount} available {self.parsed_symbol.base_portfolio_asset()} "
                         f"on {self.exchange_manager.exchange_name} "
                     )
                     next_base_amount = available_amount
@@ -510,7 +511,7 @@ def _get_locked_funds(amount: float) -> decimal.Decimal:
 
 
 def _init_global_locked_funds(exchange_manager_id: str, symbol: str):
-    base, quote = commons_symbols.parse_symbol(symbol).base_and_quote()
+    base, quote = commons_symbols.parse_symbol(symbol).portfolio_base_and_quote()
     if exchange_manager_id not in _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID:
         _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id] = {}
     _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id][symbol] = {
@@ -520,14 +521,14 @@ def _init_global_locked_funds(exchange_manager_id: str, symbol: str):
 
 
 def _set_global_locked_funds(exchange_manager_id: str, symbol: str, base_funds: decimal.Decimal, quote_funds: decimal.Decimal):
-    base, quote = commons_symbols.parse_symbol(symbol).base_and_quote()
+    base, quote = commons_symbols.parse_symbol(symbol).portfolio_base_and_quote()
     _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id][symbol][base] = base_funds
     _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id][symbol][quote] = quote_funds
     _confirm_initialized_locked_funds_by_exchange_manager_id(exchange_manager_id, symbol)
 
 
 def _get_locked_base_and_quote(exchange_manager_id: str, symbol: str) -> (decimal.Decimal, decimal.Decimal):
-    base, quote = commons_symbols.parse_symbol(symbol).base_and_quote()
+    base, quote = commons_symbols.parse_symbol(symbol).portfolio_base_and_quote()
     return (
         _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id][symbol][base],
         _LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id][symbol][quote],
@@ -558,13 +559,13 @@ def _confirm_initialized_locked_funds_by_exchange_manager_id(exchange_manager_id
 
 
 async def _wait_required_locked_funds_init(exchange_manager_id, symbol, timeout):
-    base, quote = commons_symbols.parse_symbol(symbol).base_and_quote()
+    base, quote = commons_symbols.parse_symbol(symbol).portfolio_base_and_quote()
     if to_wait := [
         event
         for event_symbol, event in _INITIALIZED_LOCKED_FUNDS_BY_EXCHANGE_MANAGER_ID[exchange_manager_id].items()
         if not event.is_set()
            # wait for init of scheduled volumes related to this symbol's base or quote
-           and any(coin in (base, quote) for coin in commons_symbols.parse_symbol(event_symbol).base_and_quote())
+           and any(coin in (base, quote) for coin in commons_symbols.parse_symbol(event_symbol).portfolio_base_and_quote())
     ]:
         await asyncio.wait_for(asyncio.gather(*(event.wait() for event in to_wait)), timeout)
         return True

@@ -280,7 +280,8 @@ async def get_pre_order_data(exchange_manager, symbol: str, timeout: int = None,
 
 
 def get_portfolio_amounts(exchange_manager, symbol, price, portfolio_type=commons_constants.PORTFOLIO_AVAILABLE):
-    currency, market = symbol_util.parse_symbol(symbol).base_and_quote()
+    parsed_symbol = symbol_util.parse_symbol(symbol)
+    currency, market = parsed_symbol.portfolio_base_and_quote()
     portfolio = exchange_manager.exchange_personal_data.portfolio_manager.portfolio
     currency_available = portfolio.get_currency_portfolio(currency).available \
         if portfolio_type == commons_constants.PORTFOLIO_AVAILABLE else portfolio.get_currency_portfolio(currency).total
@@ -421,7 +422,7 @@ def get_order_locked_amount(order: order_import.Order, force_use_origin_quantity
     # ( a BTC/USDT order with USDT fees need to lock USDT fees to be able to pay them)
     use_origin_quantity_and_price = force_use_origin_quantity_and_price or not order.is_filled()
     forecasted_fees = order.get_computed_fee(use_origin_quantity_and_price=use_origin_quantity_and_price)
-    base, quote = symbol_util.parse_symbol(order.symbol).base_and_quote()
+    base, quote = symbol_util.parse_symbol(order.symbol).portfolio_base_and_quote()
     # use remaining quantity when order is open or partially filled
     locked_amount = order.get_locked_quantity()
     # when buy order
@@ -439,7 +440,7 @@ def get_orders_locked_amounts_by_asset(open_orders: list[order_import.Order]) ->
         if not order.is_active:
             # don't count inactive orders in locked funds
             continue
-        base, quote = symbol_util.parse_symbol(order.symbol).base_and_quote()
+        base, quote = symbol_util.parse_symbol(order.symbol).portfolio_base_and_quote()
         # use get_order_locked_amount just like trader simulator to ensure locked funds integrity
         if order.side == enums.TradeOrderSide.BUY:
             # buy orders only lock fees in quote
@@ -736,7 +737,7 @@ async def _cancel_reduce_only_orders_on_position_reset(exchange_manager, symbol,
 def get_order_quantity_currency(exchange_manager, symbol):
     try:
         parsed_symbol = symbol_util.parse_symbol(symbol)
-        base, quote = parsed_symbol.base_and_quote()
+        base, quote = parsed_symbol.portfolio_base_and_quote()
     except ValueError:
         # symbol that can't be split
         return None

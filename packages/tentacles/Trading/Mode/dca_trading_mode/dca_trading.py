@@ -377,7 +377,10 @@ class DCATradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         try:
             buying = order_type in (trading_enums.TraderOrderType.BUY_MARKET, trading_enums.TraderOrderType.BUY_LIMIT)
             parsed_symbol = symbol_util.parse_symbol(symbol)
-            missing_currency = parsed_symbol.quote if buying else parsed_symbol.base
+            missing_currency = (
+                parsed_symbol.quote_portfolio_asset() if buying else parsed_symbol.base_portfolio_asset()
+            )
+            # Market leg (not portfolio asset): spot settlement quote / futures settlement asset — use portfolio_base_and_quote() for portfolio[...] / reference_market.
             settlement_asset = parsed_symbol.settlement_asset if parsed_symbol.is_future() else parsed_symbol.quote
             quantity_currency = trading_personal_data.get_order_quantity_currency(self.exchange_manager, symbol)
             if parsed_symbol.is_spot():
@@ -510,7 +513,7 @@ class DCATradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         if self.exchange_manager.is_future:
             # not implemented for futures
             return False
-        asset = symbol_util.parse_symbol(symbol).base
+        asset = symbol_util.parse_symbol(symbol).base_portfolio_asset()
         ratio = self.exchange_manager.exchange_personal_data.portfolio_manager. \
             portfolio_value_holder.get_holdings_ratio(asset, include_assets_in_open_orders=True)
         if ratio >= self.trading_mode.max_asset_holding_ratio:
@@ -1219,7 +1222,7 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
         self, sellable_assets, target_asset: str, tickers: dict
     ) -> list:
         traded_coins = [
-            symbol.base
+            symbol.base_portfolio_asset()
             for symbol in self.exchange_manager.exchange_config.traded_symbols
         ]
         sellable_assets = sorted(list(set(sellable_assets + traded_coins)))
@@ -1273,7 +1276,7 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
         asset_and_amount = []
         value_holder = self.exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder
         traded_base_assets = set(
-            symbol.base
+            symbol.base_portfolio_asset()
             for symbol in self.exchange_manager.exchange_config.traded_symbols
         )
         sell_orders = [
@@ -1307,12 +1310,12 @@ class DCATradingMode(trading_modes.AbstractTradingMode):
             holdings_in_sell_orders = sum(
                 order.origin_quantity
                 for order in sell_orders
-                if symbol_util.parse_symbol(order.symbol).base == asset
+                if symbol_util.parse_symbol(order.symbol).base_portfolio_asset() == asset
             )
             holdings_from_partially_filled_buy_orders = sum(
                 order.filled_quantity
                 for order in partially_filled_buy_orders
-                if symbol_util.parse_symbol(order.symbol).base == asset
+                if symbol_util.parse_symbol(order.symbol).base_portfolio_asset() == asset
             )
             # do not consider more than the available amounts
             orphan_amount = min(
