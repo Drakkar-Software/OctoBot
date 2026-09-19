@@ -96,6 +96,7 @@ Pytest matrix: [reference-pytest.md](../octobot-cloud/reference-pytest.md) (skil
 |-------|-------------|--------|
 | Unit (Python) | Test path + enumerated behaviors | Package `tests/` or `tools/tests/…` per `AGENTS.md` **Tests** |
 | Unit (Node UI) | TS under `packages/tentacles/Services/Interfaces/node_web_interface/` | `src/**/__tests__`; cwd that directory; `npm test` (vitest). Profile **`ui-node-web`** if build env needed. |
+| UI copy / UX | User-visible strings or layout in `node_web_interface` or `web_interface` | Review against skill **end-user-ui** (incl. no em dash in copy); Vitest or `web_interface` pytest per stack. |
 | Functional / integration | Cross-package or I/O flows | `tools/tests`, integration dirs, tentacles-dependent pytest |
 | UI functional | Browser / seeded grid | Default **N/A — Vitest + API tests**; **agent-seed** only when the user explicitly wants manual `/app` QA — **not** new Playwright `e2e/` files in git (`path.deny_node_web_playwright_e2e`) |
 
@@ -117,6 +118,7 @@ Pytest matrix: [reference-pytest.md](../octobot-cloud/reference-pytest.md) (skil
 | Implement / verify in cloud | **octobot-cloud** |
 | Pytest cwd / PYTHONPATH | **octobot-cloud** → `reference-pytest.md` |
 | Node UI unit tests | `packages/tentacles/Services/Interfaces/node_web_interface/` → `npm test` |
+| End-user UI copy | skill **end-user-ui** + colocated UI `AGENTS.md` |
 | Node UI browser QA | **agent-seed** |
 | Package boundaries | colocated `AGENTS.md` |
 | Contributor workflow | `CONTRIBUTING-agent.md` |

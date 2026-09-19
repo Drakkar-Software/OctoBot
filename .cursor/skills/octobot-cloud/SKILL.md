@@ -63,6 +63,7 @@ See **[reference-pytest.md](reference-pytest.md)** for cwd and PYTHONPATH per CI
 
 ## Node UI tests (agents)
 
+- **User-visible UI:** For copy, layout, errors, or help in `node_web_interface` or classic `web_interface`, read skill **end-user-ui** (`.cursor/skills/end-user-ui/SKILL.md`) and colocated `AGENTS.md` under those tentacle paths.
 - **In PRs:** Vitest in `packages/tentacles/Services/Interfaces/node_web_interface/` (`npm test`) plus Python/API tests (`node_api_interface`, `packages/node`, tentacles pytest as needed). **Do not** add Playwright e2e under `e2e/` or `test:e2e` scripts (`path.deny_node_web_playwright_e2e`).
 - CI runs Vitest for tentacles `package.json` projects; e2e is not in the matrix.
 

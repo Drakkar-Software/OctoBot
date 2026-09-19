@@ -3,6 +3,11 @@
 React web UI for the OctoBot node API, packaged as a tentacle. Built with Vite, TanStack
 Router/Query, and Tailwind. The compiled bundle in `dist/` is what ships in the tentacle package.
 
+**Agents:** User-visible copy and layout follow [AGENTS.md](AGENTS.md) and skill **end-user-ui**
+([`.cursor/skills/end-user-ui/SKILL.md`](../../../../../.cursor/skills/end-user-ui/SKILL.md))
+under the OctoBot repo root. Edit sources here in `packages/tentacles/.../node_web_interface/` only;
+never repo-root `tentacles/`.
+
 ## Requirements
 
 Node 24 (see `.nvmrc`). Run `nvm use` before any npm command.
