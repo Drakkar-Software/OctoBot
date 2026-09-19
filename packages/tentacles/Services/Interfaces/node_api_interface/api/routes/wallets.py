@@ -48,6 +48,15 @@ class UpdateWalletBody(pydantic.BaseModel):
     name: typing.Optional[str] = None
 
 
+class RecoveryPhraseStatus(pydantic.BaseModel):
+    has_recovery_phrase: bool
+    recovery_phrase_saved: bool
+
+
+class RecoveryPhraseResponse(pydantic.BaseModel):
+    seed: str
+
+
 @router.get("/", response_model=list[WalletInfo])
 def list_wallets(
     credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
@@ -171,3 +180,63 @@ def delete_wallet(address: str, current_user: CurrentUser) -> dict:
     except (wallet_backend.CannotRemoveLastWalletError, wallet_backend.CannotRemoveAdminWalletError) as err:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
     return {"address": normalized}
+
+
+@router.get("/me/recovery-phrase/status", response_model=RecoveryPhraseStatus)
+def get_recovery_phrase_status(current_user: CurrentUser) -> RecoveryPhraseStatus:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service not initialized",
+        )
+    address = current_user.email.lower()
+    try:
+        has_phrase, saved = auth.get_recovery_phrase_status(address)
+    except wallet_backend.WalletNotFoundError as err:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err)) from err
+    return RecoveryPhraseStatus(has_recovery_phrase=has_phrase, recovery_phrase_saved=saved)
+
+
+@router.get("/me/recovery-phrase", response_model=RecoveryPhraseResponse)
+def get_recovery_phrase(
+    current_user: CurrentUser,
+    credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
+) -> RecoveryPhraseResponse:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None or credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service not initialized",
+        )
+    address = current_user.email.lower()
+    try:
+        seed = auth.get_recovery_phrase(address, credentials.password)
+    except wallet_backend.WalletNotFoundError as err:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err)) from err
+    except wallet_backend.InvalidPassphraseError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid passphrase",
+        )
+    except wallet_backend.RecoveryPhraseNotAvailableError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(err),
+        ) from err
+    return RecoveryPhraseResponse(seed=seed)
+
+
+@router.post("/me/recovery-phrase/acknowledge", status_code=status.HTTP_204_NO_CONTENT)
+def acknowledge_recovery_phrase_saved(current_user: CurrentUser) -> None:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service not initialized",
+        )
+    address = current_user.email.lower()
+    try:
+        auth.mark_recovery_phrase_saved(address)
+    except wallet_backend.WalletNotFoundError as err:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err)) from err

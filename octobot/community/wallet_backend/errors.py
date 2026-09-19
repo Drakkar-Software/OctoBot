@@ -49,3 +49,11 @@ class InvalidPrivateKeyError(WalletError):
 
 class PassphraseTooShortError(WalletError):
     pass
+
+
+class RecoveryPhraseNotAvailableError(WalletError):
+    pass
+
+
+class RecoveryPhraseMismatchError(WalletError):
+    pass

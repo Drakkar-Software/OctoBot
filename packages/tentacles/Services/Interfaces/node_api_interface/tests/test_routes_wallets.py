@@ -179,3 +179,16 @@ def test_delete_last_wallet_raises_400(admin_client, mock_auth):
     mock_auth.remove_wallet.side_effect = wallet_backend.CannotRemoveLastWalletError("Cannot remove the last wallet")
     resp = admin_client.delete(f"/api/v1/wallets/{ADMIN_ADDRESS}")
     assert resp.status_code == 400
+
+
+def test_recovery_phrase_status(admin_client, mock_auth):
+    mock_auth.get_recovery_phrase_status.return_value = (True, False)
+    resp = admin_client.get("/api/v1/wallets/me/recovery-phrase/status")
+    assert resp.status_code == 200
+    assert resp.json() == {"has_recovery_phrase": True, "recovery_phrase_saved": False}
+
+
+def test_acknowledge_recovery_phrase_saved(admin_client, mock_auth):
+    resp = admin_client.post("/api/v1/wallets/me/recovery-phrase/acknowledge")
+    assert resp.status_code == 204
+    mock_auth.mark_recovery_phrase_saved.assert_called_once_with(ADMIN_ADDRESS)

@@ -31,6 +31,8 @@ from octobot.community.wallet_backend.errors import (
     CannotRemoveAdminWalletError,
     InvalidPrivateKeyError,
     PassphraseTooShortError,
+    RecoveryPhraseNotAvailableError,
+    RecoveryPhraseMismatchError,
 )
 from octobot.community.wallet_backend import wallet_storage
 from octobot.community.wallet_backend.wallet_storage import (
@@ -54,6 +56,8 @@ __all__ = [
     "CannotRemoveAdminWalletError",
     "InvalidPrivateKeyError",
     "PassphraseTooShortError",
+    "RecoveryPhraseNotAvailableError",
+    "RecoveryPhraseMismatchError",
     "WalletStorage",
     "ConfigJsonWalletStorage",
     "DedicatedFileWalletStorage",

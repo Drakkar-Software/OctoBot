@@ -15,14 +15,22 @@ export function isPreWalletSetupRoute(pathname: string): boolean {
   return normalized === "/setup" || normalized.endsWith("/setup/welcome")
 }
 
+export const START_FRESH_FROM_RECOVER_KEY = "start_fresh_from_recover"
+
 export function getSetupRedirect(opts: {
   configured: boolean
   setupInProgress: boolean
   loggedIn: boolean
   pathname: string
+  startFreshFromRecover?: boolean
 }): string | null {
-  const { configured, setupInProgress, loggedIn, pathname } = opts
+  const { configured, setupInProgress, loggedIn, pathname, startFreshFromRecover } =
+    opts
   if (!configured) return null
+
+  if (startFreshFromRecover && isPreWalletSetupRoute(pathname)) {
+    return null
+  }
 
   if (isPreWalletSetupRoute(pathname)) {
     if (loggedIn) return setupInProgress ? "/setup/connect" : "/"

@@ -55,6 +55,18 @@ describe("getSetupRedirect", () => {
     ).toBe("/setup/connect")
   })
 
+  it("allows wallet setup when starting fresh from recover", () => {
+    expect(
+      getSetupRedirect({
+        configured: true,
+        setupInProgress: false,
+        loggedIn: false,
+        pathname: "/setup",
+        startFreshFromRecover: true,
+      }),
+    ).toBeNull()
+  })
+
   it("allows connect and first-bot only during setup", () => {
     expect(
       getSetupRedirect({
