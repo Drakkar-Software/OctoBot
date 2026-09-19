@@ -58,6 +58,15 @@ class WalletExport(pydantic.BaseModel):
     seed: typing.Optional[str] = None
 
 
+class WalletRecoverBody(pydantic.BaseModel):
+    seed: str
+    new_passphrase: str
+
+
+class WalletRecoverResult(pydantic.BaseModel):
+    address: str
+
+
 class LocalNetworkAddress(pydantic.BaseModel):
     local_network_ip: typing.Optional[str] = None
 
@@ -181,3 +190,47 @@ def export_wallet(
             detail="Invalid passphrase",
         )
     return WalletExport(address=entry.address, private_key=entry.private_key, seed=entry.seed or None)
+
+
+@router.post("/setup/wallet/recover", response_model=WalletRecoverResult)
+def recover_wallet_passphrase(body: WalletRecoverBody) -> WalletRecoverResult:
+    """Reset a wallet passphrase using its BIP-39 recovery phrase (offline, no auth)."""
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    if not auth.list_wallets():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    try:
+        wallet_info = auth.recover_wallet_passphrase(body.seed, body.new_passphrase)
+    except wallet_backend.PassphraseTooShortError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err
+    except wallet_backend.InvalidPrivateKeyError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err
+    except wallet_backend.RecoveryPhraseMismatchError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err
+    except wallet_backend.WalletNotFoundError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(err),
+        ) from err
+    except wallet_backend.WalletError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err
+    return WalletRecoverResult(address=wallet_info.address)

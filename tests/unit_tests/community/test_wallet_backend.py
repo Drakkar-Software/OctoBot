@@ -196,6 +196,48 @@ class TestRemoveWalletJournal:
         assert "http_status" not in record_mock.call_args.kwargs
 
 
+class TestRecoveryPhrase:
+    def test_status_defaults_to_not_saved(self):
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        has_phrase, saved = backend.get_recovery_phrase_status(_TEST_MNEMONIC_ADDRESS)
+        assert has_phrase is True
+        assert saved is False
+
+    def test_mark_recovery_phrase_saved(self):
+        backend, saved_store = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        backend.mark_recovery_phrase_saved(_TEST_MNEMONIC_ADDRESS)
+        entry = WalletEntry(**saved_store[0])
+        assert entry.recovery_phrase_saved is True
+        _, saved = backend.get_recovery_phrase_status(_TEST_MNEMONIC_ADDRESS)
+        assert saved is True
+
+    def test_get_recovery_phrase_requires_valid_passphrase(self):
+        from octobot.community.wallet_backend.errors import InvalidPassphraseError
+
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        with pytest.raises(InvalidPassphraseError):
+            backend.get_recovery_phrase(_TEST_MNEMONIC_ADDRESS, "wrong-passphrase")
+
+    def test_recover_wallet_passphrase_resets_login(self):
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        backend.recover_wallet_passphrase(_TEST_MNEMONIC, "newpassphrase1")
+        assert backend.verify_wallet_passphrase(_TEST_MNEMONIC_ADDRESS, "newpassphrase1")
+        assert not backend.verify_wallet_passphrase(_TEST_MNEMONIC_ADDRESS, "passphrase123")
+
+    def test_recover_wallet_passphrase_rejects_unknown_seed(self):
+        from octobot.community.wallet_backend.errors import WalletNotFoundError
+
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        other_mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+        with pytest.raises(WalletNotFoundError):
+            backend.recover_wallet_passphrase(other_mnemonic, "newpassphrase1")
+
+
 class TestRenameWalletJournal:
     def test_records_journal_on_unknown_address(self):
         from octobot.community.wallet_backend.errors import WalletNotFoundError

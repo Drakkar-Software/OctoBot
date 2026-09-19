@@ -31,6 +31,8 @@ from octobot.community.wallet_backend.errors import (
     InvalidPassphraseError,
     InvalidPrivateKeyError,
     PassphraseTooShortError,
+    RecoveryPhraseMismatchError,
+    RecoveryPhraseNotAvailableError,
     WalletAlreadyExistsError,
     WalletError,
     WalletNotFoundError,
@@ -69,6 +71,7 @@ class WalletEntry(commons_dataclasses.FlexibleDataclass):
     private_key: str = ""
     passphrase_hash: str = ""
     seed: typing.Optional[str] = None
+    recovery_phrase_saved: bool = False
 
 
 def _hash_passphrase(passphrase: str) -> str:
@@ -323,3 +326,94 @@ class WalletBackend:
     def get_wallet_name(self, address: str) -> typing.Optional[str]:
         entry = self._find_wallet_entry(address)
         return entry.name if entry else None
+
+    def get_recovery_phrase_status(self, address: str) -> tuple[bool, bool]:
+        """Return (has_stored_recovery_phrase, recovery_phrase_saved)."""
+        entry = self._find_wallet_entry(address)
+        if entry is None:
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="lookup", error=wallet_error)
+            raise wallet_error
+        return bool(entry.seed), bool(entry.recovery_phrase_saved)
+
+    def get_recovery_phrase(self, address: str, passphrase: str) -> str:
+        entry = self.decrypt_wallet_entry_by_address(address, passphrase)
+        if not entry.seed:
+            wallet_error = RecoveryPhraseNotAvailableError("No recovery phrase stored for this wallet")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
+        return entry.seed
+
+    def store_recovery_phrase_if_missing(self, address: str, seed: str) -> None:
+        """Persist a BIP-39 phrase when the wallet entry has none (e.g. legacy private-key import)."""
+        normalized_seed = seed.strip()
+        try:
+            wallet = sync_chain.wallet_from_mnemonic(normalized_seed)
+        except Exception as err:
+            wallet_error = InvalidPrivateKeyError(f"Invalid recovery phrase: {err}")
+            _record_wallet_operation_failure(operation="import", error=wallet_error)
+            raise wallet_error from err
+        normalized = address.lower()
+        derived_key = wallet.private_key.removeprefix("0x").lower()
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            for entry in node_wallets:
+                if entry.address == normalized:
+                    if entry.seed:
+                        return
+                    if entry.private_key.lower() != derived_key:
+                        wallet_error = RecoveryPhraseMismatchError(
+                            "Recovery phrase does not match this wallet"
+                        )
+                        _record_wallet_operation_failure(operation="import", error=wallet_error)
+                        raise wallet_error
+                    entry.seed = normalized_seed
+                    self._save_node_wallets_list(node_wallets)
+                    return
+        wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+        _record_wallet_operation_failure(operation="lookup", error=wallet_error)
+        raise wallet_error
+
+    def mark_recovery_phrase_saved(self, address: str) -> None:
+        normalized = address.lower()
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            for entry in node_wallets:
+                if entry.address == normalized:
+                    entry.recovery_phrase_saved = True
+                    self._save_node_wallets_list(node_wallets)
+                    return
+        wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+        _record_wallet_operation_failure(operation="lookup", error=wallet_error)
+        raise wallet_error
+
+    def recover_wallet_passphrase(self, seed: str, new_passphrase: str) -> WalletInfo:
+        normalized_seed = seed.strip()
+        if len(new_passphrase) < 8:
+            wallet_error = PassphraseTooShortError("Passphrase must be at least 8 characters")
+            _record_wallet_operation_failure(operation="recover", error=wallet_error)
+            raise wallet_error
+        try:
+            wallet = sync_chain.wallet_from_mnemonic(normalized_seed)
+        except Exception as err:
+            wallet_error = InvalidPrivateKeyError(f"Invalid recovery phrase: {err}")
+            _record_wallet_operation_failure(operation="recover", error=wallet_error)
+            raise wallet_error from err
+        normalized = wallet.address.lower()
+        derived_key = wallet.private_key.removeprefix("0x").lower()
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            entry = next((e for e in node_wallets if e.address == normalized), None)
+            if entry is None:
+                wallet_error = WalletNotFoundError("Recovery phrase does not match any wallet on this node")
+                _record_wallet_operation_failure(operation="recover", error=wallet_error)
+                raise wallet_error
+            if entry.private_key.lower() != derived_key:
+                wallet_error = RecoveryPhraseMismatchError("Recovery phrase does not match this wallet")
+                _record_wallet_operation_failure(operation="recover", error=wallet_error)
+                raise wallet_error
+            entry.passphrase_hash = _hash_passphrase(new_passphrase)
+            if not entry.seed:
+                entry.seed = normalized_seed
+            self._save_node_wallets_list(node_wallets)
+            return WalletInfo(address=entry.address, name=entry.name, is_admin=entry.is_admin)

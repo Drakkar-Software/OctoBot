@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react"
 import { Suspense, useCallback, useMemo, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
+import { SaveAccountBanner } from "@/components/Account/SaveAccountBanner"
 import { BotGrid } from "@/components/OctoBots/BotGrid"
 import { BotsFilterBar } from "@/components/OctoBots/BotsFilterBar"
 import { SelectionToolbar } from "@/components/OctoBots/SelectionToolbar"
@@ -67,6 +68,7 @@ function BotsContent() {
 
   return (
     <div className="flex flex-col gap-6">
+      <SaveAccountBanner />
       <BotsFilterBar
         filterValue={filterValue}
         searchValue={searchValue}

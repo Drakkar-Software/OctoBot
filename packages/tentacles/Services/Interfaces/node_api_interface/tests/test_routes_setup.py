@@ -221,6 +221,22 @@ def test_wallet_export_success(admin_client, mock_auth):
     assert data["private_key"] == "0xdeadbeef"
 
 
+def test_wallet_recover_success(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [mock.MagicMock()]
+    auth.recover_wallet_passphrase.return_value = mock.MagicMock(address=ADMIN_ADDRESS)
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ):
+        resp = client.post(
+            "/api/v1/setup/wallet/recover",
+            json={"seed": "test test test test test test test test test test test junk", "new_passphrase": "newpass123"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"address": ADMIN_ADDRESS}
+
+
 def test_setup_local_network_address(client):
     with mock.patch(
         "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.network.get_local_network_ip",

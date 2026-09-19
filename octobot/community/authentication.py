@@ -708,6 +708,21 @@ class CommunityAuthentication(authentication.Authenticator):
     def get_wallet_name(self, address: str) -> typing.Optional[str]:
         return self._wallet_backend.get_wallet_name(address)
 
+    def get_recovery_phrase_status(self, address: str) -> tuple[bool, bool]:
+        return self._wallet_backend.get_recovery_phrase_status(address)
+
+    def get_recovery_phrase(self, address: str, passphrase: str) -> str:
+        return self._wallet_backend.get_recovery_phrase(address, passphrase)
+
+    def mark_recovery_phrase_saved(self, address: str) -> None:
+        return self._wallet_backend.mark_recovery_phrase_saved(address)
+
+    def store_recovery_phrase_if_missing(self, address: str, seed: str) -> None:
+        return self._wallet_backend.store_recovery_phrase_if_missing(address, seed)
+
+    def recover_wallet_passphrase(self, seed: str, new_passphrase: str) -> wallet_backend.WalletInfo:
+        return self._wallet_backend.recover_wallet_passphrase(seed, new_passphrase)
+
     def get_sync_client_for_address(self, address: str) -> sync_client.StarfishClient:
         self.init_sync_client_for_wallet(address)
         if self._sync_client is None:
