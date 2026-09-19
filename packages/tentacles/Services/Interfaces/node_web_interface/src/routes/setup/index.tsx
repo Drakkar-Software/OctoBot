@@ -22,6 +22,7 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { clearAuth } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { savePassword } from "@/lib/device-key"
+import { START_FRESH_FROM_RECOVER_KEY } from "@/lib/setup-guard"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/setup/")({
@@ -122,6 +123,7 @@ function SetupWallet() {
       if (name?.trim()) {
         localStorage.setItem("auth_wallet_name", name.trim())
       }
+      sessionStorage.removeItem(START_FRESH_FROM_RECOVER_KEY)
       sessionStorage.setItem("setup_in_progress", "true")
       navigate({ to: "/setup/connect" })
     },
@@ -131,6 +133,7 @@ function SetupWallet() {
         // The node was already configured (e.g. session still had setup_in_progress set
         // after a previous successful setup). Clean up and redirect to login.
         sessionStorage.removeItem("setup_in_progress")
+        sessionStorage.removeItem(START_FRESH_FROM_RECOVER_KEY)
         await clearAuth()
         navigate({ to: "/login" })
         return

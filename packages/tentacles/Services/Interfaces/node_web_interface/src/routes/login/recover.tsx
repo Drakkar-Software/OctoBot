@@ -5,6 +5,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
+import { RecoverCreateWalletSection } from "@/components/Account/RecoverCreateWalletSection"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -93,6 +94,7 @@ function RecoverAccount() {
 
   return (
     <AuthLayout>
+      <div className="flex w-full max-w-md flex-col gap-8">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -177,6 +179,8 @@ function RecoverAccount() {
           </div>
         </form>
       </Form>
+      <RecoverCreateWalletSection />
+      </div>
     </AuthLayout>
   )
 }

@@ -1,7 +1,10 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { SetupService } from "@/client"
 import { isLoggedIn } from "@/hooks/useAuth"
-import { getSetupRedirect } from "@/lib/setup-guard"
+import {
+  getSetupRedirect,
+  START_FRESH_FROM_RECOVER_KEY,
+} from "@/lib/setup-guard"
 
 export const Route = createFileRoute("/setup")({
   beforeLoad: async ({ location }) => {
@@ -16,6 +19,8 @@ export const Route = createFileRoute("/setup")({
       setupInProgress: !!sessionStorage.getItem("setup_in_progress"),
       loggedIn: isLoggedIn(),
       pathname: location.pathname,
+      startFreshFromRecover:
+        sessionStorage.getItem(START_FRESH_FROM_RECOVER_KEY) === "1",
     })
     if (target) throw redirect({ to: target })
   },
