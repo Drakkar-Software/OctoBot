@@ -23,7 +23,7 @@ from octobot_commons.tests.test_config import load_test_config
 
 from octobot_trading.api.exchange import create_exchange_builder, \
     get_exchange_configurations_from_exchange_name, get_exchange_manager_from_exchange_name_and_id, \
-    get_exchanges_availability
+    get_exchanges_availability, exchange_uses_network_qualified_markets
 from octobot_trading.exchanges.exchanges import Exchanges
 from tests.exchanges import exchange_manager
 from tests import event_loop
@@ -51,6 +51,18 @@ async def test_get_exchange_manager_from_exchange_name_and_id(exchange_manager):
         get_exchange_manager_from_exchange_name_and_id(exchange_manager.exchange_name, "test")
     with pytest.raises(KeyError):
         get_exchange_manager_from_exchange_name_and_id("bybit", exchange_manager.id)
+
+
+class TestExchangeUsesNetworkQualifiedMarkets:
+    pytestmark = []
+
+    def test_true_when_client_symbol_contains_network_separator(self):
+        exchange_manager = mock.Mock(client_symbols=["BTC@BTC/USDT@ETH"])
+        assert exchange_uses_network_qualified_markets(exchange_manager)
+
+    def test_false_for_plain_spot_pair(self):
+        exchange_manager = mock.Mock(client_symbols=["BTC/USDT"])
+        assert not exchange_uses_network_qualified_markets(exchange_manager)
 
 
 class TestGetExchangesAvailability:

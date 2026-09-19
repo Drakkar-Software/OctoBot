@@ -26,6 +26,7 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.enums as enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.exchanges as exchanges
+import octobot_commons.symbols as commons_symbols
 import octobot_trading.exchanges.util.exchange_util as exchange_util
 
 from tests import event_loop
@@ -815,3 +816,24 @@ class TestGetExchangesAvailabilityCaching:
         second_call = exchange_util.get_exchanges_availability()
         assert first_call is second_call
         build_mock.assert_called_once()
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestGetTradedAssetsNetworkQualified:
+    def test_includes_qualified_symbol_legs(self):
+        parsed = commons_symbols.parse_symbol(TICKER_WISE_SYMBOL)
+        exchange_manager = mock.Mock(
+            exchange_config=mock.Mock(traded_symbols=[parsed]),
+        )
+        assert exchange_util.get_traded_assets(exchange_manager) == ["BTC@BTC", "USDT@ETH"]
+
+
+class TestGetCommonTradedQuoteNetworkQualified:
+    def test_returns_qualified_quote(self):
+        parsed = commons_symbols.parse_symbol(TICKER_WISE_SYMBOL)
+        exchange_manager = mock.Mock(
+            exchange_config=mock.Mock(traded_symbols=[parsed]),
+        )
+        assert exchange_util.get_common_traded_quote(exchange_manager) == "USDT@ETH"

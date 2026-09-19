@@ -482,7 +482,7 @@ class SimpleMarketMakingTradingMode(market_making_trading.MarketMakingTradingMod
     ) -> decimal.Decimal:
         default_volume = cls.DEFAULT_CRYPTO_VOL
         if symbol_util.is_usd_like_coin(symbol_util.parse_symbol(symbol).quote):
-             default_volume = cls.DEFAULT_USD_LIKE_VOL
+            default_volume = cls.DEFAULT_USD_LIKE_VOL
         minimum_default_volume = default_volume / decimal.Decimal("2")
         # if volume is not 0: compare it to default value and use half default if necessary
         if quote_volume and not quote_volume.is_nan() and quote_volume < minimum_default_volume:

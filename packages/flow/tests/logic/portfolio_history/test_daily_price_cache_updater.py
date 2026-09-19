@@ -9,6 +9,9 @@ import octobot_trading.errors as trading_errors
 import octobot_commons.constants as commons_constants
 import octobot_flow.constants as flow_constants
 import octobot_flow.logic.portfolio_history.daily_price_cache_updater as daily_price_cache_updater_module
+import octobot_flow.logic.portfolio_history.trade_fetch_cursors as trade_fetch_cursors
+
+TICKER_WISE_REFERENCE_SYMBOL = "BTC@BTC/USDT@ETH"
 
 
 def _empty_daily_prices():
@@ -61,6 +64,16 @@ def mock_empty_historical_ohlcv():
         _empty_historical_ohlcv,
     ):
         yield
+
+
+class TestParseBareBaseQuote:
+    def test_spot_symbol_returns_bare_base_and_quote(self):
+        assert daily_price_cache_updater_module._parse_bare_base_quote("BTC/USDT") == ("BTC", "USDT")
+
+    def test_ticker_wise_symbol_returns_bare_base_and_quote(self):
+        assert daily_price_cache_updater_module._parse_bare_base_quote(
+            TICKER_WISE_REFERENCE_SYMBOL,
+        ) == ("BTC", "USDT")
 
 
 class TestComputeFetchTimeRangeMs:
@@ -180,6 +193,24 @@ class TestUpdateDailyPrices:
         assert "since" not in exchange_manager.exchange.get_symbol_prices.call_args[1]
 
     @pytest.mark.asyncio
+    async def test_ticker_wise_reference_symbol_keys_sources_by_qualified_base(self, tmp_path):
+        exchange_manager = _exchange_manager_with_symbols(["BTC/USDT"])
+        day_one = _utc_day_start(1)
+        exchange_manager.exchange.get_symbol_prices.return_value = [
+            _sample_candle(day_one, 40500),
+        ]
+        data_root = str(tmp_path)
+        await daily_price_cache_updater_module.update_daily_prices(
+            exchange_manager, "binance", "spot", False, [TICKER_WISE_REFERENCE_SYMBOL], data_root,
+        )
+
+        result = await trading_api.load_daily_prices("binance", "spot", False, data_root)
+        assert result[trading_enums.DailyPricesCacheKeys.SOURCES]["BTC@BTC"] == "BTC/USDT"
+        assert trade_fetch_cursors.resolve_daily_cache_symbol(
+            result, TICKER_WISE_REFERENCE_SYMBOL,
+        ) == "BTC/USDT"
+
+    @pytest.mark.asyncio
     async def test_empty_cache_fetches_without_since(self, tmp_path):
         exchange_manager = _exchange_manager_with_symbols(["BTC/USDT"])
         exchange_manager.exchange.get_symbol_prices.return_value = [
@@ -276,7 +307,8 @@ class TestUpdateDailyPrices:
         assert exchange_manager.exchange.get_symbol_prices.call_args[1]["since"] != 1000 * 1000
 
     @pytest.mark.asyncio
-    async def test_skips_usd_like_stablecoin_symbol(self, tmp_path):
+    async def test_skips_when_bare_base_is_usd_like(self, tmp_path):
+        """Skip daily fetch when the bare base asset is USD-like, not when only the quote is."""
         exchange_manager = _exchange_manager_with_symbols(["USDC/USDT"])
         data_root = str(tmp_path)
         await daily_price_cache_updater_module.update_daily_prices(

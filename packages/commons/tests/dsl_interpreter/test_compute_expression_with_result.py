@@ -20,6 +20,8 @@ import pytest
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors as commons_errors
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
+
 
 class TestDSLCallResult:
     def test_error_message_defaults_to_none(self):
@@ -33,7 +35,7 @@ class TestDSLCallResult:
         assert call_result.error_message is None
 
 
-class ErrorRaisingTestOperator(dsl_interpreter.CallOperator):
+class ErrorRaisingTestOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     @staticmethod
     def get_name() -> str:
         return "test_error"
@@ -43,7 +45,7 @@ class ErrorRaisingTestOperator(dsl_interpreter.CallOperator):
         raise commons_errors.ErrorStatementEncountered(*params)
 
 
-class SumPlusFortyTwoOperator(dsl_interpreter.NaryOperator):
+class SumPlusFortyTwoOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.NaryOperator):
     def __init__(self, *parameters: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(*parameters, **kwargs)
         self.added_value = 42

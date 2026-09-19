@@ -153,28 +153,37 @@ class PortfolioHistoryJob:
                 self.data_root,
             )
             fetched_trades_count = 0
-            trades = await trades_repo.fetch_trades_paginated(
-                discovered_symbols,
-                existing_config_symbols=existing_config_symbols,
-                exchange_name=exchange_config.exchange,
-                account_id=account.id,
-                exchange_config_id=exchange_config.id,
-                exchange_config_name=exchange_config.name,
-                symbol_since_ms=symbol_since_ms or None,
-            )
-            fetched_trades_count = len(trades)
-            trades, dropped_trade_symbols = _filter_trades_on_live_markets(
-                exchange_manager,
-                trades,
-            )
-            if dropped_trade_symbols:
+            dropped_trade_symbols: set[str] = set()
+            if exchange_api.exchange_uses_network_qualified_markets(exchange_manager):
                 logger.info(
-                    "Dropped %d trades on delisted/unknown markets for %s account %s: %s",
-                    fetched_trades_count - len(trades),
+                    "Skipping historical trade fetch for %s account %s: exchange markets use network-qualified symbols",
                     exchange_config.exchange,
                     account.id,
-                    ", ".join(sorted(dropped_trade_symbols)),
                 )
+                trades = []
+            else:
+                trades = await trades_repo.fetch_trades_paginated(
+                    discovered_symbols,
+                    existing_config_symbols=existing_config_symbols,
+                    exchange_name=exchange_config.exchange,
+                    account_id=account.id,
+                    exchange_config_id=exchange_config.id,
+                    exchange_config_name=exchange_config.name,
+                    symbol_since_ms=symbol_since_ms or None,
+                )
+                fetched_trades_count = len(trades)
+                trades, dropped_trade_symbols = _filter_trades_on_live_markets(
+                    exchange_manager,
+                    trades,
+                )
+                if dropped_trade_symbols:
+                    logger.info(
+                        "Dropped %d trades on delisted/unknown markets for %s account %s: %s",
+                        fetched_trades_count - len(trades),
+                        exchange_config.exchange,
+                        account.id,
+                        ", ".join(sorted(dropped_trade_symbols)),
+                    )
 
             live_discovered_symbols = _filter_symbols_on_live_markets(
                 exchange_manager,
@@ -374,7 +383,7 @@ def _reference_market_from_account_assets(
     if account.assets:
         for assets_for_trading_type in account.assets:
             for asset in assets_for_trading_type.assets or []:
-                if asset.symbol not in commons_constants.USD_LIKE_COINS:
+                if not symbol_util.is_usd_like_coin(asset.symbol):
                     continue
                 asset_total = float(asset.total or 0)
                 if asset_total <= min_holdings_threshold:
@@ -419,21 +428,27 @@ def _derive_price_symbols(
     transactions: list[dict],
     reference_market: str,
 ) -> list[str]:
-    """Build the set of symbols whose daily prices should be cached."""
+    """
+    Build the set of symbols whose daily prices should be cached.
+    @NETWORK from pairs are ignored so that ETH/USDT and ETH@ETH/USDT@ETH share the same cache.
+    """
     base_assets: set[str] = set()
     for trading_symbol in trade_symbols:
         if not symbol_util.is_symbol(trading_symbol):
             continue
-        base_currency, _quote_currency = symbol_util.parse_symbol(trading_symbol).base_and_quote()
-        if symbol_util.is_usd_like_coin(base_currency):
+        # Bare asset ticker: merged valuation pair for daily cache — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+        parsed_trading_symbol = symbol_util.parse_symbol(trading_symbol)
+        base_currency = parsed_trading_symbol.base_asset_ticker()
+        _quote_currency = parsed_trading_symbol.quote_asset_ticker()
+        if symbol_util.is_usd_like_coin(parsed_trading_symbol.base):
             continue
-        if base_currency and base_currency != reference_market:
+        if base_currency and not symbol_util.is_same_coin(base_currency, reference_market):
             base_assets.add(base_currency)
     for transaction in transactions:
         transaction_currency = transaction.get("currency")
         if (
             not transaction_currency
-            or transaction_currency == reference_market
+            or symbol_util.is_same_coin(transaction_currency, reference_market)
             or symbol_util.is_usd_like_coin(transaction_currency)
         ):
             continue
@@ -452,7 +467,10 @@ def _derive_price_symbols(
 def _is_valid_trading_symbol(symbol: str) -> bool:
     if not symbol_util.is_symbol(symbol):
         return False
-    base_currency, quote_currency = symbol_util.parse_symbol(symbol).base_and_quote()
-    if symbol_util.is_usd_like_coin(base_currency):
+    # Bare asset ticker: validate merged valuation symbol legs — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+    parsed_symbol = symbol_util.parse_symbol(symbol)
+    base_currency = parsed_symbol.base_asset_ticker()
+    quote_currency = parsed_symbol.quote_asset_ticker()
+    if symbol_util.is_usd_like_coin(parsed_symbol.base):
         return False
     return bool(base_currency) and bool(quote_currency) and base_currency != quote_currency

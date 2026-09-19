@@ -19,6 +19,7 @@ import uuid
 import octobot_commons.configuration as configuration
 import octobot_commons.constants as common_constants
 import octobot_commons.logging as logging
+import octobot_commons.symbols as commons_symbols
 import octobot_commons.timestamp_util as timestamp_util
 
 import octobot_trading.exchange_channel as exchange_channel
@@ -270,7 +271,8 @@ class ExchangeManager(util.Initializable):
         return self.exchange.get_pair_from_exchange(symbol, error_on_missing=error_on_missing)
 
     def get_exchange_quote_and_base(self, symbol):
-        return self.exchange.get_split_pair_from_exchange(symbol)
+        parsed_symbol = commons_symbols.parse_symbol(symbol)
+        return parsed_symbol.base, parsed_symbol.quote
 
     def get_symbol_data(self, symbol):
         return self.exchange_symbols_data.get_exchange_symbol_data(symbol)

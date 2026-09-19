@@ -415,7 +415,7 @@ class AbstractRebalancer:
 
     def _get_symbol_and_base_asset(self, coin_or_symbol: str) -> tuple[str, str]:
         if symbol_util.is_symbol(coin_or_symbol):
-            return coin_or_symbol, symbol_util.parse_symbol(coin_or_symbol).base # type: ignore
+            return coin_or_symbol, symbol_util.parse_symbol(coin_or_symbol).base  # type: ignore
         return symbol_util.merge_currencies(coin_or_symbol, self._exchange_interface.portfolio.reference_market), coin_or_symbol
 
     def _get_logger(self):

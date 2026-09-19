@@ -251,6 +251,42 @@ class TestDiscoverTradeSymbolsPortfolio:
             )
         assert result == ["SOL/USDC"]
 
+    def test_skips_reference_market_when_tickers_match_qualified_key(self):
+        exchange_manager, get_associated_symbol = _exchange_manager_with_markets(set())
+        with mock.patch.object(
+            exchange_util_module,
+            "get_associated_symbol",
+            side_effect=get_associated_symbol,
+        ) as get_associated_symbol_mock:
+            result = trade_symbols_discovery_module.discover_trade_symbols(
+                exchange_manager,
+                seed_symbols=["SOL/USDC"],
+                account=_make_account({"USDT": 402.0}),
+                account_trading=None,
+                fresh_transactions=[],
+                reference_market="USDT@ETH",
+            )
+        get_associated_symbol_mock.assert_not_called()
+        assert result == ["SOL/USDC"]
+
+    def test_skips_usd_like_network_qualified_holding(self):
+        exchange_manager, get_associated_symbol = _exchange_manager_with_markets(set())
+        with mock.patch.object(
+            exchange_util_module,
+            "get_associated_symbol",
+            side_effect=get_associated_symbol,
+        ) as get_associated_symbol_mock:
+            result = trade_symbols_discovery_module.discover_trade_symbols(
+                exchange_manager,
+                seed_symbols=[],
+                account=_make_account({"USDT@ETH": 402.0}),
+                account_trading=None,
+                fresh_transactions=[],
+                reference_market="BTC",
+            )
+        get_associated_symbol_mock.assert_not_called()
+        assert result == []
+
     def test_excludes_pair_when_quote_not_held(self):
         exchange_manager, get_associated_symbol = _exchange_manager_with_markets({"ALGO"})
         with mock.patch.object(

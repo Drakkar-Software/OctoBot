@@ -25,6 +25,25 @@ def test_merge_symbol():
     assert octobot_commons.symbols.merge_symbol("BTC/USDT:USDT") == "BTCUSDT_USDT"
 
 
+def test_merge_currencies_ticker_wise_network_legs():
+    merged = octobot_commons.symbols.merge_currencies("BTC@BTC", "USDT@ETH")
+    assert merged == "BTC@BTC/USDT@ETH"
+    parsed = octobot_commons.symbols.parse_symbol(merged)
+    assert parsed.has_ticker_wise_networks() is True
+    assert parsed.base == "BTC@BTC"
+    assert parsed.quote == "USDT@ETH"
+    assert parsed.base_and_quote() == ("BTC@BTC", "USDT@ETH")
+    assert parsed.base_asset_ticker() == "BTC"
+    assert parsed.quote_asset_ticker() == "USDT"
+
+
+def test_base_and_quote_spot_uses_bare_legs():
+    parsed = octobot_commons.symbols.parse_symbol("BTC/USDT")
+    assert parsed.base_and_quote() == ("BTC", "USDT")
+    assert parsed.base_asset_ticker() == "BTC"
+    assert parsed.quote_asset_ticker() == "USDT"
+
+
 def test_merge_currencies():
     assert octobot_commons.symbols.merge_currencies("BTC", "USDT") == "BTC/USDT"
     assert octobot_commons.symbols.merge_currencies("BTC", "USDT", "BTC") == "BTC/USDT:BTC"
@@ -144,6 +163,30 @@ class TestTradingTypeFromTradedSymbols:
             octobot_commons.symbols.trading_type_from_traded_symbols(["BTC/USDT", "BTC/USDT:USDT"])
 
 
+class TestIsUsdLikeCoin:
+    def test_bare_usd_like_tickers(self):
+        assert octobot_commons.symbols.is_usd_like_coin("USDT")
+        assert octobot_commons.symbols.is_usd_like_coin("USDC")
+
+    def test_network_qualified_usd_like_key(self):
+        assert octobot_commons.symbols.is_usd_like_coin("USDT@ETH")
+
+    def test_non_usd_like_tickers(self):
+        assert not octobot_commons.symbols.is_usd_like_coin("BTC")
+        assert not octobot_commons.symbols.is_usd_like_coin("BTC@BTC")
+
+    def test_empty_coin_is_not_usd_like(self):
+        assert not octobot_commons.symbols.is_usd_like_coin("")
+
+    def test_malformed_at_only_coin(self):
+        assert not octobot_commons.symbols.is_usd_like_coin("@")
+        assert octobot_commons.symbols.is_same_coin("@", "@")
+
+    def test_is_same_coin_matches_bare_and_qualified(self):
+        assert octobot_commons.symbols.is_same_coin("USDT", "USDT@ETH")
+        assert not octobot_commons.symbols.is_same_coin("USDT@ETH", "USDC@ETH")
+
+
 class TestIsUsdLikeToUsdLikePair:
     def test_returns_true_for_usdc_usd(self):
         assert octobot_commons.symbols.is_usd_like_to_usd_like_pair("USDC/USD")
@@ -156,6 +199,10 @@ class TestIsUsdLikeToUsdLikePair:
 
     def test_returns_false_for_usdc_eur(self):
         assert not octobot_commons.symbols.is_usd_like_to_usd_like_pair("USDC/EUR")
+
+    def test_ticker_wise_qualified_legs(self):
+        assert octobot_commons.symbols.is_usd_like_to_usd_like_pair("USDC@ETH/USDT@BNB")
+        assert not octobot_commons.symbols.is_usd_like_to_usd_like_pair("BTC@BTC/USDT@ETH")
 
 
 class TestMergeSymbolNetworkDex:

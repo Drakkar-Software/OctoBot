@@ -273,3 +273,33 @@ def _get_fees(currency, value):
         enums.FeePropertyColumns.CURRENCY.value: currency,
         enums.FeePropertyColumns.COST.value: decimal.Decimal(str(value))
     }
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestTradePnlGetFeesNetworkQualified:
+    def test_get_fees_uses_qualified_legs_for_denomination(self):
+        trade = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            executed_price=decimal.Decimal("10"),
+            fee={
+                enums.FeePropertyColumns.CURRENCY.value: "USDT@ETH",
+                enums.FeePropertyColumns.COST.value: decimal.Decimal("1"),
+            },
+        )
+        trade_pnl = personal_data.TradePnl([trade], [])
+        assert trade_pnl._get_fees(trade) == decimal.Decimal("1")
+
+
+class TestTradePnlNetworkQualified:
+    def test_special_fees_skips_qualified_legs(self):
+        entry = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            fee={
+                enums.FeePropertyColumns.CURRENCY.value: "BTC@BTC",
+                enums.FeePropertyColumns.COST.value: decimal.Decimal("1"),
+            },
+        )
+        trade_pnl = personal_data.TradePnl([entry], [])
+        assert trade_pnl.get_paid_special_fees_by_currency() == {}

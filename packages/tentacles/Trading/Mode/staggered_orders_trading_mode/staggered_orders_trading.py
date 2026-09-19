@@ -918,10 +918,14 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         parsed_symbol = symbol_util.parse_symbol(self.symbol)
         try:
             if selling:
-                available_funds = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.base).available
+                available_funds = trading_api.get_portfolio_currency(
+                    self.exchange_manager, parsed_symbol.base
+                ).available
                 return min(available_funds, volume)
             else:
-                available_funds = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.quote).available
+                available_funds = trading_api.get_portfolio_currency(
+                    self.exchange_manager, parsed_symbol.quote
+                ).available
                 required_cost = price * volume
                 return min(available_funds, required_cost) / price
         except decimal.DecimalException as err:
@@ -1715,15 +1719,24 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
                 trailed_order_side = trading_enums.TradeOrderSide.SELL if is_trailing_up else trading_enums.TradeOrderSide.BUY
                 ideal_base_quantity = to_convert_order.total_cost / trailed_price 
                 parsed_symbol = symbol_util.parse_symbol(to_convert_order.symbol)
-                other_side_currency = parsed_symbol.quote if trailed_order_side is trading_enums.TradeOrderSide.BUY else parsed_symbol.base
+                other_side_currency = (
+                    parsed_symbol.quote
+                    if trailed_order_side is trading_enums.TradeOrderSide.BUY
+                    else parsed_symbol.base
+                )
                 available_amount = trading_api.get_portfolio_currency(self.exchange_manager, other_side_currency).available
-                available_amount_in_base = available_amount if other_side_currency == parsed_symbol.base else available_amount / trailed_price
+                base_portfolio_asset = parsed_symbol.base
+                available_amount_in_base = (
+                    available_amount if other_side_currency == base_portfolio_asset else available_amount / trailed_price
+                )
                 if available_amount_in_base < ideal_base_quantity:
                     trailing_order_quantity = available_amount_in_base
                     self.logger.warning(
-                        f"Not enough available funds to create a full {ideal_base_quantity} {parsed_symbol.base} {to_convert_order.symbol} {trailed_order_side.name} trailing "
+                        f"Not enough available funds to create a full {ideal_base_quantity} "
+                        f"{parsed_symbol.base} {to_convert_order.symbol} {trailed_order_side.name} trailing "
                         f"order: available: {available_amount} {other_side_currency} < {ideal_base_quantity} "
-                        f"(={available_amount_in_base} {parsed_symbol.base}). Using {trailing_order_quantity} instead."
+                        f"(={available_amount_in_base} {parsed_symbol.base}). "
+                        f"Using {trailing_order_quantity} instead."
                     )
                 else:
                     trailing_order_quantity = ideal_base_quantity
@@ -1846,8 +1859,12 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
         orders = []
         try:
             parsed_symbol = symbol_util.parse_symbol(self.symbol)
-            available_base_amount = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.base).available
-            available_quote_amount = trading_api.get_portfolio_currency(self.exchange_manager, parsed_symbol.quote).available
+            available_base_amount = trading_api.get_portfolio_currency(
+                self.exchange_manager, parsed_symbol.base
+            ).available
+            available_quote_amount = trading_api.get_portfolio_currency(
+                self.exchange_manager, parsed_symbol.quote
+            ).available
             usable_amount_in_quote = available_quote_amount + (available_base_amount * current_price)
             config_max_amount = self.buy_funds + (self.sell_funds * current_price)
             if config_max_amount > trading_constants.ZERO:

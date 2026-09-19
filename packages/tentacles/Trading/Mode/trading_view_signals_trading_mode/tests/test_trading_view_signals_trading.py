@@ -26,6 +26,7 @@ import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 import octobot_commons.symbols as commons_symbols
+import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.tests.test_config as test_config
 import octobot_trading.constants as trading_constants
@@ -1290,6 +1291,57 @@ async def test_functional_limit_buy_signal_end_to_end(tools):
     assert created_order.side == trading_enums.TradeOrderSide.BUY
     assert created_order.origin_price == decimal.Decimal(str(limit_price))
     assert created_order.origin_quantity == decimal.Decimal(str(order_volume))
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_QUOTE_ASSET = "USDT@ETH"
+
+
+class TestTradingViewSignalsNetworkQualifiedPortfolioAssets:
+    async def test_mode_symbol_aliases_for_signal_matching(self, tools):
+        _exchange_manager, _symbol, mode, _producer, _consumer = tools
+        mode.symbol = TICKER_WISE_SYMBOL
+        parsed_symbol = symbol_util.parse_symbol(mode.symbol)
+        mode.str_symbol = str(parsed_symbol)
+        mode.merged_simple_symbol = parsed_symbol.merged_str_base_and_quote_only_symbol(market_separator="")
+        parsed_data = {
+            Mode.TradingViewSignalsTradingMode.EXCHANGE_KEY: mode.exchange_manager.exchange_name,
+            Mode.TradingViewSignalsTradingMode.SYMBOL_KEY: mode.str_symbol,
+        }
+        assert mode.is_relevant_signal(parsed_data) is True
+        parsed_data[Mode.TradingViewSignalsTradingMode.SYMBOL_KEY] = mode.merged_simple_symbol
+        assert mode.is_relevant_signal(parsed_data) is True
+        parsed_data[Mode.TradingViewSignalsTradingMode.SYMBOL_KEY] = "BTC/USDT"
+        assert mode.is_relevant_signal(parsed_data) is False
+
+    async def test_trading_view_signal_callback_accepts_ticker_wise_alert(self, tools):
+        exchange_manager, _symbol, mode, producer, _consumer = tools
+        mode.symbol = TICKER_WISE_SYMBOL
+        parsed_symbol = symbol_util.parse_symbol(mode.symbol)
+        mode.str_symbol = str(parsed_symbol)
+        mode.merged_simple_symbol = parsed_symbol.merged_str_base_and_quote_only_symbol(market_separator="")
+        exchange_manager.exchange_personal_data.portfolio_manager.reference_market = PORTFOLIO_QUOTE_ASSET
+        with mock.patch.object(producer, "signal_callback", mock.AsyncMock()) as signal_callback_mock:
+            signal = f"""
+                EXCHANGE={exchange_manager.exchange_name}
+                SYMBOL={mode.merged_simple_symbol}
+                SIGNAL=BUY
+            """
+            await mode._trading_view_signal_callback({"metadata": signal})
+            signal_callback_mock.assert_awaited_once()
+            parsed_data = signal_callback_mock.await_args[0][0]
+            assert parsed_data[Mode.TradingViewSignalsTradingMode.SYMBOL_KEY] == mode.str_symbol
+
+    async def test_parse_signal_data_uses_portfolio_reference_market_for_futures_usd_replace(self):
+        errors = []
+        exchange_name = "binance"
+        reference_market = PORTFOLIO_QUOTE_ASSET
+        assert Mode.TradingViewSignalsTradingMode.parse_signal_data(
+            "SYMBOL=USD*", exchange_name, trading_enums.ExchangeTypes.FUTURE, reference_market, errors
+        ) == {
+            "SYMBOL": PORTFOLIO_QUOTE_ASSET,
+        }
+        assert errors == []
 
 
 def compare_dict_with_nan(d_1, d_2):

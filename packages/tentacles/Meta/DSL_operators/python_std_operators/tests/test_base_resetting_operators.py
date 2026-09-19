@@ -24,8 +24,10 @@ import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.errors
 import octobot_commons.enums as commons_enums
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
 
-class _LoopUntilSingleEvalTestConditionOperator(dsl_interpreter.CallOperator):
+
+class _LoopUntilSingleEvalTestConditionOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     MIN_PARAMS = 0
     MAX_PARAMS = 0
     CATEGORY = commons_enums.DslKeywordCategory.LOGIC.value

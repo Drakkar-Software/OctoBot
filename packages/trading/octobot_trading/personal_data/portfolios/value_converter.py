@@ -109,8 +109,13 @@ class ValueConverter:
         if symbol_util.is_usd_like_coin(currency):
             return quantity
         if symbol := self.get_usd_like_symbol_from_symbols(currency, self.last_prices_by_trading_pair):
-            base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
-            usd_like_currency = base if symbol_util.is_usd_like_coin(base) else quote
+            # Bare asset ticker: bridge routing — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+            parsed_symbol = symbol_util.parse_symbol(symbol)
+            usd_like_currency = (
+                parsed_symbol.base
+                if symbol_util.is_usd_like_coin(parsed_symbol.base)
+                else parsed_symbol.quote
+            )
             return self.evaluate_value(
                 currency, quantity, raise_error=raise_error,
                 target_currency=usd_like_currency, init_price_fetchers=init_price_fetchers
@@ -133,14 +138,20 @@ class ValueConverter:
         usd_like_symbols = []
         for usd_like_coin in commons_constants.USD_LIKE_COINS:
             for symbol in symbols:
-                base_and_quote = symbol_util.parse_symbol(symbol).base_and_quote()
-                if currency in base_and_quote and usd_like_coin in base_and_quote:
+                # Bare asset ticker: bridge routing — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+                parsed_symbol = symbol_util.parse_symbol(symbol)
+                base_and_quote = (parsed_symbol.base, parsed_symbol.quote)
+                bare_tickers = (parsed_symbol.base_asset_ticker(), parsed_symbol.quote_asset_ticker())
+                if currency in base_and_quote and usd_like_coin in bare_tickers:
                     usd_like_symbols.append(symbol)
         return usd_like_symbols
 
     @staticmethod
     def can_convert_symbol_to_usd_like(symbol: str) -> bool:
-        base, quote = symbol_util.parse_symbol(symbol).base_and_quote()
+        # Bare asset ticker: bridge routing — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+        parsed_symbol = symbol_util.parse_symbol(symbol)
+        base = parsed_symbol.base_asset_ticker()
+        quote = parsed_symbol.quote_asset_ticker()
         for usd_like_coins in commons_constants.USD_LIKE_COINS:
             if usd_like_coins == base or usd_like_coins == quote:
                 return True
@@ -307,6 +318,7 @@ class ValueConverter:
         # look into available symbols to find pair bridges
         for bridge_part_1_symbol in self._get_priced_pairs():
             parsed_bridge_part_1_symbol = symbol_util.parse_symbol(bridge_part_1_symbol)
+            # Bare asset ticker: bridge routing — walk pair legs to link conversions; leg match uses qualified .base/.quote when ticker-wise.
             if (parsed_bridge_part_1_symbol.base, parsed_bridge_part_1_symbol.quote) in base_bridge\
                or (parsed_bridge_part_1_symbol.quote, parsed_bridge_part_1_symbol.base) in base_bridge:
                 # avoid looping in symbols

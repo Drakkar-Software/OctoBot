@@ -476,10 +476,17 @@ class ActionsDAGParser:
         parsed_symbol = _parse_order_symbol(self.params.ORDER_SYMBOL)
         if self.params.ORDER_SIDE:
             signal = self.params.ORDER_SIDE.lower()
-        elif parsed_symbol.base == self.params.BLOCKCHAIN_FROM_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_TO_ASSET: # type: ignore
+        # Bare asset ticker: DAG blockchain leg params are bare tickers — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+        elif (
+            parsed_symbol.base_asset_ticker() == self.params.BLOCKCHAIN_FROM_ASSET
+            and parsed_symbol.quote_asset_ticker() == self.params.BLOCKCHAIN_TO_ASSET
+        ):  # type: ignore
             # sell the first blockchain asset to get the second one
             signal = tv_trading_mode.SELL_SIGNAL
-        elif parsed_symbol.base == self.params.BLOCKCHAIN_TO_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_FROM_ASSET: # type: ignore
+        elif (
+            parsed_symbol.base_asset_ticker() == self.params.BLOCKCHAIN_TO_ASSET
+            and parsed_symbol.quote_asset_ticker() == self.params.BLOCKCHAIN_FROM_ASSET
+        ):  # type: ignore
             # buy the second blockchain asset to get the first one
             signal = tv_trading_mode.BUY_SIGNAL
         else:

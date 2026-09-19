@@ -243,6 +243,52 @@ async def test_get_amount_from_input_amount(null_context):
             adapt_amount_to_holdings_mock.reset_mock()
 
 
+class TestGetAmountFromInputAmountTickerWise:
+    async def test_traded_symbols_percent_uses_qualified_symbol_legs(self, null_context):
+        ticker_wise_symbol = "BTC@BTC/USDT@ETH"
+        null_context.exchange_manager = mock.Mock(
+            exchange_personal_data=mock.Mock(
+                portfolio_manager=mock.Mock(
+                    portfolio_value_holder=mock.Mock()
+                )
+            ),
+            exchange=mock.Mock(supports_fetching_balance=mock.Mock(return_value=True)),
+        )
+        null_context.symbol = ticker_wise_symbol
+        portfolio_value_holder = (
+            null_context.exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder
+        )
+        exchange_personal_data = null_context.exchange_manager.exchange_personal_data
+        null_context.exchange_manager = mock.Mock(
+            exchange_config=mock.Mock(
+                traded_symbols=[commons_symbols.parse_symbol(ticker_wise_symbol)],
+            ),
+            exchange_personal_data=exchange_personal_data,
+            exchange=null_context.exchange_manager.exchange,
+        )
+        with mock.patch.object(
+            dsl,
+            "parse_quantity",
+            mock.Mock(
+                return_value=(
+                    script_keywords.QuantityType.TRADED_SYMBOLS_ASSETS_PERCENT,
+                    decimal.Decimal(8),
+                )
+            ),
+        ), mock.patch.object(
+            portfolio_value_holder,
+            "get_assets_holdings_value",
+            mock.Mock(return_value=decimal.Decimal("0.01")),
+        ) as get_holdings_value_mock, mock.patch.object(
+            account_balance,
+            "adapt_amount_to_holdings",
+            mock.AsyncMock(side_effect=lambda _context, amount, *_args, **_kwargs: amount),
+        ):
+            result = await script_keywords.get_amount_from_input_amount(null_context, "8%t", "buy")
+        get_holdings_value_mock.assert_called_once_with({"BTC@BTC", "USDT@ETH"}, "BTC@BTC")
+        assert result == decimal.Decimal("0.0008")
+
+
 async def test_get_amount_from_input_amount_for_position(null_context):
     null_context.exchange_manager = mock.Mock(
         exchange_personal_data=mock.Mock(
@@ -282,3 +328,28 @@ async def test_get_amount_from_input_amount_for_position(null_context):
         is_in_one_way_position_mode_mock.assert_called_once_with(null_context)
         get_position_mock.assert_called_once()
         adapt_amount_to_holdings_mock.assert_called_once()
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestTotalAccountBalanceNetworkQualified:
+    @pytest.mark.asyncio
+    async def test_reference_market_matches_qualified_quote(self):
+        context = mock.Mock()
+        context.symbol = TICKER_WISE_SYMBOL
+        context.exchange_manager = mock.Mock(
+            is_future=False,
+            exchange_personal_data=mock.Mock(
+                portfolio_manager=mock.Mock(
+                    reference_market="USDT@ETH",
+                    portfolio_value_holder=mock.Mock(portfolio_current_value=decimal.Decimal("100")),
+                ),
+            ),
+        )
+        with mock.patch(
+            "octobot_trading.personal_data.get_up_to_date_price",
+            mock.AsyncMock(return_value=decimal.Decimal("2")),
+        ):
+            result = await account_balance.total_account_balance(context)
+        assert result == decimal.Decimal("50")

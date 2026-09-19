@@ -1,7 +1,9 @@
 import typing
 
+import octobot_commons
 import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_commons.constants
+import octobot_commons.symbols as commons_symbols
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
 import octobot_trading.api.exchange as exchange_api
@@ -84,7 +86,8 @@ def infer_reference_market(
     ):
         return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
     if crypto_currencies:
-        return octobot_commons.symbols.parse_symbol(crypto_currencies[0].trading_pairs[0]).quote # type: ignore
+        # Ref market uses qualified .quote on ticker-wise pairs (e.g. USDT@ETH).
+        return octobot_commons.symbols.parse_symbol(crypto_currencies[0].trading_pairs[0]).quote  # type: ignore
     elif exchange_account_details:
         if exchange_account_details.portfolio.unit:
             # portfolio unit can be used to define the reference market
@@ -95,8 +98,14 @@ def infer_reference_market(
             )
     return octobot_commons.constants.DEFAULT_REFERENCE_MARKET
 
+
 def _get_crypto_currencies(symbols: set[str]) -> list[profile_data_import.CryptoCurrencyData]:
+    trading_pairs_by_bare_base: dict[str, list[str]] = {}
+    for symbol in symbols:
+        parsed_symbol = commons_symbols.parse_symbol(symbol)
+        base_bare_ticker = parsed_symbol.base_asset_ticker()
+        trading_pairs_by_bare_base.setdefault(base_bare_ticker, []).append(symbol)
     return [
-        profile_data_import.CryptoCurrencyData(trading_pairs=[symbol], name=symbol)
-        for symbol in symbols
+        profile_data_import.CryptoCurrencyData(trading_pairs=trading_pairs, name=base_bare_ticker)
+        for base_bare_ticker, trading_pairs in sorted(trading_pairs_by_bare_base.items())
     ]

@@ -23,39 +23,51 @@ _FULL_SYMBOL_GROUPS_REGEX = r"([^//]*)\/([^:]*):?([^-]*)-?([^-]*)-?([^-]*)-?([^-
 
 # pylint: disable=R0902,R0913
 class Symbol:
-    #                             base   /  quote : settlement-identifier-strike price-type
-    # Inspired from CCXT https://docs.ccxt.com/#/README?id=contract-naming-conventions:
-    # //
-    # // base asset or currency
-    # // ↓
-    # // ↓  quote asset or currency
-    # // ↓  ↓
-    # // ↓  ↓    settlement asset or currency
-    # // ↓  ↓    ↓
-    # // ↓  ↓    ↓       identifier (settlement date)
-    # // ↓  ↓    ↓       ↓
-    # // ↓  ↓    ↓       ↓   strike price
-    # // ↓  ↓    ↓       ↓   ↓
-    # // ↓  ↓    ↓       ↓   ↓   type, put (P) or call (C)
-    # // ↓  ↓    ↓       ↓   ↓   ↓
-    # 'BTC/USDT:BTC-211225-60000-P'  // BTC/USDT put option contract strike price 60000 USDT settled in BTC (inverse)
-    # on 2021-12-25
-    # 'ETH/USDT:USDT-211225-40000-C' // BTC/USDT call option contract strike price 40000 USDT settled in USDT (linear,
-    # vanilla) on 2021-12-25
-    # 'ETH/USDT:ETH-210625-5000-P'   // ETH/USDT put option contract strike price 5000 USDT settled in ETH (inverse)
-    # on 2021-06-25
-    # 'ETH/USDT:USDT-210625-5000-C'  // ETH/USDT call option contract strike price 5000 USDT settled in USDT (linear,
-    # vanilla) on 2021-06-25
-    # Local OctoBot addition (supported by the OctoBot ccxt fork)
-    # Uses https://docs.ccxt.com/#/README?id=unified-networks for network names.
-    # Optional network and DEX suffix (in uppercase, always at the end of the symbol):
-    # 'BTC/USDT@SOL!RAYDIUM'  // BTC/USDT spot pair on solana network and raydium dex
-    # 'WETH/USDT:USDT-211225-40000-C@ETH!UNISWAP'  // call option on ethereum network and uniswap dex
-    # 'WETH/USDT:USDT-211225-40000-C@ETH!*'  // call option on ethereum network and any (most liquid) dex
-    # Note: network and dex names cannot contain '!', which separates network from dex after '@'.
-    # Ticker-wise per-leg network:
-    # 'USDT@ETH'  // USDT on the ETH network (portfolio asset key)
-    # 'ETH@ETH/USDT@BNB'  // spot pair with per-leg networks
+    """
+    base   /  quote : settlement-identifier-strike price-type
+    Inspired from CCXT https://docs.ccxt.com/#/README?id=contract-naming-conventions:
+    base asset or currency
+    ↓
+    ↓  quote asset or currency
+    ↓  ↓
+    ↓  ↓    settlement asset or currency
+    ↓  ↓    ↓
+    ↓  ↓    ↓       identifier (settlement date)
+    ↓  ↓    ↓       ↓
+    ↓  ↓    ↓       ↓   strike price
+    ↓  ↓    ↓       ↓   ↓
+    ↓  ↓    ↓       ↓   ↓   type, put (P) or call (C)
+    ↓  ↓    ↓       ↓   ↓   ↓
+    'BTC/USDT:BTC-211225-60000-P'  // BTC/USDT put option contract strike price 60000 USDT settled in BTC (inverse)
+    on 2021-12-25
+    'ETH/USDT:USDT-211225-40000-C' // BTC/USDT call option contract strike price 40000 USDT settled in USDT (linear,
+    vanilla) on 2021-12-25
+    'ETH/USDT:ETH-210625-5000-P'   // ETH/USDT put option contract strike price 5000 USDT settled in ETH (inverse)
+    on 2021-06-25
+    'ETH/USDT:USDT-210625-5000-C'  // ETH/USDT call option contract strike price 5000 USDT settled in USDT (linear,
+    vanilla) on 2021-06-25
+
+    Local OctoBot addition (supported by the OctoBot ccxt fork)
+    @NETWORK and !DEX
+    Uses https://docs.ccxt.com/#/README?id=unified-networks for network names.
+    Optional network and DEX suffix (in uppercase, always at the end of the symbol):
+    'BTC/USDT@SOL!RAYDIUM'  // BTC/USDT spot pair on solana network and raydium dex
+    'WETH/USDT:USDT-211225-40000-C@ETH!UNISWAP'  // call option on ethereum network and uniswap dex
+    'WETH/USDT:USDT-211225-40000-C@ETH!*'  // call option on ethereum network and any (most liquid) dex
+    Note: network and dex names cannot contain '!', which separates network from dex after '@'.
+
+    Optional ticker-wise per-leg @NETWORK:
+    'USDT@ETH'  // USDT on the ETH network (portfolio asset key)
+    'ETH@ETH/USDT@BNB'  // spot pair with per-leg networks
+    'BTC@BTC/USDT@ETH'  // base=BTC@BTC, quote=USDT@ETH; bare tickers via base_asset_ticker()/quote_asset_ticker()
+    After parse, .base and .quote:
+    - Plain spot and pair-level network (BTC/USDT, BTC/USDT@SOL): bare currency tickers.
+    - Ticker-wise pairs (BTC@BTC/USDT@ETH): network-qualified legs for
+      reference_market, holdings, fee currency, and config currency sets.
+    When bare currency is required (USD-like checks, CCXT fetch legs, bridge routing, etc.):
+      base_asset_ticker() / quote_asset_ticker().
+    At each such call site: # Bare asset ticker: <reason> — .base/.quote are network-qualified on
+    """
 
     def __init__(
         self,
@@ -107,11 +119,17 @@ class Symbol:
             self.network_separator,
         ):
             base_leg, quote_leg = symbol_str.split(self.market_separator, 1)
-            self.base, self.base_network = parse_currency_network_leg(
+            base_currency, self.base_network = parse_currency_network_leg(
                 base_leg, self.network_separator, self.dex_separator
             )
-            self.quote, self.quote_network = parse_currency_network_leg(
+            quote_currency, self.quote_network = parse_currency_network_leg(
                 quote_leg, self.network_separator, self.dex_separator
+            )
+            self.base = _format_network_qualified_leg(
+                base_currency, self.base_network, self.network_separator
+            )
+            self.quote = _format_network_qualified_leg(
+                quote_currency, self.quote_network, self.network_separator
             )
             self.network = None
             self.dex = None
@@ -143,9 +161,29 @@ class Symbol:
 
     def base_and_quote(self) -> typing.Tuple[str, str]:
         """
-        return a tuple made of this symbol's base and quote assets
+        Return this symbol's base and quote legs (qualified on ticker-wise pairs).
         """
         return self.base, self.quote
+
+    def base_asset_ticker(self) -> str:
+        """
+        Bare currency ticker for the base leg (e.g. ``BTC`` on ``BTC@BTC/USDT@ETH``).
+        On non-ticker-wise symbols, equals ``base``.
+        """
+        if self.has_ticker_wise_networks():
+            return self.base.rsplit(self.network_separator, 1)[0]
+        return self.base
+
+    def quote_asset_ticker(self) -> typing.Optional[str]:
+        """
+        Bare currency ticker for the quote leg (e.g. ``USDT`` on ``BTC@BTC/USDT@ETH``).
+        On non-ticker-wise symbols, equals ``quote``.
+        """
+        if self.quote is None:
+            return None
+        if self.has_ticker_wise_networks():
+            return self.quote.rsplit(self.network_separator, 1)[0]
+        return self.quote
 
     def merged_str_symbol(
         self,
@@ -158,11 +196,8 @@ class Symbol:
         """
         return the base/quote representation of this symbol. includes settlement asset if set
         """
-        if self.base_network and self.quote_network:
-            return (
-                f"{self.base}{network_separator}{self.base_network}"
-                f"{market_separator}{self.quote}{network_separator}{self.quote_network}"
-            )
+        if self.has_ticker_wise_networks():
+            return f"{self.base}{market_separator}{self.quote}"
         if self.quote is None and self.network:
             return f"{self.base}{network_separator}{self.network}"
         merged_symbol = f"{self.base}{market_separator}{self.quote}"
@@ -319,6 +354,14 @@ class Symbol:
 
     def __repr__(self):
         return str(self)
+
+
+def _format_network_qualified_leg(
+    currency: str,
+    network: str,
+    network_separator: str = octobot_commons.NETWORK_SEPARATOR,
+) -> str:
+    return f"{currency}{network_separator}{network}"
 
 
 def extract_network_and_dex(

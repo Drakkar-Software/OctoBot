@@ -20,6 +20,7 @@ import pytest
 import octobot_commons.profiles as commons_profiles
 import octobot_commons.profiles.profile_data as profile_data_module
 import octobot_trading.util as util
+import octobot_trading.util.config_util as config_util
 import octobot_trading.constants as trading_constants
 import octobot_commons.symbols as symbol_util
 import octobot_commons.constants as commons_constants
@@ -248,3 +249,21 @@ class TestGetConfig:
         build_setup_mock.assert_not_called()
         assert tentacles_setup_config.profile is None
         assert configuration.profile.tentacles_setup_config is None
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestConfigUtilNetworkQualified:
+    def test_get_all_currencies_includes_network_qualified_legs(self):
+        config = {
+            commons_constants.CONFIG_CRYPTO_CURRENCIES: {
+                "BTC@BTC": {
+                    commons_constants.CONFIG_ENABLED_OPTION: True,
+                    commons_constants.CONFIG_CRYPTO_PAIRS: [TICKER_WISE_SYMBOL],
+                }
+            }
+        }
+        currencies = config_util.get_all_currencies(config)
+        assert "BTC@BTC" in currencies
+        assert "USDT@ETH" in currencies

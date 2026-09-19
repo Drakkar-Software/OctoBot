@@ -18,6 +18,7 @@ import asyncio
 import contextlib
 import typing
 
+import octobot_commons
 import octobot_commons.symbols as commons_symbols
 import octobot_commons.enums as commons_enums
 
@@ -420,6 +421,14 @@ def cancel_ccxt_throttle_task():
         # manually cancel ccxt async throttle task since it apparently can't be cancelled otherwise
         if str(task._coro).startswith("<coroutine object Throttler.looper at"):
             task.cancel()
+
+
+def exchange_uses_network_qualified_markets(exchange_manager) -> bool:
+    network_separator = octobot_commons.NETWORK_SEPARATOR
+    return any(
+        network_separator in market_symbol
+        for market_symbol in exchange_manager.client_symbols
+    )
 
 
 def get_exchanges_availability() -> list[protocol_models.ExchangeAvailability]:
