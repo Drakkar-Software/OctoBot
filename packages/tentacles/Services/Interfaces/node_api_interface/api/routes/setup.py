@@ -23,6 +23,7 @@ from fastapi.security import HTTPBasicCredentials
 import octobot_node.config as node_config
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
+import octobot.community.wallet_backend.setup_timing as wallet_setup_timing
 import octobot.community.node_journal as node_journal
 import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.recording_context as journal_recording_context
@@ -67,6 +68,15 @@ class RecoverPassphraseBody(pydantic.BaseModel):
 
 class RecoverPassphraseResult(pydantic.BaseModel):
     address: str
+
+
+class WalletBackupPromptStatus(pydantic.BaseModel):
+    wallet_setup_succeeded_at: typing.Optional[float] = None
+    backup_saved_ack: bool = False
+
+
+class WalletBackupSavedAckResult(pydantic.BaseModel):
+    acknowledged: bool = True
 
 
 class LocalNetworkAddress(pydantic.BaseModel):
@@ -283,3 +293,33 @@ def recover_wallet_passphrase(body: RecoverPassphraseBody) -> RecoverPassphraseR
             detail=str(err),
         )
     return RecoverPassphraseResult(address=target_address)
+
+
+@router.get("/setup/wallet/backup-prompt-status", response_model=WalletBackupPromptStatus)
+def get_wallet_backup_prompt_status(
+    current_user: CurrentUser,
+) -> WalletBackupPromptStatus:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    return WalletBackupPromptStatus(
+        wallet_setup_succeeded_at=wallet_setup_timing.get_wallet_setup_succeeded_timestamp(),
+        backup_saved_ack=auth.is_wallet_backup_saved_acknowledged(),
+    )
+
+
+@router.post("/setup/wallet/backup-saved-ack", response_model=WalletBackupSavedAckResult)
+def acknowledge_wallet_backup_saved(
+    current_user: CurrentUser,
+) -> WalletBackupSavedAckResult:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    auth.set_wallet_backup_saved_acknowledged()
+    return WalletBackupSavedAckResult()

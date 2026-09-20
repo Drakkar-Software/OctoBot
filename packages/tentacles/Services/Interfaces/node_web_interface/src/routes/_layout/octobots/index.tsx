@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react"
 import { Suspense, useCallback, useMemo, useState } from "react"
 
 import type { Task_Output as Task } from "@/client"
+import { WalletBackupPromptBanner } from "@/components/Dashboard/WalletBackupPromptBanner"
 import { BotGrid } from "@/components/OctoBots/BotGrid"
 import { BotsFilterBar } from "@/components/OctoBots/BotsFilterBar"
 import { SelectionToolbar } from "@/components/OctoBots/SelectionToolbar"
@@ -111,6 +112,7 @@ function BotsIndex() {
         </div>
       }
     >
+      <WalletBackupPromptBanner />
       <BotsContent />
     </Suspense>
   )

@@ -22,6 +22,7 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { clearAuth } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { savePassword } from "@/lib/device-key"
+import { saveLocalWalletSetupSucceededAtMs } from "@/lib/wallet-backup-prompt-storage"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/setup/")({
@@ -112,6 +113,7 @@ function SetupWallet() {
       // isLoggedIn() stays false instead of leaving a passwordless session.
       try {
         await savePassword(passphrase)
+        await saveLocalWalletSetupSucceededAtMs(Date.now())
       } catch {
         showErrorToast(
           "Could not save your passphrase on this device. Check your browser's privacy settings and try again.",
