@@ -1,0 +1,295 @@
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { ShieldCheck } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+
+import { type WalletInfo, WalletsService } from "@/client"
+import { AuthLayout } from "@/components/Common/AuthLayout"
+import {
+  LoginAuthErrorDisplay,
+  loginAuthFieldDescribedBy,
+} from "@/components/Common/LoginAuthErrorDisplay"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { PasswordInput } from "@/components/ui/password-input"
+import useAuth from "@/hooks/useAuth"
+import {
+  type AuthErrorPresentation,
+  applyLoginAuthPresentation,
+  getAuthErrorPresentation,
+  resolveLoginAuthPresentation,
+  shouldResetMultiWalletSelectionOnLoginError,
+} from "@/lib/auth-error-messages"
+import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
+import { consumeLoginPassphraseRecoveredHint } from "@/lib/login-passphrase-recovered-hint"
+import { consumeLoginSessionClearedHint } from "@/lib/login-session-hint"
+import { truncateAddress } from "@/lib/wallet-utils"
+
+const formSchema = z.object({
+  passphrase: z.string().min(1, { message: "Passphrase is required" }),
+})
+
+type FormData = z.infer<typeof formSchema>
+
+export const Route = createFileRoute("/login/")({
+  component: Login,
+  head: () => ({
+    meta: [{ title: "Log In" }],
+  }),
+})
+
+function Login() {
+  const { loginMutation } = useAuth()
+  const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
+  const [sessionClearedBanner, setSessionClearedBanner] = useState(false)
+  const [passphraseRecoveredBanner, setPassphraseRecoveredBanner] = useState(false)
+  const [loginAuthError, setLoginAuthError] =
+    useState<AuthErrorPresentation | null>(null)
+
+  useEffect(() => {
+    if (consumeLoginSessionClearedHint()) {
+      setSessionClearedBanner(true)
+    }
+    if (consumeLoginPassphraseRecoveredHint()) {
+      setPassphraseRecoveredBanner(true)
+    }
+  }, [])
+
+  const {
+    data: wallets = [],
+    isPending: walletsLoading,
+    isError: walletsError,
+  } = useQuery({
+    queryKey: ["wallets"],
+    queryFn: () => WalletsService.listWallets(),
+    staleTime: 0,
+  })
+
+  const multiWallet = !walletsLoading && wallets.length > 1
+  const sessionExpiredCopy = getAuthErrorPresentation(
+    CLIENT_AUTH_ERROR_CODES.SESSION_CLEARED,
+  )
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    mode: "onBlur",
+    criteriaMode: "all",
+    defaultValues: {
+      passphrase: "",
+    },
+  })
+
+  const onSubmit = (data: FormData) => {
+    if (loginMutation.isPending) return
+    setLoginAuthError(null)
+
+    let username: string
+    if (multiWallet) {
+      if (!selectedWallet) return
+      username = selectedWallet.address
+    } else if (wallets.length === 1) {
+      username = wallets[0].address
+    } else {
+      setLoginAuthError(
+        applyLoginAuthPresentation(
+          CLIENT_AUTH_ERROR_CODES.NETWORK_ERROR,
+          { multiWallet },
+          false,
+        ),
+      )
+      return
+    }
+
+    loginMutation.mutate(
+      { username, password: data.passphrase },
+      {
+        onError: (err) => {
+          setLoginAuthError(
+            resolveLoginAuthPresentation(err, data.passphrase, {
+              multiWallet,
+            }),
+          )
+          if (multiWallet && shouldResetMultiWalletSelectionOnLoginError(err)) {
+            setSelectedWallet(null)
+            setLoginAuthError(null)
+            form.reset()
+          }
+        },
+      },
+    )
+  }
+
+  if (walletsError) {
+    return (
+      <AuthLayout>
+        <div className="flex flex-col items-center gap-2 text-center">
+          <h1 className="text-2xl font-bold">Unable to connect</h1>
+          <p className="text-sm text-muted-foreground">
+            Could not reach the node. Please check your connection and reload.
+          </p>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (multiWallet && selectedWallet === null) {
+    return (
+      <AuthLayout>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-2xl font-bold">Choose a wallet</h1>
+            <p className="text-sm text-muted-foreground">
+              Select the wallet you want to connect with.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {wallets.map((wallet) => (
+              <button
+                key={wallet.address}
+                type="button"
+                onClick={() => setSelectedWallet(wallet)}
+                className="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium truncate">
+                      {wallet.name || (
+                        <span className="text-muted-foreground italic font-normal">
+                          No name
+                        </span>
+                      )}
+                    </span>
+                    {wallet.is_admin && (
+                      <ShieldCheck className="size-4 shrink-0 text-primary" />
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {truncateAddress(wallet.address)}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  return (
+    <AuthLayout>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex flex-col gap-6"
+        >
+          <div className="flex flex-col items-center gap-2 text-center">
+            {multiWallet && selectedWallet ? (
+              <>
+                <h1 className="text-2xl font-bold">
+                  {selectedWallet.name ||
+                    truncateAddress(selectedWallet.address)}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Enter the passphrase for this wallet.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedWallet(null)
+                    setLoginAuthError(null)
+                    form.reset()
+                  }}
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                >
+                  ← Choose a different wallet
+                </button>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold">Unlock your node</h1>
+                <p className="text-sm text-muted-foreground">
+                  Enter your passphrase to continue.
+                </p>
+              </>
+            )}
+          </div>
+
+          {passphraseRecoveredBanner ? (
+            <div
+              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+              data-testid="login-passphrase-recovered-banner"
+              role="status"
+            >
+              <p className="font-medium text-foreground">Passphrase updated</p>
+              <p>Sign in with your new passphrase.</p>
+            </div>
+          ) : null}
+
+          {sessionClearedBanner ? (
+            <div
+              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+              data-testid="login-session-cleared-banner"
+              role="status"
+            >
+              <p className="font-medium text-foreground">
+                {sessionExpiredCopy.title}
+              </p>
+              <p>{sessionExpiredCopy.explanation}</p>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="passphrase"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Passphrase</FormLabel>
+                  <FormControl>
+                    <PasswordInput
+                      data-testid="passphrase-input"
+                      placeholder="Your passphrase"
+                      aria-invalid={loginAuthError ? true : undefined}
+                      aria-describedby={loginAuthFieldDescribedBy(loginAuthError)}
+                      {...field}
+                      onChange={(event) => {
+                        setLoginAuthError(null)
+                        field.onChange(event)
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                  <LoginAuthErrorDisplay presentation={loginAuthError} />
+                </FormItem>
+              )}
+            />
+
+            <LoadingButton type="submit" loading={loginMutation.isPending}>
+              Unlock
+            </LoadingButton>
+
+            <p className="text-center text-sm text-muted-foreground">
+              <Link
+                to="/login/recover"
+                className="underline underline-offset-2"
+                data-testid="login-forgot-passphrase-link"
+              >
+                Forgot your passphrase?
+              </Link>
+            </p>
+          </div>
+        </form>
+      </Form>
+    </AuthLayout>
+  )
+}

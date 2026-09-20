@@ -18,6 +18,7 @@ import { Route as LayoutDslKeywordsRouteImport } from './routes/_layout/dsl-keyw
 import { Route as LayoutOctobotsRouteImport } from './routes/_layout/octobots'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutSupportRouteImport } from './routes/_layout/support'
+import { Route as LoginIndexRouteImport } from './routes/login.index'
 import { Route as LoginRecoverRouteImport } from './routes/login.recover'
 import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as SetupConnectRouteImport } from './routes/setup/connect'
@@ -77,6 +78,11 @@ const LayoutSupportRoute = LayoutSupportRouteImport.update({
   id: '/support',
   path: '/support',
   getParentRoute: () => LayoutRoute,
+} as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LoginRoute,
 } as any)
 const LoginRecoverRoute = LoginRecoverRouteImport.update({
   id: '/recover',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/setup/first-bot': typeof SetupFirstBotRoute
   '/setup/mobile-app': typeof SetupMobileAppRoute
   '/setup/welcome': typeof SetupWelcomeRoute
+  '/login/': typeof LoginIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/octobots/export': typeof LayoutOctobotsExportRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
@@ -183,7 +190,6 @@ export interface FileRoutesByFullPath {
   '/octobots/new/presets': typeof LayoutOctobotsNewPresetsRoute
 }
 export interface FileRoutesByTo {
-  '/login': typeof LoginRouteWithChildren
   '/debug': typeof LayoutDebugRoute
   '/dsl-keywords': typeof LayoutDslKeywordsRoute
   '/support': typeof LayoutSupportRoute
@@ -193,6 +199,7 @@ export interface FileRoutesByTo {
   '/setup/mobile-app': typeof SetupMobileAppRoute
   '/setup/welcome': typeof SetupWelcomeRoute
   '/': typeof LayoutIndexRoute
+  '/login': typeof LoginIndexRoute
   '/setup': typeof SetupIndexRoute
   '/octobots/export': typeof LayoutOctobotsExportRoute
   '/octobots/import': typeof LayoutOctobotsImportRoute
@@ -220,6 +227,7 @@ export interface FileRoutesById {
   '/setup/mobile-app': typeof SetupMobileAppRoute
   '/setup/welcome': typeof SetupWelcomeRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/_layout/octobots/export': typeof LayoutOctobotsExportRoute
   '/_layout/octobots/import': typeof LayoutOctobotsImportRoute
@@ -247,6 +255,7 @@ export interface FileRouteTypes {
     | '/setup/first-bot'
     | '/setup/mobile-app'
     | '/setup/welcome'
+    | '/login/'
     | '/setup/'
     | '/octobots/export'
     | '/octobots/import'
@@ -259,7 +268,6 @@ export interface FileRouteTypes {
     | '/octobots/new/presets'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/login'
     | '/debug'
     | '/dsl-keywords'
     | '/support'
@@ -269,6 +277,7 @@ export interface FileRouteTypes {
     | '/setup/mobile-app'
     | '/setup/welcome'
     | '/'
+    | '/login'
     | '/setup'
     | '/octobots/export'
     | '/octobots/import'
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/setup/mobile-app'
     | '/setup/welcome'
     | '/_layout/'
+    | '/login/'
     | '/setup/'
     | '/_layout/octobots/export'
     | '/_layout/octobots/import'
@@ -377,6 +387,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/support'
       preLoaderRoute: typeof LayoutSupportRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof LoginRoute
     }
     '/login/recover': {
       id: '/login/recover'
@@ -556,10 +573,12 @@ const LayoutRouteWithChildren =
 
 interface LoginRouteChildren {
   LoginRecoverRoute: typeof LoginRecoverRoute
+  LoginIndexRoute: typeof LoginIndexRoute
 }
 
 const LoginRouteChildren: LoginRouteChildren = {
   LoginRecoverRoute: LoginRecoverRoute,
+  LoginIndexRoute: LoginIndexRoute,
 }
 
 const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
