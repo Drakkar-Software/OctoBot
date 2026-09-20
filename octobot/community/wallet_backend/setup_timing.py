@@ -14,46 +14,18 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import typing
 
-class WalletError(Exception):
-    pass
-
-
-class WalletAlreadyExistsError(WalletError):
-    pass
+import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.events as journal_events
 
 
-class AdminWalletAlreadyExistsError(WalletError):
-    pass
-
-
-class WalletNotFoundError(WalletError):
-    pass
-
-
-class InvalidPassphraseError(WalletError):
-    pass
-
-
-class CannotRemoveLastWalletError(WalletError):
-    pass
-
-
-class CannotRemoveAdminWalletError(WalletError):
-    pass
-
-
-class InvalidPrivateKeyError(WalletError):
-    pass
-
-
-class PassphraseTooShortError(WalletError):
-    pass
-
-
-class RecoveryProofMismatchError(WalletError):
-    pass
-
-
-class WalletStorageReadOnlyError(WalletError):
-    pass
+def get_wallet_setup_succeeded_timestamp() -> typing.Optional[float]:
+    """Return the earliest wallet_setup_succeeded journal timestamp, if any."""
+    timestamps: list[float] = []
+    for event in node_journal.read_events():
+        if event.event == journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED.value:
+            timestamps.append(event.timestamp)
+    if not timestamps:
+        return None
+    return min(timestamps)

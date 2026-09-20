@@ -77,6 +77,7 @@ class WalletOperation(enum.StrEnum):
     LOOKUP = "lookup"
     DELETE = "delete"
     RENAME = "rename"
+    RECOVER_PASSPHRASE = "recover_passphrase"
 
 
 class SyncReadFailureReason(enum.StrEnum):

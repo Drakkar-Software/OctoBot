@@ -58,6 +58,17 @@ class WalletExport(pydantic.BaseModel):
     seed: typing.Optional[str] = None
 
 
+class RecoverPassphraseBody(pydantic.BaseModel):
+    new_passphrase: str
+    address: typing.Optional[str] = None
+    seed: typing.Optional[str] = None
+    private_key: typing.Optional[str] = None
+
+
+class RecoverPassphraseResult(pydantic.BaseModel):
+    address: str
+
+
 class LocalNetworkAddress(pydantic.BaseModel):
     local_network_ip: typing.Optional[str] = None
 
@@ -181,3 +192,94 @@ def export_wallet(
             detail="Invalid passphrase",
         )
     return WalletExport(address=entry.address, private_key=entry.private_key, seed=entry.seed or None)
+
+
+def _resolve_recover_target_address(
+    auth: community_auth.CommunityAuthentication,
+    requested_address: typing.Optional[str],
+) -> str:
+    wallets = auth.list_wallets()
+    if not wallets:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    if len(wallets) == 1:
+        only_address = wallets[0].address.lower()
+        if requested_address and requested_address.lower() != only_address:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Wallet address does not match the only configured wallet",
+            )
+        return only_address
+    if not requested_address:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Wallet address is required when multiple wallets are configured",
+        )
+    normalized = requested_address.lower()
+    if not any(wallet.address == normalized for wallet in wallets):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Wallet not found",
+        )
+    return normalized
+
+
+@router.post("/setup/wallet/recover-passphrase", response_model=RecoverPassphraseResult)
+def recover_wallet_passphrase(body: RecoverPassphraseBody) -> RecoverPassphraseResult:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    if not body.seed and not body.private_key:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A seed phrase or private key is required",
+        )
+    if body.seed and body.private_key:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Provide either a seed phrase or a private key, not both",
+        )
+    target_address = _resolve_recover_target_address(auth, body.address)
+    try:
+        auth.recover_wallet_passphrase(
+            target_address,
+            body.new_passphrase,
+            seed=body.seed,
+            private_key=body.private_key,
+        )
+    except wallet_backend.WalletStorageReadOnlyError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Passphrase recovery is unavailable on this node.",
+        )
+    except wallet_backend.RecoveryProofMismatchError as err:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(err),
+        )
+    except wallet_backend.WalletNotFoundError as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(err),
+        )
+    except wallet_backend.PassphraseTooShortError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        )
+    except wallet_backend.InvalidPrivateKeyError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        )
+    except wallet_backend.WalletError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        )
+    return RecoverPassphraseResult(address=target_address)

@@ -18,7 +18,15 @@ import pytest
 from unittest import mock
 
 from octobot.community.wallet_backend.community_wallet import WalletBackend, WalletEntry
-from octobot.community.wallet_backend.errors import InvalidPrivateKeyError, WalletAlreadyExistsError
+from octobot.community.wallet_backend.errors import (
+    InvalidPrivateKeyError,
+    InvalidPassphraseError,
+    PassphraseTooShortError,
+    RecoveryProofMismatchError,
+    WalletAlreadyExistsError,
+    WalletStorageReadOnlyError,
+)
+from octobot.community.wallet_backend.wallet_storage import EnvVarWalletStorage
 
 
 # BIP-39 test mnemonic (well-known test vector)
@@ -194,6 +202,83 @@ class TestRemoveWalletJournal:
         assert record_mock.call_args.kwargs["operation"] == "delete"
         assert isinstance(record_mock.call_args.kwargs["error"], WalletNotFoundError)
         assert "http_status" not in record_mock.call_args.kwargs
+
+
+class TestRecoverPassphrase:
+    def test_recover_with_seed_updates_passphrase_hash(self):
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "old-passphrase123", name=None)
+        backend.recover_passphrase(
+            _TEST_MNEMONIC_ADDRESS,
+            "new-passphrase456",
+            seed=_TEST_MNEMONIC,
+        )
+        backend.decrypt_wallet_entry_by_address(_TEST_MNEMONIC_ADDRESS, "new-passphrase456")
+        with pytest.raises(InvalidPassphraseError):
+            backend.decrypt_wallet_entry_by_address(_TEST_MNEMONIC_ADDRESS, "old-passphrase123")
+
+    def test_recover_with_private_key(self):
+        from octobot_sync.chain.evm import create_evm_wallet
+
+        backend, _ = _make_backend()
+        wallet = create_evm_wallet()
+        backend.import_wallet(wallet.private_key, "old-passphrase123", name=None)
+        backend.recover_passphrase(
+            wallet.address,
+            "new-passphrase456",
+            private_key=wallet.private_key,
+        )
+        backend.decrypt_wallet_entry_by_address(wallet.address, "new-passphrase456")
+
+    def test_recover_mismatch_does_not_change_passphrase(self):
+        from octobot_sync.chain.evm import create_evm_wallet
+
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "old-passphrase123", name=None)
+        other_wallet = create_evm_wallet()
+        with pytest.raises(RecoveryProofMismatchError):
+            backend.recover_passphrase(
+                _TEST_MNEMONIC_ADDRESS,
+                "new-passphrase456",
+                private_key=other_wallet.private_key,
+            )
+        backend.decrypt_wallet_entry_by_address(_TEST_MNEMONIC_ADDRESS, "old-passphrase123")
+
+    def test_recover_targets_specific_wallet_in_multi_wallet_setup(self):
+        from octobot_sync.chain.evm import create_evm_wallet
+
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name="primary")
+        second_wallet = create_evm_wallet()
+        backend.import_wallet(second_wallet.private_key, "passphrase123", name="secondary")
+        backend.recover_passphrase(
+            second_wallet.address,
+            "new-passphrase456",
+            private_key=second_wallet.private_key,
+        )
+        backend.decrypt_wallet_entry_by_address(second_wallet.address, "new-passphrase456")
+        backend.decrypt_wallet_entry_by_address(_TEST_MNEMONIC_ADDRESS, "passphrase123")
+
+    def test_recover_rejects_short_passphrase(self):
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        with pytest.raises(PassphraseTooShortError):
+            backend.recover_passphrase(
+                _TEST_MNEMONIC_ADDRESS,
+                "short",
+                seed=_TEST_MNEMONIC,
+            )
+
+    def test_recover_read_only_storage_raises(self):
+        backend, _ = _make_backend()
+        backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
+        backend._storage = EnvVarWalletStorage(env_var="__OCTOBOT_TEST_MISSING_WALLETS__")
+        with pytest.raises(WalletStorageReadOnlyError):
+            backend.recover_passphrase(
+                _TEST_MNEMONIC_ADDRESS,
+                "new-passphrase456",
+                seed=_TEST_MNEMONIC,
+            )
 
 
 class TestRenameWalletJournal:

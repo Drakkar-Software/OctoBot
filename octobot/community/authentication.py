@@ -690,6 +690,27 @@ class CommunityAuthentication(authentication.Authenticator):
     def verify_wallet_passphrase(self, address: str, passphrase: str) -> bool:
         return self._wallet_backend.verify_wallet_passphrase(address, passphrase)
 
+    def recover_wallet_passphrase(
+        self,
+        address: str,
+        new_passphrase: str,
+        *,
+        seed: typing.Optional[str] = None,
+        private_key: typing.Optional[str] = None,
+    ) -> None:
+        return self._wallet_backend.recover_passphrase(
+            address,
+            new_passphrase,
+            seed=seed,
+            private_key=private_key,
+        )
+
+    def is_wallet_backup_saved_acknowledged(self) -> bool:
+        return self._get_value_in_config(constants.CONFIG_WALLET_BACKUP_SAVED_ACK) is True
+
+    def set_wallet_backup_saved_acknowledged(self) -> None:
+        self._save_value_in_config(constants.CONFIG_WALLET_BACKUP_SAVED_ACK, True)
+
     def decrypt_wallet_by_address(self, address: str, passphrase: str):
         return self._wallet_backend.decrypt_wallet_by_address(address, passphrase)
 

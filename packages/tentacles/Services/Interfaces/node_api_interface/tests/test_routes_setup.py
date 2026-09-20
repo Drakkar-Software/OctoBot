@@ -231,6 +231,67 @@ def test_setup_local_network_address(client):
     assert resp.json() == {"local_network_ip": "192.168.0.10"}
 
 
+def test_recover_passphrase_with_seed(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [mock.MagicMock(address=ADMIN_ADDRESS)]
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ):
+        resp = client.post(
+            "/api/v1/setup/wallet/recover-passphrase",
+            json={
+                "new_passphrase": "newpassphrase123",
+                "seed": "test test test test test test test test test test test junk",
+            },
+        )
+    assert resp.status_code == 200
+    assert resp.json()["address"] == ADMIN_ADDRESS
+    auth.recover_wallet_passphrase.assert_called_once()
+
+
+def test_recover_passphrase_requires_address_for_multi_wallet(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [
+        mock.MagicMock(address=ADMIN_ADDRESS),
+        mock.MagicMock(address="0x0000000000000000000000000000000000000001"),
+    ]
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ):
+        resp = client.post(
+            "/api/v1/setup/wallet/recover-passphrase",
+            json={
+                "new_passphrase": "newpassphrase123",
+                "private_key": "a" * 64,
+            },
+        )
+    assert resp.status_code == 422
+    auth.recover_wallet_passphrase.assert_not_called()
+
+
+def test_recover_passphrase_env_storage_unavailable(client):
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [mock.MagicMock(address=ADMIN_ADDRESS)]
+    auth.recover_wallet_passphrase.side_effect = wallet_backend.WalletStorageReadOnlyError(
+        "read-only"
+    )
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ):
+        resp = client.post(
+            "/api/v1/setup/wallet/recover-passphrase",
+            json={
+                "new_passphrase": "newpassphrase123",
+                "private_key": "a" * 64,
+            },
+        )
+    assert resp.status_code == 503
+    assert "unavailable" in resp.json()["detail"].lower()
+
+
 def test_setup_vpn_network_address(client):
     with mock.patch(
         "tentacles.Services.Interfaces.node_api_interface.api.routes.setup.network.get_vpn_network_ip",

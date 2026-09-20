@@ -127,6 +127,7 @@ CONFIG_COMMUNITY_PACKAGE_URLS = "package_urls"
 CONFIG_COMMUNITY_ENVIRONMENT = "environment"
 CONFIG_COMMUNITY_LOCAL_DATA_IDENTIFIER = "local_data_identifier"
 CONFIG_COMMUNITY_WALLETS = "wallets"
+CONFIG_WALLET_BACKUP_SAVED_ACK = "wallet_backup_saved_ack"
 CHAIN_TYPE, CHAIN_NETWORK = SYNC_CHAIN_ID.split(":", 1)
 # Wallet storage backend: "config" (default, inside config.json),
 # "file" (dedicated wallets.json), or "env" (read-only env var injection)
