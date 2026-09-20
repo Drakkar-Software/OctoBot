@@ -17,6 +17,9 @@
 from unittest import mock
 
 import octobot.community.wallet_backend as wallet_backend
+from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
+    reset_recover_passphrase_rate_limits_for_tests,
+)
 
 from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE
 
@@ -269,6 +272,27 @@ def test_recover_passphrase_requires_address_for_multi_wallet(client):
         )
     assert resp.status_code == 422
     auth.recover_wallet_passphrase.assert_not_called()
+
+
+def test_recover_passphrase_returns_429_when_rate_limited(client):
+    reset_recover_passphrase_rate_limits_for_tests()
+    auth = mock.MagicMock()
+    auth.list_wallets.return_value = [mock.MagicMock(address=ADMIN_ADDRESS)]
+    payload = {
+        "new_passphrase": "newpassphrase123",
+        "private_key": "a" * 64,
+    }
+    with mock.patch(
+        "octobot.community.authentication.CommunityAuthentication.instance",
+        return_value=auth,
+    ):
+        for _ in range(10):
+            resp = client.post("/api/v1/setup/wallet/recover-passphrase", json=payload)
+            assert resp.status_code == 200
+        resp = client.post("/api/v1/setup/wallet/recover-passphrase", json=payload)
+    assert resp.status_code == 429
+    assert "too many" in resp.json()["detail"].lower()
+    assert auth.recover_wallet_passphrase.call_count == 10
 
 
 def test_recover_passphrase_env_storage_unavailable(client):
