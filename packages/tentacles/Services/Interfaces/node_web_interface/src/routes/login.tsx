@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -31,6 +31,7 @@ import {
   shouldResetMultiWalletSelectionOnLoginError,
 } from "@/lib/auth-error-messages"
 import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
+import { consumeLoginPassphraseRecoveredHint } from "@/lib/login-passphrase-recovered-hint"
 import { consumeLoginSessionClearedHint } from "@/lib/login-session-hint"
 import { truncateAddress } from "@/lib/wallet-utils"
 
@@ -56,12 +57,16 @@ function Login() {
   const { loginMutation } = useAuth()
   const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
   const [sessionClearedBanner, setSessionClearedBanner] = useState(false)
+  const [passphraseRecoveredBanner, setPassphraseRecoveredBanner] = useState(false)
   const [loginAuthError, setLoginAuthError] =
     useState<AuthErrorPresentation | null>(null)
 
   useEffect(() => {
     if (consumeLoginSessionClearedHint()) {
       setSessionClearedBanner(true)
+    }
+    if (consumeLoginPassphraseRecoveredHint()) {
+      setPassphraseRecoveredBanner(true)
     }
   }, [])
 
@@ -231,6 +236,17 @@ function Login() {
             )}
           </div>
 
+          {passphraseRecoveredBanner ? (
+            <div
+              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+              data-testid="login-passphrase-recovered-banner"
+              role="status"
+            >
+              <p className="font-medium text-foreground">Passphrase updated</p>
+              <p>Sign in with your new passphrase.</p>
+            </div>
+          ) : null}
+
           {sessionClearedBanner ? (
             <div
               className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
@@ -273,6 +289,16 @@ function Login() {
             <LoadingButton type="submit" loading={loginMutation.isPending}>
               Unlock
             </LoadingButton>
+
+            <p className="text-center text-sm text-muted-foreground">
+              <Link
+                to="/login/recover"
+                className="underline underline-offset-2"
+                data-testid="login-forgot-passphrase-link"
+              >
+                Forgot your passphrase?
+              </Link>
+            </p>
           </div>
         </form>
       </Form>
