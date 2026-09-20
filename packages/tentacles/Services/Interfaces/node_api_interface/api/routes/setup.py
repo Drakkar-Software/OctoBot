@@ -17,7 +17,7 @@
 import typing
 
 import pydantic
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasicCredentials
 
 import octobot_node.config as node_config
