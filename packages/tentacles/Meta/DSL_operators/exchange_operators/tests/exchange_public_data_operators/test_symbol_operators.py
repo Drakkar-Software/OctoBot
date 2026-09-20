@@ -54,6 +54,17 @@ def interpreter(host):
     )
 
 
+def test_market_expiry_operator_excluded_from_global_catalog(host):
+    symbol_operator_classes = exchange_operators.create_symbol_operators(host)
+    market_expiry_operators = [
+        operator_class
+        for operator_class in symbol_operator_classes
+        if operator_class.get_name() == "market_expiry"
+    ]
+    assert len(market_expiry_operators) == 1
+    assert market_expiry_operators[0] not in dsl_interpreter.get_all_operators()
+
+
 @pytest.mark.asyncio
 async def test_triggered_symbol(interpreter):
     assert await interpreter.interprete("triggered_symbol()") == SYMBOL
