@@ -27,7 +27,7 @@ import octobot_node.scheduler.workflows.params as params
 
 logger = octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util")
 
-_USER_ACTION_TERMINAL_WORKFLOW_STATUSES = (
+DBOS_TERMINAL_WORKFLOW_STATUSES = (
     dbos_lib.WorkflowStatusString.SUCCESS,
     dbos_lib.WorkflowStatusString.ERROR,
     dbos_lib.WorkflowStatusString.CANCELLED,
@@ -36,16 +36,12 @@ _USER_ACTION_TERMINAL_WORKFLOW_STATUSES = (
 _USER_ACTION_INPUT_WORKFLOW_STATUSES = tuple(
     workflow_status
     for workflow_status in dbos_lib.WorkflowStatusString
-    if workflow_status not in _USER_ACTION_TERMINAL_WORKFLOW_STATUSES
+    if workflow_status not in DBOS_TERMINAL_WORKFLOW_STATUSES
 )
 
 
 def get_user_action_input_workflow_statuses() -> tuple[dbos_lib.WorkflowStatusString, ...]:
     return _USER_ACTION_INPUT_WORKFLOW_STATUSES
-
-
-def get_user_action_terminal_workflow_statuses() -> tuple[dbos_lib.WorkflowStatusString, ...]:
-    return _USER_ACTION_TERMINAL_WORKFLOW_STATUSES
 
 
 @dataclasses.dataclass
@@ -244,6 +240,41 @@ def get_workflows_by_parent_id(
         parent_id = w.workflow_id[:octobot_node.constants.PARENT_WORKFLOW_ID_LENGTH]
         by_parent.setdefault(parent_id, []).append(w)
     return by_parent
+
+
+def resolve_automation_result_for_group(
+    group: list[dbos_lib.WorkflowStatus],
+) -> typing.Optional[dbos_lib.WorkflowStatus]:
+    """
+    Pick the terminal child workflow row used for batch export of one parent automation.
+
+    - Latest child is CANCELLED → that row (state from workflow input, not prior children).
+    - Else latest SUCCESS child that has DBOS ``output`` (may not be the chronologically latest child).
+    - Else latest ERROR child by child index.
+    - Else ``None`` (no row with exportable or error-signalling terminal status).
+    """
+    if not group:
+        return None
+    latest = get_latest_workflow(group)
+    if latest.status == dbos_lib.WorkflowStatusString.CANCELLED.value:
+        return latest
+    # Prefer SUCCESS iterations that persisted workflow output over newer failures without output.
+    success_with_output = [
+        workflow_row
+        for workflow_row in group
+        if workflow_row.status == dbos_lib.WorkflowStatusString.SUCCESS.value and workflow_row.output
+    ]
+    if success_with_output:
+        return get_latest_workflow(success_with_output)
+    # No success output: surface the latest ERROR child (export may return error-only payload).
+    error_rows = [
+        workflow_row
+        for workflow_row in group
+        if workflow_row.status == dbos_lib.WorkflowStatusString.ERROR.value
+    ]
+    if error_rows:
+        return sorted(error_rows, key=_automation_child_workflow_sort_key)[-1]
+    return None
 
 
 def parse_automation_workflow_output(

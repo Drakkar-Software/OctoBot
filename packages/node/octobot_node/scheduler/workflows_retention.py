@@ -67,7 +67,7 @@ EMPTY_CLEANUP_SUMMARY: dict[str, typing.Any] = {
 
 _TERMINAL_WORKFLOW_STATUS_VALUES = frozenset(
     workflow_status.value
-    for workflow_status in workflows_util.get_user_action_terminal_workflow_statuses()
+    for workflow_status in workflows_util.DBOS_TERMINAL_WORKFLOW_STATUSES
 )
 
 def should_skip_retention_cleanup_on_this_node() -> bool:

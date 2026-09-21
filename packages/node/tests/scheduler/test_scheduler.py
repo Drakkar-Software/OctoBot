@@ -34,6 +34,8 @@ import octobot_node.scheduler.scheduler as scheduler_module
 
 PARENT_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 CHILD_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-iter-1"
+CHILD_INDEX_1_ID = f"{PARENT_ID}_1"
+CHILD_INDEX_2_ID = f"{PARENT_ID}_2"
 
 
 def _build_mock_workflow_status(task: octobot_node.models.Task, encrypted_state: str, state_metadata: str, workflow_id: str = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa") -> mock.Mock:
@@ -371,6 +373,51 @@ class TestSchedulerGetResults:
 
         assert executions == []
 
+    @pytest.mark.asyncio
+    async def test_get_results_cancelled_latest_has_empty_result(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="cancelled-automation",
+            content="input-state",
+            type="execute_actions",
+        )
+        prior_ws = _build_mock_workflow_status(task, "prior_plain_state", None, workflow_id=CHILD_INDEX_1_ID)
+        prior_ws.updated_at = 10
+        cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=CHILD_INDEX_2_ID)
+        cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+        cancelled_ws.updated_at = 20
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[prior_ws, cancelled_ws])
+
+        executions = await sched.get_results()
+
+        assert len(executions) == 1
+        assert executions[0].id == CHILD_INDEX_2_ID
+        assert executions[0].status == octobot_node.models.TaskStatus.CANCELLED
+        assert executions[0].result == ""
+        assert executions[0].result_metadata == ""
+
+    @pytest.mark.asyncio
+    async def test_get_results_first_iteration_cancelled_has_empty_result(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="cancelled-first-iteration",
+            content="input-state",
+            type="execute_actions",
+        )
+        cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
+        cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[cancelled_ws])
+
+        executions = await sched.get_results()
+
+        assert len(executions) == 1
+        assert executions[0].status == octobot_node.models.TaskStatus.CANCELLED
+        assert executions[0].result == ""
+
 
 class TestGetWorkflowsExportResults:
 
@@ -602,6 +649,51 @@ class TestGetWorkflowsExportResults:
         mock_encrypt.assert_called_once()
         call_kwargs = mock_encrypt.call_args
         assert call_kwargs[1]["rsa_public_key"] == user_key_pem.encode("utf-8")
+
+    @pytest.mark.asyncio
+    async def test_export_cancelled_uses_workflow_input_not_prior_output(self):
+        task = self._make_task()
+        prior_ws = _build_mock_workflow_status(task, "prior_export_state", None, workflow_id=CHILD_INDEX_1_ID)
+        prior_ws.updated_at = 10
+        cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=CHILD_INDEX_2_ID)
+        cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+        cancelled_ws.updated_at = 20
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[prior_ws, cancelled_ws])
+
+        with mock.patch.object(
+            type(octobot_node.config.settings),
+            "is_node_side_encryption_enabled",
+            new_callable=mock.PropertyMock,
+            return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.encryption.encrypt_task_result"
+        ) as mock_encrypt:
+            result = await sched.get_workflows_export_results([PARENT_ID], None)
+
+        assert result[PARENT_ID] == {"result": "encrypted_content", "result_metadata": ""}
+        mock_encrypt.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.asyncio
+    async def test_export_cancelled_without_input_content_returns_empty(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="test-task",
+            content=None,
+            type="execute_actions",
+            user_id="wallet-a",
+        )
+        cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
+        cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[cancelled_ws])
+
+        result = await sched.get_workflows_export_results([PARENT_ID], None)
+
+        assert result[PARENT_ID] == {"result": "", "result_metadata": ""}
 
 
 class TestSchedulerGetPendingTasks:
@@ -883,7 +975,7 @@ class TestSchedulerListUserActions:
             status.value for status in workflows_util.get_user_action_input_workflow_statuses()
         }
         expected_terminal_status_values = {
-            status.value for status in workflows_util.get_user_action_terminal_workflow_statuses()
+            status.value for status in workflows_util.DBOS_TERMINAL_WORKFLOW_STATUSES
         }
         assert input_status_values == expected_input_status_values
         assert terminal_status_values == expected_terminal_status_values

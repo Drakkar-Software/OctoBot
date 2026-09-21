@@ -895,6 +895,26 @@ class TestGetTaskResult:
 
             assert result["status"] == "pending or running"
 
+    @pytest.mark.asyncio
+    async def test_get_task_result_cancelled_returns_no_data(self) -> None:
+        task_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa_2"
+
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_status = mock.AsyncMock(return_value=mock.Mock(status="CANCELLED"))
+        mock_handle.get_result = mock.AsyncMock()
+
+        mock_instance = mock.AsyncMock()
+        mock_instance.retrieve_workflow_async = mock.AsyncMock(return_value=mock_handle)
+
+        mock_scheduler = mock.Mock()
+        mock_scheduler.INSTANCE = mock_instance
+
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            result = await get_task_result(task_id)
+
+        assert result == {"status": "cancelled", "data": None}
+        mock_handle.get_result.assert_not_called()
+
 
 class TestAwaitWorkflowResultFromId:
     @pytest.mark.asyncio
