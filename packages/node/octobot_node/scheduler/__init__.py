@@ -85,6 +85,7 @@ async def initialize_scheduler():
             workflows_version_migration.migrate_stranded_workflow_versions(
                 target_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
             )
+    import octobot_node.scheduler.queues as scheduler_queues
     import octobot_node.scheduler.schedules as schedules
     with journal_recording_context.scheduler_init_phase(
         init_phase=journal_enums.JournalInitPhase.DBOS_LAUNCH,
@@ -92,6 +93,7 @@ async def initialize_scheduler():
         on_failure=_record_scheduler_init_failed,
     ):
         SCHEDULER.start()
+        await scheduler_queues.register_scheduler_queues_async()
     # apply_schedules requires DBOS launch (sys_db); must run after start().
     with journal_recording_context.scheduler_init_phase(
         init_phase=journal_enums.JournalInitPhase.REGISTER_SCHEDULES,

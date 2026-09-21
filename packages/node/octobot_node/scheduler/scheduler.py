@@ -63,11 +63,6 @@ def _sanitize(result: typing.Any) -> typing.Any:
 
 class Scheduler:
     INSTANCE: dbos.DBOS = None # type: ignore
-    AUTOMATION_WORKFLOW_QUEUE: dbos.Queue = None # type: ignore
-    USER_ACTION_QUEUE: dbos.Queue = None # type: ignore
-    DBOS_CLEANUP_QUEUE: dbos.Queue = None # type: ignore
-    GLOBAL_VIEW_QUEUE: dbos.Queue = None # type: ignore
-    PORTFOLIO_HISTORY_QUEUE: dbos.Queue = None # type: ignore
 
     @staticmethod
     def _wallet_filter_queue(queue_names: typing.Optional[list[str]]) -> octobot_node.enums.SchedulerQueues:
@@ -138,7 +133,6 @@ class Scheduler:
 
     def start(self):
         if self.INSTANCE:
-            self.create_queues()
             self.logger.info("Starting scheduler")
             self.INSTANCE.launch()
             self.logger.info("Scheduler started")
@@ -151,28 +145,6 @@ class Scheduler:
         self.INSTANCE.destroy()
         self.logger.info("Scheduler stopped")
         Scheduler.INSTANCE = None
-        Scheduler.AUTOMATION_WORKFLOW_QUEUE = None
-        Scheduler.USER_ACTION_QUEUE = None
-        Scheduler.DBOS_CLEANUP_QUEUE = None
-        Scheduler.GLOBAL_VIEW_QUEUE = None
-        Scheduler.PORTFOLIO_HISTORY_QUEUE = None
-
-    def create_queues(self):
-        self.AUTOMATION_WORKFLOW_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value)
-        self.USER_ACTION_QUEUE = dbos.Queue(name=octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value)
-        self.DBOS_CLEANUP_QUEUE = dbos.Queue(
-            name=octobot_node.enums.SchedulerQueues.DBOS_CLEANUP_QUEUE.value,
-            # only one cleanup workflow can run at a time
-            concurrency=1,
-        )
-        self.GLOBAL_VIEW_QUEUE = dbos.Queue(
-            name=octobot_node.enums.SchedulerQueues.GLOBAL_VIEW_QUEUE.value,
-            concurrency=1,
-        )
-        self.PORTFOLIO_HISTORY_QUEUE = dbos.Queue(
-            name=octobot_node.enums.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value,
-            concurrency=1,
-        )
 
     async def get_periodic_tasks(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         """DBOS scheduled workflows are not easily introspectable; return empty list."""

@@ -35,6 +35,7 @@
 - Add new user-facing operations only in tentacle routes—extend protocol, executor, and **node** tests for new action types
 - Change `actions_dag` or `AutomationJob` semantics without matching **flow** changes
 - Assume shared **PostgreSQL** multi-node DBOS in cloud unless configured (default dev/CI and cloud agents use **SQLite** DBOS locally)
+- Construct `dbos.Queue(...)` or enqueue scheduler workflows via the `dbos.DBOS` class—use `octobot_node.enums.SchedulerQueues`, [`octobot_node/scheduler/queues.py`](octobot_node/scheduler/queues.py) after launch, and `SCHEDULER.INSTANCE.enqueue_workflow_async` (see `octobot_node/scheduler/tasks.py`)
 
 ## Agent seed (demo wallet / Cloud QA)
 
@@ -59,4 +60,4 @@ Only when driving the **live Node web UI** or debug view — not for routine `py
 
 ## Last reviewed
 
-- 2026-09-18
+- 2026-09-22
