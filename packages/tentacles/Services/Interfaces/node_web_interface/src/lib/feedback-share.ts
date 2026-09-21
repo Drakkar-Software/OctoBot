@@ -4,7 +4,7 @@ import {
   type FeedbackUploadEnvelope,
 } from "@/client"
 import { downloadBytesAsFile } from "@/lib/logs-export"
-import { buildStoredZipArchive } from "@/lib/node-journal-zip"
+import { buildZipArchive } from "@/lib/node-journal-zip"
 
 export type ShareFeedbackFailureKind =
   | "boot_failed"
@@ -275,7 +275,7 @@ export function buildNodeJournalZipBytes(
   envelope: FeedbackUploadEnvelope,
 ): Uint8Array {
   const jsonBody = JSON.stringify(envelope, null, 2)
-  return buildStoredZipArchive([
+  return buildZipArchive([
     {
       name: FEEDBACK_JOURNAL_JSON_FILENAME,
       data: new TextEncoder().encode(jsonBody),
