@@ -151,6 +151,14 @@ class TestExportFeedback:
         assert "failure_kind" not in (envelope.note or "")
 
 
+class TestFeedbackRoutes:
+    def test_export_route_registered_without_upload(self):
+        paths = {route.path for route in feedback_routes.router.routes}
+        assert "/export" in paths
+        assert "/upload" not in paths
+        assert "/preview" in paths
+
+
 class TestExportFeedbackWhenJournalDisabled:
     def test_returns_note_only_without_journal_events(self, journal_persisted_state):
         journal_module.record(
