@@ -31,6 +31,7 @@ import {
 import {
   getDisplayDate,
   getStatusVariant,
+  isTaskCancelled,
   statusLabels,
 } from "@/utils/task-status"
 import { BotAvatar } from "./BotAvatar"
@@ -293,7 +294,7 @@ export const BotCard = memo(function BotCard({
   const activeExec = getActiveExecution(task.executions)
   const rawStatus = (activeExec?.status ?? "scheduled") as TaskStatus
   const group = getStatusGroup(rawStatus)
-  const hasError = !!task.error
+  const hasError = !!task.error && !isTaskCancelled(task)
   const errorInfo = hasError ? resolveTaskError(task) : null
   const started = hasStartedExecution(task.executions)
 
