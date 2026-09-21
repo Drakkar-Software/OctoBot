@@ -37,7 +37,7 @@
     "dist"
   ],
   "dependencies": {
-    "@drakkar.software/octobot-protocol": "^0.8.0",
+    "@drakkar.software/octobot-protocol": "^0.9.0",
     "@drakkar.software/starfish-client": "3.0.0-alpha.72",
     "@drakkar.software/starfish-identities": "3.0.0-alpha.72",
     "@drakkar.software/starfish-keyring": "3.0.0-alpha.72",
