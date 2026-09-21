@@ -316,14 +316,12 @@ async def _run_execute_automation_until_iteration_retries_exhausted(
             "execute_iteration",
             max_attempts,
         )
-        assert workflow_result == json.dumps(
-            params.AutomationWorkflowOutput(
-                error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
-                error_message=expected_error_message,
-            ).to_dict(include_default_values=False)
+        assert workflow_result == _expected_automation_workflow_envelope_json(
+            "{}",
+            error=octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value,
+            error_message=expected_error_message,
         )
         parsed_output = _parse_automation_workflow_output(workflow_result)
-        assert parsed_output.state is None
         assert (
             parsed_output.error
             == octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
@@ -433,6 +431,90 @@ def iteration_result():
         has_next_actions=True,
     )
 
+
+class TestBestEffortWorkflowOutputState:
+    """``_best_effort_workflow_output_state`` picks state for interrupted workflow output.
+
+    Priority: in-flight iteration snapshot (``next_iteration_description``) over workflow
+    input task content; empty/missing inputs yield ``(None, None)``.
+    """
+
+    @pytest.mark.parametrize(
+        "iteration_description,task_content,task_metadata,expected_state,expected_metadata",
+        [
+            # No inputs and no iteration progress → nothing to persist.
+            (None, None, None, None, None),
+            # Empty task content is treated as absent (falsy), same as no task.
+            (None, "", None, None, None),
+            # Input-only: fall back to task content when iteration has no description.
+            (None, "input-state", "input-meta", "input-state", "input-meta"),
+            # Iteration description wins over input task when both are present.
+            (
+                "iteration-state",
+                "input-state",
+                "input-meta",
+                "iteration-state",
+                "iteration-meta",
+            ),
+            # Non-None but empty iteration description is still preferred over input.
+            (
+                "",
+                "input-state",
+                None,
+                "",
+                None,
+            ),
+        ],
+    )
+    def test_best_effort_workflow_output_state(
+        self,
+        import_automation_workflow,
+        iteration_description,
+        task_content,
+        task_metadata,
+        expected_state,
+        expected_metadata,
+    ):
+        automation_workflow = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+        # task_content=None → no parsed_inputs (first param row only).
+        parsed_inputs = None
+        if task_content is not None:
+            task = octobot_node.models.Task(
+                name="test_task",
+                content=task_content,
+                content_metadata=task_metadata,
+                type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+            )
+            parsed_inputs = params.AutomationWorkflowInputs(task=task, execution_time=0)
+        # Build iteration_result when the row exercises iteration and/or input paths.
+        iteration_result = None
+        if iteration_description is not None or task_content is not None:
+            iteration_result = params.AutomationWorkflowIterationResult(
+                progress_status=params.ProgressStatus(
+                    latest_step="step",
+                    next_step=None,
+                    next_step_at=None,
+                    remaining_steps=0,
+                    error=None,
+                    should_stop=False,
+                ),
+                next_iteration_description=iteration_description,
+                next_iteration_description_metadata="iteration-meta" if iteration_description else None,
+                has_next_actions=False,
+            )
+        state, metadata = automation_workflow._best_effort_workflow_output_state(
+            parsed_inputs, iteration_result
+        )
+        assert state == expected_state
+        # Metadata follows the same source as state (iteration meta vs task content_metadata).
+        if iteration_description is not None:
+            assert metadata == (
+                "iteration-meta" if iteration_description else None
+            )
+        else:
+            assert metadata == expected_metadata
+
+
 def required_imports(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
@@ -482,7 +564,9 @@ class TestExecuteAutomation:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None # next_iteration_description.next_actions_description is None
+            assert await handle.get_result() == _expected_automation_workflow_envelope_json(
+                parsed_inputs.task.content
+            )  # no iteration description; best-effort falls back to input task.content
             mock_wait.assert_awaited_once_with(parsed_inputs, 0)
             mock_iteration.assert_called_once_with(inputs, None)
             mock_should_continue.assert_called_once()
@@ -663,14 +747,12 @@ class TestExecuteAutomation:
                     inputs=inputs,
                 )
                 workflow_result = await handle.get_result()
-                assert workflow_result == json.dumps(
-                    params.AutomationWorkflowOutput(
-                        error=expected_error_status,
-                        error_message=expected_error_message,
-                    ).to_dict(include_default_values=False)
+                assert workflow_result == _expected_automation_workflow_envelope_json(
+                    parsed_inputs.task.content,
+                    error=expected_error_status,
+                    error_message=expected_error_message,
                 )
                 parsed_output = _parse_automation_workflow_output(workflow_result)
-                assert parsed_output.state is None
                 assert parsed_output.error == expected_error_status
                 assert parsed_output.error_message == expected_error_message
                 assert run_mock.await_count == expected_run_await_count
@@ -1918,6 +2000,116 @@ class TestExecuteAutomationCrashSignalExecutionCallback:
             octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
         )
 
+
+class TestExecuteAutomationBestEffortOutputState:
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_preserves_input_state_on_terminal_iteration_error_without_description(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        task_content = json.dumps({"state": _automation_state_dict([])})
+        task = octobot_node.models.Task(
+            name="terminal_iteration_error_test",
+            content=task_content,
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        terminal_error = octobot_flow.enums.ActionErrorStatus.NO_TRADING_SIGNAL.value
+        iteration_result = params.AutomationWorkflowIterationResult(
+            progress_status=params.ProgressStatus(
+                latest_step="action_1",
+                next_step=None,
+                next_step_at=None,
+                remaining_steps=0,
+                error=terminal_error,
+                error_message="no signal",
+                should_stop=False,
+            ),
+            next_iteration_description=None,
+            has_next_actions=False,
+        )
+        mock_wait = mock.AsyncMock(return_value=None)
+        mock_iteration = mock.AsyncMock(
+            return_value=iteration_result.to_dict(include_default_values=False)
+        )
+        mock_process = mock.AsyncMock()
+
+        with mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_wait_and_trigger_on_actions_update",
+            mock_wait,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "execute_iteration",
+            mock_iteration,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_process_pending_priority_actions_and_reschedule",
+            mock_process,
+        ):
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            workflow_result = await handle.get_result()
+
+        parsed_output = _parse_automation_workflow_output(workflow_result)
+        assert parsed_output.state == task_content
+        assert parsed_output.error == terminal_error
+        assert parsed_output.error_message == "no signal"
+        mock_process.assert_not_called()
+
+    @pytest.mark.asyncio
+    @required_imports
+    async def test_preserves_input_state_on_exception_when_iteration_has_no_description(
+        self,
+        import_automation_workflow,
+        temp_dbos_scheduler,
+    ):
+        task_content = json.dumps({"state": _automation_state_dict([])})
+        task = octobot_node.models.Task(
+            name="exception_preserves_state_test",
+            content=task_content,
+            type=octobot_node.models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        inputs = params.AutomationWorkflowInputs(task=task, execution_time=0).to_dict(
+            include_default_values=False
+        )
+        inputs["task"] = task.model_dump(exclude_defaults=True)
+        workflow_error = ValueError("iteration exploded")
+        mock_wait = mock.AsyncMock(return_value=None)
+        mock_iteration = mock.AsyncMock(side_effect=workflow_error)
+
+        with mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_wait_and_trigger_on_actions_update",
+            mock_wait,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "execute_iteration",
+            mock_iteration,
+        ), mock.patch.object(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow,
+            "_process_pending_priority_actions_and_reschedule",
+            mock.AsyncMock(),
+        ):
+            handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
+                octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
+                inputs=inputs,
+            )
+            workflow_result = await handle.get_result()
+
+        parsed_output = _parse_automation_workflow_output(workflow_result)
+        assert parsed_output.state == task_content
+        assert parsed_output.error == (
+            octobot_flow.enums.AutomationWorkflowErrorStatus.EXCEPTION_DURING_ITERATION.value
+        )
+        assert parsed_output.error_message == str(workflow_error)
 
 class TestExecuteIterationOutdatedReferenceAccountError:
     @pytest.mark.asyncio
@@ -3194,6 +3386,13 @@ class TestGetLogger:
             octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.get_logger(parsed_inputs)
         mock_get_logger.assert_called_once_with(octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.__name__)
 
+    def test_get_logger_uses_class_name_when_parsed_inputs_none(self, import_automation_workflow):
+        with mock.patch("octobot_commons.logging.get_logger", mock.Mock()) as mock_get_logger:
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.get_logger(None)
+        mock_get_logger.assert_called_once_with(
+            octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.__name__
+        )
+
 
 class TestExecuteAutomationIntegration:
     def setup_method(self):
@@ -4040,7 +4239,9 @@ class TestExecuteAutomationInitialWait:
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
-            assert await handle.get_result() is None
+            assert await handle.get_result() == _expected_automation_workflow_envelope_json(
+                parsed_inputs.task.content
+            )
 
         mock_wait.assert_awaited_once_with(parsed_inputs, 0)
         mock_iteration.assert_awaited_once_with(inputs, None)

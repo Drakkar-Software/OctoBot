@@ -247,3 +247,29 @@ class TestGetResolvedAutomationTask:
         assert resolved_task is not None
         assert resolved_task.content == input_content
 
+
+class TestResolveAutomationResultForGroup:
+    def test_cancelled_latest_chooses_cancelled_child(self):
+        prior_child = _workflow_status_row(workflow_id=_child_workflow_id(1), updated_at=10)
+        cancelled_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(2),
+            updated_at=20,
+            status=dbos.WorkflowStatusString.CANCELLED.value,
+        )
+        chosen = workflows_util.resolve_automation_result_for_group([prior_child, cancelled_child])
+        assert chosen is cancelled_child
+
+    def test_latest_success_with_output_chooses_that_child(self):
+        success_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(1),
+            updated_at=10,
+            status=dbos.WorkflowStatusString.SUCCESS.value,
+        )
+        success_child.output = json.dumps(
+            workflow_params.AutomationWorkflowOutput(state="state-1").to_dict(
+                include_default_values=False
+            )
+        )
+        chosen = workflows_util.resolve_automation_result_for_group([success_child])
+        assert chosen is success_child
+

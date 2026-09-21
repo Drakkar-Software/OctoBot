@@ -313,6 +313,8 @@ async def get_task_result(task_id: str):
             except Exception as error:
                 result_data = {"error": str(error)}
             return {"status": "completed", "data": result_data}
+        if wf_status == "CANCELLED":
+            return {"status": "cancelled", "data": None}
     except Exception as error:
         logger.debug(f"Workflow {task_id} not yet complete: {error}")
     return {"status": "pending or running"}

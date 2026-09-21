@@ -437,60 +437,103 @@ class Scheduler:
         """DBOS has no direct 'scheduled for later' queue; return empty list."""
         return []
 
+    async def _list_terminal_automation_workflows(
+        self,
+        user_id: typing.Optional[str],
+        *,
+        load_output: bool,
+    ) -> list[dbos.WorkflowStatus]:
+        return await self._list_workflows(
+            user_id,
+            list(workflows_util.DBOS_TERMINAL_WORKFLOW_STATUSES),
+            [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value],
+            load_output=load_output,
+        )
+
     async def get_results(self, user_id: typing.Optional[str] = None) -> list[octobot_node.models.Execution]:
         if not self.INSTANCE:
             return []
         executions: list[octobot_node.models.Execution] = []
         try:
-            completed_workflow_statuses = await self._list_workflows(user_id, [
-                    dbos.WorkflowStatusString.SUCCESS, dbos.WorkflowStatusString.ERROR
-                ], [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output=True)
-            for completed_workflow_status in completed_workflow_statuses:
+            completed_workflow_statuses = await self._list_terminal_automation_workflows(
+                user_id, load_output=True
+            )
+            by_parent = workflows_util.get_workflows_by_parent_id(completed_workflow_statuses)
+            for group in by_parent.values():
                 try:
-                    task = workflows_util.get_automation_input_task(completed_workflow_status)
-                    error_message = None
-                    if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value:
-                        output_error = None
-                        if completed_workflow_status.output:
-                            try:
-                                output = workflow_params.AutomationWorkflowOutput.from_dict(
-                                    json.loads(completed_workflow_status.output)
-                                )
-                                output_error = output.error
-                                error_message = output.error_message
-                            except Exception as parse_err:
-                                self.logger.warning(
-                                    f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {parse_err}"
-                                )
-                        if output_error:
+                    latest = workflows_util.get_latest_workflow(group)
+                    if latest.status == dbos.WorkflowStatusString.CANCELLED.value:
+                        cancelled_workflow = latest
+                        task = workflows_util.get_automation_input_task(cancelled_workflow)
+                        executions.append(octobot_node.models.Execution(
+                            id=cancelled_workflow.workflow_id,
+                            name=task.name if task else cancelled_workflow.workflow_id,
+                            description="Cancelled",
+                            status=octobot_node.models.TaskStatus.CANCELLED,
+                            is_encrypted=bool(task.content_metadata) if task else False,
+                            result="",
+                            result_metadata="",
+                            scheduled_at=cancelled_workflow.created_at,
+                            completed_at=cancelled_workflow.updated_at,
+                            error=None,
+                            error_message=None,
+                            user_id=task.user_id if task else None,
+                        ))
+                        continue
+                    for completed_workflow_status in group:
+                        if completed_workflow_status.status not in (
+                            dbos.WorkflowStatusString.SUCCESS.value,
+                            dbos.WorkflowStatusString.ERROR.value,
+                        ):
+                            continue
+                        task = workflows_util.get_automation_input_task(completed_workflow_status)
+                        error_message = None
+                        if completed_workflow_status.status == dbos.WorkflowStatusString.SUCCESS.value:
+                            output_error = None
+                            if completed_workflow_status.output:
+                                try:
+                                    output = workflow_params.AutomationWorkflowOutput.from_dict(
+                                        json.loads(completed_workflow_status.output)
+                                    )
+                                    output_error = output.error
+                                    error_message = output.error_message
+                                except Exception as parse_err:
+                                    self.logger.warning(
+                                        f"Failed to parse output for workflow {completed_workflow_status.workflow_id}: {parse_err}"
+                                    )
+                            if output_error:
+                                status = octobot_node.models.TaskStatus.FAILED
+                                description = "ERROR"
+                                error = output_error
+                            else:
+                                status = octobot_node.models.TaskStatus.COMPLETED
+                                description = "Completed"
+                                error = None
+                                error_message = None
+                        else:
                             status = octobot_node.models.TaskStatus.FAILED
                             description = "ERROR"
-                            error = output_error
-                        else:
-                            status = octobot_node.models.TaskStatus.COMPLETED
-                            description = "Completed"
-                            error = None
-                            error_message = None
-                    else:
-                        status = octobot_node.models.TaskStatus.FAILED
-                        description = "ERROR"
-                        error = str(completed_workflow_status.error) if completed_workflow_status.error else "Execution failed"
-                    executions.append(octobot_node.models.Execution(
-                        id=completed_workflow_status.workflow_id,
-                        name=task.name if task else completed_workflow_status.workflow_id,
-                        description=description,
-                        status=status,
-                        is_encrypted=bool(task.content_metadata) if task else False,
-                        result="",
-                        result_metadata="",
-                        scheduled_at=completed_workflow_status.created_at,
-                        completed_at=completed_workflow_status.updated_at,
-                        error=error,
-                        error_message=error_message,
-                        user_id=task.user_id if task else None,
-                    ))
+                            error = (
+                                str(completed_workflow_status.error)
+                                if completed_workflow_status.error
+                                else "Execution failed"
+                            )
+                        executions.append(octobot_node.models.Execution(
+                            id=completed_workflow_status.workflow_id,
+                            name=task.name if task else completed_workflow_status.workflow_id,
+                            description=description,
+                            status=status,
+                            is_encrypted=bool(task.content_metadata) if task else False,
+                            result="",
+                            result_metadata="",
+                            scheduled_at=completed_workflow_status.created_at,
+                            completed_at=completed_workflow_status.updated_at,
+                            error=error,
+                            error_message=error_message,
+                            user_id=task.user_id if task else None,
+                        ))
                 except Exception as e:
-                    self.logger.exception(e, True, f"Failed to process result workflow {completed_workflow_status.workflow_id}: {e}")
+                    self.logger.exception(e, True, f"Failed to process result workflow group: {e}")
         except Exception as e:
             self.logger.warning(f"Failed to list result workflows: {e}")
         return executions
@@ -524,19 +567,27 @@ class Scheduler:
             output, result_task = self._parse_output_and_task_from_workflow_output(workflow_status)
         except Exception as e:
             self.logger.warning(f"Failed to parse output for workflow {workflow_status.workflow_id}: {e}")
-            output = workflow_params.AutomationWorkflowOutput()
-        if not output.state:
             return {"result": "", "result_metadata": ""}
+        # Completed rows export output.state; CANCELLED rows usually have none, so export uses
+        # workflow input task content (see get_resolved_automation_task) when present.
+        if not output.state:
+            if (
+                workflow_status.status != dbos.WorkflowStatusString.CANCELLED.value
+                or not result_task.content
+            ):
+                return {"result": "", "result_metadata": ""}
         with task_context.encrypted_task(result_task):
             if (result_task.content == output.state and output.state_metadata
                     and octobot_node.config.settings.TASKS_SERVER_RSA_PRIVATE_KEY):
                 raise encryption.EncryptionTaskError("Internal state decryption silently failed")
             user_rsa_key = user_rsa_public_key or octobot_node.config.settings.TASKS_USER_RSA_PUBLIC_KEY
             if not user_rsa_key or not octobot_node.config.settings.TASKS_SERVER_ECDSA_PRIVATE_KEY:
+                # Node-side decrypt only; return plaintext state (typical dev / tests).
                 return {
                     "result": result_task.content, # type: ignore
                     "result_metadata": "",
                 }
+            # Re-encrypt for the requesting user's RSA key (export to client).
             result, metadata = encryption.encrypt_task_result(
                 result_task.content,
                 rsa_public_key=user_rsa_key,
@@ -550,12 +601,18 @@ class Scheduler:
         user_id: typing.Optional[str],
         user_rsa_public_key: typing.Optional[str] = None,
     ) -> dict[str, dict[str, str]]:
+        """
+        Batch-export automation state for parent task IDs.
+
+        Per task_id the value is one of:
+        - ``{"error": "not found" | "forbidden" | ...}`` — request/lookup failure.
+        - ``{"result", "result_metadata"}`` — decrypted or re-encrypted state (may be empty strings).
+        - ``{"result": "", "result_metadata": "", "error": "..."}`` — chosen row is ERROR with no
+          persisted output.state; empty result fields mean nothing to export, ``error`` is the run failure.
+        """
         if not self.INSTANCE:
             return {}
-        completed = await self._list_workflows(None, [
-            dbos.WorkflowStatusString.SUCCESS,
-            dbos.WorkflowStatusString.ERROR,
-        ], [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value], load_output=True)
+        completed = await self._list_terminal_automation_workflows(None, load_output=True)
 
         by_parent = workflows_util.get_workflows_by_parent_id(completed)
         out: dict[str, dict[str, str]] = {}
@@ -572,24 +629,28 @@ class Scheduler:
                 if user_id is not None and (task is None or task.user_id != user_id):
                     out[task_id] = {"error": "forbidden"}
                     continue
-                result_workflows = [
-                    w for w in group
-                    if w.status == dbos.WorkflowStatusString.SUCCESS.value and w.output
-                ]
-                chosen = workflows_util.get_latest_workflow(result_workflows) if result_workflows else None
-                if chosen is None:
-                    error_ws = [w for w in group if w.status == dbos.WorkflowStatusString.ERROR.value]
-                    if error_ws:
-                        err = error_ws[-1].error
-                        out[task_id] = {
-                            "result": "", "result_metadata": "",
-                            "error": str(err) if err else "Execution failed",
-                        }
-                    else:
-                        out[task_id] = {"result": "", "result_metadata": ""}
+                export_workflow = workflows_util.resolve_automation_result_for_group(group)
+                if export_workflow is None:
+                    # Terminal children exist but none are exportable (e.g. SUCCESS without output).
+                    out[task_id] = {"result": "", "result_metadata": ""}
                     continue
                 user_rsa = user_rsa_public_key.encode("utf-8") if user_rsa_public_key else None
-                out[task_id] = self._build_export_result_from_status(chosen, user_rsa)
+                built = self._build_export_result_from_status(export_workflow, user_rsa)
+                if built.get("result") or built.get("result_metadata"):
+                    # SUCCESS/ERROR with output.state, or CANCELLED with input task content.
+                    out[task_id] = built
+                    continue
+                if export_workflow.status == dbos.WorkflowStatusString.ERROR.value:
+                    # ERROR without persisted state: same empty payload as above, plus workflow error.
+                    err = export_workflow.error
+                    out[task_id] = {
+                        "result": "",
+                        "result_metadata": "",
+                        "error": str(err) if err else "Execution failed",
+                    }
+                else:
+                    # CANCELLED (or other) with no input content — legitimately empty export.
+                    out[task_id] = built
             except Exception as e:
                 self.logger.warning(f"Failed to export result for {task_id}: {e}")
                 out[task_id] = {"error": str(e)}
@@ -771,7 +832,7 @@ class Scheduler:
             loaded.append((sort_key, user_action_row))
         terminal_workflows = await self._list_workflows(
             user_id,
-            list(workflows_util.get_user_action_terminal_workflow_statuses()),
+            list(workflows_util.DBOS_TERMINAL_WORKFLOW_STATUSES),
             [user_action_queue_name],
             load_output=True,
         )

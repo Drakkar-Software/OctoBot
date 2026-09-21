@@ -15,6 +15,7 @@ export const statusLabels: Record<TaskStatus, string> = {
   periodic: "Recurring",
   running: "Running",
   completed: "Completed",
+  cancelled: "Cancelled",
   failed: "Failed",
 }
 
