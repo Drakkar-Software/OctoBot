@@ -1136,6 +1136,164 @@ class TestMaybeCatchUpScheduleOnceOnStartup:
         backfill_to_thread_mock.assert_not_awaited()
 
 
+class TestScheduledWorkflowsDisabled:
+    pytestmark = pytest.mark.asyncio
+
+    @pytest.fixture
+    def dbos_cleanup_workflow_module(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow_module_loaded
+
+        yield dbos_cleanup_workflow_module_loaded
+
+    @pytest.fixture
+    def global_view_workflow_module(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow_module_loaded
+
+        yield global_view_workflow_module_loaded
+
+    @pytest.fixture
+    def portfolio_history_workflow_module(self, temp_dbos_scheduler):
+        import octobot_node.scheduler.workflows.portfolio_history_workflow as portfolio_history_workflow_module_loaded
+
+        yield portfolio_history_workflow_module_loaded
+
+    async def test_register_schedules_when_disabled_removes_existing_schedules(
+        self,
+        dbos_cleanup_workflow_module,
+        global_view_workflow_module,
+        portfolio_history_workflow_module,
+        temp_dbos_scheduler,
+    ):
+        import octobot_node.scheduler.schedules as schedules_module
+
+        with mock.patch(
+            "octobot_node.scheduler.schedules.scheduled_workflows_enabled",
+            return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                portfolio_history_workflow_module,
+                cleanup_existing=_matching_existing_schedule(
+                    dbos_cleanup_workflow_module,
+                    temp_dbos_scheduler,
+                ),
+                global_view_existing=_matching_existing_global_view_schedule(
+                    global_view_workflow_module,
+                ),
+                portfolio_history_existing=_matching_existing_portfolio_history_schedule(
+                    portfolio_history_workflow_module,
+                ),
+            ),
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.delete_schedule_async",
+            new_callable=mock.AsyncMock,
+        ) as delete_schedule_mock, mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.create_schedule_async",
+            new_callable=mock.AsyncMock,
+        ) as create_schedule_mock, mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "apply_schedules_async",
+            new_callable=mock.AsyncMock,
+        ) as apply_schedules_mock:
+            await schedules_module.register_schedules(temp_dbos_scheduler)
+
+        assert delete_schedule_mock.await_count == 3
+        delete_schedule_mock.assert_any_await(dbos_cleanup_workflow_module.SCHEDULE_NAME)
+        delete_schedule_mock.assert_any_await(global_view_workflow_module.SCHEDULE_NAME)
+        delete_schedule_mock.assert_any_await(portfolio_history_workflow_module.SCHEDULE_NAME)
+        create_schedule_mock.assert_not_awaited()
+        apply_schedules_mock.assert_not_awaited()
+
+    async def test_register_schedules_when_disabled_skips_delete_when_schedule_missing(
+        self,
+        dbos_cleanup_workflow_module,
+        global_view_workflow_module,
+        portfolio_history_workflow_module,
+        temp_dbos_scheduler,
+    ):
+        import octobot_node.scheduler.schedules as schedules_module
+
+        with mock.patch(
+            "octobot_node.scheduler.schedules.scheduled_workflows_enabled",
+            return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
+            side_effect=_get_schedule_async_side_effect(
+                dbos_cleanup_workflow_module,
+                global_view_workflow_module,
+                portfolio_history_workflow_module,
+                cleanup_existing=None,
+                global_view_existing=None,
+                portfolio_history_existing=None,
+            ),
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.delete_schedule_async",
+            new_callable=mock.AsyncMock,
+        ) as delete_schedule_mock:
+            await schedules_module.register_schedules(temp_dbos_scheduler)
+
+        delete_schedule_mock.assert_not_awaited()
+
+    async def test_register_schedules_when_disabled_does_not_run_startup_backfill_or_catch_up(
+        self,
+        dbos_cleanup_workflow_module,
+        global_view_workflow_module,
+        portfolio_history_workflow_module,
+        temp_dbos_scheduler,
+    ):
+        import octobot_node.scheduler.schedules as schedules_module
+
+        with mock.patch(
+            "octobot_node.scheduler.schedules.scheduled_workflows_enabled",
+            return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
+            new_callable=mock.AsyncMock,
+            return_value=None,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules._maybe_backfill_schedule_on_startup",
+            new_callable=mock.AsyncMock,
+        ) as backfill_mock, mock.patch(
+            "octobot_node.scheduler.schedules._maybe_catch_up_schedule_once_on_startup",
+            new_callable=mock.AsyncMock,
+        ) as catch_up_mock:
+            await schedules_module.register_schedules(temp_dbos_scheduler)
+
+        backfill_mock.assert_not_awaited()
+        catch_up_mock.assert_not_awaited()
+
+    async def test_update_cleanup_schedule_cron_when_disabled(
+        self,
+        dbos_cleanup_workflow_module,
+        temp_dbos_scheduler,
+    ):
+        import octobot_node.scheduler.schedules as schedules_module
+
+        desired_cron = "0 */6 * * *"
+
+        with mock.patch(
+            "octobot_node.scheduler.schedules.scheduled_workflows_enabled",
+            return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.schedules.dbos.DBOS.get_schedule_async",
+            new_callable=mock.AsyncMock,
+        ) as get_schedule_mock, mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "apply_schedules_async",
+            new_callable=mock.AsyncMock,
+        ) as apply_schedules_mock:
+            result = await schedules_module.update_cleanup_schedule_cron(
+                temp_dbos_scheduler,
+                desired_cron,
+            )
+
+        assert result == {"changed": False, "cron": desired_cron}
+        get_schedule_mock.assert_not_awaited()
+        apply_schedules_mock.assert_not_awaited()
+
+
 class TestUpdateCleanupScheduleCron:
     pytestmark = pytest.mark.asyncio
 

@@ -392,8 +392,7 @@ def _get_sqlite_database_size_bytes() -> int | None:
         _get_logger().exception(
             missing_file_error,
             True,
-            "Scheduler sqlite file not found: %s",
-            sqlite_path,
+            f"Scheduler sqlite file not found: {sqlite_path}",
         )
         return None
     total_size_bytes = sqlite_path.stat().st_size

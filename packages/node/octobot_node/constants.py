@@ -119,4 +119,10 @@ SCHEDULER_APPLICATION_VERSION = "octobot_node_v1"
 ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION = bool((
     os.getenv("ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION") or "false"
 ).lower() == "true")
-    
+# DBOS cron schedules (dbos cleanup, global view refresh, portfolio history).
+# Env: ENABLE_SCHEDULED_WORKFLOWS (default on unless set to "false").
+# When false: on scheduler init, existing schedules are deleted and not re-registered (no new cron triggers).
+# Does not cancel workflows already enqueued or running. Read at import; restart required to apply.
+ENABLE_SCHEDULED_WORKFLOWS = bool((
+    os.getenv("ENABLE_SCHEDULED_WORKFLOWS") or "true"
+).lower() != "false")
