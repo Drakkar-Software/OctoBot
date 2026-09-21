@@ -5,11 +5,15 @@ import {
   buildContactNoteSuffix,
   buildContextNotePrefix,
   buildFeedbackFilename,
+  buildFeedbackMailtoUrl,
   buildFeedbackNote,
+  buildNodeJournalZipBytes,
   buildRecoveryFeedbackFallbackEnvelope,
   computeShareFeedbackSendDisabled,
   downloadFeedbackEnvelope,
   downloadPreviewEnvelope,
+  FEEDBACK_JOURNAL_JSON_FILENAME,
+  FEEDBACK_JOURNAL_ZIP_FILENAME,
   formatJourneySummaryForDisplay,
   getPreviewEventCount,
   getPreviewAutomationCount,
@@ -344,14 +348,41 @@ describe("getPreviewAutomationCount", () => {
 })
 
 describe("buildFeedbackFilename", () => {
-  it("produces a stable feedback json name", () => {
+  it("uses the journal json member name", () => {
     const envelope = {
       install_id: "abcdefgh1234",
     } as FeedbackUploadEnvelope
 
-    expect(buildFeedbackFilename(envelope)).toMatch(
-      /^feedback-abcdefgh-.+\.json$/,
-    )
+    expect(buildFeedbackFilename(envelope)).toBe(FEEDBACK_JOURNAL_JSON_FILENAME)
+  })
+})
+
+describe("buildNodeJournalZipBytes", () => {
+  it("contains a single node_journal.json member", () => {
+    const zipBytes = buildNodeJournalZipBytes({
+      install_id: "install-1",
+      event_count: 0,
+    } as FeedbackUploadEnvelope)
+    expect(zipBytes[0]).toBe(0x50)
+    expect(zipBytes[1]).toBe(0x4b)
+    const zipText = new TextDecoder().decode(zipBytes)
+    expect(zipText).toContain(FEEDBACK_JOURNAL_JSON_FILENAME)
+  })
+})
+
+describe("buildFeedbackMailtoUrl", () => {
+  it("includes user note and attach instruction without install id", () => {
+    const mailto = buildFeedbackMailtoUrl({
+      note: "Something broke",
+      contactMethod: "email",
+      contactValue: "user@example.com",
+    })
+    expect(mailto).toContain("mailto:contact@octobot.cloud")
+    expect(mailto).toContain("Something+broke")
+    expect(mailto).toContain("Email%3A+user%40example.com")
+    expect(mailto).toContain("node_journal.zip")
+    expect(mailto).not.toContain("install_id")
+    expect(mailto).not.toContain("app_version")
   })
 })
 
@@ -369,6 +400,10 @@ describe("downloadFeedbackEnvelope", () => {
       revokeObjectURL: revokeObjectUrlMock,
     })
     vi.stubGlobal("document", {
+      body: {
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+      },
       createElement: () =>
         ({
           click: clickMock,

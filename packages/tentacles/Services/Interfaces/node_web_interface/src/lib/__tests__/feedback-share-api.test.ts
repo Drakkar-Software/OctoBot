@@ -3,18 +3,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 vi.mock("@/client", () => ({
   FeedbackService: {
     getFeedbackPreview: vi.fn(),
-    uploadFeedback: vi.fn(),
+    exportFeedback: vi.fn(),
   },
 }))
 
 import { FeedbackService } from "@/client"
 import { submitFeedbackDownload } from "@/lib/feedback-share"
 
-const mockedUploadFeedback = vi.mocked(FeedbackService.uploadFeedback)
+const mockedExportFeedback = vi.mocked(FeedbackService.exportFeedback)
+const assignMock = vi.fn()
 
 function stubWindowPathname(pathname: string) {
   vi.stubGlobal("window", {
-    location: { pathname },
+    location: {
+      pathname,
+      assign: assignMock,
+    },
   })
 }
 
@@ -22,17 +26,21 @@ describe("submitFeedbackDownload", () => {
   const createObjectUrlMock = vi.fn(() => "blob:feedback")
   const revokeObjectUrlMock = vi.fn()
   const clickMock = vi.fn()
-
   beforeEach(() => {
-    mockedUploadFeedback.mockReset()
+    mockedExportFeedback.mockReset()
     createObjectUrlMock.mockClear()
     revokeObjectUrlMock.mockClear()
     clickMock.mockClear()
+    assignMock.mockClear()
     vi.stubGlobal("URL", {
       createObjectURL: createObjectUrlMock,
       revokeObjectURL: revokeObjectUrlMock,
     })
     vi.stubGlobal("document", {
+      body: {
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+      },
       createElement: () =>
         ({
           click: clickMock,
@@ -40,20 +48,26 @@ describe("submitFeedbackDownload", () => {
           href: "",
         }) as unknown as HTMLAnchorElement,
     })
+    vi.stubGlobal("window", {
+      location: {
+        pathname: "/app",
+        assign: assignMock,
+      },
+    })
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it("uploads note, ui_error_name, and contact without context in note", async () => {
+  it("exports note, ui_error_name, and contact without context in note", async () => {
     stubWindowPathname("/app/settings")
-    const uploadEnvelope = {
+    const exportEnvelope = {
       install_id: "install-1",
       event_count: 2,
       uploaded: false,
     }
-    mockedUploadFeedback.mockResolvedValue(uploadEnvelope as never)
+    mockedExportFeedback.mockResolvedValue(exportEnvelope as never)
 
     await submitFeedbackDownload({
       note: "App froze on settings",
@@ -65,7 +79,7 @@ describe("submitFeedbackDownload", () => {
       contactValue: "user@example.com",
     })
 
-    expect(mockedUploadFeedback).toHaveBeenCalledWith({
+    expect(mockedExportFeedback).toHaveBeenCalledWith({
       requestBody: {
         note:
           "App froze on settings\n\n[contact] method=email value=user@example.com",
@@ -76,18 +90,22 @@ describe("submitFeedbackDownload", () => {
     })
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickMock).toHaveBeenCalledTimes(1)
+    expect(assignMock).toHaveBeenCalledTimes(1)
+    expect(assignMock.mock.calls[0][0]).toContain("mailto:contact@octobot.cloud")
+    expect(assignMock.mock.calls[0][0]).toContain("App+froze+on+settings")
+    expect(assignMock.mock.calls[0][0]).not.toContain("install-1")
   })
 
-  it("uploads ui_error_route from current page for navbar feedback", async () => {
+  it("exports ui_error_route from current page for navbar feedback", async () => {
     stubWindowPathname("/app/settings")
-    mockedUploadFeedback.mockResolvedValue({ install_id: "x" } as never)
+    mockedExportFeedback.mockResolvedValue({ install_id: "x" } as never)
 
     await submitFeedbackDownload({
       note: "Navbar feedback",
       context: { source: "navbar" },
     })
 
-    expect(mockedUploadFeedback).toHaveBeenCalledWith({
+    expect(mockedExportFeedback).toHaveBeenCalledWith({
       requestBody: {
         note: "[ui_context] source=navbar\n\nNavbar feedback",
         issue_url: null,
@@ -97,14 +115,14 @@ describe("submitFeedbackDownload", () => {
     })
   })
 
-  it("uploads route error context on envelope request fields", async () => {
-    mockedUploadFeedback.mockResolvedValue({ install_id: "x" } as never)
+  it("exports route error context on envelope request fields", async () => {
+    mockedExportFeedback.mockResolvedValue({ install_id: "x" } as never)
 
     await submitFeedbackDownload({
       context: { source: "route_error", routePath: "/app/x" },
     })
 
-    expect(mockedUploadFeedback).toHaveBeenCalledWith({
+    expect(mockedExportFeedback).toHaveBeenCalledWith({
       requestBody: {
         note: null,
         issue_url: null,
@@ -114,9 +132,9 @@ describe("submitFeedbackDownload", () => {
     })
   })
 
-  it("downloads recovery fallback when upload fails", async () => {
+  it("downloads recovery fallback when export fails", async () => {
     stubWindowPathname("/app/insecure")
-    mockedUploadFeedback.mockRejectedValue(new Error("network error"))
+    mockedExportFeedback.mockRejectedValue(new Error("network error"))
 
     const envelope = await submitFeedbackDownload({
       note: "Recovery note",
@@ -132,10 +150,11 @@ describe("submitFeedbackDownload", () => {
     expect(envelope.ui_error_route).toBe("/app/insecure")
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickMock).toHaveBeenCalledTimes(1)
+    expect(assignMock).toHaveBeenCalledTimes(1)
   })
 
-  it("rethrows upload errors for non-recovery context", async () => {
-    mockedUploadFeedback.mockRejectedValue(new Error("network error"))
+  it("rethrows export errors for non-recovery context", async () => {
+    mockedExportFeedback.mockRejectedValue(new Error("network error"))
 
     await expect(
       submitFeedbackDownload({
@@ -144,5 +163,6 @@ describe("submitFeedbackDownload", () => {
       }),
     ).rejects.toThrow("network error")
     expect(createObjectUrlMock).not.toHaveBeenCalled()
+    expect(assignMock).not.toHaveBeenCalled()
   })
 })
