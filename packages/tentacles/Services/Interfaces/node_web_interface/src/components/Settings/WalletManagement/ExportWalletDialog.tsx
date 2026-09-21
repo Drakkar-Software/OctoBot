@@ -24,9 +24,11 @@ import {
 export function ExportWalletDialog({
   walletAddress,
   isOwnWallet,
+  showTextTrigger = false,
 }: {
   walletAddress: string
   isOwnWallet: boolean
+  showTextTrigger?: boolean
 }) {
   const [privateKey, setPrivateKey] = useState<string | null>(null)
   const [seed, setSeed] = useState<string | null>(null)
@@ -94,20 +96,32 @@ export function ExportWalletDialog({
   return (
     <>
     <Dialog onOpenChange={onOpenChange}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Export wallet"
-            >
-              <Download className="size-4" />
-            </button>
-          </DialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Export wallet</TooltipContent>
-      </Tooltip>
+      {showTextTrigger ? (
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+          >
+            <Download className="size-4" />
+            Export wallet
+          </button>
+        </DialogTrigger>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Export wallet"
+              >
+                <Download className="size-4" />
+              </button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="left">Export wallet</TooltipContent>
+        </Tooltip>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Export wallet</DialogTitle>
