@@ -68,6 +68,40 @@ One paragraph: what this package does in OctoBot.
 - YYYY-MM-DD
 ```
 
+## Node journal
+
+The node journal (`octobot.community.node_journal`) is an append-only event log for diagnostics, journey analytics, and **export/sharing**. It is **not** a source of truth.
+
+- **Outside `octobot/community/node_journal/`:** call Tier-1 **`record_*`** / `record` only. Do not call `read_events`, read journal files on disk, or branch product logic on journal contents.
+- **Inside the package:** `read_events`, `build_journey_summary`, and `build_upload_envelope` are for the **export pipeline** (plus unit tests).
+- Do not store data in journal payloads to reuse later for non-journal features; use config, DB, sync collections, or domain stores instead.
+- Details: [`octobot/community/node_journal/AGENTS.md`](octobot/community/node_journal/AGENTS.md) and skill **node-journal** (`.cursor/skills/node-journal/SKILL.md`).
+
+## Python conventions (agents)
+
+Authoritative rules for Python in `octobot/` and `packages/`. Cloud agents: also summarized in `.cursor/rules/octobot-cloud.mdc`.
+
+### Shared literals (magic strings)
+
+- Put cross-module identifiers in the **owning package** at **package top level** when only a few literals are needed: e.g. [`octobot/constants.py`](octobot/constants.py), [`octobot/enums.py`](octobot/enums.py), or `packages/<name>/octobot_<name>/constants.py` and `enums.py`.
+- TypeScript: `constants.ts` / `wireConstants.ts` where applicable; see [`docs/content/client-sdk/wire-contract.md`](docs/content/client-sdk/wire-contract.md) for cross-language wire literals.
+- Callers use `import module as alias` and `alias.NAME`; do not duplicate the same string in multiple files.
+- **OK inline:** log/debug text; truly local one-off values never compared or reused elsewhere.
+- **Submodule `constants.py` / `enums.py`:** only when a sub-area owns a **large** dedicated literal surface (exemplar: [`octobot/community/node_journal/constants.py`](octobot/community/node_journal/constants.py), [`enums.py`](octobot/community/node_journal/enums.py)). Do not add deep per-folder constant files for a handful of strings.
+
+### Imports
+
+- Prefer imports at **module top level**.
+- Use `import xxx` or `import xxx as yy`; access via `xxx.name` or `yy.name`.
+- Avoid `from xxx import yy` in normal module code; avoid lazy (function-scoped) imports unless breaking a documented import cycle or loading an optional heavy dependency on a rare path.
+- **`from xxx import yyy` is allowed only in `__init__.py`** when re-exporting the public surface (see below).
+
+### Package `__init__.py` as public bridge
+
+- Re-export the **public surface** from each package/subpackage `__init__.py` so callers use one stable import (e.g. `import octobot_trading.personal_data as personal_data`) instead of deep internal paths.
+- Example: [`packages/trading/octobot_trading/personal_data/__init__.py`](packages/trading/octobot_trading/personal_data/__init__.py).
+- When adding a new public symbol, export it from the appropriate `__init__.py`.
+
 ## Formatting
 
 Ruff/Biome configs are present; mass format and CI enforce land in later phases. Do not run repo-wide reformat in routine agent PRs unless requested.
