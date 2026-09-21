@@ -339,13 +339,40 @@ async def _ensure_schedule(
     await _maybe_catch_up_schedule_once_on_startup(schedule_name, schedule_input)
 
 
-async def register_schedules(scheduler: scheduler_module.Scheduler) -> None:
-    schedule_inputs: list[dbos.ScheduleInput] = [
+def scheduled_workflows_enabled() -> bool:
+    return constants.ENABLE_SCHEDULED_WORKFLOWS
+
+
+def get_registered_schedule_inputs() -> list[dbos.ScheduleInput]:
+    return [
         dbos_cleanup_workflow.get_schedule_input(),
         global_view_workflow.get_schedule_input(),
         portfolio_history_workflow.get_schedule_input(),
     ]
-    for schedule_input in schedule_inputs:
+
+
+async def _remove_registered_schedule(schedule_name: str) -> None:
+    logger = _get_logger()
+    existing_schedule = await dbos.DBOS.get_schedule_async(schedule_name)
+    if existing_schedule is None:
+        return
+    logger.info(
+        "Scheduled workflows disabled; removing schedule %s so no future cron runs are registered",
+        schedule_name,
+    )
+    await dbos.DBOS.delete_schedule_async(schedule_name)
+
+
+async def _remove_all_registered_schedules() -> None:
+    for schedule_input in get_registered_schedule_inputs():
+        await _remove_registered_schedule(schedule_input["schedule_name"])
+
+
+async def register_schedules(scheduler: scheduler_module.Scheduler) -> None:
+    if not scheduled_workflows_enabled():
+        await _remove_all_registered_schedules()
+        return
+    for schedule_input in get_registered_schedule_inputs():
         await _ensure_schedule(scheduler, schedule_input)
 
 
@@ -353,6 +380,8 @@ async def update_cleanup_schedule_cron(
     scheduler: scheduler_module.Scheduler,
     cron: str,
 ) -> dict[str, typing.Any]:
+    if not scheduled_workflows_enabled():
+        return {"changed": False, "cron": cron}
     existing_schedule = await dbos.DBOS.get_schedule_async(dbos_cleanup_workflow.SCHEDULE_NAME)
     if existing_schedule is not None and existing_schedule["schedule"] == cron:
         return {"changed": False, "cron": cron}
