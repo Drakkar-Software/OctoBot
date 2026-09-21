@@ -60,9 +60,14 @@ import {
   validateExportTemplateJson,
 } from "@/lib/export-templates"
 import { discoverPaths, extractValue, formatCellValue } from "@/lib/json-path"
+import {
+  getStoppedTaskIdsForExport,
+  shouldProcessExportEntry,
+} from "@/lib/export-results-fetch"
 import { fetchServerPublicKeys } from "@/lib/server-keys"
-import { getActiveExecution } from "@/utils/executions"
+import { getActiveExecution, getStatusGroup } from "@/utils/executions"
 import { resolveTaskError } from "@/utils/task-errors"
+import { getTaskMetaStatus } from "@/utils/task-status"
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -100,10 +105,7 @@ function buildExportRows(tasks: Task[]): ExportRow[] {
       meta: {
         __task_name__: task.name ?? "",
         __exec_status__: activeExec?.status ?? "",
-        __task_status__:
-          activeExec?.status === "failed" || activeExec?.error
-            ? "errored"
-            : (activeExec?.status ?? ""),
+        __task_status__: getTaskMetaStatus(task),
         __task_error__: errorStatus ?? "",
         __task_error_message__: errorMessage ?? "",
         __exec_type__: activeExec?.type ?? "",
@@ -174,9 +176,10 @@ export default function ExportResultsContent({
   const encryptedTaskCount = useMemo(
     () =>
       tasks.filter(
-        (t) =>
-          t.is_encrypted &&
-          getActiveExecution(t.executions)?.status === "completed",
+        (task) =>
+          task.is_encrypted &&
+          getStatusGroup(getActiveExecution(task.executions)?.status) ===
+            "stopped",
       ).length,
     [tasks],
   )
@@ -184,11 +187,8 @@ export default function ExportResultsContent({
   useEffect(() => {
     let cancelled = false
     async function tryDecryptAll() {
-      const completedTaskIds = tasks
-        .filter((t) => getActiveExecution(t.executions)?.status === "completed")
-        .map((t) => t.id ?? "")
-        .filter(Boolean)
-      if (completedTaskIds.length === 0) return
+      const stoppedTaskIds = getStoppedTaskIdsForExport(tasks)
+      if (stoppedTaskIds.length === 0) return
 
       const rawKeys = await loadClientKeys()
       const hasClientKeys = !!rawKeys?.rsa_private?.trim()
@@ -216,7 +216,7 @@ export default function ExportResultsContent({
       try {
         const exportedResults = await TasksService.exportResults({
           requestBody: {
-            task_ids: completedTaskIds,
+            task_ids: stoppedTaskIds,
             user_rsa_public_key: userRsaPublicPem,
           },
         })
@@ -224,7 +224,7 @@ export default function ExportResultsContent({
         const rows = await Promise.all(
           tasks.map(async (task, i) => {
             const entry = exportedResults[task.id ?? ""]
-            if (!entry || entry.error || !entry.result) return base[i]
+            if (!entry || !shouldProcessExportEntry(entry)) return base[i]
             try {
               let decrypted: string
               if (entry.result_metadata && keys && serverKeys) {

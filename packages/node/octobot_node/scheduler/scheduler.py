@@ -568,14 +568,9 @@ class Scheduler:
         except Exception as e:
             self.logger.warning(f"Failed to parse output for workflow {workflow_status.workflow_id}: {e}")
             return {"result": "", "result_metadata": ""}
-        # Completed rows export output.state; CANCELLED rows usually have none, so export uses
-        # workflow input task content (see get_resolved_automation_task) when present.
-        if not output.state:
-            if (
-                workflow_status.status != dbos.WorkflowStatusString.CANCELLED.value
-                or not result_task.content
-            ):
-                return {"result": "", "result_metadata": ""}
+        # Latest run: export persisted output.state when present, else workflow input task content.
+        if not output.state and not result_task.content:
+            return {"result": "", "result_metadata": ""}
         with task_context.encrypted_task(result_task):
             if (result_task.content == output.state and output.state_metadata
                     and octobot_node.config.settings.TASKS_SERVER_RSA_PRIVATE_KEY):
@@ -629,11 +624,7 @@ class Scheduler:
                 if user_id is not None and (task is None or task.user_id != user_id):
                     out[task_id] = {"error": "forbidden"}
                     continue
-                export_workflow = workflows_util.resolve_automation_result_for_group(group)
-                if export_workflow is None:
-                    # Terminal children exist but none are exportable (e.g. SUCCESS without output).
-                    out[task_id] = {"result": "", "result_metadata": ""}
-                    continue
+                export_workflow = workflows_util.get_latest_workflow(group)
                 user_rsa = user_rsa_public_key.encode("utf-8") if user_rsa_public_key else None
                 built = self._build_export_result_from_status(export_workflow, user_rsa)
                 if built.get("result") or built.get("result_metadata"):

@@ -7,8 +7,8 @@ import type { Task_Output as Task } from "@/client"
 import { BotGrid } from "@/components/OctoBots/BotGrid"
 import { BotsFilterBar } from "@/components/OctoBots/BotsFilterBar"
 import { SelectionToolbar } from "@/components/OctoBots/SelectionToolbar"
+import { taskMatchesSearchQuery } from "@/lib/octobots/task-matches-search-query"
 import { getTasksQueryOptions } from "@/lib/task-queries"
-import { getActiveExecution } from "@/utils/executions"
 import {
   getTaskFilterGroup,
   getTaskSortDate,
@@ -21,15 +21,9 @@ function BotsContent() {
   const [searchValue, setSearchValue] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const filteredTasks = useMemo(() => {
-    const query = searchValue.trim().toLowerCase()
     const matched = tasks.filter((task: Task) => {
-      const activeExec = getActiveExecution(task.executions)
       const inFilter = getTaskFilterGroup(task) === filterValue
-      const inSearch = query
-        ? `${task.name ?? ""} ${activeExec?.type ?? ""}`
-            .toLowerCase()
-            .includes(query)
-        : true
+      const inSearch = taskMatchesSearchQuery(task, searchValue)
       return inFilter && inSearch
     })
     const tagged = matched.map((task: Task) => {

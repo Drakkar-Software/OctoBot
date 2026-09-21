@@ -793,20 +793,19 @@ describe("client-encryption", () => {
         result_metadata: "some-meta",
         error: undefined,
       }
-      // !entry.result → early return to base row
+      // !entry.result → early return to base row (see shouldProcessExportEntry)
       const shouldProcess = !!entry.result
       expect(shouldProcess).toBe(false)
     })
 
-    it("entry with error field skips processing", () => {
+    it("entry with error still processes when result is present", () => {
       const entry = {
         result: "some-result",
         result_metadata: "meta",
         error: "forbidden",
       }
-      // entry.error → early return to base row
-      const shouldProcess = !entry.error
-      expect(shouldProcess).toBe(false)
+      const shouldProcess = !!entry.result
+      expect(shouldProcess).toBe(true)
     })
 
     it("request-supplied RSA public PEM from derivePublicPemsFromPrivates is valid for a full export roundtrip", async () => {

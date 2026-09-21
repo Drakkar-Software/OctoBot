@@ -43,10 +43,33 @@ export function getStatusVariant(
   return "secondary"
 }
 
+export function isTaskCancelled(task: Task): boolean {
+  return getActiveExecution(task.executions)?.status === "cancelled"
+}
+
+/** Export/meta status: cancelled stays `cancelled`, not `errored`. */
+export function getTaskMetaStatus(task: Task): string {
+  const exec = getActiveExecution(task.executions)
+  if (exec?.status === "cancelled") {
+    return "cancelled"
+  }
+  if (exec?.status === "failed" || exec?.error) {
+    return "errored"
+  }
+  return exec?.status ?? ""
+}
+
 export function getTaskFilterGroup(task: Task): TaskFilterGroup {
   const exec = getActiveExecution(task.executions)
   if (getStatusGroup(exec?.status) === "active") return "active"
-  return exec?.status === "failed" || exec?.error ? "errored" : "completed"
+  if (
+    exec?.status === "failed" ||
+    exec?.status === "cancelled" ||
+    exec?.error
+  ) {
+    return "errored"
+  }
+  return "completed"
 }
 
 export function getTaskSortDate(task: Task): string | null {

@@ -433,7 +433,7 @@ class TestGetWorkflowsExportResults:
 
     @pytest.mark.asyncio
     async def test_picks_child_with_output_for_multi_iteration_parent(self):
-        """For multi-iteration task: parent output=None, child has actual output → child is used."""
+        """Latest child run with persisted output.state is exported."""
         task = self._make_task()
         parent_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
         child_output = params.AutomationWorkflowOutput(state="encrypted_state", state_metadata=None)
@@ -477,12 +477,13 @@ class TestGetWorkflowsExportResults:
     async def test_skips_crypto_when_encryption_disabled(self):
         """When node-side encryption is off, state is returned as-is without crypto."""
         task = self._make_task()
-        child_ws = _build_mock_workflow_status(task, "plain_state", None, workflow_id=CHILD_ID)
-        child_ws.updated_at = 10
-        parent_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
+        prior_ws = _build_mock_workflow_status_no_output(task, workflow_id=CHILD_INDEX_1_ID)
+        prior_ws.updated_at = 10
+        child_ws = _build_mock_workflow_status(task, "plain_state", None, workflow_id=CHILD_INDEX_2_ID)
+        child_ws.updated_at = 20
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[parent_ws, child_ws])
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[prior_ws, child_ws])
 
         with mock.patch.object(
             type(octobot_node.config.settings),
@@ -498,26 +499,37 @@ class TestGetWorkflowsExportResults:
         mock_encrypt.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_returns_empty_when_no_workflow_has_output(self):
-        """All workflows in group have output=None → returns empty result, no exception."""
+    async def test_returns_latest_run_input_when_no_workflow_has_output(self):
+        """Latest run has output=None → export workflow input task content."""
         task = self._make_task()
         parent_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
         mock_instance.list_workflows_async = mock.AsyncMock(return_value=[parent_ws])
 
-        with mock.patch(
+        with mock.patch.object(
+            type(octobot_node.config.settings),
+            "is_node_side_encryption_enabled",
+            new_callable=mock.PropertyMock,
+            return_value=False,
+        ), mock.patch(
             "octobot_node.scheduler.encryption.encrypt_task_result"
         ) as mock_encrypt:
             result = await sched.get_workflows_export_results([PARENT_ID], None)
 
-        assert result[PARENT_ID] == {"result": "", "result_metadata": ""}
+        assert result[PARENT_ID] == {"result": "encrypted_content", "result_metadata": ""}
         mock_encrypt.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_returns_error_for_all_failed_group(self):
-        """All workflows ERROR → error message surfaced in response."""
-        task = self._make_task()
+    async def test_returns_error_when_latest_error_has_no_exportable_content(self):
+        """Latest ERROR without output or input content → error message in response."""
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="test-task",
+            content=None,
+            type="execute_actions",
+            user_id="wallet-a",
+        )
         error_ws = _build_mock_workflow_status_error(task, RuntimeError("boom"), workflow_id=PARENT_ID)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
@@ -676,6 +688,29 @@ class TestGetWorkflowsExportResults:
         mock_encrypt.assert_not_called()
 
     @pytest.mark.asyncio
+    async def test_export_latest_error_uses_input_not_prior_success_output(self):
+        task = self._make_task()
+        prior_ws = _build_mock_workflow_status(task, "prior_export_state", None, workflow_id=CHILD_INDEX_1_ID)
+        prior_ws.updated_at = 10
+        error_ws = _build_mock_workflow_status_error(task, RuntimeError("boom"), workflow_id=CHILD_INDEX_2_ID)
+        error_ws.updated_at = 20
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[prior_ws, error_ws])
+
+        with mock.patch.object(
+            type(octobot_node.config.settings),
+            "is_node_side_encryption_enabled",
+            new_callable=mock.PropertyMock,
+            return_value=False,
+        ), mock.patch(
+            "octobot_node.scheduler.encryption.encrypt_task_result"
+        ) as mock_encrypt:
+            result = await sched.get_workflows_export_results([PARENT_ID], None)
+
+        assert result[PARENT_ID] == {"result": "encrypted_content", "result_metadata": ""}
+        mock_encrypt.assert_not_called()
+
     @pytest.mark.asyncio
     async def test_export_cancelled_without_input_content_returns_empty(self):
         task = octobot_node.models.Task(
