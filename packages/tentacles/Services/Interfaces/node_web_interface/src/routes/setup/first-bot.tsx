@@ -3,6 +3,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { NewBotCards } from "@/components/Common/NewBotCards"
 import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
 import { isLoggedIn } from "@/hooks/useAuth"
+import { clearSetupGenerateFlow, getSetupStepTotal } from "@/lib/seed-onboarding"
 
 export const Route = createFileRoute("/setup/first-bot")({
   beforeLoad: () => {
@@ -21,15 +22,19 @@ function SetupFirstBot() {
 
   const finishSetup = () => {
     sessionStorage.removeItem("setup_in_progress")
+    clearSetupGenerateFlow()
     navigate({ to: "/" })
   }
+
+  const totalSteps = getSetupStepTotal()
+  const stepNumber = totalSteps === 5 ? 5 : 3
 
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
       <div className="flex w-full max-w-4xl flex-col gap-8">
         <SetupStepHeader
-          step={3}
-          total={3}
+          step={stepNumber}
+          total={totalSteps}
           title="Launch your first OctoBot"
           subtitle="Pick how to create your first bot, or skip and do it later."
         />

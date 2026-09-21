@@ -8,6 +8,7 @@ import { ConnectNodeGuide } from "@/components/Setup/ConnectNodeGuide"
 import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
 import { Button } from "@/components/ui/button"
 import { isLoggedIn } from "@/hooks/useAuth"
+import { getSetupStepTotal } from "@/lib/seed-onboarding"
 import {
   CONNECT_NODE_PAGE_SUBTITLE,
   CONNECT_NODE_PAGE_TITLE,
@@ -27,13 +28,15 @@ export const Route = createFileRoute("/setup/connect")({
 
 function SetupConnect() {
   const navigate = useNavigate()
+  const totalSteps = getSetupStepTotal()
+  const stepNumber = totalSteps === 5 ? 4 : 2
 
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
       <div className="flex w-full max-w-3xl flex-col gap-8">
         <SetupStepHeader
-          step={2}
-          total={3}
+          step={stepNumber}
+          total={totalSteps}
           title={CONNECT_NODE_PAGE_TITLE}
           subtitle={CONNECT_NODE_PAGE_SUBTITLE}
         />

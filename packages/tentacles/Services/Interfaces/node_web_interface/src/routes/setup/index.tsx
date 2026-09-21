@@ -8,6 +8,7 @@ import { z } from "zod"
 import { type ApiError, type SetupResult, SetupService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
+import { WalletSeedOnboardingFlow } from "@/components/Wallet/WalletSeedOnboardingFlow"
 import {
   Form,
   FormControl,
@@ -22,6 +23,13 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { clearAuth } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { savePassword } from "@/lib/device-key"
+import {
+  clearSetupGenerateFlow,
+  markSetupGenerateFlow,
+  SETUP_STEP_TOTAL_GENERATE,
+  SETUP_STEP_TOTAL_IMPORT,
+} from "@/lib/seed-onboarding"
+import { fetchSeedAfterWalletCreate } from "@/lib/wallet-seed-after-create"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/setup/")({
@@ -71,7 +79,12 @@ function NodeWalletNote() {
 function SetupWallet() {
   const navigate = useNavigate()
   const [mode, setMode] = useState<"generate" | "import">("generate")
+  const [generatedSeed, setGeneratedSeed] = useState<string | null>(null)
   const { showErrorToast } = useCustomToast()
+
+  const finishSetupNavigation = () => {
+    navigate({ to: "/setup/connect" })
+  }
 
   const generateForm = useForm<GenerateData>({
     resolver: zodResolver(generateSchema),
@@ -106,10 +119,7 @@ function SetupWallet() {
           name: name?.trim() || undefined,
         },
       }),
-    onSuccess: async (result, { passphrase, name }) => {
-      // Persist the password before marking the session as logged in — if this
-      // throws (e.g. IndexedDB blocked), auth_username must not be set, so
-      // isLoggedIn() stays false instead of leaving a passwordless session.
+    onSuccess: async (result, { passphrase, name, privateKey }) => {
       try {
         await savePassword(passphrase)
       } catch {
@@ -123,13 +133,30 @@ function SetupWallet() {
         localStorage.setItem("auth_wallet_name", name.trim())
       }
       sessionStorage.setItem("setup_in_progress", "true")
-      navigate({ to: "/setup/connect" })
+
+      if (privateKey) {
+        clearSetupGenerateFlow()
+        finishSetupNavigation()
+        return
+      }
+
+      try {
+        const seed = await fetchSeedAfterWalletCreate(result.address, passphrase)
+        if (seed) {
+          setGeneratedSeed(seed)
+          return
+        }
+      } catch {
+        showErrorToast(
+          "Your wallet was created but the seed phrase could not be loaded. Export it from Settings after setup.",
+        )
+      }
+      clearSetupGenerateFlow()
+      finishSetupNavigation()
     },
     onError: async (error) => {
       const apiError = error as ApiError
       if (apiError.status === 409) {
-        // The node was already configured (e.g. session still had setup_in_progress set
-        // after a previous successful setup). Clean up and redirect to login.
         sessionStorage.removeItem("setup_in_progress")
         await clearAuth()
         navigate({ to: "/login" })
@@ -151,12 +178,35 @@ function SetupWallet() {
     })
   }
 
+  const handleSeedOnboardingComplete = () => {
+    markSetupGenerateFlow()
+    setGeneratedSeed(null)
+    finishSetupNavigation()
+  }
+
+  if (generatedSeed) {
+    return (
+      <AuthLayout>
+        <WalletSeedOnboardingFlow
+          seed={generatedSeed}
+          revealStep={2}
+          quizStep={3}
+          totalSteps={SETUP_STEP_TOTAL_GENERATE}
+          onComplete={handleSeedOnboardingComplete}
+        />
+      </AuthLayout>
+    )
+  }
+
+  const setupTotal =
+    mode === "generate" ? SETUP_STEP_TOTAL_GENERATE : SETUP_STEP_TOTAL_IMPORT
+
   return (
     <AuthLayout>
       <div className="flex flex-col gap-6">
         <SetupStepHeader
           step={1}
-          total={3}
+          total={setupTotal}
           title="Set up your wallet"
           subtitle="Create a new wallet or import an existing one."
         />
@@ -244,7 +294,7 @@ function SetupWallet() {
               />
               <NodeWalletNote />
               <LoadingButton type="submit" loading={initMutation.isPending}>
-                Continue
+                Generate wallet
               </LoadingButton>
             </form>
           </Form>
