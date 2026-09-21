@@ -1,0 +1,101 @@
+import { Copy, TriangleAlert } from "lucide-react"
+import { useState } from "react"
+
+import { ConfirmWalletSecretCopyDialog } from "@/components/Common/ConfirmWalletSecretCopyDialog"
+import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { splitSeedPhraseWords } from "@/lib/seed-onboarding"
+import { useConfirmWalletSecretCopy } from "@/lib/use-confirm-wallet-secret-copy"
+
+export type SeedPhraseRevealStepProps = {
+  seed: string
+  step?: number
+  total?: number
+  onContinue: () => void
+}
+
+export function SeedPhraseRevealStep({
+  seed,
+  step,
+  total,
+  onContinue,
+}: SeedPhraseRevealStepProps) {
+  const words = splitSeedPhraseWords(seed)
+  const [copyCount, setCopyCount] = useState(0)
+  const [savedOffline, setSavedOffline] = useState(false)
+
+  const walletSecretCopy = useConfirmWalletSecretCopy({
+    onCopied: () => {
+      setCopyCount((n) => n + 1)
+    },
+  })
+
+  const canContinue = copyCount >= 1 && savedOffline
+
+  const copyPhrase = () => {
+    walletSecretCopy.requestCopy(seed, "seed_phrase")
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-6">
+        <SetupStepHeader
+          step={step}
+          total={total}
+          title="Save your seed phrase"
+          subtitle="Write down all words in order. You need them to recover this wallet."
+        />
+        <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+          <span>
+            Anyone with these words can control your wallet. Never share them online.
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {words.map((word, index) => (
+            <div
+              key={`${index}-${word}`}
+              className="rounded-md border bg-muted px-3 py-2 text-sm font-mono"
+            >
+              <span className="text-muted-foreground mr-2">{index + 1}.</span>
+              {word}
+            </div>
+          ))}
+        </div>
+        <Button type="button" variant="outline" onClick={copyPhrase}>
+          <Copy className="size-4" />
+          Copy seed phrase
+        </Button>
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="seed-saved-offline"
+            checked={savedOffline}
+            onCheckedChange={(checked) => setSavedOffline(checked === true)}
+          />
+          <Label
+            htmlFor="seed-saved-offline"
+            className="text-sm font-normal leading-snug"
+          >
+            I saved it offline
+          </Label>
+        </div>
+        <LoadingButton
+          type="button"
+          disabled={!canContinue}
+          onClick={onContinue}
+        >
+          Continue
+        </LoadingButton>
+      </div>
+      <ConfirmWalletSecretCopyDialog
+        open={walletSecretCopy.confirmOpen}
+        onOpenChange={walletSecretCopy.handleOpenChange}
+        secretType={walletSecretCopy.pendingSecretType}
+        onConfirm={walletSecretCopy.handleConfirm}
+      />
+    </>
+  )
+}
