@@ -30,6 +30,8 @@ Colocated **`AGENTS.md`** files describe package boundaries (owns, deps, tests).
 | Core app / CLI / config | [`octobot/AGENTS.md`](octobot/AGENTS.md) |
 | Tentacles sources vs install | [`packages/tentacles/AGENTS.md`](packages/tentacles/AGENTS.md) |
 | Node UI or classic web UI (copy, layout, errors) | [`packages/tentacles/Services/Interfaces/node_web_interface/AGENTS.md`](packages/tentacles/Services/Interfaces/node_web_interface/AGENTS.md), [`packages/tentacles/Services/Interfaces/web_interface/AGENTS.md`](packages/tentacles/Services/Interfaces/web_interface/AGENTS.md), skill **end-user-ui** (`.cursor/skills/end-user-ui/SKILL.md`) |
+| Node journal (record / export) | [`octobot/community/node_journal/AGENTS.md`](octobot/community/node_journal/AGENTS.md), skill **node-journal** (`.cursor/skills/node-journal/SKILL.md`) |
+| Python style (imports, literals, `__init__.py` API) | [CONTRIBUTING-agent.md](CONTRIBUTING-agent.md) — **Python conventions (agents)** |
 | Cross-package or tentacles | This file + every involved colocated `AGENTS.md` |
 | Node UI demo / agent-seed QA | [`tools/agent_seed/README.md`](tools/agent_seed/README.md) + skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`) |
 

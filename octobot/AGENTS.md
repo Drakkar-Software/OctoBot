@@ -24,6 +24,9 @@ Top-level OctoBot app: CLI entry, configuration, community features, orchestrati
 - Edit repo-root `tentacles/` (install output)
 - Put secrets or `user/` data in tree
 - Duplicate logic that belongs in `packages/*`
+- Use **node journal** for reads or control flow outside export: record-only via `octobot.community.node_journal` from the rest of the app (see [`community/node_journal/AGENTS.md`](community/node_journal/AGENTS.md), skill **node-journal**)
+- Duplicate shared wire/config/event strings; use package-top [`constants.py`](constants.py) / [`enums.py`](enums.py) (or the owning package’s equivalents)
+- Use `from xxx import yyy` or lazy imports in normal modules (only `__init__.py` re-exports; see [CONTRIBUTING-agent.md](../CONTRIBUTING-agent.md) — **Python conventions (agents)**)
 
 ## Tests
 
@@ -37,4 +40,4 @@ Top-level OctoBot app: CLI entry, configuration, community features, orchestrati
 
 ## Last reviewed
 
-- 2026-03-25
+- 2026-09-21

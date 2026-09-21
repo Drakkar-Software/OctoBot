@@ -33,6 +33,11 @@ Multi-step **roadmap** plans (title or description contains `roadmap`): author w
 - Installed tentacles output: repo-root `tentacles/` (generated — never edit).
 - Tentacles sources: `packages/tentacles/`.
 
+## Coding conventions
+
+- **Python (imports, literals, public API):** [CONTRIBUTING-agent.md](../../CONTRIBUTING-agent.md) — **Python conventions (agents)**.
+- **Node journal:** skill **node-journal** (`.cursor/skills/node-journal/SKILL.md`); colocated [`octobot/community/node_journal/AGENTS.md`](../../octobot/community/node_journal/AGENTS.md). Integrators record only; not a source of truth.
+
 ## Policy and verify
 
 - Machine rules: `tools/extended_linter/config/policy.yaml` (extend via `tools/extended_linter/ARCHITECTURE.md`)
