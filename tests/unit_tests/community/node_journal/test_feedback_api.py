@@ -72,9 +72,9 @@ class TestBuildFeedbackUploadEnvelope:
             timestamp=1.0,
         )
 
-        envelope = feedback_routes._build_feedback_upload_envelope(note="manual upload")
+        envelope = feedback_routes._build_feedback_upload_envelope(note="manual export")
 
-        assert envelope.note == "manual upload"
+        assert envelope.note == "manual export"
         assert envelope.event_count == 1
 
     def test_upload_events_use_storage_shape(self, journal_persisted_state):
@@ -107,38 +107,25 @@ class TestBuildFeedbackPreviewWhenJournalDisabled:
         assert preview.journey_summary["last_successful_step"] is None
 
 
-class TestUploadFeedback:
+class TestExportFeedback:
     def test_combines_note_and_issue_url(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(
             note="sync issue",
             issue_url="https://github.com/example/issues/1",
         )
 
-        with mock.patch.object(
-            feedback_routes,
-            "_forward_feedback_to_remote",
-        ) as forward_mock:
-            envelope = feedback_routes.upload_feedback(body=request_body)
+        envelope = feedback_routes.export_feedback(body=request_body)
 
         assert "sync issue" in envelope.note
         assert "issue_url: https://github.com/example/issues/1" in envelope.note
-        forward_mock.assert_called_once()
-        assert forward_mock.call_args.args[0].note == envelope.note
 
-    def test_includes_ui_error_name_on_envelope_and_forward(self, journal_persisted_state):
+    def test_includes_ui_error_name_on_envelope(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(ui_error_name="boot_failed")
 
-        with mock.patch.object(
-            feedback_routes,
-            "_forward_feedback_to_remote",
-        ) as forward_mock:
-            envelope = feedback_routes.upload_feedback(body=request_body)
+        envelope = feedback_routes.export_feedback(body=request_body)
 
         assert envelope.ui_error_name == "boot_failed"
         assert envelope.ui_error_route is None
-        forward_mock.assert_called_once()
-        forwarded = forward_mock.call_args.args[0]
-        assert forwarded.ui_error_name == "boot_failed"
 
     def test_includes_ui_error_route_for_route_errors(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(
@@ -146,16 +133,10 @@ class TestUploadFeedback:
             ui_error_route="/app/x",
         )
 
-        with mock.patch.object(
-            feedback_routes,
-            "_forward_feedback_to_remote",
-        ) as forward_mock:
-            envelope = feedback_routes.upload_feedback(body=request_body)
+        envelope = feedback_routes.export_feedback(body=request_body)
 
         assert envelope.ui_error_name == "route_error"
         assert envelope.ui_error_route == "/app/x"
-        forwarded = forward_mock.call_args.args[0]
-        assert forwarded.ui_error_route == "/app/x"
 
     def test_note_and_ui_error_name_without_context_in_note(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(
@@ -163,15 +144,15 @@ class TestUploadFeedback:
             ui_error_name="auth_broken",
         )
 
-        envelope = feedback_routes.upload_feedback(body=request_body)
+        envelope = feedback_routes.export_feedback(body=request_body)
 
         assert envelope.note == "user detail"
         assert envelope.ui_error_name == "auth_broken"
         assert "failure_kind" not in (envelope.note or "")
 
 
-class TestUploadFeedbackWhenJournalDisabled:
-    def test_forward_receives_note_only_without_journal_events(self, journal_persisted_state):
+class TestExportFeedbackWhenJournalDisabled:
+    def test_returns_note_only_without_journal_events(self, journal_persisted_state):
         journal_module.record(
             journal_events.NodeJournalEvent.WALLET_SETUP_SUCCEEDED,
             attributes={"configured": True},
@@ -182,21 +163,12 @@ class TestUploadFeedbackWhenJournalDisabled:
             "os.environ",
             {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"},
         ):
-            with mock.patch.object(
-                feedback_routes,
-                "_forward_feedback_to_remote",
-            ) as forward_mock:
-                envelope = feedback_routes.upload_feedback(body=request_body)
+            envelope = feedback_routes.export_feedback(body=request_body)
         assert envelope.event_count == 0
         assert envelope.events == []
         assert "note only" in (envelope.note or "")
-        forward_mock.assert_called_once()
-        forwarded = forward_mock.call_args.args[0]
-        assert forwarded.event_count == 0
-        assert forwarded.events == []
-        assert "note only" in (forwarded.note or "")
 
-    def test_forward_includes_ui_error_name_when_journal_disabled(
+    def test_includes_ui_error_name_when_journal_disabled(
         self,
         journal_persisted_state,
     ):
@@ -208,10 +180,5 @@ class TestUploadFeedbackWhenJournalDisabled:
             "os.environ",
             {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"},
         ):
-            with mock.patch.object(
-                feedback_routes,
-                "_forward_feedback_to_remote",
-            ) as forward_mock:
-                feedback_routes.upload_feedback(body=request_body)
-        forwarded = forward_mock.call_args.args[0]
-        assert forwarded.ui_error_name == "insecure_context"
+            envelope = feedback_routes.export_feedback(body=request_body)
+        assert envelope.ui_error_name == "insecure_context"

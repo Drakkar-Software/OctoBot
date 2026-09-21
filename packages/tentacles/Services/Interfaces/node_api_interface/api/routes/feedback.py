@@ -76,12 +76,6 @@ def _build_feedback_preview() -> FeedbackPreviewResponse:
     )
 
 
-def _forward_feedback_to_remote(envelope: FeedbackUploadEnvelope) -> None:
-    if not node_journal.is_journal_enabled():
-        envelope = envelope.model_copy(update={"events": [], "event_count": 0})
-    # TODO: relay envelope to external feedback server when URL/integration is defined.
-
-
 def _build_feedback_upload_envelope(
     *,
     note: str | None = None,
@@ -104,8 +98,8 @@ def get_feedback_preview(current_user: CurrentUser) -> FeedbackPreviewResponse:
     return _build_feedback_preview()
 
 
-@router.post("/upload", response_model=FeedbackUploadEnvelope)
-def upload_feedback(
+@router.post("/export", response_model=FeedbackUploadEnvelope)
+def export_feedback(
     body: FeedbackUploadRequest | None = None,
 ) -> FeedbackUploadEnvelope:
     note = None
@@ -121,10 +115,8 @@ def upload_feedback(
             note = "\n".join(note_parts)
         ui_error_name = body.ui_error_name
         ui_error_route = body.ui_error_route
-    envelope = _build_feedback_upload_envelope(
+    return _build_feedback_upload_envelope(
         note=note,
         ui_error_name=ui_error_name,
         ui_error_route=ui_error_route,
     )
-    _forward_feedback_to_remote(envelope)
-    return envelope
