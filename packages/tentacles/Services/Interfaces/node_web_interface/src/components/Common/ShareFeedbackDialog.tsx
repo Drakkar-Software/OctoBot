@@ -175,12 +175,14 @@ export function ShareFeedbackDialogContent({
         contactValue,
       }),
     onSuccess: () => {
-      showSuccessToast("Feedback file downloaded")
+      showSuccessToast(
+        "Journal downloaded. Finish sending in your email app.",
+      )
       onOpenChange(false)
     },
     onError: (error) => {
       showErrorToast(
-        error instanceof Error ? error.message : "Couldn't download feedback",
+        error instanceof Error ? error.message : "Couldn't export feedback",
       )
     },
   })
@@ -222,7 +224,7 @@ export function ShareFeedbackDialogContent({
       return
     }
     downloadPreviewEnvelope(preview)
-    showSuccessToast("Preview file downloaded")
+    showSuccessToast("Journal preview downloaded")
   }
 
   return (
@@ -346,7 +348,7 @@ export function ShareFeedbackDialogContent({
           disabled={isSendDisabled}
           onClick={() => submitMutation.mutate()}
         >
-          Send feedback
+          Download & email
         </LoadingButton>
       </DialogFooter>
     </DialogContent>

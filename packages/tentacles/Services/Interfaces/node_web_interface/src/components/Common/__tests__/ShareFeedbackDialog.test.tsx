@@ -162,8 +162,8 @@ describe("ShareFeedbackDialogContent", () => {
     expect(markup).not.toContain("Sign in to send feedback")
     expect(markup).not.toContain("Activity history")
     expect(markup).toContain('id="feedback-note"')
-    expect(markup).toContain("Send feedback")
-    expect(markup).not.toMatch(/Send feedback[\s\S]*disabled=""/)
+    expect(markup).toContain("Download &amp; email")
+    expect(markup).not.toMatch(/Download &amp; email[\s\S]*disabled=""/)
   })
 
   it("navbar + preview loading: activity history reserves space with empty counts", () => {
@@ -195,8 +195,8 @@ describe("ShareFeedbackDialogContent", () => {
 
     const markup = renderDialog({ source: "navbar" })
 
-    expect(markup).toContain('type="button">Send feedback</button>')
-    expect(markup).not.toContain('disabled="" type="button">Send feedback')
+    expect(markup).toContain('type="button">Download &amp; email</button>')
+    expect(markup).not.toContain('disabled="" type="button">Download &amp; email')
   })
 
   it("recovery + preview 200: send disabled when journal empty and note empty", () => {
@@ -215,8 +215,8 @@ describe("ShareFeedbackDialogContent", () => {
 
     expect(markup).toContain("Activity history")
     expect(markup).not.toContain("Sign in to send feedback")
-    expect(markup).toContain('type="button">Send feedback</button>')
-    expect(markup).not.toContain('disabled="" type="button">Send feedback')
+    expect(markup).toContain('type="button">Download &amp; email</button>')
+    expect(markup).not.toContain('disabled="" type="button">Download &amp; email')
   })
 
   it("recovery + preview 200: send enabled when journal has events", () => {
@@ -233,7 +233,7 @@ describe("ShareFeedbackDialogContent", () => {
       failureKind: "boot_failed",
     })
 
-    expect(markup).toContain('type="button">Send feedback</button>')
-    expect(markup).not.toContain('disabled="" type="button">Send feedback')
+    expect(markup).toContain('type="button">Download &amp; email</button>')
+    expect(markup).not.toContain('disabled="" type="button">Download &amp; email')
   })
 })
