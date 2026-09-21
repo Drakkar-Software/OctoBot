@@ -78,29 +78,6 @@ def _reset_asyncio_default_executor() -> None:
     loop._default_executor = None
 
 
-def _ensure_scheduler_queues() -> None:
-    # destroy_launched_dbos() clears Scheduler queue handles; when destroy_registry=False
-    # the global registry still owns the Queue declarations and re-creating them fails.
-    scheduler = octobot_node.scheduler.SCHEDULER
-    if scheduler.AUTOMATION_WORKFLOW_QUEUE is not None:
-        return
-    import dbos._dbos as dbos_internals
-    import octobot_node.enums as octobot_node_enums_module
-    registry = dbos_internals._get_or_create_dbos_registry()
-    queue_bindings = {
-        octobot_node_enums_module.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value: "AUTOMATION_WORKFLOW_QUEUE",
-        octobot_node_enums_module.SchedulerQueues.USER_ACTION_QUEUE.value: "USER_ACTION_QUEUE",
-        octobot_node_enums_module.SchedulerQueues.DBOS_CLEANUP_QUEUE.value: "DBOS_CLEANUP_QUEUE",
-        octobot_node_enums_module.SchedulerQueues.GLOBAL_VIEW_QUEUE.value: "GLOBAL_VIEW_QUEUE",
-        octobot_node_enums_module.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value: "PORTFOLIO_HISTORY_QUEUE",
-    }
-    if all(queue_name in registry.queue_info_map for queue_name in queue_bindings):
-        for queue_name, scheduler_attribute in queue_bindings.items():
-            setattr(scheduler, scheduler_attribute, registry.queue_info_map[queue_name])
-        return
-    scheduler.create_queues()
-
-
 def destroy_launched_dbos(*, destroy_registry: bool = False) -> None:
     """
     Tear down the DBOS singleton so the next test can reset the system database.
@@ -114,11 +91,6 @@ def destroy_launched_dbos(*, destroy_registry: bool = False) -> None:
     # rebinds registry.dbos on the next launch.
     dbos.DBOS.destroy(workflow_completion_timeout_sec=0, destroy_registry=destroy_registry)
     octobot_node.scheduler.SCHEDULER.INSTANCE = None
-    octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE = None
-    octobot_node.scheduler.SCHEDULER.USER_ACTION_QUEUE = None
-    octobot_node.scheduler.SCHEDULER.DBOS_CLEANUP_QUEUE = None
-    octobot_node.scheduler.SCHEDULER.GLOBAL_VIEW_QUEUE = None
-    octobot_node.scheduler.SCHEDULER.PORTFOLIO_HISTORY_QUEUE = None
 
 
 def init_scheduler(db_file_name: str, application_version: str | None = None):
@@ -136,7 +108,6 @@ def init_scheduler(db_file_name: str, application_version: str | None = None):
         }
         if application_version is not None:
             config["application_version"] = application_version
-        _ensure_scheduler_queues()
         dbos.DBOS(config=config)
         octobot_node.scheduler.SCHEDULER.INSTANCE = dbos.DBOS
         octobot_node.scheduler.workflows.register_workflows()
@@ -147,6 +118,21 @@ def init_scheduler_with_app_version(db_file_name: str, application_version: str)
     return init_scheduler(db_file_name, application_version=application_version)
 
 
+def register_scheduler_queues() -> None:
+    """Sync queue registration for pytest fixtures (requires ``DBOS.launch()`` first)."""
+    import octobot_node.scheduler.queues as scheduler_queues_module
+
+    for queue, register_kwargs in scheduler_queues_module._SCHEDULER_QUEUE_SPECS:
+        dbos.DBOS.register_queue(queue.value, **register_kwargs)
+
+
+def reset_launch_and_register_scheduler_queues(dbos_runtime) -> None:
+    """Prepare a test DBOS runtime for enqueue/consume after ``init_scheduler``."""
+    dbos_runtime.reset_system_database()
+    dbos_runtime.launch()
+    register_scheduler_queues()
+
+
 @pytest.fixture()
 def temp_dbos_scheduler():
     # from https://docs.dbos.dev/python/tutorials/testing
@@ -154,8 +140,7 @@ def temp_dbos_scheduler():
     with tempfile.NamedTemporaryFile() as temp_file:
         destroy_launched_dbos()
         dbos_runtime = init_scheduler(temp_file.name)
-        dbos_runtime.reset_system_database()
-        dbos_runtime.launch()
+        reset_launch_and_register_scheduler_queues(dbos_runtime)
         try:
             yield octobot_node.scheduler.SCHEDULER
         finally:
@@ -165,6 +150,5 @@ def temp_dbos_scheduler():
 def init_and_destroy_scheduler(db_file_name: str):
     destroy_launched_dbos()
     dbos_runtime = init_scheduler(db_file_name)
-    dbos_runtime.reset_system_database()
-    dbos_runtime.launch()
+    reset_launch_and_register_scheduler_queues(dbos_runtime)
     destroy_launched_dbos()

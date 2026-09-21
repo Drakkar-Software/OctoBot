@@ -69,7 +69,9 @@ class TestTriggerTask:
         for task_type in octobot_node.models.TaskType:
             schedule_task.type = task_type.value
             with mock.patch.object(
-                temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE, "enqueue_async", mock.AsyncMock()
+                temp_dbos_scheduler.INSTANCE,
+                "enqueue_workflow_async",
+                mock.AsyncMock(),
             ) as mock_enqueue_async:
                 mock_handle = mock.Mock()
                 mock_handle.workflow_id = expected_workflow_id
@@ -77,14 +79,18 @@ class TestTriggerTask:
                 result = await octobot_node.scheduler.tasks.trigger_task(schedule_task)
                 assert result == expected_workflow_id
                 mock_enqueue_async.assert_called_once()
-                call_kwargs = mock_enqueue_async.call_args[1]
+                call_args = mock_enqueue_async.call_args
+                assert call_args[0][0] == node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
+                call_kwargs = call_args[1]
                 assert "inputs" in call_kwargs
                 assert len(call_kwargs["inputs"]) == 1
                 inputs = call_kwargs["inputs"]
                 assert inputs["task"] == schedule_task.model_dump(exclude_defaults=True)
         with pytest.raises(ValueError, match="Unsupported task type"):
             with mock.patch.object(
-                temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE, "enqueue_async", mock.AsyncMock()
+                temp_dbos_scheduler.INSTANCE,
+                "enqueue_workflow_async",
+                mock.AsyncMock(),
             ) as mock_enqueue_async:
                 schedule_task.type = "invalid_type"
                 await octobot_node.scheduler.tasks.trigger_task(schedule_task)
@@ -105,25 +111,18 @@ class TestTriggerTask:
         schedule_task.type = octobot_node.models.TaskType.EXECUTE_ACTIONS.value
         mock_handle = mock.Mock()
         mock_handle.workflow_id = expected_workflow_id
-        with (
-            mock.patch.object(
-                temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE,
-                "enqueue_async",
-                mock.AsyncMock(return_value=mock_handle),
-            ) as mock_enqueue_automation,
-            mock.patch.object(
-                temp_dbos_scheduler.USER_ACTION_QUEUE,
-                "enqueue_async",
-                mock.AsyncMock(),
-            ) as mock_enqueue_user_action,
-        ):
+        with mock.patch.object(
+            temp_dbos_scheduler.INSTANCE,
+            "enqueue_workflow_async",
+            mock.AsyncMock(return_value=mock_handle),
+        ) as mock_enqueue_automation:
             result = await octobot_node.scheduler.tasks.trigger_task(
                 schedule_task,
                 target_workflow_id=target_workflow_id,
             )
         assert result == expected_workflow_id
         mock_enqueue_automation.assert_awaited_once()
-        mock_enqueue_user_action.assert_not_called()
+        assert mock_enqueue_automation.call_args[0][0] == node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
         call_kwargs = mock_enqueue_automation.call_args[1]
         assert call_kwargs["inputs"]["task"] == schedule_task.model_dump(exclude_defaults=True)
 
@@ -160,8 +159,8 @@ class TestTriggerUserActionWorkflow:
         test_wallet_address = "0xaaabbbbbccccddddeeeeffff00002222"
         expected_workflow_handle_identifier = "user-action-workflow-test-id"
         with mock.patch.object(
-            temp_dbos_scheduler.USER_ACTION_QUEUE,
-            "enqueue_async",
+            temp_dbos_scheduler.INSTANCE,
+            "enqueue_workflow_async",
             mock.AsyncMock(),
         ) as mock_enqueue_async_operation:
             import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow_module_loaded
@@ -178,8 +177,9 @@ class TestTriggerUserActionWorkflow:
             assert enqueue_function_result == expected_workflow_handle_identifier
             mock_enqueue_async_operation.assert_awaited_once()
             positional_workflow_targets, enqueue_keyword_arguments = mock_enqueue_async_operation.call_args
+            assert positional_workflow_targets[0] == node_enums.SchedulerQueues.USER_ACTION_QUEUE.value
             assert (
-                positional_workflow_targets[0]
+                positional_workflow_targets[1]
                 is user_action_workflow_module_loaded.UserActionWorkflow.execute_user_action
             )
             assert list(enqueue_keyword_arguments) == ["inputs"]
@@ -214,8 +214,8 @@ class TestTriggerPortfolioHistoryCollection:
                 return_value=scheduled_time,
             ),
             mock.patch.object(
-                temp_dbos_scheduler.PORTFOLIO_HISTORY_QUEUE,
-                "enqueue_async",
+                temp_dbos_scheduler.INSTANCE,
+                "enqueue_workflow_async",
                 mock.AsyncMock(),
             ) as mock_enqueue_async_operation,
         ):
@@ -230,12 +230,13 @@ class TestTriggerPortfolioHistoryCollection:
         assert enqueue_function_result == expected_workflow_id
         mock_enqueue_async_operation.assert_awaited_once()
         positional_workflow_targets, enqueue_keyword_arguments = mock_enqueue_async_operation.call_args
+        assert positional_workflow_targets[0] == node_enums.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value
         assert (
-            positional_workflow_targets[0]
+            positional_workflow_targets[1]
             is portfolio_history_workflow_module_loaded.PortfolioHistoryWorkflow.portfolio_history_collection
         )
-        assert positional_workflow_targets[1] == scheduled_time
-        assert positional_workflow_targets[2] == collection_params.to_dict(include_default_values=False)
+        assert positional_workflow_targets[2] == scheduled_time
+        assert positional_workflow_targets[3] == collection_params.to_dict(include_default_values=False)
         assert enqueue_keyword_arguments == {}
 
 

@@ -215,11 +215,13 @@ def build_running_automation_state(
 
 
 async def enqueue_and_await_global_view_refresh() -> dict[str, typing.Any]:
-    import octobot_node.scheduler
+    import dbos
+    import octobot_node.enums
     import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow_module
 
     scheduled_time = datetime.datetime.now(datetime.UTC)
-    workflow_handle = await octobot_node.scheduler.SCHEDULER.GLOBAL_VIEW_QUEUE.enqueue_async(
+    workflow_handle = await dbos.DBOS.enqueue_workflow_async(
+        octobot_node.enums.SchedulerQueues.GLOBAL_VIEW_QUEUE.value,
         global_view_workflow_module.GlobalViewRefreshWorkflow.global_view_refresh,
         scheduled_time,
         None,

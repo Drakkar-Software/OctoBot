@@ -41,8 +41,7 @@ def temp_dbos_scheduler_strategy_crud(
     """Mirrors ``tests.scheduler.temp_dbos_scheduler``; requests the patch fixture so registration sees capped retries."""
     with tempfile.NamedTemporaryFile() as temp_file:
         dbos_runtime = scheduler_tests.init_scheduler(temp_file.name)
-        dbos_runtime.reset_system_database()
-        dbos_runtime.launch()
+        scheduler_tests.reset_launch_and_register_scheduler_queues(dbos_runtime)
         try:
             yield octobot_node.scheduler.SCHEDULER
         finally:

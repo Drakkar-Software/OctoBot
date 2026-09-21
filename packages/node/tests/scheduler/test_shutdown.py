@@ -48,6 +48,9 @@ class TestShutdownSchedulerAndTradingSignalChannel:
         def track_start() -> None:
             init_call_order.append("start")
 
+        async def track_register_queues(*args, **kwargs) -> None:
+            init_call_order.append("register_queues")
+
         async def track_register_schedules(*args, **kwargs) -> None:
             init_call_order.append("register_schedules")
 
@@ -62,18 +65,23 @@ class TestShutdownSchedulerAndTradingSignalChannel:
                     "start",
                     side_effect=track_start,
                 ):
-                    with mock.patch("octobot_node.scheduler.workflows.register_workflows"):
-                        with mock.patch.object(
-                            schedules_module,
-                            "register_schedules",
-                            side_effect=track_register_schedules,
-                        ):
-                            scheduler_module._shutdown_done = True
-                            await scheduler_module.initialize_scheduler()
+                    with mock.patch(
+                        "octobot_node.scheduler.queues.register_scheduler_queues_async",
+                        side_effect=track_register_queues,
+                    ):
+                        with mock.patch("octobot_node.scheduler.workflows.register_workflows"):
+                            with mock.patch.object(
+                                schedules_module,
+                                "register_schedules",
+                                side_effect=track_register_schedules,
+                            ):
+                                scheduler_module._shutdown_done = True
+                                await scheduler_module.initialize_scheduler()
         finally:
             scheduler_module.SCHEDULER.INSTANCE = previous_instance
         assert scheduler_module._shutdown_done is False
         assert init_call_order == [
             "start",
+            "register_queues",
             "register_schedules",
         ]

@@ -75,12 +75,10 @@ def import_automation_workflow():
         importlib.import_module("octobot_node.scheduler.workflows.automation_workflow")
         AUTOMATION_WORKFLOW_IMPORTED = True
     # init_and_destroy_scheduler() tears down DBOS after registering workflows, leaving
-    # INSTANCE/queues as None. Unit tests patch recv_async/enqueue_async on these objects;
+    # INSTANCE as None. Unit tests patch recv_async / enqueue_workflow_async on SCHEDULER.INSTANCE;
     # provide mocks so patch.object has a real target (re-apply after other fixtures tear down).
     if octobot_node.scheduler.SCHEDULER.INSTANCE is None:
         octobot_node.scheduler.SCHEDULER.INSTANCE = mock.Mock()
-    if octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE is None:
-        octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE = mock.Mock()
 
 
 def _automation_state_dict(actions: list[dict[str, typing.Any]]) -> dict[str, typing.Any]:
@@ -2708,8 +2706,8 @@ class TestScheduleNextIteration:
             "SetWorkflowID",
             mock_set_workflow_id,
         ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
-            "enqueue_async",
+            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE,
+            "enqueue_workflow_async",
             mock_enqueue,
         ):
             await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._schedule_next_iteration(
@@ -2718,7 +2716,8 @@ class TestScheduleNextIteration:
         mock_enqueue.assert_called_once()
         mock_set_workflow_id.assert_called_once_with(f"{parent_workflow_id}_1")
         call_args = mock_enqueue.call_args
-        assert call_args[0][0] == octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation
+        assert call_args[0][0] == octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
+        assert call_args[0][1] == octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation
         assert "inputs" in call_args[1]
 
     @pytest.mark.asyncio
@@ -2736,8 +2735,8 @@ class TestScheduleNextIteration:
             "SetWorkflowID",
             mock_set_workflow_id,
         ), mock.patch.object(
-            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
-            "enqueue_async",
+            octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE,
+            "enqueue_workflow_async",
             mock_enqueue,
         ):
             await octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow._schedule_next_iteration(
@@ -2912,9 +2911,10 @@ class TestExecuteAutomationPostponedFailedRequestIntegration:
         inputs["task"] = task.model_dump(exclude_defaults=True)
         fixed_now = 1000.0
         recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
-        real_enqueue_async = temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE.enqueue_async
-        enqueue_mock = mock.AsyncMock(wraps=real_enqueue_async)
-        automation_wf = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        real_enqueue_automation = automation_workflow_module.SCHEDULER.INSTANCE.enqueue_workflow_async
+        enqueue_mock = mock.AsyncMock(wraps=real_enqueue_automation)
+        automation_wf = automation_workflow_module.AutomationWorkflow
         with mock.patch(recv_path, mock.AsyncMock(return_value=None)), mock.patch(
             "octobot_node.scheduler.workflows.automation_workflow.time.time",
             return_value=fixed_now,
@@ -2926,8 +2926,8 @@ class TestExecuteAutomationPostponedFailedRequestIntegration:
             octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
             "persist_account_trading_from_iteration_state",
         ), mock.patch.object(
-            octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
-            "enqueue_async",
+            automation_workflow_module.SCHEDULER.INSTANCE,
+            "enqueue_workflow_async",
             enqueue_mock,
         ), mock.patch.object(
             automation_wf,
@@ -2993,9 +2993,10 @@ class TestExecuteAutomationPostponedFailedRequestIntegration:
         inputs["task"] = task.model_dump(exclude_defaults=True)
         fixed_now = 1000.0
         recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
-        real_enqueue_async = temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE.enqueue_async
-        enqueue_mock = mock.AsyncMock(wraps=real_enqueue_async)
-        automation_wf = octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow
+        automation_workflow_module = octobot_node.scheduler.workflows.automation_workflow
+        real_enqueue_automation = automation_workflow_module.SCHEDULER.INSTANCE.enqueue_workflow_async
+        enqueue_mock = mock.AsyncMock(wraps=real_enqueue_automation)
+        automation_wf = automation_workflow_module.AutomationWorkflow
         with mock.patch(
             recv_path,
             mock.AsyncMock(side_effect=[None, trading_signal_envelope, None]),
@@ -3010,8 +3011,8 @@ class TestExecuteAutomationPostponedFailedRequestIntegration:
             octobot_node.scheduler.workflows.automation_workflow.account_state_persistence_module,
             "persist_account_trading_from_iteration_state",
         ), mock.patch.object(
-            octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
-            "enqueue_async",
+            automation_workflow_module.SCHEDULER.INSTANCE,
+            "enqueue_workflow_async",
             enqueue_mock,
         ), mock.patch.object(
             automation_wf,
@@ -3464,7 +3465,8 @@ class TestExecuteAutomationIntegration:
 
         recv_path = "octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE.recv_async"
         with mock.patch(recv_path, mock.AsyncMock(return_value=[])):
-            await temp_dbos_scheduler.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+            await temp_dbos_scheduler.INSTANCE.enqueue_workflow_async(
+                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value,
                 octobot_node.scheduler.workflows.automation_workflow.AutomationWorkflow.execute_automation,
                 inputs=inputs,
             )
@@ -4176,8 +4178,8 @@ class TestExecuteAutomationIntegration:
                 "OctoBotActionsJob",
                 mock_octobot_actions_job_class_schedule,
             ), mock.patch.object(
-                octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE,
-                "enqueue_async",
+                octobot_node.scheduler.workflows.automation_workflow.SCHEDULER.INSTANCE,
+                "enqueue_workflow_async",
                 enqueue_mock,
             ):
                 schedule_handle = await temp_dbos_scheduler.INSTANCE.start_workflow_async(
@@ -4187,8 +4189,8 @@ class TestExecuteAutomationIntegration:
                 await schedule_handle.get_result()
 
             enqueue_mock.assert_called_once()
-            assert len(enqueue_mock.call_args.args) == 1 # function to call
-            assert len(enqueue_mock.call_args.kwargs) == 1 # inputs
+            assert len(enqueue_mock.call_args.args) == 2  # queue name and workflow function
+            assert len(enqueue_mock.call_args.kwargs) == 1  # inputs
             enqueued_inputs = enqueue_mock.call_args.kwargs["inputs"]
             schedule_plaintext_state = _encrypted_description_raw_json(schedule_result_template)
             assert enqueued_inputs["task"]["content"] != schedule_plaintext_state

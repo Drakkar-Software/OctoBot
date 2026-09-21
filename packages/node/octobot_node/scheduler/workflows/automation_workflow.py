@@ -678,9 +678,10 @@ class AutomationWorkflow:
         )
         next_workflow_id = AutomationWorkflow._get_next_child_workflow_id()
         with SCHEDULER.SetWorkflowID(next_workflow_id):
-            await SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+            await SCHEDULER.INSTANCE.enqueue_workflow_async(
+                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value,
                 AutomationWorkflow.execute_automation,
-                inputs=next_iteration_inputs
+                inputs=next_iteration_inputs,
             )
 
     @staticmethod
