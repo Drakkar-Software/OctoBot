@@ -14,109 +14,120 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import dataclasses
 import typing
 
 import pydantic
 from fastapi import APIRouter
 
-import octobot.constants
-import octobot.community.node_journal as node_journal
-
-try:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
-except ImportError:
-    from api.deps import CurrentUser  # type: ignore[no-redef]
+import octobot.constants as octobot_constants
+import octobot.community.node_journal.journal as journal_module
+import octobot.community.node_journal.journey_summary as journey_summary_module
+import octobot.community.node_journal.models as journal_models
+import octobot.community.node_journal.state as journal_state
 
 router = APIRouter(tags=["feedback"])
 
 
-class FeedbackUploadEnvelope(pydantic.BaseModel):
+class FeedbackUploadRequest(pydantic.BaseModel):
+    note: typing.Optional[str] = None
+    issue_url: typing.Optional[str] = None
+    ui_error_name: typing.Optional[str] = None
+    ui_error_route: typing.Optional[str] = None
+
+
+@dataclasses.dataclass
+class FeedbackUploadEnvelope:
     install_id: str
     app_version: str
-    onboarding_started_at: float | None
-    onboarding_complete: bool
-    journey_summary: dict[str, typing.Any]
-    events: list[dict[str, typing.Any]]
-    uploaded: bool
-    ready: bool
     event_count: int
-    note: str | None = None
-    ui_error_name: str | None = None
-    ui_error_route: str | None = None
+    events: list
+    ready: bool
+    uploaded: bool
+    note: typing.Optional[str] = None
+    ui_error_name: typing.Optional[str] = None
+    ui_error_route: typing.Optional[str] = None
 
 
-class FeedbackPreviewResponse(pydantic.BaseModel):
-    journey_summary: dict[str, typing.Any]
+@dataclasses.dataclass
+class FeedbackPreview:
+    journey_summary: dict
     upload_envelope: FeedbackUploadEnvelope
 
 
-class FeedbackUploadRequest(pydantic.BaseModel):
-    issue_url: str | None = None
-    note: str | None = None
-    ui_error_name: str | None = None
-    ui_error_route: str | None = None
-
-
-def _feedback_events() -> list:
-    if not node_journal.is_journal_enabled():
-        return []
-    return node_journal.read_events()
-
-
-def _build_feedback_preview() -> FeedbackPreviewResponse:
-    events = _feedback_events()
-    journey_summary = node_journal.build_journey_summary(events)
-    upload_envelope = node_journal.build_upload_envelope(
-        events,
-        app_version=octobot.constants.LONG_VERSION,
-    )
-    return FeedbackPreviewResponse(
-        journey_summary=journey_summary.to_dict(),
-        upload_envelope=FeedbackUploadEnvelope(**upload_envelope.to_dict()),
-    )
-
-
-def _build_feedback_upload_envelope(
+def _build_feedback_upload_envelope_from_events(
+    events: list[journal_models.JournalEventLine],
     *,
     note: str | None = None,
     ui_error_name: str | None = None,
     ui_error_route: str | None = None,
 ) -> FeedbackUploadEnvelope:
-    events = _feedback_events()
-    upload_envelope = node_journal.build_upload_envelope(
-        events,
-        app_version=octobot.constants.LONG_VERSION,
+    persisted_state = journal_state.load_persisted_state()
+    event_dicts = [event_line.to_storage_dict() for event_line in events]
+    return FeedbackUploadEnvelope(
+        install_id=persisted_state.install_id,
+        app_version=octobot_constants.LONG_VERSION,
+        event_count=len(events),
+        events=event_dicts,
+        ready=True,
+        uploaded=False,
         note=note,
         ui_error_name=ui_error_name,
         ui_error_route=ui_error_route,
     )
-    return FeedbackUploadEnvelope(**upload_envelope.to_dict())
 
 
-@router.get("/preview", response_model=FeedbackPreviewResponse)
-def get_feedback_preview(current_user: CurrentUser) -> FeedbackPreviewResponse:
-    return _build_feedback_preview()
-
-
-@router.post("/export", response_model=FeedbackUploadEnvelope)
-def export_feedback(
-    body: FeedbackUploadRequest | None = None,
+def _build_feedback_upload_envelope(
+    note: str | None = None,
+    ui_error_name: str | None = None,
+    ui_error_route: str | None = None,
 ) -> FeedbackUploadEnvelope:
-    note = None
-    ui_error_name = None
-    ui_error_route = None
-    if body is not None:
-        note_parts = []
-        if body.note:
-            note_parts.append(body.note)
-        if body.issue_url:
-            note_parts.append(f"issue_url: {body.issue_url}")
-        if note_parts:
-            note = "\n".join(note_parts)
-        ui_error_name = body.ui_error_name
-        ui_error_route = body.ui_error_route
+    events = journal_module.read_events()
+    return _build_feedback_upload_envelope_from_events(
+        events,
+        note=note,
+        ui_error_name=ui_error_name,
+        ui_error_route=ui_error_route,
+    )
+
+
+def _build_feedback_preview() -> FeedbackPreview:
+    events = journal_module.read_events()
+    journey_summary = journey_summary_module.build_journey_summary(events)
+    upload_envelope = _build_feedback_upload_envelope_from_events(events)
+    return FeedbackPreview(
+        journey_summary=journey_summary.to_dict(),
+        upload_envelope=upload_envelope,
+    )
+
+
+def _build_combined_note(note: str | None, issue_url: str | None) -> str | None:
+    if note is not None and issue_url is not None:
+        return f"{note}\nissue_url: {issue_url}"
+    if issue_url is not None:
+        return f"issue_url: {issue_url}"
+    return note
+
+
+def export_feedback(body: FeedbackUploadRequest) -> FeedbackUploadEnvelope:
+    note = _build_combined_note(body.note, body.issue_url)
     return _build_feedback_upload_envelope(
         note=note,
-        ui_error_name=ui_error_name,
-        ui_error_route=ui_error_route,
+        ui_error_name=body.ui_error_name,
+        ui_error_route=body.ui_error_route,
     )
+
+
+@router.get("/preview")
+def get_preview() -> dict:
+    preview = _build_feedback_preview()
+    return {
+        "journey_summary": preview.journey_summary,
+        "upload_envelope": dataclasses.asdict(preview.upload_envelope),
+    }
+
+
+@router.post("/export")
+def post_export(body: FeedbackUploadRequest) -> dict:
+    envelope = export_feedback(body=body)
+    return dataclasses.asdict(envelope)
