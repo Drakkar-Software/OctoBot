@@ -17,7 +17,7 @@
 import typing
 
 import pydantic
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasicCredentials
 
 import octobot_node.config as node_config
@@ -30,9 +30,13 @@ import octobot.community.node_journal.recording_context as journal_recording_con
 
 try:
     from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
+    from api.recover_passphrase_rate_limit import enforce_recover_passphrase_rate_limit
     from core import network
 except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
+    from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
+        enforce_recover_passphrase_rate_limit,
+    )
     from tentacles.Services.Interfaces.node_api_interface.core import network
 
 router = APIRouter(tags=["setup"])
@@ -238,7 +242,11 @@ def _resolve_recover_target_address(
 
 
 @router.post("/setup/wallet/recover-passphrase", response_model=RecoverPassphraseResult)
-def recover_wallet_passphrase(body: RecoverPassphraseBody) -> RecoverPassphraseResult:
+def recover_wallet_passphrase(
+    body: RecoverPassphraseBody,
+    request: Request,
+) -> RecoverPassphraseResult:
+    enforce_recover_passphrase_rate_limit(request)
     auth = community_auth.CommunityAuthentication.instance()
     if auth is None:
         raise HTTPException(
