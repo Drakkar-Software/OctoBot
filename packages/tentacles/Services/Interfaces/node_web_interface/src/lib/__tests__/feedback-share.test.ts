@@ -1,3 +1,4 @@
+import { unzipSync } from "fflate"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { FeedbackPreviewResponse, FeedbackUploadEnvelope } from "@/client"
@@ -358,15 +359,43 @@ describe("buildFeedbackFilename", () => {
 })
 
 describe("buildNodeJournalZipBytes", () => {
-  it("contains a single node_journal.json member", () => {
+  it("builds node_journal.zip bytes with a valid node_journal.json member", () => {
+    expect(FEEDBACK_JOURNAL_ZIP_FILENAME).toBe("node_journal.zip")
     const zipBytes = buildNodeJournalZipBytes({
       install_id: "install-1",
       event_count: 0,
     } as FeedbackUploadEnvelope)
     expect(zipBytes[0]).toBe(0x50)
     expect(zipBytes[1]).toBe(0x4b)
-    const zipText = new TextDecoder().decode(zipBytes)
-    expect(zipText).toContain(FEEDBACK_JOURNAL_JSON_FILENAME)
+
+    const unzipped = unzipSync(zipBytes)
+    expect(Object.keys(unzipped)).toEqual([FEEDBACK_JOURNAL_JSON_FILENAME])
+    const jsonText = new TextDecoder().decode(
+      unzipped[FEEDBACK_JOURNAL_JSON_FILENAME],
+    )
+    const parsed = JSON.parse(jsonText) as { install_id: string }
+    expect(parsed.install_id).toBe("install-1")
+  })
+
+  it("compresses repetitive journal content smaller than raw JSON", () => {
+    const envelope = {
+      install_id: "install-1",
+      app_version: "1.0.0",
+      onboarding_started_at: null,
+      onboarding_complete: false,
+      journey_summary: {},
+      uploaded: false,
+      ready: true,
+      event_count: 50,
+      events: Array.from({ length: 50 }, (_, index) => ({
+        event: "wallet_setup_succeeded",
+        attributes: { note: "x".repeat(200) },
+        timestamp: index,
+      })),
+    } as FeedbackUploadEnvelope
+    const rawJson = JSON.stringify(envelope, null, 2)
+    const zipBytes = buildNodeJournalZipBytes(envelope)
+    expect(zipBytes.length).toBeLessThan(rawJson.length)
   })
 })
 
