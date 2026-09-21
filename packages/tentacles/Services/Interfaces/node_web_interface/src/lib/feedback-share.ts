@@ -3,6 +3,8 @@ import {
   type FeedbackPreviewResponse,
   type FeedbackUploadEnvelope,
 } from "@/client"
+import { downloadBytesAsFile } from "@/lib/logs-export"
+import { buildStoredZipArchive } from "@/lib/node-journal-zip"
 
 export type ShareFeedbackFailureKind =
   | "boot_failed"
@@ -31,6 +33,10 @@ type JournalEventLine = FeedbackUploadEnvelope["events"][number]
 
 const FIRST_FAILURE_MESSAGE_MAX_LENGTH = 120
 const RECONCILE_COMPLETED_EVENT = "reconcile_completed"
+export const FEEDBACK_SUPPORT_EMAIL = "contact@octobot.cloud"
+export const FEEDBACK_JOURNAL_ZIP_FILENAME = "node_journal.zip"
+export const FEEDBACK_JOURNAL_JSON_FILENAME = "node_journal.json"
+const FEEDBACK_JOURNAL_ZIP_MIME = "application/zip"
 
 export async function fetchFeedbackPreview(): Promise<FeedbackPreviewResponse> {
   return FeedbackService.getFeedbackPreview()
@@ -261,22 +267,87 @@ export function formatJourneySummaryForDisplay(
   return displayLines
 }
 
-export function buildFeedbackFilename(envelope: FeedbackUploadEnvelope): string {
-  const installIdSlice = envelope.install_id.slice(0, 8)
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
-  return `feedback-${installIdSlice}-${timestamp}.json`
+export function buildFeedbackFilename(_envelope: FeedbackUploadEnvelope): string {
+  return FEEDBACK_JOURNAL_JSON_FILENAME
+}
+
+export function buildNodeJournalZipBytes(
+  envelope: FeedbackUploadEnvelope,
+): Uint8Array {
+  const jsonBody = JSON.stringify(envelope, null, 2)
+  return buildStoredZipArchive([
+    {
+      name: FEEDBACK_JOURNAL_JSON_FILENAME,
+      data: new TextEncoder().encode(jsonBody),
+    },
+  ])
 }
 
 export function downloadFeedbackEnvelope(envelope: FeedbackUploadEnvelope): void {
-  const filename = buildFeedbackFilename(envelope)
   const jsonBody = JSON.stringify(envelope, null, 2)
-  const blob = new Blob([jsonBody], { type: "application/json" })
-  const objectUrl = URL.createObjectURL(blob)
-  const downloadLink = document.createElement("a")
-  downloadLink.href = objectUrl
-  downloadLink.download = filename
-  downloadLink.click()
-  URL.revokeObjectURL(objectUrl)
+  downloadBytesAsFile(
+    new TextEncoder().encode(jsonBody),
+    buildFeedbackFilename(envelope),
+    "application/json",
+  )
+}
+
+export function downloadFeedbackJournalZip(
+  envelope: FeedbackUploadEnvelope,
+): void {
+  downloadBytesAsFile(
+    buildNodeJournalZipBytes(envelope),
+    FEEDBACK_JOURNAL_ZIP_FILENAME,
+    FEEDBACK_JOURNAL_ZIP_MIME,
+  )
+}
+
+const CONTACT_METHOD_MAIL_LABELS: Record<ShareFeedbackContactMethod, string> = {
+  email: "Email",
+  telegram: "Telegram",
+  discord: "Discord",
+}
+
+export function buildFeedbackMailtoUrl({
+  note,
+  contactMethod,
+  contactValue,
+}: {
+  note?: string
+  contactMethod?: ShareFeedbackContactMethod
+  contactValue?: string
+}): string {
+  const bodyParts: string[] = []
+  const trimmedNote = note?.trim() ?? ""
+  if (trimmedNote) {
+    bodyParts.push(trimmedNote)
+  }
+  const trimmedContact = contactValue?.trim() ?? ""
+  if (contactMethod || trimmedContact) {
+    const methodLabel = contactMethod
+      ? CONTACT_METHOD_MAIL_LABELS[contactMethod]
+      : "Contact"
+    bodyParts.push(
+      trimmedContact
+        ? `${methodLabel}: ${trimmedContact}`
+        : `${methodLabel}: (not provided)`,
+    )
+  }
+  bodyParts.push(
+    "Please attach the downloaded node_journal.zip file to this email.",
+  )
+  const params = new URLSearchParams({
+    subject: "OctoBot Node feedback",
+    body: bodyParts.join("\n\n"),
+  })
+  return `mailto:${FEEDBACK_SUPPORT_EMAIL}?${params.toString()}`
+}
+
+export function openFeedbackMailto(mailtoUrl: string): void {
+  if (typeof window === "undefined") {
+    return
+  }
+  window.location.assign(mailtoUrl)
 }
 
 export function downloadPreviewEnvelope(preview: FeedbackPreviewResponse): void {
@@ -310,7 +381,7 @@ export function buildRecoveryFeedbackFallbackEnvelope({
   }
 }
 
-export function downloadRecoveryFeedbackFallback({
+export function buildRecoveryFeedbackFallback({
   note,
   uiErrorName,
   uiErrorRoute,
@@ -319,13 +390,11 @@ export function downloadRecoveryFeedbackFallback({
   uiErrorName: string | null
   uiErrorRoute: string | null
 }): FeedbackUploadEnvelope {
-  const envelope = buildRecoveryFeedbackFallbackEnvelope({
+  return buildRecoveryFeedbackFallbackEnvelope({
     note,
     uiErrorName,
     uiErrorRoute,
   })
-  downloadFeedbackEnvelope(envelope)
-  return envelope
 }
 
 export async function submitFeedbackDownload({
@@ -349,8 +418,9 @@ export async function submitFeedbackDownload({
     contactMethod,
     contactValue,
   })
+  let envelope: FeedbackUploadEnvelope
   try {
-    const envelope = await FeedbackService.uploadFeedback({
+    envelope = await FeedbackService.exportFeedback({
       requestBody: {
         note: composedNote || null,
         issue_url: null,
@@ -358,16 +428,23 @@ export async function submitFeedbackDownload({
         ui_error_route: uiErrorRoute,
       },
     })
-    downloadFeedbackEnvelope(envelope)
-    return envelope
-  } catch (uploadError) {
+  } catch (exportError) {
     if (context.source !== "recovery") {
-      throw uploadError
+      throw exportError
     }
-    return downloadRecoveryFeedbackFallback({
+    envelope = buildRecoveryFeedbackFallback({
       note: composedNote,
       uiErrorName,
       uiErrorRoute,
     })
   }
+  downloadFeedbackJournalZip(envelope)
+  openFeedbackMailto(
+    buildFeedbackMailtoUrl({
+      note,
+      contactMethod,
+      contactValue,
+    }),
+  )
+  return envelope
 }
