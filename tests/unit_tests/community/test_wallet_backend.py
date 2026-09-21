@@ -14,6 +14,11 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import base64
+import dataclasses
+import json
+import os
+
 import pytest
 from unittest import mock
 
@@ -272,13 +277,23 @@ class TestRecoverPassphrase:
     def test_recover_read_only_storage_raises(self):
         backend, _ = _make_backend()
         backend.import_wallet_from_seed(_TEST_MNEMONIC, "passphrase123", name=None)
-        backend._storage = EnvVarWalletStorage(env_var="__OCTOBOT_TEST_MISSING_WALLETS__")
-        with pytest.raises(WalletStorageReadOnlyError):
-            backend.recover_passphrase(
-                _TEST_MNEMONIC_ADDRESS,
-                "new-passphrase456",
-                seed=_TEST_MNEMONIC,
-            )
+        env_var = "__OCTOBOT_TEST_READ_ONLY_WALLETS__"
+        wallet_payload = base64.b64encode(
+            json.dumps(
+                [dataclasses.asdict(entry) for entry in backend.list_wallet_entries()],
+            ).encode(),
+        ).decode()
+        os.environ[env_var] = wallet_payload
+        try:
+            backend._storage = EnvVarWalletStorage(env_var=env_var)
+            with pytest.raises(WalletStorageReadOnlyError):
+                backend.recover_passphrase(
+                    _TEST_MNEMONIC_ADDRESS,
+                    "new-passphrase456",
+                    seed=_TEST_MNEMONIC,
+                )
+        finally:
+            os.environ.pop(env_var, None)
 
 
 class TestRenameWalletJournal:
