@@ -10,8 +10,6 @@ import async_channel.channels as async_channel_channels
 pytest.importorskip("octobot_flow")
 
 import octobot_flow.entities as flow_entities
-import octobot_node.enums as octobot_node_enums
-import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_flow.repositories.community.trading_signals_channel as trading_signals_channel
 import octobot_flow.repositories.community.trading_signals_repository as trading_signals_repository
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals
@@ -54,7 +52,7 @@ async def test_get_or_create_after_shutdown_creates_new_channel():
 @pytest.mark.asyncio
 async def test_trigger_copier_automation_lists_pending_automation_workflows_by_name():
     pending_workflow_status = mock.Mock(workflow_id="automation-wf-1")
-    list_scheduler_workflows_mock = mock.AsyncMock(return_value=[pending_workflow_status])
+    list_pending_mock = mock.AsyncMock(return_value=[pending_workflow_status])
     signal = flow_entities.TradingSignal(
         account=protocol_models.CopiedAccount(
             version=copy_constants.COPIED_ACCOUNT_VERSION,
@@ -65,9 +63,9 @@ async def test_trigger_copier_automation_lists_pending_automation_workflows_by_n
     )
     with (
         mock.patch.object(
-            workflows_util_module,
-            "list_scheduler_workflows_async",
-            list_scheduler_workflows_mock,
+            internal_trading_signals,
+            "list_pending_copier_automation_workflow_statuses",
+            list_pending_mock,
         ),
         mock.patch(
             "octobot_node.scheduler.automations.automation_states_loader.get_automation_copied_strategy_ids",
@@ -80,14 +78,45 @@ async def test_trigger_copier_automation_lists_pending_automation_workflows_by_n
     ):
         await internal_trading_signals._trigger_copier_automation(signal)
 
-    list_scheduler_workflows_mock.assert_awaited_once()
-    await_args = list_scheduler_workflows_mock.await_args
-    assert await_args.args[1] == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION
-    assert await_args.kwargs.get("load_output") is False
-    assert dbos.WorkflowStatusString.ENQUEUED in await_args.args[2]
-    assert dbos.WorkflowStatusString.PENDING in await_args.args[2]
-    assert await_args.kwargs.get("load_input") is True
+    list_pending_mock.assert_awaited_once()
     trigger_copier_automation_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_trigger_copier_automation_triggers_all_matching_pending_children():
+    pending_child_one = mock.Mock(workflow_id="automation-wf-1")
+    pending_child_two = mock.Mock(workflow_id="automation-wf-2")
+    list_pending_mock = mock.AsyncMock(return_value=[pending_child_one, pending_child_two])
+    signal = flow_entities.TradingSignal(
+        account=protocol_models.CopiedAccount(
+            version=copy_constants.COPIED_ACCOUNT_VERSION,
+            updated_at=time.time(),
+            copied_assets=[],
+        ),
+        strategy_id="test-strategy-id",
+    )
+    with (
+        mock.patch.object(
+            internal_trading_signals,
+            "list_pending_copier_automation_workflow_statuses",
+            list_pending_mock,
+        ),
+        mock.patch(
+            "octobot_node.scheduler.automations.automation_states_loader.get_automation_copied_strategy_ids",
+            return_value={"test-strategy-id"},
+        ),
+        mock.patch(
+            "octobot_node.scheduler.tasks.trigger_copier_automation",
+            mock.AsyncMock(),
+        ) as trigger_copier_automation_mock,
+    ):
+        await internal_trading_signals._trigger_copier_automation(signal)
+
+    assert trigger_copier_automation_mock.await_count == 2
+    triggered_workflow_ids = [
+        call.args[0] for call in trigger_copier_automation_mock.await_args_list
+    ]
+    assert triggered_workflow_ids == ["automation-wf-1", "automation-wf-2"]
 
 
 @pytest.mark.asyncio

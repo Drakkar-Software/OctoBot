@@ -60,11 +60,9 @@ class TestResolveActiveAutomationWorkflowIdsForParentId:
         inner_mock.assert_awaited_once_with(
             _TEST_WALLET_ADDRESS,
             [parent_id],
-            [
-                dbos.WorkflowStatusString.ENQUEUED,
-                dbos.WorkflowStatusString.PENDING,
-            ],
+            None,
             load_output=False,
+            queues_only=True,
         )
 
 

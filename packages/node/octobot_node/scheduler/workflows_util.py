@@ -67,6 +67,8 @@ async def list_scheduler_workflows_async(
     sort_desc: typing.Optional[bool] = None,
     limit: typing.Optional[int] = None,
     workflow_ids: typing.Optional[list[str]] = None,
+    workflow_id_prefix: typing.Optional[str | list[str]] = None,
+    queues_only: bool = False,
 ) -> list[dbos_lib.WorkflowStatus]:
     """
     List DBOS workflows by registered workflow name (not enqueue queue).
@@ -75,12 +77,18 @@ async def list_scheduler_workflows_async(
     true. Defaults stay false for cheap scans (retention, counts); callers that parse task content
     must pass ``load_input=True`` (and output when needed). Prefer listing metadata first and
     bulk-hydrating with ``workflow_ids=`` when only a subset needs payloads.
+
+    When ``queues_only=True``, DBOS lists queued workflows only. Pending-only callers pass
+    ``statuses=None``. If both ``queues_only=True`` and ``statuses`` are set, both are forwarded
+    to DBOS (``queues_only`` and mapped ``status``).
     """
     list_kwargs: dict[str, typing.Any] = {
         "name": workflow_name.value,
         "load_output": load_output,
         "load_input": load_input,
     }
+    if queues_only:
+        list_kwargs["queues_only"] = True
     if statuses is not None:
         list_kwargs["status"] = [status.value for status in statuses]
     if sort_desc is not None:
@@ -89,6 +97,8 @@ async def list_scheduler_workflows_async(
         list_kwargs["limit"] = limit
     if workflow_ids is not None:
         list_kwargs["workflow_ids"] = workflow_ids
+    if workflow_id_prefix is not None:
+        list_kwargs["workflow_id_prefix"] = workflow_id_prefix
     workflows = await dbos_instance.list_workflows_async(**list_kwargs)
     wallet_queue = wallet_filter_queue_for_workflow(workflow_name)
     if user_id is not None and wallet_queue is not None:

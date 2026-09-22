@@ -173,8 +173,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return pending_wf
             return result_wf
 
@@ -189,7 +189,12 @@ class TestGetTaskMetrics:
         assert result["scheduled"] == 0
         assert result["results"] == 10
         import octobot_node.enums as octobot_node_enums
-        for call in mock_instance.list_workflows_async.call_args_list:
+        pending_call, results_call = mock_instance.list_workflows_async.call_args_list
+        assert pending_call.kwargs.get("queues_only") is True
+        assert "status" not in pending_call.kwargs
+        assert results_call.kwargs.get("queues_only") is not True
+        assert results_call.kwargs.get("status") is not None
+        for call in (pending_call, results_call):
             assert call.kwargs.get("load_output") is False
             assert call.kwargs.get("name") == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
             assert "queue_name" not in call.kwargs
@@ -215,8 +220,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return pending_wf
             return result_wf
 
@@ -255,8 +260,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return []
             return [legacy_wf, unparseable_wf, other_wf]
 
@@ -284,8 +289,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return []
             return [cancelled_wf]
 
@@ -339,8 +344,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return pending_wf
             return result_wf
 

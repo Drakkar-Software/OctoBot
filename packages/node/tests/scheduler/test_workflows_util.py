@@ -69,6 +69,86 @@ class TestListSchedulerWorkflowsAsync:
         assert listed == [matching_row]
 
 
+class TestListSchedulerWorkflowsAsyncDbosKwargs:
+    @pytest.mark.asyncio
+    async def test_forwards_workflow_id_prefix(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        parent_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            None,
+            None,
+            load_output=False,
+            workflow_id_prefix=parent_id,
+            queues_only=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            load_output=False,
+            load_input=False,
+            workflow_id_prefix=parent_id,
+            queues_only=True,
+        )
+        assert "status" not in mock_dbos.list_workflows_async.await_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_queues_only_without_statuses_omits_status_kwarg(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            None,
+            None,
+            load_output=False,
+            queues_only=True,
+        )
+        call_kwargs = mock_dbos.list_workflows_async.await_args.kwargs
+        assert call_kwargs.get("queues_only") is True
+        assert "status" not in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_queues_only_with_statuses_passes_both(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.PENDING],
+            None,
+            load_output=False,
+            queues_only=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            load_output=False,
+            load_input=False,
+            queues_only=True,
+            status=[dbos.WorkflowStatusString.PENDING.value],
+        )
+
+    @pytest.mark.asyncio
+    async def test_non_queues_only_passes_status(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.SUCCESS],
+            None,
+            load_output=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            status=[dbos.WorkflowStatusString.SUCCESS.value],
+            load_output=True,
+            load_input=False,
+        )
+        assert "queues_only" not in mock_dbos.list_workflows_async.await_args.kwargs
+
+
 class TestHydrateSchedulerWorkflowsAsync:
     @pytest.mark.asyncio
     async def test_merges_input_and_output_onto_metadata_rows(self):
