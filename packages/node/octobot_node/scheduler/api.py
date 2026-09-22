@@ -24,6 +24,7 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.config
 import octobot_node.constants
+import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows_util as workflows_util
@@ -84,13 +85,11 @@ async def get_task_metrics(
             workflows_util.list_scheduler_workflows_async(
                 scheduler.INSTANCE,
                 octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
-                [
-                    dbos.WorkflowStatusString.ENQUEUED,
-                    dbos.WorkflowStatusString.PENDING,
-                ],
+                None,
                 user_id,
                 load_output=False,
                 load_input=wallet_scoped_metrics,
+                queues_only=True,
             ),
             workflows_util.list_scheduler_workflows_async(
                 scheduler.INSTANCE,

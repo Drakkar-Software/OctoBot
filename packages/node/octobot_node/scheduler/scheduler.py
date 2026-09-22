@@ -151,16 +151,14 @@ class Scheduler:
         try:
             pending_workflow_statuses = await self._list_workflows(
                 user_id,
-                [
-                    dbos.WorkflowStatusString.ENQUEUED, dbos.WorkflowStatusString.PENDING
-                ],
+                None,
                 octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
                 load_output=False,
                 load_input=True,
+                queues_only=True,
             )
             for pending_workflow_status in pending_workflow_statuses:
                 try:
-                    task = workflows_util.get_automation_input_task(pending_workflow_status)
                     if reader := automation_states_loader.get_automation_state_reader(pending_workflow_status):
                         next_step = ", ".join([
                             action.get_summary()
@@ -187,6 +185,8 @@ class Scheduler:
         load_input: bool = False,
         sort_desc: typing.Optional[bool] = None,
         limit: typing.Optional[int] = None,
+        workflow_id_prefix: typing.Optional[str | list[str]] = None,
+        queues_only: bool = False,
     ) -> list[dbos.WorkflowStatus]:
         if not self.INSTANCE:
             return []
@@ -199,40 +199,50 @@ class Scheduler:
             load_input=load_input,
             sort_desc=sort_desc,
             limit=limit,
+            workflow_id_prefix=workflow_id_prefix,
+            queues_only=queues_only,
         )
 
     async def _get_parent_and_children_automation_workflows(
         self,
         user_id: typing.Optional[str],
         workflow_ids: list[str],
-        statuses: list[dbos.WorkflowStatusString],
+        statuses: typing.Optional[list[dbos.WorkflowStatusString]],
         load_output: bool = False,
+        *,
+        queues_only: bool = False,
     ) -> list[dbos.WorkflowStatus]:
-        all_workflows = await self._list_workflows(
-            user_id,
-            statuses,
-            octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
-            load_output,
-        )
-        parent_workflow_ids = set(
+        parent_workflow_ids = list(dict.fromkeys(
             workflows_util.normalize_parent_automation_id(workflow_id)
             for workflow_id in workflow_ids
+        ))
+        if not parent_workflow_ids:
+            return []
+        list_statuses = None if queues_only else statuses
+        return await self._list_workflows(
+            user_id,
+            list_statuses,
+            octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            load_output,
+            workflow_id_prefix=parent_workflow_ids,
+            queues_only=queues_only,
         )
-        return [
-            workflow
-            for workflow in all_workflows
-            if workflows_util.normalize_parent_automation_id(workflow.workflow_id) in parent_workflow_ids
-        ]
 
     async def get_parent_and_children_automation_workflow_ids(
         self,
         wallet_address: typing.Optional[str],
         workflow_ids: list[str],
-        statuses: list[dbos.WorkflowStatusString],
-        load_output: bool = False
+        statuses: typing.Optional[list[dbos.WorkflowStatusString]],
+        load_output: bool = False,
+        *,
+        queues_only: bool = False,
     ) -> list[str]:
         matching_workflows = await self._get_parent_and_children_automation_workflows(
-            wallet_address, workflow_ids, statuses, load_output
+            wallet_address,
+            workflow_ids,
+            statuses,
+            load_output,
+            queues_only=queues_only,
         )
         return [workflow.workflow_id for workflow in matching_workflows]
 
@@ -274,11 +284,9 @@ class Scheduler:
         matching_workflows = await self._get_parent_and_children_automation_workflows(
             user_id,
             [parent_id],
-            [
-                dbos.WorkflowStatusString.ENQUEUED,
-                dbos.WorkflowStatusString.PENDING,
-            ],
+            None,
             load_output=False,
+            queues_only=True,
         )
         if not matching_workflows:
             return []
@@ -298,11 +306,9 @@ class Scheduler:
         matching_workflows = await self._get_parent_and_children_automation_workflows(
             None,
             [parent_id],
-            [
-                dbos.WorkflowStatusString.ENQUEUED,
-                dbos.WorkflowStatusString.PENDING,
-            ],
+            None,
             load_output=False,
+            queues_only=True,
         )
         if not matching_workflows:
             return None
@@ -388,9 +394,8 @@ class Scheduler:
             to_cancel = await self.get_parent_and_children_automation_workflow_ids(
                 None,
                 workflow_ids,
-                [
-                    dbos.WorkflowStatusString.ENQUEUED, dbos.WorkflowStatusString.PENDING
-                ]
+                None,
+                queues_only=True,
             )
             self.logger.info(f"Cancelling {len(to_cancel)} workflows {to_cancel}")
             await self.INSTANCE.cancel_workflows_async(to_cancel)

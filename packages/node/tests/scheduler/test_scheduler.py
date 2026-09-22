@@ -1464,3 +1464,93 @@ class TestSchedulerDeleteWorkflows:
             mock_instance,
             merged_workflow_ids,
         )
+
+
+class TestGetParentAndChildrenAutomationWorkflowsDbosKwargs:
+    @pytest.mark.asyncio
+    async def test_pending_passes_queues_only_true_prefix_omit_status(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        await sched._get_parent_and_children_automation_workflows(
+            "0xw1",
+            [PARENT_ID],
+            None,
+            load_output=False,
+            queues_only=True,
+        )
+        mock_instance.list_workflows_async.assert_awaited_once()
+        call_kwargs = mock_instance.list_workflows_async.await_args.kwargs
+        assert call_kwargs.get("queues_only") is True
+        assert call_kwargs.get("workflow_id_prefix") == [PARENT_ID]
+        assert "status" not in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_terminal_passes_queues_only_false_prefix_and_status(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        terminal_statuses = [
+            dbos.WorkflowStatusString.SUCCESS,
+            dbos.WorkflowStatusString.ERROR,
+        ]
+        await sched._get_parent_and_children_automation_workflows(
+            "0xw1",
+            [PARENT_ID],
+            terminal_statuses,
+            load_output=True,
+            queues_only=False,
+        )
+        mock_instance.list_workflows_async.assert_awaited_once()
+        call_kwargs = mock_instance.list_workflows_async.await_args.kwargs
+        assert call_kwargs.get("queues_only") is not True
+        assert call_kwargs.get("workflow_id_prefix") == [PARENT_ID]
+        assert call_kwargs.get("status") == [status.value for status in terminal_statuses]
+
+    @pytest.mark.asyncio
+    async def test_multi_parent_prefix_list(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        other_parent = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        await sched._get_parent_and_children_automation_workflows(
+            None,
+            [PARENT_ID, other_parent, PARENT_ID],
+            None,
+            queues_only=True,
+        )
+        call_kwargs = mock_instance.list_workflows_async.await_args.kwargs
+        assert call_kwargs.get("workflow_id_prefix") == [PARENT_ID, other_parent]
+
+
+class TestGetPendingTasksDbosKwargs:
+    @pytest.mark.asyncio
+    async def test_list_workflows_uses_queues_only_without_status(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[])
+        with mock.patch(
+            "octobot_node.scheduler.automations.automation_states_loader.get_automation_state_reader",
+            return_value=None,
+        ):
+            await sched.get_pending_tasks()
+        mock_instance.list_workflows_async.assert_awaited_once()
+        call_kwargs = mock_instance.list_workflows_async.await_args.kwargs
+        assert call_kwargs.get("queues_only") is True
+        assert "status" not in call_kwargs
+
+
+class TestCancelWorkflowsQueuesOnly:
+    @pytest.mark.asyncio
+    async def test_cancel_passes_queues_only_true_to_get_parent_and_children(self):
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        mock_instance.cancel_workflows_async = mock.AsyncMock()
+        with mock.patch.object(
+            sched,
+            "get_parent_and_children_automation_workflow_ids",
+            new_callable=mock.AsyncMock,
+            return_value=["wf-1"],
+        ) as get_ids_mock:
+            await sched.cancel_workflows([PARENT_ID])
+        get_ids_mock.assert_awaited_once_with(
+            None,
+            [PARENT_ID],
+            None,
+            queues_only=True,
+        )
