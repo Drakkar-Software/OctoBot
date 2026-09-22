@@ -11,8 +11,10 @@ import pytest
 import octobot_protocol.models as protocol_models
 import octobot_node.models as node_models
 import octobot_node.protocol.automations as automations_protocol
+import octobot_node.enums as octobot_node_enums
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
 import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_node.scheduler.workflows_util as workflows_util_module
 
 
 _PARENT_WORKFLOW_ID = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
@@ -400,23 +402,35 @@ class TestGetAutomationWorkflowStatus:
                 automation_id="automation-pending",
             ),
         )
-        with mock.patch.object(
-            dbos.DBOS,
-            "list_workflows_async",
-            new=mock.AsyncMock(return_value=[workflow_status]),
+        list_mock = mock.AsyncMock(return_value=[workflow_status])
+        import octobot_node.scheduler as scheduler_module
+        with (
+            mock.patch.object(scheduler_module, "is_initialized", return_value=True),
+            mock.patch.object(
+                workflows_util_module,
+                "list_scheduler_workflows_async",
+                list_mock,
+            ),
         ):
             resolved_workflow = await automation_states_loader_module.get_automation_workflow_status(
                 "automation-pending",
             )
 
         assert resolved_workflow is workflow_status
+        list_mock.assert_awaited_once()
+        assert list_mock.await_args.args[1] == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION
+        assert list_mock.await_args.kwargs.get("load_input") is True
 
     @pytest.mark.asyncio
     async def test_raises_when_no_workflow_matches(self):
-        with mock.patch.object(
-            dbos.DBOS,
-            "list_workflows_async",
-            new=mock.AsyncMock(return_value=[]),
+        import octobot_node.scheduler as scheduler_module
+        with (
+            mock.patch.object(scheduler_module, "is_initialized", return_value=True),
+            mock.patch.object(
+                workflows_util_module,
+                "list_scheduler_workflows_async",
+                new=mock.AsyncMock(return_value=[]),
+            ),
         ):
             with pytest.raises(ValueError, match="No automation workflow found"):
                 await automation_states_loader_module.get_automation_workflow_status("missing-automation")

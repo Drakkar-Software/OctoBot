@@ -74,7 +74,7 @@ async def _recv_signal_execution_result(
 @SCHEDULER.INSTANCE.dbos_class()
 class UserActionWorkflow:
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name="execute_user_action")
+    @SCHEDULER.INSTANCE.workflow(name=node_enums.SchedulerWorkflowNames.EXECUTE_USER_ACTION.value)
     async def execute_user_action(inputs: dict) -> dict:
         dispatch_output = await UserActionWorkflow._dispatch_user_action(inputs)
         parsed_dispatch_output = params.UserActionExecutionResult.from_dict(dispatch_output)

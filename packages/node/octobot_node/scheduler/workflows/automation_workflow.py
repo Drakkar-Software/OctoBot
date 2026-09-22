@@ -47,9 +47,6 @@ import octobot.community.node_journal as node_journal
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
-WORKFLOW_NAME = "execute_automation"
-
-
 @dataclasses.dataclass
 class _IterationExecutionState:
     execution_error: str | None = None
@@ -65,7 +62,7 @@ class AutomationWorkflow:
     # Always use dict as input to parse minimizable dataclasses and facilitate data format updates
 
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name=WORKFLOW_NAME)
+    @SCHEDULER.INSTANCE.workflow(name=octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value)
     async def execute_automation(inputs: dict) -> typing.Optional[str]:
         """
         Automation workflow runner: 

@@ -3,8 +3,11 @@ import dbos
 import octobot_commons.logging
 import octobot_flow.entities
 import octobot_flow.repositories.community as trading_signals_channel
+import octobot_node.enums as octobot_node_enums
+import octobot_node.scheduler as scheduler
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.tasks as tasks
+import octobot_node.scheduler.workflows_util as workflows_util_module
 
 
 async def _on_internal_trading_signal(trading_signal: octobot_flow.entities.TradingSignal) -> None:
@@ -32,9 +35,16 @@ async def _trigger_copier_automation(trading_signal: octobot_flow.entities.Tradi
     Triggers copier automations with the given trading signal.
     Automations are triggered one by one to avoid concurrent executions.
     """
-    import octobot_node.scheduler as scheduler
-    pending_workflow_statuses = await scheduler.SCHEDULER.INSTANCE.list_workflows_async(
-        status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
+    pending_workflow_statuses = await workflows_util_module.list_scheduler_workflows_async(
+        scheduler.SCHEDULER.INSTANCE,
+        octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+        [
+            dbos.WorkflowStatusString.ENQUEUED,
+            dbos.WorkflowStatusString.PENDING,
+        ],
+        None,
+        load_output=False,
+        load_input=True,
     )
     for pending_workflow_status in pending_workflow_statuses:
         if (

@@ -3661,6 +3661,15 @@ class TestExecuteAutomationIntegration:
             assert cancelled_status is not None
             assert cancelled_status.status == dbos.WorkflowStatusString.CANCELLED.value
 
+            executions = await octobot_node.scheduler.SCHEDULER.get_results()
+            cancelled_executions = [
+                execution
+                for execution in executions
+                if execution.status == octobot_node.models.TaskStatus.CANCELLED
+            ]
+            assert len(cancelled_executions) == 1
+            assert cancelled_executions[0].id == automation_workflow_id
+
     @pytest.mark.asyncio
     @required_imports
     async def test_cancel_workflow_async_during_iteration_retries_stops_further_job_attempts(

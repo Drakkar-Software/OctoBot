@@ -240,31 +240,37 @@ async def cleanup_outdated_automation_executions(
             retention_seconds,
             database_size_bytes,
         )
-    import octobot_node.scheduler.workflows.automation_workflow as automation_workflow
-    import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
-    import octobot_node.scheduler.workflows.global_view_workflow as global_view_workflow
-    import octobot_node.scheduler.workflows.portfolio_history_workflow as portfolio_history_workflow
-    automation_workflows = await scheduler.INSTANCE.list_workflows_async(
-        name=automation_workflow.WORKFLOW_NAME,
-        queue_name=[octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value],
-        load_input=False,
+    automation_workflows = await workflows_util.list_scheduler_workflows_async(
+        scheduler.INSTANCE,
+        octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+        None,
+        None,
         load_output=False,
+        load_input=False,
     )
-    cleanup_workflows = await scheduler.INSTANCE.list_workflows_async(
-        name=dbos_cleanup_workflow.WORKFLOW_NAME,
-        load_input=False,
+    cleanup_workflows = await workflows_util.list_scheduler_workflows_async(
+        scheduler.INSTANCE,
+        octobot_node.enums.SchedulerWorkflowNames.DBOS_CLEANUP,
+        None,
+        None,
         load_output=False,
+        load_input=False,
     )
-    global_view_workflows = await scheduler.INSTANCE.list_workflows_async(
-        name=global_view_workflow.WORKFLOW_NAME,
-        queue_name=[octobot_node.enums.SchedulerQueues.GLOBAL_VIEW_QUEUE.value],
-        load_input=False,
+    global_view_workflows = await workflows_util.list_scheduler_workflows_async(
+        scheduler.INSTANCE,
+        octobot_node.enums.SchedulerWorkflowNames.GLOBAL_VIEW_REFRESH,
+        None,
+        None,
         load_output=False,
+        load_input=False,
     )
-    portfolio_history_workflows = await scheduler.INSTANCE.list_workflows_async(
-        name=portfolio_history_workflow.WORKFLOW_NAME,
-        load_input=False,
+    portfolio_history_workflows = await workflows_util.list_scheduler_workflows_async(
+        scheduler.INSTANCE,
+        octobot_node.enums.SchedulerWorkflowNames.PORTFOLIO_HISTORY_COLLECTION,
+        None,
+        None,
         load_output=False,
+        load_input=False,
     )
     deletions_by_automation = get_outdated_automation_execution_deletions(
         automation_workflows,
@@ -369,14 +375,15 @@ async def should_skip_retention_cleanup_for_scheduled_time(
 ) -> bool:
     if not scheduler.is_initialized():
         return True
-    import octobot_node.scheduler.workflows.dbos_cleanup_workflow as dbos_cleanup_workflow
-    cleanup_workflows = await scheduler.INSTANCE.list_workflows_async(
-        name=dbos_cleanup_workflow.WORKFLOW_NAME,
-        status=[dbos.WorkflowStatusString.SUCCESS.value],
+    cleanup_workflows = await workflows_util.list_scheduler_workflows_async(
+        scheduler.INSTANCE,
+        octobot_node.enums.SchedulerWorkflowNames.DBOS_CLEANUP,
+        [dbos.WorkflowStatusString.SUCCESS],
+        None,
+        load_output=False,
+        load_input=False,
         sort_desc=True,
         limit=1,
-        load_input=False,
-        load_output=False,
     )
     latest_timestamp_ms = _get_latest_completed_cleanup_timestamp_ms(cleanup_workflows)
     if latest_timestamp_ms == 0:
