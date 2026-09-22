@@ -27,6 +27,8 @@ import octobot_node.scheduler.workflows.params as params
 
 logger = octobot_commons.logging.get_logger("octobot_node.scheduler.workflows_util")
 
+_SCHEDULER_HYDRATE_WORKFLOW_IDS_CHUNK_SIZE = 200
+
 DBOS_TERMINAL_WORKFLOW_STATUSES = (
     dbos_lib.WorkflowStatusString.SUCCESS,
     dbos_lib.WorkflowStatusString.ERROR,
@@ -42,6 +44,92 @@ _USER_ACTION_INPUT_WORKFLOW_STATUSES = tuple(
 
 def get_user_action_input_workflow_statuses() -> tuple[dbos_lib.WorkflowStatusString, ...]:
     return _USER_ACTION_INPUT_WORKFLOW_STATUSES
+
+
+def wallet_filter_queue_for_workflow(
+    workflow_name: octobot_node_enums.SchedulerWorkflowNames,
+) -> typing.Optional[octobot_node_enums.SchedulerQueues]:
+    if workflow_name == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_USER_ACTION:
+        return octobot_node_enums.SchedulerQueues.USER_ACTION_QUEUE
+    if workflow_name == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION:
+        return octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE
+    return None
+
+
+async def list_scheduler_workflows_async(
+    dbos_instance,
+    workflow_name: octobot_node_enums.SchedulerWorkflowNames,
+    statuses: typing.Optional[list[dbos_lib.WorkflowStatusString]],
+    user_id: typing.Optional[str],
+    *,
+    load_output: bool,
+    load_input: bool = False,
+    sort_desc: typing.Optional[bool] = None,
+    limit: typing.Optional[int] = None,
+    workflow_ids: typing.Optional[list[str]] = None,
+) -> list[dbos_lib.WorkflowStatus]:
+    """
+    List DBOS workflows by registered workflow name (not enqueue queue).
+
+    DBOS omits ``workflow_status.input`` / ``.output`` unless ``load_input`` / ``load_output`` are
+    true. Defaults stay false for cheap scans (retention, counts); callers that parse task content
+    must pass ``load_input=True`` (and output when needed). Prefer listing metadata first and
+    bulk-hydrating with ``workflow_ids=`` when only a subset needs payloads.
+    """
+    list_kwargs: dict[str, typing.Any] = {
+        "name": workflow_name.value,
+        "load_output": load_output,
+        "load_input": load_input,
+    }
+    if statuses is not None:
+        list_kwargs["status"] = [status.value for status in statuses]
+    if sort_desc is not None:
+        list_kwargs["sort_desc"] = sort_desc
+    if limit is not None:
+        list_kwargs["limit"] = limit
+    if workflow_ids is not None:
+        list_kwargs["workflow_ids"] = workflow_ids
+    workflows = await dbos_instance.list_workflows_async(**list_kwargs)
+    wallet_queue = wallet_filter_queue_for_workflow(workflow_name)
+    if user_id is not None and wallet_queue is not None:
+        workflows = filter_by_wallet(workflows, user_id, wallet_queue)
+    return workflows
+
+
+async def hydrate_scheduler_workflows_async(
+    dbos_instance,
+    workflow_name: octobot_node_enums.SchedulerWorkflowNames,
+    workflow_rows: list[dbos_lib.WorkflowStatus],
+    workflow_ids: list[str],
+    *,
+    load_input: bool,
+    load_output: bool,
+) -> None:
+    """Merge DBOS input/output payloads onto existing metadata rows (in place)."""
+    if not workflow_ids or not workflow_rows:
+        return
+    rows_by_id = {workflow_row.workflow_id: workflow_row for workflow_row in workflow_rows}
+    ids_to_fetch = [workflow_id for workflow_id in workflow_ids if workflow_id in rows_by_id]
+    chunk_size = _SCHEDULER_HYDRATE_WORKFLOW_IDS_CHUNK_SIZE
+    for chunk_start in range(0, len(ids_to_fetch), chunk_size):
+        chunk_ids = ids_to_fetch[chunk_start : chunk_start + chunk_size]
+        hydrated_rows = await list_scheduler_workflows_async(
+            dbos_instance,
+            workflow_name,
+            None,
+            None,
+            load_output=load_output,
+            load_input=load_input,
+            workflow_ids=chunk_ids,
+        )
+        for hydrated_row in hydrated_rows:
+            metadata_row = rows_by_id.get(hydrated_row.workflow_id)
+            if metadata_row is None:
+                continue
+            if load_input:
+                metadata_row.input = hydrated_row.input
+            if load_output:
+                metadata_row.output = hydrated_row.output
 
 
 @dataclasses.dataclass

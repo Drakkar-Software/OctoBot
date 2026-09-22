@@ -1,4 +1,4 @@
-#  Drakkar-Software OctoBot-Node
+﻿#  Drakkar-Software OctoBot-Node
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 
 import json
@@ -6,9 +6,122 @@ import json
 import dbos
 import mock
 import pytest
+
+import octobot_node.enums as octobot_node_enums
 import octobot_node.models as node_models
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_protocol.models as protocol_models
+
+
+class TestListSchedulerWorkflowsAsync:
+    @pytest.mark.asyncio
+    async def test_lists_by_workflow_name_without_queue_name(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.PENDING],
+            None,
+            load_output=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            status=[dbos.WorkflowStatusString.PENDING.value],
+            load_output=True,
+            load_input=False,
+        )
+        assert "queue_name" not in mock_dbos.list_workflows_async.await_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_applies_wallet_filter_for_automation_when_user_id_set(self):
+        task = node_models.Task(
+            name="t",
+            content=None,
+            type="execute_actions",
+            user_id="0xmine",
+        )
+        inputs = workflow_params.AutomationWorkflowInputs(task=task, execution_time=0)
+        matching_row = mock.Mock(spec=dbos.WorkflowStatus)
+        matching_row.workflow_id = "wf-mine"
+        matching_row.input = {"args": [inputs.to_dict()], "kwargs": {}}
+        other_task = node_models.Task(
+            name="t2",
+            content=None,
+            type="execute_actions",
+            user_id="0xother",
+        )
+        other_inputs = workflow_params.AutomationWorkflowInputs(task=other_task, execution_time=0)
+        other_row = mock.Mock(spec=dbos.WorkflowStatus)
+        other_row.workflow_id = "wf-other"
+        other_row.input = {"args": [other_inputs.to_dict()], "kwargs": {}}
+
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[matching_row, other_row])
+        listed = await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.PENDING],
+            "0xmine",
+            load_output=False,
+        )
+        assert listed == [matching_row]
+
+
+class TestHydrateSchedulerWorkflowsAsync:
+    @pytest.mark.asyncio
+    async def test_merges_input_and_output_onto_metadata_rows(self):
+        metadata_row = mock.Mock(spec=dbos.WorkflowStatus)
+        metadata_row.workflow_id = "wf-1"
+        metadata_row.input = None
+        metadata_row.output = None
+
+        hydrated_row = mock.Mock(spec=dbos.WorkflowStatus)
+        hydrated_row.workflow_id = "wf-1"
+        hydrated_row.input = {"args": [], "kwargs": {}}
+        hydrated_row.output = '{"state": "x"}'
+
+        mock_dbos = mock.AsyncMock()
+
+        async def list_workflows_side_effect(**kwargs):
+            if kwargs.get("workflow_ids") == ["wf-1"]:
+                if kwargs.get("load_input"):
+                    row = mock.Mock(spec=dbos.WorkflowStatus)
+                    row.workflow_id = "wf-1"
+                    row.input = hydrated_row.input
+                    row.output = None
+                    return [row]
+                if kwargs.get("load_output"):
+                    row = mock.Mock(spec=dbos.WorkflowStatus)
+                    row.workflow_id = "wf-1"
+                    row.input = None
+                    row.output = hydrated_row.output
+                    return [row]
+            return []
+
+        mock_dbos.list_workflows_async = mock.AsyncMock(side_effect=list_workflows_side_effect)
+
+        await workflows_util.hydrate_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [metadata_row],
+            ["wf-1"],
+            load_input=True,
+            load_output=False,
+        )
+        await workflows_util.hydrate_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [metadata_row],
+            ["wf-1"],
+            load_input=False,
+            load_output=True,
+        )
+
+        assert metadata_row.input == hydrated_row.input
+        assert metadata_row.output == hydrated_row.output
+
 
 _AUTOMATION_STATE_KEY = "state"
 
@@ -273,3 +386,57 @@ class TestResolveAutomationResultForGroup:
         chosen = workflows_util.resolve_automation_result_for_group([success_child])
         assert chosen is success_child
 
+
+class TestResolveUserActionWorkflowInputs:
+    def test_unwraps_dbos_kwargs_inputs_key(self):
+        user_action = protocol_models.UserAction(id="ua-kwargs", configuration=None)
+        encoded = workflow_params.UserActionWorkflowInputs(
+            user_id="0xkwargs",
+            user_action=user_action,
+        ).to_dict(include_default_values=False)
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = "wf-kwargs"
+        workflow_status.input = {"args": [], "kwargs": {"inputs": encoded}}
+
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+
+        assert resolved.inputs is not None
+        assert resolved.inputs.user_id == "0xkwargs"
+        assert resolved.inputs.user_action.id == "ua-kwargs"
+
+    def test_unwraps_portable_json_named_args_inputs(self):
+        user_action = protocol_models.UserAction(id="ua-portable", configuration=None)
+        encoded = workflow_params.UserActionWorkflowInputs(
+            user_id="0xportable",
+            user_action=user_action,
+        ).to_dict(include_default_values=False)
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = "wf-portable"
+        workflow_status.input = {
+            "args": [
+                {
+                    "positionalArgs": [],
+                    "namedArgs": {"inputs": encoded},
+                },
+            ],
+            "kwargs": {},
+        }
+
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+
+        assert resolved.inputs is not None
+        assert resolved.inputs.user_id == "0xportable"
+        assert resolved.inputs.user_action.id == "ua-portable"
+
+    def test_empty_wrappers_report_no_inputs_not_missing_fields(self):
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = "wf-empty"
+        workflow_status.input = {
+            "args": [{"positionalArgs": [], "namedArgs": {}}],
+            "kwargs": {},
+        }
+
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+
+        assert resolved.inputs is None
+        assert resolved.parse_error == "no user-action workflow inputs found"

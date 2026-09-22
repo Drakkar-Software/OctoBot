@@ -79,34 +79,28 @@ async def get_task_metrics(
     if not scheduler.INSTANCE:
         return {"pending": 0, "scheduled": 0, "results": 0}
     try:
+        wallet_scoped_metrics = user_id is not None
         pending_statuses, result_statuses = await asyncio.gather(
-            scheduler.INSTANCE.list_workflows_async(status=[
-                dbos.WorkflowStatusString.ENQUEUED.value,
-                dbos.WorkflowStatusString.PENDING.value,
-            ], load_output=False),
-            scheduler.INSTANCE.list_workflows_async(status=[
-                dbos.WorkflowStatusString.SUCCESS.value,
-                dbos.WorkflowStatusString.ERROR.value,
-            ], load_output=False),
+            workflows_util.list_scheduler_workflows_async(
+                scheduler.INSTANCE,
+                octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+                [
+                    dbos.WorkflowStatusString.ENQUEUED,
+                    dbos.WorkflowStatusString.PENDING,
+                ],
+                user_id,
+                load_output=False,
+                load_input=wallet_scoped_metrics,
+            ),
+            workflows_util.list_scheduler_workflows_async(
+                scheduler.INSTANCE,
+                octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+                list(workflows_util.DBOS_TERMINAL_WORKFLOW_STATUSES),
+                user_id,
+                load_output=False,
+                load_input=wallet_scoped_metrics,
+            ),
         )
-        if user_id is not None:
-            automation_queue = octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
-            pending_only_automation = [
-                row for row in (pending_statuses or []) if row.queue_name == automation_queue
-            ]
-            result_only_automation = [
-                row for row in (result_statuses or []) if row.queue_name == automation_queue
-            ]
-            pending_statuses = workflows_util.filter_by_wallet(
-                pending_only_automation,
-                user_id,
-                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
-            )
-            result_statuses = workflows_util.filter_by_wallet(
-                result_only_automation,
-                user_id,
-                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
-            )
         return {
             "pending": len(pending_statuses or []),
             "scheduled": 0,

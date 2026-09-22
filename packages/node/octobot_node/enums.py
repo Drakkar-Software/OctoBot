@@ -43,6 +43,14 @@ class SchedulerQueues(enum.Enum):
     PORTFOLIO_HISTORY_QUEUE = "portfolio_history_queue"
 
 
+class SchedulerWorkflowNames(enum.Enum):
+    EXECUTE_AUTOMATION = "execute_automation"
+    EXECUTE_USER_ACTION = "execute_user_action"
+    GLOBAL_VIEW_REFRESH = "global_view_refresh"
+    PORTFOLIO_HISTORY_COLLECTION = "portfolio_history_collection"
+    DBOS_CLEANUP = "dbos_cleanup"
+
+
 class UserActionSource(enum.Enum):
     SYNC = "sync"
     DEBUG_API = "debug_api"

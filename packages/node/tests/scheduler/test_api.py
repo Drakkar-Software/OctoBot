@@ -50,6 +50,7 @@ def _make_wf_status(workflow_id: str, status: str, user_id: str = "0xaaa") -> mo
     wf = mock.Mock()
     wf.workflow_id = workflow_id
     wf.status = status
+    wf.name = octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
     wf.queue_name = octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
     wf.input = {
         "args": [inputs.to_dict(include_default_values=False)],
@@ -187,8 +188,11 @@ class TestGetTaskMetrics:
         assert result["pending"] == 5
         assert result["scheduled"] == 0
         assert result["results"] == 10
+        import octobot_node.enums as octobot_node_enums
         for call in mock_instance.list_workflows_async.call_args_list:
             assert call.kwargs.get("load_output") is False
+            assert call.kwargs.get("name") == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+            assert "queue_name" not in call.kwargs
 
     @pytest.mark.asyncio
     async def test_get_task_metrics_wallet_scoped(self) -> None:
@@ -241,7 +245,8 @@ class TestGetTaskMetrics:
         unparseable_wf = mock.Mock()
         unparseable_wf.workflow_id = "dddddddd-dddd-dddd-dddd-ddddddddddd2"
         unparseable_wf.status = dbos.WorkflowStatusString.SUCCESS.value
-        unparseable_wf.queue_name = octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
+        unparseable_wf.name = octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+        unparseable_wf.queue_name = None
         unparseable_wf.input = {"args": [], "kwargs": {}}  # nothing parseable
         unparseable_wf.created_at = None
         unparseable_wf.updated_at = None
@@ -264,6 +269,34 @@ class TestGetTaskMetrics:
 
         # legacy + unparseable kept (2), explicit other_wallet dropped (1)
         assert result["results"] == 2
+
+    @pytest.mark.asyncio
+    async def test_get_task_metrics_counts_cancelled_automation_with_null_queue(self) -> None:
+        import octobot_node.enums as octobot_node_enums
+
+        my_wallet = "0xmine"
+        cancelled_wf = _make_wf_status(
+            "cccccccc-cccc-cccc-cccc-ccccccccccc0",
+            dbos.WorkflowStatusString.CANCELLED.value,
+            user_id=my_wallet,
+        )
+        cancelled_wf.queue_name = None
+
+        mock_instance = mock.AsyncMock()
+
+        def list_side_effect(status=None, **kwargs):
+            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+                return []
+            return [cancelled_wf]
+
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=list_side_effect)
+        mock_scheduler = mock.Mock()
+        mock_scheduler.INSTANCE = mock_instance
+
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            result = await get_task_metrics(user_id=my_wallet)
+
+        assert result["results"] == 1
 
     @pytest.mark.asyncio
     async def test_get_task_metrics_uninitialized_scheduler(self) -> None:

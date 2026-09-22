@@ -15,8 +15,10 @@ import pytest
 import octobot_commons.timestamp_util as timestamp_util
 import octobot_copy.constants as copy_constants
 import octobot_flow.entities as octobot_flow_entities
+import octobot_node.enums as octobot_node_enums
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals_module
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
+import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
 
@@ -113,11 +115,16 @@ async def deliver_trading_signal_when_pending(
     poll_interval = 0.05
     poll_deadline = time.monotonic() + deadline_seconds
     while time.monotonic() < poll_deadline:
-        pending_rows = await scheduler.INSTANCE.list_workflows_async(
-            status=[
-                dbos.WorkflowStatusString.ENQUEUED.value,
-                dbos.WorkflowStatusString.PENDING.value,
+        pending_rows = await workflows_util_module.list_scheduler_workflows_async(
+            scheduler.INSTANCE,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [
+                dbos.WorkflowStatusString.ENQUEUED,
+                dbos.WorkflowStatusString.PENDING,
             ],
+            None,
+            load_output=False,
+            load_input=True,
         )
         for workflow_row in pending_rows:
             if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
@@ -131,6 +138,37 @@ async def deliver_trading_signal_when_pending(
     pytest.fail(
         f"Timed out delivering trading signal for automation_id={automation_id!r} "
         f"strategy_id={trading_signal.strategy_id!r}"
+    )
+
+
+async def deliver_fresh_trading_signal_after_outdated_skip(
+    scheduler: typing.Any,
+    caplog,
+    automation_id: str,
+    trading_signal: octobot_flow_entities.TradingSignal,
+    deadline_seconds: float,
+) -> None:
+    """
+    Wait for the outdated-reference skip log, then deliver the signal while the automation
+    child workflow is still pending on recv (before a signal-less DAG iteration stops it).
+    """
+    poll_interval = 0.05
+    poll_deadline = time.monotonic() + deadline_seconds
+    while time.monotonic() < poll_deadline:
+        if caplog_contains_outdated_skip(caplog):
+            break
+        await asyncio.sleep(poll_interval)
+    else:
+        pytest.fail(
+            "Timed out waiting for outdated reference account skip log "
+            f"({OUTDATED_SKIP_LOG_SUBSTRING!r}) before fresh signal delivery"
+        )
+    remaining_seconds = max(0.0, poll_deadline - time.monotonic())
+    await deliver_trading_signal_when_pending(
+        scheduler,
+        automation_id,
+        trading_signal,
+        remaining_seconds,
     )
 
 

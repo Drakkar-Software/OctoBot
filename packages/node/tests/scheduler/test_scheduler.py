@@ -91,6 +91,46 @@ def _make_scheduler_with_mock_instance() -> tuple[scheduler_module.Scheduler, mo
     return sched, sched.INSTANCE
 
 
+def _metadata_row_from_hydrated(full_row: mock.Mock) -> mock.Mock:
+    metadata_row = mock.Mock(spec=dbos.WorkflowStatus)
+    metadata_row.workflow_id = full_row.workflow_id
+    metadata_row.status = full_row.status
+    metadata_row.name = getattr(full_row, "name", None)
+    metadata_row.error = getattr(full_row, "error", None)
+    metadata_row.created_at = full_row.created_at
+    metadata_row.updated_at = full_row.updated_at
+    metadata_row.queue_name = getattr(full_row, "queue_name", None)
+    metadata_row.input = None
+    metadata_row.output = None
+    return metadata_row
+
+
+def _install_get_results_dbos_list_side_effect(
+    mock_instance: mock.AsyncMock,
+    full_rows: list[mock.Mock],
+) -> list[mock.Mock]:
+    hydrated_by_id = {row.workflow_id: row for row in full_rows}
+    metadata_rows = [_metadata_row_from_hydrated(row) for row in full_rows]
+
+    async def list_workflows_side_effect(**kwargs):
+        if kwargs.get("workflow_ids"):
+            batch: list[mock.Mock] = []
+            for workflow_id in kwargs["workflow_ids"]:
+                full_row = hydrated_by_id.get(workflow_id)
+                if full_row is None:
+                    continue
+                payload_row = mock.Mock(spec=dbos.WorkflowStatus)
+                payload_row.workflow_id = workflow_id
+                payload_row.input = full_row.input if kwargs.get("load_input") else None
+                payload_row.output = full_row.output if kwargs.get("load_output") else None
+                batch.append(payload_row)
+            return batch
+        return metadata_rows
+
+    mock_instance.list_workflows_async = mock.AsyncMock(side_effect=list_workflows_side_effect)
+    return metadata_rows
+
+
 _DELETE_WORKFLOW_STATUSES = workflows_retention._TERMINAL_DELETE_WORKFLOW_STATUSES
 
 
@@ -147,7 +187,7 @@ class TestSchedulerGetResults:
         ws = _build_mock_workflow_status(task, "encrypted_state", "state_meta")
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         with mock.patch("octobot_node.scheduler.encryption.encrypt_task_result") as mock_crypto:
             executions = await sched.get_results()
@@ -178,7 +218,7 @@ class TestSchedulerGetResults:
         ws_plain = _build_mock_workflow_status(plain_task, None, None, workflow_id=plain_task.id)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws_enc, ws_plain])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws_enc, ws_plain])
 
         executions = await sched.get_results()
 
@@ -208,7 +248,7 @@ class TestSchedulerGetResults:
         ws.updated_at = None
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results()
 
@@ -239,7 +279,7 @@ class TestSchedulerGetResults:
         ws.updated_at = None
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results()
 
@@ -268,7 +308,7 @@ class TestSchedulerGetResults:
         ws.updated_at = None
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results()
 
@@ -301,7 +341,7 @@ class TestSchedulerGetResults:
         ws.updated_at = None
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results()
 
@@ -324,7 +364,7 @@ class TestSchedulerGetResults:
         ws = _build_mock_workflow_status(legacy_task, None, None, workflow_id=legacy_task.id)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results(user_id="0xcaller")
 
@@ -347,7 +387,7 @@ class TestSchedulerGetResults:
         ws.updated_at = None
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results(user_id="0xcaller")
 
@@ -367,7 +407,7 @@ class TestSchedulerGetResults:
         ws = _build_mock_workflow_status(other_task, None, None, workflow_id=other_task.id)
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [ws])
 
         executions = await sched.get_results(user_id="0xcaller")
 
@@ -385,18 +425,53 @@ class TestSchedulerGetResults:
         prior_ws.updated_at = 10
         cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=CHILD_INDEX_2_ID)
         cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+        cancelled_ws.name = octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+        cancelled_ws.queue_name = None
         cancelled_ws.updated_at = 20
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[prior_ws, cancelled_ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [prior_ws, cancelled_ws])
 
         executions = await sched.get_results()
+        metadata_call = mock_instance.list_workflows_async.await_args_list[0]
+        list_kwargs = metadata_call.kwargs
+        assert list_kwargs["name"] == octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+        assert list_kwargs["load_input"] is False
+        assert list_kwargs["load_output"] is False
+        assert "queue_name" not in list_kwargs
 
         assert len(executions) == 1
         assert executions[0].id == CHILD_INDEX_2_ID
         assert executions[0].status == octobot_node.models.TaskStatus.CANCELLED
         assert executions[0].result == ""
         assert executions[0].result_metadata == ""
+
+    def test_executions_for_automation_group_cancelled_hides_prior_success(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="cancelled-automation",
+            content="input-state",
+            type="execute_actions",
+        )
+        prior_ws = _build_mock_workflow_status(task, "prior_plain_state", None, workflow_id=CHILD_INDEX_1_ID)
+        prior_ws.updated_at = 10
+        cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=CHILD_INDEX_2_ID)
+        cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+        cancelled_ws.name = octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+        cancelled_ws.queue_name = None
+        cancelled_ws.updated_at = 20
+
+        sched, _mock_instance = _make_scheduler_with_mock_instance()
+        group = [prior_ws, cancelled_ws]
+        latest_input_task = workflows_util.get_automation_input_task(cancelled_ws)
+
+        group_executions = sched._executions_for_automation_group(
+            group, cancelled_ws, latest_input_task
+        )
+
+        assert len(group_executions) == 1
+        assert group_executions[0].id == CHILD_INDEX_2_ID
+        assert group_executions[0].status == octobot_node.models.TaskStatus.CANCELLED
 
     @pytest.mark.asyncio
     async def test_get_results_first_iteration_cancelled_has_empty_result(self):
@@ -408,15 +483,126 @@ class TestSchedulerGetResults:
         )
         cancelled_ws = _build_mock_workflow_status_no_output(task, workflow_id=PARENT_ID)
         cancelled_ws.status = dbos.WorkflowStatusString.CANCELLED.value
+        cancelled_ws.name = octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+        cancelled_ws.queue_name = None
 
         sched, mock_instance = _make_scheduler_with_mock_instance()
-        mock_instance.list_workflows_async = mock.AsyncMock(return_value=[cancelled_ws])
+        _install_get_results_dbos_list_side_effect(mock_instance, [cancelled_ws])
 
         executions = await sched.get_results()
 
         assert len(executions) == 1
         assert executions[0].status == octobot_node.models.TaskStatus.CANCELLED
         assert executions[0].result == ""
+
+    @pytest.mark.asyncio
+    async def test_get_results_lists_metadata_then_hydrates_latest(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="hydrate-sequence-task",
+            content=None,
+            type="execute_actions",
+        )
+        full_row = _build_mock_workflow_status(task, "state", "meta", workflow_id=PARENT_ID)
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        _install_get_results_dbos_list_side_effect(mock_instance, [full_row])
+
+        await sched.get_results()
+
+        assert mock_instance.list_workflows_async.await_count >= 2
+        metadata_kwargs = mock_instance.list_workflows_async.await_args_list[0].kwargs
+        assert metadata_kwargs["load_input"] is False
+        assert metadata_kwargs["load_output"] is False
+        hydrate_calls = [
+            call.kwargs
+            for call in mock_instance.list_workflows_async.await_args_list[1:]
+            if call.kwargs.get("workflow_ids")
+        ]
+        assert len(hydrate_calls) == 1
+        assert PARENT_ID in hydrate_calls[0]["workflow_ids"]
+        assert hydrate_calls[0]["load_input"] is True
+        assert hydrate_calls[0]["load_output"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_results_hydrates_latest_with_input_and_output(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="error-latest-task",
+            content=None,
+            type="execute_actions",
+        )
+        full_row = _build_mock_workflow_status_error(
+            task, RuntimeError("failed"), workflow_id=PARENT_ID
+        )
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        _install_get_results_dbos_list_side_effect(mock_instance, [full_row])
+
+        await sched.get_results()
+
+        hydrate_calls = [
+            call.kwargs
+            for call in mock_instance.list_workflows_async.await_args_list[1:]
+            if call.kwargs.get("workflow_ids")
+        ]
+        assert len(hydrate_calls) == 1
+        assert PARENT_ID in hydrate_calls[0]["workflow_ids"]
+        assert hydrate_calls[0]["load_input"] is True
+        assert hydrate_calls[0]["load_output"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_results_historical_success_and_error_latest(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="multi-child-task",
+            content=None,
+            type="execute_actions",
+        )
+        prior_success = _build_mock_workflow_status(task, "old-state", None, workflow_id=CHILD_INDEX_1_ID)
+        prior_success.updated_at = 10
+        latest_error = _build_mock_workflow_status_error(
+            task, RuntimeError("latest failure"), workflow_id=CHILD_INDEX_2_ID
+        )
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        _install_get_results_dbos_list_side_effect(mock_instance, [prior_success, latest_error])
+
+        executions = await sched.get_results()
+
+        assert len(executions) == 2
+        by_id = {execution.id: execution for execution in executions}
+        assert by_id[CHILD_INDEX_1_ID].status == octobot_node.models.TaskStatus.COMPLETED
+        assert by_id[CHILD_INDEX_2_ID].status == octobot_node.models.TaskStatus.FAILED
+        assert "latest failure" in by_id[CHILD_INDEX_2_ID].error
+
+    @pytest.mark.asyncio
+    async def test_get_results_historical_success_output_error_not_failed(self):
+        task = octobot_node.models.Task(
+            id=PARENT_ID,
+            name="tradeoff-task",
+            content=None,
+            type="execute_actions",
+        )
+        stale_output = params.AutomationWorkflowOutput(error="stale graceful failure")
+        stale_success = mock.Mock(spec=dbos.WorkflowStatus)
+        stale_success.workflow_id = CHILD_INDEX_1_ID
+        stale_success.status = dbos.WorkflowStatusString.SUCCESS.value
+        stale_success.output = json.dumps(stale_output.to_dict())
+        stale_success.input = {"args": [params.AutomationWorkflowInputs(task=task).to_dict()], "kwargs": {}}
+        stale_success.created_at = None
+        stale_success.updated_at = 10
+        stale_success.error = None
+
+        latest_success = _build_mock_workflow_status(task, "clean-state", None, workflow_id=CHILD_INDEX_2_ID)
+        latest_success.updated_at = 20
+
+        sched, mock_instance = _make_scheduler_with_mock_instance()
+        _install_get_results_dbos_list_side_effect(mock_instance, [stale_success, latest_success])
+
+        executions = await sched.get_results()
+
+        by_id = {execution.id: execution for execution in executions}
+        assert by_id[CHILD_INDEX_1_ID].status == octobot_node.models.TaskStatus.COMPLETED
+        assert by_id[CHILD_INDEX_2_ID].status == octobot_node.models.TaskStatus.COMPLETED
 
 
 class TestGetWorkflowsExportResults:
@@ -1015,6 +1201,9 @@ class TestSchedulerListUserActions:
         assert input_status_values == expected_input_status_values
         assert terminal_status_values == expected_terminal_status_values
         assert "SUCCESS" not in input_status_values
+        for call in mock_instance.list_workflows_async.await_args_list:
+            assert call.kwargs["name"] == octobot_node.enums.SchedulerWorkflowNames.EXECUTE_USER_ACTION.value
+            assert "queue_name" not in call.kwargs
 
     @pytest.mark.asyncio
     async def test_active_only_false_terminal_unparseable_appears_once(self):
@@ -1173,10 +1362,29 @@ class TestResolveAutomationOwnerUserId:
         assert result is None
 
 
+class TestGetLatestWorkflowForEachAutomation:
+    @pytest.mark.asyncio
+    async def test_list_workflows_loads_input_for_automation_state_paths(self):
+        scheduler = scheduler_module.Scheduler()
+        scheduler.INSTANCE = mock.Mock()
+        with mock.patch.object(
+            scheduler,
+            "_list_workflows",
+            mock.AsyncMock(return_value=[]),
+        ) as list_workflows_mock:
+            await scheduler._get_latest_workflow_for_each_automation(
+                "0xwallet",
+                None,
+                load_output=False,
+            )
+        list_workflows_mock.assert_awaited_once()
+        assert list_workflows_mock.await_args.kwargs.get("load_input") is True
+
+
 class TestResolveLatestTerminalAutomationWorkflowForParentId:
     @pytest.mark.asyncio
     async def test_returns_latest_terminal_when_only_input_state_is_usable(self):
-        from tests.scheduler.test_workflows_util_automation_state import (
+        from tests.scheduler.test_workflows_util import (
             _automation_task_content,
             _child_workflow_id,
             _workflow_status_with_automation_task,

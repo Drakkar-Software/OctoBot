@@ -339,11 +339,13 @@ async def _list_matching_automation_workflow_rows(
     scheduler: typing.Any,
     automation_id: str,
 ) -> list[dbos.WorkflowStatus]:
+    # Third argument is SchedulerWorkflowNames (DBOS workflow name), not enqueue queue.
     workflow_rows = await scheduler._list_workflows(
         None,
         None,
-        [node_enums_module.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value],
+        node_enums_module.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
         load_output=False,
+        load_input=True,
     )
     return [
         workflow_row

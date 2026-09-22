@@ -11,7 +11,6 @@ import octobot_node.scheduler.workflows.params as workflow_params_module
 import octobot_node.enums
 from octobot_node.scheduler import SCHEDULER
 
-WORKFLOW_NAME = "portfolio_history_collection"
 SCHEDULE_NAME = "portfolio_history_daily_3am"
 SCHEDULE_CRON = "0 3 * * *" # 3:00 AM every day
 
@@ -39,7 +38,7 @@ def _parse_collection_params(
 @SCHEDULER.INSTANCE.dbos_class()
 class PortfolioHistoryWorkflow:
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name=WORKFLOW_NAME)
+    @SCHEDULER.INSTANCE.workflow(name=octobot_node.enums.SchedulerWorkflowNames.PORTFOLIO_HISTORY_COLLECTION.value)
     async def portfolio_history_collection(
         scheduled_time: datetime.datetime,
         context: typing.Any,
