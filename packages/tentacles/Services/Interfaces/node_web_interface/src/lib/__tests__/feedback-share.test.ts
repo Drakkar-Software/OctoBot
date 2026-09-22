@@ -399,6 +399,12 @@ describe("buildNodeJournalZipBytes", () => {
   })
 })
 
+function parseMailtoQueryParam(mailto: string, param: "subject" | "body"): string {
+  const query = mailto.split("?")[1] ?? ""
+  const match = query.match(new RegExp(`(?:^|&)${param}=([^&]*)`))
+  return decodeURIComponent(match?.[1] ?? "")
+}
+
 describe("buildFeedbackMailtoUrl", () => {
   it("includes user note and attach instruction without install id", () => {
     const mailto = buildFeedbackMailtoUrl({
@@ -407,11 +413,22 @@ describe("buildFeedbackMailtoUrl", () => {
       contactValue: "user@example.com",
     })
     expect(mailto).toContain("mailto:contact@octobot.cloud")
-    expect(mailto).toContain("Something+broke")
-    expect(mailto).toContain("Email%3A+user%40example.com")
+    expect(mailto).toContain("Something%20broke")
+    expect(mailto).toContain("Email%3A%20user%40example.com")
+    expect(mailto).not.toContain("+")
     expect(mailto).toContain("node_journal.zip")
     expect(mailto).not.toContain("install_id")
     expect(mailto).not.toContain("app_version")
+
+    expect(parseMailtoQueryParam(mailto, "subject")).toBe(
+      "OctoBot Node feedback",
+    )
+    const decodedBody = parseMailtoQueryParam(mailto, "body")
+    expect(decodedBody).toContain("Something broke")
+    expect(decodedBody).toContain("Email: user@example.com")
+    expect(decodedBody).toContain(
+      "Please attach the downloaded node_journal.zip file to this email.",
+    )
   })
 })
 

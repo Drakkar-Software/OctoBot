@@ -92,7 +92,7 @@ describe("submitFeedbackDownload", () => {
     expect(clickMock).toHaveBeenCalledTimes(1)
     expect(assignMock).toHaveBeenCalledTimes(1)
     expect(assignMock.mock.calls[0][0]).toContain("mailto:contact@octobot.cloud")
-    expect(assignMock.mock.calls[0][0]).toContain("App+froze+on+settings")
+    expect(assignMock.mock.calls[0][0]).toContain("App%20froze%20on%20settings")
     expect(assignMock.mock.calls[0][0]).not.toContain("install-1")
   })
 
