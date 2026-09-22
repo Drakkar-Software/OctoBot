@@ -336,11 +336,10 @@ export function buildFeedbackMailtoUrl({
   bodyParts.push(
     "Please attach the downloaded node_journal.zip file to this email.",
   )
-  const params = new URLSearchParams({
-    subject: "OctoBot Node feedback",
-    body: bodyParts.join("\n\n"),
-  })
-  return `mailto:${FEEDBACK_SUPPORT_EMAIL}?${params.toString()}`
+  const subject = "OctoBot Node feedback"
+  const body = bodyParts.join("\n\n")
+  const query = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  return `mailto:${FEEDBACK_SUPPORT_EMAIL}?${query}`
 }
 
 export function openFeedbackMailto(mailtoUrl: string): void {
