@@ -1,7 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
 import { Plus, TriangleAlert } from "lucide-react"
 import { useState } from "react"
-import { type ApiError, WalletsService } from "@/client"
+import { WalletsService } from "@/client"
+import { getApiErrorStatus, type ApiError } from "@/lib/api-error"
 import { extractErrorMessage } from "@/utils"
 import {
   Dialog,
@@ -36,15 +37,19 @@ export function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
   }
 
   const mutation = useMutation({
-    mutationFn: () =>
-      WalletsService.createWallet({
-        requestBody: {
-          passphrase,
-          name: name.trim() || null,
-          private_key: importMode && !importBySeed && privateKey.trim() ? privateKey.trim() : null,
-          seed: importMode && importBySeed && seed.trim() ? seed.trim() : null,
-        },
-      }),
+    mutationFn: async () =>
+      (await WalletsService.walletsCreateWallet({
+          body: {
+            passphrase,
+            name: name.trim() || null,
+            private_key:
+              importMode && !importBySeed && privateKey.trim()
+                ? privateKey.trim()
+                : null,
+            seed:
+              importMode && importBySeed && seed.trim() ? seed.trim() : null,
+          },
+        })).data,
     onSuccess: () => {
       setOpen(false)
       reset()
@@ -52,7 +57,7 @@ export function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
     },
     onError: (e: unknown) => {
       const err = e as ApiError
-      if (err?.status === 409) {
+      if (getApiErrorStatus(err) === 409) {
         setError("This wallet is already imported.")
         return
       }

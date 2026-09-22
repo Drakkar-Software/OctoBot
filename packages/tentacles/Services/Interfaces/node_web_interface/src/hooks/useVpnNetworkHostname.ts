@@ -5,7 +5,8 @@ import { SetupService } from "@/client"
 export function useVpnNetworkHostname() {
   const vpnNetworkQuery = useQuery({
     queryKey: ["setup", "vpn-network-address"],
-    queryFn: () => SetupService.getVpnNetworkAddress(),
+    queryFn: async () =>
+      (await SetupService.setupGetVpnNetworkAddress()).data,
   })
 
   const detectedIp = vpnNetworkQuery.data?.vpn_network_ip ?? null

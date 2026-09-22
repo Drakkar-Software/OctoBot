@@ -2,12 +2,12 @@ import { useMutation } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 
 import {
-  type ApiError,
   type AutomationSignalType,
   type AutomationState,
   DebugService,
   type UserAction,
 } from "@/client"
+import type { ApiError } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -82,11 +82,11 @@ export function SignalAutomationDialog({
   }, [open])
 
   const mutation = useMutation({
-    mutationFn: (body: UserAction) =>
-      DebugService.executeUserAction({
-        requestBody: body,
-        walletAddress: walletAddress ?? null,
-      }),
+    mutationFn: async (body: UserAction) =>
+      (await DebugService.debugExecuteUserAction({
+          body,
+          query: { wallet_address: walletAddress ?? null },
+        })).data,
     onSuccess: () => {
       showSuccessToast("Signal submitted")
       onOpenChange(false)

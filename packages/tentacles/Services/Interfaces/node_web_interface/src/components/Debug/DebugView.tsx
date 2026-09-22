@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router"
 import { Bug, Code, ScrollText } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { type ApiError, type DebugState, WalletsService } from "@/client"
+import { type DebugState, WalletsService } from "@/client"
+import { getApiErrorStatus, type ApiError } from "@/lib/api-error"
 import {
   DebugExecuteActionDialogHost,
   type DebugExecuteActionHandle,
@@ -66,7 +67,8 @@ export function DebugView() {
 
   const { data: wallets = [], isPending: isWalletsLoading } = useQuery({
     queryKey: ["wallets"],
-    queryFn: () => WalletsService.listWallets(),
+    queryFn: async () =>
+      (await WalletsService.walletsListWallets()).data,
     enabled: isSuperuser,
   })
 
@@ -76,7 +78,7 @@ export function DebugView() {
     ...getDebugQueryOptions(walletQueryParam),
     enabled: !isImportedMode,
     retry: (failureCount, error) => {
-      const status = (error as ApiError)?.status
+      const status = getApiErrorStatus(error as ApiError)
       if (status === 503) return false
       return failureCount < 2
     },
@@ -87,7 +89,7 @@ export function DebugView() {
       !isImportedMode &&
       debugQuery.isError &&
       debugQuery.error &&
-      (debugQuery.error as ApiError).status !== 503
+      getApiErrorStatus(debugQuery.error as ApiError) !== 503
     ) {
       handleError.bind(showErrorToast)(debugQuery.error as ApiError)
     }
@@ -104,7 +106,7 @@ export function DebugView() {
   const schedulerUnavailable =
     !isImportedMode &&
     debugQuery.isError &&
-    (debugQuery.error as ApiError)?.status === 503
+    getApiErrorStatus(debugQuery.error as ApiError) === 503
 
   const importedSummary = useMemo(() => {
     if (!importedSnapshot || !importMeta) return null

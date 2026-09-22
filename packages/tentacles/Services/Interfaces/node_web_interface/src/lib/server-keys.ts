@@ -9,7 +9,7 @@ let cache: ServerPublicKeys | null = null
 
 export async function fetchServerPublicKeys(): Promise<ServerPublicKeys> {
   if (cache) return cache
-  const raw = await TasksService.getServerPublicKeys()
+  const raw = (await TasksService.tasksGetServerPublicKeys()).data
   const data = raw as {
     server_rsa_public_pem: string
     server_ecdsa_public_pem: string

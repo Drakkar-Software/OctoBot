@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 
-import { ApiError } from "@/client"
+import { getApiErrorStatus, isApiError } from "@/lib/api-error"
 import { AuthLoginRedirectSuppressionProvider } from "@/components/Common/AuthLoginRedirectSuppressionProvider"
 import { Button } from "@/components/ui/button"
 import {
@@ -80,7 +80,7 @@ function getContextChipLabel(context: ShareFeedbackContext): string | null {
 }
 
 function isAuthRequiredError(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 401
+  return isApiError(error) && getApiErrorStatus(error) === 401
 }
 
 type ActivityHistorySectionProps = {
@@ -167,7 +167,7 @@ export function ShareFeedbackDialogContent({
   const showSignInPrompt = previewAuthBlocked && !isRecoveryContext
 
   const submitMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: async () =>
       submitFeedbackDownload({
         note,
         context,

@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 
-import { type ApiError, type User, UsersService } from "@/client"
+import { type User, UsersService } from "@/client"
+import type { ApiError } from "@/lib/api-error"
 import { clearPassword, savePassword } from "@/lib/device-key"
 import { verifyLoginCredentials } from "@/lib/verify-login-credentials"
 import { setStoredIsSuperuser } from "@/lib/user-menu-display"
@@ -34,7 +35,12 @@ const useAuth = () => {
 
   const { data: user, isPending } = useQuery<User | null, Error>({
     queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
+    queryFn: async (): Promise<User | null> => {
+      const response = await UsersService.usersReadUserMe({
+        throwOnError: true,
+      })
+      return response.data
+    },
     enabled: isLoggedIn(),
   })
 

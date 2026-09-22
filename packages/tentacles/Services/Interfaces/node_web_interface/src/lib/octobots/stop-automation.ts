@@ -1,4 +1,5 @@
-import type { ApiError, Task_Output as Task, UserAction } from "@/client"
+import type { TaskOutput as Task, UserAction } from "@/client"
+import { formatApiErrorDetailMessage } from "@/lib/api-error"
 import { buildAutomationStopUserActionJson } from "@/lib/debug/user-action-templates"
 import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 import { getActiveExecution, getStatusGroup } from "@/utils/executions"
@@ -18,29 +19,10 @@ export function buildStopAutomationUserAction(
 }
 
 export function formatStopAutomationError(error: unknown): string {
-  if (error instanceof Error && error.name === "ApiError") {
-    const apiError = error as ApiError
-    const detail = (apiError.body as { detail?: unknown } | undefined)?.detail
-    if (typeof detail === "string" && detail.trim().length > 0) {
-      return detail
-    }
-    if (Array.isArray(detail) && detail.length > 0) {
-      const firstDetail = detail[0] as { msg?: string }
-      if (
-        typeof firstDetail?.msg === "string" &&
-        firstDetail.msg.trim().length > 0
-      ) {
-        return firstDetail.msg
-      }
-    }
-    if (apiError.message.trim().length > 0) {
-      return apiError.message
-    }
-  }
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message
-  }
-  return "Couldn't stop this OctoBot. Try again."
+  return formatApiErrorDetailMessage(
+    error,
+    "Couldn't stop this OctoBot. Try again.",
+  )
 }
 
 export function getStopAutomationConfigurationActionType(

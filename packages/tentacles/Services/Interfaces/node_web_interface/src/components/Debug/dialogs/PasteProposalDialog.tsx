@@ -5,7 +5,8 @@ import {
 } from "@drakkar.software/octobot-client/protocol"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { type ApiError, DebugService } from "@/client"
+import { type DebugState, DebugService } from "@/client"
+import type { ApiError } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -113,9 +114,9 @@ export function PasteProposalDialog({
       configuration: ProposedActionEntry["configuration"]
     }) => {
       try {
-        await DebugService.executeUserAction({
-          requestBody: { id, configuration },
-          walletAddress: walletAddress ?? null,
+        await DebugService.debugExecuteUserAction({
+          body: { id, configuration },
+          query: { wallet_address: walletAddress ?? null },
         })
       } catch (error) {
         throw new Error(describeSubmitError(error))
@@ -124,10 +125,15 @@ export function PasteProposalDialog({
     [walletAddress],
   )
 
-  const fetchDebugState = useCallback(
-    () => DebugService.getDebug(walletAddress ? { walletAddress } : {}),
-    [walletAddress],
-  )
+  const fetchDebugState = useCallback(async (): Promise<DebugState> => {
+    const response = await DebugService.debugGetDebug({
+      ...(walletAddress
+        ? { query: { wallet_address: walletAddress } }
+        : {}),
+      throwOnError: true,
+    })
+    return response.data
+  }, [walletAddress])
 
   const handleRun = (proposal: ActionProposal) => {
     setSteps(proposal.actions.map(() => ({ state: "waiting" })))

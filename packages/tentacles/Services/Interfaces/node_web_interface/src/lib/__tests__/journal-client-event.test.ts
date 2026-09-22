@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { OpenAPI } from "@/client"
+vi.mock("@/lib/configure-api-client", () => ({
+  getApiBaseUrl: () => "http://localhost:8000",
+}))
 import {
   buildJournalClientEventUrl,
   getOrCreateClientInstanceId,
@@ -57,7 +59,6 @@ describe("buildJournalClientEventUrl", () => {
 describe("reportUiJournalEvent", () => {
   beforeEach(() => {
     sessionStorageMock.clear()
-    OpenAPI.BASE = "http://localhost:8000"
     fetchMock.mockReset()
     fetchMock.mockResolvedValue({ ok: true })
     vi.stubGlobal("fetch", fetchMock)

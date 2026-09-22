@@ -7,7 +7,10 @@ export const Route = createFileRoute("/setup")({
   beforeLoad: async ({ location }) => {
     let configured = false
     try {
-      configured = (await SetupService.getSetupStatus()).configured
+      const response = await SetupService.setupGetSetupStatus({
+        throwOnError: true,
+      })
+      configured = response.data.configured ?? false
     } catch {
       // network error — stay on setup
     }

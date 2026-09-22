@@ -1,4 +1,4 @@
-import type { Task_Output as Task } from "@/client"
+import type { TaskOutput as Task } from "@/client"
 import { getActiveExecution } from "@/utils/executions"
 
 export interface TaskErrorInfo {

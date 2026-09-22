@@ -9,7 +9,8 @@ function isUsableBrowserHostname(hostname: string): boolean {
 export function useLocalNetworkHostname() {
   const localNetworkQuery = useQuery({
     queryKey: ["setup", "local-network-address"],
-    queryFn: () => SetupService.getLocalNetworkAddress(),
+    queryFn: async () =>
+      (await SetupService.setupGetLocalNetworkAddress()).data,
   })
 
   const browserHostname = window.location.hostname

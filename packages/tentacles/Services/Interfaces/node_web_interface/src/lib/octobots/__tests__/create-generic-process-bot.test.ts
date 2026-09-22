@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { ApiError } from "@/client"
+import { createTestApiError } from "@/lib/api-error"
 import {
   buildCreateGenericProcessBotRequestBody,
   formatCreateGenericProcessBotError,
@@ -37,34 +37,16 @@ describe("buildCreateGenericProcessBotRequestBody", () => {
 
 describe("formatCreateGenericProcessBotError", () => {
   it("uses string detail from ApiError", () => {
-    const error = new ApiError(
-      { method: "POST", url: "/api/v1/octobots/generic-process" },
-      {
-        url: "/api/v1/octobots/generic-process",
-        ok: false,
-        status: 400,
-        statusText: "Bad Request",
-        body: { detail: "name must not be empty" },
-      },
-      "Bad Request",
-    )
+    const error = createTestApiError(400, { detail: "name must not be empty" })
     expect(formatCreateGenericProcessBotError(error)).toBe(
       "name must not be empty",
     )
   })
 
   it("uses validation array detail from ApiError", () => {
-    const error = new ApiError(
-      { method: "POST", url: "/api/v1/octobots/generic-process" },
-      {
-        url: "/api/v1/octobots/generic-process",
-        ok: false,
-        status: 422,
-        statusText: "Unprocessable Entity",
-        body: { detail: [{ msg: "Field required" }] },
-      },
-      "Unprocessable Entity",
-    )
+    const error = createTestApiError(422, {
+      detail: [{ msg: "Field required" }],
+    })
     expect(formatCreateGenericProcessBotError(error)).toBe("Field required")
   })
 

@@ -18,7 +18,8 @@ export function WalletManagementCard() {
   const { user, logout } = useAuth()
   const { data: wallets = [], isLoading } = useQuery({
     queryKey: ["wallets"],
-    queryFn: () => WalletsService.listWallets(),
+    queryFn: async () =>
+      (await WalletsService.walletsListWallets()).data,
   })
 
   const refresh = () => {

@@ -1,4 +1,4 @@
-import { OpenAPI } from "@/client"
+import { getApiBaseUrl } from "@/lib/configure-api-client"
 
 export type UiJournalEvent =
   | "ui_boot_failed"
@@ -33,7 +33,7 @@ export function getOrCreateClientInstanceId(): string {
 }
 
 export function resolveJournalApiBase(): string {
-  return OpenAPI.BASE
+  return getApiBaseUrl()
 }
 
 export function buildJournalClientEventUrl(apiBase: string): string {

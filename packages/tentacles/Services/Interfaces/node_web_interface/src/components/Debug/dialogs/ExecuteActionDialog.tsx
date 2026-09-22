@@ -2,7 +2,8 @@ import { useMutation } from "@tanstack/react-query"
 import { Copy, TriangleAlert } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-import { type ApiError, DebugService, type UserAction } from "@/client"
+import { DebugService, type UserAction } from "@/client"
+import { formatApiErrorDetailMessage, type ApiError } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -31,18 +32,6 @@ import {
   type UserActionTemplateKey,
   userActionTemplateKeyFromActionType,
 } from "@/lib/debug/user-action-templates"
-
-function getApiErrorMessage(error: ApiError): string {
-  const errorDetail = (error.body as { detail?: unknown } | undefined)?.detail
-  if (typeof errorDetail === "string" && errorDetail.length > 0) {
-    return errorDetail
-  }
-  if (Array.isArray(errorDetail) && errorDetail.length > 0) {
-    const firstDetail = errorDetail[0] as { msg?: string }
-    if (firstDetail.msg) return firstDetail.msg
-  }
-  return error.message || "Something went wrong."
-}
 
 function ExecuteActionDialogError({ message }: { message: string }) {
   return (
@@ -111,18 +100,20 @@ export function ExecuteActionDialog({
   }
 
   const mutation = useMutation({
-    mutationFn: (body: UserAction) =>
-      DebugService.executeUserAction({
-        requestBody: body,
-        walletAddress: walletAddress ?? null,
-      }),
+    mutationFn: async (body: UserAction) =>
+      (await DebugService.debugExecuteUserAction({
+          body,
+          query: { wallet_address: walletAddress ?? null },
+        })).data,
     onSuccess: () => {
       showSuccessToast("Action submitted")
       onOpenChange(false)
       onSuccess()
     },
     onError: (error) => {
-      setSubmitError(getApiErrorMessage(error as ApiError))
+      setSubmitError(
+        formatApiErrorDetailMessage(error, "Something went wrong."),
+      )
     },
   })
 

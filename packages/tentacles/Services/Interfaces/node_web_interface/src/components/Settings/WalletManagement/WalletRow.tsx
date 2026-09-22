@@ -34,11 +34,11 @@ export function WalletRow({
   }, [wallet.name, editing])
 
   const mutation = useMutation({
-    mutationFn: (name: string | null) =>
-      WalletsService.updateWallet({
-        address: wallet.address,
-        requestBody: { name },
-      }),
+    mutationFn: async (name: string | null) =>
+      (await WalletsService.walletsUpdateWallet({
+          path: { address: wallet.address },
+          body: { name },
+        })).data,
     onSuccess: () => {
       setEditing(false)
       setRenameError(null)

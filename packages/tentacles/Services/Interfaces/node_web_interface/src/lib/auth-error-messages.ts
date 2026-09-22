@@ -3,7 +3,8 @@
  * whitespace are not removed.
  */
 
-import { ApiError } from "@/client"
+import type { ApiError } from "@/lib/api-error"
+import { isApiError } from "@/lib/api-error"
 import {
   API_AUTH_ERROR_CODES,
   type ApiAuthErrorCode,
@@ -172,7 +173,7 @@ export function resolveLoginAuthPresentation(
     )
   }
 
-  if (!(error instanceof ApiError)) {
+  if (!isApiError(error)) {
     return applyLoginAuthPresentation(
       CLIENT_AUTH_ERROR_CODES.DEVICE_STORAGE_BLOCKED,
       context,
@@ -180,7 +181,8 @@ export function resolveLoginAuthPresentation(
     )
   }
 
-  if (error.status === 503) {
+  const status = error.response?.status
+  if (status === 503) {
     const code = parseAuthErrorCodeFromApiError(error)
     if (code === API_AUTH_ERROR_CODES.AUTH_NODE_NOT_CONFIGURED) {
       return applyLoginAuthPresentation(code, context, false)
@@ -192,7 +194,7 @@ export function resolveLoginAuthPresentation(
     )
   }
 
-  if (error.status === 401) {
+  if (status === 401) {
     const code =
       parseAuthErrorCodeFromApiError(error) ??
       API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE
@@ -211,13 +213,14 @@ export function shouldSuppressLoginErrorToast(error: unknown): boolean {
   if (error instanceof Error && error.message === "Authentication failed") {
     return true
   }
-  if (!(error instanceof ApiError)) {
+  if (!isApiError(error)) {
     return true
   }
-  if (error.status === 401) {
+  const status = error.response?.status
+  if (status === 401) {
     return true
   }
-  if (error.status === 503) {
+  if (status === 503) {
     const code = parseAuthErrorCodeFromApiError(error)
     return code === API_AUTH_ERROR_CODES.AUTH_NODE_NOT_CONFIGURED
   }
@@ -237,7 +240,7 @@ export function resolveLoginFormAuthError(
 export function shouldResetMultiWalletSelectionOnLoginError(
   error: unknown,
 ): boolean {
-  if (!(error instanceof ApiError) || error.status !== 401) {
+  if (!isApiError(error) || error.response?.status !== 401) {
     return false
   }
   const code = parseAuthErrorCodeFromApiError(error)

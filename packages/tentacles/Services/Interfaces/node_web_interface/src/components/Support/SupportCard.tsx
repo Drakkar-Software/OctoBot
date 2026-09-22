@@ -47,7 +47,7 @@ export function SupportCard() {
   })
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: async () =>
       createSupportTicket({ title: title.trim(), message: message.trim() }),
     onSuccess: () => {
       setOpen(false)

@@ -2,7 +2,7 @@
 import { TriangleAlert } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { TaskOutput as Task } from "@/client"
 import { DebugService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,10 +49,10 @@ async function stopAutomationsSequentially(
   const failed: { automationId: string; message: string }[] = []
   for (const automationId of automationIds) {
     try {
-      await DebugService.executeUserAction({
-        requestBody: buildStopAutomationUserAction(automationId),
-        walletAddress: null,
-      })
+      (await DebugService.debugExecuteUserAction({
+          body: buildStopAutomationUserAction(automationId),
+          query: { wallet_address: null },
+        })).data
     } catch (error) {
       failed.push({
         automationId,
@@ -97,7 +97,7 @@ export function StopAutomationDialog({
   }, [open, stoppableTasks.map((task) => task.id).join(",")])
 
   const stopMutation = useMutation({
-    mutationFn: (automationIds: string[]) =>
+    mutationFn: async (automationIds: string[]) =>
       stopAutomationsSequentially(automationIds),
     onSuccess: (result, automationIds) => {
       if (result.failed.length > 0) {

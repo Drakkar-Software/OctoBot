@@ -5,7 +5,8 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type ApiError, type SetupResult, SetupService } from "@/client"
+import { type SetupResult, SetupService } from "@/client"
+import { getApiErrorStatus, type ApiError } from "@/lib/api-error"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
 import {
@@ -97,15 +98,18 @@ function SetupWallet() {
     ApiError,
     { passphrase: string; privateKey?: string; name?: string }
   >({
-    mutationFn: ({ passphrase, privateKey, name }) =>
-      SetupService.initSetup({
-        requestBody: {
+    mutationFn: async ({ passphrase, privateKey, name }): Promise<SetupResult> => {
+      const response = await SetupService.setupInitSetup({
+        body: {
           passphrase,
           node_type: "standalone",
           private_key: privateKey || undefined,
           name: name?.trim() || undefined,
         },
-      }),
+        throwOnError: true,
+      })
+      return response.data
+    },
     onSuccess: async (result, { passphrase, name }) => {
       // Persist the password before marking the session as logged in — if this
       // throws (e.g. IndexedDB blocked), auth_username must not be set, so
@@ -127,7 +131,7 @@ function SetupWallet() {
     },
     onError: async (error) => {
       const apiError = error as ApiError
-      if (apiError.status === 409) {
+      if (getApiErrorStatus(apiError) === 409) {
         // The node was already configured (e.g. session still had setup_in_progress set
         // after a previous successful setup). Clean up and redirect to login.
         sessionStorage.removeItem("setup_in_progress")

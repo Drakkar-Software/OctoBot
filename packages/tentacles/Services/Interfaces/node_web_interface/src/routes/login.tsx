@@ -71,7 +71,8 @@ function Login() {
     isError: walletsError,
   } = useQuery({
     queryKey: ["wallets"],
-    queryFn: () => WalletsService.listWallets(),
+    queryFn: async () =>
+      (await WalletsService.walletsListWallets()).data,
     staleTime: 0,
   })
 

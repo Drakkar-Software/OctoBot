@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { ApiError } from "@/client/core/ApiError"
+import { createTestApiError } from "@/lib/api-error"
 import {
   API_AUTH_ERROR_CODES,
   CLIENT_AUTH_ERROR_CODES,
@@ -59,22 +59,12 @@ describe("applyLoginAuthPresentation", () => {
 
 describe("resolveLoginAuthPresentation", () => {
   it("maps invalid passphrase API code with no tips on single-wallet", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
+    const error = createTestApiError(401, {
           detail: {
             code: API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE,
             message: "Passphrase verification failed",
           },
-        },
-      },
-      "Unauthorized",
-    )
+        })
     const presentation = resolveLoginAuthPresentation(error, "pw", {
       multiWallet: false,
     })
@@ -84,19 +74,9 @@ describe("resolveLoginAuthPresentation", () => {
   })
 
   it("adds whitespace tip when passphrase has edge spaces", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
+    const error = createTestApiError(401, {
           detail: { code: API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE },
-        },
-      },
-      "Unauthorized",
-    )
+        })
     const presentation = resolveLoginAuthPresentation(error, " demodemo", {
       multiWallet: false,
     })
@@ -105,19 +85,9 @@ describe("resolveLoginAuthPresentation", () => {
   })
 
   it("returns empty guidance for passphrase required code", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
+    const error = createTestApiError(401, {
           detail: { code: API_AUTH_ERROR_CODES.AUTH_PASSPHRASE_REQUIRED },
-        },
-      },
-      "Unauthorized",
-    )
+        })
     const presentation = resolveLoginAuthPresentation(error, "")
     expect(presentation.guidance).toHaveLength(0)
   })
@@ -129,17 +99,7 @@ describe("resolveLoginAuthPresentation", () => {
   })
 
   it("maps unknown ApiError status to network presentation", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/x" },
-      {
-        url: "/x",
-        ok: false,
-        status: 500,
-        statusText: "Error",
-        body: {},
-      },
-      "Error",
-    )
+    const error = createTestApiError(500, {})
     const presentation = resolveLoginAuthPresentation(error, "pw")
     expect(presentation.title).toBe("Can't connect")
     expect(presentation.guidance).toHaveLength(1)
@@ -148,70 +108,30 @@ describe("resolveLoginAuthPresentation", () => {
 
 describe("shouldSuppressLoginErrorToast", () => {
   it("suppresses 401 auth errors", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
+    const error = createTestApiError(401, {
           detail: { code: API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE },
-        },
-      },
-      "Unauthorized",
-    )
+        })
     expect(shouldSuppressLoginErrorToast(error)).toBe(true)
   })
 
   it("does not suppress generic 503", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/x" },
-      {
-        url: "/x",
-        ok: false,
-        status: 503,
-        statusText: "Unavailable",
-        body: { detail: { code: "other" } },
-      },
-      "Unavailable",
-    )
+    const error = createTestApiError(503, { detail: { code: "other" } })
     expect(shouldSuppressLoginErrorToast(error)).toBe(false)
   })
 
   it("suppresses node not configured 503", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/x" },
-      {
-        url: "/x",
-        ok: false,
-        status: 503,
-        statusText: "Unavailable",
-        body: {
+    const error = createTestApiError(503, {
           detail: { code: API_AUTH_ERROR_CODES.AUTH_NODE_NOT_CONFIGURED },
-        },
-      },
-      "Unavailable",
-    )
+        })
     expect(shouldSuppressLoginErrorToast(error)).toBe(true)
   })
 })
 
 describe("resolveLoginFormAuthError", () => {
   it("maps wallet not found API code", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
+    const error = createTestApiError(401, {
           detail: { code: API_AUTH_ERROR_CODES.AUTH_WALLET_NOT_FOUND },
-        },
-      },
-      "Unauthorized",
-    )
+        })
     const message = resolveLoginFormAuthError(error, "pw")
     expect(message).toContain("Wallet not found here")
     expect(message).toContain("same node address")
@@ -220,19 +140,9 @@ describe("resolveLoginFormAuthError", () => {
 
 describe("shouldResetMultiWalletSelectionOnLoginError", () => {
   it("returns true for invalid passphrase", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
+    const error = createTestApiError(401, {
           detail: { code: API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE },
-        },
-      },
-      "Unauthorized",
-    )
+        })
     expect(shouldResetMultiWalletSelectionOnLoginError(error)).toBe(true)
   })
 })
