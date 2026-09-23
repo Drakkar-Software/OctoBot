@@ -23,7 +23,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { TasksService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
