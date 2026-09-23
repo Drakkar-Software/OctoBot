@@ -1,4 +1,3 @@
-import { unzipSync } from "fflate"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { FeedbackPreviewResponse, FeedbackUploadEnvelope } from "@/client"
@@ -8,7 +7,6 @@ import {
   buildFeedbackFilename,
   buildFeedbackMailtoUrl,
   buildFeedbackNote,
-  buildNodeJournalZipBytes,
   buildRecoveryFeedbackFallbackEnvelope,
   computeShareFeedbackSendDisabled,
   downloadFeedbackEnvelope,
@@ -20,14 +18,57 @@ import {
   getPreviewAutomationCount,
   getShareFeedbackUiErrorName,
   resolveShareFeedbackUiErrorRoute,
+  shouldUseDegradedFeedbackWithoutPreview,
 } from "@/lib/feedback-share"
+
+describe("shouldUseDegradedFeedbackWithoutPreview", () => {
+  it("returns true when preview failed without auth block", () => {
+    expect(
+      shouldUseDegradedFeedbackWithoutPreview({
+        previewAuthBlocked: false,
+        previewLoading: false,
+        previewError: true,
+      }),
+    ).toBe(true)
+  })
+
+  it("returns false while preview is loading", () => {
+    expect(
+      shouldUseDegradedFeedbackWithoutPreview({
+        previewAuthBlocked: false,
+        previewLoading: true,
+        previewError: true,
+      }),
+    ).toBe(false)
+  })
+
+  it("returns false when auth blocked", () => {
+    expect(
+      shouldUseDegradedFeedbackWithoutPreview({
+        previewAuthBlocked: true,
+        previewLoading: false,
+        previewError: true,
+      }),
+    ).toBe(false)
+  })
+
+  it("returns false when preview succeeded", () => {
+    expect(
+      shouldUseDegradedFeedbackWithoutPreview({
+        previewAuthBlocked: false,
+        previewLoading: false,
+        previewError: false,
+      }),
+    ).toBe(false)
+  })
+})
 
 describe("computeShareFeedbackSendDisabled", () => {
   it("allows send with empty journal when note is present", () => {
     expect(
       computeShareFeedbackSendDisabled({
         submitPending: false,
-        useDegradedRecoveryFeedback: false,
+        useDegradedFeedback: false,
         hasUiErrorContext: false,
         showSignInPrompt: false,
         previewLoading: false,
@@ -43,7 +84,7 @@ describe("computeShareFeedbackSendDisabled", () => {
     expect(
       computeShareFeedbackSendDisabled({
         submitPending: false,
-        useDegradedRecoveryFeedback: false,
+        useDegradedFeedback: false,
         hasUiErrorContext: false,
         showSignInPrompt: false,
         previewLoading: false,
@@ -59,7 +100,7 @@ describe("computeShareFeedbackSendDisabled", () => {
     expect(
       computeShareFeedbackSendDisabled({
         submitPending: false,
-        useDegradedRecoveryFeedback: false,
+        useDegradedFeedback: false,
         hasUiErrorContext: true,
         showSignInPrompt: false,
         previewLoading: false,
@@ -69,6 +110,38 @@ describe("computeShareFeedbackSendDisabled", () => {
         note: "",
       }),
     ).toBe(false)
+  })
+
+  it("allows send when preview failed in degraded mode", () => {
+    expect(
+      computeShareFeedbackSendDisabled({
+        submitPending: false,
+        useDegradedFeedback: true,
+        hasUiErrorContext: false,
+        showSignInPrompt: false,
+        previewLoading: false,
+        previewError: true,
+        hasPreview: false,
+        eventCount: null,
+        note: "",
+      }),
+    ).toBe(false)
+  })
+
+  it("disables send when preview failed outside degraded mode", () => {
+    expect(
+      computeShareFeedbackSendDisabled({
+        submitPending: false,
+        useDegradedFeedback: false,
+        hasUiErrorContext: false,
+        showSignInPrompt: false,
+        previewLoading: false,
+        previewError: true,
+        hasPreview: false,
+        eventCount: null,
+        note: "",
+      }),
+    ).toBe(true)
   })
 })
 
@@ -358,47 +431,6 @@ describe("buildFeedbackFilename", () => {
   })
 })
 
-describe("buildNodeJournalZipBytes", () => {
-  it("builds node_journal.zip bytes with a valid node_journal.json member", () => {
-    expect(FEEDBACK_JOURNAL_ZIP_FILENAME).toBe("node_journal.zip")
-    const zipBytes = buildNodeJournalZipBytes({
-      install_id: "install-1",
-      event_count: 0,
-    } as FeedbackUploadEnvelope)
-    expect(zipBytes[0]).toBe(0x50)
-    expect(zipBytes[1]).toBe(0x4b)
-
-    const unzipped = unzipSync(zipBytes)
-    expect(Object.keys(unzipped)).toEqual([FEEDBACK_JOURNAL_JSON_FILENAME])
-    const jsonText = new TextDecoder().decode(
-      unzipped[FEEDBACK_JOURNAL_JSON_FILENAME],
-    )
-    const parsed = JSON.parse(jsonText) as { install_id: string }
-    expect(parsed.install_id).toBe("install-1")
-  })
-
-  it("compresses repetitive journal content smaller than raw JSON", () => {
-    const envelope = {
-      install_id: "install-1",
-      app_version: "1.0.0",
-      onboarding_started_at: null,
-      onboarding_complete: false,
-      journey_summary: {},
-      uploaded: false,
-      ready: true,
-      event_count: 50,
-      events: Array.from({ length: 50 }, (_, index) => ({
-        event: "wallet_setup_succeeded",
-        attributes: { note: "x".repeat(200) },
-        timestamp: index,
-      })),
-    } as FeedbackUploadEnvelope
-    const rawJson = JSON.stringify(envelope, null, 2)
-    const zipBytes = buildNodeJournalZipBytes(envelope)
-    expect(zipBytes.length).toBeLessThan(rawJson.length)
-  })
-})
-
 function parseMailtoQueryParam(mailto: string, param: "subject" | "body"): string {
   const query = mailto.split("?")[1] ?? ""
   const match = query.match(new RegExp(`(?:^|&)${param}=([^&]*)`))
@@ -427,8 +459,26 @@ describe("buildFeedbackMailtoUrl", () => {
     expect(decodedBody).toContain("Something broke")
     expect(decodedBody).toContain("Email: user@example.com")
     expect(decodedBody).toContain(
-      "Please attach the downloaded node_journal.zip file to this email.",
+      "REMINDER: Please attach the downloaded node_journal.zip file to this email.",
     )
+    expect(decodedBody.indexOf("REMINDER:")).toBeLessThan(
+      decodedBody.indexOf("Something broke"),
+    )
+  })
+
+  it("uses json attachment filename when specified", () => {
+    const mailto = buildFeedbackMailtoUrl({
+      note: "Offline",
+      attachmentFilename: FEEDBACK_JOURNAL_JSON_FILENAME,
+    })
+    const decodedBody = parseMailtoQueryParam(mailto, "body")
+    expect(decodedBody).toContain(
+      "REMINDER: Please attach the downloaded node_journal.json file to this email.",
+    )
+    expect(decodedBody.indexOf("REMINDER:")).toBeLessThan(
+      decodedBody.indexOf("Offline"),
+    )
+    expect(decodedBody).not.toContain("node_journal.zip")
   })
 })
 

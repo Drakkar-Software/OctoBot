@@ -14,6 +14,10 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import io
+import json
+import zipfile
+
 import mock
 
 import octobot.constants as octobot_constants
@@ -26,6 +30,26 @@ import octobot.community.node_journal.journal as journal_module
 _EVENT = journal_enums.JournalEventLineField
 
 from tentacles.Services.Interfaces.node_api_interface.api.routes import feedback as feedback_routes
+
+
+def _decode_export_zip_response(response) -> dict:
+    archive = io.BytesIO(response.body)
+    with zipfile.ZipFile(archive) as zip_file:
+        names = zip_file.namelist()
+        assert names == [feedback_routes.FEEDBACK_JOURNAL_JSON_FILENAME]
+        json_text = zip_file.read(feedback_routes.FEEDBACK_JOURNAL_JSON_FILENAME).decode()
+    return json.loads(json_text)
+
+
+class TestBuildFeedbackJournalZip:
+    def test_builds_single_json_member_with_zip_magic(self, journal_persisted_state):
+        envelope = feedback_routes._build_feedback_upload_envelope(note="zip test")
+        archive = feedback_routes.build_feedback_journal_zip(envelope)
+        assert archive[0:2] == b"PK"
+        payload = _decode_export_zip_response(
+            type("Response", (), {"body": archive})(),
+        )
+        assert payload["note"] == "zip test"
 
 
 class TestBuildFeedbackPreview:
@@ -114,18 +138,20 @@ class TestExportFeedback:
             issue_url="https://github.com/example/issues/1",
         )
 
-        envelope = feedback_routes.export_feedback(body=request_body)
+        response = feedback_routes.export_feedback(body=request_body)
+        payload = _decode_export_zip_response(response)
 
-        assert "sync issue" in envelope.note
-        assert "issue_url: https://github.com/example/issues/1" in envelope.note
+        assert "sync issue" in payload["note"]
+        assert "issue_url: https://github.com/example/issues/1" in payload["note"]
 
     def test_includes_ui_error_name_on_envelope(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(ui_error_name="boot_failed")
 
-        envelope = feedback_routes.export_feedback(body=request_body)
+        response = feedback_routes.export_feedback(body=request_body)
+        payload = _decode_export_zip_response(response)
 
-        assert envelope.ui_error_name == "boot_failed"
-        assert envelope.ui_error_route is None
+        assert payload["ui_error_name"] == "boot_failed"
+        assert payload["ui_error_route"] is None
 
     def test_includes_ui_error_route_for_route_errors(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(
@@ -133,10 +159,11 @@ class TestExportFeedback:
             ui_error_route="/app/x",
         )
 
-        envelope = feedback_routes.export_feedback(body=request_body)
+        response = feedback_routes.export_feedback(body=request_body)
+        payload = _decode_export_zip_response(response)
 
-        assert envelope.ui_error_name == "route_error"
-        assert envelope.ui_error_route == "/app/x"
+        assert payload["ui_error_name"] == "route_error"
+        assert payload["ui_error_route"] == "/app/x"
 
     def test_note_and_ui_error_name_without_context_in_note(self, journal_persisted_state):
         request_body = feedback_routes.FeedbackUploadRequest(
@@ -144,11 +171,12 @@ class TestExportFeedback:
             ui_error_name="auth_broken",
         )
 
-        envelope = feedback_routes.export_feedback(body=request_body)
+        response = feedback_routes.export_feedback(body=request_body)
+        payload = _decode_export_zip_response(response)
 
-        assert envelope.note == "user detail"
-        assert envelope.ui_error_name == "auth_broken"
-        assert "failure_kind" not in (envelope.note or "")
+        assert payload["note"] == "user detail"
+        assert payload["ui_error_name"] == "auth_broken"
+        assert "failure_kind" not in (payload["note"] or "")
 
 
 class TestFeedbackRoutes:
@@ -171,10 +199,11 @@ class TestExportFeedbackWhenJournalDisabled:
             "os.environ",
             {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"},
         ):
-            envelope = feedback_routes.export_feedback(body=request_body)
-        assert envelope.event_count == 0
-        assert envelope.events == []
-        assert "note only" in (envelope.note or "")
+            response = feedback_routes.export_feedback(body=request_body)
+        payload = _decode_export_zip_response(response)
+        assert payload["event_count"] == 0
+        assert payload["events"] == []
+        assert "note only" in (payload["note"] or "")
 
     def test_includes_ui_error_name_when_journal_disabled(
         self,
@@ -188,5 +217,6 @@ class TestExportFeedbackWhenJournalDisabled:
             "os.environ",
             {journal_constants.JOURNAL_ENABLED_ENV_VAR: "false"},
         ):
-            envelope = feedback_routes.export_feedback(body=request_body)
-        assert envelope.ui_error_name == "insecure_context"
+            response = feedback_routes.export_feedback(body=request_body)
+        payload = _decode_export_zip_response(response)
+        assert payload["ui_error_name"] == "insecure_context"

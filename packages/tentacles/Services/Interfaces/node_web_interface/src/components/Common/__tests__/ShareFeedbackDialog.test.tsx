@@ -121,6 +121,39 @@ function create401PreviewError(): ApiError {
   )
 }
 
+function create503PreviewError(): ApiError {
+  return new ApiError(
+    { method: "GET", url: "/api/v1/feedback/preview" },
+    {
+      url: "/api/v1/feedback/preview",
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+      body: {},
+    },
+    "Service Unavailable",
+  )
+}
+
+function createFailedPreviewQueryState(error: unknown) {
+  return {
+    data: undefined,
+    error,
+    isLoading: false,
+    isError: true,
+    isSuccess: false,
+  }
+}
+
+function expectDegradedPreviewFailureDialog(markup: string) {
+  expect(markup).toContain("download diagnostics and email your feedback below")
+  expect(markup).not.toContain('class="font-medium">Activity history</p>')
+  expect(markup).not.toContain("Check file content")
+  expect(markup).toContain('id="feedback-note"')
+  expect(markup).toContain("Download &amp; email")
+  expect(markup).not.toContain('disabled="" type="button">Download &amp; email')
+}
+
 function renderDialog(
   context: import("@/lib/feedback-share").ShareFeedbackContext,
 ) {
@@ -235,5 +268,39 @@ describe("ShareFeedbackDialogContent", () => {
 
     expect(markup).toContain('type="button">Download &amp; email</button>')
     expect(markup).not.toContain('disabled="" type="button">Download &amp; email')
+  })
+
+  it("navbar + preview 503: degraded mode, send enabled, preview notice", () => {
+    useQueryMock.mockReturnValue(
+      createFailedPreviewQueryState(create503PreviewError()),
+    )
+
+    const markup = renderDialog({ source: "navbar" })
+
+    expectDegradedPreviewFailureDialog(markup)
+  })
+
+  it("settings + preview network error: degraded mode, send enabled", () => {
+    useQueryMock.mockReturnValue(
+      createFailedPreviewQueryState(new Error("network error")),
+    )
+
+    const markup = renderDialog({ source: "settings" })
+
+    expectDegradedPreviewFailureDialog(markup)
+  })
+
+  it("route error + preview failure: send enabled with empty note", () => {
+    useQueryMock.mockReturnValue(
+      createFailedPreviewQueryState(new Error("network error")),
+    )
+
+    const markup = renderDialog({
+      source: "route_error",
+      routePath: "/app/broken",
+    })
+
+    expectDegradedPreviewFailureDialog(markup)
+    expect(markup).toContain("Route error: /app/broken")
   })
 })

@@ -28,10 +28,12 @@ import useCustomToast from "@/hooks/useCustomToast"
 import {
   computeShareFeedbackSendDisabled,
   downloadPreviewEnvelope,
+  FEEDBACK_PREVIEW_UNAVAILABLE_MESSAGE,
   fetchFeedbackPreview,
   getPreviewEventCount,
   getPreviewAutomationCount,
   getShareFeedbackUiErrorName,
+  shouldUseDegradedFeedbackWithoutPreview,
   submitFeedbackDownload,
   type ShareFeedbackContactMethod,
   type ShareFeedbackContext,
@@ -162,8 +164,13 @@ export function ShareFeedbackDialogContent({
 
   const isRecoveryContext = context.source === "recovery"
   const previewAuthBlocked = isAuthRequiredError(previewQuery.error)
-  const useDegradedRecoveryFeedback =
-    isRecoveryContext && previewAuthBlocked
+  const useDegradedFeedback =
+    (isRecoveryContext && previewAuthBlocked) ||
+    shouldUseDegradedFeedbackWithoutPreview({
+      previewAuthBlocked,
+      previewLoading: previewQuery.isLoading,
+      previewError: previewQuery.isError,
+    })
   const showSignInPrompt = previewAuthBlocked && !isRecoveryContext
 
   const submitMutation = useMutation({
@@ -173,6 +180,7 @@ export function ShareFeedbackDialogContent({
         context,
         contactMethod: contactMethod || undefined,
         contactValue,
+        previewUploadEnvelope: preview?.upload_envelope,
       }),
     onSuccess: () => {
       showSuccessToast(
@@ -198,18 +206,16 @@ export function ShareFeedbackDialogContent({
     : "Contact detail"
 
   const showActivityHistory =
-    !useDegradedRecoveryFeedback &&
+    !useDegradedFeedback &&
     !showSignInPrompt &&
     (previewQuery.isLoading || previewQuery.isSuccess)
-  const showPreviewLoadError =
-    previewQuery.isError &&
-    !previewAuthBlocked &&
-    !useDegradedRecoveryFeedback
+  const showPreviewUnavailableNotice =
+    previewQuery.isError && !previewAuthBlocked
   const showFeedbackForm = !showSignInPrompt
 
   const isSendDisabled = computeShareFeedbackSendDisabled({
     submitPending: submitMutation.isPending,
-    useDegradedRecoveryFeedback,
+    useDegradedFeedback,
     hasUiErrorContext,
     showSignInPrompt,
     previewLoading: previewQuery.isLoading,
@@ -268,11 +274,9 @@ export function ShareFeedbackDialogContent({
           </p>
         )}
 
-        {showPreviewLoadError && (
-          <p className="text-destructive">
-            {previewQuery.error instanceof Error
-              ? previewQuery.error.message
-              : "Couldn't load feedback preview"}
+        {showPreviewUnavailableNotice && (
+          <p className="text-muted-foreground">
+            {FEEDBACK_PREVIEW_UNAVAILABLE_MESSAGE}
           </p>
         )}
 
