@@ -22,7 +22,7 @@ postgrest  # Supabase posgres calls (required by supabase and enforced to allow 
 websockets==15.0.1 # used by supabase, a recent version is required, see https://github.com/supabase/realtime-py/blob/main/pyproject.toml
 
 # async http requests
-aiohttp==3.14.1 # sync with ccxt
+aiohttp==3.14.3 # sync with ccxt's >=
 aiofiles==25.1.0
 # updating to aiodns==3.2.0 is incompatible (and failing CI)
 # raises RuntimeError: aiodns needs a SelectorEventLoop on Windows. See more: https://github.com/saghul/aiodns/issues/86
