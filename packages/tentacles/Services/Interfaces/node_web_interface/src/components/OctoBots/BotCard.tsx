@@ -3,7 +3,7 @@ import { memo } from "react"
 
 import type {
   ChildOctoBotProcessState,
-  Task_Output as Task,
+  TaskOutput as Task,
   TaskStatus,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"

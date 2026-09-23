@@ -7,7 +7,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import type { Task_Input as Task } from "@/client"
+import type { TaskInput as Task } from "@/client"
 import { NodesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"
@@ -43,6 +43,11 @@ function getValidActions(actions: ActionRow[]): ActionRow[] {
   })
 }
 
+type NodeConfigEncryptionFields = {
+  tasks_encryption_enabled?: boolean
+  server_encryption_env_vars?: string[]
+}
+
 function buildContentString(action: ActionRow): string {
   const template = getTemplateById(action.templateId)
   const actions = template?.actionTypes.join(",") ?? ""
@@ -64,14 +69,11 @@ export default function EncryptStep({
   const { showErrorToast } = useCustomToast()
 
   useEffect(() => {
-    NodesService.getNodeConfig()
-      .then((data) => {
-        const d = data as {
-          tasks_encryption_enabled?: boolean
-          server_encryption_env_vars?: string[]
-        }
-        setEncryptionEnabled(d.tasks_encryption_enabled ?? false)
-        setEnvVars(d.server_encryption_env_vars ?? [])
+    void NodesService.nodesGetNodeConfig({ throwOnError: true })
+      .then((response) => {
+        const nodeConfig = response.data as NodeConfigEncryptionFields
+        setEncryptionEnabled(nodeConfig.tasks_encryption_enabled ?? false)
+        setEnvVars(nodeConfig.server_encryption_env_vars ?? [])
       })
       .catch(() => setEncryptionEnabled(false))
     hasStoredClientKeys().then(setClientKeysStored)

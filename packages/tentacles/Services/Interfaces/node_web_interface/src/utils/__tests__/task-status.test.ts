@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { Task_Output as Task } from "@/client"
+import type { TaskOutput as Task } from "@/client"
 import { getTaskFilterGroup, getTaskMetaStatus } from "@/utils/task-status"
 
 function taskWithExecStatus(

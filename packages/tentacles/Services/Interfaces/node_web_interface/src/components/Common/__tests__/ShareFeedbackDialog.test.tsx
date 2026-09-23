@@ -3,7 +3,7 @@ import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { ApiError } from "@/client"
+import { createTestApiError } from "@/lib/api-error"
 import { ShareFeedbackDialogContent } from "@/components/Common/ShareFeedbackDialog"
 import { Dialog } from "@/components/ui/dialog"
 
@@ -107,18 +107,8 @@ function createPreviewResponse(eventCount: number) {
   }
 }
 
-function create401PreviewError(): ApiError {
-  return new ApiError(
-    { method: "GET", url: "/api/v1/feedback/preview" },
-    {
-      url: "/api/v1/feedback/preview",
-      ok: false,
-      status: 401,
-      statusText: "Unauthorized",
-      body: {},
-    },
-    "Unauthorized",
-  )
+function create401PreviewError() {
+  return createTestApiError(401, {})
 }
 
 function renderDialog(

@@ -45,17 +45,17 @@ export async function resolvePairingNodeUrl(): Promise<string> {
 
   // P1: Tailscale IP, P2: LAN IP, P3: browser origin fallback.
   const [vpnResult, localResult] = await Promise.allSettled([
-    SetupService.getVpnNetworkAddress(),
-    SetupService.getLocalNetworkAddress(),
+    (await SetupService.setupGetVpnNetworkAddress()).data,
+    (await SetupService.setupGetLocalNetworkAddress()).data,
   ])
 
   const vpnIp =
     vpnResult.status === "fulfilled"
-      ? (vpnResult.value.vpn_network_ip ?? null)
+      ? (vpnResult.value?.vpn_network_ip ?? null)
       : null
   const localIp =
     localResult.status === "fulfilled"
-      ? (localResult.value.local_network_ip ?? null)
+      ? (localResult.value?.local_network_ip ?? null)
       : null
 
   return resolvePairingNodeHostname(vpnIp, localIp, window.location.origin)

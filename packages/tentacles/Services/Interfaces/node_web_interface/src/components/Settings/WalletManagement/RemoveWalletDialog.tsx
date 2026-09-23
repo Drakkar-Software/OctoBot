@@ -22,7 +22,10 @@ export function RemoveWalletDialog({
   const [open, setOpen] = useState(false)
 
   const mutation = useMutation({
-    mutationFn: () => WalletsService.deleteWallet({ address: wallet.address }),
+    mutationFn: async () =>
+      (await WalletsService.walletsDeleteWallet({
+          path: { address: wallet.address },
+        })).data,
     onSuccess: () => {
       setOpen(false)
       onSuccess()

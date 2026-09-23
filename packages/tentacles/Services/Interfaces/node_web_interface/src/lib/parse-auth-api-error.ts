@@ -1,6 +1,6 @@
-import { ApiError } from "@/client"
 import type { ApiAuthErrorCode } from "@/lib/auth-error-codes"
 import { API_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
+import { getApiErrorResponseBody, isApiError } from "@/lib/api-error"
 
 const API_AUTH_CODE_SET = new Set<string>(Object.values(API_AUTH_ERROR_CODES))
 
@@ -29,8 +29,8 @@ export function parseAuthErrorCodeFromBody(body: unknown): ApiAuthErrorCode | nu
 export function parseAuthErrorCodeFromApiError(
   error: unknown,
 ): ApiAuthErrorCode | null {
-  if (!(error instanceof ApiError)) {
+  if (!isApiError(error)) {
     return null
   }
-  return parseAuthErrorCodeFromBody(error.body)
+  return parseAuthErrorCodeFromBody(getApiErrorResponseBody(error))
 }

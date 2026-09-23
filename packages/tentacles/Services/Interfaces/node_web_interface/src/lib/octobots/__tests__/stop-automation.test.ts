@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { ApiError } from "@/client"
+import { createTestApiError } from "@/lib/api-error"
 import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 import {
   buildStopAutomationUserAction,
@@ -95,32 +95,14 @@ describe("buildStopAutomationUserAction", () => {
 
 describe("formatStopAutomationError", () => {
   it("uses string detail from ApiError", () => {
-    const error = new ApiError(
-      { method: "POST", url: "/api/v1/debug/" },
-      {
-        url: "/api/v1/debug/",
-        ok: false,
-        status: 400,
-        statusText: "Bad Request",
-        body: { detail: "automation not found" },
-      },
-      "Bad Request",
-    )
+    const error = createTestApiError(400, { detail: "automation not found" })
     expect(formatStopAutomationError(error)).toBe("automation not found")
   })
 
   it("uses validation array detail from ApiError", () => {
-    const error = new ApiError(
-      { method: "POST", url: "/api/v1/debug/" },
-      {
-        url: "/api/v1/debug/",
-        ok: false,
-        status: 422,
-        statusText: "Unprocessable Entity",
-        body: { detail: [{ msg: "Invalid user action" }] },
-      },
-      "Unprocessable Entity",
-    )
+    const error = createTestApiError(422, {
+      detail: [{ msg: "Invalid user action" }],
+    })
     expect(formatStopAutomationError(error)).toBe("Invalid user action")
   })
 

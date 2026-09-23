@@ -35,7 +35,7 @@ export function SupportChat({
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: threadKey(nodeId),
-    queryFn: () => getThread(nodeId),
+    queryFn: async () => getThread(nodeId),
     refetchInterval: 8_000,
   })
 
@@ -43,7 +43,7 @@ export function SupportChat({
     queryClient.invalidateQueries({ queryKey: threadKey(nodeId) })
 
   const sendMutation = useMutation({
-    mutationFn: (text: string) => sendMessage(nodeId, text),
+    mutationFn: async (text: string) => sendMessage(nodeId, text),
     onSuccess: () => {
       setDraft("")
       refresh()
@@ -52,7 +52,7 @@ export function SupportChat({
   })
 
   const attachMutation = useMutation({
-    mutationFn: (file: File) =>
+    mutationFn: async (file: File) =>
       file.arrayBuffer().then((buf) =>
         sendAttachment(nodeId, {
           bytes: new Uint8Array(buf),
@@ -66,7 +66,10 @@ export function SupportChat({
 
   const debugMutation = useMutation({
     mutationFn: async () => {
-      const state = await DebugService.getDebug({})
+      const state = (await DebugService.debugGetDebug({})).data
+      if (!state) {
+        throw new Error("Debug state unavailable")
+      }
       const wallet = localStorage.getItem("auth_username") ?? ""
       const file = debugStateToFile(state, wallet)
       await sendAttachment(nodeId, file, "Shared a debug snapshot")
@@ -79,7 +82,7 @@ export function SupportChat({
   })
 
   const closeMutation = useMutation({
-    mutationFn: () => closeTicket(nodeId),
+    mutationFn: async () => closeTicket(nodeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SUPPORT_TICKET_QUERY_KEY })
     },

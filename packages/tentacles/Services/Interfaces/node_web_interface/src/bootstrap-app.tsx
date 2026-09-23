@@ -3,15 +3,11 @@ import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { ErrorBoundary } from "react-error-boundary"
-import { OpenAPI } from "@/client"
 import { RecoveryScreen } from "@/components/Common/RecoveryScreen"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
-import { clearAuth } from "@/hooks/useAuth"
 import { probeAuthState } from "@/lib/auth-state-probe"
-import { shouldRedirectToLoginOn401 } from "@/lib/open-api-401-login-redirect"
-import { loadPassword } from "@/lib/device-key"
-import { markLoginSessionCleared } from "@/lib/login-session-hint"
+import { configureApiClient } from "@/lib/configure-api-client"
 import type { RecoveryFailureKind } from "@/components/Common/RecoveryScreen"
 import { isWebCryptoAvailable } from "@/lib/secure-context"
 import {
@@ -20,38 +16,6 @@ import {
   reportShellFatalError,
 } from "@/lib/shell-error-reporting"
 import { routeTree } from "@/routeTree.gen"
-
-// Wire generated API client credentials and session recovery before any route loads.
-export function configureOpenApi(): void {
-  OpenAPI.BASE =
-    import.meta.env.NODE_API_URL ||
-    (import.meta.env.DEV ? "http://localhost:8000" : "")
-  OpenAPI.USERNAME = async () => {
-    return localStorage.getItem("auth_username") || ""
-  }
-  OpenAPI.PASSWORD = async () => {
-    return (await loadPassword()) ?? ""
-  }
-
-  let isRedirectingOnAuthFailure = false
-  // On 401 for a protected page, clear local session and hard-navigate to login so the UI
-  // never keeps calling APIs with a stale username and no usable password.
-  OpenAPI.interceptors.response.use((response) => {
-    if (
-      shouldRedirectToLoginOn401(response, {
-        pathname: window.location.pathname,
-        isRedirectingOnAuthFailure,
-      })
-    ) {
-      isRedirectingOnAuthFailure = true
-      markLoginSessionCleared()
-      void clearAuth().finally(() => {
-        window.location.href = "/app/login"
-      })
-    }
-    return response
-  })
-}
 
 function createAppRouter() {
   return createRouter({
@@ -127,7 +91,7 @@ function renderApp(rootElement: HTMLElement): void {
 
 // Startup: configure API → mount root → require Web Crypto → auth probe → app or RecoveryScreen.
 export async function bootstrapApp(): Promise<void> {
-  configureOpenApi()
+  configureApiClient()
   const rootElement = document.getElementById("root")
   if (!rootElement) {
     throw new Error("Root element not found")

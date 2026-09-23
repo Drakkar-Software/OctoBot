@@ -1,4 +1,4 @@
-import { DebugService } from "@/client"
+import { type DebugState, DebugService } from "@/client"
 import { fetchAccountHistoricalValues } from "@/lib/debug/account-historical-values-api"
 import { fetchAggregatedAccountHistoricalValues } from "@/lib/debug/aggregated-account-historical-values-api"
 
@@ -7,8 +7,10 @@ export function getDebugQueryOptions(walletAddress?: string | null) {
     walletAddress && walletAddress.length > 0 ? walletAddress : undefined
   return {
     queryKey: ["debug", resolved ?? "current"] as const,
-    queryFn: () =>
-      DebugService.getDebug(resolved ? { walletAddress: resolved } : {}),
+    queryFn: async () =>
+      (await DebugService.debugGetDebug(
+          resolved ? { query: { wallet_address: resolved } } : {},
+        )).data,
   }
 }
 
@@ -25,7 +27,7 @@ export function getAccountHistoricalValuesQueryOptions(
       accountId ?? "none",
       resolvedWallet ?? "current",
     ] as const,
-    queryFn: () => {
+    queryFn: async () => {
       if (!accountId) {
         throw new Error("Account id is required")
       }
@@ -48,7 +50,7 @@ export function getAggregatedAccountHistoricalValuesQueryOptions(
       isSimulated ? "simulated" : "real",
       resolvedWallet ?? "current",
     ] as const,
-    queryFn: () =>
+    queryFn: async () =>
       fetchAggregatedAccountHistoricalValues(isSimulated, resolvedWallet),
     enabled,
   }

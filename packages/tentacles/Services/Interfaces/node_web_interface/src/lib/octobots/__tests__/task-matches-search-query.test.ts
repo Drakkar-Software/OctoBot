@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { Task_Output as Task } from "@/client"
+import type { TaskOutput as Task } from "@/client"
 import { taskMatchesSearchQuery } from "@/lib/octobots/task-matches-search-query"
 
 function makeTask(overrides: Partial<Task> = {}): Task {

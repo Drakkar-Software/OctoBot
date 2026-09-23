@@ -45,7 +45,7 @@ export function NodeConfigurationCard() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const stopMutation = useMutation({
-    mutationFn: () => NodesService.stopNode(),
+    mutationFn: async () => (await NodesService.nodesStopNode()).data,
     onSuccess: () => {
       setStopDialogOpen(false)
       showSuccessToast("OctoBot is stopping")

@@ -14,8 +14,10 @@ export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     let configured = true
     try {
-      const status = await SetupService.getSetupStatus()
-      configured = status.configured
+      const response = await SetupService.setupGetSetupStatus({
+        throwOnError: true,
+      })
+      configured = response.data.configured ?? false
     } catch {
       // network error — do not block navigation
     }

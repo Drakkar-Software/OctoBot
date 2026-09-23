@@ -39,7 +39,10 @@ export const FEEDBACK_JOURNAL_JSON_FILENAME = "node_journal.json"
 const FEEDBACK_JOURNAL_ZIP_MIME = "application/zip"
 
 export async function fetchFeedbackPreview(): Promise<FeedbackPreviewResponse> {
-  return FeedbackService.getFeedbackPreview()
+  const response = await FeedbackService.feedbackGetFeedbackPreview({
+    throwOnError: true,
+  })
+  return response.data
 }
 
 export function getPreviewEventCount(preview: FeedbackPreviewResponse): number {
@@ -419,14 +422,16 @@ export async function submitFeedbackDownload({
   })
   let envelope: FeedbackUploadEnvelope
   try {
-    envelope = await FeedbackService.exportFeedback({
-      requestBody: {
+    const response = await FeedbackService.feedbackExportFeedback({
+      body: {
         note: composedNote || null,
         issue_url: null,
         ui_error_name: uiErrorName,
         ui_error_route: uiErrorRoute,
       },
+      throwOnError: true,
     })
+    envelope = response.data
   } catch (exportError) {
     if (context.source !== "recovery") {
       throw exportError

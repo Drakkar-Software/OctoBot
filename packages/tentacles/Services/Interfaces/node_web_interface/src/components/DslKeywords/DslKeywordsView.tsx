@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 import { BookOpen } from "lucide-react"
 import { useEffect } from "react"
 
-import { type ApiError, DslService } from "@/client"
+import { DslService } from "@/client"
+import type { ApiError } from "@/lib/api-error"
 import { DslKeywordsTable } from "@/components/DslKeywords/DslKeywordsTable"
 import {
   Card,
@@ -19,7 +20,8 @@ export function DslKeywordsView() {
 
   const keywordsQuery = useQuery({
     queryKey: ["dsl-keywords"],
-    queryFn: () => DslService.getDslKeywords(),
+    queryFn: async () =>
+      (await DslService.dslGetDslKeywords()).data,
   })
 
   useEffect(() => {

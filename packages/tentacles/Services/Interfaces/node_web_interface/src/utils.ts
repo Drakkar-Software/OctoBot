@@ -1,25 +1,26 @@
-import { AxiosError } from "axios"
-import type { ApiError } from "./client"
+import type { ApiError } from "@/lib/api-error"
+import { getApiErrorResponseBody, isApiError } from "@/lib/api-error"
 
 export function extractErrorMessage(err: ApiError): string {
-  if (err instanceof AxiosError) {
+  if (isApiError(err)) {
+    const body = getApiErrorResponseBody(err)
+    const errDetail = (body as { detail?: unknown })?.detail
+    if (Array.isArray(errDetail) && errDetail.length > 0) {
+      const first = errDetail[0] as { msg?: string }
+      return first.msg ?? err.message
+    }
+    if (errDetail && typeof errDetail === "object") {
+      const message = (errDetail as { message?: unknown }).message
+      if (typeof message === "string" && message.length > 0) {
+        return message
+      }
+    }
+    if (typeof errDetail === "string") {
+      return errDetail
+    }
     return err.message
   }
 
-  const errDetail = (err.body as { detail?: unknown })?.detail
-  if (Array.isArray(errDetail) && errDetail.length > 0) {
-    const first = errDetail[0] as { msg?: string }
-    return first.msg ?? "Something went wrong."
-  }
-  if (errDetail && typeof errDetail === "object") {
-    const message = (errDetail as { message?: unknown }).message
-    if (typeof message === "string" && message.length > 0) {
-      return message
-    }
-  }
-  if (typeof errDetail === "string") {
-    return errDetail
-  }
   return "Something went wrong."
 }
 

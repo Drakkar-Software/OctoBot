@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 
-import { type Task_Input as Task, TasksService } from "@/client"
+import { type TaskInput as Task, TasksService } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
 import type { CSVRawResult } from "@/lib/csv"
 import ColumnMappingStep, {
@@ -34,8 +34,8 @@ export default function ImportTask({ onSuccess }: ImportTaskProps) {
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const createTaskMutation = useMutation({
-    mutationFn: (data: Array<Task>) =>
-      TasksService.createTasks({ requestBody: data }),
+    mutationFn: async (data: Array<Task>) =>
+      (await TasksService.tasksCreateTasks({ body: data })).data,
   })
 
   const handleCsvParsed = (result: CSVRawResult) => {

@@ -45,10 +45,10 @@ export function CreateGenericProcessBotDialog({
   >(null)
 
   const createMutation = useMutation({
-    mutationFn: (trimmedName: string) =>
-      OctobotsService.createGenericProcessBot({
-        requestBody: buildCreateGenericProcessBotRequestBody(trimmedName),
-      }),
+    mutationFn: async (trimmedName: string) =>
+      (await OctobotsService.octobotsCreateGenericProcessBot({
+          body: buildCreateGenericProcessBotRequestBody(trimmedName),
+        })).data,
     onSuccess: (_result, trimmedName) => {
       setCreatedBotName(trimmedName)
       setStep("success")

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { Ban, ScrollText, Square, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { TaskOutput as Task } from "@/client"
 import { TasksService } from "@/client"
 import { StopAutomationDialog } from "@/components/OctoBots/StopAutomationDialog"
 import { Button } from "@/components/ui/button"
@@ -92,10 +92,12 @@ export function SelectionToolbar({
   )
 
   const deleteMutation = useMutation({
-    mutationFn: () =>
-      TasksService.deleteTasks({
-        taskIds: inactiveTasks.map((task) => task.id as string),
-      }),
+    mutationFn: async () =>
+      (await TasksService.tasksDeleteTasks({
+          query: {
+            taskIds: inactiveTasks.map((task) => task.id as string),
+          },
+        })).data,
     onSuccess: () => {
       showSuccessToast(
         `Deleted ${inactiveTasks.length} OctoBot${inactiveTasks.length !== 1 ? "s" : ""}`,
@@ -110,10 +112,10 @@ export function SelectionToolbar({
   })
 
   const cancelMutation = useMutation({
-    mutationFn: () =>
-      TasksService.cancelTasks({
-        requestBody: { task_ids: activeTasks.map((task) => task.id as string) },
-      }),
+    mutationFn: async () =>
+      (await TasksService.tasksCancelTasks({
+          body: { task_ids: activeTasks.map((task) => task.id as string) },
+        })).data,
     onSuccess: () => {
       showSuccessToast(
         `Cancelled ${activeTasks.length} OctoBot${activeTasks.length !== 1 ? "s" : ""}`,
@@ -127,7 +129,7 @@ export function SelectionToolbar({
   })
 
   const shareLogsMutation = useMutation({
-    mutationFn: () => shareWorkflowLogs(Array.from(selectedIds)),
+    mutationFn: async () => shareWorkflowLogs(Array.from(selectedIds)),
     onSuccess: (res) => {
       if (res.status === "shared") {
         showSuccessToast("Workflow logs shared to your support ticket")

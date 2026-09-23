@@ -39,10 +39,10 @@ export function DebugTabDeleteControls({
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const deleteMutation = useMutation({
-    mutationFn: () =>
-      TasksService.deleteTasks({
-        taskIds: Array.from(selectedIds),
-      }),
+    mutationFn: async () =>
+      (await TasksService.tasksDeleteTasks({
+          query: { taskIds: Array.from(selectedIds) },
+        })).data,
     onSuccess: () => {
       showSuccessToast(
         `Deleted ${selectedCount} item${selectedCount !== 1 ? "s" : ""}`,

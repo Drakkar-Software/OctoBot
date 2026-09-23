@@ -23,8 +23,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
-import { TasksService } from "@/client"
+import { TasksService, type TaskOutput as Task } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -214,12 +213,14 @@ export default function ExportResultsContent({
       setIsDecrypting(true)
       let failCount = 0
       try {
-        const exportedResults = await TasksService.exportResults({
-          requestBody: {
+        const exportResponse = await TasksService.tasksExportResults({
+          body: {
             task_ids: stoppedTaskIds,
             user_rsa_public_key: userRsaPublicPem,
           },
+          throwOnError: true,
         })
+        const exportedResults = exportResponse.data
         const base = buildExportRows(tasks)
         const rows = await Promise.all(
           tasks.map(async (task, i) => {

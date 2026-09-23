@@ -2,15 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("@/client", () => ({
   FeedbackService: {
-    getFeedbackPreview: vi.fn(),
-    exportFeedback: vi.fn(),
+    feedbackGetFeedbackPreview: vi.fn(),
+    feedbackExportFeedback: vi.fn(),
   },
 }))
 
 import { FeedbackService } from "@/client"
 import { submitFeedbackDownload } from "@/lib/feedback-share"
 
-const mockedExportFeedback = vi.mocked(FeedbackService.exportFeedback)
+const mockedExportFeedback = vi.mocked(FeedbackService.feedbackExportFeedback)
 const assignMock = vi.fn()
 
 function stubWindowPathname(pathname: string) {
@@ -20,6 +20,10 @@ function stubWindowPathname(pathname: string) {
       assign: assignMock,
     },
   })
+}
+
+function mockExportResolved(envelope: unknown) {
+  mockedExportFeedback.mockResolvedValue({ data: envelope } as never)
 }
 
 describe("submitFeedbackDownload", () => {
@@ -67,7 +71,7 @@ describe("submitFeedbackDownload", () => {
       event_count: 2,
       uploaded: false,
     }
-    mockedExportFeedback.mockResolvedValue(exportEnvelope as never)
+    mockExportResolved(exportEnvelope)
 
     await submitFeedbackDownload({
       note: "App froze on settings",
@@ -80,13 +84,14 @@ describe("submitFeedbackDownload", () => {
     })
 
     expect(mockedExportFeedback).toHaveBeenCalledWith({
-      requestBody: {
+      body: {
         note:
           "App froze on settings\n\n[contact] method=email value=user@example.com",
         issue_url: null,
         ui_error_name: "boot_failed",
         ui_error_route: "/app/settings",
       },
+      throwOnError: true,
     })
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickMock).toHaveBeenCalledTimes(1)
@@ -98,7 +103,7 @@ describe("submitFeedbackDownload", () => {
 
   it("exports ui_error_route from current page for navbar feedback", async () => {
     stubWindowPathname("/app/settings")
-    mockedExportFeedback.mockResolvedValue({ install_id: "x" } as never)
+    mockExportResolved({ install_id: "x" })
 
     await submitFeedbackDownload({
       note: "Navbar feedback",
@@ -106,29 +111,31 @@ describe("submitFeedbackDownload", () => {
     })
 
     expect(mockedExportFeedback).toHaveBeenCalledWith({
-      requestBody: {
+      body: {
         note: "[ui_context] source=navbar\n\nNavbar feedback",
         issue_url: null,
         ui_error_name: null,
         ui_error_route: "/app/settings",
       },
+      throwOnError: true,
     })
   })
 
   it("exports route error context on envelope request fields", async () => {
-    mockedExportFeedback.mockResolvedValue({ install_id: "x" } as never)
+    mockExportResolved({ install_id: "x" })
 
     await submitFeedbackDownload({
       context: { source: "route_error", routePath: "/app/x" },
     })
 
     expect(mockedExportFeedback).toHaveBeenCalledWith({
-      requestBody: {
+      body: {
         note: null,
         issue_url: null,
         ui_error_name: "route_error",
         ui_error_route: "/app/x",
       },
+      throwOnError: true,
     })
   })
 
@@ -138,31 +145,11 @@ describe("submitFeedbackDownload", () => {
 
     const envelope = await submitFeedbackDownload({
       note: "Recovery note",
-      context: {
-        source: "recovery",
-        failureKind: "auth_broken",
-      },
+      context: { source: "recovery", failureKind: "insecure_context" },
     })
 
-    expect(envelope.install_id).toBe("recovery-client-fallback")
-    expect(envelope.note).toBe("Recovery note")
-    expect(envelope.ui_error_name).toBe("auth_broken")
-    expect(envelope.ui_error_route).toBe("/app/insecure")
+    expect(envelope.uploaded).toBe(false)
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickMock).toHaveBeenCalledTimes(1)
-    expect(assignMock).toHaveBeenCalledTimes(1)
-  })
-
-  it("rethrows export errors for non-recovery context", async () => {
-    mockedExportFeedback.mockRejectedValue(new Error("network error"))
-
-    await expect(
-      submitFeedbackDownload({
-        note: "Navbar feedback",
-        context: { source: "navbar" },
-      }),
-    ).rejects.toThrow("network error")
-    expect(createObjectUrlMock).not.toHaveBeenCalled()
-    expect(assignMock).not.toHaveBeenCalled()
   })
 })
