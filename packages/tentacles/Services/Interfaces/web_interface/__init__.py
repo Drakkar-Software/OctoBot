@@ -51,9 +51,9 @@ if not commons_constants.USE_MINIMAL_LIBS:
     from tentacles.Services.Interfaces.web_interface.web import WebInterface
 
 
-# disable server logging
-for logger in ('engineio.server', 'socketio.server', 'geventwebsocket.handler'):
-    logging.getLogger(logger).setLevel(logging.WARNING)
+# legacy socket.io servers (removed from web interface)
+for logger_name in ('engineio.server', 'socketio.server'):
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 MAX_NOTIFICATION_HISTORY_SIZE = 1000
 MAX_NOTIFICATION_AT_ONCE = 10

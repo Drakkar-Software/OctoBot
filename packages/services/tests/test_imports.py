@@ -23,9 +23,9 @@ import octobot_services.util
 
 def test_web_imports():
     import flask
-    import flask_socketio
-    import gevent
-    import geventwebsocket
+    import uvicorn
+    import asgiref.wsgi
+    import starlette
     import flask_login
     import wtforms
     import flask_wtf

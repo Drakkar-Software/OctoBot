@@ -39,6 +39,7 @@ import octobot.community.wallet_backend as wallet_backend
 import octobot.community.feeds as community_feeds
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.community.community_bot as community_bot
+import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
@@ -316,8 +317,9 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._re_create_client()
 
     def is_using_the_current_loop(self):
-        return self.supabase_client.event_loop is None \
-            or self.supabase_client.event_loop is asyncio.get_event_loop()
+        if self.supabase_client.event_loop is None:
+            return True
+        return asyncio_tools.is_on_async_loop(self.supabase_client.event_loop)
 
     def is_initialized(self):
         return self.initialized_event is not None and self.initialized_event.is_set()

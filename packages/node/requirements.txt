@@ -1,5 +1,6 @@
 fastapi==0.141.0 # avoid bundling fastapi CLI with fastapi[standard]
-uvicorn==0.53.0
+uvicorn # version locked in packages/services
+starlette # version locked in packages/services
 passlib[bcrypt]==1.7.4
 pydantic
 

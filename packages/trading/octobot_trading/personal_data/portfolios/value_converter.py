@@ -38,7 +38,7 @@ class ValueConverter:
 
     def __init__(self, portfolio_manager):
         self.portfolio_manager = portfolio_manager
-        self._bot_main_loop = asyncio.get_event_loop()
+        self._bot_main_loop = asyncio.get_running_loop()
         self.logger = logging.get_logger(f"{self.__class__.__name__}"
                                          f"[{self.portfolio_manager.exchange_manager.exchange_name}]")
 
@@ -249,7 +249,7 @@ class ValueConverter:
         Synchronously call TICKER_CHANNEL producer to add a list of new symbols to its watch list
         :param symbols_to_add: the list of symbol to add to the TICKER_CHANNEL producer watch list
         """
-        if self._bot_main_loop is asyncio.get_event_loop():
+        if asyncio_tools.is_on_async_loop(self._bot_main_loop):
             asyncio.create_task(
                 self.portfolio_manager.exchange_manager.exchange_config.add_watched_symbols(symbols_to_add)
             )
