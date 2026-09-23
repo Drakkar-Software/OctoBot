@@ -14,9 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import decimal
+import threading
+
 import mock
 import pytest
 
+import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_trading.constants as constants
 import octobot_trading.errors as errors
 import octobot_trading.personal_data as trading_personal_data
@@ -242,3 +245,36 @@ class TestValueConverterUpdateLastPriceLogging:
         value_converter.update_last_price("BTC/USDT", decimal.Decimal("100"))
 
         value_converter.logger.debug.assert_called_once_with("Initialized last price for BTC/USDT")
+
+
+class TestValueConverterAskTickerFromWorkerThread:
+    def test_ask_ticker_from_thread_without_loop_schedules_on_bot_loop(self, backtesting_trader):
+        config, exchange_manager, trader = backtesting_trader
+        portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+        value_converter = portfolio_manager.portfolio_value_holder.value_converter
+        bot_main_loop = value_converter._bot_main_loop
+        symbols_to_add = ["USDC/USDT"]
+        schedule_calls = []
+
+        async def add_watched_symbols(symbols):
+            return symbols
+
+        exchange_manager.exchange_config.add_watched_symbols = add_watched_symbols
+
+        def run_coroutine_in_bot_loop(coroutine, async_loop):
+            schedule_calls.append(async_loop)
+            coroutine.close()
+
+        def worker():
+            with mock.patch.object(
+                asyncio_tools,
+                "run_coroutine_in_asyncio_loop",
+                side_effect=run_coroutine_in_bot_loop,
+            ):
+                value_converter._ask_ticker_data_for_currency(symbols_to_add)
+
+        thread = threading.Thread(target=worker)
+        thread.start()
+        thread.join()
+
+        assert schedule_calls == [bot_main_loop]

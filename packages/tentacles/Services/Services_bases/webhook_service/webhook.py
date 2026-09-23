@@ -19,8 +19,9 @@ import os
 import time
 import flask
 import threading
-import gevent.pywsgi
+import uvicorn
 import pyngrok.ngrok as ngrok
+import asgiref.wsgi as asgiref_wsgi
 import pyngrok.exception
 
 import octobot_commons.logging as bot_logging
@@ -36,6 +37,7 @@ import octobot.community.errors as community_errors
 
 class WebHookService(services.AbstractService):
     CONNECTION_TIMEOUT = 8  # can take up to 5s on slow setups
+    WEBHOOK_STOP_TIMEOUT_SECONDS = 8
     LOGGERS = ["pyngrok.ngrok", "werkzeug"]
 
     def get_fields_description(self):
@@ -83,7 +85,7 @@ class WebHookService(services.AbstractService):
         self.webhook_host = None
         self.webhook_port = None
         self.webhook_server = None
-        self.webhook_server_context = None
+        self._webhook_serve_finished = None
         self.webhook_server_thread = None
         self.connected = None
 
@@ -186,16 +188,26 @@ class WebHookService(services.AbstractService):
     def _prepare_webhook_server(self):
         try:
             self.logger.debug(f"Starting local webhook server at {self.webhook_host}:{self.webhook_port}")
-            self.webhook_server = gevent.pywsgi.WSGIServer(
-                (self.webhook_host, self.webhook_port),
-                self.webhook_app,
-                log=None
+            self._webhook_serve_finished = threading.Event()
+            webhook_asgi = asgiref_wsgi.WsgiToAsgi(self.webhook_app)
+            uvicorn_config = uvicorn.Config(
+                webhook_asgi,
+                host=self.webhook_host,
+                port=self.webhook_port,
+                log_level="warning",
             )
-            self.webhook_server_context = self.webhook_app.app_context()
-            self.webhook_server_context.push()
-        except OSError as e:
+            self.webhook_server = uvicorn.Server(uvicorn_config)
+        except OSError as error:
             self.webhook_server = None
-            self.logger.exception(e, False, f"Fail to start webhook : {e}")
+            self.logger.exception(error, False, f"Fail to start webhook : {error}")
+
+    async def _run_webhook_uvicorn(self):
+        with self.webhook_app.app_context():
+            try:
+                await self.webhook_server.serve()
+            finally:
+                if self._webhook_serve_finished is not None:
+                    self._webhook_serve_finished.set()
 
     def _register_webhook_routes(self, blueprint) -> None:
         @blueprint.route('/')
@@ -297,7 +309,7 @@ class WebHookService(services.AbstractService):
                 self.webhook_public_url = f"{self.ngrok_tunnel.public_url}/webhook"
             if self.webhook_server:
                 self.connected = True
-                self.webhook_server.serve_forever()
+                asyncio.run(self._run_webhook_uvicorn())
         except pyngrok.exception.PyngrokNgrokError as e:
             self.logger.error(f"Error when starting webhook service: Your ngrok.com token might be invalid. ({e})")
         except Exception as e:
@@ -307,7 +319,7 @@ class WebHookService(services.AbstractService):
     async def _start_isolated_server(self):
         if self.webhook_app is None:
             self.webhook_app = flask.Flask(__name__)
-            # gevent WSGI server has to be created in the thread it is started: create everything in this thread
+            # uvicorn server has to be created in the thread it is started: create everything in this thread
             self.webhook_server_thread = threading.Thread(target=self._start_server, name=self.get_name())
             self.webhook_server_thread.start()
             start_time = time.time()
@@ -402,6 +414,11 @@ class WebHookService(services.AbstractService):
             ngrok.kill()
             if self.webhook_server:
                 try:
-                    self.webhook_server.stop()
+                    self.webhook_server.should_exit = True
+                    serve_finished = self._webhook_serve_finished
+                    if serve_finished is not None:
+                        serve_finished.wait(timeout=self.WEBHOOK_STOP_TIMEOUT_SECONDS)
                 except Exception as err:
                     self.logger.warning(f"Error when stopping webhook server: {err}")
+            if self.webhook_server_thread is not None and self.webhook_server_thread.is_alive():
+                self.webhook_server_thread.join(timeout=self.WEBHOOK_STOP_TIMEOUT_SECONDS)

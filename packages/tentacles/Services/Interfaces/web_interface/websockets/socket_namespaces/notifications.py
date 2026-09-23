@@ -14,14 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
-import copy
-import flask_socketio
-
 import tentacles.Services.Interfaces.web_interface as web_interface
-import tentacles.Services.Interfaces.web_interface.websockets as websockets
+import tentacles.Services.Interfaces.web_interface.websockets.core.abstract_websocket_namespace_notifier as abstract_websocket_namespace_notifier_module
+import tentacles.Services.Interfaces.web_interface.websockets.core.websocket_connection as websocket_connection_module
 
 
-class NotificationsNamespace(websockets.AbstractWebSocketNamespaceNotifier):
+class NotificationsNamespace(abstract_websocket_namespace_notifier_module.AbstractWebSocketNamespaceNotifier):
 
     @staticmethod
     def _get_update_data():
@@ -30,25 +28,18 @@ class NotificationsNamespace(websockets.AbstractWebSocketNamespaceNotifier):
             "errors_count": web_interface.get_errors_count()
         }
 
-    def _client_context_send_notifications(self):
-        flask_socketio.emit("update", self._get_update_data())
-
     def all_clients_send_notifications(self, **kwargs) -> bool:
         if self._has_clients():
             try:
-                self.socketio.emit("update", self._get_update_data(), namespace=self.namespace)
-                return True
-            except Exception as e:
-                self.logger.exception(e, True, f"Error when sending web notification: {e}")
+                return self.registry.schedule_broadcast("update", self._get_update_data())
+            except Exception as error:
+                self.logger.exception(error, True, f"Error when sending web notification: {error}")
         return False
 
-    @websockets.websocket_with_login_required_when_activated
-    def on_connect(self):
-        super().on_connect()
-        self._client_context_send_notifications()
+    async def on_connect(self, connection: websocket_connection_module.WebSocketConnection) -> None:
+        await connection.send_event("update", self._get_update_data())
         web_interface.flush_notifications()
 
 
 notifier = NotificationsNamespace('/notifications')
 web_interface.register_notifier(web_interface.GENERAL_NOTIFICATION_KEY, notifier)
-websockets.namespaces.append(notifier)

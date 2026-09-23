@@ -12,6 +12,9 @@
 
         <!-- Prevent search engines indexing -->
         <meta name="robots" content="noindex">
+        {% if WEB_SOCKET_BASE_PATH %}
+        <meta name="octobot-web-socket-base-path" content="{{ WEB_SOCKET_BASE_PATH }}">
+        {% endif %}
 
         <!-- Favicon -->
         <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
@@ -51,7 +54,6 @@
         <!-- Scripts -->
         <!-- At the beginning of the page : be available for template scripts -->
         <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha384-UG8ao2jwOWB7/oDdObZc6ItJmwUkR/PfMyt9Qs5AwX7PsnYn1CRKCTWyncPTWvaS" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js" integrity="sha384-KA7m0DwgQGmeRC6Xre3hJO+ZxpanOauVh4Czdqbg8lDKJ3bZZYVYmP+y4F31x40L" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js" integrity="sha384-VDls8ImYGI8SwVxpmjX2Bn27U2TcNodzTNROTusVEWO55+lmL+H9NczoQJk6mwZR" crossorigin="anonymous"></script>
@@ -65,6 +67,7 @@
 
         <script src="{{ url_for('static', filename='js/lib/bootstrap-editable.min.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
         <script src="{{ url_for('static', filename='js/common/cst.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
+        <script src="{{ url_for('static', filename='js/common/octobot_websocket.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
         <script src="{{ url_for('static', filename='js/common/util.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
         <script src="{{ url_for('static', filename='js/common/bot_connection.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>
         <script src="{{ url_for('static', filename='js/common/dom_updater.js', u=LAST_UPDATED_STATIC_FILES) }}"></script>

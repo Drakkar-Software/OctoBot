@@ -16,7 +16,7 @@
 
 import pytest
 
-import tentacles.Services.Interfaces.web_interface.tests.distribution_tester as distribution_tester
+import tentacles.Services.Interfaces.web_interface.tests.models.distributions.distribution_tester as distribution_tester
 import octobot.enums
 
 
@@ -29,8 +29,8 @@ _COMMUNITY_ACCOUNT_REQUIRED_PATHS = [
 ]
 
 
-class TestNodeDistributionPlugin(distribution_tester.AbstractDistributionTester):
-    DISTRIBUTION = octobot.enums.OctoBotDistribution.NODE
+class TestMarketMakingDistributionPlugin(distribution_tester.AbstractDistributionTester):
+    DISTRIBUTION = octobot.enums.OctoBotDistribution.MARKET_MAKING
     # backlist endpoints expecting additional data
     URL_BLACK_LIST = [
         "/tentacle_media", "/export_logs", "/api/first_exchange_details"

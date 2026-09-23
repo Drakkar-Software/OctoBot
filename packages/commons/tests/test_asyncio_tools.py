@@ -14,6 +14,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 import asyncio
+import threading
+
 import mock
 import pytest
 
@@ -21,6 +23,23 @@ import octobot_commons.asyncio_tools as asyncio_tools
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
+
+
+class TestIsOnAsyncLoop:
+    async def test_returns_true_when_running_on_given_loop(self):
+        assert asyncio_tools.is_on_async_loop(asyncio.get_running_loop())
+
+    async def test_returns_false_from_thread_without_loop(self):
+        bot_loop = asyncio.get_running_loop()
+        thread_result = {}
+
+        def worker():
+            thread_result["is_on_loop"] = asyncio_tools.is_on_async_loop(bot_loop)
+
+        thread = threading.Thread(target=worker)
+        thread.start()
+        thread.join()
+        assert thread_result["is_on_loop"] is False
 
 
 async def test_without_error_container():

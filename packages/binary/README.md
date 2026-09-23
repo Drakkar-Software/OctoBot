@@ -21,11 +21,10 @@ $ ./OctoBot_linux
 2. Install OctoBot requirements  `python -m pip install -r octobot/requirements.txt`
 3. Install pyinstaller >= 4.0 pip install  `https://github.com/pyinstaller/pyinstaller/archive/develop.zip`
 4. List OctoBot modules files for pyinstaller discovery  `python scripts/python_file_lister.py "bin/octobot_packages_files.txt" <octobot repo folder>`
-5. Add pyinstaller required imports  `python scripts/insert_imports.py octobot/octobot/cli.py`
-6. Copy bin folder into the octobot folder
-7. Go into the octobot folder
-8. Compile the OctoBot project `python setup.py build_ext --inplace`
-9. Call pyinstaller  `pyinstaller bin\start.spec`
-10. Binary should be available in the dist folder
+5. Copy bin folder into the octobot folder
+6. Go into the octobot folder
+7. Compile the OctoBot project `python setup.py build_ext --inplace`
+8. Call pyinstaller  `pyinstaller bin\start.spec`
+9. Binary should be available in the dist folder
 
 More information on [OctoBot wiki page](https://github.com/Drakkar-Software/OctoBot/wiki/Installation).

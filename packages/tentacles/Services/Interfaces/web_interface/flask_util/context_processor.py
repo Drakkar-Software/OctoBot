@@ -13,6 +13,8 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import flask
+
 import octobot_commons.symbols.symbol_util as symbol_util
 import octobot_commons.constants as commons_constants
 import octobot_commons.authentication as authentication
@@ -140,6 +142,8 @@ def register_context_processor(web_interface_instance):
 
 
         return dict(
+            # URL prefix when UI is behind a subpath (proxy script_root); meta for octobot_websocket.js WS URLs.
+            WEB_SOCKET_BASE_PATH=flask.request.script_root or "",
             LAST_UPDATED_STATIC_FILES=web_interface.LAST_UPDATED_STATIC_FILES,
             OCTOBOT_WEBSITE_URL=constants.OCTOBOT_WEBSITE_URL,
             OCTOBOT_DOCS_URL=constants.OCTOBOT_DOCS_URL,
