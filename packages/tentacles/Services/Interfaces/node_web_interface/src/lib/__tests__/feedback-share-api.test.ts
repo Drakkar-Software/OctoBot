@@ -1,17 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-vi.mock("@/client", () => ({
-  FeedbackService: {
-    getFeedbackPreview: vi.fn(),
-    exportFeedback: vi.fn(),
-  },
-}))
+import type { FeedbackUploadEnvelope } from "@/client"
+import {
+  FEEDBACK_JOURNAL_JSON_FILENAME,
+  FEEDBACK_JOURNAL_ZIP_FILENAME,
+  submitFeedbackDownload,
+} from "@/lib/feedback-share"
 
-import { FeedbackService } from "@/client"
-import { submitFeedbackDownload } from "@/lib/feedback-share"
-
-const mockedExportFeedback = vi.mocked(FeedbackService.exportFeedback)
 const assignMock = vi.fn()
+const fetchMock = vi.fn()
+
+const MINIMAL_ZIP_BYTES = new Uint8Array([0x50, 0x4b, 0x03, 0x04])
 
 function stubWindowPathname(pathname: string) {
   vi.stubGlobal("window", {
@@ -26,12 +25,15 @@ describe("submitFeedbackDownload", () => {
   const createObjectUrlMock = vi.fn(() => "blob:feedback")
   const revokeObjectUrlMock = vi.fn()
   const clickMock = vi.fn()
+  let createdLink: HTMLAnchorElement
+
   beforeEach(() => {
-    mockedExportFeedback.mockReset()
+    fetchMock.mockReset()
     createObjectUrlMock.mockClear()
     revokeObjectUrlMock.mockClear()
     clickMock.mockClear()
     assignMock.mockClear()
+    vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("URL", {
       createObjectURL: createObjectUrlMock,
       revokeObjectURL: revokeObjectUrlMock,
@@ -41,12 +43,14 @@ describe("submitFeedbackDownload", () => {
         appendChild: vi.fn(),
         removeChild: vi.fn(),
       },
-      createElement: () =>
-        ({
+      createElement: () => {
+        createdLink = {
           click: clickMock,
           download: "",
           href: "",
-        }) as unknown as HTMLAnchorElement,
+        } as unknown as HTMLAnchorElement
+        return createdLink
+      },
     })
     vi.stubGlobal("window", {
       location: {
@@ -60,16 +64,14 @@ describe("submitFeedbackDownload", () => {
     vi.unstubAllGlobals()
   })
 
-  it("exports note, ui_error_name, and contact without context in note", async () => {
+  it("downloads zip when export succeeds", async () => {
     stubWindowPathname("/app/settings")
-    const exportEnvelope = {
-      install_id: "install-1",
-      event_count: 2,
-      uploaded: false,
-    }
-    mockedExportFeedback.mockResolvedValue(exportEnvelope as never)
+    fetchMock.mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => MINIMAL_ZIP_BYTES.buffer,
+    })
 
-    await submitFeedbackDownload({
+    const result = await submitFeedbackDownload({
       note: "App froze on settings",
       context: {
         source: "recovery",
@@ -79,64 +81,77 @@ describe("submitFeedbackDownload", () => {
       contactValue: "user@example.com",
     })
 
-    expect(mockedExportFeedback).toHaveBeenCalledWith({
-      requestBody: {
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/feedback/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         note:
           "App froze on settings\n\n[contact] method=email value=user@example.com",
         issue_url: null,
         ui_error_name: "boot_failed",
         ui_error_route: "/app/settings",
-      },
+      }),
     })
+    expect(result).toEqual({ attachmentKind: "zip" })
+    expect(createdLink.download).toBe(FEEDBACK_JOURNAL_ZIP_FILENAME)
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
     expect(clickMock).toHaveBeenCalledTimes(1)
     expect(assignMock).toHaveBeenCalledTimes(1)
-    expect(assignMock.mock.calls[0][0]).toContain("mailto:contact@octobot.cloud")
+    expect(assignMock.mock.calls[0][0]).toContain("node_journal.zip")
     expect(assignMock.mock.calls[0][0]).toContain("App%20froze%20on%20settings")
-    expect(assignMock.mock.calls[0][0]).not.toContain("install-1")
   })
 
-  it("exports ui_error_route from current page for navbar feedback", async () => {
+  it("sends navbar export request body with ui_error_route", async () => {
     stubWindowPathname("/app/settings")
-    mockedExportFeedback.mockResolvedValue({ install_id: "x" } as never)
+    fetchMock.mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => MINIMAL_ZIP_BYTES.buffer,
+    })
 
     await submitFeedbackDownload({
       note: "Navbar feedback",
       context: { source: "navbar" },
     })
 
-    expect(mockedExportFeedback).toHaveBeenCalledWith({
-      requestBody: {
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/feedback/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         note: "[ui_context] source=navbar\n\nNavbar feedback",
         issue_url: null,
         ui_error_name: null,
         ui_error_route: "/app/settings",
-      },
+      }),
     })
   })
 
-  it("exports route error context on envelope request fields", async () => {
-    mockedExportFeedback.mockResolvedValue({ install_id: "x" } as never)
+  it("sends route error context on export request fields", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => MINIMAL_ZIP_BYTES.buffer,
+    })
 
     await submitFeedbackDownload({
       context: { source: "route_error", routePath: "/app/x" },
     })
 
-    expect(mockedExportFeedback).toHaveBeenCalledWith({
-      requestBody: {
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/feedback/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         note: null,
         issue_url: null,
         ui_error_name: "route_error",
         ui_error_route: "/app/x",
-      },
+      }),
     })
   })
 
-  it("downloads recovery fallback when export fails", async () => {
+  it("downloads recovery fallback json when export fails without preview", async () => {
     stubWindowPathname("/app/insecure")
-    mockedExportFeedback.mockRejectedValue(new Error("network error"))
+    fetchMock.mockRejectedValue(new Error("network error"))
 
-    const envelope = await submitFeedbackDownload({
+    const result = await submitFeedbackDownload({
       note: "Recovery note",
       context: {
         source: "recovery",
@@ -144,25 +159,48 @@ describe("submitFeedbackDownload", () => {
       },
     })
 
-    expect(envelope.install_id).toBe("recovery-client-fallback")
-    expect(envelope.note).toBe("Recovery note")
-    expect(envelope.ui_error_name).toBe("auth_broken")
-    expect(envelope.ui_error_route).toBe("/app/insecure")
+    expect(result.attachmentKind).toBe("json")
+    if (result.attachmentKind === "json") {
+      expect(result.envelope.install_id).toBe("recovery-client-fallback")
+      expect(result.envelope.note).toBe("Recovery note")
+      expect(result.envelope.ui_error_name).toBe("auth_broken")
+      expect(result.envelope.ui_error_route).toBe("/app/insecure")
+    }
+    expect(createdLink.download).toBe(FEEDBACK_JOURNAL_JSON_FILENAME)
     expect(createObjectUrlMock).toHaveBeenCalledTimes(1)
-    expect(clickMock).toHaveBeenCalledTimes(1)
-    expect(assignMock).toHaveBeenCalledTimes(1)
+    expect(assignMock.mock.calls[0][0]).toContain("node_journal.json")
   })
 
-  it("rethrows export errors for non-recovery context", async () => {
-    mockedExportFeedback.mockRejectedValue(new Error("network error"))
+  it("downloads preview json fallback when export fails for navbar", async () => {
+    fetchMock.mockRejectedValue(new Error("network error"))
+    const previewEnvelope = {
+      install_id: "preview-install",
+      app_version: "1.0.0",
+      onboarding_started_at: null,
+      onboarding_complete: true,
+      journey_summary: {},
+      events: [{ event: "wallet_setup_succeeded" }],
+      uploaded: false,
+      ready: true,
+      event_count: 1,
+    } as FeedbackUploadEnvelope
 
-    await expect(
-      submitFeedbackDownload({
-        note: "Navbar feedback",
-        context: { source: "navbar" },
-      }),
-    ).rejects.toThrow("network error")
-    expect(createObjectUrlMock).not.toHaveBeenCalled()
-    expect(assignMock).not.toHaveBeenCalled()
+    const result = await submitFeedbackDownload({
+      note: "Navbar feedback",
+      context: { source: "navbar" },
+      previewUploadEnvelope: previewEnvelope,
+    })
+
+    expect(result.attachmentKind).toBe("json")
+    if (result.attachmentKind === "json") {
+      expect(result.envelope.install_id).toBe("preview-install")
+      expect(result.envelope.note).toBe(
+        "[ui_context] source=navbar\n\nNavbar feedback",
+      )
+      expect(result.envelope.ui_error_name).toBeNull()
+      expect(result.envelope.ui_error_route).toBe("/app")
+      expect(result.envelope.event_count).toBe(1)
+    }
+    expect(assignMock.mock.calls[0][0]).toContain("node_journal.json")
   })
 })

@@ -14,8 +14,12 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import io
+import json
 import typing
+import zipfile
 
+import fastapi
 import pydantic
 from fastapi import APIRouter
 
@@ -28,6 +32,9 @@ except ImportError:
     from api.deps import CurrentUser  # type: ignore[no-redef]
 
 router = APIRouter(tags=["feedback"])
+
+FEEDBACK_JOURNAL_JSON_FILENAME = "node_journal.json"
+FEEDBACK_JOURNAL_ZIP_FILENAME = "node_journal.zip"
 
 
 class FeedbackUploadEnvelope(pydantic.BaseModel):
@@ -93,14 +100,16 @@ def _build_feedback_upload_envelope(
     return FeedbackUploadEnvelope(**upload_envelope.to_dict())
 
 
-@router.get("/preview", response_model=FeedbackPreviewResponse)
-def get_feedback_preview(current_user: CurrentUser) -> FeedbackPreviewResponse:
-    return _build_feedback_preview()
+def build_feedback_journal_zip(envelope: FeedbackUploadEnvelope) -> bytes:
+    json_body = json.dumps(envelope.model_dump(), indent=2, ensure_ascii=False)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(FEEDBACK_JOURNAL_JSON_FILENAME, json_body)
+    return buffer.getvalue()
 
 
-@router.post("/export", response_model=FeedbackUploadEnvelope)
-def export_feedback(
-    body: FeedbackUploadRequest | None = None,
+def _envelope_from_export_request(
+    body: FeedbackUploadRequest | None,
 ) -> FeedbackUploadEnvelope:
     note = None
     ui_error_name = None
@@ -119,4 +128,26 @@ def export_feedback(
         note=note,
         ui_error_name=ui_error_name,
         ui_error_route=ui_error_route,
+    )
+
+
+@router.get("/preview", response_model=FeedbackPreviewResponse)
+def get_feedback_preview(current_user: CurrentUser) -> FeedbackPreviewResponse:
+    return _build_feedback_preview()
+
+
+@router.post("/export")
+def export_feedback(
+    body: FeedbackUploadRequest | None = None,
+) -> fastapi.Response:
+    envelope = _envelope_from_export_request(body)
+    archive = build_feedback_journal_zip(envelope)
+    return fastapi.Response(
+        content=archive,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{FEEDBACK_JOURNAL_ZIP_FILENAME}"'
+            ),
+        },
     )
