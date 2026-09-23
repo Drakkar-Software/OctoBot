@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { formatTaskErrorDisplay, resolveTaskError } from "@/utils/task-errors"
 
 function makeTask(overrides: Partial<Task> = {}): Task {

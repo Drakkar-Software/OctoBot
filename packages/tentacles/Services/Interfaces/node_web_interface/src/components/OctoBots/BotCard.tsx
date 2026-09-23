@@ -3,7 +3,8 @@ import { memo } from "react"
 
 import type {
   ChildOctoBotProcessState,
-  Task_Output as Task,
+  Execution,
+  Task,
   TaskStatus,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -140,11 +141,11 @@ function RunsCounterRow({
   const runCount = task.executions?.length ?? 0
   const completedSteps =
     task.executions?.filter(
-      (execution) =>
+      (execution: Execution) =>
         execution.status === "completed" || execution.status === "failed",
     ).length ?? 0
   const runningExec = task.executions?.find(
-    (execution) => execution.status === "running",
+    (execution: Execution) => execution.status === "running",
   )
   const elapsedFrom = runningExec?.scheduled_at ?? activeExec?.scheduled_at
 

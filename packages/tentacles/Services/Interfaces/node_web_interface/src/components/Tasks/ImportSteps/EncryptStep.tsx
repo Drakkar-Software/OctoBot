@@ -7,7 +7,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import type { Task_Input as Task } from "@/client"
+import type { Task } from "@/client"
 import { NodesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { LoadingButton } from "@/components/ui/loading-button"

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { Ban, ScrollText, Square, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { TasksService } from "@/client"
 import { StopAutomationDialog } from "@/components/OctoBots/StopAutomationDialog"
 import { Button } from "@/components/ui/button"

@@ -1,4 +1,4 @@
-import type { ApiError, Task_Output as Task, UserAction } from "@/client"
+import type { ApiError, Task, UserAction } from "@/client"
 import { buildAutomationStopUserActionJson } from "@/lib/debug/user-action-templates"
 import { resolveOneOfInstance } from "@/lib/debug/protocol-oneof"
 import { getActiveExecution, getStatusGroup } from "@/utils/executions"

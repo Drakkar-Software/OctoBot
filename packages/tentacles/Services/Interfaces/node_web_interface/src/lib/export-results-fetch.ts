@@ -1,4 +1,4 @@
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { getActiveExecution, getStatusGroup } from "@/utils/executions"
 
 export function getStoppedTaskIdsForExport(tasks: Task[]): string[] {
