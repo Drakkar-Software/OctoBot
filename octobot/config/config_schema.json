@@ -47,6 +47,32 @@
         }
       }
     },
+    "journal": {
+      "type": "object",
+      "properties": {
+        "install_id": {
+          "type": "string"
+        },
+        "onboarding_started_at": {
+          "type": ["number", "null"]
+        },
+        "first_automation_started_at": {
+          "type": ["number", "null"]
+        },
+        "connection_sequence": {
+          "type": "integer"
+        },
+        "last_user_data_pull_at": {
+          "type": ["number", "null"]
+        },
+        "tracked_automation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "backtesting": {
       "type": "object",
       "properties": {
@@ -127,7 +153,5 @@
     "services",
     "notification"
   ],
-  "additionalProperties": {
-    "type": "string"
-  }
+  "additionalProperties": true
 }
