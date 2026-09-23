@@ -1,4 +1,4 @@
-numpy==2.4.2
+numpy
 
 # Exchange connection requirements
 octobot-ccxt==0.0.12 # always ensure real exchanges tests (in tests_additional and authenticated exchange tests) are passing before changing the ccxt version
@@ -9,4 +9,4 @@ cryptography # Never specify a version (managed by https://github.com/Drakkar-So
 sortedcontainers==2.4.0
 
 # Caching
-cachetools>=6, <7 # pyiceberg 0.10.0 requires cachetools<7.0,>=5.5
+cachetools

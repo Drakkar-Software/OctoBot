@@ -19,8 +19,6 @@ import flask
 import flask_cors
 import werkzeug.middleware.proxy_fix
 import flask_socketio
-from flask_compress import Compress
-from flask_caching import Cache
 
 import octobot_commons.logging as bot_logging
 import octobot_commons.network as network_module
@@ -186,11 +184,6 @@ class WebInterface(services_interfaces.AbstractWebInterface):
 
         if self.dev_mode:
             server_instance.config['TEMPLATES_AUTO_RELOAD'] = True
-        else:
-            cache = Cache(config={"CACHE_TYPE": "SimpleCache"})
-            cache.init_app(server_instance)
-
-            Compress(server_instance)
 
         flask_util.register_context_processor(self)
         flask_util.register_template_filters(server_instance)
