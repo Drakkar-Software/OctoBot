@@ -97,7 +97,6 @@ from octobot.community.history_backend import (
     history_backend_client,
     HistoricalBackendClient,
     ClickhouseHistoricalBackendClient,
-    IcebergHistoricalBackendClient,
 )
 from octobot.community.community_bot import (
     CommunityBot,
@@ -161,7 +160,6 @@ __all__ = [
     "history_backend_client",
     "HistoricalBackendClient",
     "ClickhouseHistoricalBackendClient",
-    "IcebergHistoricalBackendClient",
     "CommunityBot",
     "MissingDeploymentError",
     "MissingProductsSubscriptionError",

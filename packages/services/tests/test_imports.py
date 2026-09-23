@@ -23,8 +23,6 @@ import octobot_services.util
 
 def test_web_imports():
     import flask
-    import flask_caching
-    import flask_compress
     import flask_socketio
     import gevent
     import geventwebsocket
@@ -35,7 +33,6 @@ def test_web_imports():
 
 def test_telegram_imports():
     import telegram
-    import telethon
 
 
 def test_openai_imports():

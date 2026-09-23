@@ -33,9 +33,9 @@ def init_sentry_tracker() -> None:
 
     error_dsn = octobot.constants.ERROR_TRACKER_DSN
     if not error_dsn:
-        logger.debug("Sentry tracker disabled: ERROR_TRACKER_DSN is not set")
         _sentry_initialized = False
         return
+    logger.debug("Sentry tracker enabled: ERROR_TRACKER_DSN is set")
 
     if _sentry_initialized:
         return

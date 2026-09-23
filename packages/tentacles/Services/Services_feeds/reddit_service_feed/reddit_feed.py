@@ -15,6 +15,7 @@
 #  License along with this library.
 import asyncio
 import time
+import asyncpraw.exceptions
 import asyncprawcore.exceptions
 import logging
 
@@ -117,23 +118,23 @@ class RedditServiceFeed(service_feeds.AbstractServiceFeed):
                 await self._start_listener()
             except asyncprawcore.exceptions.RequestException:
                 # probably a connexion loss, try again
-                time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
+                await asyncio.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except asyncprawcore.exceptions.InvalidToken as e:
                 # expired, try again
                 self.logger.exception(e, True, f"Error when receiving Reddit feed: '{e}'")
                 self.logger.info(f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds.")
-                time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
+                await asyncio.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except asyncprawcore.exceptions.ServerError as e:
                 # server error, try again
                 self.logger.exception(e, True, "Error when receiving Reddit feed: '{e}'")
                 self.logger.info(f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds.")
-                time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
+                await asyncio.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except asyncprawcore.exceptions.OAuthException as e:
                 self.logger.exception(e, True, f"Error when receiving Reddit feed: '{e}' this may mean that reddit "
                                                f"login info in config.json are wrong")
                 self.keep_running = False
                 self.should_stop = True
-            except asyncprawcore.exceptions.ResponseException as e:
+            except (asyncprawcore.exceptions.ResponseException, asyncpraw.exceptions.RedditAPIException) as e:
                 message_complement = "this may mean that reddit login info in config.json are invalid." \
                     if not self.credentials_ok else \
                     f"Try to continue after {self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC} seconds."
@@ -143,7 +144,7 @@ class RedditServiceFeed(service_feeds.AbstractServiceFeed):
                     self.connect_attempts += 1
                 else:
                     self.connect_attempts += 0.1
-                time.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
+                await asyncio.sleep(self._SLEEPING_TIME_BEFORE_RECONNECT_ATTEMPT_SEC)
             except Exception as e:
                 self.logger.exception(e, True, f"Error when receiving Reddit feed: '{e}'")
                 self.keep_running = False
