@@ -24,7 +24,6 @@ import typing
 import mock
 import pytest
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from starlette.middleware.cors import CORSMiddleware
 
@@ -33,6 +32,7 @@ import octobot_protocol.models.market_making_configuration as market_making_conf
 
 import tentacles.Services.Interfaces.node_api_interface as node_api_interface_module
 import tentacles.Trading.Mode.simple_market_making_trading_mode.api.core as market_making_core
+import tentacles.Trading.Mode.simple_market_making_trading_mode.tests.api.fastapi_route_test_utils as fastapi_route_test_utils
 
 
 def dex_exchange_config_dict(**overrides) -> dict:
@@ -74,14 +74,13 @@ def client(app: FastAPI) -> TestClient:
 
 
 def get_all_routes(fastapi_app: FastAPI) -> list[str]:
-    route_paths: list[str] = []
-    for route in fastapi_app.routes:
-        if (
-            isinstance(route, APIRoute)
-            and "{" not in route.path
-            and route.path.startswith("/api/v1")
-        ):
-            route_paths.append(route.path)
+    route_paths = [
+        path
+        for path in fastapi_route_test_utils.collect_effective_http_paths(
+            fastapi_app.routes
+        )
+        if "{" not in path and path.startswith("/api/v1")
+    ]
     return sorted(set(route_paths))
 
 
