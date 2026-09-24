@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { cryptoSecretInputProps } from "@/lib/crypto-secret-input"
 import { cn } from "@/lib/utils"
 import { fetchSeedAfterWalletCreate } from "@/lib/wallet-seed-after-create"
 
@@ -227,6 +228,7 @@ export function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
                       rows={3}
                       value={seed}
                       onChange={(e) => setSeed(e.target.value)}
+                      {...cryptoSecretInputProps}
                     />
                   ) : (
                     <input
@@ -236,6 +238,7 @@ export function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
                       placeholder="0x..."
                       value={privateKey}
                       onChange={(e) => setPrivateKey(e.target.value)}
+                      {...cryptoSecretInputProps}
                     />
                   )}
                 </>

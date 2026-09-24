@@ -29,6 +29,7 @@ import {
   SETUP_STEP_TOTAL_GENERATE,
   SETUP_STEP_TOTAL_IMPORT,
 } from "@/lib/seed-onboarding"
+import { cryptoSecretInputProps } from "@/lib/crypto-secret-input"
 import { fetchSeedAfterWalletCreate } from "@/lib/wallet-seed-after-create"
 import { handleError } from "@/utils"
 
@@ -332,6 +333,7 @@ function SetupWallet() {
                       <Input
                         type="password"
                         placeholder="0x... or 64 hex characters"
+                        {...cryptoSecretInputProps}
                         {...field}
                       />
                     </FormControl>
