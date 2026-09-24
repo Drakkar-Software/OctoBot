@@ -1,6 +1,11 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { ShieldCheck } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 
-<<<<<<< HEAD
 import { type WalletInfo, WalletsService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
@@ -17,12 +22,13 @@ import {
 } from "@/components/ui/form"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
-import useAuth, { isLoggedIn } from "@/hooks/useAuth"
+import useAuth from "@/hooks/useAuth"
 import {
   type AuthErrorPresentation,
   applyLoginAuthPresentation,
   getAuthErrorPresentation,
   resolveLoginAuthPresentation,
+  shouldResetMultiWalletSelectionOnLoginError,
 } from "@/lib/auth-error-messages"
 import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
 import { consumeLoginPassphraseRecoverySuccessHint } from "@/lib/login-passphrase-recovery-hint"
@@ -34,22 +40,10 @@ const formSchema = z.object({
 })
 
 type FormData = z.infer<typeof formSchema>
-=======
-import { isLoggedIn } from "@/hooks/useAuth"
->>>>>>> 3eaf47b3 (Fix login recover-seed routing with login layout outlet)
 
-export const Route = createFileRoute("/login")({
-  beforeLoad: async () => {
-    if (isLoggedIn()) {
-      throw redirect({ to: "/" })
-    }
-  },
-  component: () => <Outlet />,
-  head: () => ({
-    meta: [{ title: "Log In" }],
-  }),
+export const Route = createFileRoute("/login/")({
+  component: Login,
 })
-<<<<<<< HEAD
 
 function Login() {
   const { loginMutation } = useAuth()
@@ -96,7 +90,6 @@ function Login() {
     if (loginMutation.isPending) return
     setLoginAuthError(null)
 
-    // Determine which wallet address to use as username
     let username: string
     if (multiWallet) {
       if (!selectedWallet) return
@@ -104,9 +97,6 @@ function Login() {
     } else if (wallets.length === 1) {
       username = wallets[0].address
     } else {
-      // No wallets configured — nothing to authenticate against. The root route
-      // guard should have already redirected to /setup/welcome before this can
-      // render; bail out rather than sending a fabricated address.
       setLoginAuthError(
         applyLoginAuthPresentation(
           CLIENT_AUTH_ERROR_CODES.NETWORK_ERROR,
@@ -126,12 +116,16 @@ function Login() {
               multiWallet,
             }),
           )
+          if (multiWallet && shouldResetMultiWalletSelectionOnLoginError(err)) {
+            setSelectedWallet(null)
+            setLoginAuthError(null)
+            form.reset()
+          }
         },
       },
     )
   }
 
-  // Wallet list failed to load — can't determine auth mode
   if (walletsError) {
     return (
       <AuthLayout>
@@ -145,7 +139,6 @@ function Login() {
     )
   }
 
-  // Multi-wallet: wallet selection step
   if (multiWallet && selectedWallet === null) {
     return (
       <AuthLayout>
@@ -195,7 +188,6 @@ function Login() {
       ? wallets[0].address
       : null
 
-  // Single-wallet or after wallet selection: passphrase step
   return (
     <AuthLayout>
       <Form {...form}>
@@ -309,5 +301,3 @@ function Login() {
     </AuthLayout>
   )
 }
-=======
->>>>>>> 3eaf47b3 (Fix login recover-seed routing with login layout outlet)
