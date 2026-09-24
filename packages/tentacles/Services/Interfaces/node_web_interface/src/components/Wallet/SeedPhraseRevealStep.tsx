@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
+import {
+  SeedPhraseWordGrid,
+  SeedPhraseWordGridCell,
+} from "@/components/Wallet/SeedPhraseWordGrid"
 import { splitSeedPhraseWords } from "@/lib/seed-onboarding"
 import { useConfirmWalletSecretCopy } from "@/lib/use-confirm-wallet-secret-copy"
 
@@ -49,17 +53,13 @@ export function SeedPhraseRevealStep({
             Anyone with these words can control your wallet. Never share them online.
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <SeedPhraseWordGrid>
           {words.map((word, index) => (
-            <div
-              key={`${index}-${word}`}
-              className="rounded-md border bg-muted px-3 py-2 text-sm font-mono"
-            >
-              <span className="text-muted-foreground mr-2">{index + 1}.</span>
+            <SeedPhraseWordGridCell key={`${index}-${word}`} index={index}>
               {word}
-            </div>
+            </SeedPhraseWordGridCell>
           ))}
-        </div>
+        </SeedPhraseWordGrid>
         <Button type="button" variant="outline" onClick={copyPhrase}>
           <Copy className="size-4" />
           Copy seed phrase

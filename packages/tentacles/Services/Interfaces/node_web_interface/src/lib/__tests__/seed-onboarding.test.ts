@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   areSeedQuizAnswersCorrect,
   clearSetupGenerateFlow,
+  getSeedQuizBlurResult,
   getSeedQuizWrongIndices,
   isSetupGenerateFlow,
   markSetupGenerateFlow,
@@ -84,6 +85,21 @@ describe("getSeedQuizWrongIndices", () => {
         2: "three",
       }),
     ).toEqual([1])
+  })
+})
+
+describe("getSeedQuizBlurResult", () => {
+  it("treats empty or whitespace as neutral", () => {
+    expect(getSeedQuizBlurResult("abandon", "")).toBe("neutral")
+    expect(getSeedQuizBlurResult("abandon", "   ")).toBe("neutral")
+  })
+
+  it("accepts a matching answer case-insensitively", () => {
+    expect(getSeedQuizBlurResult("abandon", " ABANDON ")).toBe("correct")
+  })
+
+  it("marks a mismatch as wrong", () => {
+    expect(getSeedQuizBlurResult("abandon", "ability")).toBe("wrong")
   })
 })
 

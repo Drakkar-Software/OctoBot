@@ -24,6 +24,26 @@ export function splitSeedPhraseWords(seed: string): string[] {
   return seed.trim().split(/\s+/).filter(Boolean)
 }
 
+/** Longest token length in the BIP39 English wordlist (2048 words). */
+export const BIP39_ENGLISH_MAX_WORD_LENGTH = 8
+
+export type SeedQuizBlurResult = "neutral" | "wrong" | "correct"
+
+/** Client-only blur validation for one quiz cell (trim + lowercase). */
+export function getSeedQuizBlurResult(
+  expectedWord: string,
+  answer: string,
+): SeedQuizBlurResult {
+  const trimmed = answer.trim()
+  if (!trimmed) {
+    return "neutral"
+  }
+  if (expectedWord.toLowerCase() === trimmed.toLowerCase()) {
+    return "correct"
+  }
+  return "wrong"
+}
+
 /** Pick `count` unique word indices in [0, wordCount). */
 export function pickSeedQuizPositions(wordCount: number, count = 3): number[] {
   if (wordCount < count) {
