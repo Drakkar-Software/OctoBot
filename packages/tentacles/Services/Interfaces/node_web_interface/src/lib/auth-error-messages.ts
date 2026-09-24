@@ -234,16 +234,3 @@ export function resolveLoginFormAuthError(
   )
 }
 
-export function shouldResetMultiWalletSelectionOnLoginError(
-  error: unknown,
-): boolean {
-  if (!(error instanceof ApiError) || error.status !== 401) {
-    return false
-  }
-  const code = parseAuthErrorCodeFromApiError(error)
-  return (
-    code === API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE ||
-    code === API_AUTH_ERROR_CODES.AUTH_WALLET_NOT_FOUND ||
-    code === null
-  )
-}
