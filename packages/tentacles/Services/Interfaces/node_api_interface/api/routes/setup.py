@@ -231,44 +231,24 @@ def recover_wallet_from_seed(
         )
     except wallet_backend.WalletNotFoundError:
         rate_limiter.record_failure(client_ip, body.address)
-        if rate_limiter.is_rate_limited(client_ip, body.address):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many recovery attempts. Try again later.",
-            )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Wallet not found",
         )
     except wallet_backend.WalletProofMismatchError as err:
         rate_limiter.record_failure(client_ip, body.address)
-        if rate_limiter.is_rate_limited(client_ip, body.address):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many recovery attempts. Try again later.",
-            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(err),
         )
     except wallet_backend.InvalidPrivateKeyError as err:
         rate_limiter.record_failure(client_ip, body.address)
-        if rate_limiter.is_rate_limited(client_ip, body.address):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many recovery attempts. Try again later.",
-            )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
         )
     except wallet_backend.PassphraseTooShortError as err:
         rate_limiter.record_failure(client_ip, body.address)
-        if rate_limiter.is_rate_limited(client_ip, body.address):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many recovery attempts. Try again later.",
-            )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
@@ -280,11 +260,6 @@ def recover_wallet_from_seed(
         )
     except wallet_backend.WalletError as err:
         rate_limiter.record_failure(client_ip, body.address)
-        if rate_limiter.is_rate_limited(client_ip, body.address):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many recovery attempts. Try again later.",
-            )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(err),
