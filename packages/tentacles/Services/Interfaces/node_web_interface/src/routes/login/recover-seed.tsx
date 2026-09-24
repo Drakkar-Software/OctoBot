@@ -154,21 +154,12 @@ function RecoverPassphrase() {
         >
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-bold">Reset wallet passphrase</h1>
-            <p className="text-sm text-muted-foreground">
-              Prove you own this wallet, then choose a new passphrase.
-            </p>
             <p
               className="text-xs font-mono text-muted-foreground"
               data-testid="recover-wallet-address"
             >
               {truncateAddress(address)}
             </p>
-            <Link
-              to="/login"
-              className="text-xs text-muted-foreground underline underline-offset-2"
-            >
-              Back to unlock
-            </Link>
           </div>
 
           <div
@@ -224,7 +215,7 @@ function RecoverPassphrase() {
                       <textarea
                         data-testid="recover-seed-input"
                         className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        placeholder="Enter your 12 or 24 word seed phrase"
+                        placeholder="To prove you own the wallet, enter your 12 or 24 word seed phrase"
                         {...field}
                         onChange={(event) => {
                           setSubmitError(null)
@@ -248,7 +239,7 @@ function RecoverPassphrase() {
                       <textarea
                         data-testid="recover-hex-input"
                         className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        placeholder="64-character hex private key"
+                        placeholder="To prove you own the wallet, enter your 64-character hex private key"
                         {...field}
                         onChange={(event) => {
                           setSubmitError(null)
@@ -317,6 +308,16 @@ function RecoverPassphrase() {
           >
             Reset passphrase
           </LoadingButton>
+
+          <p className="text-center">
+            <Link
+              to="/login"
+              className="text-xs text-muted-foreground underline underline-offset-2"
+              data-testid="recover-back-to-unlock-link"
+            >
+              Back to unlock
+            </Link>
+          </p>
         </form>
       </Form>
     </AuthLayout>
