@@ -36,14 +36,23 @@ export function pickSeedQuizPositions(wordCount: number, count = 3): number[] {
   return [...positions].sort((a, b) => a - b)
 }
 
+/** Word indices in `positions` whose answers do not match (trim + lowercase). */
+export function getSeedQuizWrongIndices(
+  words: string[],
+  positions: number[],
+  answers: Record<number, string>,
+): number[] {
+  return positions.filter((index) => {
+    const expected = words[index]?.toLowerCase()
+    const given = answers[index]?.trim().toLowerCase()
+    return !expected || !given || expected !== given
+  })
+}
+
 export function areSeedQuizAnswersCorrect(
   words: string[],
   positions: number[],
   answers: Record<number, string>,
 ): boolean {
-  return positions.every((index) => {
-    const expected = words[index]?.toLowerCase()
-    const given = answers[index]?.trim().toLowerCase()
-    return Boolean(expected && given && expected === given)
-  })
+  return getSeedQuizWrongIndices(words, positions, answers).length === 0
 }

@@ -29,7 +29,7 @@ export const Route = createFileRoute("/setup/connect")({
 function SetupConnect() {
   const navigate = useNavigate()
   const totalSteps = getSetupStepTotal()
-  const stepNumber = totalSteps === 5 ? 4 : 2
+  const stepNumber = totalSteps - 1
 
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
