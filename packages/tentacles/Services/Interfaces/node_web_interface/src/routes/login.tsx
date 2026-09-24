@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -30,6 +30,7 @@ import {
   resolveLoginAuthPresentation,
 } from "@/lib/auth-error-messages"
 import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
+import { consumeLoginPassphraseRecoverySuccessHint } from "@/lib/login-passphrase-recovery-hint"
 import { consumeLoginSessionClearedHint } from "@/lib/login-session-hint"
 import { truncateAddress } from "@/lib/wallet-utils"
 
@@ -55,12 +56,16 @@ function Login() {
   const { loginMutation } = useAuth()
   const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
   const [sessionClearedBanner, setSessionClearedBanner] = useState(false)
+  const [passphraseRecoveryBanner, setPassphraseRecoveryBanner] = useState(false)
   const [loginAuthError, setLoginAuthError] =
     useState<AuthErrorPresentation | null>(null)
 
   useEffect(() => {
     if (consumeLoginSessionClearedHint()) {
       setSessionClearedBanner(true)
+    }
+    if (consumeLoginPassphraseRecoverySuccessHint()) {
+      setPassphraseRecoveryBanner(true)
     }
   }, [])
 
@@ -185,6 +190,12 @@ function Login() {
     )
   }
 
+  const unlockWalletAddress = multiWallet
+    ? selectedWallet?.address
+    : wallets.length === 1
+      ? wallets[0].address
+      : null
+
   // Single-wallet or after wallet selection: passphrase step
   return (
     <AuthLayout>
@@ -224,6 +235,19 @@ function Login() {
               </>
             )}
           </div>
+
+          {passphraseRecoveryBanner ? (
+            <div
+              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+              data-testid="login-passphrase-recovery-success-banner"
+              role="status"
+            >
+              <p className="font-medium text-foreground">
+                Passphrase updated
+              </p>
+              <p>Unlock with your new passphrase.</p>
+            </div>
+          ) : null}
 
           {sessionClearedBanner ? (
             <div
@@ -267,6 +291,19 @@ function Login() {
             <LoadingButton type="submit" loading={loginMutation.isPending}>
               Unlock
             </LoadingButton>
+
+            {unlockWalletAddress ? (
+              <p className="text-center text-sm text-muted-foreground">
+                <Link
+                  to="/login/recover-seed"
+                  search={{ address: unlockWalletAddress }}
+                  className="underline underline-offset-2"
+                  data-testid="login-forgot-passphrase-link"
+                >
+                  Forgot passphrase?
+                </Link>
+              </p>
+            ) : null}
           </div>
         </form>
       </Form>

@@ -34,6 +34,8 @@ from octobot.community.wallet_backend.errors import (
     WalletAlreadyExistsError,
     WalletError,
     WalletNotFoundError,
+    WalletProofMismatchError,
+    WalletStorageReadOnlyError,
 )
 from octobot.community.wallet_backend.wallet_storage import (
     WalletStorage,
@@ -323,3 +325,72 @@ class WalletBackend:
     def get_wallet_name(self, address: str) -> typing.Optional[str]:
         entry = self._find_wallet_entry(address)
         return entry.name if entry else None
+
+    def recover_passphrase_from_ownership_proof(
+        self,
+        address: str,
+        new_passphrase: str,
+        seed: typing.Optional[str] = None,
+        private_key: typing.Optional[str] = None,
+    ) -> None:
+        """Replace passphrase_hash after proving ownership via BIP39 seed or hex private key."""
+        if len(new_passphrase) < 8:
+            raise PassphraseTooShortError("Passphrase must be at least 8 characters")
+
+        seed_value = seed.strip() if seed else ""
+        key_value = private_key.strip() if private_key else ""
+        if bool(seed_value) == bool(key_value):
+            raise InvalidPrivateKeyError(
+                "Provide exactly one of seed phrase or private key"
+            )
+
+        normalized_target = address.lower()
+        if self._find_wallet_entry(address) is None:
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="recover_passphrase", error=wallet_error)
+            raise wallet_error
+
+        try:
+            if seed_value:
+                derived = sync_chain.wallet_from_mnemonic(seed_value)
+            else:
+                derived_address = sync_chain.address_from_evm_key(key_value)
+                derived = sync_chain.Wallet(private_key=key_value, address=derived_address)
+        except Exception as err:
+            raise InvalidPrivateKeyError("Invalid seed phrase or private key") from err
+
+        if derived.address.lower() != normalized_target:
+            raise WalletProofMismatchError(
+                "Seed phrase or private key does not match this wallet"
+            )
+
+        new_hash = _hash_passphrase(new_passphrase)
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            updated: list[WalletEntry] = []
+            found = False
+            for entry in node_wallets:
+                if entry.address == normalized_target:
+                    found = True
+                    updated.append(
+                        WalletEntry(
+                            address=entry.address,
+                            name=entry.name,
+                            is_admin=entry.is_admin,
+                            private_key=entry.private_key,
+                            passphrase_hash=new_hash,
+                            seed=entry.seed,
+                        )
+                    )
+                else:
+                    updated.append(entry)
+            if not found:
+                wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+                _record_wallet_operation_failure(operation="recover_passphrase", error=wallet_error)
+                raise wallet_error
+            try:
+                self._save_node_wallets_list(updated)
+            except NotImplementedError as err:
+                raise WalletStorageReadOnlyError(
+                    "Wallet storage is read-only; passphrase cannot be changed on this node"
+                ) from err

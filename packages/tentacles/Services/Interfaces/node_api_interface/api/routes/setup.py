@@ -17,7 +17,7 @@
 import typing
 
 import pydantic
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasicCredentials
 
 import octobot_node.config as node_config
@@ -33,6 +33,10 @@ try:
 except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
     from tentacles.Services.Interfaces.node_api_interface.core import network
+
+from octobot.community.wallet_backend.recover_passphrase_rate_limit import (
+    get_recover_passphrase_rate_limiter,
+)
 
 router = APIRouter(tags=["setup"])
 
@@ -64,6 +68,23 @@ class LocalNetworkAddress(pydantic.BaseModel):
 
 class VPNNetworkAddress(pydantic.BaseModel):
     vpn_network_ip: typing.Optional[str] = None
+
+
+class RecoverWalletFromSeedBody(pydantic.BaseModel):
+    address: str
+    new_passphrase: str
+    seed: typing.Optional[str] = None
+    private_key: typing.Optional[str] = None
+
+
+class RecoverWalletFromSeedResult(pydantic.BaseModel):
+    success: bool = True
+
+
+def _client_ip(request: Request) -> str:
+    if request.client is not None:
+        return request.client.host
+    return "unknown"
 
 
 @router.get("/setup/status", response_model=SetupStatus)
@@ -181,3 +202,92 @@ def export_wallet(
             detail="Invalid passphrase",
         )
     return WalletExport(address=entry.address, private_key=entry.private_key, seed=entry.seed or None)
+
+
+@router.post("/setup/wallet/recover-from-seed", response_model=RecoverWalletFromSeedResult)
+def recover_wallet_from_seed(
+    body: RecoverWalletFromSeedBody,
+    request: Request,
+) -> RecoverWalletFromSeedResult:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    client_ip = _client_ip(request)
+    rate_limiter = get_recover_passphrase_rate_limiter()
+    if rate_limiter.is_rate_limited(client_ip, body.address):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many recovery attempts. Try again later.",
+        )
+    try:
+        auth.recover_passphrase_from_ownership_proof(
+            address=body.address,
+            new_passphrase=body.new_passphrase,
+            seed=body.seed,
+            private_key=body.private_key,
+        )
+    except wallet_backend.WalletNotFoundError:
+        rate_limiter.record_failure(client_ip, body.address)
+        if rate_limiter.is_rate_limited(client_ip, body.address):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many recovery attempts. Try again later.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Wallet not found",
+        )
+    except wallet_backend.WalletProofMismatchError as err:
+        rate_limiter.record_failure(client_ip, body.address)
+        if rate_limiter.is_rate_limited(client_ip, body.address):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many recovery attempts. Try again later.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(err),
+        )
+    except wallet_backend.InvalidPrivateKeyError as err:
+        rate_limiter.record_failure(client_ip, body.address)
+        if rate_limiter.is_rate_limited(client_ip, body.address):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many recovery attempts. Try again later.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        )
+    except wallet_backend.PassphraseTooShortError as err:
+        rate_limiter.record_failure(client_ip, body.address)
+        if rate_limiter.is_rate_limited(client_ip, body.address):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many recovery attempts. Try again later.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        )
+    except wallet_backend.WalletStorageReadOnlyError as err:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(err),
+        )
+    except wallet_backend.WalletError as err:
+        rate_limiter.record_failure(client_ip, body.address)
+        if rate_limiter.is_rate_limited(client_ip, body.address):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many recovery attempts. Try again later.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        )
+    rate_limiter.record_success(client_ip, body.address)
+    return RecoverWalletFromSeedResult()
