@@ -15,9 +15,9 @@ export function SeedPhraseWordGridSlot({
   footer?: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      {cell}
-      <div className="min-h-5 text-sm leading-tight">
+    <div className="flex h-[4.25rem] flex-col justify-between gap-1">
+      <div className="shrink-0">{cell}</div>
+      <div className="min-h-5 shrink-0 text-sm leading-tight">
         {footer ?? (
           <span className="invisible select-none" aria-hidden="true">
             .
@@ -59,4 +59,4 @@ export function SeedPhraseWordGridCell({
 
 /** Input styled to sit inside a word cell without changing cell height. */
 export const seedPhraseQuizInputClassName =
-  "h-8 w-full min-w-0 rounded-none border-0 bg-transparent p-0 text-sm font-mono shadow-none focus-visible:border-0 focus-visible:ring-0 aria-invalid:border-0 aria-invalid:ring-0"
+  "h-7 w-full min-w-0 rounded-none border-0 bg-transparent p-0 text-sm font-mono leading-none shadow-none focus-visible:border-0 focus-visible:ring-0 aria-invalid:border-0 aria-invalid:ring-0"
