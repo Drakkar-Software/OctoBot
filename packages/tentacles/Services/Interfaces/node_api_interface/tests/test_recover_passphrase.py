@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
+from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.recover_passphrase import (
     get_recover_passphrase_rate_limiter,
 )
 

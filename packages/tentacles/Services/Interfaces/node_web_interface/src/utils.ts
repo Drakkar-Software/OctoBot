@@ -20,6 +20,16 @@ export function extractErrorMessage(err: ApiError): string {
   if (typeof errDetail === "string") {
     return errDetail
   }
+  if (typeof err.body === "string" && err.body.trim().length > 0) {
+    return err.body
+  }
+  if (
+    typeof err.message === "string" &&
+    err.message.trim().length > 0 &&
+    err.message !== err.statusText
+  ) {
+    return err.message
+  }
   return "Something went wrong."
 }
 

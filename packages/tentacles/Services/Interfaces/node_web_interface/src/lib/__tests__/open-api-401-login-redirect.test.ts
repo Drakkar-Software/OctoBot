@@ -50,6 +50,15 @@ describe("shouldRedirectToLoginOn401", () => {
     ).toBe(false)
   })
 
+  it("returns false for 401 on recover-seed login child route", () => {
+    expect(
+      shouldRedirectToLoginOn401(create401Response(), {
+        pathname: "/app/login/recover-seed",
+        isRedirectingOnAuthFailure: false,
+      }),
+    ).toBe(false)
+  })
+
   it("returns false when already redirecting", () => {
     expect(
       shouldRedirectToLoginOn401(create401Response(), {

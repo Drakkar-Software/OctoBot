@@ -29,21 +29,14 @@ import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.recording_context as journal_recording_context
 
 try:
-    from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
-    from core import network
-except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
     from tentacles.Services.Interfaces.node_api_interface.core import network
-
-try:
-    from api.recover_passphrase_rate_limit import (  # type: ignore[no-redef]
-        RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
-        get_recover_passphrase_rate_limiter,
-        recover_passphrase_rate_dimensions,
-    )
-    from core.http_rate_limit import http_failure_rate_limited  # type: ignore[no-redef]
 except ImportError:
-    from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
+
+    from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
+    from core import network
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.recover_passphrase import (
         RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
         get_recover_passphrase_rate_limiter,
         recover_passphrase_rate_dimensions,
@@ -51,6 +44,13 @@ except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.core.http_rate_limit import (
         http_failure_rate_limited,
     )
+except ImportError:
+    from api.rate_limits.recover_passphrase import (  # type: ignore[no-redef]
+        RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
+        get_recover_passphrase_rate_limiter,
+        recover_passphrase_rate_dimensions,
+    )
+    from core.http_rate_limit import http_failure_rate_limited  # type: ignore[no-redef]
 
 router = APIRouter(tags=["setup"])
 
@@ -166,7 +166,7 @@ def init_setup(body: SetupInit) -> SetupResult:
         )
     except wallet_backend.WalletError as err:
         journal_recording_context.raise_wallet_setup_http_error(
-            http_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            http_status=status.HTTP_422_UNPROCESSABLE_CONTENT,
             failure_reason=journal_enums.WalletSetupFailureReason.WALLET_ERROR,
             setup_method=setup_method,
             detail=str(err),
@@ -200,7 +200,7 @@ def export_wallet(
     target_passphrase = credentials.password if is_own_wallet else passphrase
     if not target_passphrase:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Passphrase required",
         )
     try:
@@ -240,24 +240,14 @@ def _recover_wallet_from_seed_http_errors(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=str(err),
             )
-        except wallet_backend.InvalidPrivateKeyError as err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(err),
-            )
-        except wallet_backend.PassphraseTooShortError as err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(err),
-            )
         except wallet_backend.WalletStorageReadOnlyError as err:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=str(err),
             )
-        except wallet_backend.WalletError as err:
+        except (wallet_backend.InvalidPrivateKeyError, wallet_backend.PassphraseTooShortError, wallet_backend.WalletError) as err:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=str(err),
             )
 

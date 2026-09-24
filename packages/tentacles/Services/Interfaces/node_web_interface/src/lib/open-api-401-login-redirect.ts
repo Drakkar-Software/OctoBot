@@ -19,7 +19,10 @@ export function shouldRedirectToLoginOn401(
   if (options.isRedirectingOnAuthFailure) {
     return false
   }
-  if (options.pathname.endsWith("/login")) {
+  if (
+    options.pathname === "/app/login" ||
+    options.pathname.startsWith("/app/login/")
+  ) {
     return false
   }
   if (shouldSkipLoginRedirectOn401()) {

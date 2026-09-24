@@ -117,7 +117,7 @@ def create_wallet(body: CreateWalletBody, current_user: CurrentUser) -> WalletIn
         ) from err
     except wallet_backend.WalletError as err:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(err),
         ) from err
     return WalletInfo(address=wallet.address, name=body.name or None, is_admin=False)

@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type ApiError } from "@/client"
+import { SetupService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -20,10 +20,10 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { isLoggedIn } from "@/hooks/useAuth"
 import { markLoginPassphraseRecoverySuccess } from "@/lib/login-passphrase-recovery-hint"
-import { recoverWalletFromSeed } from "@/lib/passphrase-recovery-api"
+import { resolveRecoverSeedSubmitError } from "@/lib/passphrase-recovery-errors"
 import type { PassphraseRecoveryProofMode } from "@/lib/passphrase-recovery-validation"
+import { cryptoSecretTextareaProps } from "@/lib/crypto-secret-input"
 import { truncateAddress } from "@/lib/wallet-utils"
-import { extractErrorMessage } from "@/utils"
 
 const searchSchema = z.object({
   address: z.string().min(1),
@@ -112,35 +112,21 @@ function RecoverPassphrase() {
     setSubmitError(null)
     setUnavailable(false)
     try {
-      await recoverWalletFromSeed({
-        address: address.trim(),
-        new_passphrase: data.newPassphrase,
-        seed: proofMode === "seed" ? data.seed?.trim() : null,
-        private_key: proofMode === "hex" ? data.privateKey?.trim() : null,
+      await SetupService.recoverWalletFromSeedRoute({
+        requestBody: {
+          address: address.trim(),
+          new_passphrase: data.newPassphrase,
+          seed: proofMode === "seed" ? data.seed?.trim() : null,
+          private_key: proofMode === "hex" ? data.privateKey?.trim() : null,
+        },
       })
       markLoginPassphraseRecoverySuccess()
       await navigate({ to: "/login" })
     } catch (error) {
-      const apiError = error as ApiError
-      if (apiError?.status === 503) {
-        setUnavailable(true)
-        setSubmitError(
-          extractErrorMessage(apiError) ||
-            "Passphrase recovery is not available on this node.",
-        )
-        return
-      }
-      if (apiError?.status === 429) {
-        setSubmitError("Too many attempts. Wait a few minutes, then try again.")
-        return
-      }
-      if (apiError?.status === 401) {
-        setSubmitError(
-          "That seed phrase or private key does not match this wallet.",
-        )
-        return
-      }
-      setSubmitError(extractErrorMessage(apiError))
+      const { message, unavailable: recoveryUnavailable } =
+        resolveRecoverSeedSubmitError(error)
+      setUnavailable(recoveryUnavailable)
+      setSubmitError(message)
     }
   }
 
@@ -216,6 +202,7 @@ function RecoverPassphrase() {
                         data-testid="recover-seed-input"
                         className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder="To prove you own the wallet, enter your 12 or 24 word seed phrase"
+                        {...cryptoSecretTextareaProps()}
                         {...field}
                         onChange={(event) => {
                           setSubmitError(null)
@@ -240,6 +227,7 @@ function RecoverPassphrase() {
                         data-testid="recover-hex-input"
                         className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder="To prove you own the wallet, enter your 64-character hex private key"
+                        {...cryptoSecretTextareaProps()}
                         {...field}
                         onChange={(event) => {
                           setSubmitError(null)

@@ -22,11 +22,12 @@ import octobot.community.wallet_backend as wallet_backend
 import octobot_commons.in_process_rate_limit as in_process_rate_limit
 
 try:
-    from core.http_rate_limit import HTTPRateLimiter  # type: ignore[no-redef]
-except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.core.http_rate_limit import (
         HTTPRateLimiter,
     )
+except ImportError:
+    from core.http_rate_limit import HTTPRateLimiter  # type: ignore[no-redef]
+
 
 _RECOVER_CLIENT_IP_POLICY = in_process_rate_limit.FailureWindowPolicy(
     name="client_ip",
