@@ -10,6 +10,7 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import {
   SeedPhraseWordGrid,
   SeedPhraseWordGridCell,
+  SeedPhraseWordGridSlot,
 } from "@/components/Wallet/SeedPhraseWordGrid"
 import { splitSeedPhraseWords } from "@/lib/seed-onboarding"
 import { useConfirmWalletSecretCopy } from "@/lib/use-confirm-wallet-secret-copy"
@@ -55,9 +56,14 @@ export function SeedPhraseRevealStep({
         </div>
         <SeedPhraseWordGrid>
           {words.map((word, index) => (
-            <SeedPhraseWordGridCell key={`${index}-${word}`} index={index}>
-              {word}
-            </SeedPhraseWordGridCell>
+            <SeedPhraseWordGridSlot
+              key={`${index}-${word}`}
+              cell={
+                <SeedPhraseWordGridCell index={index}>
+                  <span className="truncate">{word}</span>
+                </SeedPhraseWordGridCell>
+              }
+            />
           ))}
         </SeedPhraseWordGrid>
         <Button type="button" variant="outline" onClick={copyPhrase}>

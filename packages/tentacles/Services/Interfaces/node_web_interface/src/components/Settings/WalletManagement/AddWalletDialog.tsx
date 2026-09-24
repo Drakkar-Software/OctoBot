@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 import { fetchSeedAfterWalletCreate } from "@/lib/wallet-seed-after-create"
 
 type DialogPhase = "form" | "seed-onboarding"
@@ -123,7 +124,14 @@ export function AddWalletDialog({ onSuccess }: { onSuccess: () => void }) {
           Add wallet
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className={cn(
+          "max-h-[90vh] overflow-y-auto",
+          phase === "seed-onboarding" && createdSeed
+            ? "sm:max-w-2xl"
+            : "sm:max-w-lg",
+        )}
+      >
         {phase === "seed-onboarding" && createdSeed ? (
           <WalletSeedOnboardingFlow
             seed={createdSeed}
