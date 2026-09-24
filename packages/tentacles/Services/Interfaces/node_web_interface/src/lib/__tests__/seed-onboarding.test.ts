@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   areSeedQuizAnswersCorrect,
   clearSetupGenerateFlow,
+  getSeedQuizWrongIndices,
   isSetupGenerateFlow,
   markSetupGenerateFlow,
   pickSeedQuizPositions,
@@ -63,6 +64,26 @@ describe("pickSeedQuizPositions", () => {
     expect(new Set(positions).size).toBe(3)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     vi.restoreAllMocks()
+  })
+})
+
+describe("getSeedQuizWrongIndices", () => {
+  const words = ["one", "two", "three", "four"]
+
+  it("returns no indices when every answer matches (trim + lowercase)", () => {
+    expect(
+      getSeedQuizWrongIndices(words, [0, 2], { 0: " ONE ", 2: "THREE" }),
+    ).toEqual([])
+  })
+
+  it("returns only mismatched positions", () => {
+    expect(
+      getSeedQuizWrongIndices(words, [0, 1, 2], {
+        0: "one",
+        1: "wrong",
+        2: "three",
+      }),
+    ).toEqual([1])
   })
 })
 

@@ -27,7 +27,7 @@ function SetupFirstBot() {
   }
 
   const totalSteps = getSetupStepTotal()
-  const stepNumber = totalSteps === 5 ? 5 : 3
+  const stepNumber = totalSteps
 
   return (
     <div className="flex min-h-svh items-center justify-center p-6">

@@ -24,16 +24,11 @@ export function SeedPhraseRevealStep({
   onContinue,
 }: SeedPhraseRevealStepProps) {
   const words = splitSeedPhraseWords(seed)
-  const [copyCount, setCopyCount] = useState(0)
   const [savedOffline, setSavedOffline] = useState(false)
 
-  const walletSecretCopy = useConfirmWalletSecretCopy({
-    onCopied: () => {
-      setCopyCount((n) => n + 1)
-    },
-  })
+  const walletSecretCopy = useConfirmWalletSecretCopy()
 
-  const canContinue = copyCount >= 1 && savedOffline
+  const canContinue = savedOffline
 
   const copyPhrase = () => {
     walletSecretCopy.requestCopy(seed, "seed_phrase")
