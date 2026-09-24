@@ -10,7 +10,6 @@ import {
   getAuthErrorPresentation,
   resolveLoginAuthPresentation,
   resolveLoginFormAuthError,
-  shouldResetMultiWalletSelectionOnLoginError,
   shouldSuppressLoginErrorToast,
 } from "@/lib/auth-error-messages"
 
@@ -215,25 +214,6 @@ describe("resolveLoginFormAuthError", () => {
     const message = resolveLoginFormAuthError(error, "pw")
     expect(message).toContain("Wallet not found here")
     expect(message).toContain("same node address")
-  })
-})
-
-describe("shouldResetMultiWalletSelectionOnLoginError", () => {
-  it("returns true for invalid passphrase", () => {
-    const error = new ApiError(
-      { method: "GET", url: "/login/test" },
-      {
-        url: "/login/test",
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        body: {
-          detail: { code: API_AUTH_ERROR_CODES.AUTH_INVALID_PASSPHRASE },
-        },
-      },
-      "Unauthorized",
-    )
-    expect(shouldResetMultiWalletSelectionOnLoginError(error)).toBe(true)
   })
 })
 
