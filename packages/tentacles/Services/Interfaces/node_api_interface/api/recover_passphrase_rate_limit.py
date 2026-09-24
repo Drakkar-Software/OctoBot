@@ -14,60 +14,60 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import typing
+
+from fastapi import Request
+
+import octobot.community.wallet_backend as wallet_backend
+import octobot_commons.in_process_rate_limit as in_process_rate_limit
+
 try:
-    from core.in_process_rate_limit import (  # type: ignore[no-redef]
-        FailureWindowPolicy,
-        InProcessFailureRateLimiter,
-    )
+    from core.http_rate_limit import HTTPRateLimiter  # type: ignore[no-redef]
 except ImportError:
-    from tentacles.Services.Interfaces.node_api_interface.core.in_process_rate_limit import (
-        FailureWindowPolicy,
-        InProcessFailureRateLimiter,
+    from tentacles.Services.Interfaces.node_api_interface.core.http_rate_limit import (
+        HTTPRateLimiter,
     )
 
-_RECOVER_CLIENT_IP_POLICY = FailureWindowPolicy(
+_RECOVER_CLIENT_IP_POLICY = in_process_rate_limit.FailureWindowPolicy(
     name="client_ip",
     max_failures=5,
     window_seconds=15 * 60,
 )
-_RECOVER_ADDRESS_POLICY = FailureWindowPolicy(
+_RECOVER_ADDRESS_POLICY = in_process_rate_limit.FailureWindowPolicy(
     name="address",
     max_failures=10,
     window_seconds=60 * 60,
     normalize_key=str.lower,
 )
 
+RECOVER_PASSPHRASE_RATE_LIMITED_DETAIL = (
+    "Too many recovery attempts. Try again later."
+)
 
-def _build_recover_passphrase_limiter() -> InProcessFailureRateLimiter:
-    return InProcessFailureRateLimiter(
-        (_RECOVER_CLIENT_IP_POLICY, _RECOVER_ADDRESS_POLICY),
-    )
+RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS: tuple[type[Exception], ...] = (
+    wallet_backend.WalletNotFoundError,
+    wallet_backend.WalletProofMismatchError,
+    wallet_backend.InvalidPrivateKeyError,
+    wallet_backend.PassphraseTooShortError,
+    wallet_backend.WalletError,
+)
 
-
-class RecoverPassphraseRateLimiter:
-    """Passphrase recovery budgets wired to the generic in-process limiter."""
-
-    def __init__(
-        self,
-        limiter: InProcessFailureRateLimiter | None = None,
-    ) -> None:
-        self._limiter = limiter or _build_recover_passphrase_limiter()
-
-    def reset_all(self) -> None:
-        self._limiter.reset_all()
-
-    def is_rate_limited(self, client_ip: str, address: str) -> bool:
-        return self._limiter.is_rate_limited(client_ip=client_ip, address=address)
-
-    def record_failure(self, client_ip: str, address: str) -> None:
-        self._limiter.record_failure(client_ip=client_ip, address=address)
-
-    def record_success(self, client_ip: str, address: str) -> None:
-        self._limiter.record_success(client_ip=client_ip, address=address)
+_recover_passphrase_rate_limiter = HTTPRateLimiter(
+    (_RECOVER_CLIENT_IP_POLICY, _RECOVER_ADDRESS_POLICY),
+    rate_limited_detail=RECOVER_PASSPHRASE_RATE_LIMITED_DETAIL,
+)
 
 
-_recover_passphrase_rate_limiter = RecoverPassphraseRateLimiter()
-
-
-def get_recover_passphrase_rate_limiter() -> RecoverPassphraseRateLimiter:
+def get_recover_passphrase_rate_limiter() -> HTTPRateLimiter:
     return _recover_passphrase_rate_limiter
+
+
+def recover_passphrase_rate_dimensions(
+    body: typing.Any,
+    request: Request,
+) -> dict[str, str]:
+    if request.client is not None:
+        client_ip = request.client.host
+    else:
+        client_ip = "unknown"
+    return {"client_ip": client_ip, "address": body.address}

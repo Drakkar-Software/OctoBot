@@ -1,18 +1,18 @@
-#  This file is part of OctoBot Node (https://github.com/Drakkar-Software/OctoBot-Node)
-#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+#  Drakkar-Software OctoBot-Commons
+#  Copyright (c) Drakkar-Software, All rights reserved.
 #
-#  OctoBot is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
 #  version 3.0 of the License, or (at your option) any later version.
 #
-#  OctoBot is distributed in the hope that it will be useful,
+#  This library is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  General Public License for more details.
+#  Lesser General Public License for more details.
 #
-#  You should have received a copy of the GNU General Public
-#  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library.
 
 import dataclasses
 import threading
@@ -51,6 +51,7 @@ class InProcessFailureRateLimiter:
         }
 
     def reset_all(self) -> None:
+        """Clear all failure counters for every policy dimension."""
         with self._lock:
             for store in self._stores.values():
                 store.clear()
@@ -78,6 +79,7 @@ class InProcessFailureRateLimiter:
         return bucket.failure_count >= policy.max_failures
 
     def is_rate_limited(self, **dimensions: str) -> bool:
+        """Return True when any policy dimension has reached its failure budget."""
         now = time.monotonic()
         with self._lock:
             for policy in self._policies:
@@ -87,6 +89,7 @@ class InProcessFailureRateLimiter:
         return False
 
     def record_failure(self, **dimensions: str) -> None:
+        """Increment failure counts for all policy dimensions."""
         now = time.monotonic()
         with self._lock:
             for policy in self._policies:
@@ -102,6 +105,7 @@ class InProcessFailureRateLimiter:
                 bucket.failure_count += 1
 
     def record_success(self, **dimensions: str) -> None:
+        """Clear failure counters for the given dimension keys."""
         with self._lock:
             for policy in self._policies:
                 key = self._policy_value(policy, **dimensions)
