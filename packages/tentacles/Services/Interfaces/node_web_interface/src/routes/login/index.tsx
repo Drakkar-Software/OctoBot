@@ -31,7 +31,10 @@ import {
   shouldResetMultiWalletSelectionOnLoginError,
 } from "@/lib/auth-error-messages"
 import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
-import { consumeLoginPassphraseRecoverySuccessHint } from "@/lib/login-passphrase-recovery-hint"
+import {
+  consumeLoginPassphraseRecoverySuccessHint,
+  showLoginPassphraseRecoverySuccessToast,
+} from "@/lib/login-passphrase-recovery-hint"
 import { consumeLoginSessionClearedHint } from "@/lib/login-session-hint"
 import { truncateAddress } from "@/lib/wallet-utils"
 
@@ -49,7 +52,6 @@ function Login() {
   const { loginMutation } = useAuth()
   const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
   const [sessionClearedBanner, setSessionClearedBanner] = useState(false)
-  const [passphraseRecoveryBanner, setPassphraseRecoveryBanner] = useState(false)
   const [loginAuthError, setLoginAuthError] =
     useState<AuthErrorPresentation | null>(null)
 
@@ -58,7 +60,7 @@ function Login() {
       setSessionClearedBanner(true)
     }
     if (consumeLoginPassphraseRecoverySuccessHint()) {
-      setPassphraseRecoveryBanner(true)
+      showLoginPassphraseRecoverySuccessToast()
     }
   }, [])
 
@@ -226,19 +228,6 @@ function Login() {
               </>
             )}
           </div>
-
-          {passphraseRecoveryBanner ? (
-            <div
-              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
-              data-testid="login-passphrase-recovery-success-banner"
-              role="status"
-            >
-              <p className="font-medium text-foreground">
-                Passphrase updated
-              </p>
-              <p>Unlock with your new passphrase.</p>
-            </div>
-          ) : null}
 
           {sessionClearedBanner ? (
             <div
