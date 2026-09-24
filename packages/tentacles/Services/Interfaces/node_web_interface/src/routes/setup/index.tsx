@@ -186,7 +186,7 @@ function SetupWallet() {
 
   if (generatedSeed) {
     return (
-      <AuthLayout>
+      <AuthLayout wide>
         <WalletSeedOnboardingFlow
           seed={generatedSeed}
           revealStep={2}

@@ -4,10 +4,13 @@ import { SetupStepHeader } from "@/components/Setup/SetupStepHeader"
 import {
   SeedPhraseWordGrid,
   SeedPhraseWordGridCell,
+  SeedPhraseWordGridSlot,
+  seedPhraseQuizInputClassName,
 } from "@/components/Wallet/SeedPhraseWordGrid"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { cn } from "@/lib/utils"
 import {
   BIP39_ENGLISH_MAX_WORD_LENGTH,
   getSeedQuizBlurResult,
@@ -90,9 +93,14 @@ export function SeedPhraseQuizStep({
           const isQuizCell = quizPositionSet.has(index)
           if (!isQuizCell) {
             return (
-              <SeedPhraseWordGridCell key={`${index}-${word}`} index={index}>
-                {word}
-              </SeedPhraseWordGridCell>
+              <SeedPhraseWordGridSlot
+                key={`${index}-${word}`}
+                cell={
+                  <SeedPhraseWordGridCell index={index}>
+                    <span className="truncate">{word}</span>
+                  </SeedPhraseWordGridCell>
+                }
+              />
             )
           }
 
@@ -102,58 +110,70 @@ export function SeedPhraseQuizStep({
 
           if (isConfirmed) {
             return (
-              <SeedPhraseWordGridCell
+              <SeedPhraseWordGridSlot
                 key={`${index}-confirmed`}
-                index={index}
-                className="border-frost/40 bg-frost/10"
-              >
-                {word}
-              </SeedPhraseWordGridCell>
+                cell={
+                  <SeedPhraseWordGridCell
+                    index={index}
+                    className="border-frost/40 bg-frost/10"
+                  >
+                    <span className="truncate">{word}</span>
+                  </SeedPhraseWordGridCell>
+                }
+              />
             )
           }
 
           return (
-            <div key={`${index}-input`} className="flex flex-col gap-1">
-              <SeedPhraseWordGridCell index={index} className="py-1.5">
-                <Input
-                  id={`seed-quiz-${index}`}
-                  className="h-9 w-full min-w-0 rounded-md px-2 py-1 text-sm font-mono"
-                  style={{
-                    minWidth: `${BIP39_ENGLISH_MAX_WORD_LENGTH}ch`,
-                  }}
-                  autoComplete="off"
-                  aria-invalid={fieldWrong || undefined}
-                  aria-describedby={fieldWrong ? errorId : undefined}
-                  value={answers[index] ?? ""}
-                  onBlur={(event) => {
-                    applyBlurValidation(index, event.target.value)
-                  }}
-                  onChange={(event) => {
-                    const value = event.target.value
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [index]: value,
-                    }))
-                    if (wrongIndices.has(index)) {
-                      setWrongIndices((prev) => {
-                        const next = new Set(prev)
-                        next.delete(index)
-                        return next
-                      })
-                    }
-                  }}
-                />
-              </SeedPhraseWordGridCell>
-              {fieldWrong && (
-                <p
-                  id={errorId}
-                  className="text-sm text-destructive"
-                  role="alert"
+            <SeedPhraseWordGridSlot
+              key={`${index}-input`}
+              cell={
+                <SeedPhraseWordGridCell
+                  index={index}
+                  className={cn(fieldWrong && "border-neg ring-1 ring-neg/20")}
                 >
-                  Does not match
-                </p>
-              )}
-            </div>
+                  <Input
+                    id={`seed-quiz-${index}`}
+                    className={seedPhraseQuizInputClassName}
+                    style={{
+                      minWidth: `${BIP39_ENGLISH_MAX_WORD_LENGTH}ch`,
+                    }}
+                    autoComplete="off"
+                    aria-invalid={fieldWrong || undefined}
+                    aria-describedby={fieldWrong ? errorId : undefined}
+                    value={answers[index] ?? ""}
+                    onBlur={(event) => {
+                      applyBlurValidation(index, event.target.value)
+                    }}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [index]: value,
+                      }))
+                      if (wrongIndices.has(index)) {
+                        setWrongIndices((prev) => {
+                          const next = new Set(prev)
+                          next.delete(index)
+                          return next
+                        })
+                      }
+                    }}
+                  />
+                </SeedPhraseWordGridCell>
+              }
+              footer={
+                fieldWrong ? (
+                  <p
+                    id={errorId}
+                    className="text-destructive"
+                    role="alert"
+                  >
+                    Does not match
+                  </p>
+                ) : undefined
+              }
+            />
           )
         })}
       </SeedPhraseWordGrid>
