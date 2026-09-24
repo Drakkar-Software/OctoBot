@@ -45,8 +45,12 @@ export function SeedPhraseQuizStep({
 
   const allConfirmed = positions.every((index) => confirmedIndices.has(index))
 
-  const handleBlur = (index: number) => {
-    const result = getSeedQuizBlurResult(words[index] ?? "", answers[index] ?? "")
+  const applyBlurValidation = (index: number, rawValue: string) => {
+    const result = getSeedQuizBlurResult(words[index] ?? "", rawValue)
+    setAnswers((prev) => ({
+      ...prev,
+      [index]: rawValue,
+    }))
     setWrongIndices((prev) => {
       const next = new Set(prev)
       if (result === "wrong") {
@@ -121,7 +125,9 @@ export function SeedPhraseQuizStep({
                   aria-invalid={fieldWrong || undefined}
                   aria-describedby={fieldWrong ? errorId : undefined}
                   value={answers[index] ?? ""}
-                  onBlur={() => handleBlur(index)}
+                  onBlur={(event) => {
+                    applyBlurValidation(index, event.target.value)
+                  }}
                   onChange={(event) => {
                     const value = event.target.value
                     setAnswers((prev) => ({
