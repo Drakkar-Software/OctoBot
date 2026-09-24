@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { cn } from "@/lib/utils"
+import { cryptoSecretInputProps } from "@/lib/crypto-secret-input"
 import {
   BIP39_ENGLISH_MAX_WORD_LENGTH,
   getSeedQuizBlurResult,
@@ -138,7 +139,7 @@ export function SeedPhraseQuizStep({
                     style={{
                       minWidth: `${BIP39_ENGLISH_MAX_WORD_LENGTH}ch`,
                     }}
-                    autoComplete="off"
+                    {...cryptoSecretInputProps}
                     aria-invalid={fieldWrong || undefined}
                     aria-describedby={fieldWrong ? errorId : undefined}
                     value={answers[index] ?? ""}
