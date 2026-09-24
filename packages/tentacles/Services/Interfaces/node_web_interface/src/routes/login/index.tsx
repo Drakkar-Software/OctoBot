@@ -28,7 +28,6 @@ import {
   applyLoginAuthPresentation,
   getAuthErrorPresentation,
   resolveLoginAuthPresentation,
-  shouldResetMultiWalletSelectionOnLoginError,
 } from "@/lib/auth-error-messages"
 import { CLIENT_AUTH_ERROR_CODES } from "@/lib/auth-error-codes"
 import {
@@ -118,11 +117,6 @@ function Login() {
               multiWallet,
             }),
           )
-          if (multiWallet && shouldResetMultiWalletSelectionOnLoginError(err)) {
-            setSelectedWallet(null)
-            setLoginAuthError(null)
-            form.reset()
-          }
         },
       },
     )
