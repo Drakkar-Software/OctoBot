@@ -80,9 +80,6 @@ type FormData = z.infer<typeof formSchema>
 export const Route = createFileRoute("/login/recover-seed")({
   validateSearch: searchSchema,
   beforeLoad: ({ search }) => {
-    if (isLoggedIn()) {
-      throw redirect({ to: "/" })
-    }
     if (!search.address?.trim()) {
       throw redirect({ to: "/login" })
     }
