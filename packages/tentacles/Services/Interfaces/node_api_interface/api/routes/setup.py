@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import functools
 import typing
 
 import pydantic
@@ -36,11 +37,19 @@ except ImportError:
 
 try:
     from api.recover_passphrase_rate_limit import (  # type: ignore[no-redef]
+        RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
         get_recover_passphrase_rate_limiter,
+        recover_passphrase_rate_dimensions,
     )
+    from core.http_rate_limit import http_failure_rate_limited  # type: ignore[no-redef]
 except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
+        RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
         get_recover_passphrase_rate_limiter,
+        recover_passphrase_rate_dimensions,
+    )
+    from tentacles.Services.Interfaces.node_api_interface.core.http_rate_limit import (
+        http_failure_rate_limited,
     )
 
 router = APIRouter(tags=["setup"])
@@ -209,8 +218,60 @@ def export_wallet(
     return WalletExport(address=entry.address, private_key=entry.private_key, seed=entry.seed or None)
 
 
+def _recover_wallet_from_seed_http_errors(
+    wrapped: typing.Callable[..., RecoverWalletFromSeedResult],
+) -> typing.Callable[..., RecoverWalletFromSeedResult]:
+    """Map wallet backend errors to HTTP responses after rate-limit accounting."""
+
+    @functools.wraps(wrapped)
+    def wrapper(
+        body: RecoverWalletFromSeedBody,
+        request: Request,
+    ) -> RecoverWalletFromSeedResult:
+        try:
+            return wrapped(body, request)
+        except wallet_backend.WalletNotFoundError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Wallet not found",
+            )
+        except wallet_backend.WalletProofMismatchError as err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(err),
+            )
+        except wallet_backend.InvalidPrivateKeyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(err),
+            )
+        except wallet_backend.PassphraseTooShortError as err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(err),
+            )
+        except wallet_backend.WalletStorageReadOnlyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(err),
+            )
+        except wallet_backend.WalletError as err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(err),
+            )
+
+    return wrapper
+
+
 @router.post("/setup/wallet/recover-from-seed", response_model=RecoverWalletFromSeedResult)
-def recover_wallet_from_seed(
+@_recover_wallet_from_seed_http_errors
+@http_failure_rate_limited(
+    get_recover_passphrase_rate_limiter(),
+    get_dimensions=recover_passphrase_rate_dimensions,
+    record_failure_on=RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
+)
+def recover_wallet_from_seed_route(
     body: RecoverWalletFromSeedBody,
     request: Request,
 ) -> RecoverWalletFromSeedResult:
@@ -220,54 +281,10 @@ def recover_wallet_from_seed(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Node not configured",
         )
-    client_ip = _client_ip(request)
-    rate_limiter = get_recover_passphrase_rate_limiter()
-    if rate_limiter.is_rate_limited(client_ip, body.address):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many recovery attempts. Try again later.",
-        )
-    try:
-        auth.recover_passphrase_from_ownership_proof(
-            address=body.address,
-            new_passphrase=body.new_passphrase,
-            seed=body.seed,
-            private_key=body.private_key,
-        )
-    except wallet_backend.WalletNotFoundError:
-        rate_limiter.record_failure(client_ip, body.address)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wallet not found",
-        )
-    except wallet_backend.WalletProofMismatchError as err:
-        rate_limiter.record_failure(client_ip, body.address)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(err),
-        )
-    except wallet_backend.InvalidPrivateKeyError as err:
-        rate_limiter.record_failure(client_ip, body.address)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(err),
-        )
-    except wallet_backend.PassphraseTooShortError as err:
-        rate_limiter.record_failure(client_ip, body.address)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(err),
-        )
-    except wallet_backend.WalletStorageReadOnlyError as err:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(err),
-        )
-    except wallet_backend.WalletError as err:
-        rate_limiter.record_failure(client_ip, body.address)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(err),
-        )
-    rate_limiter.record_success(client_ip, body.address)
+    auth.recover_passphrase_from_ownership_proof(
+        address=body.address,
+        new_passphrase=body.new_passphrase,
+        seed=body.seed,
+        private_key=body.private_key,
+    )
     return RecoverWalletFromSeedResult()

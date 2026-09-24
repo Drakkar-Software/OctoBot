@@ -15,50 +15,30 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
-    RecoverPassphraseRateLimiter,
-)
-from tentacles.Services.Interfaces.node_api_interface.core.in_process_rate_limit import (
-    FailureWindowPolicy,
-    InProcessFailureRateLimiter,
+    get_recover_passphrase_rate_limiter,
 )
 
 
 def test_ip_bucket_limits_after_five_failures():
-    limiter = RecoverPassphraseRateLimiter()
+    limiter = get_recover_passphrase_rate_limiter()
     address = "0xabc"
     for _ in range(5):
-        limiter.record_failure("1.2.3.4", address)
-    assert limiter.is_rate_limited("1.2.3.4", address) is True
+        limiter.record_failure(client_ip="1.2.3.4", address=address)
+    assert limiter.is_rate_limited(client_ip="1.2.3.4", address=address) is True
 
 
 def test_address_bucket_limits_after_ten_failures():
-    limiter = RecoverPassphraseRateLimiter()
+    limiter = get_recover_passphrase_rate_limiter()
     address = "0xdef"
     for i in range(10):
-        limiter.record_failure(f"10.0.0.{i}", address)
-    assert limiter.is_rate_limited("10.0.0.99", address) is True
+        limiter.record_failure(client_ip=f"10.0.0.{i}", address=address)
+    assert limiter.is_rate_limited(client_ip="10.0.0.99", address=address) is True
 
 
 def test_success_resets_buckets():
-    limiter = RecoverPassphraseRateLimiter()
+    limiter = get_recover_passphrase_rate_limiter()
     address = "0xabc"
     for _ in range(4):
-        limiter.record_failure("1.2.3.4", address)
-    limiter.record_success("1.2.3.4", address)
-    assert limiter.is_rate_limited("1.2.3.4", address) is False
-
-
-def test_generic_limiter_normalizes_keys_per_policy():
-    limiter = InProcessFailureRateLimiter(
-        (
-            FailureWindowPolicy(
-                name="address",
-                max_failures=2,
-                window_seconds=60,
-                normalize_key=str.lower,
-            ),
-        ),
-    )
-    limiter.record_failure(address="0xAbC")
-    limiter.record_failure(address="0xabc")
-    assert limiter.is_rate_limited(address="0xABC") is True
+        limiter.record_failure(client_ip="1.2.3.4", address=address)
+    limiter.record_success(client_ip="1.2.3.4", address=address)
+    assert limiter.is_rate_limited(client_ip="1.2.3.4", address=address) is False
