@@ -18,7 +18,7 @@ from unittest import mock
 
 import octobot.community.wallet_backend as wallet_backend
 
-from octobot.community.wallet_backend.recover_passphrase_rate_limit import (
+from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
     get_recover_passphrase_rate_limiter,
 )
 

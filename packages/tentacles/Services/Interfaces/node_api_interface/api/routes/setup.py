@@ -34,9 +34,14 @@ except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
     from tentacles.Services.Interfaces.node_api_interface.core import network
 
-from octobot.community.wallet_backend.recover_passphrase_rate_limit import (
-    get_recover_passphrase_rate_limiter,
-)
+try:
+    from api.recover_passphrase_rate_limit import (  # type: ignore[no-redef]
+        get_recover_passphrase_rate_limiter,
+    )
+except ImportError:
+    from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
+        get_recover_passphrase_rate_limiter,
+    )
 
 router = APIRouter(tags=["setup"])
 

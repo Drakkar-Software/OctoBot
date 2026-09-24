@@ -1,4 +1,4 @@
-#  This file is part of OctoBot (https://github.com/Drakkar-Software/OctoBot)
+#  This file is part of OctoBot Node (https://github.com/Drakkar-Software/OctoBot-Node)
 #  Copyright (c) 2025 Drakkar-Software, All rights reserved.
 #
 #  OctoBot is free software; you can redistribute it and/or
@@ -14,8 +14,12 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-from octobot.community.wallet_backend.recover_passphrase_rate_limit import (
+from tentacles.Services.Interfaces.node_api_interface.api.recover_passphrase_rate_limit import (
     RecoverPassphraseRateLimiter,
+)
+from tentacles.Services.Interfaces.node_api_interface.core.in_process_rate_limit import (
+    FailureWindowPolicy,
+    InProcessFailureRateLimiter,
 )
 
 
@@ -42,3 +46,19 @@ def test_success_resets_buckets():
         limiter.record_failure("1.2.3.4", address)
     limiter.record_success("1.2.3.4", address)
     assert limiter.is_rate_limited("1.2.3.4", address) is False
+
+
+def test_generic_limiter_normalizes_keys_per_policy():
+    limiter = InProcessFailureRateLimiter(
+        (
+            FailureWindowPolicy(
+                name="address",
+                max_failures=2,
+                window_seconds=60,
+                normalize_key=str.lower,
+            ),
+        ),
+    )
+    limiter.record_failure(address="0xAbC")
+    limiter.record_failure(address="0xabc")
+    assert limiter.is_rate_limited(address="0xABC") is True
