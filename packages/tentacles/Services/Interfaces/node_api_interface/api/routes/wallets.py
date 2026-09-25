@@ -53,12 +53,15 @@ def list_wallets(
     credentials: typing.Annotated[typing.Optional[HTTPBasicCredentials], Depends(security_basic)],
 ) -> list[WalletInfo]:
     """Return configured wallets (no auth required for login page).
-    Names and is_admin are only revealed to verified callers to avoid PII disclosure."""
+
+    Addresses and wallet names are always returned for login and recovery UX.
+    is_admin is hidden unless Basic auth verifies a wallet passphrase.
+    """
     auth = community_auth.CommunityAuthentication.instance()
     if auth is None:
         return []
     wallets_data = auth.list_wallets()
-    # Gate is_admin behind credential verification; names are labels visible on login page
+    # Always return name; gate is_admin only
     reveal_admin = (
         credentials is not None
         and bool(credentials.username)
@@ -68,7 +71,7 @@ def list_wallets(
     return [
         WalletInfo(
             address=w.address,
-            name=w.name if reveal_admin else None,
+            name=w.name,
             is_admin=w.is_admin if reveal_admin else False,
         )
         for w in wallets_data
