@@ -27,6 +27,13 @@ except ImportError:
 
 _DEFAULT_DETAIL = "Too many requests. Try again later."
 _CLIENT_IP = "1.2.3.4"
+_MONOTONIC_PATCH = "octobot_commons.in_process_rate_limit.time.monotonic"
+_TIME_PATCH = "tentacles.Services.Interfaces.node_api_interface.core.http_rate_limit.time.time"
+
+
+def _rate_limit_detail(exc: HTTPException) -> dict:
+    assert isinstance(exc.detail, dict)
+    return exc.detail
 
 
 class CountedError(Exception):
@@ -60,21 +67,36 @@ def _decorated_handler(limiter, inner_handler):
 class TestHTTPRateLimiterRaiseIfRateLimited:
     def test_raises_429_with_default_detail(self):
         limiter = _limiter(max_failures=2)
-        limiter.record_failure(client_ip=_CLIENT_IP)
-        limiter.record_failure(client_ip=_CLIENT_IP)
-        with pytest.raises(HTTPException) as exc_info:
-            limiter.raise_if_rate_limited(client_ip=_CLIENT_IP)
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0):
+            limiter.record_failure(client_ip=_CLIENT_IP)
+            limiter.record_failure(client_ip=_CLIENT_IP)
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0), mock.patch(
+            _TIME_PATCH,
+            return_value=1000.0,
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                limiter.raise_if_rate_limited(client_ip=_CLIENT_IP)
         assert exc_info.value.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-        assert exc_info.value.detail == _DEFAULT_DETAIL
+        detail = _rate_limit_detail(exc_info.value)
+        assert detail["message"] == _DEFAULT_DETAIL
+        assert detail["unblock_at"] == 1060
+        assert exc_info.value.headers["Retry-After"] == "60"
 
     def test_raises_429_with_detail_override(self):
         limiter = _limiter(max_failures=2)
-        limiter.record_failure(client_ip=_CLIENT_IP)
-        limiter.record_failure(client_ip=_CLIENT_IP)
-        with pytest.raises(HTTPException) as exc_info:
-            limiter.raise_if_rate_limited(client_ip=_CLIENT_IP, detail="Custom")
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0):
+            limiter.record_failure(client_ip=_CLIENT_IP)
+            limiter.record_failure(client_ip=_CLIENT_IP)
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0), mock.patch(
+            _TIME_PATCH,
+            return_value=1000.0,
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                limiter.raise_if_rate_limited(client_ip=_CLIENT_IP, detail="Custom")
         assert exc_info.value.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-        assert exc_info.value.detail == "Custom"
+        detail = _rate_limit_detail(exc_info.value)
+        assert detail["message"] == "Custom"
+        assert detail["unblock_at"] == 1060
 
     def test_no_op_when_not_limited(self):
         limiter = _limiter(max_failures=2)

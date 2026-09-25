@@ -51,6 +51,12 @@ except ImportError:
         recover_passphrase_rate_dimensions,
     )
     from core.http_rate_limit import http_failure_rate_limited  # type: ignore[no-redef]
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.rate_limit_response import (
+        RateLimitedDetail,
+    )
+except ImportError:
+    from api.rate_limits.rate_limit_response import RateLimitedDetail  # type: ignore[no-redef]
 
 router = APIRouter(tags=["setup"])
 
@@ -254,7 +260,13 @@ def _recover_wallet_from_seed_http_errors(
     return wrapper
 
 
-@router.post("/setup/wallet/recover-from-seed", response_model=RecoverWalletFromSeedResult)
+@router.post(
+    "/setup/wallet/recover-from-seed",
+    response_model=RecoverWalletFromSeedResult,
+    responses={
+        429: {"model": RateLimitedDetail, "description": "Too many recovery attempts"},
+    },
+)
 @_recover_wallet_from_seed_http_errors
 @http_failure_rate_limited(
     get_recover_passphrase_rate_limiter(),

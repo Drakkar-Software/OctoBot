@@ -1,4 +1,8 @@
 import { ApiError } from "@/client"
+import {
+  formatRateLimitUnblockLocalTime,
+  parseRateLimitDetail,
+} from "@/lib/parse-rate-limit-api-error"
 import { extractErrorMessage } from "@/utils"
 
 const RECOVER_SEED_MISMATCH =
@@ -43,6 +47,13 @@ export function resolveRecoverSeedSubmitError(
   }
 
   if (error.status === 429) {
+    const parsed = parseRateLimitDetail(error)
+    if (parsed !== null) {
+      return {
+        message: formatRateLimitUnblockLocalTime(parsed.unblockAt),
+        unavailable: false,
+      }
+    }
     return { message: RECOVER_RATE_LIMIT, unavailable: false }
   }
 

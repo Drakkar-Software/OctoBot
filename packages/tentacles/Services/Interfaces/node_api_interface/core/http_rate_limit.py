@@ -16,11 +16,20 @@
 
 import functools
 import inspect
+import math
+import time
 import typing
 
 from fastapi import HTTPException, status
 
 import octobot_commons.in_process_rate_limit as in_process_rate_limit
+
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.rate_limit_response import (
+        RateLimitedDetail,
+    )
+except ImportError:
+    from api.rate_limits.rate_limit_response import RateLimitedDetail  # type: ignore[no-redef]
 
 FailureWindowPolicy = in_process_rate_limit.FailureWindowPolicy
 
@@ -45,11 +54,21 @@ class HTTPRateLimiter(in_process_rate_limit.InProcessFailureRateLimiter):
         detail: str | None = None,
         **dimensions: str,
     ) -> None:
-        if self.is_rate_limited(**dimensions):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=detail or self._rate_limited_detail,
-            )
+        if not self.is_rate_limited(**dimensions):
+            return
+        remaining = self.retry_after_seconds(**dimensions)
+        now_epoch = int(time.time())
+        unblock_at = int(math.ceil(time.time() + remaining))
+        if remaining > 0.0:
+            unblock_at = max(unblock_at, now_epoch + 1)
+        message = detail or self._rate_limited_detail
+        payload = RateLimitedDetail(message=message, unblock_at=unblock_at).model_dump()
+        retry_header = max(1, unblock_at - now_epoch)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=payload,
+            headers={"Retry-After": str(retry_header)},
+        )
 
 
 def run_with_failure_rate_limit(

@@ -78,6 +78,37 @@ class InProcessFailureRateLimiter:
             return False
         return bucket.failure_count >= policy.max_failures
 
+    def _remaining_seconds_for_policy(
+        self,
+        policy: FailureWindowPolicy,
+        key: str,
+        now: float,
+    ) -> float:
+        """Read-only: seconds until this policy's window ends, or 0 if not limited."""
+        store = self._stores[policy.name]
+        bucket = store.get(key)
+        if bucket is None:
+            return 0.0
+        if now - bucket.window_start >= policy.window_seconds:
+            return 0.0
+        if bucket.failure_count < policy.max_failures:
+            return 0.0
+        remaining = bucket.window_start + policy.window_seconds - now
+        if remaining <= 0.0:
+            return 0.0
+        return remaining
+
+    def retry_after_seconds(self, **dimensions: str) -> float:
+        """Monotonic seconds until the strictest active limit expires; 0 if not limited."""
+        now = time.monotonic()
+        max_remaining = 0.0
+        with self._lock:
+            for policy in self._policies:
+                key = self._policy_value(policy, **dimensions)
+                remaining = self._remaining_seconds_for_policy(policy, key, now)
+                max_remaining = max(max_remaining, remaining)
+        return max_remaining
+
     def is_rate_limited(self, **dimensions: str) -> bool:
         """Return True when any policy dimension has reached its failure budget."""
         now = time.monotonic()

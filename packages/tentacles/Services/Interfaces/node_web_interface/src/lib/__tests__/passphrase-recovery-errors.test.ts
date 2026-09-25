@@ -47,7 +47,23 @@ describe("resolveRecoverSeedSubmitError", () => {
     expect(result.message).toBe("This wallet is not set up on this node.")
   })
 
-  it("maps 429 to rate limit copy", () => {
+  it("maps 429 with unblock_at to local time message", () => {
+    const result = resolveRecoverSeedSubmitError(
+      makeApiError(
+        429,
+        {
+          detail: {
+            message: "Too many recovery attempts. Try again later.",
+            unblock_at: 1_704_067_200,
+          },
+        },
+        "Too Many Requests",
+      ),
+    )
+    expect(result.message).toMatch(/^Try again after /)
+  })
+
+  it("maps 429 with legacy string detail to static copy", () => {
     const result = resolveRecoverSeedSubmitError(
       makeApiError(429, { detail: "rate limited" }, "Too Many Requests"),
     )
