@@ -24,6 +24,8 @@ import octobot_commons.in_process_rate_limit as in_process_rate_limit
 
 FailureWindowPolicy = in_process_rate_limit.FailureWindowPolicy
 
+_T = typing.TypeVar("_T")
+
 
 class HTTPRateLimiter(in_process_rate_limit.InProcessFailureRateLimiter):
     """HTTP-facing failure rate limiter; raises FastAPI 429 when a budget is exceeded."""
@@ -50,6 +52,25 @@ class HTTPRateLimiter(in_process_rate_limit.InProcessFailureRateLimiter):
             )
 
 
+def run_with_failure_rate_limit(
+    rate_limiter: HTTPRateLimiter,
+    *,
+    dimensions: dict[str, str],
+    action: typing.Callable[[], _T],
+    should_record_failure: typing.Callable[[BaseException], bool],
+) -> _T:
+    """Check budgets, run action, record failure/success on the limiter's policies."""
+    rate_limiter.raise_if_rate_limited(**dimensions)
+    try:
+        result = action()
+    except BaseException as err:
+        if should_record_failure(err):
+            rate_limiter.record_failure(**dimensions)
+        raise
+    rate_limiter.record_success(**dimensions)
+    return result
+
+
 def http_failure_rate_limited(
     rate_limiter: HTTPRateLimiter,
     *,
@@ -68,14 +89,12 @@ def http_failure_rate_limited(
             bound = signature.bind(*args, **kwargs)
             bound.apply_defaults()
             dimensions = get_dimensions(**bound.arguments)
-            rate_limiter.raise_if_rate_limited(**dimensions)
-            try:
-                result = wrapped(*args, **kwargs)
-            except record_failure_on:
-                rate_limiter.record_failure(**dimensions)
-                raise
-            rate_limiter.record_success(**dimensions)
-            return result
+            return run_with_failure_rate_limit(
+                rate_limiter,
+                dimensions=dimensions,
+                action=lambda: wrapped(*args, **kwargs),
+                should_record_failure=lambda err: isinstance(err, record_failure_on),
+            )
 
         return wrapper
 

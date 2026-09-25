@@ -23,6 +23,12 @@ export type LoginAuthContext = {
   multiWallet: boolean
 }
 
+const LOGIN_RATE_LIMIT_PRESENTATION: AuthErrorPresentation = {
+  title: "Too many login attempts",
+  explanation: "Try again later.",
+  guidance: [],
+}
+
 const API_AUTH_MESSAGES: Record<ApiAuthErrorCode, AuthErrorPresentation> = {
   [API_AUTH_ERROR_CODES.AUTH_PASSPHRASE_REQUIRED]: {
     title: "Enter your passphrase",
@@ -192,6 +198,10 @@ export function resolveLoginAuthPresentation(
     )
   }
 
+  if (error.status === 429) {
+    return LOGIN_RATE_LIMIT_PRESENTATION
+  }
+
   if (error.status === 401) {
     const code =
       parseAuthErrorCodeFromApiError(error) ??
@@ -215,6 +225,9 @@ export function shouldSuppressLoginErrorToast(error: unknown): boolean {
     return true
   }
   if (error.status === 401) {
+    return true
+  }
+  if (error.status === 429) {
     return true
   }
   if (error.status === 503) {

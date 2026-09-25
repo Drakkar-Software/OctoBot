@@ -168,3 +168,49 @@ class TestHttpFailureRateLimited:
         )(inner)
         handler()
         assert captured_dimensions["client_ip"] == "9.9.9.9"
+
+
+class TestRunWithFailureRateLimit:
+    def test_records_failure_when_predicate_matches(self):
+        limiter = _limiter(max_failures=2)
+
+        def action():
+            raise CountedError("fail")
+
+        with pytest.raises(CountedError):
+            http_rate_limit.run_with_failure_rate_limit(
+                limiter,
+                dimensions={"client_ip": _CLIENT_IP},
+                action=action,
+                should_record_failure=lambda err: isinstance(err, CountedError),
+            )
+        with pytest.raises(CountedError):
+            http_rate_limit.run_with_failure_rate_limit(
+                limiter,
+                dimensions={"client_ip": _CLIENT_IP},
+                action=action,
+                should_record_failure=lambda err: isinstance(err, CountedError),
+            )
+        with pytest.raises(HTTPException):
+            http_rate_limit.run_with_failure_rate_limit(
+                limiter,
+                dimensions={"client_ip": _CLIENT_IP},
+                action=action,
+                should_record_failure=lambda err: isinstance(err, CountedError),
+            )
+
+    def test_skips_failure_recording_when_predicate_false(self):
+        limiter = _limiter(max_failures=2)
+        limiter.record_failure(client_ip=_CLIENT_IP)
+
+        def action():
+            raise OtherError("fail")
+
+        with pytest.raises(OtherError):
+            http_rate_limit.run_with_failure_rate_limit(
+                limiter,
+                dimensions={"client_ip": _CLIENT_IP},
+                action=action,
+                should_record_failure=lambda err: isinstance(err, CountedError),
+            )
+        assert limiter.is_rate_limited(client_ip=_CLIENT_IP) is False
