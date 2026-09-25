@@ -11,6 +11,10 @@ import {
   CLIENT_AUTH_ERROR_CODES,
 } from "@/lib/auth-error-codes"
 import { parseAuthErrorCodeFromApiError } from "@/lib/parse-auth-api-error"
+import {
+  formatRateLimitUnblockLocalTime,
+  parseRateLimitDetail,
+} from "@/lib/parse-rate-limit-api-error"
 import { passphraseHasEdgeWhitespace } from "@/lib/passphrase-edge"
 
 export type AuthErrorPresentation = {
@@ -27,6 +31,17 @@ const LOGIN_RATE_LIMIT_PRESENTATION: AuthErrorPresentation = {
   title: "Too many login attempts",
   explanation: "Try again later.",
   guidance: [],
+}
+
+function loginRateLimitPresentation(error: ApiError): AuthErrorPresentation {
+  const parsed = parseRateLimitDetail(error)
+  if (parsed === null) {
+    return LOGIN_RATE_LIMIT_PRESENTATION
+  }
+  return {
+    ...LOGIN_RATE_LIMIT_PRESENTATION,
+    explanation: formatRateLimitUnblockLocalTime(parsed.unblockAt),
+  }
 }
 
 const API_AUTH_MESSAGES: Record<ApiAuthErrorCode, AuthErrorPresentation> = {
@@ -199,7 +214,7 @@ export function resolveLoginAuthPresentation(
   }
 
   if (error.status === 429) {
-    return LOGIN_RATE_LIMIT_PRESENTATION
+    return loginRateLimitPresentation(error)
   }
 
   if (error.status === 401) {

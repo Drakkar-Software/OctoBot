@@ -16,9 +16,12 @@
 
 from unittest import mock
 
+import time
+
 import octobot.community.wallet_backend as wallet_backend
 
 from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.recover_passphrase import (
+    RECOVER_PASSPHRASE_RATE_LIMITED_DETAIL,
     get_recover_passphrase_rate_limiter,
 )
 
@@ -26,6 +29,22 @@ from .conftest import ADMIN_ADDRESS
 
 _TEST_MNEMONIC = "test test test test test test test test test test test junk"
 _RECOVER_URL = "/api/v1/setup/wallet/recover-from-seed"
+_RECOVER_IP_WINDOW_SECONDS = 15 * 60
+
+
+def _assert_structured_rate_limit_response(
+    response,
+    *,
+    expected_message: str,
+    max_window_seconds: int,
+) -> None:
+    assert response.status_code == 429
+    detail = response.json()["detail"]
+    assert isinstance(detail, dict)
+    assert detail["message"] == expected_message
+    now_epoch = int(time.time())
+    assert now_epoch <= detail["unblock_at"] <= now_epoch + max_window_seconds + 5
+    assert int(response.headers["Retry-After"]) >= 1
 
 
 def _recover_body(**overrides):
@@ -96,3 +115,8 @@ def test_recover_wallet_rate_limited_after_ip_failures(client):
             assert resp.status_code == 401
         resp = client.post(_RECOVER_URL, json=_recover_body())
     assert resp.status_code == 429
+    _assert_structured_rate_limit_response(
+        resp,
+        expected_message=RECOVER_PASSPHRASE_RATE_LIMITED_DETAIL,
+        max_window_seconds=_RECOVER_IP_WINDOW_SECONDS,
+    )

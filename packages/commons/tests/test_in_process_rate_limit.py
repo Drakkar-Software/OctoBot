@@ -78,6 +78,49 @@ class TestInProcessFailureRateLimiterMissingDimension:
         with pytest.raises(KeyError):
             limiter.record_success()
 
+    def test_retry_after_seconds_raises_key_error(self):
+        limiter = _limiter(_client_ip_policy())
+        with pytest.raises(KeyError):
+            limiter.retry_after_seconds()
+
+
+class TestInProcessFailureRateLimiterRetryAfterSeconds:
+    def test_zero_when_not_limited(self):
+        limiter = _limiter(_client_ip_policy(max_failures=3))
+        assert limiter.retry_after_seconds(client_ip="1.2.3.4") == 0.0
+        limiter.record_failure(client_ip="1.2.3.4")
+        limiter.record_failure(client_ip="1.2.3.4")
+        assert limiter.retry_after_seconds(client_ip="1.2.3.4") == 0.0
+
+    def test_decay_over_window(self):
+        limiter = _limiter(_client_ip_policy(max_failures=2, window_seconds=10))
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0):
+            limiter.record_failure(client_ip="1.2.3.4")
+            limiter.record_failure(client_ip="1.2.3.4")
+            assert limiter.retry_after_seconds(client_ip="1.2.3.4") == pytest.approx(10.0)
+        with mock.patch(_MONOTONIC_PATCH, return_value=5.0):
+            assert limiter.retry_after_seconds(client_ip="1.2.3.4") == pytest.approx(5.0)
+        with mock.patch(_MONOTONIC_PATCH, return_value=11.0):
+            assert limiter.retry_after_seconds(client_ip="1.2.3.4") == 0.0
+
+    def test_multi_policy_returns_max_remaining(self):
+        short_policy = _client_ip_policy(max_failures=2, window_seconds=10)
+        long_policy = _address_policy(max_failures=2, window_seconds=100)
+        limiter = _limiter(short_policy, long_policy)
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0):
+            limiter.record_failure(client_ip="1.2.3.4", address="0xaaa")
+            limiter.record_failure(client_ip="1.2.3.4", address="0xaaa")
+            remaining = limiter.retry_after_seconds(client_ip="1.2.3.4", address="0xaaa")
+        assert remaining == pytest.approx(100.0)
+
+    def test_does_not_reset_buckets(self):
+        limiter = _limiter(_client_ip_policy(max_failures=2, window_seconds=10))
+        with mock.patch(_MONOTONIC_PATCH, return_value=0.0):
+            limiter.record_failure(client_ip="1.2.3.4")
+            limiter.record_failure(client_ip="1.2.3.4")
+            limiter.retry_after_seconds(client_ip="1.2.3.4")
+            assert limiter.is_rate_limited(client_ip="1.2.3.4") is True
+
 
 class TestInProcessFailureRateLimiterFailureBudget:
     def test_not_limited_below_max_failures(self):

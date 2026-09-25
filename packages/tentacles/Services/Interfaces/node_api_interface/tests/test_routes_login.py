@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import base64
+import time
 
 from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.login import (
     LOGIN_RATE_LIMITED_DETAIL,
@@ -24,11 +25,27 @@ from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.login impo
 from .conftest import ADMIN_ADDRESS, ADMIN_PASSPHRASE
 
 _LOGIN_TEST_URL = "/api/v1/login/test"
+_LOGIN_WINDOW_SECONDS = 15 * 60
 
 
 def _auth_header(address: str, passphrase: str) -> dict:
     token = base64.b64encode(f"{address}:{passphrase}".encode()).decode()
     return {"Authorization": f"Basic {token}"}
+
+
+def _assert_structured_rate_limit_response(
+    response,
+    *,
+    expected_message: str,
+    max_window_seconds: int,
+) -> None:
+    assert response.status_code == 429
+    detail = response.json()["detail"]
+    assert isinstance(detail, dict)
+    assert detail["message"] == expected_message
+    now_epoch = int(time.time())
+    assert now_epoch <= detail["unblock_at"] <= now_epoch + max_window_seconds + 5
+    assert int(response.headers["Retry-After"]) >= 1
 
 
 def test_login_success(client, mock_auth):
@@ -50,7 +67,11 @@ def test_login_rate_limited_after_ten_failures(client, mock_auth):
         assert resp.status_code == 401
     resp = client.get(_LOGIN_TEST_URL, headers=wrong_headers)
     assert resp.status_code == 429
-    assert resp.json()["detail"] == LOGIN_RATE_LIMITED_DETAIL
+    _assert_structured_rate_limit_response(
+        resp,
+        expected_message=LOGIN_RATE_LIMITED_DETAIL,
+        max_window_seconds=_LOGIN_WINDOW_SECONDS,
+    )
 
 
 def test_login_success_resets_rate_limit(client, mock_auth):
