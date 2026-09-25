@@ -143,6 +143,24 @@ describe("resolveLoginAuthPresentation", () => {
     expect(presentation.title).toBe("Can't connect")
     expect(presentation.guidance).toHaveLength(1)
   })
+
+  it("maps 429 to login rate limit presentation", () => {
+    const error = new ApiError(
+      { method: "GET", url: "/login/test" },
+      {
+        url: "/login/test",
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        body: { detail: "Too many login attempts. Try again later." },
+      },
+      "Too Many Requests",
+    )
+    const presentation = resolveLoginAuthPresentation(error, "pw")
+    expect(presentation.title).toBe("Too many login attempts")
+    expect(presentation.explanation).toMatch(/Try again later/i)
+    expect(presentation.guidance).toHaveLength(0)
+  })
 })
 
 describe("shouldSuppressLoginErrorToast", () => {
@@ -191,6 +209,21 @@ describe("shouldSuppressLoginErrorToast", () => {
         },
       },
       "Unavailable",
+    )
+    expect(shouldSuppressLoginErrorToast(error)).toBe(true)
+  })
+
+  it("suppresses 429 rate limit", () => {
+    const error = new ApiError(
+      { method: "GET", url: "/login/test" },
+      {
+        url: "/login/test",
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+        body: { detail: "Too many login attempts. Try again later." },
+      },
+      "Too Many Requests",
     )
     expect(shouldSuppressLoginErrorToast(error)).toBe(true)
   })

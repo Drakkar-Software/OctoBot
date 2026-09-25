@@ -20,10 +20,10 @@ from fastapi import APIRouter
 
 try:
     from api.auth_errors import NodeAuthErrorDetail  # type: ignore[no-redef]
-    from api.deps import CurrentUser
+    from api.deps import LoginRateLimitedUser
 except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.auth_errors import NodeAuthErrorDetail
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser  # type: ignore[no-redef]
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import LoginRateLimitedUser  # type: ignore[no-redef]
 import octobot_node.models
 
 router = APIRouter(tags=["login"])
@@ -34,8 +34,9 @@ router = APIRouter(tags=["login"])
     response_model=octobot_node.models.User,
     responses={
         401: {"model": NodeAuthErrorDetail, "description": "Authentication failed"},
+        429: {"description": "Too many login attempts"},
         503: {"model": NodeAuthErrorDetail, "description": "Node not configured"},
     },
 )
-def test_auth(current_user: CurrentUser) -> typing.Any:
+def test_auth(current_user: LoginRateLimitedUser) -> typing.Any:
     return current_user
