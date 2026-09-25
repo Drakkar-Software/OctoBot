@@ -26,7 +26,7 @@ import octobot.community.node_journal as node_journal
 import octobot.community.node_journal.enums as journal_enums
 import octobot.community.node_journal.recording_context as journal_recording_context
 
-scheduler_logger = logging.getLogger(__name__)
+scheduler_logger = logging.getLogger("scheduler.init")
 
 SCHEDULER: scheduler_lib.Scheduler = scheduler_lib.Scheduler()
 
@@ -93,14 +93,19 @@ async def initialize_scheduler():
         on_failure=_record_scheduler_init_failed,
     ):
         SCHEDULER.start()
+        scheduler_logger.info("Scheduler: registering DBOS queues")
         await scheduler_queues.register_scheduler_queues_async()
+        scheduler_logger.info("Scheduler: DBOS queues registered")
     # apply_schedules requires DBOS launch (sys_db); must run after start().
     with journal_recording_context.scheduler_init_phase(
         init_phase=journal_enums.JournalInitPhase.REGISTER_SCHEDULES,
         backend=backend,
         on_failure=_record_scheduler_init_failed,
     ):
+        scheduler_logger.info("Scheduler: applying schedules")
         await schedules.register_schedules(SCHEDULER)
+        scheduler_logger.info("Scheduler: schedules applied")
+    scheduler_logger.info("Scheduler: initialize_scheduler completed")
 
 
 async def shutdown_scheduler_and_trading_signal_channel() -> None:
