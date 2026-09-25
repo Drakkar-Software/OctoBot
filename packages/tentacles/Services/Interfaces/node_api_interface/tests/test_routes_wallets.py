@@ -36,6 +36,10 @@ def test_list_wallets_unauthenticated(client, mock_auth):
     # Admin flags must not be revealed without credentials
     for w in data:
         assert w["is_admin"] is False
+    admin_entry = next(w for w in data if w["address"] == ADMIN_ADDRESS)
+    tenant_entry = next(w for w in data if w["address"] == TENANT_ADDRESS)
+    assert admin_entry["name"] == "Admin"
+    assert tenant_entry["name"] == "Alice"
 
 
 def test_list_wallets_authenticated_reveals_admin_flags(client, mock_auth):
@@ -63,12 +67,11 @@ def test_list_wallets_bad_credentials_hides_admin_flags(client, mock_auth):
 
 
 def test_list_wallets_unknown_address_hides_admin_flags(client, mock_auth):
-    """Credentials for an address not in the wallet list must not reveal names/is_admin."""
+    """Credentials for an address not in the wallet list must not reveal is_admin."""
     resp = client.get("/api/v1/wallets/", auth=("0xunknown000000000000000000000000000001", "anypass"))
     assert resp.status_code == 200
     for w in resp.json():
         assert w["is_admin"] is False
-        assert w["name"] is None
 
 
 def test_list_wallets_no_auth_service(client):

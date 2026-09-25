@@ -1,11 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router"
 import { TriangleAlert } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { SetupService } from "@/client"
+import { SetupService, WalletsService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -23,7 +24,7 @@ import { markLoginPassphraseRecoverySuccess } from "@/lib/login-passphrase-recov
 import { resolveRecoverSeedSubmitError } from "@/lib/passphrase-recovery-errors"
 import type { PassphraseRecoveryProofMode } from "@/lib/passphrase-recovery-validation"
 import { cryptoSecretTextareaProps } from "@/lib/crypto-secret-input"
-import { truncateAddress } from "@/lib/wallet-utils"
+import { RecoverWalletIdentityHeader } from "@/routes/login/-RecoverWalletIdentityHeader"
 
 const searchSchema = z.object({
   address: z.string().min(1),
@@ -97,6 +98,22 @@ function RecoverPassphrase() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [unavailable, setUnavailable] = useState(false)
 
+  const {
+    data: wallets = [],
+    isPending: walletsPending,
+  } = useQuery({
+    queryKey: ["wallets"],
+    queryFn: () => WalletsService.listWallets(),
+  })
+
+  const matchedWallet = useMemo(
+    () =>
+      wallets.find(
+        (wallet) => wallet.address.toLowerCase() === address.trim().toLowerCase(),
+      ),
+    [wallets, address],
+  )
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
@@ -140,12 +157,11 @@ function RecoverPassphrase() {
         >
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-bold">Reset wallet passphrase</h1>
-            <p
-              className="text-xs font-mono text-muted-foreground"
-              data-testid="recover-wallet-address"
-            >
-              {truncateAddress(address)}
-            </p>
+            <RecoverWalletIdentityHeader
+              address={address.trim()}
+              walletName={matchedWallet?.name}
+              walletNamePending={walletsPending}
+            />
           </div>
 
           <div
