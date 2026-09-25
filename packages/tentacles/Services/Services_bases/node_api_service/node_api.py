@@ -121,6 +121,7 @@ class NodeApiService(services.AbstractService):
             self.api_app.stop()
 
     async def prepare(self) -> None:
+        self.logger.info("Node API service: prepare started")
         try:
             node_config = self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_NODE_API]
             self.node_api_url = node_config.get(services_constants.NODE_API_URL)
@@ -141,10 +142,12 @@ class NodeApiService(services.AbstractService):
         self._sync_config()
         self._register_mirror_context_provider()
         if self.get_is_enabled(self.config) and not octobot_node.scheduler.is_initialized():
+            self.logger.info("Node API service: initializing scheduler from prepare()")
             await octobot_node.scheduler.initialize_scheduler()
             await internal_trading_signals.subscribe_internal_trading_signal_consumer()
         if octobot_node.scheduler.is_initialized():
             await journal_startup.complete_reconcile_automations()
+        self.logger.info("Node API service: prepare finished")
 
     def _sync_config(self):
         defaults = self.get_default_value()
@@ -191,7 +194,11 @@ class NodeApiService(services.AbstractService):
         return f"{network_module.LOCAL_HOST_IP}:{port}"
 
     def get_successful_startup_message(self):
-        return f"Node API interface successfully initialized and accessible at: http://{self._get_node_api_server_url()}.", True
+        return (
+            f"Node API service configured at: http://{self._get_node_api_server_url()} "
+            f"(HTTP served by NodeApiInterface when its thread reaches uvicorn serve()).",
+            True,
+        )
 
     def get_bind_host(self):
         return os.getenv(services_constants.ENV_NODE_API_ADDRESS, services_constants.DEFAULT_NODE_API_IP)
