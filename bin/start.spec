@@ -43,6 +43,10 @@ a = Analysis(
       "asyncpraw", "simplifiedpytrends", "simplifiedpytrends.exceptions", "simplifiedpytrends.request",
       "pyngrok", "pyngrok.ngrok", "openai",
       "flask", "flask_login", "flask_wtf", "flask_socketio", "flask_cors",
+      # Tentacles (excluded from Analysis) — ASGI stack per packages/services/full_requirements.txt
+      "asgiref.sync", "asgiref.wsgi",
+      "uvicorn", "uvicorn.config", "uvicorn.server",
+      "starlette", "starlette.applications", "starlette.routing", "starlette.websockets",
       "werkzeug.middleware", "werkzeug.middleware.proxy_fix",
       "wtforms", "wtforms.fields",
       "vaderSentiment", "vaderSentiment.vaderSentiment",
