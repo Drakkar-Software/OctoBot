@@ -9,6 +9,7 @@ import {
   MAGIC_DNS_OPEN_IN_BROWSER_LABEL,
   TAILSCALE_ADMIN_CONSOLE_MACHINES_URL,
   TAILSCALE_MAGICDNS_REACHABILITY_LEAD,
+  TAILSCALE_PRIVATE_NETWORK_CONNECT_GUIDE_LABEL,
   TAILSCALE_SERVE_NOT_ENABLED_ON_TAILNET_MESSAGE,
   TAILSCALE_SERVE_STARTED_RUNNING_MESSAGE,
 } from "@/lib/ui-recovery-constants"
@@ -59,6 +60,7 @@ describe("TailscaleRemoteAccessDialog", () => {
     expect(markup).not.toContain('aria-label="Copy command"')
     expect(markup).not.toContain('aria-label="Copy URL"')
     expect(markup).toContain(OCTOBOT_TAILSCALE_CONNECT_GUIDE_URL)
+    expect(markup).toContain(TAILSCALE_PRIVATE_NETWORK_CONNECT_GUIDE_LABEL)
     vi.unstubAllGlobals()
   })
 })

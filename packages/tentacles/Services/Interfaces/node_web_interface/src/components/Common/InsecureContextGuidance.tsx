@@ -1,10 +1,13 @@
 import { buildSameComputerLoopbackUrl } from "@/lib/secure-context"
+import { OCTOBOT_CONNECT_GUIDE_TWO_INTERFACES_URL } from "@/lib/external-links"
 import {
   INSECURE_CONTEXT_OPTION_LOCAL_SUBLABEL,
   INSECURE_CONTEXT_OPTION_LOCAL_TITLE,
   INSECURE_CONTEXT_OPTION_REMOTE_TITLE,
   INSECURE_CONTEXT_REMOTE_LEAD,
   INSECURE_CONTEXT_SAME_COMPUTER_LEAD,
+  INSECURE_CONTEXT_TWO_INTERFACES_GUIDE_BEFORE,
+  INSECURE_CONTEXT_TWO_INTERFACES_GUIDE_LINK,
   INSECURE_CONTEXT_WHY_ADDRESS_AFTER,
   INSECURE_CONTEXT_WHY_ADDRESS_BEFORE,
   INSECURE_CONTEXT_WHY_LEAD,
@@ -31,11 +34,25 @@ export function InsecureContextGuidance({
       <div className="space-y-2">
         <p>{INSECURE_CONTEXT_WHY_LEAD}</p>
         {pageHref !== "" ? (
-          <p>
-            {INSECURE_CONTEXT_WHY_ADDRESS_BEFORE}
-            <span className="break-all font-mono text-foreground">{pageHref}</span>
-            {INSECURE_CONTEXT_WHY_ADDRESS_AFTER}
-          </p>
+          <>
+            <p>
+              {INSECURE_CONTEXT_WHY_ADDRESS_BEFORE}
+              <span className="break-all font-mono text-foreground">{pageHref}</span>
+              {INSECURE_CONTEXT_WHY_ADDRESS_AFTER}
+            </p>
+            <p>
+              {INSECURE_CONTEXT_TWO_INTERFACES_GUIDE_BEFORE}
+              <a
+                href={OCTOBOT_CONNECT_GUIDE_TWO_INTERFACES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 text-foreground"
+              >
+                {INSECURE_CONTEXT_TWO_INTERFACES_GUIDE_LINK}
+              </a>
+              .
+            </p>
+          </>
         ) : null}
       </div>
       <div className="space-y-3 rounded-md border border-border bg-muted/20 p-4">

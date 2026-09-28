@@ -50,6 +50,14 @@ export const TAILSCALE_REMOTE_ACCESS_BUTTON_LABEL = "Set up remote access"
 
 export const TAILSCALE_REMOTE_ACCESS_DIALOG_TITLE = "Remote access with Tailscale"
 
+export const TAILSCALE_PRIVATE_NETWORK_CONNECT_GUIDE_LABEL =
+  "Private network connect guide"
+
+export const INSECURE_CONTEXT_TWO_INTERFACES_GUIDE_BEFORE =
+  "Learn more about the OctoBot interface in "
+
+export const INSECURE_CONTEXT_TWO_INTERFACES_GUIDE_LINK = "the guide"
+
 export const TAILSCALE_ADMIN_CONSOLE_MACHINES_URL =
   "https://console.tailscale.com/admin/machines"
 

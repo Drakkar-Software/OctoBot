@@ -18,6 +18,7 @@ import {
   TAILSCALE_ADMIN_CONSOLE_MACHINES_URL,
   TAILSCALE_FULL_DOMAIN_EXAMPLE,
   TAILSCALE_MAGICDNS_REACHABILITY_LEAD,
+  TAILSCALE_PRIVATE_NETWORK_CONNECT_GUIDE_LABEL,
   TAILSCALE_REMOTE_ACCESS_DIALOG_TITLE,
   TAILSCALE_SERVE_NOT_ENABLED_ON_TAILNET_MESSAGE,
   TAILSCALE_SERVE_STARTED_RUNNING_MESSAGE,
@@ -128,7 +129,7 @@ export function TailscaleRemoteAccessDialog({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Read the full Tailscale guide
+              {TAILSCALE_PRIVATE_NETWORK_CONNECT_GUIDE_LABEL}
             </a>
           </Button>
           <DialogClose asChild>
