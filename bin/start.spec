@@ -29,7 +29,7 @@ a = Analysis(
       "pyngrok", "pyngrok.ngrok", "openai",
       "flask", "flask_login", "flask_wtf", "flask_socketio", "flask_cors",
       "werkzeug.middleware", "werkzeug.middleware.proxy_fix",
-      "wtforms", "wtforms.fields", "gevent", "geventwebsocket",
+      "wtforms", "wtforms.fields",
       "vaderSentiment", "vaderSentiment.vaderSentiment",
       "coingecko_openapi_client",
       "certifi",
