@@ -44,14 +44,14 @@ export function NodeConnectAddressTabs({ audience }: NodeConnectAddressTabsProps
 
   const vpnHostnameHelperText = couldNotDetectVpn ? (
     <>
-      Tailscale may not be running or is disconnected.{" "}
+      Try restarting Tailscale on the node machine or{" "}
       <button
         type="button"
         className="underline"
         onClick={() => setConnectAddressMethod("local")}
       >
-        Use local network instead
-      </button>
+        use local network instead
+      </button>. Note: if you are using another VPN, this might not detect your IP address, you will need to find your it manually.
     </>
   ) : undefined
 
@@ -105,13 +105,13 @@ export function NodeConnectAddressTabs({ audience }: NodeConnectAddressTabsProps
               rel="noopener noreferrer"
             >
               <Button type="button" variant="outline">
-                Read the Tailscale guide
+                Read the Private Network guide
               </Button>
             </a>
           </div>
           <SetupNodeAddressPanel
             hostname={vpnHostname}
-            hostnameLabel="Tailscale IP address or MagicDNS"
+            hostnameLabel="Private Network IP address or MagicDNS"
             hostnameHelperText={vpnHostnameHelperText}
             hostnameLoading={isVpnPending || isVpnFetching}
             onHostnameRefresh={() => {

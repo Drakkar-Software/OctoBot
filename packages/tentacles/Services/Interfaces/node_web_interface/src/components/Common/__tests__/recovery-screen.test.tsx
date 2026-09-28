@@ -5,6 +5,7 @@ import {
   confirmAndResetLocalBrowserData,
   RecoveryScreen,
 } from "@/components/Common/RecoveryScreen"
+import { OCTOBOT_CONNECT_GUIDE_TWO_INTERFACES_URL } from "@/lib/external-links"
 
 const mocks = vi.hoisted(() => ({
   resetClientStorage: vi.fn().mockResolvedValue(undefined),
@@ -54,9 +55,16 @@ describe("RecoveryScreen", () => {
   })
 
   it("insecure_context omits reset and reload, shows Tailscale setup", () => {
+    vi.stubGlobal("window", {
+      location: {
+        href: "http://192.168.1.50:8000/app/setup?x=1",
+        port: "8000",
+      },
+    })
     const markup = renderToStaticMarkup(
       <RecoveryScreen failureKind="insecure_context" />,
     )
+    vi.unstubAllGlobals()
     expect(markup).not.toContain("Reset local browser data")
     expect(markup).not.toContain("Reload page")
     expect(markup).toContain("Secure context required")
@@ -71,6 +79,8 @@ describe("RecoveryScreen", () => {
     expect(markup).toContain("share-feedback-stub")
     expect(markup).toContain('data-testid="insecure-context-option-remote"')
     expect(markup).toContain('data-testid="recovery-insecure-share-feedback"')
+    expect(markup).toContain(OCTOBOT_CONNECT_GUIDE_TWO_INTERFACES_URL)
+    expect(markup).toContain("Learn more about the OctoBot interface in ")
     expect(markup.toLowerCase()).not.toContain("saved data")
     expect(markup.toLowerCase()).not.toContain("local data is fine")
   })
