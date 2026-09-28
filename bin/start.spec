@@ -1,12 +1,27 @@
 # -*- mode: python -*-
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 
 block_cipher = None
 
 # eth_account.hdaccount reads BIP39 wordlists from disk (hdaccount/wordlist/*.txt).
 # hiddenimports only bundles Python modules; collect_data_files includes those data files.
 eth_account_datas = collect_data_files("eth_account")
+
+# importlib.metadata.version() at import time; PyInstaller does not bundle .dist-info by default.
+_eth_web3_dist_names = (
+   "py-ecc",
+   "eth-account",
+   "eth-keyfile",
+   "eth-utils",
+   "eth-typing",
+   "eth-keys",
+   "hexbytes",
+   "web3",
+)
+eth_web3_metadata = []
+for _dist_name in _eth_web3_dist_names:
+   eth_web3_metadata += copy_metadata(_dist_name)
 
 OCTOBOT_PACKAGES_FILES = REQUIRED = [s.strip() for s in open('bin/octobot_packages_files.txt').readlines()]
 # hiddenimports=['numpy.core._dtype_ctypes'] from https://github.com/pyinstaller/pyinstaller/issues/3982
@@ -16,7 +31,7 @@ a = Analysis(
    datas=[
       ('../octobot/config', 'octobot/config'),
       ('../octobot/strategy_optimizer/optimizer_data_files', 'octobot/strategy_optimizer/optimizer_data_files'),
-   ] + eth_account_datas,  # required for node wallet mnemonic generation (web3.Account.create_with_mnemonic)
+   ] + eth_account_datas + eth_web3_metadata,  # required for node wallet mnemonic generation (web3.Account.create_with_mnemonic)
    hiddenimports=[
       "colorlog", "numpy.core._dtype_ctypes", "dotenv",
       "pgpy", "imghdr",
