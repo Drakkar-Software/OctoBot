@@ -62,7 +62,7 @@ Expected behavior:
 
 - The binary starts in **node mode** (`Using node OctoBot distribution`). The Node UI (React, `node_web_interface`) is the interface. The classic Flask web interface is disabled (`Web interface disabled`).
 - The Node API and UI listen on **port 8000**, on all interfaces. The UI is at `http://127.0.0.1:8000/app`.
-- The log also prints `Interface successfully initialized and accessible at: http://127.0.0.1:5001`. Nothing listens on 5001 in node mode. Ignore that line.
+- Nothing listens on port 5001 in node mode. Builds that include `dev` commit `6eea4ff` log `WebInterface configured to use port 5001 if started.` Older builds, such as the `bin_factory` build this guide was first written against, log `Interface successfully initialized and accessible at: http://127.0.0.1:5001` instead, which is misleading here: ignore that line.
 - Start-up takes a few seconds once tentacles are installed. The first start is longer because it downloads and installs them (about 12 MB).
 
 Wait for readiness instead of sleeping:
@@ -219,8 +219,6 @@ These were seen on the `bin_factory` build. They do not block boot or the checks
 
 - `bootstrap --scenario lifecycle` fails on this build with `AutomationNameLostError` and exit code 1. That is the finding below, the check is doing its job. It also means `grid` cannot be re-run afterwards on the same node, because the grid check finds its automation by name.
 - After `automation_restart`, the automation `metadata.name` is empty, so the Node UI titles the card `OctoBot a00000` instead of `Agent seed BTC/USDC grid`. The name is correct until the restart. The restart executor rebuilds the task from the latest terminal workflow (`user_actions_executor/automation/restart_automation.py`).
-- One `ERROR GridTradingModeProducer Error reading fees for BTC/USDC: '>' not supported between instances of 'NoneType' and 'NoneType'` is logged when the grid starts, because Kraken returns no maker or taker fee for the pair. It is caught in the staggered orders tentacle and the grid still places all its orders.
-- The log line pointing to `http://127.0.0.1:5001` is misleading in node mode (section 3).
 
 ## 5. Clean up
 
