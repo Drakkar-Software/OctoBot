@@ -13,15 +13,24 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import octobot_services.api as service_api
 import octobot_services.notification as services_notification
 import octobot_services.notifier as notifier
 import tentacles.Services.Interfaces.web_interface as web_interface
+import tentacles.Services.Interfaces.web_interface.web as web_interface_web
 import tentacles.Services.Services_bases as Services_bases
 
 
 class WebNotifier(notifier.AbstractNotifier):
     REQUIRED_SERVICES = [Services_bases.WebService]
     NOTIFICATION_TYPE_KEY = "web"
+
+    @classmethod
+    def is_enabled(cls, config):
+        if not service_api.is_enabled(web_interface_web.WebInterface):
+            # disable web notifier if web interface is not enabled (ex: node UI only)
+            return False
+        return super().is_enabled(config)
 
     async def _handle_notification(self, notification: services_notification.Notification):
         await web_interface.add_notification(notification.level, notification.title,

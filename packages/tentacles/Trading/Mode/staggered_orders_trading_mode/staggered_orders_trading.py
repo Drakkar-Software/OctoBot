@@ -600,7 +600,10 @@ class StaggeredOrdersTradingModeProducer(trading_modes.AbstractTradingModeProduc
             except TypeError as err:
                 # don't crash if fees are not available
                 market_status = self.exchange_manager.exchange.get_market_status(self.symbol, with_fixer=False)
-                self.logger.error(f"Error reading fees for {self.symbol}: {err}. Market status: {market_status}")
+                self.logger.warning(
+                    f"Impossible to read fees for {self.symbol}: {err}. Market status: {market_status}. "
+                    f"Using default {trading_constants.CONFIG_DEFAULT_FEES} fees."
+                )
                 self.max_fees = decimal.Decimal(str(trading_constants.CONFIG_DEFAULT_FEES))
         self.flat_increment = None
         self.flat_spread = None
