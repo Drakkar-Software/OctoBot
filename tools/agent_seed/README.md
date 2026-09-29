@@ -153,6 +153,10 @@ The demo wallet is sandboxed in `octobot_node/agent_seed/demo_wallet.py`: it **c
 - Index strategy on **BTC / ETH / SOL** (10% rebalance trigger)
 - Bootstrap (optional/`--full`) starts the grid automation via `POST /api/v1/debug/`; CLI exits with error if debug shows that create user action **failed**.
 
+## Against a PyInstaller binary
+
+The same fixtures work with a CI-built binary instead of `start.py`. `seed` and `bootstrap` still run from this repo (Python), only the node process is the binary. Set `OCTOBOT_AGENT_SEED_MASTER_USER_ROOT` to the `user/` folder the binary created when it installed tentacles, put that run folder on `PYTHONPATH` so `tentacles` resolves, then start the binary with `--master --user-folder user/agent-seed` plus the same `SCHEDULER_SQLITE_FILE` and `EXIT_BEFORE_TENTACLES_AUTO_REINSTALL` variables as `seed-agent.sh start`. Full steps and the checks to run: [`packages/binary/BINARY_TESTING_INSTRUCTIONS.md`](../../packages/binary/BINARY_TESTING_INSTRUCTIONS.md) (section **Seeded QA**).
+
 ## Troubleshooting
 
 | Symptom | Likely fix |

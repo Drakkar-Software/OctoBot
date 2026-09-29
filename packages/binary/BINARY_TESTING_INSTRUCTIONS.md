@@ -71,7 +71,7 @@ Wait for readiness instead of sleeping:
 until curl -sf -o /dev/null http://127.0.0.1:8000/app; do sleep 2; done && echo ready
 ```
 
-Stop it with `pkill -INT -f OctoBot_x64` (or Ctrl+C in the foreground). It exits in about 2 seconds. The log line `forcing immediate process exit without stop_tasks()` is the normal handling of an interrupt, not a crash.
+Stop it with `pkill -INT -x OctoBot_x64` (or Ctrl+C in the foreground). It exits in about 2 seconds. The log line `forcing immediate process exit without stop_tasks()` is the normal handling of an interrupt, not a crash.
 
 ### When the machine cannot reach the tentacles host directly
 
@@ -135,10 +135,71 @@ Per `.cursor/skills/end-user-ui/SKILL.md`, user-visible text must use entry-leve
 
 - [ ] Stop the bot, start it again in the same directory **without** `TENTACLES_URL_TAG`. It boots (tentacles already installed) and `GET /api/v1/wallets/` still returns the wallet created earlier.
 
-## 5. Clean up
+### 4.6 Seeded QA (agent-seed)
+
+The demo fixtures from `tools/agent_seed` (see its [README](../../tools/agent_seed/README.md) and skill **agent-seed**) work unchanged against the binary. This is the way to test a logged-in node with accounts, strategies and a running automation, and it is the documented QA path for the Node UI.
+
+Only the seed and bootstrap commands need the source checkout: they are Python code that has to run from the repo root in a Python 3.13 environment that has the repo requirement files loaded (root `requirements.txt`, `full_requirements.txt`, every `packages/*/requirements.txt` and `packages/*/full_requirements.txt`, plus `jsonschema` and `aiosqlite`, which are imported but not listed). The binary itself needs nothing besides the tentacles from section 3, so use a scratch environment outside the repo and do not commit anything from it.
+
+Use the directory where the binary already installed its tentacles (call it `$RUN`). Two paths differ from the source-tree flow:
+
+- `OCTOBOT_AGENT_SEED_MASTER_USER_ROOT=$RUN/user` points the seed at the reference tentacles config and profiles the binary created.
+- `PYTHONPATH` must list the repo root, every `packages/*` folder except `tentacles` and `binary`, and `$RUN` itself so that `import tentacles` finds the installed tentacles.
 
 ```bash
-pkill -INT -f OctoBot_x64
+export OCTOBOT_AGENT_SEED_MASTER_USER_ROOT=$RUN/user
+python -m tools.agent_seed seed --user-folder $RUN/user/agent-seed     # run from the repo root, prints nothing on success
+
+cd $RUN
+export EXIT_BEFORE_TENTACLES_AUTO_REINSTALL=true
+export SCHEDULER_SQLITE_FILE=$RUN/user/agent-seed/tasks.db
+./path/to/OctoBot_x64 --master --user-folder user/agent-seed &         # same as `seed-agent.sh start`, with the binary
+
+python -m tools.agent_seed bootstrap --base-url http://127.0.0.1:8000  # from the repo root, once the node listens
+```
+
+Checks, all seen passing on the `bin_factory` Linux x64 build:
+
+- [ ] `GET /api/v1/wallets/` lists the demo wallet `0x70997970c51812dc3a010c7d01b50e0d17dc79c8`, name `demo`.
+- [ ] `GET /api/v1/debug/` without credentials returns 401. With HTTP Basic `wallet:demodemo` it returns 200 with accounts **Seed kraken A** (1000 USDC) and **Seed kraken B** (500 USDC), one exchange config, two strategies.
+- [ ] `/app` redirects to `/app/login` ("Unlock your node"). The passphrase `demodemo` opens `/app/octobots`. `/app/debug` shows the debug view with the seeded counts and no browser errors.
+- [ ] `bootstrap` exits 0. The automation `a0000000-0000-4000-8000-000000000001` is `running`, the create user action is `completed`, and the log shows the simulated trader placing 3 buy and 3 sell BTC/USDC limit orders.
+- [ ] `/app/octobots` shows one active OctoBot as Running.
+
+### 4.7 User actions through the debug API
+
+`POST /api/v1/debug/` (HTTP Basic, body is a `UserAction` as JSON) returns 204 when the action is accepted. Poll `GET /api/v1/debug/` until the action in `user_actions` is `completed` or `failed`. Build payloads with `tools.agent_seed.protocol.builders` and send them with `json.loads(user_action.to_json())`.
+
+- [ ] Creating a **live** (not simulated) account returns 403 with `Demo agent-seed wallet cannot create live exchange accounts or automations`. This is the demo wallet guard, not a bug.
+- [ ] Creating a **simulated** account returns 204 and completes. The account list grows.
+- [ ] `automation_stop` (with `cancel_orders`) returns 204, completes, and the automation status becomes `completed`.
+- [ ] `automation_restart` returns 204, completes, and the automation is `running` again.
+
+### 4.8 Node internals (packages/node, node_journal, node_api_interface)
+
+- [ ] **Scheduler:** `user/agent-seed/tasks.db` (SQLite, set by `SCHEDULER_SQLITE_FILE`) has successful `execute_user_action`, `execute_automation`, `global_view_refresh`, `portfolio_history_collection` and `dbos_cleanup` workflows.
+- [ ] **Journal (record-only):** `<user folder>/node_journal/events.jsonl` and `onboarding_segment.jsonl` contain the events for what you did (`external_action_received`, `account_create_attempt`, `automation_stopped`, `automation_restarted`, `first_automation_started`, `node_process_startup_succeeded`). Nothing in the app should read them back.
+- [ ] **REST spec:** `GET /api/v1/openapi.json` returns 200 (about 100 KB). `/docs` and `/redoc` return 200. `/openapi.json` returns 404, that is expected.
+- [ ] **Encryption:** debug routes answer 404 when node-side encryption is on. The seeded demo expects it off.
+
+### 4.9 Restart recovery
+
+- [ ] With the automation running, stop the bot (`pkill -INT -x OctoBot_x64`) and start it again with the same command. The log shows `Recovering 1 workflows from application version octobot_node_v1`, the automation is `running` again with its 6 orders, accounts and strategies are unchanged, and there is no `ERROR` or `Traceback`.
+
+### 4.10 Known findings on this build
+
+These were seen on the `bin_factory` build. They do not block boot or the checks above, and none is caused by the binary packaging itself.
+
+- After `automation_restart`, the automation `metadata.name` is empty, so the Node UI titles the card `OctoBot a00000` instead of `Agent seed BTC/USDC grid`. The name is correct until the restart. The restart executor rebuilds the task from the latest terminal workflow (`user_actions_executor/automation/restart_automation.py`).
+- One `ERROR GridTradingModeProducer Error reading fees for BTC/USDC: '>' not supported between instances of 'NoneType' and 'NoneType'` is logged when the grid starts, because Kraken returns no maker or taker fee for the pair. It is caught in the staggered orders tentacle and the grid still places all its orders.
+- The log line pointing to `http://127.0.0.1:5001` is misleading in node mode (section 3).
+
+## 5. Clean up
+
+Stop the bot by exact process name. Do not use `pkill -f OctoBot_x64`, it also matches the shell that runs the command and kills it.
+
+```bash
+pkill -INT -x OctoBot_x64
 cd .. && rm -rf octobot-test
 ```
 
