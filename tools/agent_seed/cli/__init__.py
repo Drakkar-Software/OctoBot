@@ -6,6 +6,10 @@ import typing
 import tools.agent_seed.cli.all as agent_seed_cli_all
 import tools.agent_seed.cli.bootstrap as agent_seed_cli_bootstrap
 import tools.agent_seed.cli.seed as agent_seed_cli_seed
+import tools.agent_seed.enums as agent_seed_enums
+
+_SCENARIO_CHOICES = [scenario.value for scenario in agent_seed_enums.BootstrapScenario]
+_SCENARIO_HELP = "Bootstrap scenario, repeatable (default: grid). all = grid, index, completed, lifecycle"
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -20,11 +24,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     bootstrap_parser = subparsers.add_parser(
         "bootstrap",
-        help="POST automation_create and wait for RUNNING grid automation",
+        help="Start the seeded automations (grid by default) through the debug API",
     )
     bootstrap_parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     bootstrap_parser.add_argument("--poll-interval", type=float, default=None)
     bootstrap_parser.add_argument("--timeout", type=float, default=None)
+    bootstrap_parser.add_argument(
+        "--scenario", action="append", choices=_SCENARIO_CHOICES, default=None, help=_SCENARIO_HELP,
+    )
     bootstrap_parser.set_defaults(handler=agent_seed_cli_bootstrap.run_from_namespace)
 
     all_parser = subparsers.add_parser("all", help="Run seed then bootstrap")
@@ -34,6 +41,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     all_parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     all_parser.add_argument("--poll-interval", type=float, default=None)
     all_parser.add_argument("--timeout", type=float, default=None)
+    all_parser.add_argument(
+        "--scenario", action="append", choices=_SCENARIO_CHOICES, default=None, help=_SCENARIO_HELP,
+    )
     all_parser.set_defaults(handler=agent_seed_cli_all.run_from_namespace)
     return parser
 

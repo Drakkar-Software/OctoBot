@@ -95,7 +95,19 @@ Then start the bot as above. Do not set `ALLOW_UNSIGNED_TENTACLES` to get around
 
 ## 4. Test it
 
-Run these in order on a fresh directory. Everything below was seen passing on the `bin_factory` Linux x64 build.
+Run these in order on a fresh directory. Everything below was seen passing on the `bin_factory` Linux x64 build, except where a finding says otherwise.
+
+### 4.0 Automated smoke test (curl only)
+
+`scripts/smoke_test.sh` runs sections 3, 4.1, 4.2, 4.5 and the setup and debug API checks of 4.6 and 4.8 in one go. It needs only bash, curl, grep and sed, so it runs on a plain machine with the binary and nothing else.
+
+```bash
+TENTACLES_URL_TAG=latest packages/binary/scripts/smoke_test.sh ./OctoBot_x64      # bin_factory build: keep the variable, other builds: drop it
+```
+
+It boots the binary in a temporary empty directory, checks the HTTP surface, creates a throwaway wallet through the setup API, checks the debug API with that wallet, scans the log for `Traceback` and unexpected `ERROR` lines, stops the node gracefully, restarts it without `TENTACLES_URL_TAG` and checks the wallet survived. It exits 0 when everything passes and 1 otherwise (the work dir is then kept and its path printed). Set `SMOKE_TENTACLES_ZIP` to a local signed tentacles package (section 3) when the machine cannot reach the tentacles host, `SMOKE_TIMEOUT` to change the 180 s start-up wait, and pass a second argument to choose the work dir. It stops the node by PID and never by process name pattern.
+
+The manual sections below cover what a script cannot: the UI, the wizard, and the seeded automations.
 
 ### 4.1 Boot
 
@@ -139,7 +151,7 @@ Per `.cursor/skills/end-user-ui/SKILL.md`, user-visible text must use entry-leve
 
 The demo fixtures from `tools/agent_seed` (see its [README](../../tools/agent_seed/README.md) and skill **agent-seed**) work unchanged against the binary. This is the way to test a logged-in node with accounts, strategies and a running automation, and it is the documented QA path for the Node UI.
 
-Only the seed and bootstrap commands need the source checkout: they are Python code that has to run from the repo root in a Python 3.13 environment that has the repo requirement files loaded (root `requirements.txt`, `full_requirements.txt`, every `packages/*/requirements.txt` and `packages/*/full_requirements.txt`, plus `jsonschema` and `aiosqlite`, which are imported but not listed). The binary itself needs nothing besides the tentacles from section 3, so use a scratch environment outside the repo and do not commit anything from it.
+Only the seed and bootstrap commands need the source checkout: they are Python code that has to run from the repo root in a Python 3.13 environment that has all the repo requirement files loaded: root `requirements.txt`, `full_requirements.txt` and `extra_requirements.txt`, then every `packages/*/requirements.txt` and every `packages/*/full_requirements.txt`. The `full_requirements.txt` files matter: `jsonschema`, `aiosqlite`, `psutil` and others are only declared there. Add `pytest` and its plugins as well if you want to run `tools/tests`. The binary itself needs nothing besides the tentacles from section 3, so use a scratch environment outside the repo and do not commit anything from it.
 
 Use the directory where the binary already installed its tentacles (call it `$RUN`). Two paths differ from the source-tree flow:
 
@@ -155,8 +167,22 @@ export EXIT_BEFORE_TENTACLES_AUTO_REINSTALL=true
 export SCHEDULER_SQLITE_FILE=$RUN/user/agent-seed/tasks.db
 ./path/to/OctoBot_x64 --master --user-folder user/agent-seed &         # same as `seed-agent.sh start`, with the binary
 
-python -m tools.agent_seed bootstrap --base-url http://127.0.0.1:8000  # from the repo root, once the node listens
+python -m tools.agent_seed bootstrap --base-url http://127.0.0.1:8000  # from the repo root, once the node listens: starts the grid automation
+python -m tools.agent_seed bootstrap --scenario index --scenario completed
+python -m tools.agent_seed bootstrap --scenario lifecycle              # see the finding in 4.10, fails on this build
 ```
+
+`bootstrap` takes repeatable `--scenario` options, all idempotent (a scenario already in its target state does nothing):
+
+| Scenario | Result |
+|----------|--------|
+| `grid` (default) | Grid automation `...0001` on Seed kraken A is `running` |
+| `index` | Index automation `...0002` (BTC, ETH, SOL) on Seed kraken B is `running` |
+| `completed` | Index automation `...0003` on Seed kraken B is created, then stopped, so it shows as completed |
+| `lifecycle` | Stops and restarts the grid automation, then checks it is `running` again with its name |
+| `all` | The four above in that order |
+
+There is no seeded "errored" automation on purpose: a failing automation keeps retrying and stays `running`, and it only becomes `failed` after the scheduler exhausts its recovery attempts, so it cannot be produced quickly and reliably from user actions.
 
 Checks, all seen passing on the `bin_factory` Linux x64 build:
 
@@ -165,6 +191,7 @@ Checks, all seen passing on the `bin_factory` Linux x64 build:
 - [ ] `/app` redirects to `/app/login` ("Unlock your node"). The passphrase `demodemo` opens `/app/octobots`. `/app/debug` shows the debug view with the seeded counts and no browser errors.
 - [ ] `bootstrap` exits 0. The automation `a0000000-0000-4000-8000-000000000001` is `running`, the create user action is `completed`, and the log shows the simulated trader placing 3 buy and 3 sell BTC/USDC limit orders.
 - [ ] `/app/octobots` shows one active OctoBot as Running.
+- [ ] After `--scenario index --scenario completed`: automation `...0002` is `running` with the name `Agent seed BTC/ETH/SOL index`, and `...0003` is `completed` with the name `Agent seed stopped index`. `/app/octobots` counts 2 active and 1 completed. Running the same command again changes nothing.
 
 ### 4.7 User actions through the debug API
 
@@ -190,6 +217,7 @@ Checks, all seen passing on the `bin_factory` Linux x64 build:
 
 These were seen on the `bin_factory` build. They do not block boot or the checks above, and none is caused by the binary packaging itself.
 
+- `bootstrap --scenario lifecycle` fails on this build with `AutomationNameLostError` and exit code 1. That is the finding below, the check is doing its job. It also means `grid` cannot be re-run afterwards on the same node, because the grid check finds its automation by name.
 - After `automation_restart`, the automation `metadata.name` is empty, so the Node UI titles the card `OctoBot a00000` instead of `Agent seed BTC/USDC grid`. The name is correct until the restart. The restart executor rebuilds the task from the latest terminal workflow (`user_actions_executor/automation/restart_automation.py`).
 - One `ERROR GridTradingModeProducer Error reading fees for BTC/USDC: '>' not supported between instances of 'NoneType' and 'NoneType'` is logged when the grid starts, because Kraken returns no maker or taker fee for the pair. It is caught in the staggered orders tentacle and the grid still places all its orders.
 - The log line pointing to `http://127.0.0.1:5001` is misleading in node mode (section 3).

@@ -79,3 +79,49 @@ class TestBuildCreateGridAutomationUserAction:
         assert str(uuid.UUID(automation_id)) == automation_id
         assert automation.strategy.id == demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID
         assert automation.accounts[0].id == demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_GRID_ID
+
+
+class TestBuildCreateIndexAutomationUserAction:
+    def test_defaults_reference_index_strategy_and_idle_account(self):
+        user_action = agent_seed_protocol_builders.build_create_index_automation_user_action()
+        payload = user_action.configuration.actual_instance
+        assert payload.action_type == protocol_models.UserActionType.AUTOMATION_CREATE
+        automation = payload.configuration
+        assert automation.id == demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID
+        assert str(uuid.UUID(automation.id)) == automation.id
+        assert automation.name == demo_agent_seed_constants.DEMO_AGENT_SEED_INDEX_AUTOMATION_DISPLAY_NAME
+        assert automation.strategy.id == demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID
+        assert automation.accounts[0].id == demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_INDEX_IDLE_ID
+
+    def test_automation_id_and_name_can_be_overridden(self):
+        automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID
+        user_action = agent_seed_protocol_builders.build_create_index_automation_user_action(
+            automation_id=automation_id,
+            automation_name=demo_agent_seed_constants.DEMO_AGENT_SEED_COMPLETED_AUTOMATION_DISPLAY_NAME,
+        )
+        automation = user_action.configuration.actual_instance.configuration
+        assert automation.id == automation_id
+        assert str(uuid.UUID(automation_id)) == automation_id
+        assert automation.name == demo_agent_seed_constants.DEMO_AGENT_SEED_COMPLETED_AUTOMATION_DISPLAY_NAME
+
+    def test_user_action_ids_are_unique(self):
+        first = agent_seed_protocol_builders.build_create_index_automation_user_action()
+        second = agent_seed_protocol_builders.build_create_index_automation_user_action()
+        assert first.id != second.id
+
+
+class TestBuildStopAndRestartAutomationUserActions:
+    def test_stop_targets_automation_and_cancels_orders(self):
+        automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
+        user_action = agent_seed_protocol_builders.build_stop_automation_user_action(automation_id)
+        payload = user_action.configuration.actual_instance
+        assert payload.action_type == protocol_models.UserActionType.AUTOMATION_STOP
+        assert payload.id == automation_id
+        assert payload.cancel_orders is True
+
+    def test_restart_targets_automation(self):
+        automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
+        user_action = agent_seed_protocol_builders.build_restart_automation_user_action(automation_id)
+        payload = user_action.configuration.actual_instance
+        assert payload.action_type == protocol_models.UserActionType.AUTOMATION_RESTART
+        assert payload.id == automation_id
