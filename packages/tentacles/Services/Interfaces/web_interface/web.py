@@ -278,6 +278,10 @@ class WebInterface(services_interfaces.AbstractWebInterface):
 
             self.started = True
             try:
+                self.logger.info(
+                    f"Interface successfully initialized and accessible at: http://"
+                    f"{Service_bases.WebService.instance().get_web_server_url(port=self.port)}."
+                )
                 await self.uvicorn_server.serve()
             finally:
                 if self._serve_finished is not None:
