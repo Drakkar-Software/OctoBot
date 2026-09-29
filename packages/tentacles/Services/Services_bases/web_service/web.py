@@ -120,6 +120,8 @@ class WebService(services.AbstractService):
 
     def _get_web_server_port(self):
         try:
+            if not self.config:
+                raise KeyError
             return os.getenv(
                 services_constants.ENV_WEB_PORT,
                 self.config[services_constants.CONFIG_CATEGORY_SERVICES][services_constants.CONFIG_WEB][
@@ -128,8 +130,9 @@ class WebService(services.AbstractService):
         except KeyError:
             return os.getenv(services_constants.ENV_WEB_PORT, services_constants.DEFAULT_SERVER_PORT)
 
-    def _get_web_server_url(self):
-        port = self._get_web_server_port()
+    def get_web_server_url(self, port=None):
+        if port is None:
+            port = self._get_web_server_port()
         try:
             return f"{os.getenv(services_constants.ENV_WEB_ADDRESS, socket.gethostbyname(socket.gethostname()))}:{port}"
         except OSError as err:
@@ -140,4 +143,8 @@ class WebService(services.AbstractService):
         return f"{LOCAL_HOST_IP}:{port}"
 
     def get_successful_startup_message(self):
-        return f"Interface successfully initialized and accessible at: http://{self._get_web_server_url()}.", True
+        port = self._get_web_server_port()
+        return (
+            f"WebInterface configured to use port {port} if started.",
+            True,
+        )
