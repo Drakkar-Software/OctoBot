@@ -154,6 +154,7 @@ class ExchangeColumns(enum.Enum):
     REST = "rest"
     WEBSOCKET = "ws"
     LOGO_URL = "logo"
+    ICON_URL = "icon"
     REFERRAL = "referral"
 
 
