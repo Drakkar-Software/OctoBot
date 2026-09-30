@@ -297,7 +297,7 @@ async def test_get_exchange_details(tentacles_setup_config, supported_exchanges)
         assert details.name == "Binance"
         assert details.url == "https://www.binance.com"
         assert len(details.api) > 1
-        assert "https://github.com/user-attachments/assets" in details.logo_url
+        assert details.logo_url == "https://exchanges-icons.octobot.cloud/binance-icon.webp"
         assert details.has_websocket is False   # default value
         get_tentacle_config_mock.assert_not_called()
 
@@ -633,6 +633,32 @@ class TestBuildCcxtExchangeAvailability:
             protocol_models.TradingType.SPOT,
             protocol_models.TradingType.FUTURES,
         ]
+
+    @mock.patch.object(exchange_util, "is_broker_enabled_on_exchange", return_value=False)
+    @mock.patch.object(exchange_util, "get_supported_exchange_types")
+    @mock.patch.object(exchange_util, "_get_ccxt_exchange_metadata")
+    def test_prefers_icon_over_logo_in_availability(
+        self,
+        metadata_mock,
+        supported_types_mock,
+        _broker_enabled_mock,
+    ):
+        metadata_mock.return_value = {
+            "name": "Binance",
+            "options": {
+                "octobot": {
+                    "urls": {
+                        "icon": "https://exchanges-icons.octobot.cloud/binance-icon.webp",
+                    },
+                },
+            },
+            "urls": {
+                "logo": "https://logo.example/binance",
+            },
+        }
+        supported_types_mock.return_value = [enums.ExchangeTypes.SPOT]
+        availability = exchange_util._build_ccxt_exchange_availability("binance")
+        assert availability.logo == "https://exchanges-icons.octobot.cloud/binance-icon.webp"
 
     @mock.patch.object(exchange_util, "is_broker_enabled_on_exchange", return_value=False)
     @mock.patch.object(exchange_util, "get_supported_exchange_types")
