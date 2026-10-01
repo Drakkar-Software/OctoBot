@@ -72,10 +72,7 @@ def get_historical_tentacle_configs(
             for config_start_time_and_config in master_config[
                 constants.CONFIG_HISTORICAL_CONFIGURATION
             ]
-            if (
-                config_start_time_and_config[0] >= from_time
-                and config_start_time_and_config[0] <= to_time
-            )
+            if from_time <= config_start_time_and_config[0] <= to_time
         ]
     except KeyError:
         raise KeyError(
