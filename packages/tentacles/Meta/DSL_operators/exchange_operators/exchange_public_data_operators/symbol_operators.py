@@ -71,6 +71,10 @@ def _market_expiry_operator(
         DESCRIPTION = "Returns the expiry timestamp in milliseconds for the given symbol's market, or None"
         EXAMPLE = "market_expiry(triggered_symbol())"
 
+        @staticmethod
+        def get_library() -> str:
+            return commons_constants.CONTEXTUAL_OPERATORS_LIBRARY
+
         @classmethod
         def get_parameters(cls) -> list:
             return [

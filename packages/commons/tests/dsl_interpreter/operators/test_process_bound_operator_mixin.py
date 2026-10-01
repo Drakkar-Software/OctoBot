@@ -22,14 +22,17 @@ import octobot_commons.dsl_interpreter.operators.process_bound_operator_mixin as
 import octobot_commons.errors as commons_errors
 import octobot_commons.process_util as process_util
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
 
-class _BareOperator(dsl_interpreter_operator.Operator):
+
+class _BareOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter_operator.Operator):
     @staticmethod
     def get_name() -> str:
         return "bare_process_bound_test"
 
 
 class _BoundOperator(
+    dsl_test_keyword_support.TestKeywordMixin,
     dsl_interpreter_operator.Operator,
     process_bound_operator_mixin.ProcessBoundOperatorMixin,
 ):

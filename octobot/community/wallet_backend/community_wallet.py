@@ -32,7 +32,10 @@ from octobot.community.wallet_backend.errors import (
     InvalidPrivateKeyError,
     PassphraseTooShortError,
     WalletAlreadyExistsError,
+    WalletError,
     WalletNotFoundError,
+    WalletProofMismatchError,
+    WalletStorageReadOnlyError,
 )
 from octobot.community.wallet_backend.wallet_storage import (
     WalletStorage,
@@ -41,6 +44,16 @@ from octobot.community.wallet_backend.wallet_storage import (
 
 _PBKDF2_ITERATIONS = 600_000
 _PBKDF2_ALG = "sha256"
+
+
+def _record_wallet_operation_failure(*, operation: str, error: WalletError) -> None:
+    if isinstance(
+        error,
+        (InvalidPrivateKeyError, WalletAlreadyExistsError, InvalidPassphraseError),
+    ):
+        return
+    import octobot.community.node_journal as node_journal
+    node_journal.record_wallet_operation_failed(operation=operation, error=error)
 
 
 @dataclasses.dataclass
@@ -137,7 +150,9 @@ class WalletBackend:
         try:
             address = sync_chain.address_from_evm_key(private_key)
         except Exception as err:
-            raise InvalidPrivateKeyError(f"Invalid EVM private key: {err}") from err
+            wallet_error = InvalidPrivateKeyError(f"Invalid EVM private key: {err}")
+            _record_wallet_operation_failure(operation="import", error=wallet_error)
+            raise wallet_error from err
         return self._add_wallet_entry(private_key, address, name, passphrase, is_admin)
 
     def import_wallet_from_seed(
@@ -150,7 +165,9 @@ class WalletBackend:
         try:
             wallet = sync_chain.wallet_from_mnemonic(seed.strip())
         except Exception as err:
-            raise InvalidPrivateKeyError(f"Invalid seed phrase: {err}") from err
+            wallet_error = InvalidPrivateKeyError(f"Invalid seed phrase: {err}")
+            _record_wallet_operation_failure(operation="import", error=wallet_error)
+            raise wallet_error from err
         return self._add_wallet_entry(wallet.private_key, wallet.address, name, passphrase, is_admin, seed=seed.strip())
 
     def _add_wallet_entry(
@@ -163,14 +180,20 @@ class WalletBackend:
         seed: typing.Optional[str] = None,
     ) -> sync_chain.Wallet:
         if len(passphrase) < 8:
-            raise PassphraseTooShortError("Passphrase must be at least 8 characters")
+            wallet_error = PassphraseTooShortError("Passphrase must be at least 8 characters")
+            _record_wallet_operation_failure(operation="create", error=wallet_error)
+            raise wallet_error
         normalized = address.lower()
         with self._wallet_lock:
             node_wallets = self._get_node_wallets_list()
             if any(e.address == normalized for e in node_wallets):
-                raise WalletAlreadyExistsError(f"Wallet {address} already exists")
+                wallet_error = WalletAlreadyExistsError(f"Wallet {address} already exists")
+                _record_wallet_operation_failure(operation="import", error=wallet_error)
+                raise wallet_error
             if is_admin and any(e.is_admin for e in node_wallets):
-                raise AdminWalletAlreadyExistsError("An admin wallet already exists")
+                wallet_error = AdminWalletAlreadyExistsError("An admin wallet already exists")
+                _record_wallet_operation_failure(operation="create", error=wallet_error)
+                raise wallet_error
             entry = WalletEntry(
                 address=normalized,
                 name=name or None,
@@ -191,9 +214,13 @@ class WalletBackend:
         """
         entry = self._find_wallet_entry(address)
         if entry is None:
-            raise WalletNotFoundError(f"Wallet {address} not found")
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
         if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
-            raise InvalidPassphraseError("Invalid passphrase")
+            wallet_error = InvalidPassphraseError("Invalid passphrase")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
         return WalletInfo(is_admin=entry.is_admin, name=entry.name, address=entry.address)
 
     def verify_wallet_passphrase(self, address: str, passphrase: str) -> bool:
@@ -206,25 +233,41 @@ class WalletBackend:
     def decrypt_wallet_by_address(self, address: str, passphrase: str) -> sync_chain.Wallet:
         entry = self._find_wallet_entry(address)
         if entry is None:
-            raise WalletNotFoundError(f"Wallet {address} not found")
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
         if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
-            raise InvalidPassphraseError("Invalid passphrase")
+            wallet_error = InvalidPassphraseError("Invalid passphrase")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
         return self._wallet_from_entry(entry)
 
     def decrypt_wallet_entry_by_address(self, address: str, passphrase: str) -> WalletEntry:
         entry = self._find_wallet_entry(address)
         if entry is None:
-            raise WalletNotFoundError(f"Wallet {address} not found")
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
         if not _verify_passphrase_hash(passphrase, entry.passphrase_hash):
-            raise InvalidPassphraseError("Invalid passphrase")
+            wallet_error = InvalidPassphraseError("Invalid passphrase")
+            _record_wallet_operation_failure(operation="decrypt", error=wallet_error)
+            raise wallet_error
         return entry
 
     def get_wallet_for_bot(self, address: str) -> sync_chain.Wallet:
         """Return wallet without passphrase verification — for bot auto-unlock at startup."""
         entry = self._find_wallet_entry(address)
         if entry is None:
-            raise WalletNotFoundError(f"Wallet {address} not found")
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="lookup", error=wallet_error)
+            raise wallet_error
         return self._wallet_from_entry(entry)
+
+    def has_wallet_for_user_id(self, user_id: str) -> bool:
+        for entry in self._get_node_wallets_list():
+            if sync_auth.derive_user_id(entry.private_key) == user_id:
+                return True
+        return False
 
     def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
         """Return the wallet whose derived Starfish ``user_id`` matches *user_id*.
@@ -239,19 +282,27 @@ class WalletBackend:
         for entry in self._get_node_wallets_list():
             if sync_auth.derive_user_id(entry.private_key) == user_id:
                 return self._wallet_from_entry(entry)
-        raise WalletNotFoundError(f"Wallet not found for user_id: {user_id}")
+        wallet_error = WalletNotFoundError(f"Wallet not found for user_id: {user_id}")
+        _record_wallet_operation_failure(operation="lookup", error=wallet_error)
+        raise wallet_error
 
     def remove_wallet(self, address: str) -> None:
         normalized = address.lower()
         with self._wallet_lock:
             node_wallets = self._get_node_wallets_list()
             if len(node_wallets) <= 1:
-                raise CannotRemoveLastWalletError("Cannot remove the last wallet")
+                wallet_error = CannotRemoveLastWalletError("Cannot remove the last wallet")
+                _record_wallet_operation_failure(operation="delete", error=wallet_error)
+                raise wallet_error
             entry = next((e for e in node_wallets if e.address == normalized), None)
             if entry is None:
-                raise WalletNotFoundError(f"Wallet {address} not found")
+                wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+                _record_wallet_operation_failure(operation="delete", error=wallet_error)
+                raise wallet_error
             if entry.is_admin:
-                raise CannotRemoveAdminWalletError("Cannot remove the admin wallet")
+                wallet_error = CannotRemoveAdminWalletError("Cannot remove the admin wallet")
+                _record_wallet_operation_failure(operation="delete", error=wallet_error)
+                raise wallet_error
             self._save_node_wallets_list([e for e in node_wallets if e.address != normalized])
 
     def rename_wallet(self, address: str, name: typing.Optional[str]) -> None:
@@ -263,7 +314,9 @@ class WalletBackend:
                     entry.name = name or None
                     self._save_node_wallets_list(node_wallets)
                     return
-        raise WalletNotFoundError(f"Wallet {address} not found")
+        wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+        _record_wallet_operation_failure(operation="rename", error=wallet_error)
+        raise wallet_error
 
     def is_admin_wallet(self, address: str) -> bool:
         entry = self._find_wallet_entry(address)
@@ -272,3 +325,72 @@ class WalletBackend:
     def get_wallet_name(self, address: str) -> typing.Optional[str]:
         entry = self._find_wallet_entry(address)
         return entry.name if entry else None
+
+    def recover_passphrase_from_ownership_proof(
+        self,
+        address: str,
+        new_passphrase: str,
+        seed: typing.Optional[str] = None,
+        private_key: typing.Optional[str] = None,
+    ) -> None:
+        """Replace passphrase_hash after proving ownership via BIP39 seed or hex private key."""
+        if len(new_passphrase) < 8:
+            raise PassphraseTooShortError("Passphrase must be at least 8 characters")
+
+        seed_value = seed.strip() if seed else ""
+        key_value = private_key.strip() if private_key else ""
+        if bool(seed_value) == bool(key_value):
+            raise InvalidPrivateKeyError(
+                "Provide exactly one of seed phrase or private key"
+            )
+
+        normalized_target = address.lower()
+        if self._find_wallet_entry(address) is None:
+            wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+            _record_wallet_operation_failure(operation="recover_passphrase", error=wallet_error)
+            raise wallet_error
+
+        try:
+            if seed_value:
+                derived = sync_chain.wallet_from_mnemonic(seed_value)
+            else:
+                derived_address = sync_chain.address_from_evm_key(key_value)
+                derived = sync_chain.Wallet(private_key=key_value, address=derived_address)
+        except Exception as err:
+            raise InvalidPrivateKeyError("Invalid seed phrase or private key") from err
+
+        if derived.address.lower() != normalized_target:
+            raise WalletProofMismatchError(
+                "Seed phrase or private key does not match this wallet"
+            )
+
+        new_hash = _hash_passphrase(new_passphrase)
+        with self._wallet_lock:
+            node_wallets = self._get_node_wallets_list()
+            updated: list[WalletEntry] = []
+            found = False
+            for entry in node_wallets:
+                if entry.address == normalized_target:
+                    found = True
+                    updated.append(
+                        WalletEntry(
+                            address=entry.address,
+                            name=entry.name,
+                            is_admin=entry.is_admin,
+                            private_key=entry.private_key,
+                            passphrase_hash=new_hash,
+                            seed=entry.seed,
+                        )
+                    )
+                else:
+                    updated.append(entry)
+            if not found:
+                wallet_error = WalletNotFoundError(f"Wallet {address} not found")
+                _record_wallet_operation_failure(operation="recover_passphrase", error=wallet_error)
+                raise wallet_error
+            try:
+                self._save_node_wallets_list(updated)
+            except NotImplementedError as err:
+                raise WalletStorageReadOnlyError(
+                    "Wallet storage is read-only; passphrase cannot be changed on this node"
+                ) from err

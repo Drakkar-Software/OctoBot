@@ -131,6 +131,15 @@ class TestOutdatedReferenceAccountWorkflow:
                         _T_POLL_SECONDS,
                     )
                 )
+                fresh_delivery_task = asyncio.create_task(
+                    outdated_reference_workflow_module.deliver_fresh_trading_signal_after_outdated_skip(
+                        temp_dbos_scheduler,
+                        caplog,
+                        automation_id,
+                        fresh_signal,
+                        _T_POLL_SECONDS,
+                    )
+                )
 
                 # Step 1 — Enqueue AUTOMATION_CREATE for copy follower; expect COMPLETED create result.
                 try:
@@ -153,17 +162,8 @@ class TestOutdatedReferenceAccountWorkflow:
                     expected_workflow_id=None,
                 )
 
-                # Step 2 — Stale signal delivered while copy workflow was pending; expect outdated skip log.
-                stale_skip_deadline = time.monotonic() + _T_POLL_SECONDS
-                while time.monotonic() < stale_skip_deadline:
-                    if outdated_reference_workflow_module.caplog_contains_outdated_skip(caplog):
-                        break
-                    await asyncio.sleep(workflow_common_module.DEFAULT_GRID_WORKFLOW_POLL_INTERVAL_SECONDS)
-                else:
-                    pytest.fail(
-                        "Timed out waiting for outdated reference account skip log "
-                        f"({outdated_reference_workflow_module.OUTDATED_SKIP_LOG_SUBSTRING!r})"
-                    )
+                # Step 2 — Stale skip + fresh delivery race the next child recv; fresh task started above.
+                await fresh_delivery_task
 
                 await outdated_reference_workflow_module.poll_state_reader_until(
                     temp_dbos_scheduler,
@@ -172,14 +172,6 @@ class TestOutdatedReferenceAccountWorkflow:
                     not in outdated_reference_workflow_module.sell_limit_prices_from_reader(reader),
                     _T_POLL_SECONDS,
                     "stale sell limit not mirrored",
-                )
-
-                # Step 3 — Send fresh TradingSignal after child workflow is pending again; expect mirror at fresh price.
-                await outdated_reference_workflow_module.deliver_trading_signal_when_pending(
-                    temp_dbos_scheduler,
-                    automation_id,
-                    fresh_signal,
-                    _T_POLL_SECONDS,
                 )
                 fresh_reader = await outdated_reference_workflow_module.poll_state_reader_until(
                     temp_dbos_scheduler,

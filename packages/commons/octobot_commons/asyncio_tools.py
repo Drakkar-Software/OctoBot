@@ -27,6 +27,17 @@ import octobot_commons.logging as logging_util
 _BACKGROUND_FINGERPRINT_ASYNC_EXECUTOR = None
 
 
+def is_on_async_loop(loop: asyncio.AbstractEventLoop) -> bool:
+    """
+    True when the current thread is running asyncio on the given loop.
+    False when there is no running loop (e.g. sync WSGI worker thread) or another loop is running.
+    """
+    try:
+        return asyncio.get_running_loop() is loop
+    except RuntimeError:
+        return False
+
+
 def run_background_fingerprint_async_executor(fingerprint: str, coroutine) -> bool:
     """
     Run a coroutine in the background async executor

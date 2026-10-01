@@ -1,0 +1,10 @@
+#  Demo-only agent seed protocol fixtures.
+
+import tools.agent_seed.protocol.builders as builders
+
+build_create_grid_automation_user_action = builders.build_create_grid_automation_user_action
+build_grid_strategy = builders.build_grid_strategy
+build_index_strategy = builders.build_index_strategy
+build_kraken_sim_exchange_config = builders.build_kraken_sim_exchange_config
+build_sim_exchange_account = builders.build_sim_exchange_account
+wrap_user_action_configuration = builders.wrap_user_action_configuration

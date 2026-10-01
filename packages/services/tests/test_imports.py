@@ -23,11 +23,9 @@ import octobot_services.util
 
 def test_web_imports():
     import flask
-    import flask_caching
-    import flask_compress
-    import flask_socketio
-    import gevent
-    import geventwebsocket
+    import uvicorn
+    import asgiref.wsgi
+    import starlette
     import flask_login
     import wtforms
     import flask_wtf
@@ -35,7 +33,6 @@ def test_web_imports():
 
 def test_telegram_imports():
     import telegram
-    import telethon
 
 
 def test_openai_imports():

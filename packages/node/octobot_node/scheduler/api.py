@@ -24,6 +24,7 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.config
 import octobot_node.constants
+import octobot_node.enums
 import octobot_node.models
 import octobot_node.scheduler
 import octobot_node.scheduler.workflows_util as workflows_util
@@ -79,34 +80,26 @@ async def get_task_metrics(
     if not scheduler.INSTANCE:
         return {"pending": 0, "scheduled": 0, "results": 0}
     try:
+        wallet_scoped_metrics = user_id is not None
         pending_statuses, result_statuses = await asyncio.gather(
-            scheduler.INSTANCE.list_workflows_async(status=[
-                dbos.WorkflowStatusString.ENQUEUED.value,
-                dbos.WorkflowStatusString.PENDING.value,
-            ], load_output=False),
-            scheduler.INSTANCE.list_workflows_async(status=[
-                dbos.WorkflowStatusString.SUCCESS.value,
-                dbos.WorkflowStatusString.ERROR.value,
-            ], load_output=False),
+            workflows_util.list_scheduler_workflows_async(
+                scheduler.INSTANCE,
+                octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+                None,
+                user_id,
+                load_output=False,
+                load_input=wallet_scoped_metrics,
+                queues_only=True,
+            ),
+            workflows_util.list_scheduler_workflows_async(
+                scheduler.INSTANCE,
+                octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+                list(workflows_util.DBOS_TERMINAL_WORKFLOW_STATUSES),
+                user_id,
+                load_output=False,
+                load_input=wallet_scoped_metrics,
+            ),
         )
-        if user_id is not None:
-            automation_queue = octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
-            pending_only_automation = [
-                row for row in (pending_statuses or []) if row.queue_name == automation_queue
-            ]
-            result_only_automation = [
-                row for row in (result_statuses or []) if row.queue_name == automation_queue
-            ]
-            pending_statuses = workflows_util.filter_by_wallet(
-                pending_only_automation,
-                user_id,
-                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
-            )
-            result_statuses = workflows_util.filter_by_wallet(
-                result_only_automation,
-                user_id,
-                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE,
-            )
         return {
             "pending": len(pending_statuses or []),
             "scheduled": 0,
@@ -128,6 +121,35 @@ def _get_active_execution(
         key=lambda e: e.completed_at,
     )
     return dated[-1] if dated else (executions[-1] if executions else None)
+
+
+def _task_recency_sort_key(task: octobot_node.models.Task) -> tuple[int, str, str]:
+    active_execution = _get_active_execution(task.executions or [])
+    if active_execution is None:
+        return (0, "", task.id or "")
+    sort_at = active_execution.completed_at or active_execution.scheduled_at
+    if sort_at is None:
+        return (0, "", task.id or "")
+    return (1, sort_at.isoformat(), task.id or "")
+
+
+def sort_tasks_by_recency(
+    tasks: list[octobot_node.models.Task],
+) -> list[octobot_node.models.Task]:
+    return sorted(tasks, key=_task_recency_sort_key, reverse=True)
+
+
+def paginate_tasks(
+    tasks: list[octobot_node.models.Task],
+    page: int,
+    limit: int,
+) -> list[octobot_node.models.Task]:
+    page = max(1, page)
+    max_limit = octobot_node.constants.TASKS_LIST_MAX_PAGE_LIMIT
+    limit = max(1, min(limit, max_limit))
+    sorted_tasks = sort_tasks_by_recency(tasks)
+    start_idx = (page - 1) * limit
+    return sorted_tasks[start_idx:start_idx + limit]
 
 
 def _build_tasks_from_executions(
@@ -284,6 +306,8 @@ async def get_task_result(task_id: str):
             except Exception as error:
                 result_data = {"error": str(error)}
             return {"status": "completed", "data": result_data}
+        if wf_status == "CANCELLED":
+            return {"status": "cancelled", "data": None}
     except Exception as error:
         logger.debug(f"Workflow {task_id} not yet complete: {error}")
     return {"status": "pending or running"}

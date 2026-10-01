@@ -95,7 +95,8 @@ async def load_historical_values(meta_database, exchange, with_candles=True,
         contracts = metadata[commons_enums.DBRows.FUTURE_CONTRACTS.value][exchange] if trading_type == "future" else {}
         # init data
         for pair in run_global_metadata[commons_enums.DBRows.SYMBOLS.value]:
-            symbol = symbol_util.parse_symbol(pair).base
+            # Bare asset ticker: backtest analytics grouping — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+            symbol = symbol_util.parse_symbol(pair).base_asset_ticker()
             is_inverse_contract = trading_type == "future" and trading_api.is_inverse_future_contract(
                 trading_enums.FutureContractType(contracts[pair]["contract_type"])
             )
@@ -358,6 +359,7 @@ async def plot_historical_portfolio_value(
 
 
 def _read_pnl_from_trades(x_data, pnl_data, cumulative_pnl_data, trades_history, x_as_trade_count):
+    # Bare asset ticker: backtest analytics grouping — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
     buy_order_volume_by_price_by_currency = {
         symbol_util.parse_symbol(symbol).base: {}
         for symbol in trades_history.keys()
@@ -368,7 +370,9 @@ def _read_pnl_from_trades(x_data, pnl_data, cumulative_pnl_data, trades_history,
     for trades in trades_history.values():
         all_trades += trades
     for trade in sorted(all_trades, key=lambda x: x[commons_enums.PlotAttributes.X.value]):
-        currency, ref_market = symbol_util.parse_symbol(trade[commons_enums.DBRows.SYMBOL.value]).base_and_quote()
+        parsed_trade_symbol = symbol_util.parse_symbol(trade[commons_enums.DBRows.SYMBOL.value])
+        currency = parsed_trade_symbol.base
+        ref_market = parsed_trade_symbol.quote
         trade_volume = trade[commons_enums.PlotAttributes.VOLUME.value]
         buy_order_volume_by_price = buy_order_volume_by_price_by_currency[currency]
         if trade[commons_enums.PlotAttributes.SIDE.value] == trading_enums.TradeOrderSide.BUY.value:

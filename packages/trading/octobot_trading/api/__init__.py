@@ -136,6 +136,7 @@ from octobot_trading.api.exchange import (
     cancel_ccxt_throttle_task,
     stop_exchange,
     get_exchanges_availability,
+    exchange_uses_network_qualified_markets,
 )
 from octobot_trading.api.modes import (
     get_trading_modes,
@@ -377,6 +378,7 @@ __all__ = [
     "cancel_ccxt_throttle_task",
     "stop_exchange",
     "get_exchanges_availability",
+    "exchange_uses_network_qualified_markets",
     "get_trading_modes",
     "get_trading_mode_symbol",
     "is_trading_mode_symbol_wildcard",

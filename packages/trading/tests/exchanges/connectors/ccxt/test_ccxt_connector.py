@@ -227,6 +227,47 @@ async def test_get_trade_fee(exchange_manager, future_trader_simulator_with_defa
            _get_fees("taker", "BTC", future_fees_value, decimal.Decimal("0.00018"))
 
 
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestGetTradeFeeNetworkQualified:
+    async def test_linear_futures_fee_currency_is_qualified_quote(self, exchange_manager):
+        exchange_manager.is_future = True
+        connector = exchange_connectors.CCXTConnector(exchange_manager.config, exchange_manager)
+        connector.calculate_fees = mock.Mock(return_value={
+            enums.FeePropertyColumns.RATE.value: 0.0004,
+            enums.FeePropertyColumns.COST.value: decimal.Decimal("1"),
+            enums.FeePropertyColumns.CURRENCY.value: "USDT",
+        })
+        future_contract = mock.Mock()
+        future_contract.is_inverse_contract.return_value = False
+        exchange_manager.exchange.get_pair_future_contract = mock.Mock(return_value=future_contract)
+
+        fee = connector.get_trade_fee(
+            TICKER_WISE_SYMBOL, enums.TraderOrderType.BUY_LIMIT,
+            decimal.Decimal("0.45"), decimal.Decimal(10000), "taker",
+        )
+        assert fee[enums.FeePropertyColumns.CURRENCY.value] == "USDT@ETH"
+
+    async def test_inverse_futures_fee_currency_is_qualified_base(self, exchange_manager):
+        exchange_manager.is_future = True
+        connector = exchange_connectors.CCXTConnector(exchange_manager.config, exchange_manager)
+        connector.calculate_fees = mock.Mock(return_value={
+            enums.FeePropertyColumns.RATE.value: 0.0004,
+            enums.FeePropertyColumns.COST.value: decimal.Decimal("1"),
+            enums.FeePropertyColumns.CURRENCY.value: "BTC",
+        })
+        future_contract = mock.Mock()
+        future_contract.is_inverse_contract.return_value = True
+        exchange_manager.exchange.get_pair_future_contract = mock.Mock(return_value=future_contract)
+
+        fee = connector.get_trade_fee(
+            TICKER_WISE_SYMBOL, enums.TraderOrderType.BUY_LIMIT,
+            decimal.Decimal("0.45"), decimal.Decimal(10000), "taker",
+        )
+        assert fee[enums.FeePropertyColumns.CURRENCY.value] == "BTC@BTC"
+
+
 async def test_set_first_consecutive_authentication_error_at_if_unset(ccxt_connector):
     assert ccxt_connector.first_consecutive_authentication_error_at is None
     with mock.patch.object(ccxt_connector, 'get_exchange_current_time', return_value=123.456) as get_time_mock:

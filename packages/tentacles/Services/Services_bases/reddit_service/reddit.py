@@ -70,10 +70,12 @@ class RedditService(services.AbstractService):
 
     async def prepare(self):
         if not self.reddit_api:
-            try:
-                self.create_reddit_api()
-            except KeyError:
-                asyncpraw.createIni()
+            self.create_reddit_api()
+
+    async def stop(self):
+        if self.reddit_api is not None:
+            await self.reddit_api.close()
+            self.reddit_api = None
 
     def get_type(self):
         return services_constants.CONFIG_REDDIT
@@ -97,7 +99,7 @@ class RedditService(services.AbstractService):
         # asyncpraw praw.ini file is sometimes not found in binary env, mock its values.
         # mock values from https://github.com/praw-dev/praw/blob/master/praw/praw.ini using [DEFAULT]
         # warning, on updating the asycpraw lib, make sure this file did not change
-        # last update: 24 aug 2022 with asyncpraw==7.5.0
+        # last update: verified against asyncpraw==8.0.3 bundled praw.ini (keys unchanged)
         # file:
         # [DEFAULT]
         # # A boolean to indicate whether or not to check for package updates.
@@ -126,7 +128,7 @@ class RedditService(services.AbstractService):
         # # The timeout for requests to Reddit in number of seconds
         # timeout = 16
         return {
-            "check_for_updates": "False",  # local overwrite to avoid update check at startup
+            "check_for_updates": False,  # local overwrite to avoid update check at startup
 
             "comment_kind": "t1",
             "message_kind": "t4",

@@ -162,7 +162,11 @@ def _add_market_pair_for_currency(
     currency: str | None,
     reference_market: str,
 ) -> None:
-    if not currency or currency == reference_market or currency in commons_constants.USD_LIKE_COINS:
+    if (
+        not currency
+        or symbol_util.is_same_coin(currency, reference_market)
+        or symbol_util.is_usd_like_coin(currency)
+    ):
         return
     direct_symbol, _is_reversed_symbol = exchange_util_module.get_associated_symbol(
         exchange_manager,

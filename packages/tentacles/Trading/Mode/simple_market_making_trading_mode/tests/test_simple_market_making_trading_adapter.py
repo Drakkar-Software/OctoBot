@@ -303,22 +303,12 @@ class TestAdapt:
         def _raise_value_error(_):
             raise ValueError("no usd like")
 
-        class ParsedSymbol:
-            def __init__(self, quote):
-                self.quote = quote
-
-        parse_symbol_mock = mock.Mock(return_value=ParsedSymbol("USDT"))
-
         with mock.patch(
             "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.symbols_util.get_most_common_usd_like_symbol",
             mock.Mock(side_effect=_raise_value_error),
-        ), mock.patch(
-            "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.symbols_util.parse_symbol",
-            parse_symbol_mock,
         ):
             await adapter.adapt(profile_data, auth_data)
 
-        parse_symbol_mock.assert_called_once_with("XRP/USDT")
         assert profile_data.trading.reference_market == "USDT"
 
     async def test_adapt_pauses_trading_when_bot_should_not_trade(self, adapter, profile_data, auth_data):
@@ -411,9 +401,6 @@ class TestAdapt:
         with mock.patch(
             "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.commons_logging.get_logger",
             mock.Mock(return_value=mock.Mock()),
-        ), mock.patch(
-            "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.symbols_util.parse_symbol",
-            mock.Mock(return_value=type("Parsed", (), {"base": "BTC", "quote": "USDT"})()),
         ), mock.patch(
             "tentacles.Trading.Mode.simple_market_making_trading_mode.simple_market_making_profile_data_adapter.octobot_commons.constants.IS_DEV_MODE_ENABLED",
             True,

@@ -126,11 +126,12 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
     NAME = "loop_until"
     DESCRIPTION = (
         "Re-evaluates a condition after retry_interval until it is true. "
+        "Optional max_retry_interval adds random jitter between checks (same semantics as wait min/max). "
         "Optional timeout and max_attempts stop the loop with ErrorStatementEncountered; "
         "if both are omitted, loops until the condition is true. "
         "Returns the condition value when it becomes true."
     )
-    EXAMPLE = "loop_until(x > 0, 1, timeout=30, max_attempts=10)"
+    EXAMPLE = "loop_until(x > 0, 1, max_retry_interval=3, timeout=30, max_attempts=10)"
     CATEGORY = commons_enums.DslKeywordCategory.TRIGGER.value
 
     LOOP_START_TIME_KEY = "loop_until_start_time"
@@ -153,6 +154,12 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
                 description="seconds to wait between condition checks",
                 required=True,
                 type=commons_enums.DslValueType.NUMBER.value),
+            dsl_interpreter.OperatorParameter(
+                name="max_retry_interval",
+                description="if set and greater than retry_interval, random wait in [retry_interval, max_retry_interval)",
+                required=False,
+                type=commons_enums.DslValueType.NUMBER.value,
+                default=None),
             dsl_interpreter.OperatorParameter(
                 name="timeout",
                 description="if set, maximum total seconds; if still false, raises ErrorStatementEncountered",
@@ -210,6 +217,23 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
             raise octobot_commons.errors.InvalidParametersError(
                 f"loop_until() requires max_attempts >= 1 when set, got {max_attempts_value}"
             )
+        max_retry_interval = param_by_name.get("max_retry_interval")
+        if max_retry_interval is not None:
+            if max_retry_interval < 0:
+                raise octobot_commons.errors.InvalidParametersError(
+                    f"loop_until() requires a non-negative max_retry_interval, got {max_retry_interval}"
+                )
+            if max_retry_interval < retry_interval:
+                raise octobot_commons.errors.InvalidParametersError(
+                    "loop_until() requires max_retry_interval >= retry_interval when set"
+                )
+
+    def _sample_retry_wait(self, param_by_name: dict[str, typing.Any]) -> float:
+        retry_interval = param_by_name["retry_interval"]
+        max_retry_interval = param_by_name.get("max_retry_interval")
+        if max_retry_interval is None or max_retry_interval == retry_interval:
+            return float(retry_interval)
+        return random.randrange(int(retry_interval) * 1000, int(max_retry_interval) * 1000) / 1000
 
     def _extra_loop_state(self, last_execution_result: typing.Optional[dict]) -> dict[str, typing.Any]:
         if not last_execution_result:
@@ -225,7 +249,10 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
         }
 
     def _compute_remaining_retry_wait(
-        self, current_time: float, last_execution_result: typing.Optional[dict]
+        self,
+        current_time: float,
+        last_execution_result: typing.Optional[dict],
+        param_by_name: dict[str, typing.Any],
     ) -> typing.Optional[float]:
         if not last_execution_result:
             return None
@@ -235,8 +262,7 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
         base_waiting_time = last_execution_result[dsl_interpreter.ReCallingOperatorResultKeys.WAITING_TIME.value]
         waiting_time = base_waiting_time - (current_time - last_execution_time)
         if waiting_time <= 0:
-            # reset waiting timee
-            return base_waiting_time
+            return self._sample_retry_wait(param_by_name)
         return waiting_time
 
     def _read_loop_start_and_attempts(
@@ -267,7 +293,9 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
         timeout = param_by_name.get("timeout")
 
         try:
-            remaining_wait = self._compute_remaining_retry_wait(current_time, last_execution_result)
+            remaining_wait = self._compute_remaining_retry_wait(
+                current_time, last_execution_result, param_by_name
+            )
         except KeyError:
             remaining_wait = None
         if remaining_wait is None:
@@ -282,7 +310,7 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
                 raise octobot_commons.errors.MaxAttemptsExceededError(
                     "loop_until: max_attempts exceeded before condition became true"
                 )
-            remaining_wait = float(param_by_name["retry_interval"])
+            remaining_wait = self._sample_retry_wait(param_by_name)
         else:
             # this is not the first execution: check exit conditions
             if timeout is not None and (
@@ -319,7 +347,6 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
     async def _run_blocking_loop(
         self, param_by_name: dict[str, typing.Any]
     ) -> typing.Any:
-        retry_interval = float(param_by_name["retry_interval"])
         loop_start_time = time.time()
         attempt_count = 0
         while True:
@@ -338,4 +365,4 @@ class LoopUntilOperator(dsl_interpreter.PreComputingCallOperator, dsl_interprete
                 raise octobot_commons.errors.ErrorStatementEncountered(
                     "loop_until: max_attempts exceeded before condition became true"
                 )
-            await asyncio.sleep(retry_interval)
+            await asyncio.sleep(self._sample_retry_wait(param_by_name))

@@ -86,11 +86,31 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
     async def _inner_start(self) -> bool:
         return self.threaded_start()
 
+    def run(self) -> None:
+        thread_name = threading.current_thread().name
+        self.logger.info("Node API thread: run() started (thread=%s)", thread_name)
+        try:
+            asyncio.run(self._async_run())
+        except Exception as exc:
+            self.logger.exception(
+                exc,
+                True,
+                f"Node API thread: _async_run failed: {exc}",
+            )
+        finally:
+            self.logger.info("Node API thread: run() exited (thread=%s)", thread_name)
+
     async def _async_run(self) -> bool:
+        self.logger.info("Node API thread: _async_run started")
         if self.node_api_service is None:
             self.node_api_service = Service_bases.NodeApiService.instance()
         self.host = self.node_api_service.get_bind_host()
         self.port = self.node_api_service.get_bind_port()
+        self.logger.info(
+            "Node API thread: binding uvicorn on %s:%s",
+            self.host,
+            self.port,
+        )
         node_sqlite_file = self.node_api_service.get_node_sqlite_file()
         node_postgres_url = self.node_api_service.get_node_postgres_url()
         if node_sqlite_file:
@@ -105,6 +125,15 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         host = self.host
         port = self.port
         self.app = self.create_app(external_host=self.node_api_service.get_node_external_host())
+        dist_dir_for_log = get_dist_directory()
+        if dist_dir_for_log is not None:
+            dist_log_value = str(dist_dir_for_log)
+        else:
+            dist_log_value = "none"
+        self.logger.info(
+            "Node API thread: FastAPI app created (dist=%s)",
+            dist_log_value,
+        )
         # Set CORS from service config
         cors_origins_str = self.node_api_service.get_backend_cors_origins()
         cors_origins = [i.strip() for i in cors_origins_str.split(",") if i.strip()] if cors_origins_str else []
@@ -125,8 +154,10 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
         if dist_dir and self._should_open_node_ui_in_browser():
             self._open_node_ui_on_browser()
         try:
+            self.logger.info("Node API thread: entering uvicorn serve()")
             await self.server.serve()
         finally:
+            self.logger.info("Node API thread: uvicorn serve() exited")
             if self._serve_finished is not None:
                 self._serve_finished.set()
         return True
@@ -170,6 +201,9 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
     def create_app(cls, external_host: str | None = None) -> FastAPI:
         @asynccontextmanager
         async def lifespan(app: FastAPI):
+            octobot_commons_logging.get_logger("NodeApiInterface").info(
+                "Node API thread: FastAPI lifespan startup (uvicorn accepting requests)",
+            )
             yield
             # Shutdown: trading signal channel first, then DBOS
             await scheduler.shutdown_scheduler_and_trading_signal_channel()

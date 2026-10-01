@@ -267,3 +267,27 @@ def test_different_symbols(mock_trader):
         
         event = octobot_trading.personal_data.FilledOrderUpdateEvent(order)
         assert event.symbol == symbol
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestFilledOrderUpdateEventNetworkQualified:
+    def test_checked_asset_uses_qualified_base_on_buy(self):
+        portfolio = mock.Mock()
+        portfolio.get_currency_portfolio = mock.Mock(
+            return_value=mock.Mock(available=decimal.Decimal("10"))
+        )
+        order = mock.Mock(
+            origin_quantity=decimal.Decimal("1"),
+            origin_price=decimal.Decimal("1"),
+            side=enums.TradeOrderSide.BUY,
+            symbol=TICKER_WISE_SYMBOL,
+            trader=mock.Mock(
+                exchange_manager=mock.Mock(is_future=False, is_option=False),
+            ),
+        )
+        event = octobot_trading.personal_data.FilledOrderUpdateEvent(order)
+        available = event._get_checked_asset_available_amount(portfolio)
+        assert available == decimal.Decimal("10")
+        portfolio.get_currency_portfolio.assert_called_once_with("BTC@BTC")

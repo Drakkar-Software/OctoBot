@@ -113,7 +113,76 @@ class TestProfileDataForAccount:
         assert profile_data.trader_simulator.enabled is True
 
 
+class TestGetCryptoCurrenciesFromSymbols:
+    def test_groups_trading_pairs_under_bare_base_ticker(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="coinrabbit"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+        )
+        profile_data = profile_data_factory_module.create_profile_data(
+            exchange_account_details,
+            automation_id="automation-ticker-wise",
+            symbols={
+                "BTC@BTC/USDT@ETH",
+                "ETH@ETH/USDT@ETH",
+            },
+            as_simulator=True,
+        )
+        crypto_by_name = {currency.name: currency.trading_pairs for currency in profile_data.crypto_currencies}
+        assert crypto_by_name == {
+            "BTC": ["BTC@BTC/USDT@ETH"],
+            "ETH": ["ETH@ETH/USDT@ETH"],
+        }
+        assert profile_data.trading.reference_market == "USDT@ETH"
+
+    def test_spot_pair_reference_market_uses_bare_quote(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="binanceus"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+        )
+        profile_data = profile_data_factory_module.create_profile_data(
+            exchange_account_details,
+            automation_id="automation-spot",
+            symbols={"BTC/USDT"},
+            as_simulator=True,
+        )
+        assert profile_data.trading.reference_market == "USDT"
+
+
 class TestInferReferenceMarket:
+    def test_uses_qualified_quote_from_crypto_when_pairs_present(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="coinrabbit"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+            portfolio=exchange_account_details_module.ExchangeAccountPortfolio(unit="USDT@ETH"),
+        )
+        crypto_currencies = [
+            profile_data_module.CryptoCurrencyData(
+                name="BTC",
+                trading_pairs=["BTC@BTC/USDT@ETH"],
+            )
+        ]
+        assert (
+            profile_data_factory_module.infer_reference_market(exchange_account_details, crypto_currencies)
+            == "USDT@ETH"
+        )
+
+    def test_uses_bare_quote_from_spot_trading_pair(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="binanceus"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+        )
+        crypto_currencies = [
+            profile_data_module.CryptoCurrencyData(
+                name="BTC",
+                trading_pairs=["BTC/USDT"],
+            )
+        ]
+        assert (
+            profile_data_factory_module.infer_reference_market(exchange_account_details, crypto_currencies)
+            == "USDT"
+        )
+
     def test_returns_default_reference_market_when_internal_name_missing(self):
         exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
             exchange_details=profile_data_module.ExchangeData(),
@@ -122,4 +191,31 @@ class TestInferReferenceMarket:
         assert (
             profile_data_factory_module.infer_reference_market(exchange_account_details, [])
             == commons_constants.DEFAULT_REFERENCE_MARKET
+        )
+
+    def test_infers_quote_from_first_trading_pair_when_portfolio_unit_missing(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="coinrabbit"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+        )
+        crypto_currencies = [
+            profile_data_module.CryptoCurrencyData(
+                name="BTC@BTC",
+                trading_pairs=["BTC@BTC/USDT@ETH"],
+            )
+        ]
+        assert (
+            profile_data_factory_module.infer_reference_market(exchange_account_details, crypto_currencies)
+            == "USDT@ETH"
+        )
+
+    def test_uses_portfolio_unit_when_crypto_currencies_empty(self):
+        exchange_account_details = exchange_account_details_module.ExchangeAccountDetails(
+            exchange_details=profile_data_module.ExchangeData(internal_name="coinrabbit"),
+            auth_details=exchange_data_module.ExchangeAuthDetails(),
+            portfolio=exchange_account_details_module.ExchangeAccountPortfolio(unit="USDT@ETH"),
+        )
+        assert (
+            profile_data_factory_module.infer_reference_market(exchange_account_details, [])
+            == "USDT@ETH"
         )

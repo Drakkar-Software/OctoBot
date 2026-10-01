@@ -377,8 +377,13 @@ class DCATradingModeConsumer(trading_modes.AbstractTradingModeConsumer):
         try:
             buying = order_type in (trading_enums.TraderOrderType.BUY_MARKET, trading_enums.TraderOrderType.BUY_LIMIT)
             parsed_symbol = symbol_util.parse_symbol(symbol)
-            missing_currency = parsed_symbol.quote if buying else parsed_symbol.base
-            settlement_asset = parsed_symbol.settlement_asset if parsed_symbol.is_future() else parsed_symbol.quote
+            missing_currency = (
+                parsed_symbol.quote if buying else parsed_symbol.base
+            )
+            # Bare asset ticker: spot settlement quote / futures settlement asset — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+            settlement_asset = (
+                parsed_symbol.settlement_asset if parsed_symbol.is_future() else parsed_symbol.quote_asset_ticker()
+            )
             quantity_currency = trading_personal_data.get_order_quantity_currency(self.exchange_manager, symbol)
             if parsed_symbol.is_spot():
                 cost = quantity * price

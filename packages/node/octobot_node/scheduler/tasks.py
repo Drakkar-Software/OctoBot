@@ -37,11 +37,12 @@ async def trigger_user_action_workflow(
     if not octobot_node.scheduler.is_initialized():
         raise RuntimeError("Scheduler is not initialized")
     import octobot_node.scheduler.workflows.user_action_workflow as user_action_workflow
-    handle = await octobot_node.scheduler.SCHEDULER.USER_ACTION_QUEUE.enqueue_async(
+    handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.enqueue_workflow_async(
+        octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value,
         user_action_workflow.UserActionWorkflow.execute_user_action,
         inputs=params.UserActionWorkflowInputs(
             user_id=user_id, user_action=user_action,
-        ).to_dict(include_default_values=False)
+        ).to_dict(include_default_values=False),
     )
     return handle.workflow_id
 
@@ -57,7 +58,8 @@ async def trigger_portfolio_history_collection(
     workflow_context = None
     if collection_params is not None:
         workflow_context = collection_params.to_dict(include_default_values=False)
-    handle = await octobot_node.scheduler.SCHEDULER.PORTFOLIO_HISTORY_QUEUE.enqueue_async(
+    handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.enqueue_workflow_async(
+        octobot_node.enums.SchedulerQueues.PORTFOLIO_HISTORY_QUEUE.value,
         portfolio_history_workflow.PortfolioHistoryWorkflow.portfolio_history_collection,
         scheduled_time,
         workflow_context,
@@ -78,14 +80,16 @@ async def trigger_task(
         inputs = params.AutomationWorkflowInputs(task=task).to_dict(include_default_values=False)
         if target_workflow_id:
             with octobot_node.scheduler.SCHEDULER.SetWorkflowID(target_workflow_id):
-                handle = await octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+                handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.enqueue_workflow_async(
+                    octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value,
                     automation_workflow.AutomationWorkflow.execute_automation,
-                    inputs=inputs
+                    inputs=inputs,
                 )
         else:
-            handle = await octobot_node.scheduler.SCHEDULER.AUTOMATION_WORKFLOW_QUEUE.enqueue_async(
+            handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.enqueue_workflow_async(
+                octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value,
                 automation_workflow.AutomationWorkflow.execute_automation,
-                inputs=inputs
+                inputs=inputs,
             )
     else:
         raise ValueError(f"Unsupported task type: {task.type}")

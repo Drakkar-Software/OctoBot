@@ -21,6 +21,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.account.account_user_action_executor as account_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.account_state_updater as account_state_updater
 
+import octobot.community.node_journal as node_journal
+
 
 def _get_edit_account_payload(
     user_action: protocol_models.UserAction,
@@ -61,3 +63,7 @@ class EditAccountActionExecutor(account_user_action_executor.AccountUserActionEx
             checked_account,
         )
         self._mark_user_action_completed(user_action)
+        node_journal.record_account_edit_succeeded(
+            account_id=checked_account.id or "",
+            user_action_id=user_action.id,
+        )

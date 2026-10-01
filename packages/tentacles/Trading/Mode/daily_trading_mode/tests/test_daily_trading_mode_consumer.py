@@ -1654,3 +1654,102 @@ async def test_target_profit_mode_futures_trading(future_tools):
     short_orders_2 = await consumer.create_new_orders(symbol, decimal.Decimal(str(1)), trading_enums.EvaluatorStates.SHORT.value)
     # did not create order as increasing position is disabled
     assert short_orders_2 == []
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_BASE_ASSET = "BTC@BTC"
+PORTFOLIO_QUOTE_ASSET = "USDT@ETH"
+
+
+@pytest_asyncio.fixture
+async def ticker_wise_tools():
+    tentacles_manager_api.reload_tentacle_info()
+    exchange_manager = None
+    try:
+        symbol = TICKER_WISE_SYMBOL
+        config = test_config.load_test_config()
+        starting_portfolio = config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_STARTING_PORTFOLIO]
+        starting_portfolio.clear()
+        starting_portfolio[PORTFOLIO_QUOTE_ASSET] = 2000
+        starting_portfolio[PORTFOLIO_BASE_ASSET] = 10
+        exchange_manager = test_exchanges.get_test_exchange_manager(config, "binance")
+        exchange_manager.tentacles_setup_config = test_utils_config.get_tentacles_setup_config()
+        exchange_manager.is_simulated = True
+        exchange_manager.is_backtesting = True
+        exchange_manager.use_cached_markets = False
+        backtesting = await backtesting_api.initialize_backtesting(
+            config,
+            exchange_ids=[exchange_manager.id],
+            matrix_id=None,
+            data_files=[
+                os.path.join(test_config.TEST_CONFIG_FOLDER, "AbstractExchangeHistoryCollector_1586017993.616272.data")
+            ],
+        )
+        exchange_manager.exchange = exchanges.ExchangeSimulator(exchange_manager.config, exchange_manager, backtesting)
+        await exchange_manager.exchange.initialize()
+        for exchange_channel_class_type in [exchanges_channel.ExchangeChannel, exchanges_channel.TimeFrameExchangeChannel]:
+            await channel_util.create_all_subclasses_channel(
+                exchange_channel_class_type, exchanges_channel.set_chan, exchange_manager=exchange_manager
+            )
+        trader = exchanges.TraderSimulator(config, exchange_manager)
+        await trader.initialize()
+        if symbol not in exchange_manager.client_symbols:
+            exchange_manager.client_symbols.append(symbol)
+        mode = Mode.DailyTradingMode(config, exchange_manager)
+        mode.symbol = symbol
+        await mode.initialize()
+        exchange_manager.trading_modes.append(mode)
+        consumer = mode.get_trading_mode_consumers()[0]
+        consumer.MAX_CURRENCY_RATIO = 1
+        last_btc_price = decimal.Decimal("7009.194999999998")
+        trading_api.force_set_mark_price(exchange_manager, symbol, last_btc_price)
+        portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+        portfolio_manager.reference_market = PORTFOLIO_QUOTE_ASSET
+        yield exchange_manager, trader, symbol, consumer, last_btc_price
+    finally:
+        if exchange_manager:
+            try:
+                await _stop(exchange_manager)
+            except Exception as err:
+                print(f"error when stopping exchange manager: {err}")
+
+
+class TestDailyTradingModeNetworkQualifiedPortfolioAssets:
+    async def test_create_new_orders_uses_portfolio_base_for_holdings_ratio(self, ticker_wise_tools):
+        _exchange_manager, _trader, _symbol, consumer, _last_btc_price = ticker_wise_tools
+        portfolio_value_holder = consumer.exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder
+        context = mock.Mock()
+        with mock.patch.object(consumer, "get_number_of_traded_assets", mock.Mock(return_value=3)), mock.patch.object(
+            portfolio_value_holder,
+            "get_holdings_ratio",
+            mock.Mock(return_value=decimal.Decimal("0.5")),
+        ) as get_holdings_ratio_mock:
+            assert consumer.trader.risk == decimal.Decimal("1")
+            limit_quantity = await consumer._get_limit_quantity_from_risk(
+                context,
+                decimal.Decimal("0.65"),
+                decimal.Decimal("1"),
+                PORTFOLIO_BASE_ASSET,
+                False,
+                True,
+            )
+            get_holdings_ratio_mock.assert_called_with(PORTFOLIO_BASE_ASSET)
+            assert limit_quantity == decimal.Decimal("0.264")
+
+    async def test_market_quantity_risk_uses_portfolio_base_vs_reference_market(self, ticker_wise_tools):
+        _exchange_manager, _trader, _symbol, consumer, _last_btc_price = ticker_wise_tools
+        assert consumer.get_number_of_traded_assets() <= 2
+        assert consumer.trader.risk == decimal.Decimal("1")
+        portfolio_manager = consumer.exchange_manager.exchange_personal_data.portfolio_manager
+        portfolio_manager.reference_market = PORTFOLIO_QUOTE_ASSET
+        context = mock.Mock()
+        eval_note = decimal.Decimal("0.5")
+        max_quantity = decimal.Decimal("1")
+        result_base_asset = await consumer._get_market_quantity_from_risk(
+            context, eval_note, max_quantity, PORTFOLIO_BASE_ASSET, False, True
+        )
+        result_reference_market_asset = await consumer._get_market_quantity_from_risk(
+            context, eval_note, max_quantity, PORTFOLIO_QUOTE_ASSET, False, True
+        )
+        assert result_base_asset == decimal.Decimal("0.545")
+        assert result_reference_market_asset == decimal.Decimal("0.825")

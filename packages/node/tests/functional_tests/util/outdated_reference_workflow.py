@@ -9,7 +9,6 @@ import decimal
 import time
 import typing
 
-import dbos
 import pytest
 
 import octobot_commons.timestamp_util as timestamp_util
@@ -17,6 +16,7 @@ import octobot_copy.constants as copy_constants
 import octobot_flow.entities as octobot_flow_entities
 import octobot_node.scheduler.internal_trading_signals as internal_trading_signals_module
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader_module
+import octobot_node.scheduler.workflows_util as workflows_util_module
 import octobot_protocol.models as protocol_models
 import octobot_trading.enums as trading_enums
 
@@ -104,6 +104,49 @@ def caplog_contains_outdated_skip(caplog) -> bool:
     )
 
 
+def _pending_copier_ready_for_automation(
+    pending_rows: typing.Iterable[typing.Any],
+    automation_id: str,
+    trading_signal: octobot_flow_entities.TradingSignal,
+) -> bool:
+    return any(
+        automation_states_loader_module.get_automation_id(workflow_row) == automation_id
+        and internal_trading_signals_module.workflow_row_matches_copier_trading_signal(
+            workflow_row, trading_signal
+        )
+        for workflow_row in pending_rows
+    )
+
+
+def _pending_latest_copier_ready_for_automation(
+    pending_rows: typing.Iterable[typing.Any],
+    automation_id: str,
+    trading_signal: octobot_flow_entities.TradingSignal,
+    *,
+    min_child_workflow_index: int = 1,
+) -> bool:
+    """
+    After outdated skip, the recv-blocking child is the latest enqueued iteration;
+    readiness on an older queued child re-triggers the wrong workflow row.
+    """
+    automation_pending_rows = [
+        workflow_row
+        for workflow_row in pending_rows
+        if automation_states_loader_module.get_automation_id(workflow_row) == automation_id
+    ]
+    if not automation_pending_rows:
+        return False
+    latest_pending_child = workflows_util_module.get_latest_child_workflow(automation_pending_rows)
+    child_workflow_index = workflows_util_module.parse_automation_child_workflow_index(
+        latest_pending_child.workflow_id
+    )
+    if child_workflow_index < min_child_workflow_index:
+        return False
+    return internal_trading_signals_module.workflow_row_matches_copier_trading_signal(
+        latest_pending_child, trading_signal
+    )
+
+
 async def deliver_trading_signal_when_pending(
     scheduler: typing.Any,
     automation_id: str,
@@ -113,24 +156,53 @@ async def deliver_trading_signal_when_pending(
     poll_interval = 0.05
     poll_deadline = time.monotonic() + deadline_seconds
     while time.monotonic() < poll_deadline:
-        pending_rows = await scheduler.INSTANCE.list_workflows_async(
-            status=[
-                dbos.WorkflowStatusString.ENQUEUED.value,
-                dbos.WorkflowStatusString.PENDING.value,
-            ],
-        )
-        for workflow_row in pending_rows:
-            if automation_states_loader_module.get_automation_id(workflow_row) != automation_id:
-                continue
-            copied_strategy_ids = automation_states_loader_module.get_automation_copied_strategy_ids(workflow_row)
-            if trading_signal.strategy_id not in copied_strategy_ids:
-                continue
+        pending_rows = await internal_trading_signals_module.list_pending_copier_automation_workflow_statuses()
+        if _pending_copier_ready_for_automation(pending_rows, automation_id, trading_signal):
             await internal_trading_signals_module.send_internal_trading_signal(trading_signal)
             return
         await asyncio.sleep(poll_interval)
     pytest.fail(
         f"Timed out delivering trading signal for automation_id={automation_id!r} "
         f"strategy_id={trading_signal.strategy_id!r}"
+    )
+
+
+async def deliver_fresh_trading_signal_after_outdated_skip(
+    scheduler: typing.Any,
+    caplog,
+    automation_id: str,
+    trading_signal: octobot_flow_entities.TradingSignal,
+    deadline_seconds: float,
+) -> None:
+    """
+    Wait for the outdated-reference skip log, then deliver the signal while the automation
+    child workflow is still pending on recv (before a signal-less DAG iteration stops it).
+    """
+    poll_interval = 0.05
+    poll_deadline = time.monotonic() + deadline_seconds
+    while time.monotonic() < poll_deadline:
+        if caplog_contains_outdated_skip(caplog):
+            break
+        await asyncio.sleep(poll_interval)
+    else:
+        pytest.fail(
+            "Timed out waiting for outdated reference account skip log "
+            f"({OUTDATED_SKIP_LOG_SUBSTRING!r}) before fresh signal delivery"
+        )
+    while time.monotonic() < poll_deadline:
+        pending_rows = await internal_trading_signals_module.list_pending_copier_automation_workflow_statuses()
+        if _pending_latest_copier_ready_for_automation(
+            pending_rows,
+            automation_id,
+            trading_signal,
+            min_child_workflow_index=2,
+        ):
+            await internal_trading_signals_module.send_internal_trading_signal(trading_signal)
+            return
+        await asyncio.sleep(poll_interval)
+    pytest.fail(
+        f"Timed out delivering fresh trading signal for automation_id={automation_id!r} "
+        f"strategy_id={trading_signal.strategy_id!r} after outdated skip"
     )
 
 

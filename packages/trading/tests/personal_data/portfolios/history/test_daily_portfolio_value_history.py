@@ -185,6 +185,28 @@ class TestComputeDailyPortfolioValues:
         )
         assert result[0].total == pytest.approx(750.0)
 
+    def test_network_qualified_usd_like_stablecoin_valued_at_face_value(self):
+        daily_holdings = {
+            0.0: _portfolio({"USDT@ETH": 500.0}),
+        }
+        result = _compute_values(
+            daily_holdings, _daily_prices({}), _empty_tickers(), end_day_timestamp=0.0,
+        )
+        assert result[0].total == pytest.approx(500.0)
+
+    def test_bare_holding_matches_qualified_reference_market_at_unit_price_one(self):
+        daily_holdings = {
+            0.0: _portfolio({"USDT": 100.0}),
+        }
+        result = _compute_values(
+            daily_holdings,
+            _daily_prices({}),
+            _empty_tickers(),
+            end_day_timestamp=0.0,
+            reference_market="USDT@ETH",
+        )
+        assert result[0].total == pytest.approx(100.0)
+
     def test_unpriced_asset_has_zero_value_but_remains_in_breakdown(self):
         daily_holdings = {
             0.0: _portfolio({"UNKNOWN": 100.0, "USDT": 500.0}),

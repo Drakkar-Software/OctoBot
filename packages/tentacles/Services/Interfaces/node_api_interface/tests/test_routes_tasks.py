@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import datetime
 from unittest.mock import AsyncMock, patch
 
 import octobot_node.models
@@ -144,3 +145,71 @@ def test_post_tasks_requires_auth(client, mock_auth):
 def test_delete_tasks_requires_auth(client, mock_auth):
     resp = client.delete(f"/api/v1/tasks/?taskIds={TENANT_TASK_ID}")
     assert resp.status_code == 401
+
+
+def _task_with_completed_at(task_id: str, completed_at: datetime.datetime) -> octobot_node.models.Task:
+    return octobot_node.models.Task(
+        id=task_id,
+        executions=[
+            octobot_node.models.Execution(
+                id=task_id,
+                status=octobot_node.models.TaskStatus.COMPLETED,
+                completed_at=completed_at,
+            )
+        ],
+    )
+
+
+def test_get_tasks_sorts_newest_first_when_newest_is_last_in_storage_order(admin_client, mock_auth):
+    oldest_id = "11111111-1111-1111-1111-111111111111"
+    middle_id = "22222222-2222-2222-2222-222222222222"
+    newest_id = "33333333-3333-3333-3333-333333333333"
+    unsorted_tasks = [
+        _task_with_completed_at(
+            oldest_id,
+            datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+        ),
+        _task_with_completed_at(
+            middle_id,
+            datetime.datetime(2024, 2, 1, tzinfo=datetime.timezone.utc),
+        ),
+        _task_with_completed_at(
+            newest_id,
+            datetime.datetime(2024, 3, 1, tzinfo=datetime.timezone.utc),
+        ),
+    ]
+    mock_get = AsyncMock(return_value=unsorted_tasks)
+    with patch("octobot_node.scheduler.api.get_all_tasks", new=mock_get):
+        resp = admin_client.get("/api/v1/tasks/?page=1&limit=2")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+    assert data[0]["id"] == newest_id
+
+
+def test_get_tasks_page_two_has_no_overlap_with_page_one(admin_client, mock_auth):
+    task_ids = [
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    ]
+    unsorted_tasks = [
+        _task_with_completed_at(
+            task_id,
+            datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+            + datetime.timedelta(days=index),
+        )
+        for index, task_id in enumerate(task_ids)
+    ]
+    mock_get = AsyncMock(return_value=unsorted_tasks)
+    with patch("octobot_node.scheduler.api.get_all_tasks", new=mock_get):
+        page_one = admin_client.get("/api/v1/tasks/?page=1&limit=2")
+        page_two = admin_client.get("/api/v1/tasks/?page=2&limit=2")
+    assert page_one.status_code == 200
+    assert page_two.status_code == 200
+    page_one_ids = {row["id"] for row in page_one.json()}
+    page_two_ids = {row["id"] for row in page_two.json()}
+    assert page_one_ids.isdisjoint(page_two_ids)
+    assert len(page_one_ids) == 2
+    assert len(page_two_ids) == 2

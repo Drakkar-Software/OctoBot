@@ -28,7 +28,7 @@ import octobot_node.scheduler
 
 import tests.scheduler as scheduler_test_util
 
-QUEUE = dbos.Queue(name="test_queue")
+_TEST_QUEUE_NAME = "test_tasks_recovery_queue"
 
 WF_TO_CREATE = 10
 WF_SLEEP_TIME = 1.5 # note: reducing this value wont speed up the test
@@ -66,12 +66,17 @@ class TestSchedulerRecovery:
 
                 logging.info(f"Launching DBOS instance 1 ...")
                 octobot_node.scheduler.SCHEDULER.INSTANCE.launch()
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
                 logging.info(f"DBOS instance 1 launched")
 
                 # 1. simple execution
                 t0 = time.time()
                 for i in range(WF_TO_CREATE):
-                    await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
+                    await dbos.DBOS.enqueue_workflow_async(
+                        _TEST_QUEUE_NAME,
+                        Sleeper.sleeper_workflow,
+                        i,
+                    )
                 wfs = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
                     status=["ENQUEUED", "PENDING"]
                 )
@@ -94,7 +99,11 @@ class TestSchedulerRecovery:
 
                 # 2. enqueue 10 more and restart
                 for i in range(WF_TO_CREATE):
-                    await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
+                    await dbos.DBOS.enqueue_workflow_async(
+                        _TEST_QUEUE_NAME,
+                        Sleeper.sleeper_workflow,
+                        i,
+                    )
                 logging.info(f"Destroying DBOS instance 1 ...")
                 octobot_node.scheduler.SCHEDULER.INSTANCE.destroy()
                 logging.info(f"DBOS instance 1 destroyed")
@@ -103,6 +112,7 @@ class TestSchedulerRecovery:
                 logging.info(f"Launching DBOS instance 2 ...")
                 await _init_dbos_scheduler(temp_file.name)
                 octobot_node.scheduler.SCHEDULER.INSTANCE.launch()
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
                 logging.info(f"DBOS instance 2 launched")
                 all_wfs = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async()
                 assert len(all_wfs) == WF_TO_CREATE * 2
@@ -112,7 +122,11 @@ class TestSchedulerRecovery:
                 assert len(pending_wfs) == WF_TO_CREATE
                 # enqueue a second batch of workflows
                 for i in range(WF_TO_CREATE, WF_TO_CREATE*2):
-                    await QUEUE.enqueue_async(Sleeper.sleeper_workflow, i)
+                    await dbos.DBOS.enqueue_workflow_async(
+                        _TEST_QUEUE_NAME,
+                        Sleeper.sleeper_workflow,
+                        i,
+                    )
                 # Only ENQUEUED/PENDING: part 1 workflows are already SUCCESS (same inputs 0..9)
                 # and must not be awaited again or get_result would duplicate those ids here.
                 wfs_to_finish = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
@@ -147,6 +161,7 @@ class TestSchedulerRecovery:
                 logging.info(f"Launching DBOS instance 3 ...")
                 await _init_dbos_scheduler(temp_file.name)
                 octobot_node.scheduler.SCHEDULER.INSTANCE.launch()
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
                 logging.info(f"DBOS instance 3 launched")
                 # all 30 worflows are now historized
                 pending_wfs = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(

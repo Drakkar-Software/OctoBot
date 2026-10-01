@@ -50,6 +50,7 @@ import {
 } from "@drakkar.software/octochat-sdk"
 import { kvGet, kvRemove, kvSet } from "@drakkar.software/octochat-sdk/platform"
 
+import { buildBasicAuthorizationHeader } from "@/lib/basic-auth"
 import { loadPassword } from "@/lib/device-key"
 import { getWalletBoundIdentity } from "@/lib/octochat-identity"
 
@@ -112,8 +113,15 @@ function dismissedKey(spaceId: string): string {
   return `octochat:dismissed:${spaceId}`
 }
 
+function logOctoChatBestEffort(context: string, error: unknown): void {
+  console.warn(context, error)
+}
+
 async function loadStringSet(key: string): Promise<Set<string>> {
-  const raw = await kvGet(key).catch(() => null)
+  const raw = await kvGet(key).catch((error) => {
+    logOctoChatBestEffort(`OctoChat KV get failed (${key})`, error)
+    return null
+  })
   if (!raw) return new Set()
   try {
     const arr = JSON.parse(raw) as unknown
@@ -126,7 +134,9 @@ async function loadStringSet(key: string): Promise<Set<string>> {
 }
 
 async function saveStringSet(key: string, set: Set<string>): Promise<void> {
-  await kvSet(key, JSON.stringify([...set])).catch(() => undefined)
+  await kvSet(key, JSON.stringify([...set])).catch((error) => {
+    logOctoChatBestEffort(`OctoChat KV set failed (${key})`, error)
+  })
 }
 
 const loadSeenReqIds = (spaceId: string): Promise<Set<string>> => loadStringSet(seenGrantsKey(spaceId))
@@ -167,7 +177,12 @@ function purgeDismissed(spaceId: string, dismissed: Set<string>): void {
 export async function cancelPendingTicket(): Promise<void> {
   if (!(await isSupportConfigured())) return
   const spaceId = await deskSpaceId()
-  await kvRemove(pendingKey(spaceId)).catch(() => undefined)
+  await kvRemove(pendingKey(spaceId)).catch((error) => {
+    logOctoChatBestEffort(
+      `OctoChat KV remove failed (${pendingKey(spaceId)})`,
+      error,
+    )
+  })
 }
 
 
@@ -177,7 +192,7 @@ async function buildAuthHeader(): Promise<string> {
   if (!username || !password) {
     throw new Error("No active wallet session")
   }
-  return `Basic ${btoa(`${username}:${password}`)}`
+  return buildBasicAuthorizationHeader(username, password)
 }
 
 /** Fetch (and cache) the OctoChat config served by the node API from packages/node settings. */
@@ -275,8 +290,9 @@ async function hydrate(session: Session): Promise<void> {
         typeof recoverSpaceAccess
       >[1]["pubAccess"],
     })
-  } catch {
+  } catch (error) {
     // Best-effort: a failed hydrate leaves the local cache intact (offline-friendly).
+    logOctoChatBestEffort("OctoChat hydrate failed", error)
   }
 }
 
@@ -304,8 +320,20 @@ export async function getSupportTicket(): Promise<SupportTicketState> {
     ticket = await getRequesterTicketForSpace(session, spaceId)
   }
   if (ticket) {
-    await kvRemove(pendingKey(spaceId)).catch(() => undefined)
-    await kvSet(ticketTitleKey(spaceId, ticket.nodeId), ticket.title).catch(() => undefined)
+    await kvRemove(pendingKey(spaceId)).catch((error) => {
+      logOctoChatBestEffort(
+        `OctoChat KV remove failed (${pendingKey(spaceId)})`,
+        error,
+      )
+    })
+    await kvSet(ticketTitleKey(spaceId, ticket.nodeId), ticket.title).catch(
+      (error) => {
+        logOctoChatBestEffort(
+          `OctoChat KV set failed (${ticketTitleKey(spaceId, ticket.nodeId)})`,
+          error,
+        )
+      },
+    )
     // The local node-access store is the source of truth for open tickets; no separate list.
     const otherIds = localTicketNodeIds(spaceId).filter((id) => id !== ticket.nodeId)
     const allTickets: Array<{ nodeId: string; title: string }> = [
@@ -313,7 +341,14 @@ export async function getSupportTicket(): Promise<SupportTicketState> {
       ...(await Promise.all(
         otherIds.map(async (id) => ({
           nodeId: id,
-          title: (await kvGet(ticketTitleKey(spaceId, id)).catch(() => null)) ?? "Support ticket",
+          title:
+            (await kvGet(ticketTitleKey(spaceId, id)).catch((error) => {
+              logOctoChatBestEffort(
+                `OctoChat KV get failed (${ticketTitleKey(spaceId, id)})`,
+                error,
+              )
+              return null
+            })) ?? "Support ticket",
         })),
       )),
     ]
@@ -325,7 +360,12 @@ export async function getSupportTicket(): Promise<SupportTicketState> {
     (): ResourceReject[] => [],
   )
   if (rejects.some((r) => r.reqId === pending)) {
-    await kvRemove(pendingKey(spaceId)).catch(() => undefined)
+    await kvRemove(pendingKey(spaceId)).catch((error) => {
+      logOctoChatBestEffort(
+        `OctoChat KV remove failed (${pendingKey(spaceId)})`,
+        error,
+      )
+    })
     return { status: "none" }
   }
   return { status: "pending" }
@@ -510,5 +550,10 @@ export async function closeTicket(nodeId: string): Promise<void> {
   dismissed.add(nodeId)
   await saveDismissed(spaceId, dismissed)
   removeNodeAccessEntry(spaceId, nodeId)
-  await kvRemove(pendingKey(spaceId)).catch(() => undefined)
+  await kvRemove(pendingKey(spaceId)).catch((error) => {
+    logOctoChatBestEffort(
+      `OctoChat KV remove failed (${pendingKey(spaceId)})`,
+      error,
+    )
+  })
 }

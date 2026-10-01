@@ -64,7 +64,11 @@ export function NodeConfigurationCard() {
         setExternalHost(data.external_host ?? "")
         setEnvOverride(Boolean(data.external_host_env_override))
         setHostStatus("ready")
-      } catch {
+      } catch (error) {
+        console.error(
+          "NodeConfigurationCard: failed to load host configuration",
+          error,
+        )
         setNodeType("standalone")
         setHostStatus("error")
         setHostError("Failed to load host configuration.")
@@ -94,6 +98,7 @@ export function NodeConfigurationCard() {
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => setHostStatus("ready"), 2000)
     } catch (e) {
+      console.error("NodeConfigurationCard: failed to save host configuration", e)
       setHostStatus("error")
       setHostError(e instanceof Error ? e.message : "Failed to save host")
     }

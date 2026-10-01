@@ -17,8 +17,9 @@
 import mock
 
 import octobot.community.authentication as community_authentication
-import octobot.community.wallet_backend.errors as wallet_backend_errors
 import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
+
+_JOURNAL_PATCH = "octobot.community.node_journal.record_wallet_operation_failed"
 
 
 class TestListCollectableWalletIds:
@@ -29,11 +30,7 @@ class TestListCollectableWalletIds:
             "wallet-missing",
         ]
         community_auth = mock.Mock()
-        community_auth.get_wallet_by_user_id.side_effect = lambda wallet_id: (
-            mock.Mock()
-            if wallet_id == "wallet-known"
-            else (_ for _ in ()).throw(wallet_backend_errors.WalletNotFoundError("missing"))
-        )
+        community_auth.has_wallet_for_user_id.side_effect = lambda wallet_id: wallet_id == "wallet-known"
         with mock.patch.object(
             community_authentication.CommunityAuthentication,
             "instance",
@@ -41,6 +38,23 @@ class TestListCollectableWalletIds:
         ):
             result = account_provider_module.AccountProvider.list_collectable_wallet_ids(provider)
         assert result == ["wallet-known"]
+
+    def test_skips_orphan_wallet_ids_without_journaling(self):
+        provider = mock.Mock(spec=account_provider_module.AccountProvider)
+        provider.list_registered_wallet_ids.return_value = [
+            "wallet-known",
+            "wallet-missing",
+        ]
+        community_auth = mock.Mock()
+        community_auth.has_wallet_for_user_id.side_effect = lambda wallet_id: wallet_id == "wallet-known"
+        with mock.patch.object(
+            community_authentication.CommunityAuthentication,
+            "instance",
+            return_value=community_auth,
+        ), mock.patch(_JOURNAL_PATCH) as record_mock:
+            result = account_provider_module.AccountProvider.list_collectable_wallet_ids(provider)
+        assert result == ["wallet-known"]
+        record_mock.assert_not_called()
 
     def test_returns_empty_when_no_registered_wallets(self):
         provider = mock.Mock(spec=account_provider_module.AccountProvider)

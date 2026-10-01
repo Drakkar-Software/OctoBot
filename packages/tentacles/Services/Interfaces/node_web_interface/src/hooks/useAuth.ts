@@ -1,15 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 
-import { type ApiError, LoginService, type User, UsersService } from "@/client"
+import { type ApiError, type User, UsersService } from "@/client"
 import { clearPassword, savePassword } from "@/lib/device-key"
+import { verifyLoginCredentials } from "@/lib/verify-login-credentials"
+import { setStoredIsSuperuser } from "@/lib/user-menu-display"
 
 export const clearAuth = async () => {
   localStorage.removeItem("auth_username")
   localStorage.removeItem("auth_wallet_name")
+  setStoredIsSuperuser(false)
   await clearPassword()
 }
 
+import { shouldSuppressLoginErrorToast } from "@/lib/auth-error-messages"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
@@ -27,22 +32,32 @@ const useAuth = () => {
   const queryClient = useQueryClient()
   const { showErrorToast } = useCustomToast()
 
-  const { data: user } = useQuery<User | null, Error>({
+  const { data: user, isPending } = useQuery<User | null, Error>({
     queryKey: ["currentUser"],
     queryFn: UsersService.readUserMe,
     enabled: isLoggedIn(),
   })
 
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+    setStoredIsSuperuser(user.is_superuser === true)
+    if (user.full_name) {
+      localStorage.setItem("auth_wallet_name", user.full_name)
+    } else {
+      localStorage.removeItem("auth_wallet_name")
+    }
+  }, [user])
+
   const login = async (data: LoginCredentials) => {
     try {
-      // Persist the password before marking the session as logged in — if
-      // this throws (e.g. IndexedDB blocked), auth_username must not be set,
-      // so isLoggedIn() stays false instead of leaving a passwordless session.
+      const loggedInUser = await verifyLoginCredentials(
+        data.username,
+        data.password,
+      )
+      // Only persist session after the node accepts the passphrase.
       await savePassword(data.password)
-      localStorage.setItem("auth_username", data.username)
-      const loggedInUser = await LoginService.testAuth()
-      if (!loggedInUser) throw new Error("Authentication failed")
-      // Store the real node address returned by the server
       localStorage.setItem("auth_username", loggedInUser.email)
       // Store wallet display name for header/menu
       if (loggedInUser.full_name) {
@@ -50,6 +65,7 @@ const useAuth = () => {
       } else {
         localStorage.removeItem("auth_wallet_name")
       }
+      setStoredIsSuperuser(loggedInUser.is_superuser === true)
     } catch (err) {
       // Clean up before propagating so isLoggedIn() never returns true for failed logins
       await clearAuth()
@@ -65,7 +81,9 @@ const useAuth = () => {
     },
     onError: (error) => {
       // clearAuth() already called inside login() before re-throwing
-      handleError.bind(showErrorToast)(error as ApiError)
+      if (!shouldSuppressLoginErrorToast(error)) {
+        handleError.bind(showErrorToast)(error as ApiError)
+      }
     },
   })
 
@@ -78,6 +96,7 @@ const useAuth = () => {
     loginMutation,
     logout,
     user,
+    isCurrentUserPending: isLoggedIn() && isPending,
   }
 }
 

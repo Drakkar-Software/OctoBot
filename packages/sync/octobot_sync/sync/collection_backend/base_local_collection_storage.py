@@ -32,6 +32,10 @@ import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_backend.state_model as state_model
 import octobot_sync.sync.collection_backend.tolerant_state_loading as tolerant_state_loading
 
+import octobot.community.node_journal.enums as journal_enums
+import octobot.community.node_journal.events as journal_events
+import octobot.community.node_journal.recording_context as journal_recording_context
+
 
 _MISSING_FILE_CHECKSUM = ""
 
@@ -125,11 +129,21 @@ class BaseLocalCollectionStorage:
         ] = None,
     ) -> state_model.StateModel:
         try:
-            plaintext_bytes = sync_crypto.decrypt_blob_dict_to_bytes(
-                blob,
-                wallet_private_key,
-                self.collection,
-            )
+            with journal_recording_context.sync_storage_error(
+                event=journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR,
+                collection=self.collection,
+                provider=journal_enums.SyncStorageProvider.LOCAL,
+            ):
+                with journal_recording_context.sync_storage_error(
+                    event=journal_events.NodeJournalEvent.SYNC_STORAGE_DECRYPT_FAILED,
+                    collection=self.collection,
+                    provider=journal_enums.SyncStorageProvider.LOCAL,
+                ):
+                    plaintext_bytes = sync_crypto.decrypt_blob_dict_to_bytes(
+                        blob,
+                        wallet_private_key,
+                        self.collection,
+                    )
         except sync_errors.OctobotSyncCryptoFormatError as err:
             raise collection_errors.CollectionFileFormatError(
                 f"{self.collection} blob: {err}"
@@ -140,15 +154,20 @@ class BaseLocalCollectionStorage:
             ) from err
 
         try:
-            if strict:
-                decrypted_state = state_model.from_json(plaintext_bytes.decode("utf-8"))
-            else:
-                decrypted_state = tolerant_state_loading.TolerantStateLoader(
-                    state_model,
-                    collection=self.collection,
-                    model_sanitizers=model_sanitizers,
-                    model_fallbacks=model_fallbacks,
-                ).from_json(plaintext_bytes.decode("utf-8"))
+            with journal_recording_context.sync_storage_error(
+                event=journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR,
+                collection=self.collection,
+                provider=journal_enums.SyncStorageProvider.LOCAL,
+            ):
+                if strict:
+                    decrypted_state = state_model.from_json(plaintext_bytes.decode("utf-8"))
+                else:
+                    decrypted_state = tolerant_state_loading.TolerantStateLoader(
+                        state_model,
+                        collection=self.collection,
+                        model_sanitizers=model_sanitizers,
+                        model_fallbacks=model_fallbacks,
+                    ).from_json(plaintext_bytes.decode("utf-8"))
         except Exception as err:
             raise collection_errors.CollectionFileFormatError(
                 f"Decrypted {self.collection} payload is not valid JSON: {err}"
@@ -201,9 +220,15 @@ class BaseLocalCollectionStorage:
             with open(path, "r", encoding="utf-8") as handle:
                 raw = json.load(handle)
         if not isinstance(raw, dict):
-            raise collection_errors.CollectionFileFormatError(
+            format_error = collection_errors.CollectionFileFormatError(
                 f"{self.collection} file must contain an encrypted blob object"
             )
+            with journal_recording_context.sync_storage_error(
+                event=journal_events.NodeJournalEvent.SYNC_STORAGE_FORMAT_ERROR,
+                collection=self.collection,
+                provider=journal_enums.SyncStorageProvider.LOCAL,
+            ):
+                raise format_error
         return raw
 
     def load_items_encrypted(self, storage_key: str) -> dict[str, str]:

@@ -299,6 +299,16 @@ def trade_and_loop_until_order_closed(market_order_action):
 
 
 @pytest.fixture
+def trade_and_loop_until_order_closed_with_jitter(trade_and_loop_until_order_closed):
+    return {
+        "params": {
+            **trade_and_loop_until_order_closed["params"],
+            "LOOP_INTERVAL_MAX": 70,
+        }
+    }
+
+
+@pytest.fixture
 def multiple_action_bundle_with_wait(deposit_action, market_order_action, withdraw_action):
     all = {
         "params": {
@@ -361,6 +371,29 @@ def get_deposit_and_withdrawal_details(actions: list["octobot_flow.entities.Abst
         )
     ]
     return list_util.flatten_list(withdrawal_lists) if withdrawal_lists else []
+
+
+async def _loop_until_order_closed_dsl_after_trade(job_config: dict) -> str:
+    job = octobot_flow_client.OctoBotActionsJob(
+        job_config, [], [], octobot_flow_client.OctoBotActionsJobResult()
+    )
+    await job.run()
+    next_actions_description = job.result.next_actions_description
+    assert next_actions_description is not None
+    job2 = octobot_flow_client.OctoBotActionsJob(
+        next_actions_description.to_dict(include_default_values=False), [], [],
+        octobot_flow_client.OctoBotActionsJobResult(),
+    )
+    await job2.run()
+    next_actions_description = job2.result.next_actions_description
+    assert next_actions_description is not None
+    parsed_state = octobot_flow.entities.AutomationState.from_dict(next_actions_description.state)
+    next_actions = parsed_state.automation.actions_dag.get_executable_actions()
+    assert len(next_actions) == 1
+    assert isinstance(next_actions[0], octobot_flow.entities.DSLScriptActionDetails)
+    loop_dsl = next_actions[0].dsl_script
+    assert loop_dsl is not None
+    return loop_dsl
 
 
 class TestOctoBotActionsJob:
@@ -894,6 +927,16 @@ class TestOctoBotActionsJob:
         # created a buy order but not executed: locked BTC in portfolio
         assert post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_AVAILABLE] < post_deposit_portfolio["BTC"][common_constants.PORTFOLIO_TOTAL]
 
+    async def test_trade_and_loop_until_order_closed_jitter_emits_max_retry_interval(
+        self, trade_and_loop_until_order_closed_with_jitter
+    ):
+        loop_dsl = await _loop_until_order_closed_dsl_after_trade(
+            trade_and_loop_until_order_closed_with_jitter
+        )
+        assert loop_dsl.startswith("loop_until(")
+        assert "max_retry_interval=70" in loop_dsl
+        assert "3.0, max_retry_interval=70.0, timeout=10.0, max_attempts=4, return_remaining_time=True)" in loop_dsl
+
     async def test_run_trade_and_loop_until_order_closed(self, trade_and_loop_until_order_closed):
         # Step 1 — Apply automation config (ACTIONS: trade, loop_until_order_closed).
         # The only runnable action is init/APPLY_CONFIGURATION; portfolio is seeded (e.g. BTC for the later market buy).
@@ -955,7 +998,8 @@ class TestOctoBotActionsJob:
         assert loop_dsl.startswith("loop_until(")
         assert "fetch_order" in loop_dsl
         assert f"!= '{trading_enums.OrderStatus.OPEN.value}'" in loop_dsl
-        assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in loop_dsl
+        assert "3.0, timeout=10.0, max_attempts=4, return_remaining_time=True)" in loop_dsl
+        assert "max_retry_interval" not in loop_dsl
         job3 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
@@ -1209,7 +1253,7 @@ class TestOctoBotActionsJob:
         assert next_actions[0].dsl_script.startswith("loop_until(")
         assert "blockchain_wallet_balance" in next_actions[0].dsl_script
         assert "123_balance_address" in next_actions[0].dsl_script
-        assert "3, timeout=10, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
+        assert "3.0, timeout=10.0, max_attempts=4, return_remaining_time=True)" in next_actions[0].dsl_script
         job5 = octobot_flow_client.OctoBotActionsJob(
             next_actions_description.to_dict(include_default_values=False), [], [],
             octobot_flow_client.OctoBotActionsJobResult(),
@@ -1663,3 +1707,73 @@ class TestOctoBotActionsJobRunLogging:
         mock_logger.info.assert_called_once_with(
             f"Running automation actions: {[executed_action]}"
         )
+
+
+class TestGetNextActionsDescription:
+    pytestmark = []
+
+    @staticmethod
+    def _job_with_automation_state(automation_state: "octobot_flow.entities.AutomationState"):
+        job = octobot_flow_client.OctoBotActionsJob(
+            {"state": {}},
+            [],
+            [],
+            octobot_flow_client.OctoBotActionsJobResult(),
+        )
+        job.after_execution_state = automation_state
+        return job
+
+    @staticmethod
+    def _automation_state_with_dag(actions_dag: "octobot_flow.entities.ActionsDAG"):
+        return octobot_flow.entities.AutomationState(
+            automation=octobot_flow.entities.AutomationDetails(
+                metadata=octobot_flow.entities.AutomationMetadata(automation_id="automation_test"),
+                actions_dag=actions_dag,
+            )
+        )
+
+    def test_returns_has_next_actions_false_when_upstream_action_failed(self):
+        if message := misses_required_octobot_flow_client_import():
+            pytest.skip(reason=message)
+        init_action = octobot_flow.entities.ConfiguredActionDetails(id="action_init")
+        init_action.complete(
+            error_status=octobot_flow.enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
+            error_message="connection timed out",
+        )
+        trade_action = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_trade",
+            dsl_script="trade()",
+            dependencies=[{"action_id": "action_init"}],
+        )
+        automation_state = self._automation_state_with_dag(
+            octobot_flow.entities.ActionsDAG(actions=[init_action, trade_action])
+        )
+        job = self._job_with_automation_state(automation_state)
+        post_execution_state = automation_state.to_dict(include_default_values=False)
+        next_description, has_next_actions = job.get_next_actions_description(post_execution_state)
+        assert has_next_actions is False
+        assert next_description is not None
+        assert next_description.state == post_execution_state
+
+    def test_raises_workflow_dag_dependencies_error_on_circular_pending_deps(self):
+        if message := misses_required_octobot_flow_client_import():
+            pytest.skip(reason=message)
+        import octobot_node.errors as node_errors
+
+        action_c = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_c",
+            dsl_script="dma_evaluator()",
+            dependencies=[{"action_id": "action_d"}],
+        )
+        action_d = octobot_flow.entities.DSLScriptActionDetails(
+            id="action_d",
+            dsl_script="dma_evaluator()",
+            dependencies=[{"action_id": "action_c"}],
+        )
+        automation_state = self._automation_state_with_dag(
+            octobot_flow.entities.ActionsDAG(actions=[action_c, action_d])
+        )
+        job = self._job_with_automation_state(automation_state)
+        post_execution_state = automation_state.to_dict(include_default_values=False)
+        with pytest.raises(node_errors.WorkflowDAGDependenciesError):
+            job.get_next_actions_description(post_execution_state)

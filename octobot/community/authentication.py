@@ -20,8 +20,7 @@ import os
 import time
 import threading
 import typing
-import octobot.community.activity_analysis.config_path_binding as config_path_binding
-import octobot.community.activity_analysis.activity_metrics as activity_metrics
+import octobot.community.config_path_binding as config_path_binding
 import decimal
 
 import octobot.constants as constants
@@ -40,6 +39,7 @@ import octobot.community.wallet_backend as wallet_backend
 import octobot.community.feeds as community_feeds
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.community.community_bot as community_bot
+import octobot_commons.asyncio_tools as asyncio_tools
 import octobot_commons.constants as commons_constants
 import octobot_commons.enums as commons_enums
 import octobot_commons.authentication as authentication
@@ -150,6 +150,7 @@ class CommunityAuthentication(authentication.Authenticator):
         )
 
     def update(self, configuration: commons_configuration.Configuration):
+        self.config = configuration
         self.configuration_storage.set_configuration(configuration)
         self._wallet_backend = wallet_backend.WalletBackend(
             self._get_wallet_sync_storage(), self.logger
@@ -316,8 +317,9 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._re_create_client()
 
     def is_using_the_current_loop(self):
-        return self.supabase_client.event_loop is None \
-            or self.supabase_client.event_loop is asyncio.get_event_loop()
+        if self.supabase_client.event_loop is None:
+            return True
+        return asyncio_tools.is_on_async_loop(self.supabase_client.event_loop)
 
     def is_initialized(self):
         return self.initialized_event is not None and self.initialized_event.is_set()
@@ -583,7 +585,6 @@ class CommunityAuthentication(authentication.Authenticator):
             "and webhook url will be different on this bot."
         )
         self._save_bot_id("")
-        activity_metrics.ActivityMetrics.clear_activity_bot_id(self.config)
         self.save_tradingview_email("")
         # also reset mqtt id to force a new mqtt id creation
         self._save_mqtt_device_uuid("")
@@ -691,6 +692,20 @@ class CommunityAuthentication(authentication.Authenticator):
     def verify_wallet_passphrase(self, address: str, passphrase: str) -> bool:
         return self._wallet_backend.verify_wallet_passphrase(address, passphrase)
 
+    def recover_passphrase_from_ownership_proof(
+        self,
+        address: str,
+        new_passphrase: str,
+        seed: typing.Optional[str] = None,
+        private_key: typing.Optional[str] = None,
+    ) -> None:
+        return self._wallet_backend.recover_passphrase_from_ownership_proof(
+            address,
+            new_passphrase,
+            seed=seed,
+            private_key=private_key,
+        )
+
     def decrypt_wallet_by_address(self, address: str, passphrase: str):
         return self._wallet_backend.decrypt_wallet_by_address(address, passphrase)
 
@@ -722,6 +737,9 @@ class CommunityAuthentication(authentication.Authenticator):
 
     def get_wallet_by_user_id(self, user_id: str) -> sync_chain.Wallet:
         return self._wallet_backend.get_wallet_by_user_id(user_id)
+
+    def has_wallet_for_user_id(self, user_id: str) -> bool:
+        return self._wallet_backend.has_wallet_for_user_id(user_id)
 
     async def get_session_for_address(self, address: str) -> starfish_spaces.Session:
         """Build (and cache) a dk-namespace starfish_spaces Session for the given wallet.

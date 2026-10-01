@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/card"
 import { buildPairingQrValue } from "@/lib/pairing"
 import {
-  OCTOBOT_BETA_GETTING_STARTED_GUIDE_URL,
+  OCTOBOT_CONNECT_GUIDE_COMMON_ISSUES_URL,
+  OCTOBOT_CONNECT_GUIDE_URL,
   OCTOBOT_PLAY_STORE_URL,
   OCTOBOT_TESTFLIGHT_URL,
   OCTOBOT_WEB_INTERFACE_URL,
@@ -143,16 +144,28 @@ export function ConnectNodeGuide() {
               <p className="pt-2 text-center text-sm text-muted-foreground">
                 Having trouble connecting to your node?{" "}
                 Try using <strong>Brave</strong> or <strong>Google Chrome</strong> instead of <strong>Firefox</strong> or <strong>Safari</strong>, which are known to sometimes block the
-                connection to the node. More troubleshooting tips on{" "}
+                connection to the node.
+              </p>
+              <p className="text-center text-sm text-muted-foreground">
+                See our{" "}
                 <a
-                  href={OCTOBOT_BETA_GETTING_STARTED_GUIDE_URL}
+                  href={OCTOBOT_CONNECT_GUIDE_URL}
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   className="underline underline-offset-4 hover:text-foreground"
                 >
-                  our full guide
-                </a>
-                .
+                  full connect guide
+                </a>{" "}
+                and{" "}
+                <a
+                  href={OCTOBOT_CONNECT_GUIDE_COMMON_ISSUES_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4 hover:text-foreground"
+                >
+                  common issues
+                </a>{" "}
+                if the web app shows Unreachable node or Queued actions.
               </p>
             </CardContent>
           </Card>

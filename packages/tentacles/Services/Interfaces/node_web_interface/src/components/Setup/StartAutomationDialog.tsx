@@ -8,7 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { OCTOBOT_WEB_INTERFACE_URL } from "@/lib/external-links"
+import {
+  OCTOBOT_CONNECT_GUIDE_URL,
+  OCTOBOT_WEB_INTERFACE_URL,
+} from "@/lib/external-links"
 
 type StartAutomationDialogProps = {
   open: boolean
@@ -70,9 +73,17 @@ export function StartAutomationDialog({
               to="/settings/connect"
               className="underline underline-offset-4 hover:text-foreground"
             >
-              step-by-step guide
-            </Link>
-            .
+              quick step-by-step guide
+            </Link>{" "}
+            or the{" "}
+            <a
+              href={OCTOBOT_CONNECT_GUIDE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              detailed guide on octobot.cloud
+            </a>{" "} if you have questions.
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             <Button

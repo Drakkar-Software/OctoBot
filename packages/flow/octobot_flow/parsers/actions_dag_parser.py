@@ -117,6 +117,7 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
     BLOCKCHAIN_BALANCE_ASSET: typing.Optional[str] = None
     BLOCKCHAIN_BALANCE: typing.Optional[str] = None
     LOOP_INTERVAL: typing.Optional[float] = None
+    LOOP_INTERVAL_MAX: typing.Optional[float] = None
     LOOP_TIMEOUT: typing.Optional[float] = None
     LOOP_MAX_ATTEMPTS: typing.Optional[int] = None
     CONTENT: typing.Optional[dict] = None
@@ -136,10 +137,41 @@ class ActionsDAGParserParams(octobot_commons.dataclasses.MinimizableDataclass):
         if self.EXCHANGE_TO and self.EXCHANGE_FROM:
             if self.EXCHANGE_TO != self.EXCHANGE_FROM:
                 raise octobot_flow.errors.InvalidAutomationActionError("EXCHANGE_TO and EXCHANGE_FROM must be the same")
+        self._normalize_loop_params()
+
+    def _normalize_loop_params(self) -> None:
+        if (
+            self.LOOP_INTERVAL is None
+            and self.LOOP_INTERVAL_MAX is None
+            and self.LOOP_TIMEOUT is None
+            and self.LOOP_MAX_ATTEMPTS is None
+        ):
+            return
+        try:
+            if self.LOOP_INTERVAL is not None:
+                self.LOOP_INTERVAL = float(self.LOOP_INTERVAL)
+            if self.LOOP_INTERVAL_MAX is not None:
+                self.LOOP_INTERVAL_MAX = float(self.LOOP_INTERVAL_MAX)
+            if self.LOOP_TIMEOUT is not None:
+                self.LOOP_TIMEOUT = float(self.LOOP_TIMEOUT)
+            if self.LOOP_MAX_ATTEMPTS is not None:
+                self.LOOP_MAX_ATTEMPTS = int(self.LOOP_MAX_ATTEMPTS)
+        except (TypeError, ValueError):
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"LOOP_INTERVAL {self.LOOP_INTERVAL} and LOOP_INTERVAL_MAX {self.LOOP_INTERVAL_MAX} must be numbers"
+            )
+        if (
+            self.LOOP_INTERVAL is not None
+            and self.LOOP_INTERVAL_MAX is not None
+            and self.LOOP_INTERVAL_MAX < self.LOOP_INTERVAL
+        ):
+            raise octobot_flow.errors.InvalidAutomationActionError(
+                f"LOOP_INTERVAL_MAX {self.LOOP_INTERVAL_MAX} must be greater than or equal to LOOP_INTERVAL {self.LOOP_INTERVAL} when set"
+            )
 
     def get_reference_market(self) -> typing.Optional[str]:
         if self.ORDER_SYMBOL:
-            parsed_symbol = octobot_commons.symbols.parse_symbol(self.ORDER_SYMBOL)
+            parsed_symbol = _parse_order_symbol(self.ORDER_SYMBOL)
             return parsed_symbol.quote
         return None
 
@@ -430,8 +462,8 @@ class ActionsDAGParser:
             case ActionType.WAIT.value:
                 return self._create_wait_action(index)
             case _:
-                raise ValueError(
-                    f"Unknown action: {action}"
+                raise octobot_flow.errors.InvalidAutomationActionError(
+                    f"Unknown action: {action!r}"
                 )
     
     def _create_order_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
@@ -441,13 +473,20 @@ class ActionsDAGParser:
             ["ORDER_SYMBOL", "ORDER_AMOUNT", "ORDER_TYPE"],
             "trade",
         )
-        parsed_symbol = octobot_commons.symbols.parse_symbol(self.params.ORDER_SYMBOL)
+        parsed_symbol = _parse_order_symbol(self.params.ORDER_SYMBOL)
         if self.params.ORDER_SIDE:
             signal = self.params.ORDER_SIDE.lower()
-        elif parsed_symbol.base == self.params.BLOCKCHAIN_FROM_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_TO_ASSET: # type: ignore
+        # Bare asset ticker: DAG blockchain leg params are bare tickers — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+        elif (
+            parsed_symbol.base_asset_ticker() == self.params.BLOCKCHAIN_FROM_ASSET
+            and parsed_symbol.quote_asset_ticker() == self.params.BLOCKCHAIN_TO_ASSET
+        ):  # type: ignore
             # sell the first blockchain asset to get the second one
             signal = tv_trading_mode.SELL_SIGNAL
-        elif parsed_symbol.base == self.params.BLOCKCHAIN_TO_ASSET and parsed_symbol.quote == self.params.BLOCKCHAIN_FROM_ASSET: # type: ignore
+        elif (
+            parsed_symbol.base_asset_ticker() == self.params.BLOCKCHAIN_TO_ASSET
+            and parsed_symbol.quote_asset_ticker() == self.params.BLOCKCHAIN_FROM_ASSET
+        ):  # type: ignore
             # buy the second blockchain asset to get the first one
             signal = tv_trading_mode.BUY_SIGNAL
         else:
@@ -617,18 +656,28 @@ class ActionsDAGParser:
             dataclasses.asdict(transfer_details),
         )
 
-    def _get_loop_params(self) -> tuple[typing.Optional[float], typing.Optional[float], int]:
-        loop_interval, loop_timeout, loop_max_attempts = (
-            self.params.LOOP_INTERVAL, self.params.LOOP_TIMEOUT, self.params.LOOP_MAX_ATTEMPTS
-        )
-        if not loop_interval:
+    def _get_loop_params(
+        self,
+    ) -> tuple[float, float, typing.Optional[float], typing.Optional[int]]:
+        if not self.params.LOOP_INTERVAL:
             raise octobot_flow.errors.InvalidAutomationActionError(
                 "LOOP_INTERVAL must be provided for the loop_until action"
             )
-        return loop_interval, loop_timeout, loop_max_attempts # type: ignore
+        loop_interval = self.params.LOOP_INTERVAL
+        max_interval = (
+            self.params.LOOP_INTERVAL_MAX
+            if self.params.LOOP_INTERVAL_MAX is not None
+            else loop_interval
+        )
+        return loop_interval, max_interval, self.params.LOOP_TIMEOUT, self.params.LOOP_MAX_ATTEMPTS
+
+    def _format_loop_until_interval_args(self, min_interval: float, max_interval: float) -> str:
+        if max_interval > min_interval:
+            return f"{min_interval}, max_retry_interval={max_interval}"
+        return f"{min_interval}"
 
     def _create_loop_until_order_closed_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
-        loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
+        loop_interval, loop_interval_max, loop_timeout, loop_max_attempts = self._get_loop_params()
         self._ensure_params(
             ["ORDER_EXCHANGE_ID", "ORDER_SYMBOL"],
             "loop_until_order_closed",
@@ -644,9 +693,10 @@ class ActionsDAGParser:
             f"\"get({commons_constants.LOCAL_VALUE_PLACEHOLDER}, 'status', '{trading_enums.OrderStatus.OPEN.value}') "
             f"!= '{trading_enums.OrderStatus.OPEN.value}'\")"
         )
+        interval_args = self._format_loop_until_interval_args(loop_interval, loop_interval_max)
         dsl_script = (
             f"loop_until({selector}, "
-            f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
+            f"{interval_args}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
             f"return_remaining_time=True)"
         )
         action_id = f"action_loop_until_order_closed_{index}"
@@ -655,7 +705,7 @@ class ActionsDAGParser:
 
     def _create_loop_until_blockchain_balance_action(self, index: int) -> octobot_flow.entities.AbstractActionDetails:
         tradingview_signal_to_dsl_translator = _tradingview_signal_to_dsl_translator()
-        loop_interval, loop_timeout, loop_max_attempts = self._get_loop_params()
+        loop_interval, loop_interval_max, loop_timeout, loop_max_attempts = self._get_loop_params()
         amount, asset = self.params.BLOCKCHAIN_BALANCE_AMOUNT, self.params.BLOCKCHAIN_BALANCE_ASSET
         if not amount or not asset:
             raise octobot_flow.errors.InvalidAutomationActionError(
@@ -668,9 +718,10 @@ class ActionsDAGParser:
             wallet_params,
             {"asset": asset},
         )
+        interval_args = self._format_loop_until_interval_args(loop_interval, loop_interval_max)
         dsl_script = (
             f"loop_until(value_if({wallet_check}, ' >= {float(amount)}'), "
-            f"{loop_interval}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
+            f"{interval_args}, timeout={loop_timeout}, max_attempts={loop_max_attempts}, "
             f"return_remaining_time=True)"
         )
         action_id = f"action_loop_until_blockchain_balance_{index}"
@@ -844,6 +895,15 @@ class ActionsDAGParser:
             config=config,
             result=result,
         )
+
+
+def _parse_order_symbol(symbol_str: str) -> octobot_commons.symbols.Symbol:
+    try:
+        return octobot_commons.symbols.parse_symbol(symbol_str)
+    except (AttributeError, ValueError, TypeError) as error:
+        raise octobot_flow.errors.InvalidAutomationActionError(
+            f"Invalid order symbol: {symbol_str!r}"
+        ) from error
 
 
 def _parse_dependency_param_value(

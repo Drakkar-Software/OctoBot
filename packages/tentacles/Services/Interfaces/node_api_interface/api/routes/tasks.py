@@ -36,8 +36,6 @@ except ImportError:
 router = APIRouter(tags=["tasks"])
 logger = logging.get_logger(__name__)
 
-_MAX_PAGE_LIMIT = 500
-
 
 @router.post("/", response_model=tuple[int, int])
 async def create_tasks(
@@ -83,13 +81,9 @@ async def get_tasks(
     page: int = 1,
     limit: int = 100,
 ) -> typing.Any:
-    limit = max(1, min(limit, _MAX_PAGE_LIMIT))
     user_id_filter = None if current_user.is_superuser else evm_to_user_id(current_user.email)
     tasks_data = await octobot_node.scheduler.api.get_all_tasks(user_id=user_id_filter)
-
-    start_idx = (page - 1) * limit
-    end_idx = start_idx + limit
-    return tasks_data[start_idx:end_idx]
+    return octobot_node.scheduler.api.paginate_tasks(tasks_data, page, limit)
 
 
 @router.put("/", response_model=octobot_node.models.Task)

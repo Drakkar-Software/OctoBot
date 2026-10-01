@@ -16,7 +16,7 @@
 
 import pytest
 
-import tentacles.Services.Interfaces.web_interface.tests.distribution_tester as distribution_tester
+import tentacles.Services.Interfaces.web_interface.tests.models.distributions.distribution_tester as distribution_tester
 import octobot.enums
 
 

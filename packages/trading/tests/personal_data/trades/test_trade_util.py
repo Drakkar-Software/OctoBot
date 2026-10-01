@@ -451,3 +451,48 @@ class TestGetTradingOrderFee:
             _get_fees("USDT", 1.0),
             False
         )
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestTradeFromDictNetworkQualified:
+    def test_from_dict_sets_portfolio_currency(self, simulated_trader):
+        _, _, trader = simulated_trader
+        trade_dict = {
+            enums.ExchangeConstantsOrderColumns.SYMBOL.value: TICKER_WISE_SYMBOL,
+            enums.ExchangeConstantsOrderColumns.MARKET.value: "USDT@ETH",
+            enums.ExchangeConstantsOrderColumns.PRICE.value: "1",
+            enums.ExchangeConstantsOrderColumns.STATUS.value: enums.OrderStatus.CLOSED.value,
+            enums.ExchangeConstantsOrderColumns.TIMESTAMP.value: 1,
+            enums.ExchangeConstantsOrderColumns.AMOUNT.value: "1",
+            enums.ExchangeConstantsOrderColumns.COST.value: "1",
+            enums.ExchangeConstantsOrderColumns.TYPE.value: enums.TradeOrderType.LIMIT.value,
+            enums.ExchangeConstantsOrderColumns.SIDE.value: enums.TradeOrderSide.BUY.value,
+        }
+        trade = personal_data.Trade.from_dict(trader, trade_dict)
+        assert trade.currency == "BTC@BTC"
+
+
+class TestTradesUtilNetworkQualified:
+    def test_fee_in_qualified_base_uses_holding_key(self):
+        trade = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            executed_quantity=decimal.Decimal("1"),
+            executed_price=decimal.Decimal("10"),
+            side=enums.TradeOrderSide.BUY,
+            fee={
+                enums.FeePropertyColumns.CURRENCY.value: "BTC@BTC",
+                enums.FeePropertyColumns.RATE.value: decimal.Decimal("0.01"),
+            },
+            exchange_order_id="oid",
+            exchange_manager=mock.Mock(
+                exchange=mock.Mock(get_trade_fee=mock.Mock()),
+                exchange_personal_data=mock.Mock(
+                    orders_manager=mock.Mock(get_order=mock.Mock(side_effect=KeyError)),
+                    trades_manager=mock.Mock(get_trades=mock.Mock(return_value=[])),
+                ),
+            ),
+        )
+        fee, _ = personal_data.get_real_or_estimated_trade_fee(trade)
+        assert fee[enums.FeePropertyColumns.CURRENCY.value] == "BTC@BTC"

@@ -33,6 +33,9 @@ AUTOMATION_LOG_FILE_MAX_BYTES = int(
 AUTOMATION_LOG_FILE_TRIM_LINES_FRACTION = 0.2
 PARENT_WORKFLOW_ID_LENGTH = 36 # length of a UUID4
 
+# Max tasks returned per GET /api/v1/tasks/ page (UI fetches page=1 at this limit).
+TASKS_LIST_MAX_PAGE_LIMIT = 500
+
 # default to 19 retry after 1, 2.5, 4.75, 8.125, 13.188, ... 2953.784 seconds (total of 4430 seconds)
 AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS = float(os.getenv("AUTOMATION_WORKFLOW_RETRY_INTERVAL_SECONDS", 1.0))
 AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES = int(os.getenv("AUTOMATION_WORKFLOW_MAX_ITERATION_RETRIES", 19))
@@ -116,4 +119,10 @@ SCHEDULER_APPLICATION_VERSION = "octobot_node_v1"
 ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION = bool((
     os.getenv("ALWAYS_ENSURE_SCHEDULER_APPLICATION_VERSION") or "false"
 ).lower() == "true")
-    
+# DBOS cron schedules (dbos cleanup, global view refresh, portfolio history).
+# Env: ENABLE_SCHEDULED_WORKFLOWS (default on unless set to "false").
+# When false: on scheduler init, existing schedules are deleted and not re-registered (no new cron triggers).
+# Does not cancel workflows already enqueued or running. Read at import; restart required to apply.
+ENABLE_SCHEDULED_WORKFLOWS = bool((
+    os.getenv("ENABLE_SCHEDULED_WORKFLOWS") or "true"
+).lower() != "false")

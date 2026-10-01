@@ -1,10 +1,11 @@
-import dbos
-
 import octobot_commons.logging
 import octobot_flow.entities
 import octobot_flow.repositories.community as trading_signals_channel
+import octobot_node.enums as octobot_node_enums
+import octobot_node.scheduler as scheduler
 import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.tasks as tasks
+import octobot_node.scheduler.workflows_util as workflows_util_module
 
 
 async def _on_internal_trading_signal(trading_signal: octobot_flow.entities.TradingSignal) -> None:
@@ -27,19 +28,35 @@ async def send_internal_trading_signal(trading_signal: octobot_flow.entities.Tra
     """
     await trading_signals_channel.send_internal_trading_signal(trading_signal)
 
+
+def workflow_row_matches_copier_trading_signal(
+    pending_workflow_status,
+    trading_signal: octobot_flow.entities.TradingSignal,
+) -> bool:
+    copied_strategy_ids = automation_states_loader.get_automation_copied_strategy_ids(pending_workflow_status)
+    return trading_signal.strategy_id in copied_strategy_ids
+
+
+async def list_pending_copier_automation_workflow_statuses():
+    return await workflows_util_module.list_scheduler_workflows_async(
+        scheduler.SCHEDULER.INSTANCE,
+        octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+        None,
+        None,
+        load_output=False,
+        load_input=True,
+        queues_only=True,
+    )
+
+
 async def _trigger_copier_automation(trading_signal: octobot_flow.entities.TradingSignal) -> None:
     """
     Triggers copier automations with the given trading signal.
     Automations are triggered one by one to avoid concurrent executions.
     """
-    import octobot_node.scheduler as scheduler
-    pending_workflow_statuses = await scheduler.SCHEDULER.INSTANCE.list_workflows_async(
-        status=[dbos.WorkflowStatusString.ENQUEUED.value, dbos.WorkflowStatusString.PENDING.value]
-    )
+    pending_workflow_statuses = await list_pending_copier_automation_workflow_statuses()
     for pending_workflow_status in pending_workflow_statuses:
-        if (
-            trading_signal.strategy_id in automation_states_loader.get_automation_copied_strategy_ids(pending_workflow_status)
-        ):
+        if workflow_row_matches_copier_trading_signal(pending_workflow_status, trading_signal):
             octobot_commons.logging.get_logger("internal_trading_signals").info(
                 f"Triggering copier automation {pending_workflow_status.workflow_id} with trading signal {trading_signal.strategy_id}"
             )

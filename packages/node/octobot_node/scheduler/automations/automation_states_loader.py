@@ -12,7 +12,9 @@ import octobot_protocol.models as protocol_models
 import octobot_flow.entities as flow_entities
 import octobot_flow.parsers.automation_state_reader as automation_state_reader_module
 
+import octobot_node.enums as octobot_node_enums
 import octobot_node.models as node_models
+import octobot_node.scheduler as scheduler_module
 import octobot_node.scheduler.automations.octobot_flow_client as octobot_flow_client
 import octobot_node.scheduler.task_context as task_context_module
 import octobot_node.scheduler.workflows_util as workflows_util_module
@@ -96,9 +98,20 @@ def patch_task_content_degraded_state(
 
 
 async def get_automation_workflow_status(automation_id: str) -> dbos_lib.WorkflowStatus:
-    for workflow_status in await dbos_lib.DBOS.list_workflows_async(status=[
-        dbos_lib.WorkflowStatusString.PENDING.value, dbos_lib.WorkflowStatusString.ENQUEUED.value
-    ]):
+    if not scheduler_module.is_initialized():
+        raise RuntimeError("Scheduler is not initialized")
+    pending_workflows = await workflows_util_module.list_scheduler_workflows_async(
+        scheduler_module.SCHEDULER.INSTANCE,
+        octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+        [
+            dbos_lib.WorkflowStatusString.PENDING,
+            dbos_lib.WorkflowStatusString.ENQUEUED,
+        ],
+        None,
+        load_output=False,
+        load_input=True,
+    )
+    for workflow_status in pending_workflows:
         if get_automation_id(workflow_status) == automation_id:
             return workflow_status
     raise ValueError(f"No automation workflow found for automation_id: {automation_id}")
@@ -145,7 +158,6 @@ async def load_automation_state_sources(
     load_output: bool = True,
 ) -> list["automations_protocol.AutomationStateSource"]:
     import octobot_node.protocol.automations as automations_protocol
-    import octobot_node.scheduler as scheduler_module
 
     scheduler = scheduler_module.SCHEDULER
     workflows = await scheduler._get_latest_workflow_for_each_automation(

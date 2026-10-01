@@ -446,7 +446,8 @@ class ScheduledVolume:
         potential_next_quote_quantity = max(candidate_next_quote_quantity, min_cost * _MIN_COST_ORDER_MULTIPLIER)
         available_amount = trading_api.get_portfolio_currency(
             self.exchange_manager,
-            self.parsed_symbol.quote if side is trading_enums.TradeOrderSide.BUY else self.parsed_symbol.base
+            self.parsed_symbol.quote if side is trading_enums.TradeOrderSide.BUY
+            else self.parsed_symbol.base
         ).available
         try:
             locked_base, locked_quote = self._get_locked_base_and_quote()

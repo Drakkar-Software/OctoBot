@@ -14,22 +14,49 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import functools
 import typing
 
 import pydantic
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasicCredentials
 
 import octobot_node.config as node_config
 import octobot.community.authentication as community_auth
 import octobot.community.wallet_backend as wallet_backend
+import octobot.community.node_journal as node_journal
+import octobot.community.node_journal.enums as journal_enums
+import octobot.community.node_journal.recording_context as journal_recording_context
 
 try:
-    from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
-    from core import network
-except ImportError:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser, security_basic
     from tentacles.Services.Interfaces.node_api_interface.core import network
+except ImportError:
+
+    from api.deps import CurrentUser, security_basic  # type: ignore[no-redef]
+    from core import network
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.recover_passphrase import (
+        RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
+        get_recover_passphrase_rate_limiter,
+        recover_passphrase_rate_dimensions,
+    )
+    from tentacles.Services.Interfaces.node_api_interface.core.http_rate_limit import (
+        http_failure_rate_limited,
+    )
+except ImportError:
+    from api.rate_limits.recover_passphrase import (  # type: ignore[no-redef]
+        RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
+        get_recover_passphrase_rate_limiter,
+        recover_passphrase_rate_dimensions,
+    )
+    from core.http_rate_limit import http_failure_rate_limited  # type: ignore[no-redef]
+try:
+    from tentacles.Services.Interfaces.node_api_interface.api.rate_limits.rate_limit_response import (
+        RateLimitedDetail,
+    )
+except ImportError:
+    from api.rate_limits.rate_limit_response import RateLimitedDetail  # type: ignore[no-redef]
 
 router = APIRouter(tags=["setup"])
 
@@ -63,6 +90,23 @@ class VPNNetworkAddress(pydantic.BaseModel):
     vpn_network_ip: typing.Optional[str] = None
 
 
+class RecoverWalletFromSeedBody(pydantic.BaseModel):
+    address: str
+    new_passphrase: str
+    seed: typing.Optional[str] = None
+    private_key: typing.Optional[str] = None
+
+
+class RecoverWalletFromSeedResult(pydantic.BaseModel):
+    success: bool = True
+
+
+def _client_ip(request: Request) -> str:
+    if request.client is not None:
+        return request.client.host
+    return "unknown"
+
+
 @router.get("/setup/status", response_model=SetupStatus)
 def get_setup_status() -> SetupStatus:
     auth = community_auth.CommunityAuthentication.instance()
@@ -83,16 +127,27 @@ def get_vpn_network_address() -> VPNNetworkAddress:
 @router.post("/setup/init", response_model=SetupResult)
 def init_setup(body: SetupInit) -> SetupResult:
     auth = community_auth.CommunityAuthentication.instance()
+    setup_method = journal_enums.WalletSetupMethod.IMPORT if body.private_key else journal_enums.WalletSetupMethod.CREATE
     if auth is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        journal_recording_context.raise_wallet_setup_http_error(
+            http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            failure_reason=journal_enums.WalletSetupFailureReason.SERVICE_UNAVAILABLE,
+            setup_method=setup_method,
             detail="Service not initialized",
+            error_message="Service not initialized",
         )
     if auth.list_wallets():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+        journal_recording_context.raise_wallet_setup_http_error(
+            http_status=status.HTTP_409_CONFLICT,
+            failure_reason=journal_enums.WalletSetupFailureReason.ALREADY_CONFIGURED,
+            setup_method=setup_method,
             detail="Node is already configured",
+            error_message="Node is already configured",
         )
+    node_journal.record_wallet_setup_attempt(
+        node_type=body.node_type,
+        setup_method=setup_method,
+    )
     try:
         if body.private_key:
             wallet = auth.import_wallet(
@@ -108,17 +163,23 @@ def init_setup(body: SetupInit) -> SetupResult:
                 is_admin=True,
             )
     except (wallet_backend.WalletAlreadyExistsError, wallet_backend.AdminWalletAlreadyExistsError) as err:
-        # A concurrent request already configured the node — surface 409.
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+        journal_recording_context.raise_wallet_setup_http_error(
+            http_status=status.HTTP_409_CONFLICT,
+            failure_reason=journal_enums.WalletSetupFailureReason.CONCURRENT_RACE,
+            setup_method=setup_method,
             detail=str(err),
-        ) from err
+            error=err,
+        )
     except wallet_backend.WalletError as err:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        journal_recording_context.raise_wallet_setup_http_error(
+            http_status=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            failure_reason=journal_enums.WalletSetupFailureReason.WALLET_ERROR,
+            setup_method=setup_method,
             detail=str(err),
-        ) from err
+            error=err,
+        )
     node_config.settings.IS_MASTER_MODE = body.node_type == "master"
+    node_journal.record_wallet_setup_succeeded()
     return SetupResult(address=wallet.address)
 
 
@@ -145,7 +206,7 @@ def export_wallet(
     target_passphrase = credentials.password if is_own_wallet else passphrase
     if not target_passphrase:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Passphrase required",
         )
     try:
@@ -161,3 +222,71 @@ def export_wallet(
             detail="Invalid passphrase",
         )
     return WalletExport(address=entry.address, private_key=entry.private_key, seed=entry.seed or None)
+
+
+def _recover_wallet_from_seed_http_errors(
+    wrapped: typing.Callable[..., RecoverWalletFromSeedResult],
+) -> typing.Callable[..., RecoverWalletFromSeedResult]:
+    """Map wallet backend errors to HTTP responses after rate-limit accounting."""
+
+    @functools.wraps(wrapped)
+    def wrapper(
+        body: RecoverWalletFromSeedBody,
+        request: Request,
+    ) -> RecoverWalletFromSeedResult:
+        try:
+            return wrapped(body, request)
+        except wallet_backend.WalletNotFoundError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Wallet not found",
+            )
+        except wallet_backend.WalletProofMismatchError as err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(err),
+            )
+        except wallet_backend.WalletStorageReadOnlyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(err),
+            )
+        except (wallet_backend.InvalidPrivateKeyError, wallet_backend.PassphraseTooShortError, wallet_backend.WalletError) as err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=str(err),
+            )
+
+    return wrapper
+
+
+@router.post(
+    "/setup/wallet/recover-from-seed",
+    response_model=RecoverWalletFromSeedResult,
+    responses={
+        429: {"model": RateLimitedDetail, "description": "Too many recovery attempts"},
+    },
+)
+@_recover_wallet_from_seed_http_errors
+@http_failure_rate_limited(
+    get_recover_passphrase_rate_limiter(),
+    get_dimensions=recover_passphrase_rate_dimensions,
+    record_failure_on=RECOVER_PASSPHRASE_FAILURE_EXCEPTIONS,
+)
+def recover_wallet_from_seed_route(
+    body: RecoverWalletFromSeedBody,
+    request: Request,
+) -> RecoverWalletFromSeedResult:
+    auth = community_auth.CommunityAuthentication.instance()
+    if auth is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Node not configured",
+        )
+    auth.recover_passphrase_from_ownership_proof(
+        address=body.address,
+        new_passphrase=body.new_passphrase,
+        seed=body.seed,
+        private_key=body.private_key,
+    )
+    return RecoverWalletFromSeedResult()

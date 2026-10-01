@@ -162,7 +162,12 @@ export function PasteProposalDialog({
       // Nothing left to do on rejection — the failing step already recorded
       // itself via onStep before runActionProposal rethrew. This catch only
       // exists so the rejection doesn't surface as unhandled.
-      .catch(() => {})
+      .catch((error: unknown) => {
+        console.error(
+          "PasteProposalDialog: proposal run failed after step error",
+          error,
+        )
+      })
   }
 
   const errorMessage = !parsed.ok ? parseErrorMessage(parsed) : null

@@ -26,6 +26,8 @@ import octobot_node.errors as node_errors
 import octobot_node.scheduler.user_actions.user_actions_executor.automation.automation_user_action_executor as automation_user_action_executor
 import octobot_node.scheduler.user_actions.user_actions_executor.util.action_details_factory as action_details_factory
 
+import octobot.community.node_journal as node_journal
+
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers as collection_providers
 
@@ -117,14 +119,24 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         user_action: protocol_models.UserAction,
     ) -> None:
         actions = self._create_automation_actions(user_action)
-        task = await self._create_automation_task(user_action, actions)
+        automation_id, task = await self._create_automation_task(user_action, actions)
         self.post_actions.to_create_automation_task = task
         self._mark_user_action_completed(
             user_action,
             created_automation_id=task.id
         )
+        automation_configuration = self._get_automation_configuration(user_action)
+        stored_strategy = _load_strategy_for_automation(
+            self._user_id,
+            automation_configuration.strategy,
+        )
+        node_journal.record_new_automation_created_from_strategy(
+            automation_id,
+            stored_strategy,
+            user_action_id=user_action.id,
+        )
 
-    async def _create_automation_task(self, user_action, actions: list[flow_entities.AbstractActionDetails]) -> models.Task:
+    async def _create_automation_task(self, user_action, actions: list[flow_entities.AbstractActionDetails]) -> tuple[str, models.Task]:
         automation_configuration = self._get_automation_configuration(user_action)
         if automation_configuration.id:
             _validate_automation_configuration_id(automation_configuration.id)
@@ -137,7 +149,7 @@ class CreateAutomationActionExecutor(automation_user_action_executor.AutomationU
         }
         if automation_configuration.id:
             task_fields["id"] = automation_configuration.id
-        return models.Task(**task_fields)
+        return automation_id, models.Task(**task_fields)
 
     def _get_automation_configuration(self, user_action: protocol_models.UserAction) -> protocol_models.AutomationConfiguration:
         create_payload = _get_create_automation_payload(user_action)

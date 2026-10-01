@@ -68,7 +68,11 @@ export function ClientEncryptionKeysCard() {
         const data = await fetchNodeConfig()
         setServerEnabled(data.tasks_encryption_enabled ?? false)
         setServerEnvVars(data.server_encryption_env_vars ?? [])
-      } catch {
+      } catch (error) {
+        console.error(
+          "ClientEncryptionKeysCard: failed to load server encryption flags",
+          error,
+        )
         setServerEnabled(false)
       }
     })()
@@ -86,7 +90,11 @@ export function ClientEncryptionKeysCard() {
         const loaded = await loadClientKeys()
         if (loaded) setKeys(loaded as ClientKeys)
         setStatus("ready")
-      } catch {
+      } catch (error) {
+        console.error(
+          "ClientEncryptionKeysCard: failed to decrypt stored keys",
+          error,
+        )
         setStatus("error")
         setError("Failed to decrypt stored keys.")
       }
@@ -106,6 +114,7 @@ export function ClientEncryptionKeysCard() {
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => setStatus("ready"), 2000)
     } catch (e) {
+      console.error("ClientEncryptionKeysCard: failed to save client keys", e)
       setStatus("error")
       setError(e instanceof Error ? e.message : "Encryption failed")
     }

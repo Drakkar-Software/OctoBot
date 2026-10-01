@@ -118,6 +118,32 @@ describe("resolveMetaTemplate", () => {
     expect(blockchainFrom?.defaultValue).toBe("bitcoin")
   })
 
+  it("keeps first literal ORDER_SYMBOL when later step overrides with dependency ref", () => {
+    const def: MetaTemplateDef = {
+      id: "test",
+      label: "Test",
+      description: "",
+      steps: [
+        {
+          templateId: "trade",
+          overrides: { ORDER_SYMBOL: "XMR/BTC" },
+        },
+        {
+          templateId: "loop_until_order_closed",
+          overrides: {
+            ORDER_SYMBOL:
+              "dependency::action_trade_2::created_orders::0::symbol",
+          },
+        },
+      ],
+    }
+    const resolved = resolveMetaTemplate(def)
+    const orderSymbol = resolved.params.find(
+      (param) => param.key === "ORDER_SYMBOL",
+    )
+    expect(orderSymbol?.defaultValue).toBe("XMR/BTC")
+  })
+
   it("preserves first-step override when later duplicate step has no override", () => {
     const def: MetaTemplateDef = {
       id: "test",

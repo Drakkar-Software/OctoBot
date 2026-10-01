@@ -4404,6 +4404,33 @@ async def test_is_target_config_applied(trading_tools):
         get_holdings_ratio_mock.reset_mock()
 
 
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_BASE_ASSET = "BTC@BTC"
+PORTFOLIO_QUOTE_ASSET = "USDT@ETH"
+
+
+class TestIndexTradingModeNetworkQualifiedPortfolioAssets:
+    @pytest.mark.parametrize("trading_tools", ["spot"], indirect=True)
+    async def test_register_traded_pairs_merges_portfolio_legs(self, trading_tools):
+        mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, {}))
+        portfolio_manager = trader.exchange_manager.exchange_personal_data.portfolio_manager
+        portfolio_manager.reference_market = PORTFOLIO_QUOTE_ASSET
+        mode.indexed_coins = [PORTFOLIO_BASE_ASSET]
+        with mock.patch.object(
+            trader.exchange_manager.exchange_config,
+            "add_traded_symbols",
+            mock.AsyncMock(),
+        ) as add_traded_symbols_mock:
+            await producer._register_traded_symbol_pairs_update()
+        add_traded_symbols_mock.assert_called_once()
+        added_pairs = add_traded_symbols_mock.call_args[0][0]
+        assert added_pairs == [commons_symbols.merge_currencies(PORTFOLIO_BASE_ASSET, PORTFOLIO_QUOTE_ASSET)]
+        assert commons_symbols.parse_symbol(added_pairs[0]).base_and_quote() == (
+            PORTFOLIO_BASE_ASSET,
+            PORTFOLIO_QUOTE_ASSET,
+        )
+
+
 @pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
 async def test_get_config_min_ratio(trading_tools):
     mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, {}))

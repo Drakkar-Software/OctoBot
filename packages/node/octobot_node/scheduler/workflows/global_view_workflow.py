@@ -33,7 +33,6 @@ import octobot_node.scheduler.workflows_retention as workflows_retention
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
-WORKFLOW_NAME = "global_view_refresh"
 SCHEDULE_NAME = "global_view_refresh_every_5m"
 SCHEDULE_CRON = "*/5 * * * *" # every 5 minutes
 
@@ -86,7 +85,7 @@ def _log_successful_account_refresh(
 @SCHEDULER.INSTANCE.dbos_class()
 class GlobalViewRefreshWorkflow:
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name=WORKFLOW_NAME)
+    @SCHEDULER.INSTANCE.workflow(name=octobot_node.enums.SchedulerWorkflowNames.GLOBAL_VIEW_REFRESH.value)
     async def global_view_refresh(
         scheduled_time: datetime.datetime,
         context: typing.Any,

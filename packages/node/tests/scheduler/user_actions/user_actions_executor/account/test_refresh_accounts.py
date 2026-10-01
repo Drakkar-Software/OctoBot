@@ -65,9 +65,16 @@ class TestRefreshAccountsActionExecutorExecute:
                 "update_account_state",
                 new=mock.AsyncMock(side_effect=[checked_first_account, checked_second_account]),
             ) as check_mock,
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.account.refresh_accounts.node_journal.record_accounts_refreshed",
+            ) as record_accounts_refreshed_mock,
         ):
             executor = refresh_accounts_executor.RefreshAccountsActionExecutor(account_executor_test_utils.WALLET_ADDRESS)
             await executor.execute(user_action)
+        record_accounts_refreshed_mock.assert_called_once_with(
+            account_ids=["acc-1", "acc-2"],
+            user_action_id="ua-refresh-all",
+        )
         provider_mock.list_items.assert_called_once_with(account_executor_test_utils.WALLET_ADDRESS)
         assert provider_mock.get_item.call_count == 2
         provider_mock.update_item.assert_has_calls(
@@ -102,6 +109,7 @@ class TestRefreshAccountsActionExecutorExecute:
         user_action = protocol_models.UserAction(id="ua-refresh-one", configuration=account_executor_test_utils.wrap_configuration(refresh_inner))
         provider_mock = mock.Mock()
         provider_mock.get_item.return_value = account_model
+        provider_mock.list_items.return_value = [account_model]
         with (
             mock.patch(
                 "octobot_sync.sync.collection_providers.AccountProvider.instance",

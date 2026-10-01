@@ -6,6 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *It is strongly advised to perform an update of your tentacles after updating OctoBot. (start.py tentacles --install --all)*
 
+## [3.0.0-beta3] - 2026-09-28
+### Added
+- [Node Interface] Much more help and guidance to connect to the web & app interfaces
+- [Exchanges] KucoinEu, Bybit EU, and Coinrabbit support
+- [Portfolio] Portfolio history from trades and transactions
+- [Node Interface] Mandatory seed phrase backup step and quiz when creating a wallet; rate-limited seed recovery at login
+- [Node Interface] Send feedback via downloadable zip
+- [Node] Disable automation schedules; signal-based automations; cancel open orders when stopping an automation
+- [Symbols] Support `@network` trading pairs
+- [Docs] Tailscale guide for exposing the webhook port
+- [Client] Pair the OctoBot client with your node (device code) and sync a read-only mirror per wallet
+- [UI] Scan QR codes and copy/paste to confirm action proposals
+### Updated
+- [Node] View outputs for failed or cancelled automations
+- [Docker] Expose child OctoBots ports in the default Docker image
+### Fixed
+- [DBOS] Reduce tasks.db file size and CPU load
+- [Inteface] Fix Exchange & trading pairs selector
+- [Trading] Errors when the portfolio cannot be loaded from the exchange
+- [Copy trading] Stale copy-trading signals
+- [Coinbase] Invalid API key (PEM) handling
+- [Node Interface] Wallet import (template, CSV, manual edit); process bot links; seed backup quiz and recovery flow; clearer unlock and login errors
+- [Node] Automations stopping unexpectedly; missing or wrong tasks in the task list; wrong passphrase errors with multiple wallets
+- [Tentacles] Child bot process failing to start (decoding error)
+- [ProcessBot] Incorrect state when using several exchanges
+- [Market making] Wrong prices from invalid references; clearer error messages
+
 ## [3.0.0-beta2] - 2026-08-06
 ### Added
 - [Weex] Support Weex exchange

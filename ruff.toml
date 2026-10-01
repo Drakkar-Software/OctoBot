@@ -1,0 +1,9 @@
+line-length = 100
+exclude = [
+    "tentacles",
+    "**/__pycache__",
+    ".cursor/venv",
+    "packages/tentacles/Services/Interfaces/node_web_interface/dist",
+    "packages/tentacles/Services/Interfaces/node_web_interface/src/client",
+    "packages/protocol/octobot_protocol/models",
+]
