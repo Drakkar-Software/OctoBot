@@ -7,6 +7,7 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 - Canonical guide: [README.md](README.md)
 - Agent procedure: skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`)
 - Bootstrap polls debug `user_actions` and fails fast on FAILED create-automation (`operations/bootstrap_grid.py`)
+- Extra bootstrap scenarios (index, completed, lifecycle) live in `operations/bootstrap_scenarios.py`
 
 ## Phases
 
@@ -18,6 +19,7 @@ flowchart TB
   seedSync[operations.seed_sync]
   clearOp[operations.clear]
   bootstrapGrid[operations.bootstrap_grid]
+  bootstrapScenarios[operations.bootstrap_scenarios]
   bootstrapHttp[operations.bootstrap_http]
   builders[protocol.builders]
   pathsMod[paths]
@@ -25,7 +27,10 @@ flowchart TB
   nodeConstants[octobot_node.agent_seed.constants]
 
   cli --> seedRun
-  cli --> bootstrapGrid
+  cli --> bootstrapScenarios
+  bootstrapScenarios --> bootstrapGrid
+  bootstrapScenarios --> bootstrapHttp
+  bootstrapScenarios --> builders
   seedRun --> clearOp
   seedRun --> seedOctobotConfig
   seedRun --> seedSync
@@ -51,7 +56,10 @@ flowchart TB
 | `operations/seed_run.py` | `run_seed`, idempotency |
 | `operations/seed_octobot_config.py` | `config.json` readonly overlays to master `user/` |
 | `operations/bootstrap_http.py` | Debug API HTTP helpers |
-| `operations/bootstrap_grid.py` | Grid automation bootstrap |
+| `operations/bootstrap_grid.py` | Grid automation bootstrap, shared polling helpers |
+| `operations/bootstrap_scenarios.py` | `--scenario` runners: index, completed, lifecycle (uses the grid helpers) |
+| `enums.py` | `BootstrapScenario` |
+| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError` |
 | `cli/` | Argparse only |
 | `__main__.py` | Entry: `python -m tools.agent_seed` |
 
@@ -67,7 +75,8 @@ Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) live
 | `operations/clear.py` | node constants (message prefix) | tentacles, CLI |
 | `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.clear`, `secrets`, `paths`, node constants | HTTP debug |
 | `operations/seed_octobot_config.py` | `octobot_commons.constants`, `paths` | tentacles, CLI |
-| `operations/bootstrap_*.py` | `protocol.builders`, `secrets`, node constants, urllib | CollectionProviders |
+| `operations/bootstrap_*.py` | `protocol.builders`, `secrets`, `enums`, `errors`, node constants, urllib | CollectionProviders |
+| `enums.py`, `errors.py` | stdlib | `octobot_*` |
 | `cli/*` | `operations`, `paths` | tentacles |
 | `__main__.py` | `cli` | direct `operations` |
 
@@ -75,7 +84,7 @@ Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) live
 
 ## Tests
 
-Mirror under `tools/tests/agent_seed/` (`paths/`, `protocol/`, `operations/`). Demo guard tests stay in `packages/node/tests/agent_seed/`.
+Mirror under `tools/tests/agent_seed/` (`paths/`, `protocol/`, `operations/`, `cli/`). Demo guard tests stay in `packages/node/tests/agent_seed/`.
 
 **CI:** OctoBot-CI job `extended_linter` runs `PYTHONPATH=.:$PYTHONPATH pytest tools/tests` (wheel + tentacles in that job).
 

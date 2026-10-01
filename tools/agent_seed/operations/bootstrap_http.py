@@ -12,6 +12,11 @@ def basic_auth_header(wallet_address: str, passphrase: str) -> dict[str, str]:
     return {"Authorization": f"Basic {token}"}
 
 
+def user_action_to_payload(user_action: typing.Any) -> dict:
+    # UserAction.to_dict() keeps datetimes, to_json() gives the wire form the debug API expects.
+    return json.loads(user_action.to_json())
+
+
 def request_json(
     method: str,
     url: str,

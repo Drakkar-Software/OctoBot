@@ -149,28 +149,78 @@ def wrap_user_action_configuration(
     return protocol_models.UserActionConfiguration.from_json(payload.to_json())
 
 
-def build_create_grid_automation_user_action() -> protocol_models.UserAction:
+def _build_create_automation_user_action(
+    *,
+    user_action_id_prefix: str,
+    automation_id: str,
+    automation_name: str,
+    strategy_id: str,
+    account_id: str,
+) -> protocol_models.UserAction:
     strategy_reference = protocol_models.StrategyReference(
-        id=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID,
+        id=strategy_id,
         version=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_VERSION,
         emit_signals=False,
     )
     automation_configuration = protocol_models.AutomationConfiguration(
-        id=demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
-        name=demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME,
+        id=automation_id,
+        name=automation_name,
         created_at=datetime.datetime(2026, 6, 1, 12, 0, 0, tzinfo=datetime.UTC),
         strategy=strategy_reference,
-        accounts=[
-            protocol_models.AccountReference(
-                id=demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_GRID_ID,
-            ),
-        ],
+        accounts=[protocol_models.AccountReference(id=account_id)],
     )
     payload = protocol_models.CreateAutomationConfiguration(
         action_type=protocol_models.UserActionType.AUTOMATION_CREATE,
         configuration=automation_configuration,
     )
     return protocol_models.UserAction(
-        id=f"ua-agent-seed-grid-{uuid.uuid4()}",
+        id=f"{user_action_id_prefix}-{uuid.uuid4()}",
+        configuration=wrap_user_action_configuration(payload),
+    )
+
+
+def build_create_grid_automation_user_action() -> protocol_models.UserAction:
+    return _build_create_automation_user_action(
+        user_action_id_prefix="ua-agent-seed-grid",
+        automation_id=demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
+        automation_name=demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME,
+        strategy_id=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID,
+        account_id=demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_GRID_ID,
+    )
+
+
+def build_create_index_automation_user_action(
+    *,
+    automation_id: str = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID,
+    automation_name: str = demo_agent_seed_constants.DEMO_AGENT_SEED_INDEX_AUTOMATION_DISPLAY_NAME,
+) -> protocol_models.UserAction:
+    return _build_create_automation_user_action(
+        user_action_id_prefix="ua-agent-seed-index",
+        automation_id=automation_id,
+        automation_name=automation_name,
+        strategy_id=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID,
+        account_id=demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_INDEX_IDLE_ID,
+    )
+
+
+def build_stop_automation_user_action(automation_id: str) -> protocol_models.UserAction:
+    payload = protocol_models.StopAutomationConfiguration(
+        id=automation_id,
+        action_type=protocol_models.UserActionType.AUTOMATION_STOP,
+        cancel_orders=True,
+    )
+    return protocol_models.UserAction(
+        id=f"ua-agent-seed-stop-{uuid.uuid4()}",
+        configuration=wrap_user_action_configuration(payload),
+    )
+
+
+def build_restart_automation_user_action(automation_id: str) -> protocol_models.UserAction:
+    payload = protocol_models.RestartAutomationConfiguration(
+        id=automation_id,
+        action_type=protocol_models.UserActionType.AUTOMATION_RESTART,
+    )
+    return protocol_models.UserAction(
+        id=f"ua-agent-seed-restart-{uuid.uuid4()}",
         configuration=wrap_user_action_configuration(payload),
     )

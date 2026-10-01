@@ -41,6 +41,7 @@ Master tentacles on `user/reference_tentacles_config/` must exist (see `tools/ag
 bash .cursor/seed-agent.sh --full    # seed + background start + bootstrap — stop node first; do NOT run start again
 bash .cursor/seed-agent.sh --clear   # wipe + re-seed — stop node first
 bash .cursor/seed-agent.sh bootstrap # node must already listen on AGENT_SEED_BASE_URL
+bash .cursor/seed-agent.sh bootstrap --scenario index --scenario completed  # more automations (grid|index|completed|lifecycle|all)
 bash .cursor/seed-agent.sh start     # foreground start only
 ```
 

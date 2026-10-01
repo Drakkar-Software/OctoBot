@@ -67,7 +67,7 @@ From OctoBot repo root (after sourcing env files):
 | `seed` with second arg `--clear` | Not used by shell; use `--clear` below |
 | `--clear` | Wipe user folder + sqlite, then re-seed (**node must be stopped**) |
 | `start` | `start.py --master --user-folder …` (foreground) |
-| `bootstrap` | HTTP bootstrap grid automation (node must be listening) |
+| `bootstrap [--scenario …]` | HTTP bootstrap of the seeded automations, grid by default (node must be listening). See **Bootstrap scenarios** |
 | `--full` | `seed` → **`start.py` in background** → `bootstrap` |
 
 ### Node process rules
@@ -139,6 +139,8 @@ From `octobot_node.agent_seed.constants`:
 |------|--------|
 | Grid automation name | `Agent seed BTC/USDC grid` |
 | Grid automation id | `a0000000-0000-4000-8000-000000000001` |
+| Index automation name / id | `Agent seed BTC/ETH/SOL index` / `a0000000-0000-4000-8000-000000000002` |
+| Stopped (completed) index automation name / id | `Agent seed stopped index` / `a0000000-0000-4000-8000-000000000003` |
 | Account display names | **Seed kraken A** (grid), **Seed kraken B** (index idle) |
 
 ## Demo wallet restrictions
@@ -151,7 +153,27 @@ The demo wallet is sandboxed in `octobot_node/agent_seed/demo_wallet.py`: it **c
 - Kraken **simulated** exchange config and accounts **Seed kraken A** (1000 USDC, grid) and **Seed kraken B** (500 USDC, index idle)
 - Grid strategy on **BTC/USDC** (3 buy / 3 sell, spread 2000, increment 500)
 - Index strategy on **BTC / ETH / SOL** (10% rebalance trigger)
-- Bootstrap (optional/`--full`) starts the grid automation via `POST /api/v1/debug/`; CLI exits with error if debug shows that create user action **failed**.
+- Bootstrap (optional/`--full`) starts the grid automation via `POST /api/v1/debug/`; CLI exits with error if debug shows that create user action **failed**. More automations on the same fixtures: see **Bootstrap scenarios**.
+
+## Bootstrap scenarios
+
+`bootstrap` (and `all`) take repeatable `--scenario` options, via `bash .cursor/seed-agent.sh bootstrap --scenario index` or `python -m tools.agent_seed bootstrap --scenario index`. Every scenario is idempotent: one already in its target state does nothing. Automations are created and controlled only through the debug API, with the same user actions the UI sends.
+
+| Scenario | Result | Why it exists |
+|----------|--------|---------------|
+| `grid` (default) | Grid automation on **Seed kraken A** is RUNNING | The default demo automation |
+| `index` | Index automation on **Seed kraken B** is RUNNING | Uses the seeded index strategy and the second account |
+| `completed` | Another index automation on **Seed kraken B** is created, then stopped (COMPLETED) | Gives the UI a completed automation to show |
+| `lifecycle` | Stops and restarts the grid automation, then checks it is RUNNING with its display name | Regression check for the stop and restart user actions. It raises `AutomationNameLostError` (exit 1) if the name is lost |
+| `all` | The four above, in that order | |
+
+There is no seeded errored automation. An automation that fails keeps retrying and stays RUNNING until the scheduler runs out of recovery attempts, which is neither quick nor reliable to trigger from user actions. Cover the errored state with unit tests instead.
+
+Do not re-run `grid` after `lifecycle` on the same node: the grid check finds its automation by display name.
+
+## Against a PyInstaller binary
+
+The same fixtures work with a CI-built binary instead of `start.py`. `seed` and `bootstrap` still run from this repo (Python), only the node process is the binary. Set `OCTOBOT_AGENT_SEED_MASTER_USER_ROOT` to the `user/` folder the binary created when it installed tentacles, put that run folder on `PYTHONPATH` so `tentacles` resolves, then start the binary with `--master --user-folder user/agent-seed` plus the same `SCHEDULER_SQLITE_FILE` and `EXIT_BEFORE_TENTACLES_AUTO_REINSTALL` variables as `seed-agent.sh start`. Full steps and the checks to run: [`packages/binary/BINARY_TESTING_INSTRUCTIONS.md`](../../packages/binary/BINARY_TESTING_INSTRUCTIONS.md) (section **Seeded QA**).
 
 ## Troubleshooting
 
@@ -162,3 +184,4 @@ The demo wallet is sandboxed in `octobot_node/agent_seed/demo_wallet.py`: it **c
 | Bootstrap `RuntimeError` with user action failed | Read automation error in message; fix node/fixtures, re-seed if needed |
 | Debug UI/API 404 | Node-side encryption enabled — not supported for debug QA |
 | `--full` bootstrap flaky | Node still booting; retry `bootstrap` |
+| `bootstrap --scenario lifecycle` exits 1 with `AutomationNameLostError` | The restarted automation lost its name (restart user action). Real node bug, not a seed problem |
