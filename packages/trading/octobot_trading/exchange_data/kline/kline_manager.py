@@ -34,14 +34,14 @@ class KlineManager(util.Initializable):
 
     def _update_kline_key(self, kline_key, kline_update):
         try:
-            if kline_update[kline_key] is not math.nan:
+            if not math.isnan(kline_update[kline_key]):
                 self.kline[kline_key] = kline_update[kline_key]
         except KeyError:
             pass
 
     def _update_kline_init_only_key(self, kline_key, kline_update):
         try:
-            if self.kline[kline_key] is math.nan:
+            if math.isnan(self.kline[kline_key]):
                 self.kline[kline_key] = kline_update[kline_key]
         except KeyError:
             pass
@@ -58,11 +58,11 @@ class KlineManager(util.Initializable):
             self._update_kline_key(enums.PriceIndexes.IND_PRICE_VOL.value, kline)
             self._update_kline_key(enums.PriceIndexes.IND_PRICE_CLOSE.value, kline)
 
-            if self.kline[enums.PriceIndexes.IND_PRICE_HIGH.value] is math.nan or \
+            if math.isnan(self.kline[enums.PriceIndexes.IND_PRICE_HIGH.value]) or \
                     self.kline[enums.PriceIndexes.IND_PRICE_HIGH.value] < kline[enums.PriceIndexes.IND_PRICE_HIGH.value]:
                 self._update_kline_key(enums.PriceIndexes.IND_PRICE_HIGH.value, kline)
 
-            if self.kline[enums.PriceIndexes.IND_PRICE_LOW.value] is math.nan or \
+            if math.isnan(self.kline[enums.PriceIndexes.IND_PRICE_LOW.value]) or \
                     self.kline[enums.PriceIndexes.IND_PRICE_LOW.value] > kline[enums.PriceIndexes.IND_PRICE_LOW.value]:
                 self._update_kline_key(enums.PriceIndexes.IND_PRICE_LOW.value, kline)
         except TypeError as e:
