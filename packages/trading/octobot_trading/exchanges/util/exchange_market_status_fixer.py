@@ -27,7 +27,7 @@ def is_ms_valid(value, zero_valid=False):
             value = float(value)
         except ValueError:
             return False
-    return value is not None and value is not math.nan and (value >= 0 if zero_valid else value > 0)
+    return value is not None and not math.isnan(value) and (value >= 0 if zero_valid else value > 0)
 
 
 def check_market_status_limits(market_limit):
