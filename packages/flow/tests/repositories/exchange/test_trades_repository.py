@@ -6,6 +6,19 @@ import octobot_trading.enums as trading_enums
 import octobot_trading.personal_data as trading_personal_data
 
 
+@pytest.fixture(autouse=True)
+def _patch_trades_channel_ensure(request):
+    if request.cls is TestTradesRepositoryEnsureTemporaryTradesChannel:
+        yield
+        return
+    with mock.patch.object(
+        trades_repository_module.TradesRepository,
+        "ensure_temporary_trades_channel",
+        mock.AsyncMock(),
+    ):
+        yield
+
+
 def _make_repo(exchange_manager):
     fetched_data = mock.MagicMock()
     return trades_repository_module.TradesRepository(exchange_manager, [], fetched_data)
@@ -299,25 +312,19 @@ class TestTradesRepositorySkipsDelistedBeforeParsing:
 
 class TestTradesRepositoryEnsureTemporaryTradesChannel:
     @pytest.mark.asyncio
-    async def test_creates_channels_and_trades_producer_only(self):
+    async def test_delegates_to_channel_producer_ensure(self):
         exchange_manager = mock.Mock()
-        with (
-            mock.patch(
-                "octobot_trading.exchanges.create_exchange_channels",
-                mock.AsyncMock(),
-            ) as create_exchange_channels_mock,
-            mock.patch(
-                "octobot_trading.exchanges.create_producers",
-                mock.AsyncMock(),
-            ) as create_producers_mock,
-        ):
+        with mock.patch.object(
+            trades_repository_module.channel_producer_ensure_module,
+            "ensure_temporary_channel_producer",
+            mock.AsyncMock(),
+        ) as ensure_mock:
             await trades_repository_module.TradesRepository.ensure_temporary_trades_channel(exchange_manager)
 
-        create_exchange_channels_mock.assert_awaited_once_with(exchange_manager)
-        create_producers_mock.assert_awaited_once_with(
+        ensure_mock.assert_awaited_once_with(
             exchange_manager,
-            [trading_personal_data.TradesUpdater],
-            start_producers=False,
+            trades_repository_module.trading_constants.TRADES_CHANNEL,
+            trading_personal_data.TradesUpdater,
         )
 
 

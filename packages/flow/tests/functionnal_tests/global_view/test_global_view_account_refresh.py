@@ -19,7 +19,6 @@ import octobot_flow.logic.accounts.account_state_persistence as account_state_pe
 import octobot_flow.logic.global_view.exchange_account_refresh as exchange_account_refresh_module
 import octobot_flow.logic.global_view.global_view_persistence as global_view_persistence_module
 import octobot_sync.constants as sync_constants
-from tests.logic.global_view.portfolio_test_util import patch_temporary_exchange_channel_ensure
 from tests.logic.global_view.portfolio_test_util import wire_portfolio_pipeline
 from tests.logic.global_view.portfolio_test_util import wire_repository_factory
 
@@ -139,11 +138,6 @@ class TestGlobalViewAccountJobFunctional:
                 "exchange_manager_from_exchange_data",
                 fake_exchange_manager,
             ),
-            patch_temporary_exchange_channel_ensure() as (
-                ensure_ticker_channel_mock,
-                ensure_balance_channel_mock,
-                ensure_orders_channel_mock,
-            ),
             mock.patch.object(
                 personal_data,
                 "refresh_portfolio_valuation",
@@ -152,11 +146,6 @@ class TestGlobalViewAccountJobFunctional:
             mock.patch.object(
                 exchange_account_refresh_module,
                 "_fetch_tickers",
-                mock.AsyncMock(return_value={}),
-            ),
-            mock.patch.object(
-                exchange_account_refresh_module.tickers_repository_module.TickersRepository,
-                "fetch_tickers",
                 mock.AsyncMock(return_value={}),
             ),
             mock.patch.object(
@@ -184,9 +173,6 @@ class TestGlobalViewAccountJobFunctional:
                 context,
             ).run()
 
-        ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
-        ensure_balance_channel_mock.assert_not_awaited()
-        ensure_orders_channel_mock.assert_not_awaited()
         portfolio_manager.apply_forced_portfolio.assert_called_once()
         assert refresh_result.updated_account.assets
         asset_symbols = {
@@ -223,11 +209,6 @@ class TestGlobalViewAccountJobFunctional:
                 "exchange_manager_from_exchange_data",
                 fake_exchange_manager,
             ),
-            patch_temporary_exchange_channel_ensure() as (
-                ensure_ticker_channel_mock,
-                ensure_balance_channel_mock,
-                ensure_orders_channel_mock,
-            ),
             mock.patch.object(
                 personal_data,
                 "refresh_portfolio_valuation",
@@ -263,9 +244,6 @@ class TestGlobalViewAccountJobFunctional:
                 context,
             ).run()
 
-        ensure_ticker_channel_mock.assert_awaited_once_with(exchange_manager)
-        ensure_balance_channel_mock.assert_awaited_once_with(exchange_manager)
-        ensure_orders_channel_mock.assert_awaited_once_with(exchange_manager)
         orders_repository.fetch_open_orders.assert_awaited_once_with(["BTC/USDT", "ETH/USDT"])
         assert refresh_result.updated_account.assets
         assert refresh_result.changed_order_ids == {"gone-order-1"}

@@ -16,18 +16,19 @@ pytestmark = pytest.mark.asyncio
 
 
 class TestPortfolioRepositoryEnsureTemporaryBalanceChannel:
-    async def test_creates_balance_producer_only(self):
+    async def test_delegates_to_channel_producer_ensure(self):
         exchange_manager = mock.Mock()
-        with mock.patch(
-            "octobot_trading.exchanges.create_producers",
+        with mock.patch.object(
+            portfolio_repository_module.channel_producer_ensure_module,
+            "ensure_temporary_channel_producer",
             mock.AsyncMock(),
-        ) as create_producers_mock:
+        ) as ensure_mock:
             await portfolio_repository_module.PortfolioRepository.ensure_temporary_balance_channel(exchange_manager)
 
-        create_producers_mock.assert_awaited_once_with(
+        ensure_mock.assert_awaited_once_with(
             exchange_manager,
-            [trading_personal_data.BalanceUpdater],
-            start_producers=False,
+            trading_constants.BALANCE_CHANNEL,
+            trading_personal_data.BalanceUpdater,
         )
 
 
@@ -55,6 +56,11 @@ class TestFetchAndApplyPortfolio:
             fetched_exchange_data=octobot_flow.entities.FetchedExchangeData(),
         )
         with (
+            mock.patch.object(
+                portfolio_repository_module.PortfolioRepository,
+                "ensure_temporary_balance_channel",
+                mock.AsyncMock(),
+            ),
             mock.patch.object(
                 repository,
                 "get_channel_updater",

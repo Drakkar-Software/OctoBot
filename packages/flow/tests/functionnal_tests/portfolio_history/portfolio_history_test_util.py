@@ -350,11 +350,6 @@ def portfolio_history_test_environment(
             return_value=mock.Mock(),
         ),
         mock.patch.object(
-            portfolio_history_job_module.trades_repository_module.TradesRepository,
-            "ensure_temporary_trades_channel",
-            trades_repository_test_util.ensure_trades_channel,
-        ),
-        mock.patch.object(
             daily_price_cache_updater_module.exchange_util,
             "get_historical_ohlcv",
             _empty_historical_ohlcv,

@@ -112,9 +112,6 @@ class PortfolioHistoryJob:
             tentacles_setup_config,
             price_fallback=None,
         ) as exchange_manager:
-            await trades_repository_module.TradesRepository.ensure_temporary_trades_channel(
-                exchange_manager,
-            )
             fetched_exchange_data = octobot_flow.entities.FetchedExchangeData()
             trades_repo = trades_repository_module.TradesRepository(
                 exchange_manager, [], fetched_exchange_data
