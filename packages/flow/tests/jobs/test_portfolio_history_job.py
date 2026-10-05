@@ -97,7 +97,6 @@ class TestRunForAccountDoesNotPersistHistory:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -112,9 +111,6 @@ class TestRunForAccountDoesNotPersistHistory:
         assert results[0].duration_seconds is not None
         assert results[0].duration_seconds >= 0
         assert results[0].price_symbols_count >= 0
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel.assert_awaited_once_with(
-            mock_exchange_manager,
-        )
         # merge_and_persist_trading_history should be called, but not AccountHistoryProvider
         mock_merge.merge_and_persist_trading_history.assert_called_once()
 
@@ -154,7 +150,6 @@ class TestFetchAndPersistTransactionCurrencies:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -203,7 +198,6 @@ class TestFetchAndPersistTransactionCurrencies:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -250,7 +244,6 @@ class TestFetchTradesUsesContextTradeSymbols:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -296,7 +289,6 @@ class TestFetchTradesUsesContextTradeSymbols:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -346,7 +338,6 @@ class TestSkipTradeFetchForNetworkQualifiedMarkets:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -394,7 +385,6 @@ class TestRunParallelExchangeAccounts:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -675,7 +665,6 @@ class TestDropDelistedTradesFromJob:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(
             return_value=[
                 {"symbol": "BTC/USDC"},
@@ -748,7 +737,6 @@ class TestDiscoverAndFetchTradeSymbols:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -797,7 +785,6 @@ class TestDiscoverAndFetchTradeSymbols:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         call_order: list[str] = []
 
         async def fetch_deposits(**_kwargs):
@@ -863,7 +850,6 @@ class TestDiscoverAndFetchTradeSymbols:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.side_effect = (
             lambda exchange_manager, *_args, **_kwargs: (
                 trades_repository_module.TradesRepository(exchange_manager, [], mock.MagicMock())
@@ -914,7 +900,6 @@ class TestDiscoverAndFetchTradeSymbols:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.side_effect = (
             lambda exchange_manager, *_args, **_kwargs: (
                 trades_repository_module.TradesRepository(exchange_manager, [], mock.MagicMock())
@@ -970,7 +955,6 @@ class TestPersistTradeConfirmedConfigFromJob:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(
             return_value=[{"symbol": "ALGO/USDC"}],
         )
@@ -1020,7 +1004,6 @@ class TestPersistTradeConfirmedConfigFromJob:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -1071,7 +1054,6 @@ class TestPersistTradeConfirmedConfigFromJob:
         mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
             return_value=False
         )
-        mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
         mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
         mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -1177,7 +1159,6 @@ class TestIncrementalTradeFetchWiring:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -1230,7 +1211,6 @@ class TestIncrementalTradeFetchFirstRun:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -1291,7 +1271,6 @@ class TestIncrementalTradeFetchNoCandleFallback:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -1345,7 +1324,6 @@ class TestIncrementalTradeFetchNullAccountTrading:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -1403,7 +1381,6 @@ class TestIncrementalTradeFetchLogging:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
             mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])
@@ -1473,7 +1450,6 @@ class TestIncrementalTradeFetchUsdLikePair:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             fetch_trades_paginated_mock = mock.AsyncMock(return_value=[])
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = fetch_trades_paginated_mock
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
@@ -1535,7 +1511,6 @@ class TestIncrementalTradeFetchUsdLikePair:
             mock_exchanges.exchange_manager_from_exchange_data.return_value.__aexit__ = mock.AsyncMock(
                 return_value=False
             )
-            mock_trades_repo.TradesRepository.ensure_temporary_trades_channel = mock.AsyncMock()
             mock_trades_repo.TradesRepository.return_value.fetch_trades_paginated = mock.AsyncMock(return_value=[])
             mock_tx_repo.TransactionsRepository.return_value.fetch_deposits = mock.AsyncMock(return_value=[])
             mock_tx_repo.TransactionsRepository.return_value.fetch_withdrawals = mock.AsyncMock(return_value=[])

@@ -2,11 +2,11 @@ import typing
 
 import octobot_trading.exchange_data
 import octobot_trading.enums as trading_enums
-import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 
 import octobot_flow.entities
 import octobot_flow.repositories.exchange.base_exchange_repository as base_exchange_repository_import
+import octobot_flow.repositories.exchange.channel_producer_ensure as channel_producer_ensure_module
 import octobot_trading.constants as trading_constants
 
 
@@ -14,14 +14,14 @@ class TickersRepository(base_exchange_repository_import.BaseExchangeRepository):
 
     @classmethod
     async def ensure_temporary_ticker_channel(cls, exchange_manager) -> None:
-        await trading_exchanges.create_exchange_channels(exchange_manager)
-        await trading_exchanges.create_producers(
+        await channel_producer_ensure_module.ensure_temporary_channel_producer(
             exchange_manager,
-            [octobot_trading.exchange_data.TickerUpdater],
-            start_producers=False,
+            trading_constants.TICKER_CHANNEL,
+            octobot_trading.exchange_data.TickerUpdater,
         )
 
     async def fetch_tickers(self, symbols: typing.Optional[list[str]]) -> dict[str, dict]:
+        await self.ensure_temporary_ticker_channel(self.exchange_manager)
         updater = typing.cast(
             octobot_trading.exchange_data.TickerUpdater,
             self.get_channel_updater(trading_constants.TICKER_CHANNEL)

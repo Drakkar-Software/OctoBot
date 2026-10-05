@@ -22,18 +22,19 @@ def _open_order_dict(exchange_id: str, symbol: str) -> dict:
 
 
 class TestOrdersRepositoryEnsureTemporaryOrdersChannel:
-    async def test_creates_orders_producer_only(self):
+    async def test_delegates_to_channel_producer_ensure(self):
         exchange_manager = mock.Mock()
-        with mock.patch(
-            "octobot_trading.exchanges.create_producers",
+        with mock.patch.object(
+            orders_repository_module.channel_producer_ensure_module,
+            "ensure_temporary_channel_producer",
             mock.AsyncMock(),
-        ) as create_producers_mock:
+        ) as ensure_mock:
             await orders_repository_module.OrdersRepository.ensure_temporary_orders_channel(exchange_manager)
 
-        create_producers_mock.assert_awaited_once_with(
+        ensure_mock.assert_awaited_once_with(
             exchange_manager,
-            [trading_personal_data.OrdersUpdater],
-            start_producers=False,
+            trading_constants.ORDERS_CHANNEL,
+            trading_personal_data.OrdersUpdater,
         )
 
 
@@ -52,6 +53,11 @@ class TestFetchOpenOrders:
             fetched_exchange_data=octobot_flow.entities.FetchedExchangeData(),
         )
         with (
+            mock.patch.object(
+                orders_repository_module.OrdersRepository,
+                "ensure_temporary_orders_channel",
+                mock.AsyncMock(),
+            ),
             mock.patch.object(
                 repository,
                 "get_channel_updater",
@@ -81,5 +87,4 @@ class TestFetchOpenOrders:
             known_automations=[],
             fetched_exchange_data=octobot_flow.entities.FetchedExchangeData(),
         )
-        open_orders = await repository.fetch_open_orders([])
-        assert open_orders == []
+        assert await repository.fetch_open_orders([]) == []
