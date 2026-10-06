@@ -22,7 +22,7 @@ Multi-step **roadmap** plans (title or description contains `roadmap`): author w
 
 ## Install and env
 
-- Profile default: **`ci-tentacles`** (`environment.json` → `OCTOBOT_CLOUD_PROFILE=ci-tentacles bash .cursor/cloud-install.sh`).
+- Profile default: **`ui-node-web`** (`environment.json` → `PANTS_PANTSD=false OCTOBOT_CLOUD_PROFILE=ui-node-web bash .cursor/cloud-install.sh`). GitHub `cloud-env-validate` still uses `ci-tentacles`.
 - **Success:** Build log contains `OCTOBOT_CLOUD_INSTALL_OK`. Do not guess from UI alone.
 - **Validate:** `bash .cursor/cloud-validate.sh --profile ci-tentacles --json`
 - Profiles: `package-only` (no tentacles), `ci-tentacles` (CI parity), `ui-node-web` (+ web UI build).

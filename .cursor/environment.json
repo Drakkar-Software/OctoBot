@@ -3,5 +3,5 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "install": "OCTOBOT_CLOUD_PROFILE=ci-tentacles bash .cursor/cloud-install.sh"
+  "install": "PANTS_PANTSD=false OCTOBOT_CLOUD_PROFILE=ui-node-web bash .cursor/cloud-install.sh"
 }

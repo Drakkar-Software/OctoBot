@@ -7,8 +7,8 @@ CI-parity install and validation for [Cursor Cloud Agents](https://cursor.com/do
 | Profile | Layers |
 |---------|--------|
 | `package-only` | L1–L3 (no tentacles install) |
-| `ci-tentacles` | L1–L5 (**default** in `environment.json`) |
-| `ui-node-web` | L1–L6 (includes `node_web_interface` build) |
+| `ci-tentacles` | L1–L5 (GitHub `cloud-env-validate`) |
+| `ui-node-web` | L1–L6 (**default** in `environment.json`; includes `node_web_interface` build) |
 
 Install: `bash .cursor/cloud-install.sh` (profile via env var).
 
@@ -46,6 +46,6 @@ If a dashboard environment snapshot shadows this repo config, remove the saved s
 
 - Target branch: **`dev`** (unless release flow to `master`).
 - Before handoff: `python -m tools.extended_linter --base origin/dev` (match PR base ref).
-- CI: **OctoBot-CI** job **`extended_linter`** (wheel + tentacles + `pytest tools/tests`; PR policy step uses `--skip-tentacles-reinstall`, no `cloud-install`). Use **`ci-tentacles`** for agents and **`cloud-env-validate`** on `.cursor/` changes.
+- CI: **OctoBot-CI** job **`extended_linter`** (wheel + tentacles + `pytest tools/tests`; PR policy step uses `--skip-tentacles-reinstall`, no `cloud-install`). Cloud agents use **`ui-node-web`** (`environment.json`). GitHub **`cloud-env-validate`** still installs **`ci-tentacles`**.
 - Agent docs: colocated `AGENTS.md` (see root index), skills **octobot-cloud** and **agent-seed** (Node UI QA).
 - Plans whose title or description include **roadmap**: skill **cloud-roadmap** (`.cursor/skills/cloud-roadmap/SKILL.md`) before `CreatePlan`; execution uses **octobot-cloud**.
