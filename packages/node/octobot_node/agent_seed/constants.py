@@ -22,6 +22,9 @@ DEMO_AGENT_SEED_STRATEGY_GRID_ID = "agent-seed-strategy-grid-btc-usdc"
 DEMO_AGENT_SEED_STRATEGY_INDEX_ID = "agent-seed-strategy-index-btc-eth-sol"
 # Stable agent-seed grid automation parent id (Node create-automation requires canonical lowercase UUID).
 DEMO_AGENT_SEED_AUTOMATION_GRID_ID = "a0000000-0000-4000-8000-000000000001"
+# Index automation (runs on the idle account) and index automation that bootstrap stops (completed state in the UI).
+DEMO_AGENT_SEED_AUTOMATION_INDEX_ID = "a0000000-0000-4000-8000-000000000002"
+DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID = "a0000000-0000-4000-8000-000000000003"
 
 DEMO_AGENT_SEED_GRID_SYMBOL = "BTC/USDC"
 DEMO_AGENT_SEED_GRID_SPREAD = 2000.0
@@ -39,6 +42,8 @@ DEMO_AGENT_SEED_ACCOUNT_INDEX_IDLE_DISPLAY_NAME = "Seed kraken B"
 DEMO_AGENT_SEED_EXCHANGE_INTERNAL_NAME = "kraken"
 
 DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME = "Agent seed BTC/USDC grid"
+DEMO_AGENT_SEED_INDEX_AUTOMATION_DISPLAY_NAME = "Agent seed BTC/ETH/SOL index"
+DEMO_AGENT_SEED_COMPLETED_AUTOMATION_DISPLAY_NAME = "Agent seed stopped index"
 
 DEMO_AGENT_SEED_FORBIDDEN_ACTION_DETAIL = (
     "Demo agent-seed wallet cannot create live exchange accounts or automations"

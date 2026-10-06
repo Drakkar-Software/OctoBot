@@ -29,7 +29,7 @@ def grid_automation_is_running(debug_payload: dict) -> bool:
     return False
 
 
-def _find_user_action(debug_payload: dict, user_action_id: str) -> typing.Optional[dict]:
+def find_user_action(debug_payload: dict, user_action_id: str) -> typing.Optional[dict]:
     debug_section = debug_payload.get("debug") or {}
     user_actions = debug_section.get("user_actions") or []
     for user_action in user_actions:
@@ -38,7 +38,7 @@ def _find_user_action(debug_payload: dict, user_action_id: str) -> typing.Option
     return None
 
 
-def _format_automation_user_action_error(user_action: dict) -> str:
+def format_automation_user_action_error(user_action: dict) -> str:
     user_action_id = user_action.get("id", "<unknown>")
     status = user_action.get("status", "<unknown>")
     result = user_action.get("result")
@@ -64,13 +64,13 @@ def _format_automation_user_action_error(user_action: dict) -> str:
     return ": ".join(parts)
 
 
-def _ensure_user_action_not_failed(debug_payload: dict, user_action_id: str) -> None:
-    user_action = _find_user_action(debug_payload, user_action_id)
+def ensure_user_action_not_failed(debug_payload: dict, user_action_id: str) -> None:
+    user_action = find_user_action(debug_payload, user_action_id)
     if user_action is None:
         return
     if user_action.get("status") != protocol_models.UserActionStatus.FAILED.value:
         return
-    raise RuntimeError(_format_automation_user_action_error(user_action))
+    raise RuntimeError(format_automation_user_action_error(user_action))
 
 
 def _poll_debug_after_create(
@@ -85,7 +85,7 @@ def _poll_debug_after_create(
     while time.monotonic() < deadline:
         status_code, debug_payload = agent_seed_bootstrap_http.request_json("GET", debug_url, headers)
         if status_code == 200 and isinstance(debug_payload, dict):
-            _ensure_user_action_not_failed(debug_payload, user_action_id)
+            ensure_user_action_not_failed(debug_payload, user_action_id)
             if grid_automation_is_running(debug_payload):
                 return
         time.sleep(poll_interval_seconds)
