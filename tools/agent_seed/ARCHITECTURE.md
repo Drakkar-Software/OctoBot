@@ -6,7 +6,7 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 
 - Canonical guide: [README.md](README.md)
 - Agent procedure: skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`)
-- Bootstrap polls debug `user_actions` and fails fast on FAILED create-automation (`operations/bootstrap_grid.py`)
+- Bootstrap polls `GET /api/v1/debug/` (`user_actions` status + automation `RUNNING` in `debug.automations`) and fails fast on FAILED create-automation; shared automation polling/conflict checks in `operations/bootstrap_automation.py` (grid entrypoint `operations/bootstrap_grid.py`)
 - Extra bootstrap scenarios (index, completed, lifecycle) live in `operations/bootstrap_scenarios.py`
 
 ## Phases
@@ -18,6 +18,7 @@ flowchart TB
   seedOctobotConfig[operations.seed_octobot_config]
   seedSync[operations.seed_sync]
   schedulerSqlite[operations.scheduler_sqlite]
+  bootstrapAutomation[operations.bootstrap_automation]
   bootstrapGrid[operations.bootstrap_grid]
   bootstrapScenarios[operations.bootstrap_scenarios]
   bootstrapHttp[operations.bootstrap_http]
@@ -30,6 +31,7 @@ flowchart TB
   cli --> bootstrapScenarios
   cli --> waitForBaseUrl[operations.wait_for_base_url]
   bootstrapScenarios --> bootstrapGrid
+  bootstrapScenarios --> bootstrapAutomation
   bootstrapScenarios --> bootstrapHttp
   bootstrapScenarios --> builders
   seedRun --> schedulerSqlite
@@ -38,9 +40,11 @@ flowchart TB
   seedRun --> pathsMod
   seedRun --> secretsMod
   seedSync --> builders
+  bootstrapGrid --> bootstrapAutomation
   bootstrapGrid --> bootstrapHttp
   bootstrapGrid --> builders
   bootstrapGrid --> secretsMod
+  bootstrapAutomation --> bootstrapHttp
   builders --> nodeConstants
   secretsMod --> nodeConstants
 ```
