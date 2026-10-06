@@ -22,7 +22,7 @@ run_seed() {
 }
 
 run_bootstrap() {
-  python -m tools.agent_seed bootstrap --base-url "${AGENT_SEED_BASE_URL:-http://127.0.0.1:8000}"
+  python -m tools.agent_seed bootstrap --base-url "${AGENT_SEED_BASE_URL:-http://127.0.0.1:8000}" "$@"
 }
 
 run_start() {
@@ -35,7 +35,8 @@ case "${1:-}" in
     run_seed "${2:-}"
     ;;
   bootstrap)
-    run_bootstrap
+    shift
+    run_bootstrap "$@"
     ;;
   start)
     run_start
@@ -49,7 +50,7 @@ case "${1:-}" in
     run_seed --clear
     ;;
   *)
-    echo "Usage: $0 {seed [--clear]|bootstrap|start|--full|--clear}" >&2
+    echo "Usage: $0 {seed [--clear]|bootstrap [--scenario grid|index|completed|lifecycle|all]|start|--full|--clear}" >&2
     exit 1
     ;;
 esac
