@@ -122,14 +122,129 @@ Set on your start configuration: `--user-folder` → `user/agent-seed`, **`SCHED
 
 ## Headless / debug API
 
-Bootstrap and agents may call the debug API with HTTP Basic (`wallet_address:passphrase`), same as [`operations/bootstrap_http.py`](operations/bootstrap_http.py):
+Bootstrap and agents may call the debug API with HTTP Basic (`wallet_address:passphrase`), same as [`operations/bootstrap_http.py`](operations/bootstrap_http.py). This is the headless equivalent of **`/app/debug`** (no separate “orders” or “trades” REST resources).
 
-- `GET /api/v1/debug/` — poll state (automations, `user_actions`, accounts, …)
-- `POST /api/v1/debug/` — enqueue a user action (204 = accepted, not completed)
+| Method | Path | Role |
+|--------|------|------|
+| `GET` | `/api/v1/debug/` | Read wallet-scoped debug snapshot (`DebugState`) |
+| `POST` | `/api/v1/debug/` | Enqueue a `UserAction` (accepted asynchronously) |
 
-Bootstrap fails fast with `RuntimeError` if the tracked create-automation user action reaches **failed** (includes `error_message` / `error_details`).
+Optional query on both: **`?wallet_address=<evm>`** — resolve debug state or execute actions for another wallet. **Superusers** may pass any wallet; normal users may only pass their own address (otherwise **403**). Omitted `wallet_address` uses the authenticated wallet.
 
-Debug routes return **404** when node-side encryption is enabled; agent-seed demo expects encryption **off**.
+Wire types live in [`packages/protocol/openapi.json`](../../packages/protocol/openapi.json) (`DebugState`, `Debug`, `AutomationState`, …). **HTTP route list** (everything else under `/api/v1/…`): fetch **`GET /api/v1/openapi.json`** from a running node (`node_api_interface` serves it). **Do not invent** paths such as `/api/v1/orders` or `/api/v1/trades` — they are not part of the Node REST API.
+
+### `GET /api/v1/debug/` response shape
+
+Top level (`DebugState`):
+
+| Field | Meaning |
+|-------|---------|
+| `version` | Debug state schema version (sync constant) |
+| `debug` | Wallet snapshot (`Debug`); may be omitted when empty |
+
+Inside `debug` (`Debug`):
+
+| Field | Meaning |
+|-------|---------|
+| `automations` | **Required.** Running/historical automation snapshots (`AutomationState`) |
+| `user_actions` | **Required.** Journaled user actions (create/stop/signal/…) with status and results |
+| `accounts` | Exchange/blockchain accounts for this wallet |
+| `exchange_configs` | Exchange connection configs referenced by accounts |
+| `account_tradings` | Per-account trading snapshots (`account_id` + `account_trading`) |
+| `local_strategies` | Strategy definitions stored for this wallet |
+
+Each **`automations[]`** entry (`AutomationState`) includes workflow fields agents often need: `id`, `status`, `metadata` (name/description), `error` / `error_message`, `actions`, `priority_actions`, `exchanges`, `exchange_account_ids`, `assets`, thin `orders` / `trades` / `positions` summaries, and optional `child_octobot_process`.
+
+Each **`user_actions[]`** entry includes `id`, `status`, `configuration` (flattened `action_type` + payload), and `result` (including automation errors when failed). Bootstrap polls these after `POST` create-automation; see [`operations/bootstrap_grid.py`](operations/bootstrap_grid.py).
+
+### Orders, trades, portfolio
+
+**Thin summaries on automations (counts / IDs only)**
+
+- `debug.automations[].orders` → `OrderSummary`: `{ "id", "symbol" }` only
+- `debug.automations[].trades` → `TradeSummary`: `{ "id", "symbol" }` only
+
+Use these to see how many open orders/trades an automation references or to list IDs/symbols. They do **not** include side, price, quantity, or status.
+
+**Full orders and trades**
+
+- Full `Order` objects (side, price, quantity, `filled`, `status`, `created_at`, …) and full `Trade` objects live under:
+  - `debug.account_tradings[].account_trading.orders`
+  - `debug.account_tradings[].account_trading.trades`
+- Each `account_tradings[]` row has `account_id` and nested `account_trading` (also `positions`, `transactions`, `updated_at` when present).
+
+**Join automations to account trading**
+
+1. Read `automation.exchange_account_ids` (often one simulated Kraken account for the seeded grid).
+2. Find `account_tradings[]` where `account_id` is in that list (same helper logic as the debug UI: `getTradingSummariesForAutomation` in `node_web_interface` `display-utils.ts`).
+3. Optionally filter full orders/trades to the automation’s thin summaries by matching `OrderSummary.id` / `TradeSummary.id` to full records (UI: `resolveOrdersFromSummaries` / `resolveTradesFromSummaries`).
+
+**Portfolio / balances**
+
+- **`accounts[].assets`**: grouped by `trading_type` (`DetailedAssetsForTradingType` → nested `DetailedAsset` with `symbol`, `total`, `available`).
+- **`automations[].assets`**: schema allows the same grouped shape; in practice the debug UI treats automation assets as a **flat** `DetailedAsset` list (`symbol`, `total`, `available`). For **deployed grid balances tied to the running automation**, prefer **`automations[].assets`** over raw `accounts[].assets` when both exist.
+
+There is **no** dedicated REST endpoint for orders or trades; stay on `GET /api/v1/debug/` or use account/historical routes listed in OpenAPI if the task needs something else.
+
+### curl → file → jq (keep context small)
+
+Save the snapshot once, then query with `jq` instead of pasting multi‑MB JSON into the agent context:
+
+```bash
+BASE="http://127.0.0.1:8000"
+WALLET="0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+PASS="demodemo"
+
+curl -sS -u "${WALLET}:${PASS}" \
+  -o /tmp/debug.json \
+  "${BASE}/api/v1/debug/"
+
+jq '.debug.automations[] | {name: .metadata.name, status, order_count: (.orders | length)}' /tmp/debug.json
+
+jq --arg aid "$(jq -r '.debug.automations[0].exchange_account_ids[0]' /tmp/debug.json)" \
+  '.debug.account_tradings[] | select(.account_id == $aid) | .account_trading.orders[] | {id, symbol, side, price, quantity, status}' \
+  /tmp/debug.json
+```
+
+### `POST /api/v1/debug/`
+
+Body: JSON **`UserAction`** (`id` + `configuration` with `action_type`). Returns **204 No Content** when the action is **accepted** and queued — not when work finishes. Poll `GET /api/v1/debug/` and inspect `user_actions[]` for completion or failure.
+
+[`protocol/builders.py`](protocol/builders.py) includes payloads for grid/index create, stop, and restart; scenario-specific sequences are documented under **Bootstrap scenarios** below.
+
+Bootstrap fails fast with `RuntimeError` if the tracked create-automation user action reaches **failed** (includes `error_message` / `error_details` when present on the automation result).
+
+### HTTP status codes (debug routes)
+
+| Code | When |
+|------|------|
+| **200** | `GET` succeeded |
+| **204** | `POST` user action accepted |
+| **400** | Invalid JSON body or user action payload (e.g. missing `configuration`) |
+| **401** | Missing/invalid HTTP Basic; wrong passphrase; unknown wallet (`detail.code`: `auth_invalid_passphrase`, `auth_wallet_not_found`, …) |
+| **403** | Demo wallet forbids the action (`DEMO_AGENT_SEED_FORBIDDEN_ACTION_DETAIL`); or `wallet_address` query targets another user’s wallet (non-superuser) |
+| **404** | Node-side encryption enabled (debug disabled); or `POST` stop/signal/restart when automation not found for caller (and not resolved via superuser owner lookup) |
+| **503** | Scheduler not initialized yet (node still starting) |
+
+Agent-seed demo expects node-side encryption **off** so debug routes stay available.
+
+### Node web UI routes (`/app/*`)
+
+Vite `base` is `/app/`. After login, common paths (from TanStack Router):
+
+| Path | Purpose |
+|------|---------|
+| `/app/login` | Passphrase login |
+| `/app/login/recover-seed` | Recover wallet from seed |
+| `/app/setup`, `/app/setup/welcome`, `/app/setup/connect`, `/app/setup/first-bot`, `/app/setup/mobile-app` | First-run setup |
+| `/app` | Redirects to `/app/octobots` |
+| `/app/octobots` | Automations list |
+| `/app/octobots/new`, `…/presets`, `…/builder`, `…/defaults` | Create automation |
+| `/app/octobots/import`, `/app/octobots/export` | Import/export |
+| `/app/settings`, `/app/settings/connect` | Settings |
+| `/app/debug` | Debug tables + submit user actions |
+| `/app/support` | Support |
+| `/app/dsl-keywords` | DSL keyword reference |
 
 ## Seeded identifiers (verification)
 
@@ -141,7 +256,7 @@ From `octobot_node.agent_seed.constants`:
 | Grid automation id | `a0000000-0000-4000-8000-000000000001` |
 | Index automation name / id | `Agent seed BTC/ETH/SOL index` / `a0000000-0000-4000-8000-000000000002` |
 | Stopped (completed) index automation name / id | `Agent seed stopped index` / `a0000000-0000-4000-8000-000000000003` |
-| Account display names | **Seed kraken A** (grid), **Seed kraken B** (index idle) |
+| Account display names | **Seed kraken A** (grid), **Seed kraken B** (index; idle until `index` or `completed` scenario) |
 
 ## Demo wallet restrictions
 
@@ -150,7 +265,7 @@ The demo wallet is sandboxed in `octobot_node/agent_seed/demo_wallet.py`: it **c
 ## What gets seeded
 
 - `config.json` pointing at master reference tentacles + profiles (readonly)
-- Kraken **simulated** exchange config and accounts **Seed kraken A** (1000 USDC, grid) and **Seed kraken B** (500 USDC, index idle)
+- Kraken **simulated** exchange config and accounts **Seed kraken A** (1000 USDC, grid) and **Seed kraken B** (500 USDC, index; idle until `index` or `completed` scenario)
 - Grid strategy on **BTC/USDC** (3 buy / 3 sell, spread 2000, increment 500)
 - Index strategy on **BTC / ETH / SOL** (10% rebalance trigger)
 - Bootstrap (optional/`--full`) starts the grid automation via `POST /api/v1/debug/`; CLI exits with error if debug shows that create user action **failed**. More automations on the same fixtures: see **Bootstrap scenarios**.
