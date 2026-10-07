@@ -11,6 +11,8 @@ REFERENCE_TENTACLES_CONFIG_DIR_NAME = "reference_tentacles_config"
 TENTACLES_CONFIG_FILE_NAME = "tentacles_config.json"
 PROFILES_DIR_NAME = "profiles"
 USER_CONFIG_FILE_NAME = "config.json"
+LOGGING_CONFIG_FILE_NAME = "logging_config.ini"
+BUNDLED_LOGGING_CONFIG_RELATIVE = pathlib.Path("octobot") / "config" / LOGGING_CONFIG_FILE_NAME
 
 
 def default_octobot_repo_root() -> pathlib.Path:
@@ -60,3 +62,11 @@ def master_profiles_dir(master_root: pathlib.Path) -> pathlib.Path:
 
 def user_config_file(user_folder: pathlib.Path) -> pathlib.Path:
     return user_folder / USER_CONFIG_FILE_NAME
+
+
+def logging_config_file(user_folder: pathlib.Path) -> pathlib.Path:
+    return user_folder / LOGGING_CONFIG_FILE_NAME
+
+
+def bundled_octobot_logging_config_file() -> pathlib.Path:
+    return (default_octobot_repo_root() / BUNDLED_LOGGING_CONFIG_RELATIVE).resolve()
