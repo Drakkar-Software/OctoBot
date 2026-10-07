@@ -6,6 +6,7 @@ import typing
 import tools.agent_seed.cli.all as agent_seed_cli_all
 import tools.agent_seed.cli.bootstrap as agent_seed_cli_bootstrap
 import tools.agent_seed.cli.seed as agent_seed_cli_seed
+import tools.agent_seed.cli.wait_for_base_url as agent_seed_cli_wait_for_base_url
 import tools.agent_seed.enums as agent_seed_enums
 
 _SCENARIO_CHOICES = [scenario.value for scenario in agent_seed_enums.BootstrapScenario]
@@ -45,6 +46,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--scenario", action="append", choices=_SCENARIO_CHOICES, default=None, help=_SCENARIO_HELP,
     )
     all_parser.set_defaults(handler=agent_seed_cli_all.run_from_namespace)
+
+    wait_parser = subparsers.add_parser(
+        "wait-for-base-url",
+        help="Wait until the node accepts TCP connections on its base URL",
+    )
+    wait_parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    wait_parser.add_argument("--timeout", type=float, default=None)
+    wait_parser.add_argument("--poll-interval", type=float, default=None)
+    wait_parser.set_defaults(handler=agent_seed_cli_wait_for_base_url.run_from_namespace)
     return parser
 
 

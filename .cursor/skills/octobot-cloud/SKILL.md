@@ -76,7 +76,7 @@ See **[reference-pytest.md](reference-pytest.md)** for cwd and PYTHONPATH per CI
 
 **Not required** for normal pytest / `ci-tentacles` package work — only when the task uses the live Node web UI.
 
-For **`ui-node-web`**: follow skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`). Typical one-shot: `source .cursor/env.sh`, `source .cursor/agent-seed.env`, stop any running node, then `bash .cursor/seed-agent.sh --full`. After startup, log in with passphrase **`demodemo`**; use the full **`/app`** UI as needed, and **`/app/debug`** to send user actions.
+For **`ui-node-web`**: follow skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`). Typical one-shot: `source .cursor/env.sh`, `source .cursor/agent-seed.env`, stop any running node, then `bash .cursor/seed-agent.sh --full`. After startup, log in with passphrase **`demodemo`**; use the full **`/app`** UI as needed, and **`/app/debug`** to send user actions. New `tools/agent_seed` operator commands: one `python -m tools.agent_seed` subcommand in `cli/` + `operations/` (see `tools/agent_seed/ARCHITECTURE.md`), not nested `__main__` packages.
 
 ## Out of scope unless asked
 

@@ -13,7 +13,7 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 
 ```mermaid
 flowchart TB
-  cli[cli seed bootstrap all]
+  cli[cli seed bootstrap all wait-for-base-url]
   seedRun[operations.seed_run]
   seedOctobotConfig[operations.seed_octobot_config]
   seedSync[operations.seed_sync]
@@ -28,6 +28,7 @@ flowchart TB
 
   cli --> seedRun
   cli --> bootstrapScenarios
+  cli --> waitForBaseUrl[operations.wait_for_base_url]
   bootstrapScenarios --> bootstrapGrid
   bootstrapScenarios --> bootstrapHttp
   bootstrapScenarios --> builders
@@ -58,10 +59,13 @@ flowchart TB
 | `operations/bootstrap_http.py` | Debug API HTTP helpers |
 | `operations/bootstrap_grid.py` | Grid automation bootstrap, shared polling helpers |
 | `operations/bootstrap_scenarios.py` | `--scenario` runners: index, completed, lifecycle (uses the grid helpers) |
+| `operations/wait_for_base_url.py` | TCP poll until node accepts connections on base URL |
 | `enums.py` | `BootstrapScenario` |
-| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError` |
+| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError`, `AgentSeedNodeStartupTimeoutError` |
 | `cli/` | Argparse only |
 | `__main__.py` | Entry: `python -m tools.agent_seed` |
+
+**CLI rule:** Do not add new `python -m tools.agent_seed.<thing>` packages or extra `__main__.py` entrypoints. New operator commands are a **subcommand** under `cli/` plus logic in `operations/`. The only entry remains `python -m tools.agent_seed`.
 
 Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) lives in `octobot_node/agent_seed/` — not in this package. **`POST /api/v1/debug/`** in `tentacles/.../node_api_interface/api/routes/debug.py` calls `validate_demo_agent_seed_user_action` before enqueueing user actions (GET debug unchanged).
 
@@ -76,6 +80,7 @@ Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) live
 | `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.clear`, `secrets`, `paths`, node constants | HTTP debug |
 | `operations/seed_octobot_config.py` | `octobot_commons.constants`, `paths` | tentacles, CLI |
 | `operations/bootstrap_*.py` | `protocol.builders`, `secrets`, `enums`, `errors`, node constants, urllib | CollectionProviders |
+| `operations/wait_for_base_url.py` | `errors`, stdlib socket/urllib | `octobot_*`, CLI |
 | `enums.py`, `errors.py` | stdlib | `octobot_*` |
 | `cli/*` | `operations`, `paths` | tentacles |
 | `__main__.py` | `cli` | direct `operations` |

@@ -51,7 +51,8 @@ From the OctoBot repo root, `seed-agent.sh` sources `.cursor/env.sh` and `.curso
 |----------|------|-------------------------------|
 | `OCTOBOT_AGENT_SEED_USER_FOLDER` | Demo user data for `start.py --user-folder` and seed CLI | `user/agent-seed` |
 | `NODE_SQLITE_FILE` | Scheduler DB for **seed/clear** wipe only | `user/agent-seed/tasks.db` |
-| `AGENT_SEED_BASE_URL` | Bootstrap HTTP target (optional) | `http://127.0.0.1:8000` |
+| `AGENT_SEED_BASE_URL` | Bootstrap / wait-for-base-url HTTP target (optional) | `http://127.0.0.1:8000` |
+| `AGENT_SEED_STARTUP_WAIT_SEC` | Max seconds for `wait-for-base-url` when node is starting (optional) | `90` |
 
 When **starting** OctoBot (not the seed CLI), set runtime scheduler DB via env **`SCHEDULER_SQLITE_FILE`** (see `octobot_services.constants.ENV_NODE_SQLITE_FILE`) to the full path of `user/agent-seed/tasks.db`. Do not confuse with **`NODE_SQLITE_FILE`**, which is only for seed/clear.
 
@@ -68,7 +69,7 @@ From OctoBot repo root (after sourcing env files):
 | `--clear` | Wipe user folder + sqlite, then re-seed (**node must be stopped**) |
 | `start` | `start.py --master --user-folder …` (foreground) |
 | `bootstrap [--scenario …]` | HTTP bootstrap of the seeded automations, grid by default (node must be listening). See **Bootstrap scenarios** |
-| `--full` | `seed` → **`start.py` in background** → `bootstrap` |
+| `--full` | `seed` → **`start.py` in background** → `wait-for-base-url` → `bootstrap` |
 
 ### Node process rules
 
@@ -92,7 +93,7 @@ source .cursor/agent-seed.env
 bash .cursor/seed-agent.sh --full
 ```
 
-Stop any running node first. Wait for the background `start.py` before assuming bootstrap succeeded; if bootstrap races startup, run `bash .cursor/seed-agent.sh bootstrap` after the node listens.
+Stop any running node first. `--full` waits for the node port before bootstrap; if bootstrap still fails, run `bash .cursor/seed-agent.sh bootstrap` after the node listens.
 
 Wipe only:
 
@@ -119,6 +120,16 @@ bash .cursor/seed-agent.sh start
 ```
 
 Set on your start configuration: `--user-folder` → `user/agent-seed`, **`SCHEDULER_SQLITE_FILE`** → full path to `tasks.db`, **`EXIT_BEFORE_TENTACLES_AUTO_REINSTALL=true`**.
+
+## `python -m tools.agent_seed` subcommands
+
+Single entrypoint: `python -m tools.agent_seed` (see [ARCHITECTURE.md](ARCHITECTURE.md)). Subcommands: `seed`, `bootstrap`, `all`, `wait-for-base-url`. Add new operator commands as subcommands under `cli/` with logic in `operations/` — do not add nested `python -m tools.agent_seed.*` modules.
+
+`wait-for-base-url` polls until TCP accepts connections on `--base-url` (used by `seed-agent.sh --full` before bootstrap). Example:
+
+```bash
+python -m tools.agent_seed wait-for-base-url --base-url http://127.0.0.1:8000
+```
 
 ## Headless / debug API
 
@@ -183,5 +194,5 @@ The same fixtures work with a CI-built binary instead of `start.py`. `seed` and 
 | Bootstrap timeout or HTTP errors | Node not listening; run `start` then `bootstrap` |
 | Bootstrap `RuntimeError` with user action failed | Read automation error in message; fix node/fixtures, re-seed if needed |
 | Debug UI/API 404 | Node-side encryption enabled — not supported for debug QA |
-| `--full` bootstrap flaky | Node still booting; retry `bootstrap` |
+| `--full` bootstrap flaky | Node still booting past `wait-for-base-url`; retry `bootstrap` or raise `AGENT_SEED_STARTUP_WAIT_SEC` |
 | `bootstrap --scenario lifecycle` exits 1 with `AutomationNameLostError` | The restarted automation lost its name (restart user action). Real node bug, not a seed problem |
