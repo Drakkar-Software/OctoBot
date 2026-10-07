@@ -41,7 +41,7 @@
 
 Only when driving the **live Node web UI** or debug view — not for routine `pytest` in this package.
 
-- Operator docs: [`tools/agent_seed/README.md`](../../tools/agent_seed/README.md) and skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`).
+- Operator docs: [`tools/agent_seed/README.md`](../../tools/agent_seed/README.md) (including [Headless / debug API](../../tools/agent_seed/README.md#headless--debug-api): orders/trades via `account_tradings`, not invented `/api/v1/orders`) and skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`).
 - Fixtures: `python -m tools.agent_seed seed` or `bash .cursor/seed-agent.sh seed|bootstrap|start|--full|--clear` (after `.cursor/agent-seed.env`).
 - After seed: login passphrase; full **`/app`** UI for QA; **`/app/debug`** to submit user actions and inspect automations.
 - Runtime sandbox: `packages/node/octobot_node/agent_seed/` (`is_demo_agent_seed_user`, demo wallet action guards).
@@ -60,4 +60,4 @@ Only when driving the **live Node web UI** or debug view — not for routine `py
 
 ## Last reviewed
 
-- 2026-09-22
+- 2026-10-06

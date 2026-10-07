@@ -58,6 +58,12 @@ Credentials: wallet `0x70997970c51812dc3a010c7d01b50e0d17dc79c8`, display name `
 
 HTTP Basic (`wallet:passphrase`) works for **`/api/v1/debug/`** without a browser session (headless equivalent of debug-view user actions).
 
+## Headless debug API (agents)
+
+- **Never invent REST routes** — there is no `/api/v1/orders` or `/api/v1/trades`. Real paths: **`GET /api/v1/openapi.json`** on a running node; debug snapshot is only **`GET` / `POST` `/api/v1/debug/`**.
+- **`debug.automations[].orders` / `.trades`** are thin `{id, symbol}` summaries. **Side, price, quantity, status** → **`debug.account_tradings[].account_trading.orders|trades`**, joined via `automations[].exchange_account_ids`.
+- **curl** snapshot to a file, then **`jq`** — do not dump full debug JSON into context. Status codes and field map: [README § Headless / debug API](../../../tools/agent_seed/README.md#headless--debug-api).
+
 ## Demo-only
 
 Committed insecure wallet in `tools/agent_seed/secrets.py` — never mainnet / real trading. Sandbox blocks live exchange/automation creation (`octobot_node/agent_seed/demo_wallet.py`).

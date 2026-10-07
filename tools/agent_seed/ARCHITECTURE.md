@@ -6,7 +6,7 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 
 - Canonical guide: [README.md](README.md)
 - Agent procedure: skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`)
-- Bootstrap polls debug `user_actions` and fails fast on FAILED create-automation (`operations/bootstrap_grid.py`)
+- Bootstrap polls `GET /api/v1/debug/` (`user_actions` status + grid automation `RUNNING` in `debug.automations`) and fails fast on FAILED create-automation (`operations/bootstrap_grid.py`)
 - Extra bootstrap scenarios (index, completed, lifecycle) live in `operations/bootstrap_scenarios.py`
 
 ## Phases
