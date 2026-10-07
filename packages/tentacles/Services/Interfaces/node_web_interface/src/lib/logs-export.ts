@@ -2,6 +2,7 @@
  * Download node or automation log archives (`POST /api/v1/logs/export`).
  */
 
+import { buildBasicAuthorizationHeader } from "@/lib/basic-auth"
 import { loadPassword } from "@/lib/device-key"
 
 const LOGS_ZIP_MIME = "application/zip"
@@ -15,7 +16,7 @@ async function buildAuthHeader(): Promise<string> {
   if (!username || !password) {
     throw new Error("No active wallet session")
   }
-  return `Basic ${btoa(`${username}:${password}`)}`
+  return buildBasicAuthorizationHeader(username, password)
 }
 
 function buildLogsTimestamp(): string {

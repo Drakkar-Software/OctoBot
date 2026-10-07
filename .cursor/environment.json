@@ -1,0 +1,7 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "PANTS_PANTSD=false OCTOBOT_CLOUD_PROFILE=ui-node-web bash .cursor/cloud-install.sh"
+}

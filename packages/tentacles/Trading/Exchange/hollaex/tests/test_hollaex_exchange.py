@@ -1,7 +1,15 @@
 #  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 
+import decimal
+import mock
+
+import octobot_trading.enums as trading_enums
+
 from ..hollaex_exchange import hollaex as hollaex_exchange_class
+from ..hollaex_exchange import hollaexConnector
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
 
 
 class TestGetTentaclesDataExchangeConfig:
@@ -38,3 +46,49 @@ class TestGetTentaclesDataExchangeConfig:
 class TestGetExchangeAvailabilities:
     def test_returns_empty_list(self):
         assert hollaex_exchange_class.get_exchange_availabilities() == []
+
+
+class TestCalculateFeesNetworkQualified:
+    def test_fee_currency_uses_qualified_quote(self):
+        fee_details = {
+            trading_enums.ExchangeConstantsMarketPropertyColumns.FEE_SIDE.value: (
+                trading_enums.ExchangeFeeSides.QUOTE.value
+            ),
+            trading_enums.ExchangeConstantsMarketPropertyColumns.TAKER.value: 0.001,
+            trading_enums.ExchangeConstantsMarketPropertyColumns.MAKER.value: 0.001,
+        }
+        with mock.patch.object(
+            hollaexConnector, "_get_fetched_fees", return_value=fee_details,
+        ):
+            fees = hollaexConnector._calculate_fetched_fees(
+                "hollaex",
+                {},
+                TICKER_WISE_SYMBOL,
+                trading_enums.TraderOrderType.BUY_LIMIT,
+                decimal.Decimal("1"),
+                decimal.Decimal("10"),
+                "taker",
+            )
+        assert fees[trading_enums.FeePropertyColumns.CURRENCY.value] == "USDT@ETH"
+
+    def test_fee_currency_uses_qualified_base(self):
+        fee_details = {
+            trading_enums.ExchangeConstantsMarketPropertyColumns.FEE_SIDE.value: (
+                trading_enums.ExchangeFeeSides.GET.value
+            ),
+            trading_enums.ExchangeConstantsMarketPropertyColumns.TAKER.value: 0.001,
+            trading_enums.ExchangeConstantsMarketPropertyColumns.MAKER.value: 0.001,
+        }
+        with mock.patch.object(
+            hollaexConnector, "_get_fetched_fees", return_value=fee_details,
+        ):
+            fees = hollaexConnector._calculate_fetched_fees(
+                "hollaex",
+                {},
+                TICKER_WISE_SYMBOL,
+                trading_enums.TraderOrderType.BUY_LIMIT,
+                decimal.Decimal("1"),
+                decimal.Decimal("10"),
+                "taker",
+            )
+        assert fees[trading_enums.FeePropertyColumns.CURRENCY.value] == "BTC@BTC"

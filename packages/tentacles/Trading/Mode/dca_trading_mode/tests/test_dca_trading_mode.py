@@ -1549,6 +1549,27 @@ async def test_single_exchange_process_health_check(tools):
         assert producer.last_activity is None
 
 
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_BASE_ASSET = "BTC@BTC"
+
+
+class TestDcaTradingModeNetworkQualifiedPortfolioAssets:
+    async def test_max_asset_ratio_uses_portfolio_base_key(self, tools):
+        mode, producer, consumer, trader = await _init_mode(tools, _get_config(tools, {}))
+        portfolio_value_holder = (
+            trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio_value_holder
+        )
+        with mock.patch.object(
+            portfolio_value_holder,
+            "get_holdings_ratio",
+            mock.Mock(return_value=decimal.Decimal("1")),
+        ) as get_holdings_ratio_mock:
+            assert consumer._is_max_asset_ratio_reached(TICKER_WISE_SYMBOL) is True
+            get_holdings_ratio_mock.assert_called_with(
+                PORTFOLIO_BASE_ASSET, include_assets_in_open_orders=True
+            )
+
+
 async def _check_open_orders_count(trader, count):
     assert len(trading_api.get_open_orders(trader.exchange_manager)) == count
 

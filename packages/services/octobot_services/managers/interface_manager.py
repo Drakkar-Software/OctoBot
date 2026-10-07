@@ -16,10 +16,22 @@
 import octobot_commons.logging as logging
 
 
+def _interface_uses_background_thread(interface) -> bool:
+    return interface.__class__.__name__ == "NodeApiInterface"
+
+
 async def start_interfaces(interfaces: list):
+    logger = logging.get_logger(__name__)
     started_interfaces = []
     for interface in interfaces:
-        if await interface.start():
+        interface_name = interface.get_name()
+        background_thread = _interface_uses_background_thread(interface)
+        if background_thread:
+            logger.info("Starting %s (threaded=True)", interface_name)
+        started = await interface.start()
+        if background_thread:
+            logger.info("Started %s (spawned=%s)", interface_name, started)
+        if started:
             started_interfaces.append(interface)
     return started_interfaces
 

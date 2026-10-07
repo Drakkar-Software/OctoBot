@@ -175,7 +175,7 @@ async def get_exchange_details(
             exchange.name,
             exchange.urls[ccxt_enums.ExchangeColumns.WEBSITE.value],
             exchange.urls[ccxt_enums.ExchangeColumns.API.value],
-            exchange.urls[ccxt_enums.ExchangeColumns.LOGO_URL.value],
+            _get_exchange_image_url_from_exchange_metadata(exchange.describe()),
             False,
         )
     except AttributeError as err:
@@ -637,9 +637,10 @@ def apply_trades_fees(raw_order, raw_trades_by_exchange_order_id):
 def get_common_traded_quote(exchange_manager) -> typing.Union[str, None]:
     quote = None
     for symbol in exchange_manager.exchange_config.traded_symbols:
+        symbol_quote = symbol.quote
         if quote is None:
-            quote = symbol.quote
-        elif quote != symbol.quote:
+            quote = symbol_quote
+        elif quote != symbol_quote:
             return None
     return quote
 
@@ -669,10 +670,12 @@ def get_traded_assets(exchange_manager: "octobot_trading.exchanges.exchange_mana
     # use list to maintain order
     assets = []
     for symbol in exchange_manager.exchange_config.traded_symbols:
-        if symbol.base not in assets:
-            assets.append(symbol.base)
-        if symbol.quote not in assets:
-            assets.append(symbol.quote)
+        base_asset = symbol.base
+        quote_asset = symbol.quote
+        if base_asset not in assets:
+            assets.append(base_asset)
+        if quote_asset not in assets:
+            assets.append(quote_asset)
     return assets
 
 
@@ -745,6 +748,17 @@ def _to_available_trading_types(exchange_name: str) -> list[protocol_models.Trad
     ]
 
 
+def _get_exchange_image_url_from_exchange_metadata(exchange_metadata: dict) -> typing.Optional[str]:
+    options = exchange_metadata.get("options") or {}
+    octobot_options = options.get("octobot") or {}
+    octobot_urls = octobot_options.get("urls") or {}
+    icon_url = octobot_urls.get(ccxt_enums.ExchangeColumns.ICON_URL.value)
+    if icon_url:
+        return icon_url
+    exchange_urls = exchange_metadata.get("urls") or {}
+    return exchange_urls.get(ccxt_enums.ExchangeColumns.LOGO_URL.value)
+
+
 def _get_register_url_from_exchange_urls(exchange_urls: dict) -> typing.Optional[str]:
     referral = exchange_urls.get(ccxt_enums.ExchangeColumns.REFERRAL.value)
     if isinstance(referral, dict):
@@ -764,7 +778,7 @@ def _build_ccxt_exchange_availability(exchange_name: str) -> protocol_models.Exc
     return protocol_models.ExchangeAvailability(
         internal_name=exchange_name,
         name=exchange_metadata.get("name") or exchange_name,
-        logo=exchange_urls.get(ccxt_enums.ExchangeColumns.LOGO_URL.value),
+        logo=_get_exchange_image_url_from_exchange_metadata(exchange_metadata),
         available_trading_types=_to_available_trading_types(exchange_name),
         support_type=_get_exchange_support_status(exchange_name),
         sandboxable=_is_exchange_sandboxable(exchange_metadata),

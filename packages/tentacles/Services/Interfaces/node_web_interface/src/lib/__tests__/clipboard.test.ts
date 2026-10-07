@@ -3,16 +3,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { copyTextToClipboard } from "@/lib/clipboard"
 
 const toastSuccess = vi.fn()
+const toastError = vi.fn()
 
 vi.mock("sonner", () => ({
   toast: {
     success: (...args: unknown[]) => toastSuccess(...args),
+    error: (...args: unknown[]) => toastError(...args),
   },
 }))
 
 describe("copyTextToClipboard", () => {
+  async function flushPromises(): Promise<void> {
+    await Promise.resolve()
+    await Promise.resolve()
+  }
+
   beforeEach(() => {
     toastSuccess.mockClear()
+    toastError.mockClear()
     Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
@@ -20,12 +28,50 @@ describe("copyTextToClipboard", () => {
     })
   })
 
-  it("writes text to the clipboard and shows a toast", async () => {
+  it("writes text with the Clipboard API and shows a toast", async () => {
     copyTextToClipboard("hello", "Sample text")
-    await Promise.resolve()
+    await flushPromises()
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("hello")
     expect(toastSuccess).toHaveBeenCalledWith("Copied to clipboard", {
       description: "Sample text",
+      classNames: {
+        description: "font-mono text-xs break-all",
+      },
     })
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it("shows an error toast when the Clipboard API is unavailable", async () => {
+    Object.assign(navigator, { clipboard: undefined })
+
+    copyTextToClipboard("tailscale up", "tailscale up")
+    await flushPromises()
+
+    expect(toastSuccess).not.toHaveBeenCalled()
+    expect(toastError).toHaveBeenCalledWith(
+      "Could not copy to clipboard",
+      expect.objectContaining({
+        description: expect.stringContaining("manually"),
+      }),
+    )
+  })
+
+  it("shows an error toast when copy fails", async () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockRejectedValue(new Error("denied")),
+      },
+    })
+
+    copyTextToClipboard("hello", "hello")
+    await flushPromises()
+
+    expect(toastSuccess).not.toHaveBeenCalled()
+    expect(toastError).toHaveBeenCalledWith(
+      "Could not copy to clipboard",
+      expect.objectContaining({
+        description: expect.stringContaining("manually"),
+      }),
+    )
   })
 })

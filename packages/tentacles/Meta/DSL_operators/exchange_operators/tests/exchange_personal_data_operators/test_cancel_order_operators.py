@@ -35,6 +35,7 @@ from tentacles.Meta.DSL_operators.exchange_operators.tests import (
 )
 
 SYMBOL = "BTC/USDT"
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
 EXCHANGE_ORDER_ID = "order-123"
 
 
@@ -413,3 +414,52 @@ class TestGetDependencies:
         assert maybe_exchange_manager_interpreter.get_dependencies() == [
             octobot_trading.dsl.SymbolDependency(symbol=symbol),
         ]
+
+
+class TestCancelOrderOperatorsNetworkQualified:
+    @pytest.mark.asyncio
+    async def test_pre_compute_cancels_orders_matching_ticker_wise_symbol(
+        self, cancel_order_operators_list, backtesting_trader
+    ):
+        _config, exchange_manager, _trader = backtesting_trader
+        cancel_order_op_class, = cancel_order_operators_list
+        ticker_wise_order = _create_mock_order("ticker-wise-order", symbol=TICKER_WISE_SYMBOL)
+        plain_order = _create_mock_order("plain-order", symbol=SYMBOL)
+        with mock.patch.object(
+            exchange_manager.exchange_personal_data.orders_manager,
+            "get_open_orders",
+            mock.Mock(return_value=[ticker_wise_order, plain_order]),
+        ), mock.patch.object(
+            exchange_manager.trader,
+            "cancel_order",
+            mock.AsyncMock(return_value=True),
+        ) as cancel_order_mock:
+            operator = cancel_order_op_class(
+                TICKER_WISE_SYMBOL, exchange_order_ids=["ticker-wise-order"]
+            )
+            await operator.pre_compute()
+            assert cancel_order_mock.await_count == 1
+            assert cancel_order_mock.await_args[0][0] == ticker_wise_order
+
+    @pytest.mark.asyncio
+    async def test_cancel_order_call_as_dsl(self, interpreter, backtesting_trader):
+        _config, exchange_manager, _trader = backtesting_trader
+        if TICKER_WISE_SYMBOL not in exchange_manager.client_symbols:
+            exchange_manager.client_symbols.append(TICKER_WISE_SYMBOL)
+        if TICKER_WISE_SYMBOL not in exchange_manager.exchange_config.traded_symbol_pairs:
+            exchange_manager.exchange_config.traded_symbol_pairs.append(TICKER_WISE_SYMBOL)
+        exchange_order_id = "ticker-wise-cancel"
+        limit_buy = trading_personal_data.BuyLimitOrder(exchange_manager.trader)
+        limit_buy.update(
+            order_type=octobot_trading.enums.TraderOrderType.BUY_LIMIT,
+            symbol=TICKER_WISE_SYMBOL,
+            exchange_order_id=exchange_order_id,
+            current_price=decimal.Decimal("50000"),
+            quantity=decimal.Decimal("0.01"),
+            price=decimal.Decimal("50000"),
+        )
+        await exchange_manager.exchange_personal_data.orders_manager.upsert_order_instance(limit_buy)
+        result = await interpreter.interprete(
+            f"cancel_order('{TICKER_WISE_SYMBOL}', exchange_order_ids=['{exchange_order_id}'])"
+        )
+        assert result == {"cancelled_orders": [exchange_order_id]}

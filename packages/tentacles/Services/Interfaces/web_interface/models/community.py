@@ -24,14 +24,6 @@ import octobot_commons.authentication as authentication
 import octobot_trading.api as trading_api
 
 
-def get_community_metrics_to_display():
-    return interfaces_util.run_in_bot_async_executor(octobot_community.get_community_metrics())
-
-
-def can_get_community_metrics():
-    return octobot_community.can_read_metrics(interfaces_util.get_edited_config(dict_only=False))
-
-
 def get_owned_packages() -> list[str]:
     authenticator = authentication.Authenticator.instance()
     return authenticator.get_owned_packages()

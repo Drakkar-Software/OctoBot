@@ -107,6 +107,30 @@ class TestResetTo:
         assert strategy_action.executed_at is None
 
 
+class TestHasFailedAction:
+    def test_true_when_completed_action_has_error_status(self):
+        failed_action = _configured_action("action_init")
+        failed_action.complete(
+            error_status=flow_enums.ActionErrorStatus.BLOCKCHAIN_WALLET_ERROR.value,
+        )
+        dag = actions_dag.ActionsDAG(actions=[failed_action])
+
+        assert dag.has_failed_action() is True
+
+    def test_false_when_all_completed_without_error(self):
+        success_action = _configured_action("action_init")
+        success_action.complete(result={"done": True})
+        dag = actions_dag.ActionsDAG(actions=[success_action])
+
+        assert dag.has_failed_action() is False
+
+    def test_false_when_only_pending_actions(self):
+        pending_action = _configured_action("action_init")
+        dag = actions_dag.ActionsDAG(actions=[pending_action])
+
+        assert dag.has_failed_action() is False
+
+
 class TestResolveDslScripts:
     def test_delegates_to_dependencies_resolver_for_dsl_actions_only(self):
         init_action = _configured_action("action_init")

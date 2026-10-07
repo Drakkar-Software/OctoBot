@@ -116,8 +116,7 @@ if check_tentacle_version('{tentacle.version}', '{tentacle.name}', '{tentacle.or
     try:
         {_get_single_module_init_line(tentacle)}
     except Exception as e:
-        get_logger('TentacleLoader').error(f'Error when loading {tentacle.name}: '
-                                           f'{{e.__class__.__name__}}{{f" ({{e}})" if f"{{e}}" else ""}}. If this '
-                                           f'error persists, try reinstalling your tentacles via '
-                                           f'\"python start.py tentacles --install --all\".')
+        get_logger('TentacleLoader').exception(e, True, 
+        f'Error when loading {tentacle.name}: {{e.__class__.__name__}}{{f" ({{e}})" if f"{{e}}" else ""}}. '
+        f'If this error persists, try reinstalling your tentacles via "python start.py tentacles --install --all".')
 """

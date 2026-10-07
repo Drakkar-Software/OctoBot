@@ -18,10 +18,10 @@ import pytest
 import octobot_commons.constants
 import octobot_commons.dsl_interpreter
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
 
 
-
-class BinOperator1(octobot_commons.dsl_interpreter.BinaryOperator):
+class BinOperator1(dsl_test_keyword_support.TestKeywordMixin, octobot_commons.dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return "b1"
@@ -30,7 +30,7 @@ class BinOperator1(octobot_commons.dsl_interpreter.BinaryOperator):
         return 0
 
 
-class BinOperator2(octobot_commons.dsl_interpreter.BinaryOperator):
+class BinOperator2(dsl_test_keyword_support.TestKeywordMixin, octobot_commons.dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return "b2"
@@ -39,7 +39,7 @@ class BinOperator2(octobot_commons.dsl_interpreter.BinaryOperator):
         return 0
 
 
-class BinOperator3(octobot_commons.dsl_interpreter.BinaryOperator):
+class BinOperator3(dsl_test_keyword_support.TestKeywordMixin, octobot_commons.dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return "b3"
@@ -48,7 +48,7 @@ class BinOperator3(octobot_commons.dsl_interpreter.BinaryOperator):
         return 0
 
 
-class UnaryOperator1(octobot_commons.dsl_interpreter.UnaryOperator):
+class UnaryOperator1(dsl_test_keyword_support.TestKeywordMixin, octobot_commons.dsl_interpreter.UnaryOperator):
     @staticmethod
     def get_name() -> str:
         return "u1"
@@ -57,7 +57,7 @@ class UnaryOperator1(octobot_commons.dsl_interpreter.UnaryOperator):
         return 0
 
 
-class UnaryOperator2(octobot_commons.dsl_interpreter.UnaryOperator):
+class UnaryOperator2(dsl_test_keyword_support.TestKeywordMixin, octobot_commons.dsl_interpreter.UnaryOperator):
     @staticmethod
     def get_name() -> str:
         return "u2"
@@ -117,7 +117,7 @@ def test_get_all_operators_unknown_library():
 def test_clear_get_all_operators_cache():
 
     def create_new_operator():
-        class NewOperator(octobot_commons.dsl_interpreter.Operator):
+        class NewOperator(dsl_test_keyword_support.TestKeywordMixin, octobot_commons.dsl_interpreter.Operator):
             @staticmethod
             def get_name() -> str:
                 return "new_operator"

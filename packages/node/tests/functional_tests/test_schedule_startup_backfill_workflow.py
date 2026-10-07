@@ -93,16 +93,8 @@ def _seed_stale_latest_application_version(stale_version_name: str) -> None:
     )
 
 
-def _get_or_create_registry_queue(queue_name: str, **queue_options) -> dbos.Queue:
-    # destroy_launched_dbos() keeps the global registry; reuse an existing Queue
-    # declaration when this fixture runs more than once on the same xdist worker.
-    import dbos._dbos as dbos_internals
-
-    registry = dbos_internals._get_or_create_dbos_registry()
-    existing_queue = registry.queue_info_map.get(queue_name)
-    if existing_queue is not None:
-        return existing_queue
-    return dbos.Queue(name=queue_name, **queue_options)
+def _register_blank_backfill_queue() -> None:
+    dbos.DBOS.register_queue(_BLANK_QUEUE_NAME, global_concurrency=1)
 
 
 @pytest.fixture
@@ -114,10 +106,10 @@ def temp_dbos_scheduler_backfill():
             temp_file.name,
             _TEST_APP_VERSION,
         )
-        _get_or_create_registry_queue(_BLANK_QUEUE_NAME, concurrency=1)
         blank_workflow_fn = _register_blank_backfill_workflow()
         dbos_runtime.reset_system_database()
         dbos_runtime.launch()
+        _register_blank_backfill_queue()
         try:
             yield blank_workflow_fn
         finally:

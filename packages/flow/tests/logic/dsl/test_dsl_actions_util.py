@@ -7,8 +7,11 @@ import octobot_commons.profiles.profile_data as profile_data_import
 import octobot_flow.entities
 import octobot_flow.logic.dsl.dsl_actions_util
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
+
 
 class _RecallableTestOperator(
+    dsl_test_keyword_support.TestKeywordMixin,
     octobot_commons.dsl_interpreter.Operator,
     octobot_commons.dsl_interpreter.ReCallableOperatorMixin,
 ):
@@ -17,7 +20,10 @@ class _RecallableTestOperator(
         return "test_recallable_operator"
 
 
-class _NonRecallableTestOperator(octobot_commons.dsl_interpreter.Operator):
+class _NonRecallableTestOperator(
+    dsl_test_keyword_support.TestKeywordMixin,
+    octobot_commons.dsl_interpreter.Operator,
+):
     @classmethod
     def get_name(cls) -> str:
         return "test_non_recallable_operator"

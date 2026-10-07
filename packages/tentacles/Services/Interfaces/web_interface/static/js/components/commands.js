@@ -42,19 +42,6 @@ function setNoFeedback(feedbackButton){
     feedbackButton.text("No feedback system available for now");
 }
 
-function update_metrics_option(){
-    const metrics_input = $("#metricsCheckbox");
-    function metrics_success_callback(updated_data, update_url, dom_root_element, msg, status) {
-        if(updated_data){
-            create_alert("success", "Anonymous statistics enabled", "Thank you for supporting OctoBot development!");
-        }else{
-            create_alert("success", "Anonymous statistics disabled", "");
-        }
-    }
-    send_and_interpret_bot_update(metrics_input.is(':checked'), metrics_input.attr(update_url_attr), null,
-        metrics_success_callback, update_failure_callback);
-}
-
 function update_beta_option(){
     function beta_success_callback(updated_data, update_url, dom_root_element, msg, status) {
         const details = "Please restart your OctoBot for it to take effect."
@@ -75,9 +62,6 @@ function update_failure_callback(updated_data, update_url, dom_root_element, msg
 
 $(document).ready(function() {
     load_commands_metadata();
-    $("#metricsCheckbox").change(function(){
-        update_metrics_option();
-    });
     $("#beta-checkbox").change(function(){
         update_beta_option();
     });

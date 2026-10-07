@@ -26,8 +26,10 @@ import octobot_commons.enums as commons_enums
 
 import tentacles.Meta.DSL_operators.python_std_operators.base_call_operators as base_call_operators
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
 
-class RaisesInPreComputeTestOperator(dsl_interpreter.CallOperator):
+
+class RaisesInPreComputeTestOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     """Fails in pre_compute only; used to assert if_error runs the on_error DSL."""
 
     NAME = "raises_in_precompute_test_op"
@@ -51,7 +53,7 @@ class RaisesInPreComputeTestOperator(dsl_interpreter.CallOperator):
         return "should_not_reach_compute"
 
 
-class ContextualNestedTestOperator(dsl_interpreter.CallOperator):
+class ContextualNestedTestOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     """Contextual operator excluded from get_all_operators(); used for nested DSL tests."""
 
     NAME = "contextual_nested_test_op"

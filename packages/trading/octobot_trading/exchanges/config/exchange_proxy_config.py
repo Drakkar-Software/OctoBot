@@ -20,6 +20,7 @@ import urllib.parse
 
 import octobot_trading.constants
 import octobot_commons.logging
+import octobot_trading.errors
 if typing.TYPE_CHECKING:
     import octobot_trading.exchanges
 
@@ -99,7 +100,7 @@ class ExchangeProxyConfig(octobot_commons.proxy_config.ProxyConfig):
                 self._last_proxied_request_url = None
                 # not authenticated request, return None and don't use proxy
                 return None
-            except NotImplementedError:
+            except (NotImplementedError, octobot_trading.errors.NotSupported):
                 self._get_logger().warning(
                     f"is_authenticated_request is not implemented for {exchange_manager.exchange_name}, "
                     f"using a dynamic proxy is impossible. Either implement is_authenticated_request for "

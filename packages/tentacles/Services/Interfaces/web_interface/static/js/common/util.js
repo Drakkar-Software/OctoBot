@@ -16,18 +16,6 @@
  * License along with this library.
  */
 
-function get_websocket(namespace){
-    // Connect to the Socket.IO server.
-    // The connection URL has the following format, relative to the current page:
-    //     http[s]://<domain>:<port>[/<namespace>]
-    return io(
-        namespace,
-        {
-            reconnectionDelay: 2000, // Prevent unexpected disconnection on slow loading pages (ex: first config load)
-            transports: ["polling", "websocket"], // update polling to ws when possible
-        });
-}
-
 function getAudioMediaUrl(mediaName){
     const baseUrl = $("#resources-urls").data("audio-media-url")
     return `${baseUrl}${mediaName}`

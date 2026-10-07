@@ -16,7 +16,9 @@
 
 import pytest
 
+import octobot_commons.dsl_interpreter as dsl_interpreter
 import octobot_commons.enums as commons_enums
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
 import octobot_commons.dsl_interpreter.operator_docs as dsl_interpreter_operator_docs
 import octobot_commons.dsl_interpreter.operator_parameter as dsl_interpreter_operator_parameter
 import octobot_node.protocol.dsl as dsl_protocol
@@ -253,6 +255,55 @@ class TestOperatorDocsToDslKeyword:
                     ]
                 )
             )
+
+    def test_minimal_operator_without_catalog_metadata_fails_conversion(self):
+        # Nested only: module-level incomplete operators are what broke GET /api/v1/dsl/keywords (HTTP 500).
+        class _IncompleteTestKeyword(dsl_interpreter.Operator):
+            @staticmethod
+            def get_name() -> str:
+                return "incomplete_test_keyword"
+
+            def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+                return None
+
+        # Same checks as production conversion; TestKeywordMixin supplies CATEGORY and return_values.
+        with pytest.raises(ValueError, match="CATEGORY|return_values"):
+            dsl_protocol.operator_docs_to_dsl_keyword(_IncompleteTestKeyword.get_docs())
+
+
+# Module-level subclass: registered when pytest imports this file (same as xdist loading a test module early).
+# Without TestKeywordMixin, operator_docs_to_dsl_keyword() would raise and the keywords route would return 500.
+class _PollutingIntrospectionTestKeyword(
+    dsl_test_keyword_support.TestKeywordMixin,
+    dsl_interpreter.Operator,
+):
+    @staticmethod
+    def get_name() -> str:
+        return "polluting_introspection_test_keyword"
+
+    def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
+        return None
+
+
+class TestDslKeywordsCatalogWithRegisteredTestOperator:
+    """
+    Regression for CI 500 on GET /api/v1/dsl/keywords when test operators are on the worker.
+
+    Catalog assembly uses flow DSLExecutor (needs tentacles), so these tests live in node, not commons.
+    _PollutingIntrospectionTestKeyword is already registered before any test method runs.
+    """
+
+    def test_operator_docs_to_dsl_keyword_succeeds(self):
+        dsl_protocol.operator_docs_to_dsl_keyword(_PollutingIntrospectionTestKeyword.get_docs())
+
+    def test_get_dsl_keywords_state_does_not_raise(self):
+        # Entry point used by the keywords API; must succeed with the polluter in get_all_operators().
+        dsl_protocol.get_dsl_keywords_state()
+
+    def test_all_operator_docs_convert_to_dsl_keywords(self):
+        # Every registered operator on this worker, not only _PollutingIntrospectionTestKeyword.
+        for operator_docs in dsl_protocol.list_dsl_operator_docs():
+            dsl_protocol.operator_docs_to_dsl_keyword(operator_docs)
 
 
 class TestGetDslKeywordsState:

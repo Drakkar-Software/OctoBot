@@ -33,6 +33,9 @@ import octobot_trading.personal_data as personal_data
 import octobot_flow.logic.exchange.simulator.simulated_portfolio_seeder as simulated_portfolio_seeder_module
 
 import octobot_flow.logic.global_view.exchange_account_refresh as exchange_account_refresh_module
+import octobot_flow.repositories.exchange.orders_repository as orders_repository_module
+import octobot_flow.repositories.exchange.portfolio_repository as portfolio_repository_module
+import octobot_flow.repositories.exchange.tickers_repository as tickers_repository_module
 
 from tests.logic.global_view.portfolio_test_util import patch_temporary_exchange_channel_ensure
 from tests.logic.global_view.portfolio_test_util import wire_portfolio_pipeline
@@ -963,4 +966,71 @@ class TestSimulatedTickerFetchMerge:
 
         assert set(fetched_symbols) == {"BTC/USDT", "ETH/USDT"}
 
+
+class TestRefreshExchangeAccountGlobalViewShapedChannels:
+    @pytest.mark.asyncio
+    async def test_cold_manager_real_repositories_create_channels_before_portfolio_fetch(self):
+        balance_content = _portfolio_content()
+        exchange_manager = mock.Mock()
+        exchange_manager.id = "global-view-cold-exchange"
+        exchange_manager.exchange.get_option_value = mock.Mock(return_value="USDC")
+        exchange_manager.exchange_personal_data = mock.Mock()
+        _wire_portfolio_pipeline(exchange_manager, {})
+        balance_updater = mock.Mock()
+        balance_updater.fetch_portfolio = mock.AsyncMock(return_value={
+            "USDT": {"total": 1000.0, "free": 1000.0},
+            "BTC": {"total": 0.1, "free": 0.1},
+        })
+        tickers_updater = mock.Mock()
+        tickers_updater.fetch_all_tickers = mock.AsyncMock(return_value={})
+        channels_registered = {"value": False}
+
+        async def register_channels_stub(_exchange_manager):
+            channels_registered["value"] = True
+
+        with (
+            mock.patch.object(
+                portfolio_repository_module.channel_producer_ensure_module,
+                "exchange_has_registered_channels",
+                side_effect=lambda _exchange_manager: channels_registered["value"],
+            ),
+            mock.patch(
+                "octobot_trading.exchanges.create_exchange_channels",
+                mock.AsyncMock(side_effect=register_channels_stub),
+            ) as create_exchange_channels_mock,
+            mock.patch(
+                "octobot_trading.exchanges.create_producers",
+                mock.AsyncMock(),
+            ),
+            mock.patch.object(
+                portfolio_repository_module.PortfolioRepository,
+                "get_channel_updater",
+                return_value=balance_updater,
+            ),
+            mock.patch.object(
+                tickers_repository_module.TickersRepository,
+                "get_channel_updater",
+                return_value=tickers_updater,
+            ),
+            mock.patch.object(
+                trading_api,
+                "get_portfolio",
+                return_value=balance_content,
+            ),
+            mock.patch.object(
+                personal_data,
+                "refresh_portfolio_valuation",
+                mock.Mock(),
+            ),
+        ):
+            refresh_result = await exchange_account_refresh_module.refresh_exchange_account(
+                exchange_manager,
+                protocol_models.TradingType.SPOT,
+                set(),
+                fetch_open_orders=False,
+            )
+
+        create_exchange_channels_mock.assert_awaited_once_with(exchange_manager)
+        balance_updater.fetch_portfolio.assert_awaited_once()
+        assert refresh_result.assets
 

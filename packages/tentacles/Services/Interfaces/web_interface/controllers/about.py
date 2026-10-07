@@ -28,5 +28,4 @@ def register(blueprint):
         return flask.render_template('about.html',
                                      octobot_beta_program_form_url=constants.OCTOBOT_BETA_PROGRAM_FORM_URL,
                                      beta_env_enabled_in_config=models.get_beta_env_enabled_in_config(),
-                                     metrics_enabled=models.get_metrics_enabled(),
                                      disclaimer=disclaimer.DISCLAIMER)

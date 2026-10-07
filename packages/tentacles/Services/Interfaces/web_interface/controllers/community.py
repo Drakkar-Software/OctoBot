@@ -63,17 +63,6 @@ def register(blueprint):
         )
 
 
-    @blueprint.route("/community_metrics")
-    @login.login_required_when_activated
-    def community_metrics():
-        return flask.redirect("/")
-        can_get_metrics = models.can_get_community_metrics()
-        display_metrics = models.get_community_metrics_to_display() if can_get_metrics else None
-        return flask.render_template('community_metrics.html',
-                                     can_get_metrics=can_get_metrics,
-                                     community_metrics=display_metrics
-                                     )
-
     @blueprint.route("/extensions")
     @login.login_required_when_activated
     def extensions():

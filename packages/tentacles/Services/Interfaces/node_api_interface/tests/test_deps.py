@@ -29,6 +29,12 @@ from .conftest import (
 )
 
 
+def _auth_error_code(exc_info) -> str:
+    detail = exc_info.value.detail
+    assert isinstance(detail, dict)
+    return detail["code"]
+
+
 def test_not_configured_auth_none():
     """auth is None → 503."""
     with mock.patch(
@@ -74,6 +80,7 @@ def test_multiwallet_wrong_passphrase(mock_auth):
     with pytest.raises(HTTPException) as exc_info:
         get_current_user(creds)
     assert exc_info.value.status_code == 401
+    assert _auth_error_code(exc_info) == "auth_invalid_passphrase"
 
 
 def test_multiwallet_missing_username(mock_auth):
@@ -81,6 +88,7 @@ def test_multiwallet_missing_username(mock_auth):
     with pytest.raises(HTTPException) as exc_info:
         get_current_user(creds)
     assert exc_info.value.status_code == 401
+    assert _auth_error_code(exc_info) == "auth_wallet_address_required"
 
 
 def test_multiwallet_missing_passphrase(mock_auth):
@@ -88,6 +96,7 @@ def test_multiwallet_missing_passphrase(mock_auth):
     with pytest.raises(HTTPException) as exc_info:
         get_current_user(creds)
     assert exc_info.value.status_code == 401
+    assert _auth_error_code(exc_info) == "auth_passphrase_required"
 
 
 def test_multiwallet_unknown_address(mock_auth):
@@ -96,6 +105,7 @@ def test_multiwallet_unknown_address(mock_auth):
     with pytest.raises(HTTPException) as exc_info:
         get_current_user(creds)
     assert exc_info.value.status_code == 401
+    assert _auth_error_code(exc_info) == "auth_wallet_not_found"
 
 
 def test_multiwallet_address_case_insensitive(mock_auth):

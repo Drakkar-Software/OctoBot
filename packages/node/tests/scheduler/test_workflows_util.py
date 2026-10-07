@@ -1,0 +1,522 @@
+﻿#  Drakkar-Software OctoBot-Node
+#  Copyright (c) 2025 Drakkar-Software, All rights reserved.
+
+import json
+
+import dbos
+import mock
+import pytest
+
+import octobot_node.enums as octobot_node_enums
+import octobot_node.models as node_models
+import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_node.scheduler.workflows_util as workflows_util
+import octobot_protocol.models as protocol_models
+
+
+class TestListSchedulerWorkflowsAsync:
+    @pytest.mark.asyncio
+    async def test_lists_by_workflow_name_without_queue_name(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.PENDING],
+            None,
+            load_output=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            status=[dbos.WorkflowStatusString.PENDING.value],
+            load_output=True,
+            load_input=False,
+        )
+        assert "queue_name" not in mock_dbos.list_workflows_async.await_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_applies_wallet_filter_for_automation_when_user_id_set(self):
+        task = node_models.Task(
+            name="t",
+            content=None,
+            type="execute_actions",
+            user_id="0xmine",
+        )
+        inputs = workflow_params.AutomationWorkflowInputs(task=task, execution_time=0)
+        matching_row = mock.Mock(spec=dbos.WorkflowStatus)
+        matching_row.workflow_id = "wf-mine"
+        matching_row.input = {"args": [inputs.to_dict()], "kwargs": {}}
+        other_task = node_models.Task(
+            name="t2",
+            content=None,
+            type="execute_actions",
+            user_id="0xother",
+        )
+        other_inputs = workflow_params.AutomationWorkflowInputs(task=other_task, execution_time=0)
+        other_row = mock.Mock(spec=dbos.WorkflowStatus)
+        other_row.workflow_id = "wf-other"
+        other_row.input = {"args": [other_inputs.to_dict()], "kwargs": {}}
+
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[matching_row, other_row])
+        listed = await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.PENDING],
+            "0xmine",
+            load_output=False,
+        )
+        assert listed == [matching_row]
+
+
+class TestListSchedulerWorkflowsAsyncDbosKwargs:
+    @pytest.mark.asyncio
+    async def test_forwards_workflow_id_prefix(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        parent_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            None,
+            None,
+            load_output=False,
+            workflow_id_prefix=parent_id,
+            queues_only=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            load_output=False,
+            load_input=False,
+            workflow_id_prefix=parent_id,
+            queues_only=True,
+        )
+        assert "status" not in mock_dbos.list_workflows_async.await_args.kwargs
+
+    @pytest.mark.asyncio
+    async def test_queues_only_without_statuses_omits_status_kwarg(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            None,
+            None,
+            load_output=False,
+            queues_only=True,
+        )
+        call_kwargs = mock_dbos.list_workflows_async.await_args.kwargs
+        assert call_kwargs.get("queues_only") is True
+        assert "status" not in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_queues_only_with_statuses_passes_both(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.PENDING],
+            None,
+            load_output=False,
+            queues_only=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            load_output=False,
+            load_input=False,
+            queues_only=True,
+            status=[dbos.WorkflowStatusString.PENDING.value],
+        )
+
+    @pytest.mark.asyncio
+    async def test_non_queues_only_passes_status(self):
+        mock_dbos = mock.AsyncMock()
+        mock_dbos.list_workflows_async = mock.AsyncMock(return_value=[])
+        await workflows_util.list_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [dbos.WorkflowStatusString.SUCCESS],
+            None,
+            load_output=True,
+        )
+        mock_dbos.list_workflows_async.assert_awaited_once_with(
+            name=octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value,
+            status=[dbos.WorkflowStatusString.SUCCESS.value],
+            load_output=True,
+            load_input=False,
+        )
+        assert "queues_only" not in mock_dbos.list_workflows_async.await_args.kwargs
+
+
+class TestHydrateSchedulerWorkflowsAsync:
+    @pytest.mark.asyncio
+    async def test_merges_input_and_output_onto_metadata_rows(self):
+        metadata_row = mock.Mock(spec=dbos.WorkflowStatus)
+        metadata_row.workflow_id = "wf-1"
+        metadata_row.input = None
+        metadata_row.output = None
+
+        hydrated_row = mock.Mock(spec=dbos.WorkflowStatus)
+        hydrated_row.workflow_id = "wf-1"
+        hydrated_row.input = {"args": [], "kwargs": {}}
+        hydrated_row.output = '{"state": "x"}'
+
+        mock_dbos = mock.AsyncMock()
+
+        async def list_workflows_side_effect(**kwargs):
+            if kwargs.get("workflow_ids") == ["wf-1"]:
+                if kwargs.get("load_input"):
+                    row = mock.Mock(spec=dbos.WorkflowStatus)
+                    row.workflow_id = "wf-1"
+                    row.input = hydrated_row.input
+                    row.output = None
+                    return [row]
+                if kwargs.get("load_output"):
+                    row = mock.Mock(spec=dbos.WorkflowStatus)
+                    row.workflow_id = "wf-1"
+                    row.input = None
+                    row.output = hydrated_row.output
+                    return [row]
+            return []
+
+        mock_dbos.list_workflows_async = mock.AsyncMock(side_effect=list_workflows_side_effect)
+
+        await workflows_util.hydrate_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [metadata_row],
+            ["wf-1"],
+            load_input=True,
+            load_output=False,
+        )
+        await workflows_util.hydrate_scheduler_workflows_async(
+            mock_dbos,
+            octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
+            [metadata_row],
+            ["wf-1"],
+            load_input=False,
+            load_output=True,
+        )
+
+        assert metadata_row.input == hydrated_row.input
+        assert metadata_row.output == hydrated_row.output
+
+
+_AUTOMATION_STATE_KEY = "state"
+
+_PARENT_WORKFLOW_ID = "741ce171-dac9-40be-83dc-b443c0eaf0e2"
+
+
+def _child_workflow_id(child_index: int) -> str:
+    if child_index == 0:
+        return _PARENT_WORKFLOW_ID
+    return f"{_PARENT_WORKFLOW_ID}_{child_index}"
+
+
+def _workflow_status_row(
+    *,
+    workflow_id: str,
+    updated_at: int = 0,
+    status: str = dbos.WorkflowStatusString.ENQUEUED.value,
+) -> mock.Mock:
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = workflow_id
+    workflow_status.updated_at = updated_at
+    workflow_status.status = status
+    return workflow_status
+
+
+def _automation_task_content(*, automation_name: str) -> str:
+    return json.dumps(
+        {
+            _AUTOMATION_STATE_KEY: {
+                "automation": {
+                    "metadata": {
+                        "automation_id": "automation_1",
+                        "name": automation_name,
+                    },
+                    "actions_dag": {"actions": []},
+                    "execution": {},
+                },
+            },
+        }
+    )
+
+
+def _workflow_status_with_automation_task(
+    *,
+    status: str,
+    input_content: str,
+    output_content: str | None = None,
+) -> mock.Mock:
+    task = node_models.Task(
+        name="automation-task",
+        content=input_content,
+        type=node_models.TaskType.EXECUTE_ACTIONS.value,
+    )
+    encoded_inputs = workflow_params.AutomationWorkflowInputs(task=task).to_dict(
+        include_default_values=False
+    )
+    workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+    workflow_status.workflow_id = "parent-workflow-id_1"
+    workflow_status.status = status
+    workflow_status.input = {"args": [encoded_inputs], "kwargs": {}}
+    if output_content is None:
+        workflow_status.output = None
+    else:
+        workflow_status.output = json.dumps(
+            workflow_params.AutomationWorkflowOutput(state=output_content).to_dict(
+                include_default_values=False
+            )
+        )
+    return workflow_status
+
+
+class TestNormalizeParentAutomationId:
+    def test_parent_workflow_id_unchanged(self):
+        assert workflows_util.normalize_parent_automation_id(_PARENT_WORKFLOW_ID) == _PARENT_WORKFLOW_ID
+
+    def test_child_workflow_id_truncated_to_parent(self):
+        child_id = _child_workflow_id(5)
+        assert workflows_util.normalize_parent_automation_id(child_id) == _PARENT_WORKFLOW_ID
+
+
+class TestBuildNextChildAutomationWorkflowId:
+    def test_parent_workflow_id_maps_to_first_child(self):
+        assert (
+            workflows_util.build_next_child_automation_workflow_id(_PARENT_WORKFLOW_ID)
+            == _child_workflow_id(1)
+        )
+
+    def test_child_workflow_id_increments_suffix(self):
+        assert (
+            workflows_util.build_next_child_automation_workflow_id(_child_workflow_id(2))
+            == _child_workflow_id(3)
+        )
+
+    def test_invalid_suffix_raises_value_error(self):
+        invalid_child_id = f"{_PARENT_WORKFLOW_ID}-4-4"
+        with pytest.raises(ValueError, match="Invalid child workflow suffix format"):
+            workflows_util.build_next_child_automation_workflow_id(invalid_child_id)
+
+
+class TestParseAutomationChildWorkflowIndex:
+    def test_parent_workflow_id_maps_to_zero(self):
+        assert workflows_util.parse_automation_child_workflow_index(_PARENT_WORKFLOW_ID) == 0
+
+    def test_underscore_suffix_maps_to_child_index(self):
+        assert workflows_util.parse_automation_child_workflow_index(_child_workflow_id(1)) == 1
+        assert workflows_util.parse_automation_child_workflow_index(_child_workflow_id(12)) == 12
+
+    def test_hyphen_suffix_maps_to_child_index(self):
+        hyphen_child_id = f"{_PARENT_WORKFLOW_ID}-3"
+        assert workflows_util.parse_automation_child_workflow_index(hyphen_child_id) == 3
+
+    def test_non_numeric_suffix_raises_value_error(self):
+        with pytest.raises(ValueError, match="Invalid child workflow suffix format"):
+            workflows_util.parse_automation_child_workflow_index(f"{_PARENT_WORKFLOW_ID}_abc")
+
+    def test_multi_segment_hyphen_suffix_raises_value_error(self):
+        with pytest.raises(ValueError, match="Invalid child workflow suffix format"):
+            workflows_util.parse_automation_child_workflow_index(f"{_PARENT_WORKFLOW_ID}-4-4")
+
+    def test_invalid_suffix_format_raises_value_error(self):
+        with pytest.raises(ValueError, match="Invalid child workflow suffix format"):
+            workflows_util.parse_automation_child_workflow_index(f"{_PARENT_WORKFLOW_ID}abc")
+
+
+class TestGetLatestChildWorkflow:
+    def test_picks_highest_child_suffix_over_newer_updated_at(self):
+        finished_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(56),
+            updated_at=200,
+            status=dbos.WorkflowStatusString.SUCCESS.value,
+        )
+        waiting_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(57),
+            updated_at=100,
+            status=dbos.WorkflowStatusString.ENQUEUED.value,
+        )
+        chosen = workflows_util.get_latest_child_workflow([finished_child, waiting_child])
+        assert chosen.workflow_id == _child_workflow_id(57)
+
+    def test_picks_child_over_parent(self):
+        parent_workflow = _workflow_status_row(workflow_id=_child_workflow_id(0), updated_at=50)
+        child_workflow = _workflow_status_row(workflow_id=_child_workflow_id(1), updated_at=10)
+        chosen = workflows_util.get_latest_child_workflow([parent_workflow, child_workflow])
+        assert chosen.workflow_id == _child_workflow_id(1)
+
+    def test_single_element_list_returns_that_workflow(self):
+        only_workflow = _workflow_status_row(workflow_id=_child_workflow_id(4), updated_at=1)
+        chosen = workflows_util.get_latest_child_workflow([only_workflow])
+        assert chosen is only_workflow
+
+    def test_equal_suffix_tie_breaks_on_updated_at(self):
+        older_duplicate = _workflow_status_row(workflow_id=_child_workflow_id(5), updated_at=10)
+        newer_duplicate = _workflow_status_row(workflow_id=_child_workflow_id(5), updated_at=20)
+        chosen = workflows_util.get_latest_child_workflow([older_duplicate, newer_duplicate])
+        assert chosen is newer_duplicate
+
+    def test_unparseable_suffix_does_not_win_over_valid_child(self):
+        unrelated_workflow = _workflow_status_row(
+            workflow_id=f"{_PARENT_WORKFLOW_ID}-4-4",
+            updated_at=999,
+        )
+        valid_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(57),
+            updated_at=1,
+        )
+        chosen = workflows_util.get_latest_child_workflow([unrelated_workflow, valid_child])
+        assert chosen.workflow_id == _child_workflow_id(57)
+
+
+class TestGetLatestWorkflow:
+    def test_delegates_to_latest_child_workflow(self):
+        parent_workflow = _workflow_status_row(workflow_id=_child_workflow_id(0), updated_at=100)
+        child_workflow = _workflow_status_row(workflow_id=_child_workflow_id(2), updated_at=1)
+        chosen = workflows_util.get_latest_workflow([parent_workflow, child_workflow])
+        assert chosen.workflow_id == _child_workflow_id(2)
+
+
+class TestGetResolvedAutomationTask:
+    def test_pending_workflow_uses_input_task_content(self):
+        input_content = _automation_task_content(automation_name="from-input")
+        output_content = _automation_task_content(automation_name="from-output")
+        workflow_status = _workflow_status_with_automation_task(
+            status=dbos.WorkflowStatusString.PENDING.value,
+            input_content=input_content,
+            output_content=output_content,
+        )
+
+        resolved_task = workflows_util.get_resolved_automation_task(workflow_status)
+
+        assert resolved_task is not None
+        assert resolved_task.content == input_content
+
+    def test_success_workflow_uses_output_state(self):
+        input_content = _automation_task_content(automation_name="from-input")
+        output_content = _automation_task_content(automation_name="from-output")
+        workflow_status = _workflow_status_with_automation_task(
+            status=dbos.WorkflowStatusString.SUCCESS.value,
+            input_content=input_content,
+            output_content=output_content,
+        )
+
+        resolved_task = workflows_util.get_resolved_automation_task(workflow_status)
+
+        assert resolved_task is not None
+        assert resolved_task.content == output_content
+
+    def test_error_workflow_uses_output_state(self):
+        input_content = _automation_task_content(automation_name="from-input")
+        output_content = _automation_task_content(automation_name="from-output")
+        workflow_status = _workflow_status_with_automation_task(
+            status=dbos.WorkflowStatusString.ERROR.value,
+            input_content=input_content,
+            output_content=output_content,
+        )
+
+        resolved_task = workflows_util.get_resolved_automation_task(workflow_status)
+
+        assert resolved_task is not None
+        assert resolved_task.content == output_content
+
+    def test_error_workflow_falls_back_to_input_when_output_state_missing(self):
+        input_content = _automation_task_content(automation_name="from-input")
+        workflow_status = _workflow_status_with_automation_task(
+            status=dbos.WorkflowStatusString.ERROR.value,
+            input_content=input_content,
+            output_content=None,
+        )
+        workflow_status.output = json.dumps(
+            workflow_params.AutomationWorkflowOutput(state=None).to_dict(
+                include_default_values=False
+            )
+        )
+
+        resolved_task = workflows_util.get_resolved_automation_task(workflow_status)
+
+        assert resolved_task is not None
+        assert resolved_task.content == input_content
+
+
+class TestResolveAutomationResultForGroup:
+    def test_cancelled_latest_chooses_cancelled_child(self):
+        prior_child = _workflow_status_row(workflow_id=_child_workflow_id(1), updated_at=10)
+        cancelled_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(2),
+            updated_at=20,
+            status=dbos.WorkflowStatusString.CANCELLED.value,
+        )
+        chosen = workflows_util.resolve_automation_result_for_group([prior_child, cancelled_child])
+        assert chosen is cancelled_child
+
+    def test_latest_success_with_output_chooses_that_child(self):
+        success_child = _workflow_status_row(
+            workflow_id=_child_workflow_id(1),
+            updated_at=10,
+            status=dbos.WorkflowStatusString.SUCCESS.value,
+        )
+        success_child.output = json.dumps(
+            workflow_params.AutomationWorkflowOutput(state="state-1").to_dict(
+                include_default_values=False
+            )
+        )
+        chosen = workflows_util.resolve_automation_result_for_group([success_child])
+        assert chosen is success_child
+
+
+class TestResolveUserActionWorkflowInputs:
+    def test_unwraps_dbos_kwargs_inputs_key(self):
+        user_action = protocol_models.UserAction(id="ua-kwargs", configuration=None)
+        encoded = workflow_params.UserActionWorkflowInputs(
+            user_id="0xkwargs",
+            user_action=user_action,
+        ).to_dict(include_default_values=False)
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = "wf-kwargs"
+        workflow_status.input = {"args": [], "kwargs": {"inputs": encoded}}
+
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+
+        assert resolved.inputs is not None
+        assert resolved.inputs.user_id == "0xkwargs"
+        assert resolved.inputs.user_action.id == "ua-kwargs"
+
+    def test_unwraps_portable_json_named_args_inputs(self):
+        user_action = protocol_models.UserAction(id="ua-portable", configuration=None)
+        encoded = workflow_params.UserActionWorkflowInputs(
+            user_id="0xportable",
+            user_action=user_action,
+        ).to_dict(include_default_values=False)
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = "wf-portable"
+        workflow_status.input = {
+            "args": [
+                {
+                    "positionalArgs": [],
+                    "namedArgs": {"inputs": encoded},
+                },
+            ],
+            "kwargs": {},
+        }
+
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+
+        assert resolved.inputs is not None
+        assert resolved.inputs.user_id == "0xportable"
+        assert resolved.inputs.user_action.id == "ua-portable"
+
+    def test_empty_wrappers_report_no_inputs_not_missing_fields(self):
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = "wf-empty"
+        workflow_status.input = {
+            "args": [{"positionalArgs": [], "namedArgs": {}}],
+            "kwargs": {},
+        }
+
+        resolved = workflows_util.resolve_user_action_workflow_inputs(workflow_status)
+
+        assert resolved.inputs is None
+        assert resolved.parse_error == "no user-action workflow inputs found"

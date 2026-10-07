@@ -22,13 +22,15 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import ast
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
+
 
 @dataclasses.dataclass
 class ChannelDependency(dsl_interpreter.InterpreterDependency):
     channel_name: str
 
 
-class SumPlusXOperatorWithoutInit(dsl_interpreter.NaryOperator):
+class SumPlusXOperatorWithoutInit(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.NaryOperator):
     def __init__(self, *parameters: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(*parameters, **kwargs)
         self.x_value = 42
@@ -42,7 +44,7 @@ class SumPlusXOperatorWithoutInit(dsl_interpreter.NaryOperator):
         return sum(computed_parameters) + self.x_value
 
 
-class TimeFrameToSecondsOperator(dsl_interpreter.CallOperator):
+class TimeFrameToSecondsOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     def __init__(self, operand: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(operand, **kwargs)
 
@@ -60,7 +62,7 @@ class TimeFrameToSecondsOperator(dsl_interpreter.CallOperator):
         return commons_enums.TimeFramesMinutes[commons_enums.TimeFrames(computed_parameters[0])] * commons_constants.MINUTE_TO_SECONDS
 
 
-class AddOperator(dsl_interpreter.BinaryOperator):
+class AddOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Add.__name__

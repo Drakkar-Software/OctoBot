@@ -34,8 +34,8 @@ WETH_ETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 USDC_ETH = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 SYMBOL_HYDREX = f"{MCADE_BASE}/{WETH_BASE}{octobot_commons.NETWORK_SEPARATOR}BASE{octobot_commons.DEX_SEPARATOR}HYDREX"
 SYMBOL_BASE_UNI = f"{WETH_BASE}/{USDC_BASE}{octobot_commons.NETWORK_SEPARATOR}BASE{octobot_commons.DEX_SEPARATOR}UNISWAPV3"
+SYMBOL_BASE_UNI_V4 = f"{WETH_BASE}/{USDC_BASE}{octobot_commons.NETWORK_SEPARATOR}BASE{octobot_commons.DEX_SEPARATOR}UNISWAPV4"
 SYMBOL_ETH_UNI = f"{WETH_ETH}/{USDC_ETH}{octobot_commons.NETWORK_SEPARATOR}ETH{octobot_commons.DEX_SEPARATOR}UNISWAPV3"
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -64,7 +64,7 @@ def require_alchemy_api_key():
 
 class TestAlchemyRealExchangeTester(real_exchange_tester.RealExchangeTester):
     """
-    Costs 442 Alchemy CU in total to execute 
+    Costs ~520 Alchemy CU in total to execute
     """
     EXCHANGE_NAME = "alchemy"
     SYMBOL = SYMBOL_HYDREX
@@ -96,7 +96,7 @@ class TestAlchemyRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.inner_test_active_symbols(0, 0)
 
     async def test_get_market_status(self):
-        symbols = [self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3]
+        symbols = [self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3, SYMBOL_BASE_UNI_V4]
         await self.assert_lazy_loaded_markets(
             symbols=symbols,
             has_price_limits=False,
@@ -135,11 +135,13 @@ class TestAlchemyRealExchangeTester(real_exchange_tester.RealExchangeTester):
             self.SYMBOL: 0.01,
             self.SYMBOL_2: 100000,
             self.SYMBOL_3: 100000,
+            SYMBOL_BASE_UNI_V4: 100000,
         }
         min_price_per_symbol = {
             self.SYMBOL: 0,
             self.SYMBOL_2: 1000,
             self.SYMBOL_3: 1000,
+            SYMBOL_BASE_UNI_V4: 1000,
         }
 
         def extra_checks(ticker):
@@ -180,7 +182,7 @@ class TestAlchemyRealExchangeTester(real_exchange_tester.RealExchangeTester):
                 previous_close=ticker_expect.NONE,
             )
 
-        for symbol in [self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3]:
+        for symbol in [self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3, SYMBOL_BASE_UNI_V4]:
             await self.assert_get_price_ticker(
                 extra_checks=extra_checks,
                 symbol=symbol,
@@ -214,7 +216,7 @@ class TestAlchemyRealExchangeTester(real_exchange_tester.RealExchangeTester):
         )
 
         await self.assert_get_all_currencies_price_ticker(
-            symbols=[self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3],
+            symbols=[self.SYMBOL, self.SYMBOL_2, self.SYMBOL_3, SYMBOL_BASE_UNI_V4],
             extra_checks=extra_checks,
             ticker_expectations=ticker_expectations,
         )

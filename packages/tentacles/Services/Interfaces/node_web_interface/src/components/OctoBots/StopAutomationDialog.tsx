@@ -2,7 +2,7 @@
 import { TriangleAlert } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-import type { Task_Output as Task } from "@/client"
+import type { Task } from "@/client"
 import { DebugService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {

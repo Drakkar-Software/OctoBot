@@ -1,7 +1,12 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useRouterState } from "@tanstack/react-router"
+import { ShareFeedbackButton } from "@/components/Common/ShareFeedbackButton"
 import { Button } from "@/components/ui/button"
 
 const ErrorComponent = () => {
+  const routePath = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+
   return (
     <div
       className="flex min-h-screen items-center justify-center flex-col p-4"
@@ -19,9 +24,14 @@ const ErrorComponent = () => {
       <p className="text-lg text-muted-foreground mb-4 text-center z-10">
         Something went wrong. Please try again.
       </p>
-      <Link to="/">
-        <Button>Go Home</Button>
-      </Link>
+      <div className="flex flex-col items-center gap-3 z-10">
+        <Link to="/">
+          <Button>Go Home</Button>
+        </Link>
+        <ShareFeedbackButton
+          context={{ source: "route_error", routePath }}
+        />
+      </div>
     </div>
   )
 }

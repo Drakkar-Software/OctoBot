@@ -27,7 +27,7 @@ import octobot_node.scheduler.workflows_version_migration as workflows_version_m
 import tests.scheduler as scheduler_test_util
 
 _OLD_APPLICATION_VERSION = "3.0.0-beta0"
-_TEST_QUEUE = dbos.Queue(name="version_migration_test_queue")
+_TEST_QUEUE_NAME = "version_migration_test_queue"
 _WORKFLOW_SLEEP_SECONDS = 1.5
 
 
@@ -59,12 +59,16 @@ class TestMigrateStrandedWorkflowVersions:
             )
             dbos.DBOS.reset_system_database()
             dbos.DBOS.launch()
+            dbos.DBOS.register_queue(_TEST_QUEUE_NAME)
 
             @octobot_node.scheduler.SCHEDULER.INSTANCE.workflow()
             async def stranded_workflow() -> str:
                 return "done"
 
-            workflow_handle = _TEST_QUEUE.enqueue(stranded_workflow)
+            workflow_handle = dbos.DBOS.enqueue_workflow(
+                _TEST_QUEUE_NAME,
+                stranded_workflow,
+            )
             stranded_workflow_id = workflow_handle.get_workflow_id()
 
             octobot_node.scheduler.SCHEDULER.INSTANCE.destroy()
@@ -90,6 +94,7 @@ class TestMigrateStrandedWorkflowVersions:
                 application_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
             )
             octobot_node.scheduler.SCHEDULER.INSTANCE.launch()
+            dbos.DBOS.register_queue(_TEST_QUEUE_NAME)
 
             migrated_status = dbos.DBOS.get_workflow_status(stranded_workflow_id)
             assert migrated_status is not None
@@ -117,7 +122,11 @@ class TestStrandedWorkflowRecoveryAfterVersionMigration:
 
                 dbos.DBOS.reset_system_database()
                 dbos.DBOS.launch()
-                await _TEST_QUEUE.enqueue_async(sleeper_workflow)
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
+                await dbos.DBOS.enqueue_workflow_async(
+                    _TEST_QUEUE_NAME,
+                    sleeper_workflow,
+                )
 
                 enqueued_workflows = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
                     status=[dbos.WorkflowStatusString.ENQUEUED.value],
@@ -146,6 +155,7 @@ class TestStrandedWorkflowRecoveryAfterVersionMigration:
                     application_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
                 )
                 octobot_node.scheduler.SCHEDULER.INSTANCE.launch()
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
 
                 recovery_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(
                     stranded_workflow_id,
@@ -176,7 +186,11 @@ class TestStrandedWorkflowRecoveryAfterVersionMigration:
 
                 dbos.DBOS.reset_system_database()
                 dbos.DBOS.launch()
-                await _TEST_QUEUE.enqueue_async(sleeper_workflow)
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
+                await dbos.DBOS.enqueue_workflow_async(
+                    _TEST_QUEUE_NAME,
+                    sleeper_workflow,
+                )
 
                 pending_workflows = await octobot_node.scheduler.SCHEDULER.INSTANCE.list_workflows_async(
                     status=[
@@ -209,6 +223,7 @@ class TestStrandedWorkflowRecoveryAfterVersionMigration:
                     application_version=octobot_node.constants.SCHEDULER_APPLICATION_VERSION,
                 )
                 octobot_node.scheduler.SCHEDULER.INSTANCE.launch()
+                await dbos.DBOS.register_queue_async(_TEST_QUEUE_NAME)
 
                 recovery_handle = await octobot_node.scheduler.SCHEDULER.INSTANCE.retrieve_workflow_async(
                     stranded_workflow_id,

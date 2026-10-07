@@ -14,12 +14,15 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
 
+import datetime
 import json
 import pytest
 import mock
 import dbos
 import octobot_protocol.models as protocol_models
 from octobot_node.models import Execution, Task, TaskStatus
+import octobot_node.constants
+
 from octobot_node.scheduler.api import (
     get_node_status,
     get_task_metrics,
@@ -28,6 +31,8 @@ from octobot_node.scheduler.api import (
     get_tasks_export_results,
     await_workflow_result_from_id,
     retrieve_workflow_handle,
+    paginate_tasks,
+    sort_tasks_by_recency,
 )
 
 from tests.scheduler import temp_dbos_scheduler
@@ -45,6 +50,7 @@ def _make_wf_status(workflow_id: str, status: str, user_id: str = "0xaaa") -> mo
     wf = mock.Mock()
     wf.workflow_id = workflow_id
     wf.status = status
+    wf.name = octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
     wf.queue_name = octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
     wf.input = {
         "args": [inputs.to_dict(include_default_values=False)],
@@ -167,8 +173,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return pending_wf
             return result_wf
 
@@ -182,8 +188,16 @@ class TestGetTaskMetrics:
         assert result["pending"] == 5
         assert result["scheduled"] == 0
         assert result["results"] == 10
-        for call in mock_instance.list_workflows_async.call_args_list:
+        import octobot_node.enums as octobot_node_enums
+        pending_call, results_call = mock_instance.list_workflows_async.call_args_list
+        assert pending_call.kwargs.get("queues_only") is True
+        assert "status" not in pending_call.kwargs
+        assert results_call.kwargs.get("queues_only") is not True
+        assert results_call.kwargs.get("status") is not None
+        for call in (pending_call, results_call):
             assert call.kwargs.get("load_output") is False
+            assert call.kwargs.get("name") == octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+            assert "queue_name" not in call.kwargs
 
     @pytest.mark.asyncio
     async def test_get_task_metrics_wallet_scoped(self) -> None:
@@ -206,8 +220,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return pending_wf
             return result_wf
 
@@ -236,7 +250,8 @@ class TestGetTaskMetrics:
         unparseable_wf = mock.Mock()
         unparseable_wf.workflow_id = "dddddddd-dddd-dddd-dddd-ddddddddddd2"
         unparseable_wf.status = dbos.WorkflowStatusString.SUCCESS.value
-        unparseable_wf.queue_name = octobot_node_enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value
+        unparseable_wf.name = octobot_node_enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value
+        unparseable_wf.queue_name = None
         unparseable_wf.input = {"args": [], "kwargs": {}}  # nothing parseable
         unparseable_wf.created_at = None
         unparseable_wf.updated_at = None
@@ -245,8 +260,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return []
             return [legacy_wf, unparseable_wf, other_wf]
 
@@ -259,6 +274,34 @@ class TestGetTaskMetrics:
 
         # legacy + unparseable kept (2), explicit other_wallet dropped (1)
         assert result["results"] == 2
+
+    @pytest.mark.asyncio
+    async def test_get_task_metrics_counts_cancelled_automation_with_null_queue(self) -> None:
+        import octobot_node.enums as octobot_node_enums
+
+        my_wallet = "0xmine"
+        cancelled_wf = _make_wf_status(
+            "cccccccc-cccc-cccc-cccc-ccccccccccc0",
+            dbos.WorkflowStatusString.CANCELLED.value,
+            user_id=my_wallet,
+        )
+        cancelled_wf.queue_name = None
+
+        mock_instance = mock.AsyncMock()
+
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
+                return []
+            return [cancelled_wf]
+
+        mock_instance.list_workflows_async = mock.AsyncMock(side_effect=list_side_effect)
+        mock_scheduler = mock.Mock()
+        mock_scheduler.INSTANCE = mock_instance
+
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            result = await get_task_metrics(user_id=my_wallet)
+
+        assert result["results"] == 1
 
     @pytest.mark.asyncio
     async def test_get_task_metrics_uninitialized_scheduler(self) -> None:
@@ -301,8 +344,8 @@ class TestGetTaskMetrics:
 
         mock_instance = mock.AsyncMock()
 
-        def list_side_effect(status=None, **kwargs):
-            if dbos.WorkflowStatusString.PENDING.value in (status or []):
+        def list_side_effect(status=None, queues_only=False, **kwargs):
+            if queues_only:
                 return pending_wf
             return result_wf
 
@@ -559,6 +602,151 @@ class TestGetAllTasksChildOctobotProcessEnrichment:
         assert tasks[0].metadata is None
 
 
+def _task_with_execution_dates(
+    task_id: str,
+    *,
+    completed_at: datetime.datetime | None = None,
+    scheduled_at: datetime.datetime | None = None,
+    status: TaskStatus = TaskStatus.COMPLETED,
+) -> Task:
+    return Task(
+        id=task_id,
+        executions=[
+            Execution(
+                id=task_id,
+                status=status,
+                completed_at=completed_at,
+                scheduled_at=scheduled_at,
+            )
+        ],
+    )
+
+
+class TestSortTasksByRecency:
+    def test_orders_by_completed_at_newest_first(self) -> None:
+        oldest_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        middle_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        newest_id = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+        tasks = [
+            _task_with_execution_dates(
+                oldest_id,
+                completed_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                newest_id,
+                completed_at=datetime.datetime(2024, 3, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                middle_id,
+                completed_at=datetime.datetime(2024, 2, 1, tzinfo=datetime.timezone.utc),
+            ),
+        ]
+        sorted_tasks = sort_tasks_by_recency(tasks)
+        assert [task.id for task in sorted_tasks] == [newest_id, middle_id, oldest_id]
+
+    def test_uses_scheduled_at_when_completed_at_missing(self) -> None:
+        later_id = "dddddddd-dddd-dddd-dddd-dddddddddddd"
+        earlier_id = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+        tasks = [
+            _task_with_execution_dates(
+                earlier_id,
+                status=TaskStatus.SCHEDULED,
+                scheduled_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                later_id,
+                status=TaskStatus.SCHEDULED,
+                scheduled_at=datetime.datetime(2024, 6, 1, tzinfo=datetime.timezone.utc),
+            ),
+        ]
+        sorted_tasks = sort_tasks_by_recency(tasks)
+        assert [task.id for task in sorted_tasks] == [later_id, earlier_id]
+
+    def test_tasks_without_sortable_date_sort_last(self) -> None:
+        dated_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        undated_id = "00000000-0000-0000-0000-000000000099"
+        tasks = [
+            Task(id=undated_id, executions=[Execution(id=undated_id, status=TaskStatus.PENDING)]),
+            _task_with_execution_dates(
+                dated_id,
+                completed_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+            ),
+        ]
+        sorted_tasks = sort_tasks_by_recency(tasks)
+        assert sorted_tasks[0].id == dated_id
+        assert sorted_tasks[1].id == undated_id
+
+
+class TestPaginateTasks:
+    def test_page_one_returns_newest_after_sort(self) -> None:
+        tasks = [
+            _task_with_execution_dates(
+                "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                completed_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                completed_at=datetime.datetime(2024, 3, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                completed_at=datetime.datetime(2024, 2, 1, tzinfo=datetime.timezone.utc),
+            ),
+        ]
+        page = paginate_tasks(tasks, page=1, limit=2)
+        assert [task.id for task in page] == [
+            "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        ]
+
+    def test_page_two_returns_remainder(self) -> None:
+        tasks = [
+            _task_with_execution_dates(
+                "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                completed_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                completed_at=datetime.datetime(2024, 3, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                completed_at=datetime.datetime(2024, 2, 1, tzinfo=datetime.timezone.utc),
+            ),
+        ]
+        page = paginate_tasks(tasks, page=2, limit=2)
+        assert [task.id for task in page] == ["aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"]
+
+    def test_non_positive_page_treated_as_first_page(self) -> None:
+        tasks = [
+            _task_with_execution_dates(
+                "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                completed_at=datetime.datetime(2024, 2, 1, tzinfo=datetime.timezone.utc),
+            ),
+            _task_with_execution_dates(
+                "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                completed_at=datetime.datetime(2024, 3, 1, tzinfo=datetime.timezone.utc),
+            ),
+        ]
+        page_zero = paginate_tasks(tasks, page=0, limit=1)
+        page_negative = paginate_tasks(tasks, page=-3, limit=1)
+        assert page_zero[0].id == "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        assert page_negative[0].id == "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+    def test_limit_above_max_clamped(self) -> None:
+        task_ids = [f"{index:08d}-0000-0000-0000-000000000000" for index in range(600)]
+        tasks = [
+            _task_with_execution_dates(
+                task_id,
+                completed_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+                + datetime.timedelta(seconds=task_index),
+            )
+            for task_index, task_id in enumerate(task_ids)
+        ]
+        page = paginate_tasks(tasks, page=1, limit=999_999)
+        assert len(page) == octobot_node.constants.TASKS_LIST_MAX_PAGE_LIMIT
+
+
 class TestGetTasksExportResults:
     """Tests for get_tasks_export_results function (batch decrypt-on-demand)."""
 
@@ -744,6 +932,26 @@ class TestGetTaskResult:
             result = await get_task_result(task_id)
 
             assert result["status"] == "pending or running"
+
+    @pytest.mark.asyncio
+    async def test_get_task_result_cancelled_returns_no_data(self) -> None:
+        task_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa_2"
+
+        mock_handle = mock.AsyncMock()
+        mock_handle.get_status = mock.AsyncMock(return_value=mock.Mock(status="CANCELLED"))
+        mock_handle.get_result = mock.AsyncMock()
+
+        mock_instance = mock.AsyncMock()
+        mock_instance.retrieve_workflow_async = mock.AsyncMock(return_value=mock_handle)
+
+        mock_scheduler = mock.Mock()
+        mock_scheduler.INSTANCE = mock_instance
+
+        with mock.patch("octobot_node.scheduler.SCHEDULER", mock_scheduler):
+            result = await get_task_result(task_id)
+
+        assert result == {"status": "cancelled", "data": None}
+        mock_handle.get_result.assert_not_called()
 
 
 class TestAwaitWorkflowResultFromId:

@@ -310,10 +310,10 @@ class TestGetWorkflowsToDelete:
         user_action_workflow = _build_user_action_workflow_with_output("ua-delete", "wf-ua-delete")
 
         async def list_workflows_side_effect(**kwargs):
-            queue_name = kwargs.get("queue_name")
-            if queue_name == [octobot_node.enums.SchedulerQueues.AUTOMATION_WORKFLOW_QUEUE.value]:
+            workflow_name = kwargs.get("name")
+            if workflow_name == octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION.value:
                 return [automation_workflow]
-            if queue_name == [octobot_node.enums.SchedulerQueues.USER_ACTION_QUEUE.value]:
+            if workflow_name == octobot_node.enums.SchedulerWorkflowNames.EXECUTE_USER_ACTION.value:
                 return [user_action_workflow]
             return []
 
@@ -521,13 +521,14 @@ class TestShouldSkipRetentionCleanupForScheduledTime:
 
         assert result is False
         mock_instance.list_workflows_async.assert_awaited_once_with(
-            name="dbos_cleanup",
+            name=octobot_node.enums.SchedulerWorkflowNames.DBOS_CLEANUP.value,
             status=[dbos.WorkflowStatusString.SUCCESS.value],
             sort_desc=True,
             limit=1,
             load_input=False,
             load_output=False,
         )
+        assert "queue_name" not in mock_instance.list_workflows_async.await_args.kwargs
 
     @pytest.mark.asyncio
     async def test_returns_true_when_latest_cleanup_is_newer_than_scheduled_time(self, temp_dbos_scheduler):

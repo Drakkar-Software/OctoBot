@@ -4,11 +4,11 @@ import typing
 import octobot_commons.logging as commons_logging
 import octobot_trading.constants as trading_constants
 import octobot_trading.enums as trading_enums
-import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.personal_data as trading_personal_data
 import octobot_trading.personal_data.trades.trades_util as trades_util_module
 
 import octobot_flow.repositories.exchange.base_exchange_repository as base_exchange_repository_import
+import octobot_flow.repositories.exchange.channel_producer_ensure as channel_producer_ensure_module
 
 logger = commons_logging.get_logger("PortfolioHistoryJob")
 
@@ -140,11 +140,10 @@ class TradesRepository(base_exchange_repository_import.BaseExchangeRepository):
 
     @classmethod
     async def ensure_temporary_trades_channel(cls, exchange_manager) -> None:
-        await trading_exchanges.create_exchange_channels(exchange_manager)
-        await trading_exchanges.create_producers(
+        await channel_producer_ensure_module.ensure_temporary_channel_producer(
             exchange_manager,
-            [trading_personal_data.TradesUpdater],
-            start_producers=False,
+            trading_constants.TRADES_CHANNEL,
+            trading_personal_data.TradesUpdater,
         )
 
     async def fetch_trades(self, symbols: list[str]) -> list[dict]:
@@ -209,6 +208,7 @@ class TradesRepository(base_exchange_repository_import.BaseExchangeRepository):
         since: int | None = None,
         exhaust_history: bool = False,
     ) -> list[dict]:
+        await self.ensure_temporary_trades_channel(self.exchange_manager)
         fetch_kwargs: dict = {}
         if since is not None:
             fetch_kwargs["since"] = since

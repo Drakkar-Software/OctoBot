@@ -1279,13 +1279,14 @@ def _get_other_asset_forecasted_fees(
             for fee_currency, fee_price_by_symbol in exchange_local_fees_currency_price.items():
                 for fee_symbol, fee_price in fee_price_by_symbol.items():
                     parsed_fee_symbol = symbol_util.parse_symbol(fee_symbol)
+                    fee_base, fee_quote = parsed_fee_symbol.base_and_quote()
                     # shared base or quote ? divive, multiply otherwise
-                    if parsed_fee_symbol.base == base or parsed_fee_symbol.quote == quote:
+                    if fee_base == base or fee_quote == quote:
                         base_local_fee = {
                             enums.FeePropertyColumns.CURRENCY.value: fee_currency,
                             enums.FeePropertyColumns.COST.value: fee_cost / fee_price
                         }
-                    elif parsed_fee_symbol.base == quote or parsed_fee_symbol.quote == base:
+                    elif fee_base == quote or fee_quote == base:
                         base_local_fee = {
                             enums.FeePropertyColumns.CURRENCY.value: fee_currency,
                             enums.FeePropertyColumns.COST.value: fee_cost * fee_price
@@ -1298,13 +1299,14 @@ def _get_other_asset_forecasted_fees(
             for fee_currency, fee_price_by_symbol in exchange_local_fees_currency_price.items():
                 for fee_symbol, fee_price in fee_price_by_symbol.items():
                     parsed_fee_symbol = symbol_util.parse_symbol(fee_symbol)
+                    fee_base, fee_quote = parsed_fee_symbol.base_and_quote()
                     # shared base or quote ? divive, multiply otherwise
-                    if parsed_fee_symbol.base == base or parsed_fee_symbol.quote == quote:
+                    if fee_base == base or fee_quote == quote:
                         quote_local_fee = {
                             enums.FeePropertyColumns.CURRENCY.value: fee_currency,
                             enums.FeePropertyColumns.COST.value: fee_cost / fee_price
                         }
-                    elif parsed_fee_symbol.base == quote or parsed_fee_symbol.quote == base:
+                    elif fee_base == quote or fee_quote == base:
                         quote_local_fee = {
                             enums.FeePropertyColumns.CURRENCY.value: fee_currency,
                             enums.FeePropertyColumns.COST.value: fee_cost * fee_price
@@ -1329,7 +1331,7 @@ def _get_exchange_local_fees_currency_price(orders: list[order_import.Order]) ->
         if local_fees_currency not in exchange_local_fees_currency_price:
             exchange_local_fees_currency_price[local_fees_currency] = {}
         if (
-            local_fees_currency in symbol_util.parse_symbol(order.symbol).base_and_quote() 
+            local_fees_currency in symbol_util.parse_symbol(order.symbol).base_and_quote()
             and order.symbol not in exchange_local_fees_currency_price[local_fees_currency]
         ):
             exchange_local_fees_currency_price[local_fees_currency][order.symbol] = order.origin_price

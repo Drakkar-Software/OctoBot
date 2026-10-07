@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import copy
 import decimal
 import contextlib
 import mock
@@ -31,6 +32,8 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.exchange_channel as exchanges_channel
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as exchanges
+import octobot_trading.personal_data as trading_personal_data
+import octobot_commons.symbols.symbol_util as symbol_util
 import tentacles.Trading.Mode.market_making_trading_mode.market_making_trading as market_making_trading
 
 import tests.test_utils.config as test_utils_config
@@ -441,3 +444,137 @@ class TestMarketMakingTradingModeProducerOnReferencePriceUpdateInvalid:
             ) as ensure_market_making_orders_mock:
                 await producer._on_reference_price_update()
                 ensure_market_making_orders_mock.assert_not_called()
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+PORTFOLIO_BASE_ASSET = "BTC@BTC"
+PORTFOLIO_QUOTE_ASSET = "USDT@ETH"
+
+
+def _register_ticker_wise_symbol_on_exchange(exchange_manager, mark_price):
+    if TICKER_WISE_SYMBOL not in exchange_manager.client_symbols:
+        exchange_manager.client_symbols.append(TICKER_WISE_SYMBOL)
+    if TICKER_WISE_SYMBOL not in exchange_manager.exchange_config.traded_symbol_pairs:
+        exchange_manager.exchange_config.traded_symbol_pairs.append(TICKER_WISE_SYMBOL)
+        exchange_manager.exchange_config.traded_symbols.append(symbol_util.parse_symbol(TICKER_WISE_SYMBOL))
+    symbol_data = exchange_manager.exchange_symbols_data.get_exchange_symbol_data(
+        TICKER_WISE_SYMBOL, allow_creation=True
+    )
+    symbol_data.handle_mark_price_update(
+        mark_price, trading_enums.MarkPriceSources.EXCHANGE_MARK_PRICE.value
+    )
+
+
+def _assert_ticker_wise_portfolio_bounds(exchange_manager, buy_actions, sell_actions):
+    quote_holdings = trading_api.get_portfolio_currency(exchange_manager, PORTFOLIO_QUOTE_ASSET).available
+    assert sum(action.order_data.price * action.order_data.quantity for action in buy_actions) <= quote_holdings
+    base_holdings = trading_api.get_portfolio_currency(exchange_manager, PORTFOLIO_BASE_ASSET).available
+    assert sum(action.order_data.quantity for action in sell_actions) <= base_holdings
+
+
+def _ticker_wise_symbol_market_fallback():
+    # Used when get_pre_order_data cannot resolve ticker-wise market metadata in the simulator.
+    symbol_market = copy.deepcopy(SYMBOL_MARKET)
+    symbol_market["symbol"] = TICKER_WISE_SYMBOL
+    symbol_market["base"] = PORTFOLIO_BASE_ASSET
+    symbol_market["quote"] = PORTFOLIO_QUOTE_ASSET
+    symbol_market["id"] = "BTCBTCUSDTETH"
+    symbol_market["lowercaseId"] = "btcbtcusdteth"
+    return symbol_market
+
+
+@contextlib.asynccontextmanager
+async def _get_ticker_wise_tools(btc_holdings=10, quote_funds=1000, price=1000):
+    tentacles_manager_api.reload_tentacle_info()
+    exchange_manager = None
+    try:
+        symbol = TICKER_WISE_SYMBOL
+        config = test_config.load_test_config()
+        starting_portfolio = config[commons_constants.CONFIG_SIMULATOR][commons_constants.CONFIG_STARTING_PORTFOLIO]
+        starting_portfolio.clear()
+        starting_portfolio[PORTFOLIO_QUOTE_ASSET] = quote_funds
+        starting_portfolio[PORTFOLIO_BASE_ASSET] = btc_holdings
+        exchange_manager = test_exchanges.get_test_exchange_manager(config, "binance")
+        exchange_manager.tentacles_setup_config = test_utils_config.load_test_tentacles_config()
+        exchange_manager.is_simulated = True
+        exchange_manager.is_backtesting = True
+        exchange_manager.use_cached_markets = False
+        backtesting = await backtesting_api.initialize_backtesting(
+            config,
+            exchange_ids=[exchange_manager.id],
+            matrix_id=None,
+            data_files=[
+                os.path.join(test_config.TEST_CONFIG_FOLDER, "AbstractExchangeHistoryCollector_1586017993.616272.data")
+            ],
+        )
+        exchange_manager.exchange = exchanges.ExchangeSimulator(exchange_manager.config, exchange_manager, backtesting)
+        await exchange_manager.exchange.initialize()
+        for exchange_channel_class_type in [exchanges_channel.ExchangeChannel, exchanges_channel.TimeFrameExchangeChannel]:
+            await channel_util.create_all_subclasses_channel(
+                exchange_channel_class_type, exchanges_channel.set_chan, exchange_manager=exchange_manager
+            )
+        trader = exchanges.TraderSimulator(config, exchange_manager)
+        await trader.initialize()
+        mark_price = decimal.Decimal(str(price))
+        _register_ticker_wise_symbol_on_exchange(exchange_manager, mark_price)
+        trading_api.force_set_mark_price(exchange_manager, symbol, price)
+        mode, producer = await _init_trading_mode(config, exchange_manager, symbol)
+        yield producer, mode.get_trading_mode_consumers()[0], exchange_manager
+    finally:
+        if exchange_manager:
+            await _stop(exchange_manager)
+
+
+class TestMarketMakingNetworkQualifiedOrderCreation:
+    async def test_handle_market_making_orders_from_no_orders_ticker_wise_symbol(self):
+        price = decimal.Decimal(1000)
+        async with _get_ticker_wise_tools(price=price) as (producer, consumer, exchange_manager):
+            try:
+                _, _, _, _, symbol_market = await trading_personal_data.get_pre_order_data(
+                    exchange_manager, symbol=TICKER_WISE_SYMBOL, timeout=1
+                )
+            except Exception:
+                symbol_market = _ticker_wise_symbol_market_fallback()
+            origin_submit_trading_evaluation = producer.submit_trading_evaluation
+            with mock.patch.object(
+                producer, "submit_trading_evaluation", mock.AsyncMock(side_effect=origin_submit_trading_evaluation)
+            ) as submit_trading_evaluation_mock, mock.patch.object(
+                producer, "_get_reference_price", mock.AsyncMock(return_value=price)
+            ) as _get_reference_price_mock, mock.patch.object(
+                producer, "_get_daily_volume", mock.Mock(return_value=(decimal.Decimal(1), decimal.Decimal(1000)))
+            ) as _get_daily_volume_mock:
+                trigger_source = "ref_price"
+                assert await producer._handle_market_making_orders(
+                    price, symbol_market, trigger_source, False
+                ) is True
+                _get_reference_price_mock.assert_called_once()
+                _get_daily_volume_mock.assert_called_once()
+                submit_trading_evaluation_mock.assert_called_once()
+                assert submit_trading_evaluation_mock.mock_calls[0].kwargs["symbol"] == TICKER_WISE_SYMBOL
+                data = submit_trading_evaluation_mock.mock_calls[0].kwargs["data"]
+                order_plan: market_making_trading.OrdersUpdatePlan = data[
+                    market_making_trading.MarketMakingTradingModeConsumer.ORDER_ACTIONS_PLAN_KEY
+                ]
+                assert len(order_plan.order_actions) == 10
+                buy_actions = [
+                    action for action in order_plan.order_actions
+                    if isinstance(action, market_making_trading.CreateOrderAction)
+                    and action.order_data.side == trading_enums.TradeOrderSide.BUY
+                ]
+                sell_actions = [
+                    action for action in order_plan.order_actions
+                    if isinstance(action, market_making_trading.CreateOrderAction)
+                    and action.order_data.side == trading_enums.TradeOrderSide.SELL
+                ]
+                assert len(buy_actions) == len(sell_actions) == 5
+                assert all(action.order_data.symbol == TICKER_WISE_SYMBOL for action in buy_actions + sell_actions)
+                _assert_ticker_wise_portfolio_bounds(exchange_manager, buy_actions, sell_actions)
+                for _ in range(len(order_plan.order_actions)):
+                    await asyncio_tools.wait_asyncio_next_cycle()
+                open_orders = exchange_manager.exchange_personal_data.orders_manager.get_open_orders(TICKER_WISE_SYMBOL)
+                assert len(open_orders) == 10
+                assert all(order.symbol == TICKER_WISE_SYMBOL for order in open_orders)
+                assert sorted([f"{order.origin_price}{order.side.value}" for order in open_orders]) == sorted([
+                    f"{action.order_data.price}{action.order_data.side.value}" for action in order_plan.order_actions
+                    if isinstance(action, market_making_trading.CreateOrderAction)
+                ])

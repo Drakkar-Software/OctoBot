@@ -54,7 +54,7 @@ import octobot.community.identifiers_provider as identifiers_provider
 
 _INTERNAL_LOGGERS = [
     "httpx", "asyncio",
-    "httpcore.http11", "httpcore.connection",
+    "httpcore.http11", "httpcore.http2", "httpcore.connection",
 ]
 # disable httpx info logs as it logs every request
 commons_logging.set_logging_level(_INTERNAL_LOGGERS, logging.WARNING)

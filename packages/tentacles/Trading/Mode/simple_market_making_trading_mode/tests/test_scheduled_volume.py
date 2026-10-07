@@ -1049,3 +1049,30 @@ def test_get_next_sided_orders_locked_funds_limit(scheduled_volume):
         # Verify that the order amount is limited by available funds
         args = mock_adapt.call_args[0]
         assert args[0] == decimal.Decimal("0.005")
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
+
+class TestScheduledVolumeNetworkQualifiedPortfolioAssets:
+    @mock.patch("octobot_trading.api.get_portfolio_currency")
+    def test_reset_locked_funds_reads_portfolio_asset_keys(
+        self, mock_get_portfolio, portfolio_mock, exchange_manager_mock
+    ):
+        scheduled_volume = scheduled_volume_import.ScheduledVolume(
+            exchange_manager=exchange_manager_mock,
+            symbol=TICKER_WISE_SYMBOL,
+            on_missing_funds_callback=mock.AsyncMock(),
+            min_interval=1.0,
+            max_interval=5.0,
+            min_quote_amount=100,
+            max_quote_amount=1000,
+        )
+        mock_get_portfolio.side_effect = [
+            portfolio_mock(decimal.Decimal("1")),
+            portfolio_mock(decimal.Decimal("10000")),
+        ]
+        current_price = decimal.Decimal("50000")
+        assert scheduled_volume._reset_locked_funds(current_price) is None
+        mock_get_portfolio.assert_any_call(exchange_manager_mock, "BTC@BTC")
+        mock_get_portfolio.assert_any_call(exchange_manager_mock, "USDT@ETH")

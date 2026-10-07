@@ -202,6 +202,17 @@ function loopIntervalParam(): ActionParamDef {
   }
 }
 
+function loopIntervalMaxParam(): ActionParamDef {
+  return {
+    key: "LOOP_INTERVAL_MAX",
+    label: "Loop Max Interval (s)",
+    required: false,
+    type: "number",
+    detectPatterns: [PATTERNS.numericAmount],
+    aliasFuzzy: ["loop_interval_max", "loopintervalmax", "loop_wait_max"],
+  }
+}
+
 function loopTimeoutParam(): ActionParamDef {
   return {
     key: "LOOP_TIMEOUT",
@@ -496,6 +507,7 @@ export const LOOP_UNTIL_ORDER_CLOSED_TEMPLATE: ActionTemplate = {
     exchangeParam("EXCHANGE_TO", "Exchange", false),
     symbolParam("ORDER_SYMBOL", "Order Symbol", true),
     loopIntervalParam(),
+    loopIntervalMaxParam(),
     loopTimeoutParam(),
     loopMaxAttemptsParam(),
   ],
@@ -512,6 +524,7 @@ export const LOOP_UNTIL_BLOCKCHAIN_BALANCE_TEMPLATE: ActionTemplate = {
     addressParam("BLOCKCHAIN_BALANCE_ADDRESS", "Balance Address", true),
     amountParam("BLOCKCHAIN_BALANCE_AMOUNT", "Balance Amount", true),
     loopIntervalParam(),
+    loopIntervalMaxParam(),
     loopTimeoutParam(),
     loopMaxAttemptsParam(),
   ],

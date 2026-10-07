@@ -65,7 +65,12 @@ export async function getWalletBoundIdentity(
     }
     if (parsed.userId) {
       clearSpaceAccessStore()
-      await kvRemove(`dk.spaceaccess.${parsed.userId}`).catch(() => undefined)
+      await kvRemove(`dk.spaceaccess.${parsed.userId}`).catch((error) => {
+        console.warn(
+          `OctoChat KV remove failed (dk.spaceaccess.${parsed.userId})`,
+          error,
+        )
+      })
     }
   }
 

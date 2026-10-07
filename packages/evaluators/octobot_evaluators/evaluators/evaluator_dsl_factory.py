@@ -113,7 +113,8 @@ def _get_cryptocurrency_from_symbol(
         return cryptocurrency
     if symbol is None:
         return None
-    return symbols_util.parse_symbol(symbol).base
+    # Bare asset ticker: evaluator ticker id — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
+    return symbols_util.parse_symbol(symbol).base_asset_ticker()
 
 
 class EvaluatorOperator(

@@ -156,8 +156,8 @@ class OctoBotActionsJob:
             )
             self.after_execution_state = automation_job.automation_state
             post_execution_state_dump = automation_job.dump()
-            next_actions_description, has_next_actions = self.get_next_actions_description(post_execution_state_dump)
             self.result.processed_actions = executed_actions
+            next_actions_description, has_next_actions = self.get_next_actions_description(post_execution_state_dump)
             self.result.next_actions_description = next_actions_description
             self.result.has_next_actions = has_next_actions
             self.result.actions_dag = automation_job.automation_state.automation.actions_dag
@@ -173,6 +173,11 @@ class OctoBotActionsJob:
         )
         has_next_actions = bool(automation.actions_dag.get_executable_actions())
         if not has_next_actions and (pending_actions := automation.actions_dag.get_pending_actions()):
+            # After an upstream failure, dependents stay pending (deps require NO_ERROR).
+            # Finish the iteration with has_next_actions=False so WorkflowDAGDependenciesError
+            # does not mask the real error.
+            if automation.actions_dag.has_failed_action():
+                return next_actions_description, False
             raise errors.WorkflowDAGDependenciesError(
                 f"Automation {automation.metadata.automation_id}: actions DAG dependencies issue: "
                 f"no executable actions while there are still "

@@ -24,7 +24,6 @@ import octobot_node.scheduler.workflows_retention as workflows_retention
 
 from octobot_node.scheduler import SCHEDULER  # avoid circular import
 
-WORKFLOW_NAME = "dbos_cleanup"
 SCHEDULE_NAME = "dbos_cleanup_daily"
 SCHEDULE_CRON = "0 0 * * *"  # daily at midnight UTC
 
@@ -32,7 +31,7 @@ SCHEDULE_CRON = "0 0 * * *"  # daily at midnight UTC
 @SCHEDULER.INSTANCE.dbos_class()
 class DbosCleanupWorkflow:
     @staticmethod
-    @SCHEDULER.INSTANCE.workflow(name=WORKFLOW_NAME)
+    @SCHEDULER.INSTANCE.workflow(name=octobot_node.enums.SchedulerWorkflowNames.DBOS_CLEANUP.value)
     async def dbos_cleanup(
         scheduled_time: datetime.datetime,
         context: typing.Any,

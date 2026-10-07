@@ -2,9 +2,9 @@ import decimal
 import typing
 
 import octobot_trading.api as trading_api
-import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.personal_data as personal_data
 import octobot_flow.repositories.exchange.base_exchange_repository as base_exchange_repository_import
+import octobot_flow.repositories.exchange.channel_producer_ensure as channel_producer_ensure_module
 import octobot_trading.constants as trading_constants
 import octobot_trading.personal_data as trading_personal_data
 
@@ -13,14 +13,14 @@ class PortfolioRepository(base_exchange_repository_import.BaseExchangeRepository
 
     @classmethod
     async def ensure_temporary_balance_channel(cls, exchange_manager) -> None:
-        await trading_exchanges.create_producers(
+        await channel_producer_ensure_module.ensure_temporary_channel_producer(
             exchange_manager,
-            [trading_personal_data.BalanceUpdater],
-            start_producers=False,
+            trading_constants.BALANCE_CHANNEL,
+            trading_personal_data.BalanceUpdater,
         )
 
     async def fetch_portfolio(self) -> dict[str, dict[str, decimal.Decimal]]:
-        
+        await self.ensure_temporary_balance_channel(self.exchange_manager)
         updater = typing.cast(
             trading_personal_data.BalanceUpdater,
             self.get_channel_updater(trading_constants.BALANCE_CHANNEL)
@@ -31,6 +31,7 @@ class PortfolioRepository(base_exchange_repository_import.BaseExchangeRepository
         ) # type: ignore
 
     async def fetch_and_apply_portfolio(self) -> dict[str, dict[str, decimal.Decimal]]:
+        await self.ensure_temporary_balance_channel(self.exchange_manager)
         updater = typing.cast(
             trading_personal_data.BalanceUpdater,
             self.get_channel_updater(trading_constants.BALANCE_CHANNEL)

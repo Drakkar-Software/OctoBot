@@ -23,12 +23,14 @@ import octobot_commons.enums as commons_enums
 import octobot_commons.constants as commons_constants
 import octobot_commons.errors as commons_errors
 
+import octobot_commons.tests.dsl_test_keyword_support as dsl_test_keyword_support
+
 
 async def get_x_value_async() -> int:
     return 666
 
 
-class SumPlusXOperatorWithoutInit(dsl_interpreter.NaryOperator):
+class SumPlusXOperatorWithoutInit(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.NaryOperator):
     def __init__(self, *parameters: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(*parameters, **kwargs)
         self.x_value = 42
@@ -42,7 +44,7 @@ class SumPlusXOperatorWithoutInit(dsl_interpreter.NaryOperator):
         return sum(computed_parameters) + self.x_value
 
 
-class SumPlusXOperatorWithPreCompute(dsl_interpreter.NaryOperator):
+class SumPlusXOperatorWithPreCompute(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.NaryOperator):
     def __init__(self, *parameters: dsl_interpreter.OperatorParameterType, **kwargs: typing.Any):
         super().__init__(*parameters, **kwargs)
         self.x_value = 42
@@ -67,7 +69,7 @@ class SumPlusXOperatorWithPreCompute(dsl_interpreter.NaryOperator):
         return sum(computed_parameters) + self.x_value
 
 
-class TimeFrameToSecondsOperator(dsl_interpreter.CallOperator):
+class TimeFrameToSecondsOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     MIN_PARAMS = 1
     MAX_PARAMS = 1
 
@@ -83,7 +85,7 @@ class TimeFrameToSecondsOperator(dsl_interpreter.CallOperator):
         return commons_enums.TimeFramesMinutes[commons_enums.TimeFrames(computed_parameters[0])] * commons_constants.MINUTE_TO_SECONDS
 
 
-class AddOperator(dsl_interpreter.BinaryOperator):
+class AddOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Add.__name__
@@ -93,7 +95,7 @@ class AddOperator(dsl_interpreter.BinaryOperator):
         return left + right
 
 
-class SubOperator(dsl_interpreter.BinaryOperator):
+class SubOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.BinaryOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Sub.__name__
@@ -103,7 +105,7 @@ class SubOperator(dsl_interpreter.BinaryOperator):
         return left - right
 
 
-class LtOperator(dsl_interpreter.CompareOperator):
+class LtOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Lt.__name__
@@ -113,7 +115,7 @@ class LtOperator(dsl_interpreter.CompareOperator):
         return left < right
 
 
-class LtEOperator(dsl_interpreter.CompareOperator):
+class LtEOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.LtE.__name__
@@ -123,7 +125,7 @@ class LtEOperator(dsl_interpreter.CompareOperator):
         return left <= right
 
 
-class GtOperator(dsl_interpreter.CompareOperator):
+class GtOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Gt.__name__
@@ -133,7 +135,7 @@ class GtOperator(dsl_interpreter.CompareOperator):
         return left > right
 
 
-class GtEOperator(dsl_interpreter.CompareOperator):
+class GtEOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.GtE.__name__
@@ -143,7 +145,7 @@ class GtEOperator(dsl_interpreter.CompareOperator):
         return left >= right
 
 
-class EqOperator(dsl_interpreter.CompareOperator):
+class EqOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Eq.__name__
@@ -153,7 +155,7 @@ class EqOperator(dsl_interpreter.CompareOperator):
         return left == right
 
 
-class NotEqOperator(dsl_interpreter.CompareOperator):
+class NotEqOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.NotEq.__name__
@@ -163,7 +165,7 @@ class NotEqOperator(dsl_interpreter.CompareOperator):
         return left != right
 
 
-class IsOperator(dsl_interpreter.CompareOperator):
+class IsOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.Is.__name__
@@ -173,7 +175,7 @@ class IsOperator(dsl_interpreter.CompareOperator):
         return left is right
 
 
-class IsNotOperator(dsl_interpreter.CompareOperator):
+class IsNotOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CompareOperator):
     @staticmethod
     def get_name() -> str:
         return ast.IsNot.__name__
@@ -183,7 +185,7 @@ class IsNotOperator(dsl_interpreter.CompareOperator):
         return left is not right
 
 
-class AndOperator(dsl_interpreter.NaryOperator):
+class AndOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.NaryOperator):
     MIN_PARAMS = 1
 
     @staticmethod
@@ -194,7 +196,7 @@ class AndOperator(dsl_interpreter.NaryOperator):
         return all(self.get_computed_parameters())
 
 
-class OrOperator(dsl_interpreter.NaryOperator):
+class OrOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.NaryOperator):
     MIN_PARAMS = 1
 
     @staticmethod
@@ -204,7 +206,7 @@ class OrOperator(dsl_interpreter.NaryOperator):
     def compute(self) -> dsl_interpreter.ComputedOperatorParameterType:
         return any(self.get_computed_parameters())
 
-class Add2Operator(dsl_interpreter.CallOperator):
+class Add2Operator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     @staticmethod
     def get_name() -> str:
         return "add2"
@@ -220,7 +222,7 @@ class Add2Operator(dsl_interpreter.CallOperator):
         left, right = self.get_computed_left_and_right_parameters()
         return left + right
 
-class PreComputeSumOperator(dsl_interpreter.PreComputingCallOperator):
+class PreComputeSumOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.PreComputingCallOperator):
     @staticmethod
     def get_name() -> str:
         return "pre_compute_sum"
@@ -238,7 +240,7 @@ class PreComputeSumOperator(dsl_interpreter.PreComputingCallOperator):
         self.value = value_by_parameter["a"] + value_by_parameter["b"]
 
 
-class CallWithDefaultParametersOperator(dsl_interpreter.CallOperator):
+class CallWithDefaultParametersOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     @staticmethod
     def get_name() -> str:
         return "call_with_default_parameters"
@@ -262,7 +264,7 @@ class CallWithDefaultParametersOperator(dsl_interpreter.CallOperator):
         )
 
     
-class ParamMerger(dsl_interpreter.CallOperator):
+class ParamMerger(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     @staticmethod
     def get_name() -> str:
         return "param_merger"
@@ -279,7 +281,7 @@ class ParamMerger(dsl_interpreter.CallOperator):
         return str(value_by_parameter)
 
 
-class NestedDictSumOperator(dsl_interpreter.CallOperator):
+class NestedDictSumOperator(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.CallOperator):
     @staticmethod
     def get_name() -> str:
         return "nested_dict_sum"
@@ -462,7 +464,7 @@ def test_get_input_value_by_parameter():
         ParamMerger(p1=1, p2=2, extra=99, another=1).get_input_value_by_parameter()
 
 
-class OperatorWithName(dsl_interpreter.Operator):
+class OperatorWithName(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.Operator):
     NAME = "custom_name"
     DESCRIPTION = "A custom operator with NAME set"
     EXAMPLE = "custom_name(1, 2)"
@@ -475,7 +477,7 @@ class OperatorWithName(dsl_interpreter.Operator):
         return sum(self.get_computed_parameters())
 
 
-class OperatorWithoutName(dsl_interpreter.Operator):
+class OperatorWithoutName(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.Operator):
     DESCRIPTION = "An operator without NAME, uses get_name()"
     EXAMPLE = "fallback_name(5)"
     
@@ -487,7 +489,7 @@ class OperatorWithoutName(dsl_interpreter.Operator):
         return sum(self.get_computed_parameters())
 
 
-class OperatorWithParameters(dsl_interpreter.Operator):
+class OperatorWithParameters(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.Operator):
     NAME = "param_op"
     DESCRIPTION = "Operator with parameters"
     EXAMPLE = "param_op(1, 2)"
@@ -507,7 +509,7 @@ class OperatorWithParameters(dsl_interpreter.Operator):
         return sum(self.get_computed_parameters())
 
 
-class OperatorWithoutParameters(dsl_interpreter.Operator):
+class OperatorWithoutParameters(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.Operator):
     NAME = "no_param_op"
     DESCRIPTION = "Operator without parameters"
     EXAMPLE = "no_param_op()"
@@ -520,7 +522,7 @@ class OperatorWithoutParameters(dsl_interpreter.Operator):
         return 42
 
 
-class OperatorWithCustomLibrary(dsl_interpreter.Operator):
+class OperatorWithCustomLibrary(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.Operator):
     NAME = "custom_lib_op"
     DESCRIPTION = "Operator with custom library"
     EXAMPLE = "custom_lib_op()"
@@ -537,8 +539,11 @@ class OperatorWithCustomLibrary(dsl_interpreter.Operator):
         return 42
 
 
-class OperatorWithEmptyFields(dsl_interpreter.Operator):
-    # NAME, DESCRIPTION, EXAMPLE all empty/default
+class OperatorWithEmptyFields(dsl_test_keyword_support.TestKeywordMixin, dsl_interpreter.Operator):
+    # NAME, DESCRIPTION, EXAMPLE empty for get_docs(); mixin still supplies catalog fields.
+    DESCRIPTION = ""
+    EXAMPLE = ""
+
     @staticmethod
     def get_name() -> str:
         return "empty_fields_op"
