@@ -30,6 +30,11 @@ run_start() {
   python start.py --master --user-folder "${OCTOBOT_AGENT_SEED_USER_FOLDER}"
 }
 
+wait_for_node_ready() {
+  python -m tools.agent_seed wait-for-base-url \
+    --base-url "${AGENT_SEED_BASE_URL:-http://127.0.0.1:8000}"
+}
+
 case "${1:-}" in
   seed)
     run_seed "${2:-}"
@@ -44,6 +49,8 @@ case "${1:-}" in
   --full)
     run_seed
     run_start &
+    disown
+    wait_for_node_ready
     run_bootstrap
     ;;
   --clear)

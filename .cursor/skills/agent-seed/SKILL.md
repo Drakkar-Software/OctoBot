@@ -9,6 +9,8 @@ description: >-
 
 Full reference: [`tools/agent_seed/README.md`](../../../tools/agent_seed/README.md). Code layout: [`tools/agent_seed/ARCHITECTURE.md`](../../../tools/agent_seed/ARCHITECTURE.md).
 
+**CLI rule:** extend `python -m tools.agent_seed` with new **subcommands** under `tools/agent_seed/cli/` and logic in `operations/`. Do not add standalone scripts or nested `python -m tools.agent_seed.<thing>` packages with their own `__main__.py`. `wait-for-base-url` waits for the node port before bootstrap (`seed-agent.sh --full` calls it automatically).
+
 ## When to use / when to skip
 
 | Task | Agent-seed? |
@@ -43,6 +45,7 @@ bash .cursor/seed-agent.sh --clear   # wipe + re-seed — stop node first
 bash .cursor/seed-agent.sh bootstrap # node must already listen on AGENT_SEED_BASE_URL
 bash .cursor/seed-agent.sh bootstrap --scenario index --scenario completed  # more automations (grid|index|completed|lifecycle|all)
 bash .cursor/seed-agent.sh start     # foreground start only
+python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full
 ```
 
 **`--full` starts OctoBot.** Never double-start. Stop before `--full` or `--clear`.

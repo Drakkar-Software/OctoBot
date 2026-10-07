@@ -11,3 +11,7 @@ class AutomationLifecycleError(AgentSeedError):
 
 class AutomationNameLostError(AutomationLifecycleError):
     pass
+
+
+class AgentSeedNodeStartupTimeoutError(AgentSeedError):
+    pass
