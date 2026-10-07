@@ -150,6 +150,7 @@ The demo wallet is sandboxed in `octobot_node/agent_seed/demo_wallet.py`: it **c
 ## What gets seeded
 
 - `config.json` pointing at master reference tentacles + profiles (readonly)
+- `logging_config.ini` copied from the bundled OctoBot default with all handler levels set to **DEBUG** (including console); refreshed on every seed
 - Kraken **simulated** exchange config and accounts **Seed kraken A** (1000 USDC, grid) and **Seed kraken B** (500 USDC, index idle)
 - Grid strategy on **BTC/USDC** (3 buy / 3 sell, spread 2000, increment 500)
 - Index strategy on **BTC / ETH / SOL** (10% rebalance trigger)
