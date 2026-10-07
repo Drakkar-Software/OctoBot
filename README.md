@@ -180,6 +180,10 @@ OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](
 
 [![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://marketplace.digitalocean.com/apps/octobot)
 
+### Deploying OctoBot with one click on RepoCloud
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/OctoBot/)
+
 ### Using the OctoBot Executable
 
 This is the easiest way to download and install OctoBot on your computer or server. Here is [our executable installation guide](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-on-your-computer?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation).  
