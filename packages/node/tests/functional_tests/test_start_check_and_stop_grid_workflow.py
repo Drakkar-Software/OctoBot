@@ -459,3 +459,24 @@ class TestTriggerTaskGridDbosIntegration:
                 account_id=_GRID_ACCOUNT_ID,
                 require_account_trading_open_orders=True,
             )
+            automation_workflow_rows = [
+                workflow_row
+                for workflow_row in await temp_dbos_scheduler.INSTANCE.list_workflows_async()
+                if automation_states_loader_module.get_automation_id(workflow_row)
+                == metadata_automation_id
+            ]
+            assert automation_workflow_rows, "expected automation workflows after restart"
+            workflow_row_after_restart = max(
+                automation_workflow_rows,
+                key=lambda workflow_status: workflow_status.updated_at or 0,
+            )
+            protocol_state_after_restart = (
+                await workflow_common_module.load_protocol_automation_state_for_workflow(
+                    workflow_common_module.SIMULATOR_GRID_TEST_COMMUNITY_USER_ID,
+                    workflow_row_after_restart,
+                )
+            )
+            protocol_assertions_module.assert_protocol_automation_metadata_name(
+                protocol_state_after_restart,
+                _GRID_AUTOMATION_DISPLAY_NAME,
+            )

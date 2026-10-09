@@ -520,3 +520,55 @@ class TestResolveUserActionWorkflowInputs:
 
         assert resolved.inputs is None
         assert resolved.parse_error == "no user-action workflow inputs found"
+
+
+class TestResolveAutomationDisplayNameFromWorkflowGroup:
+    _PARENT_ID = "00000000-0000-4000-8000-000000000001"
+
+    @staticmethod
+    def _workflow_with_task_name(
+        *,
+        workflow_id: str,
+        task_name: str | None,
+        updated_at: int,
+    ) -> mock.Mock:
+        task = node_models.Task(
+            name=task_name,
+            content='{"state": {}}',
+            type=node_models.TaskType.EXECUTE_ACTIONS.value,
+        )
+        encoded_inputs = workflow_params.AutomationWorkflowInputs(task=task).to_dict(
+            include_default_values=False
+        )
+        workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
+        workflow_status.workflow_id = workflow_id
+        workflow_status.updated_at = updated_at
+        workflow_status.input = {"args": [encoded_inputs], "kwargs": {}}
+        return workflow_status
+
+    def test_returns_name_from_earliest_child_when_latest_terminal_lacks_name(self):
+        parent_workflow = self._workflow_with_task_name(
+            workflow_id=self._PARENT_ID,
+            task_name="Agent seed BTC/USDC grid",
+            updated_at=10,
+        )
+        child_workflow = self._workflow_with_task_name(
+            workflow_id=f"{self._PARENT_ID}_1",
+            task_name=None,
+            updated_at=100,
+        )
+        resolved_name = workflows_util.resolve_automation_display_name_from_workflow_group(
+            [child_workflow, parent_workflow],
+        )
+        assert resolved_name == "Agent seed BTC/USDC grid"
+
+    def test_returns_none_when_no_workflow_has_task_name(self):
+        unnamed_workflow = self._workflow_with_task_name(
+            workflow_id=self._PARENT_ID,
+            task_name=None,
+            updated_at=10,
+        )
+        assert (
+            workflows_util.resolve_automation_display_name_from_workflow_group([unnamed_workflow])
+            is None
+        )
