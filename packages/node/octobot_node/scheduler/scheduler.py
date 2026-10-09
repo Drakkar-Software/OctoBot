@@ -210,6 +210,7 @@ class Scheduler:
         statuses: typing.Optional[list[dbos.WorkflowStatusString]],
         load_output: bool = False,
         *,
+        load_input: bool = False,
         queues_only: bool = False,
     ) -> list[dbos.WorkflowStatus]:
         parent_workflow_ids = list(dict.fromkeys(
@@ -224,6 +225,7 @@ class Scheduler:
             list_statuses,
             octobot_node.enums.SchedulerWorkflowNames.EXECUTE_AUTOMATION,
             load_output,
+            load_input=load_input,
             workflow_id_prefix=parent_workflow_ids,
             queues_only=queues_only,
         )
@@ -369,6 +371,33 @@ class Scheduler:
             if workflows_util.get_resolved_automation_task(workflow_status) is not None:
                 return workflow_status
         return None
+
+    async def resolve_automation_display_name_for_parent_id(
+        self,
+        user_id: typing.Optional[str],
+        parent_id: str,
+    ) -> typing.Optional[str]:
+        """
+        Return the first non-empty automation ``Task.name`` found on terminal child inputs for ``parent_id``.
+
+        Scans SUCCESS/ERROR workflow inputs from the earliest child index upward so restarts can recover
+        display names when the latest terminal row no longer carries ``Task.name``.
+        """
+        matching_workflows = await self._get_parent_and_children_automation_workflows(
+            user_id,
+            [parent_id],
+            [
+                dbos.WorkflowStatusString.SUCCESS,
+                dbos.WorkflowStatusString.ERROR,
+            ],
+            load_output=False,
+            load_input=True,
+        )
+        if not matching_workflows:
+            return None
+        return workflows_util.resolve_automation_display_name_from_workflow_group(
+            matching_workflows
+        )
 
     async def _get_latest_workflow_for_each_automation(
         self,

@@ -69,11 +69,13 @@ def _terminal_workflow_with_output(
     *,
     parent_id: str = _PARENT_AUTOMATION_ID,
     stop_automation: bool = True,
+    task_name: str | None = "restart-test-automation",
+    workflow_id: str | None = None,
 ) -> mock.Mock:
     state_dict = _stopped_automation_state_dict(stop_automation=stop_automation)
     task_content = json.dumps({"state": state_dict})
     task = models_module.Task(
-        name="restart-test-automation",
+        name=task_name,
         content=task_content,
         type=models_module.TaskType.EXECUTE_ACTIONS.value,
     )
@@ -81,7 +83,7 @@ def _terminal_workflow_with_output(
         include_default_values=False
     )
     workflow_status = mock.Mock(spec=dbos.WorkflowStatus)
-    workflow_status.workflow_id = parent_id
+    workflow_status.workflow_id = workflow_id if workflow_id is not None else parent_id
     workflow_status.status = dbos.WorkflowStatusString.SUCCESS.value
     workflow_status.updated_at = 100
     workflow_status.input = {"args": [encoded_inputs], "kwargs": {}}
@@ -195,6 +197,55 @@ class TestRestartAutomationActionExecutor:
         )
         inner = user_action.result.actual_instance
         assert inner.created_automation_id == _PARENT_AUTOMATION_ID
+
+    @pytest.mark.asyncio
+    async def test_execute_preserves_display_name_from_parent_group_when_terminal_input_lacks_name(
+        self,
+    ):
+        user_action = _user_action_restart(
+            user_action_id="ua-restart-name-fallback",
+            automation_parent_id=_PARENT_AUTOMATION_ID,
+        )
+        terminal_workflow = _terminal_workflow_with_output(
+            task_name=None,
+            workflow_id=f"{_PARENT_AUTOMATION_ID}_1",
+        )
+        executor = restart_automation_executor.RestartAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with (
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.restart_automation.scheduler_module.is_initialized",
+                return_value=True,
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "list_user_actions",
+                new_callable=mock.AsyncMock,
+                return_value=[],
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[],
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_latest_terminal_automation_workflow_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=terminal_workflow,
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_automation_display_name_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value="Agent seed BTC/USDC grid",
+            ),
+        ):
+            await executor.execute(user_action)
+
+        scheduled_task = executor.post_actions.to_create_automation_task
+        assert scheduled_task is not None
+        assert scheduled_task.name == "Agent seed BTC/USDC grid"
 
     @pytest.mark.asyncio
     async def test_execute_restarts_from_terminal_input_when_output_state_missing(self):
