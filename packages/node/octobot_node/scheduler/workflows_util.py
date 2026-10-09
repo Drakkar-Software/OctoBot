@@ -330,6 +330,17 @@ def get_latest_workflow(
     return get_latest_child_workflow(workflows)
 
 
+def resolve_automation_display_name_from_workflow_group(
+    workflows: typing.Iterable[dbos_lib.WorkflowStatus],
+) -> typing.Optional[str]:
+    """First non-empty ``Task.name`` on workflow inputs, preferring the lowest child index."""
+    for workflow_status in sorted(workflows, key=_automation_child_workflow_sort_key):
+        input_task = get_automation_input_task(workflow_status)
+        if input_task is not None and input_task.name:
+            return input_task.name
+    return None
+
+
 def get_workflows_by_parent_id(
     workflows: list[dbos_lib.WorkflowStatus]
 ) -> dict[str, list[dbos_lib.WorkflowStatus]]:

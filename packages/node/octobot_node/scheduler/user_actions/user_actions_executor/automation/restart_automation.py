@@ -122,7 +122,16 @@ class RestartAutomationActionExecutor(automation_user_action_executor.Automation
                 f"Latest execution for automation {parent_automation_id!r} has no usable state."
             )
         input_task = workflows_util.get_automation_input_task(latest_workflow)
-        task_name = input_task.name if input_task is not None else None
+        task_name = None
+        if input_task is not None and input_task.name:
+            task_name = input_task.name
+        elif resolved_task.name:
+            task_name = resolved_task.name
+        else:
+            task_name = await scheduler_module.SCHEDULER.resolve_automation_display_name_for_parent_id(
+                self._user_id,
+                parent_automation_id,
+            )
         with task_context.encrypted_task(resolved_task):
             automation_state_dict = automation_states_loader.get_automation_dict(resolved_task.content)[
                 automation_states_loader.STATE_KEY
