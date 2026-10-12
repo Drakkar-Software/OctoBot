@@ -5,6 +5,7 @@ import pathlib
 import re
 import signal
 import subprocess
+import sys
 import time
 import typing
 
@@ -13,6 +14,7 @@ import tools.agent_seed.operations.base_url_net as agent_seed_base_url_net
 import tools.agent_seed.paths as agent_seed_paths
 
 DEFAULT_STOP_TIMEOUT_SECONDS = 30.0
+_EXIT_BEFORE_TENTACLES_AUTO_REINSTALL_ENV = "EXIT_BEFORE_TENTACLES_AUTO_REINSTALL"
 _GRACEFUL_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 _PID_FROM_SS_PATTERN = re.compile(r"pid=(\d+)")
 _STOP_SHELL_HINT = "bash .cursor/seed-agent.sh --stop"
@@ -69,6 +71,15 @@ def ensure_port_free_for_start(base_url: str) -> None:
     )
 
 
+def resolve_stop_timeout_seconds(stop_timeout: typing.Optional[float]) -> float:
+    if stop_timeout is not None:
+        return stop_timeout
+    env_value = os.environ.get("AGENT_SEED_STOP_WAIT_SEC")
+    if env_value is not None:
+        return float(env_value)
+    return DEFAULT_STOP_TIMEOUT_SECONDS
+
+
 def prepare_node_start(user_folder: pathlib.Path, base_url: str) -> None:
     pid_file = agent_seed_paths.node_pid_file(user_folder)
     recorded_pid = read_recorded_pid(pid_file)
@@ -80,6 +91,42 @@ def prepare_node_start(user_folder: pathlib.Path, base_url: str) -> None:
             )
         pid_file.unlink(missing_ok=True)
     ensure_port_free_for_start(base_url)
+
+
+def start_node_background(
+    user_folder: pathlib.Path,
+    base_url: str,
+    repo_root: pathlib.Path,
+) -> str:
+    prepare_node_start(user_folder, base_url)
+    user_folder.mkdir(parents=True, exist_ok=True)
+    log_file = agent_seed_paths.node_log_file(user_folder)
+    pid_file = agent_seed_paths.node_pid_file(user_folder)
+    start_py = (repo_root / "start.py").resolve()
+    env = os.environ.copy()
+    env[_EXIT_BEFORE_TENTACLES_AUTO_REINSTALL_ENV] = "true"
+    with log_file.open("a", encoding="utf-8") as log_handle:
+        process = subprocess.Popen(
+            [
+                "setsid",
+                sys.executable,
+                str(start_py),
+                "--master",
+                "--user-folder",
+                str(user_folder),
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            cwd=str(repo_root),
+            env=env,
+        )
+    node_pid = process.pid
+    pid_file.write_text(f"{node_pid}\n", encoding="utf-8")
+    return (
+        f"Agent-seed node started in background (pid {node_pid}).\n"
+        f"Node log: {log_file}"
+    )
 
 
 def _wait_process_exit(pid: int, timeout_seconds: float) -> bool:

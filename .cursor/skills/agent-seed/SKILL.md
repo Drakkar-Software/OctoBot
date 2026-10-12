@@ -46,7 +46,7 @@ bash .cursor/seed-agent.sh --clear   # wipe + re-seed — run --stop first
 bash .cursor/seed-agent.sh bootstrap # node must already listen on AGENT_SEED_BASE_URL
 bash .cursor/seed-agent.sh bootstrap --scenario index --scenario completed  # more automations (grid|index|completed|lifecycle|all)
 bash .cursor/seed-agent.sh start     # foreground start only
-python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full
+python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full after start-background
 ```
 
 **`--full` starts OctoBot** in the background (pidfile + `user/agent-seed/agent-seed-node.log`). Never double-start: port busy → fail fast with `--stop` hint. Always **`--stop`** when finished.
