@@ -130,7 +130,7 @@ Set on your start configuration: `--user-folder` → `user/agent-seed`, **`SCHED
 
 ## `python -m tools.agent_seed` subcommands
 
-Single entrypoint: `python -m tools.agent_seed` (see [ARCHITECTURE.md](ARCHITECTURE.md)). Subcommands: `seed`, `bootstrap`, `all`, `wait-for-base-url`, `prepare-node-start`, `stop-node`. Add new operator commands as subcommands under `cli/` with logic in `operations/` — do not add nested `python -m tools.agent_seed.*` modules.
+Single entrypoint: `python -m tools.agent_seed` (see [ARCHITECTURE.md](ARCHITECTURE.md)). Subcommands: `seed`, `bootstrap`, `all`, `wait-for-base-url`, `start-background`, `stop-node`. Add new operator commands as subcommands in `cli/__init__.py` with logic in `operations/` — do not add nested `python -m tools.agent_seed.*` modules or standalone CLI modules with their own `main()`.
 
 `wait-for-base-url` polls until TCP accepts connections on `--base-url` (used by `seed-agent.sh --full` before bootstrap). Example:
 

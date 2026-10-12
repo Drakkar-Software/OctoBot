@@ -33,6 +33,19 @@ def resolve_path_from_env(
     return (repo_root / path).resolve()
 
 
+def resolve_agent_seed_user_folder(
+    user_folder_value: typing.Optional[str],
+    repo_root: typing.Optional[pathlib.Path] = None,
+) -> typing.Optional[pathlib.Path]:
+    if user_folder_value is None:
+        user_folder_value = os.environ.get("OCTOBOT_AGENT_SEED_USER_FOLDER")
+    if not user_folder_value:
+        return None
+    if repo_root is None:
+        repo_root = default_octobot_repo_root()
+    return resolve_path_from_env(user_folder_value, repo_root)
+
+
 def marker_path(user_folder: pathlib.Path) -> pathlib.Path:
     return user_folder / AGENT_SEED_VERSION_MARKER_FILE
 

@@ -83,6 +83,44 @@ def test_stop_recorded_node_terminates_and_removes_pidfile(tmp_path, monkeypatch
     assert "Stopped agent-seed node" in message
 
 
+def test_resolve_stop_timeout_seconds_uses_env(monkeypatch):
+    monkeypatch.setenv("AGENT_SEED_STOP_WAIT_SEC", "42")
+    assert agent_seed_node_lifecycle.resolve_stop_timeout_seconds(None) == 42.0
+    assert agent_seed_node_lifecycle.resolve_stop_timeout_seconds(7.0) == 7.0
+
+
+def test_start_node_background_writes_pidfile_and_prepares(tmp_path, monkeypatch):
+    user_folder = tmp_path / "user"
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / "start.py").write_text("# stub\n", encoding="utf-8")
+    prepare_calls = []
+    monkeypatch.setattr(
+        agent_seed_node_lifecycle,
+        "prepare_node_start",
+        lambda folder, url: prepare_calls.append((folder, url)),
+    )
+
+    class FakeProcess:
+        pid = 12345
+
+    def fake_popen(*_args, **_kwargs):
+        return FakeProcess()
+
+    monkeypatch.setattr(agent_seed_node_lifecycle.subprocess, "Popen", fake_popen)
+
+    message = agent_seed_node_lifecycle.start_node_background(
+        user_folder=user_folder,
+        base_url="http://127.0.0.1:8000",
+        repo_root=repo_root,
+    )
+    assert prepare_calls == [(user_folder, "http://127.0.0.1:8000")]
+    pid_file = agent_seed_paths.node_pid_file(user_folder)
+    assert pid_file.read_text(encoding="utf-8").strip() == "12345"
+    assert "12345" in message
+    assert str(agent_seed_paths.node_log_file(user_folder)) in message
+
+
 def test_stop_recorded_node_raises_when_port_still_busy_after_stop(tmp_path, monkeypatch):
     pid_file = agent_seed_paths.node_pid_file(tmp_path)
     pid_file.write_text("5002\n", encoding="utf-8")
