@@ -1,8 +1,0 @@
-#  Demo-only agent seed data wipe. Stop the OctoBot node before clearing tasks.db.
-
-import tools.agent_seed.operations.scheduler_sqlite as agent_seed_scheduler_sqlite
-
-AgentSeedClearLockedSqliteError = agent_seed_scheduler_sqlite.AgentSeedClearLockedSqliteError
-agent_seed_clear_targets_exist = agent_seed_scheduler_sqlite.scheduler_sqlite_targets_exist
-clear_agent_seed_user_folder = agent_seed_scheduler_sqlite.clear_agent_seed_user_folder
-remove_scheduler_sqlite_files = agent_seed_scheduler_sqlite.remove_scheduler_sqlite_files

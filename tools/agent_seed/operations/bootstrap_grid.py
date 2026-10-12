@@ -16,8 +16,6 @@ import tools.agent_seed.secrets as agent_seed_secrets
 DEFAULT_POLL_INTERVAL_SECONDS = 2.0
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
-_GRID_AUTOMATION_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
-
 
 def find_user_action(debug_payload: dict, user_action_id: str) -> typing.Optional[dict]:
     debug_section = debug_payload.get("debug") or {}
@@ -108,9 +106,12 @@ def bootstrap_grid_automation(
     if status_code == 200 and isinstance(debug_payload, dict):
         agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(
             debug_payload,
-            _GRID_AUTOMATION_ID,
+            demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
         )
-        if agent_seed_bootstrap_automation.automation_is_running(debug_payload, _GRID_AUTOMATION_ID):
+        if agent_seed_bootstrap_automation.automation_is_running(
+            debug_payload,
+            demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
+        ):
             return
 
     user_action = agent_seed_protocol_builders.build_create_grid_automation_user_action()
@@ -129,7 +130,7 @@ def bootstrap_grid_automation(
     _poll_debug_after_create(
         debug_url=debug_url,
         headers=headers,
-        automation_id=_GRID_AUTOMATION_ID,
+        automation_id=demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
         user_action_id=user_action_id,
         deadline=deadline,
         poll_interval_seconds=poll_interval_seconds,

@@ -95,6 +95,7 @@ Authoritative rules for Python in `octobot/` and `packages/`. Cloud agents: also
 - Use `import xxx` or `import xxx as yy`; access via `xxx.name` or `yy.name`.
 - Avoid `from xxx import yy` in normal module code; avoid lazy (function-scoped) imports unless breaking a documented import cycle or loading an optional heavy dependency on a rare path.
 - **`from xxx import yyy` is allowed only in `__init__.py`** when re-exporting the public surface (see below).
+- **No assignment aliases** for symbols defined elsewhere (`name = other_module.symbol`, including errors and constants). Import from the defining module at call sites. Re-export only via `from module import name` in `__init__.py`, not `name = module.name`.
 
 ### Package `__init__.py` as public bridge
 
