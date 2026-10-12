@@ -3,8 +3,10 @@
 import argparse
 import os
 import pathlib
+import sys
 import typing
 
+import tools.agent_seed.errors as agent_seed_errors
 import tools.agent_seed.operations.seed_run as agent_seed_seed_run
 import tools.agent_seed.paths as agent_seed_paths
 
@@ -42,12 +44,16 @@ def main(argv: typing.Optional[list[str]] = None) -> int:
         os.environ.get("NODE_SQLITE_FILE"),
         repo_root,
     )
-    agent_seed_seed_run.run_seed(
-        user_folder=user_folder,
-        clear=arguments.clear,
-        node_sqlite_file=node_sqlite_file,
-        repo_root=repo_root,
-    )
+    try:
+        agent_seed_seed_run.run_seed(
+            user_folder=user_folder,
+            clear=arguments.clear,
+            node_sqlite_file=node_sqlite_file,
+            repo_root=repo_root,
+        )
+    except agent_seed_errors.AgentSeedClearNotInitializedError as error:
+        print(str(error), file=sys.stderr)
+        return 1
     return 0
 
 

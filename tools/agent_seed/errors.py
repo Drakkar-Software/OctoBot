@@ -15,3 +15,11 @@ class AutomationNameLostError(AutomationLifecycleError):
 
 class AgentSeedNodeStartupTimeoutError(AgentSeedError):
     pass
+
+
+class AgentSeedClearNotInitializedError(AgentSeedError):
+    pass
+
+
+class GridAutomationIdConflictError(AgentSeedError):
+    pass

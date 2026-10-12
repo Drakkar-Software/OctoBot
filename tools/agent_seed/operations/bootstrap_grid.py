@@ -1,6 +1,7 @@
 #  Demo-only grid automation bootstrap via debug HTTP API.
 
 import json
+import os
 import time
 import typing
 
@@ -8,6 +9,7 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
+import tools.agent_seed.errors as agent_seed_errors
 import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.protocol.builders as agent_seed_protocol_builders
 import tools.agent_seed.secrets as agent_seed_secrets
@@ -15,18 +17,57 @@ import tools.agent_seed.secrets as agent_seed_secrets
 DEFAULT_POLL_INTERVAL_SECONDS = 2.0
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
+_GRID_AUTOMATION_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
+
+
+def find_automation(debug_payload: dict, automation_id: str) -> typing.Optional[dict]:
+    debug_section = debug_payload.get("debug") or {}
+    for automation in debug_section.get("automations") or []:
+        if automation.get("id") == automation_id:
+            return automation
+    return None
+
+
+def _scheduler_sqlite_file_for_errors() -> str:
+    for env_name in ("SCHEDULER_SQLITE_FILE", "NODE_SQLITE_FILE"):
+        env_value = os.environ.get(env_name)
+        if env_value:
+            return os.path.abspath(env_value)
+    return "<SCHEDULER_SQLITE_FILE not set>"
+
+
+def format_grid_automation_id_conflict_error(
+    automation: dict,
+    scheduler_sqlite_file: str,
+) -> str:
+    status = automation.get("status", "<unknown>")
+    return (
+        f"Grid bootstrap blocked: an automation with id {_GRID_AUTOMATION_ID} already exists "
+        f"with status {status!r} (expected no record or RUNNING). "
+        f"The node scheduler database is {scheduler_sqlite_file!r}. "
+        "Stop the OctoBot node, then run `bash .cursor/seed-agent.sh --clear` to wipe that "
+        "database and user folder, or ensure SCHEDULER_SQLITE_FILE matches NODE_SQLITE_FILE "
+        "(see tools/agent_seed/README.md)."
+    )
+
+
+def ensure_grid_automation_can_bootstrap(debug_payload: dict) -> None:
+    automation = find_automation(debug_payload, _GRID_AUTOMATION_ID)
+    if automation is None:
+        return
+    status = automation.get("status")
+    if status == protocol_models.WorkflowStatus.RUNNING.value:
+        return
+    raise agent_seed_errors.GridAutomationIdConflictError(
+        format_grid_automation_id_conflict_error(automation, _scheduler_sqlite_file_for_errors()),
+    )
+
 
 def grid_automation_is_running(debug_payload: dict) -> bool:
-    debug_section = debug_payload.get("debug") or {}
-    automations = debug_section.get("automations") or []
-    target_name = demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME
-    for automation in automations:
-        status = automation.get("status")
-        metadata = automation.get("metadata") or {}
-        automation_name = metadata.get("name")
-        if automation_name == target_name and status == protocol_models.WorkflowStatus.RUNNING.value:
-            return True
-    return False
+    automation = find_automation(debug_payload, _GRID_AUTOMATION_ID)
+    if automation is None:
+        return False
+    return automation.get("status") == protocol_models.WorkflowStatus.RUNNING.value
 
 
 def find_user_action(debug_payload: dict, user_action_id: str) -> typing.Optional[dict]:
@@ -86,6 +127,7 @@ def _poll_debug_after_create(
         status_code, debug_payload = agent_seed_bootstrap_http.request_json("GET", debug_url, headers)
         if status_code == 200 and isinstance(debug_payload, dict):
             ensure_user_action_not_failed(debug_payload, user_action_id)
+            ensure_grid_automation_can_bootstrap(debug_payload)
             if grid_automation_is_running(debug_payload):
                 return
         time.sleep(poll_interval_seconds)
@@ -110,10 +152,10 @@ def bootstrap_grid_automation(
     deadline = time.monotonic() + timeout_seconds
 
     status_code, debug_payload = agent_seed_bootstrap_http.request_json("GET", debug_url, headers)
-    if status_code == 200 and isinstance(debug_payload, dict) and grid_automation_is_running(
-        debug_payload,
-    ):
-        return
+    if status_code == 200 and isinstance(debug_payload, dict):
+        ensure_grid_automation_can_bootstrap(debug_payload)
+        if grid_automation_is_running(debug_payload):
+            return
 
     user_action = agent_seed_protocol_builders.build_create_grid_automation_user_action()
     user_action_id = user_action.id

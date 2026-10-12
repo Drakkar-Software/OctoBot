@@ -6,6 +6,7 @@ import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
 import tools.agent_seed.enums as agent_seed_enums
 import tools.agent_seed.errors as agent_seed_errors
+import tools.agent_seed.operations.bootstrap_grid as agent_seed_bootstrap_grid
 import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.operations.bootstrap_scenarios as agent_seed_bootstrap_scenarios
 
@@ -106,11 +107,11 @@ class TestExpandScenarios:
 class TestFindAutomation:
     def test_returns_matching_automation(self):
         payload = {"debug": {"automations": [{"id": "a"}, {"id": "b", "status": "running"}]}}
-        assert agent_seed_bootstrap_scenarios.find_automation(payload, "b") == {"id": "b", "status": "running"}
+        assert agent_seed_bootstrap_grid.find_automation(payload, "b") == {"id": "b", "status": "running"}
 
     def test_returns_none_when_missing_or_empty(self):
-        assert agent_seed_bootstrap_scenarios.find_automation({"debug": {"automations": []}}, "a") is None
-        assert agent_seed_bootstrap_scenarios.find_automation({}, "a") is None
+        assert agent_seed_bootstrap_grid.find_automation({"debug": {"automations": []}}, "a") is None
+        assert agent_seed_bootstrap_grid.find_automation({}, "a") is None
 
 
 class TestIndexScenario:
