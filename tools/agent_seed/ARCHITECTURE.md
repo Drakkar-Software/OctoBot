@@ -17,7 +17,7 @@ flowchart TB
   seedRun[operations.seed_run]
   seedOctobotConfig[operations.seed_octobot_config]
   seedSync[operations.seed_sync]
-  clearOp[operations.clear]
+  schedulerSqlite[operations.scheduler_sqlite]
   bootstrapGrid[operations.bootstrap_grid]
   bootstrapScenarios[operations.bootstrap_scenarios]
   bootstrapHttp[operations.bootstrap_http]
@@ -32,7 +32,7 @@ flowchart TB
   bootstrapScenarios --> bootstrapGrid
   bootstrapScenarios --> bootstrapHttp
   bootstrapScenarios --> builders
-  seedRun --> clearOp
+  seedRun --> schedulerSqlite
   seedRun --> seedOctobotConfig
   seedRun --> seedSync
   seedRun --> pathsMod
@@ -52,7 +52,6 @@ flowchart TB
 | `paths.py` | Repo root, env path resolution, marker file name |
 | `secrets.py` | `DEMO_INSECURE_*` key material only |
 | `protocol/builders.py` | Kraken sim + grid/index protocol objects |
-| `operations/clear.py` | Re-exports scheduler sqlite wipe (`operations/scheduler_sqlite.py`) |
 | `operations/scheduler_sqlite.py` | Scheduler DB path resolution and wipe |
 | `operations/bootstrap_automation.py` | Debug automation lookup and id conflict checks (all bootstrap scenarios) |
 | `operations/seed_sync.py` | Wallet import + sync collection writes |
@@ -78,8 +77,8 @@ Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) live
 | `secrets.py` | `octobot_sync.auth.provider`, `octobot_node.agent_seed.constants` | tentacles, CommunityAuthentication, HTTP |
 | `protocol/builders.py` | `octobot_protocol`, tentacles, `octobot_copy.enums`, node constants | `operations`, `cli`, sync providers |
 | `paths.py` | stdlib | `octobot_*` |
-| `operations/clear.py` | node constants (message prefix) | tentacles, CLI |
-| `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.clear`, `secrets`, `paths`, node constants | HTTP debug |
+| `operations/scheduler_sqlite.py` | node constants (message prefix), `paths`, `errors` | tentacles, CLI |
+| `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.scheduler_sqlite`, `secrets`, `paths`, node constants | HTTP debug |
 | `operations/seed_octobot_config.py` | `octobot_commons.constants`, `paths` | tentacles, CLI |
 | `operations/bootstrap_*.py` | `protocol.builders`, `secrets`, `enums`, `errors`, node constants, urllib | CollectionProviders |
 | `operations/wait_for_base_url.py` | `errors`, stdlib socket/urllib | `octobot_*`, CLI |

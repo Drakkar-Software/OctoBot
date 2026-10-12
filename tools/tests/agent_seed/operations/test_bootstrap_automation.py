@@ -11,10 +11,6 @@ import octobot_node.agent_seed.constants as demo_agent_seed_constants
 import tools.agent_seed.errors as agent_seed_errors
 import tools.agent_seed.operations.bootstrap_automation as agent_seed_bootstrap_automation
 
-GRID_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
-INDEX_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID
-
-
 class TestFindAutomation:
     def test_returns_matching_automation(self):
         payload = {"debug": {"automations": [{"id": "a"}, {"id": "b", "status": "running"}]}}
@@ -34,14 +30,14 @@ class TestAutomationIsRunning:
             "debug": {
                 "automations": [
                     {
-                        "id": GRID_ID,
+                        "id": demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
                         "status": protocol_models.WorkflowStatus.RUNNING.value,
                         "metadata": {"name": "other-name"},
                     },
                 ],
             },
         }
-        assert agent_seed_bootstrap_automation.automation_is_running(debug_payload, GRID_ID)
+        assert agent_seed_bootstrap_automation.automation_is_running(debug_payload, demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID)
 
 
 class TestEnsureAutomationIdAvailableForCreate:
@@ -51,7 +47,7 @@ class TestEnsureAutomationIdAvailableForCreate:
             "debug": {
                 "automations": [
                     {
-                        "id": INDEX_ID,
+                        "id": demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID,
                         "status": protocol_models.WorkflowStatus.COMPLETED.value,
                     },
                 ],
@@ -60,10 +56,10 @@ class TestEnsureAutomationIdAvailableForCreate:
         with pytest.raises(agent_seed_errors.AutomationIdConflictError) as error_info:
             agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(
                 debug_payload,
-                INDEX_ID,
+                demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID,
             )
         message = str(error_info.value)
-        assert INDEX_ID in message
+        assert demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID in message
         assert "completed" in message
         assert os.path.abspath("/tmp/seed-tasks.db") in message
         assert "--clear" in message
@@ -74,7 +70,7 @@ class TestEnsureAutomationIdAvailableForCreate:
             "debug": {
                 "automations": [
                     {
-                        "id": GRID_ID,
+                        "id": demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
                         "status": protocol_models.WorkflowStatus.PENDING.value,
                     },
                 ],
@@ -83,7 +79,7 @@ class TestEnsureAutomationIdAvailableForCreate:
         with pytest.raises(agent_seed_errors.AutomationIdConflictError):
             agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(
                 debug_payload,
-                GRID_ID,
+                demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
             )
 
     def test_no_op_when_running(self):
@@ -91,13 +87,13 @@ class TestEnsureAutomationIdAvailableForCreate:
             "debug": {
                 "automations": [
                     {
-                        "id": GRID_ID,
+                        "id": demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
                         "status": protocol_models.WorkflowStatus.RUNNING.value,
                     },
                 ],
             },
         }
-        agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(debug_payload, GRID_ID)
+        agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(debug_payload, demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID)
 
 
 class TestEnsureAutomationNotStaleWhileWaitingRunning:
@@ -106,7 +102,7 @@ class TestEnsureAutomationNotStaleWhileWaitingRunning:
             "debug": {
                 "automations": [
                     {
-                        "id": GRID_ID,
+                        "id": demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
                         "status": protocol_models.WorkflowStatus.PENDING.value,
                     },
                 ],
@@ -114,7 +110,7 @@ class TestEnsureAutomationNotStaleWhileWaitingRunning:
         }
         agent_seed_bootstrap_automation.ensure_automation_not_stale_while_waiting_running(
             debug_payload,
-            GRID_ID,
+            demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
         )
 
     def test_raises_on_completed_while_waiting(self, monkeypatch):
@@ -123,7 +119,7 @@ class TestEnsureAutomationNotStaleWhileWaitingRunning:
             "debug": {
                 "automations": [
                     {
-                        "id": GRID_ID,
+                        "id": demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
                         "status": protocol_models.WorkflowStatus.COMPLETED.value,
                     },
                 ],
@@ -132,5 +128,5 @@ class TestEnsureAutomationNotStaleWhileWaitingRunning:
         with pytest.raises(agent_seed_errors.AutomationIdConflictError):
             agent_seed_bootstrap_automation.ensure_automation_not_stale_while_waiting_running(
                 debug_payload,
-                GRID_ID,
+                demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
             )

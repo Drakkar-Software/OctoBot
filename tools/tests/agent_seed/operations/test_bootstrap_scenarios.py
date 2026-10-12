@@ -12,10 +12,6 @@ import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.operations.bootstrap_scenarios as agent_seed_bootstrap_scenarios
 
 BASE_URL = "http://127.0.0.1:8000"
-GRID_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
-INDEX_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID
-COMPLETED_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID
-GRID_NAME = demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME
 
 
 class FakeNode:
@@ -122,9 +118,12 @@ class TestIndexScenario:
     def test_creates_running_index_automation(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.INDEX])
         assert fake_node.posted_action_types == ["automation_create"]
-        assert fake_node.automations[INDEX_ID]["status"] == "running"
         assert (
-            fake_node.automations[INDEX_ID]["metadata"]["name"]
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID]["status"]
+            == "running"
+        )
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID]["metadata"]["name"]
             == demo_agent_seed_constants.DEMO_AGENT_SEED_INDEX_AUTOMATION_DISPLAY_NAME
         )
 
@@ -144,7 +143,10 @@ class TestCompletedScenario:
     def test_creates_then_stops_automation(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
         assert fake_node.posted_action_types == ["automation_create", "automation_stop"]
-        assert fake_node.automations[COMPLETED_ID]["status"] == "completed"
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID]["status"]
+            == "completed"
+        )
 
     def test_no_op_when_already_completed(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
@@ -153,7 +155,9 @@ class TestCompletedScenario:
 
     def test_only_stops_when_already_running(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
-        fake_node.automations[COMPLETED_ID]["status"] = "running"
+        fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID]["status"] = (
+            "running"
+        )
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
         assert fake_node.posted_action_types == ["automation_create", "automation_stop", "automation_stop"]
 
@@ -173,8 +177,14 @@ class TestLifecycleScenario:
     def test_passes_when_name_survives_restart(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.LIFECYCLE])
         assert fake_node.posted_action_types == ["automation_create", "automation_stop", "automation_restart"]
-        assert fake_node.automations[GRID_ID]["status"] == "running"
-        assert fake_node.automations[GRID_ID]["metadata"]["name"] == GRID_NAME
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID]["status"]
+            == "running"
+        )
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID]["metadata"]["name"]
+            == demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME
+        )
 
     def test_raises_typed_error_when_name_lost_on_restart(self, monkeypatch):
         node = FakeNode(drop_name_on_restart=True)
