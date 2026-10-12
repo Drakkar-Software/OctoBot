@@ -21,5 +21,5 @@ class AgentSeedClearNotInitializedError(AgentSeedError):
     pass
 
 
-class GridAutomationIdConflictError(AgentSeedError):
+class AutomationIdConflictError(AgentSeedError):
     pass

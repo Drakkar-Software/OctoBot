@@ -7,6 +7,7 @@ import sys
 import typing
 
 import tools.agent_seed.errors as agent_seed_errors
+import tools.agent_seed.operations.scheduler_sqlite as agent_seed_scheduler_sqlite
 import tools.agent_seed.operations.seed_run as agent_seed_seed_run
 import tools.agent_seed.paths as agent_seed_paths
 
@@ -40,10 +41,7 @@ def main(argv: typing.Optional[list[str]] = None) -> int:
     user_folder = agent_seed_paths.resolve_path_from_env(arguments.user_folder, repo_root)
     if user_folder is None:
         parser.error("invalid user folder path")
-    node_sqlite_file = agent_seed_paths.resolve_path_from_env(
-        os.environ.get("NODE_SQLITE_FILE"),
-        repo_root,
-    )
+    node_sqlite_file = agent_seed_scheduler_sqlite.resolve_scheduler_sqlite_path(repo_root)
     try:
         agent_seed_seed_run.run_seed(
             user_folder=user_folder,

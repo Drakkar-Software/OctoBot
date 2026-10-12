@@ -9,6 +9,7 @@ import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
 import tools.agent_seed.enums as agent_seed_enums
 import tools.agent_seed.errors as agent_seed_errors
+import tools.agent_seed.operations.bootstrap_automation as agent_seed_bootstrap_automation
 import tools.agent_seed.operations.bootstrap_grid as agent_seed_bootstrap_grid
 import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.protocol.builders as agent_seed_protocol_builders
@@ -70,7 +71,15 @@ def _wait_for_automation_status(
         debug_payload = _get_debug_payload(debug_url, headers)
         if user_action_id is not None:
             agent_seed_bootstrap_grid.ensure_user_action_not_failed(debug_payload, user_action_id)
-        automation = agent_seed_bootstrap_grid.find_automation(debug_payload, automation_id)
+        if (
+            expected_status == protocol_models.WorkflowStatus.RUNNING
+            and user_action_id is not None
+        ):
+            agent_seed_bootstrap_automation.ensure_automation_not_stale_while_waiting_running(
+                debug_payload,
+                automation_id,
+            )
+        automation = agent_seed_bootstrap_automation.find_automation(debug_payload, automation_id)
         if automation is not None and automation.get("status") == expected_status.value:
             return automation
         time.sleep(poll_interval_seconds)
@@ -88,7 +97,7 @@ def _session(base_url: str) -> tuple[str, dict[str, str]]:
 
 
 def _current_status(debug_url: str, headers: dict[str, str], automation_id: str) -> typing.Optional[str]:
-    automation = agent_seed_bootstrap_grid.find_automation(
+    automation = agent_seed_bootstrap_automation.find_automation(
         _get_debug_payload(debug_url, headers),
         automation_id,
     )
@@ -104,6 +113,13 @@ def _create_and_wait_running(
     poll_interval_seconds: float,
     timeout_seconds: float,
 ) -> None:
+    debug_payload = _get_debug_payload(debug_url, headers)
+    agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(
+        debug_payload,
+        automation_id,
+    )
+    if agent_seed_bootstrap_automation.automation_is_running(debug_payload, automation_id):
+        return
     user_action_id = _submit_user_action(debug_url, headers, user_action)
     _wait_for_automation_status(
         debug_url=debug_url,
