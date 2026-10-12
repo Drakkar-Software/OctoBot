@@ -13,7 +13,7 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 
 ```mermaid
 flowchart TB
-  cli[cli seed bootstrap all wait-for-base-url]
+  cli[cli seed bootstrap all wait-for-base-url prepare-node-start stop-node]
   seedRun[operations.seed_run]
   seedOctobotConfig[operations.seed_octobot_config]
   seedSync[operations.seed_sync]
@@ -65,6 +65,8 @@ flowchart TB
 | `operations/bootstrap_grid.py` | Grid automation bootstrap |
 | `operations/bootstrap_scenarios.py` | `--scenario` runners: index, completed, lifecycle (uses the grid helpers) |
 | `operations/wait_for_base_url.py` | TCP poll until node accepts connections on base URL |
+| `operations/base_url_net.py` | Parse base URL host/port; TCP reachability probe |
+| `operations/node_lifecycle.py` | Pidfile, port-in-use checks, graceful stop (`seed-agent.sh --stop`) |
 | `enums.py` | `BootstrapScenario` |
 | `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError`, `AgentSeedNodeStartupTimeoutError` |
 | `cli/` | Argparse only |

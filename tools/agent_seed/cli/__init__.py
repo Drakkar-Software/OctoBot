@@ -5,7 +5,9 @@ import typing
 
 import tools.agent_seed.cli.all as agent_seed_cli_all
 import tools.agent_seed.cli.bootstrap as agent_seed_cli_bootstrap
+import tools.agent_seed.cli.prepare_node_start as agent_seed_cli_prepare_node_start
 import tools.agent_seed.cli.seed as agent_seed_cli_seed
+import tools.agent_seed.cli.stop_node as agent_seed_cli_stop_node
 import tools.agent_seed.cli.wait_for_base_url as agent_seed_cli_wait_for_base_url
 import tools.agent_seed.enums as agent_seed_enums
 
@@ -55,6 +57,23 @@ def build_arg_parser() -> argparse.ArgumentParser:
     wait_parser.add_argument("--timeout", type=float, default=None)
     wait_parser.add_argument("--poll-interval", type=float, default=None)
     wait_parser.set_defaults(handler=agent_seed_cli_wait_for_base_url.run_from_namespace)
+
+    stop_parser = subparsers.add_parser(
+        "stop-node",
+        help="Stop the background agent-seed OctoBot node and verify its port is free",
+    )
+    stop_parser.add_argument("--user-folder", default=None)
+    stop_parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    stop_parser.add_argument("--stop-timeout", type=float, default=None)
+    stop_parser.set_defaults(handler=agent_seed_cli_stop_node.run_from_namespace)
+
+    prepare_parser = subparsers.add_parser(
+        "prepare-node-start",
+        help="Ensure the agent-seed node port is free before starting in the background",
+    )
+    prepare_parser.add_argument("--user-folder", default=None)
+    prepare_parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    prepare_parser.set_defaults(handler=agent_seed_cli_prepare_node_start.run_from_namespace)
     return parser
 
 

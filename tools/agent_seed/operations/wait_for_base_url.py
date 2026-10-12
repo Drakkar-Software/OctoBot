@@ -2,22 +2,13 @@
 
 import socket
 import time
-import urllib.parse
 
 import tools.agent_seed.errors as agent_seed_errors
+import tools.agent_seed.operations.base_url_net as agent_seed_base_url_net
 
 DEFAULT_STARTUP_WAIT_SECONDS = 90.0
 DEFAULT_POLL_INTERVAL_SECONDS = 1.0
 _CONNECT_TIMEOUT_SECONDS = 2.0
-
-
-def _parse_host_port(base_url: str) -> tuple[str, int]:
-    parsed = urllib.parse.urlparse(base_url)
-    host = parsed.hostname or "127.0.0.1"
-    port = parsed.port
-    if port is None:
-        port = 443 if parsed.scheme == "https" else 80
-    return host, port
 
 
 def wait_for_base_url(
@@ -25,7 +16,7 @@ def wait_for_base_url(
     timeout_seconds: float = DEFAULT_STARTUP_WAIT_SECONDS,
     poll_interval_seconds: float = DEFAULT_POLL_INTERVAL_SECONDS,
 ) -> None:
-    host, port = _parse_host_port(base_url)
+    host, port = agent_seed_base_url_net.parse_host_port(base_url)
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         try:
