@@ -5,6 +5,8 @@ import pathlib
 import typing
 
 AGENT_SEED_VERSION_MARKER_FILE = ".agent-seed-version"
+AGENT_SEED_NODE_PID_FILE_NAME = ".agent-seed-node.pid"
+AGENT_SEED_NODE_LOG_FILE_NAME = "agent-seed-node.log"
 OCTOBOT_AGENT_SEED_MASTER_USER_ROOT_ENV = "OCTOBOT_AGENT_SEED_MASTER_USER_ROOT"
 MASTER_USER_FOLDER_NAME = "user"
 REFERENCE_TENTACLES_CONFIG_DIR_NAME = "reference_tentacles_config"
@@ -33,6 +35,14 @@ def resolve_path_from_env(
 
 def marker_path(user_folder: pathlib.Path) -> pathlib.Path:
     return user_folder / AGENT_SEED_VERSION_MARKER_FILE
+
+
+def node_pid_file(user_folder: pathlib.Path) -> pathlib.Path:
+    return user_folder / AGENT_SEED_NODE_PID_FILE_NAME
+
+
+def node_log_file(user_folder: pathlib.Path) -> pathlib.Path:
+    return user_folder / AGENT_SEED_NODE_LOG_FILE_NAME
 
 
 def default_master_user_root(repo_root: pathlib.Path) -> pathlib.Path:

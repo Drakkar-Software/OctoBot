@@ -23,3 +23,11 @@ class AgentSeedClearNotInitializedError(AgentSeedError):
 
 class AutomationIdConflictError(AgentSeedError):
     pass
+
+
+class AgentSeedPortInUseError(AgentSeedError):
+    pass
+
+
+class AgentSeedNodeStopError(AgentSeedError):
+    pass

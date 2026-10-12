@@ -40,15 +40,16 @@ Master tentacles on `user/reference_tentacles_config/` must exist (see `tools/ag
 ## Commands (OctoBot repo root)
 
 ```bash
-bash .cursor/seed-agent.sh --full    # seed + background start + bootstrap — stop node first; do NOT run start again
-bash .cursor/seed-agent.sh --clear   # wipe + re-seed — stop node first
+bash .cursor/seed-agent.sh --full    # seed + detached background start + bootstrap (safe with captured shell output)
+bash .cursor/seed-agent.sh --stop    # stop recorded node; frees port — run when QA is done or before --clear
+bash .cursor/seed-agent.sh --clear   # wipe + re-seed — run --stop first
 bash .cursor/seed-agent.sh bootstrap # node must already listen on AGENT_SEED_BASE_URL
 bash .cursor/seed-agent.sh bootstrap --scenario index --scenario completed  # more automations (grid|index|completed|lifecycle|all)
 bash .cursor/seed-agent.sh start     # foreground start only
 python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full
 ```
 
-**`--full` starts OctoBot.** Never double-start. Stop before `--full` or `--clear`.
+**`--full` starts OctoBot** in the background (pidfile + `user/agent-seed/agent-seed-node.log`). Never double-start: port busy → fail fast with `--stop` hint. Always **`--stop`** when finished.
 
 ## After seed: interact with the UI
 

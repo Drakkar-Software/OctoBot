@@ -53,6 +53,7 @@ From the OctoBot repo root, `seed-agent.sh` sources `.cursor/env.sh` and `.curso
 | `NODE_SQLITE_FILE` | Scheduler DB for **seed/clear** wipe only | `user/agent-seed/tasks.db` |
 | `AGENT_SEED_BASE_URL` | Bootstrap / wait-for-base-url HTTP target (optional) | `http://127.0.0.1:8000` |
 | `AGENT_SEED_STARTUP_WAIT_SEC` | Max seconds for `wait-for-base-url` when node is starting (optional) | `90` |
+| `AGENT_SEED_STOP_WAIT_SEC` | Max seconds for graceful `stop-node` / `--stop` shutdown (optional) | `30` |
 
 When **starting** OctoBot (not the seed CLI), set runtime scheduler DB via env **`SCHEDULER_SQLITE_FILE`** (see `octobot_services.constants.ENV_NODE_SQLITE_FILE`) to the full path of `user/agent-seed/tasks.db`. Do not confuse with **`NODE_SQLITE_FILE`**, which is only for seed/clear.
 
@@ -69,12 +70,16 @@ From OctoBot repo root (after sourcing env files):
 | `--clear` | Wipe user folder + sqlite, then re-seed (**node must be stopped**) |
 | `start` | `start.py --master --user-folder …` (foreground) |
 | `bootstrap [--scenario …]` | HTTP bootstrap of the seeded automations, grid by default (node must be listening). See **Bootstrap scenarios** |
-| `--full` | `seed` → **`start.py` in background** → `wait-for-base-url` → `bootstrap` |
+| `--full` | `seed` → **`start.py` in background** (log file + pidfile) → `wait-for-base-url` → `bootstrap` |
+| `--stop` | Stop the node recorded in **`user/agent-seed/.agent-seed-node.pid`**, verify the base URL port is free |
+
+Background start writes **`user/agent-seed/agent-seed-node.log`** (full path printed) and records the PID in **`user/agent-seed/.agent-seed-node.pid`**. Node stdout/stderr go only to that log so **`--full` returns** even when the caller captures shell output (agents, `$(…)`).
 
 ### Node process rules
 
-- **`--full` already starts OctoBot** (`run_start &`). Do **not** run `start` again afterward (port 8000 / duplicate process).
-- **Stop the running node** before **`--full`** or **`--clear`**.
+- **`--full` already starts OctoBot** in the background. Do **not** run `start` again afterward (duplicate process).
+- Use **`bash .cursor/seed-agent.sh --stop`** when QA is done, or before **`--clear`**. If the port is busy, **`--full` fails immediately** with the port, listener PID when detectable, and a hint to run **`--stop`**.
+- **`--stop`** with no pidfile succeeds only when the port is free. If the port is still in use (orphan node), it exits non-zero with an explicit message.
 - Node **already running** and you only need bootstrap or UI: use **`bootstrap`** or open the UI — **not** `--full`.
 - Prefer **stop → seed → start** over seeding while the node is up.
 
@@ -91,9 +96,11 @@ From OctoBot repo root (after sourcing env files):
 source .cursor/env.sh
 source .cursor/agent-seed.env
 bash .cursor/seed-agent.sh --full
+# when finished with the UI:
+bash .cursor/seed-agent.sh --stop
 ```
 
-Stop any running node first. `--full` waits for the node port before bootstrap; if bootstrap still fails, run `bash .cursor/seed-agent.sh bootstrap` after the node listens.
+`--full` fails fast if the base URL port is already in use (run **`--stop`** first). It waits for the node port before bootstrap; if bootstrap still fails, run `bash .cursor/seed-agent.sh bootstrap` after the node listens.
 
 Wipe only:
 
@@ -123,7 +130,7 @@ Set on your start configuration: `--user-folder` → `user/agent-seed`, **`SCHED
 
 ## `python -m tools.agent_seed` subcommands
 
-Single entrypoint: `python -m tools.agent_seed` (see [ARCHITECTURE.md](ARCHITECTURE.md)). Subcommands: `seed`, `bootstrap`, `all`, `wait-for-base-url`. Add new operator commands as subcommands under `cli/` with logic in `operations/` — do not add nested `python -m tools.agent_seed.*` modules.
+Single entrypoint: `python -m tools.agent_seed` (see [ARCHITECTURE.md](ARCHITECTURE.md)). Subcommands: `seed`, `bootstrap`, `all`, `wait-for-base-url`, `prepare-node-start`, `stop-node`. Add new operator commands as subcommands under `cli/` with logic in `operations/` — do not add nested `python -m tools.agent_seed.*` modules.
 
 `wait-for-base-url` polls until TCP accepts connections on `--base-url` (used by `seed-agent.sh --full` before bootstrap). Example:
 
@@ -311,4 +318,6 @@ The same fixtures work with a CI-built binary instead of `start.py`. `seed` and 
 | Bootstrap `RuntimeError` with user action failed | Read automation error in message; fix node/fixtures, re-seed if needed |
 | Debug UI/API 404 | Node-side encryption enabled — not supported for debug QA |
 | `--full` bootstrap flaky | Node still booting past `wait-for-base-url`; retry `bootstrap` or raise `AGENT_SEED_STARTUP_WAIT_SEC` |
+| Port 8000 already in use / bind errors | Run `bash .cursor/seed-agent.sh --stop`; check `agent-seed-node.log` under the user folder |
+| `--full` never returns in an agent shell | Fixed by log redirection; upgrade `seed-agent.sh` or run without capturing stdout |
 | `bootstrap --scenario lifecycle` exits 1 with `AutomationNameLostError` | The restarted automation lost its name (restart user action). Real node bug, not a seed problem |
