@@ -52,12 +52,14 @@ flowchart TB
 | `paths.py` | Repo root, env path resolution, marker file name |
 | `secrets.py` | `DEMO_INSECURE_*` key material only |
 | `protocol/builders.py` | Kraken sim + grid/index protocol objects |
-| `operations/clear.py` | Sqlite-first wipe |
+| `operations/clear.py` | Re-exports scheduler sqlite wipe (`operations/scheduler_sqlite.py`) |
+| `operations/scheduler_sqlite.py` | Scheduler DB path resolution and wipe |
+| `operations/bootstrap_automation.py` | Debug automation lookup and id conflict checks (all bootstrap scenarios) |
 | `operations/seed_sync.py` | Wallet import + sync collection writes |
 | `operations/seed_run.py` | `run_seed`, idempotency |
 | `operations/seed_octobot_config.py` | `config.json` readonly overlays to master `user/` |
 | `operations/bootstrap_http.py` | Debug API HTTP helpers |
-| `operations/bootstrap_grid.py` | Grid automation bootstrap, shared polling helpers |
+| `operations/bootstrap_grid.py` | Grid automation bootstrap |
 | `operations/bootstrap_scenarios.py` | `--scenario` runners: index, completed, lifecycle (uses the grid helpers) |
 | `operations/wait_for_base_url.py` | TCP poll until node accepts connections on base URL |
 | `enums.py` | `BootstrapScenario` |
