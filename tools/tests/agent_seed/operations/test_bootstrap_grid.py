@@ -1,8 +1,17 @@
 #  Unit tests for agent seed grid bootstrap helpers.
 
+import os
+
 import pytest
 
+import octobot_protocol.models as protocol_models
+
+import octobot_node.agent_seed.constants as demo_agent_seed_constants
+
+import tools.agent_seed.errors as agent_seed_errors
 import tools.agent_seed.operations.bootstrap_grid as agent_seed_bootstrap_grid
+
+GRID_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
 
 
 class TestFindUserAction:
@@ -39,6 +48,57 @@ class TestFormatAutomationUserActionError:
         assert "ua-failed" in message
         assert "invalid_automation_id" in message
         assert "valid UUID" in message
+
+
+class TestGridAutomationIsRunning:
+    def test_matches_by_automation_id_not_only_display_name(self):
+        debug_payload = {
+            "debug": {
+                "automations": [
+                    {
+                        "id": GRID_ID,
+                        "status": protocol_models.WorkflowStatus.RUNNING.value,
+                        "metadata": {"name": "other-name"},
+                    },
+                ],
+            },
+        }
+        assert agent_seed_bootstrap_grid.grid_automation_is_running(debug_payload)
+
+
+class TestEnsureGridAutomationCanBootstrap:
+    def test_raises_when_grid_id_exists_completed(self, monkeypatch):
+        monkeypatch.setenv("SCHEDULER_SQLITE_FILE", "/tmp/seed-tasks.db")
+        debug_payload = {
+            "debug": {
+                "automations": [
+                    {
+                        "id": GRID_ID,
+                        "status": protocol_models.WorkflowStatus.COMPLETED.value,
+                    },
+                ],
+            },
+        }
+        with pytest.raises(agent_seed_errors.GridAutomationIdConflictError) as error_info:
+            agent_seed_bootstrap_grid.ensure_grid_automation_can_bootstrap(debug_payload)
+        message = str(error_info.value)
+        assert GRID_ID in message
+        assert "completed" in message
+        assert os.path.abspath("/tmp/seed-tasks.db") in message
+        assert "--clear" in message
+
+    def test_no_op_when_running(self):
+        debug_payload = {
+            "debug": {
+                "automations": [
+                    {
+                        "id": GRID_ID,
+                        "status": protocol_models.WorkflowStatus.RUNNING.value,
+                    },
+                ],
+            },
+        }
+        agent_seed_bootstrap_grid.ensure_grid_automation_can_bootstrap(debug_payload)
 
 
 class TestEnsureUserActionNotFailed:

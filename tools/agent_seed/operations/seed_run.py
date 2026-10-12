@@ -74,10 +74,9 @@ def run_seed(
     resolved_repo_root = (
         repo_root if repo_root is not None else agent_seed_paths.default_octobot_repo_root()
     )
-    user_folder.mkdir(parents=True, exist_ok=True)
     if clear:
         agent_seed_clear.clear_agent_seed_user_folder(user_folder, node_sqlite_file)
-        user_folder.mkdir(parents=True, exist_ok=True)
+    user_folder.mkdir(parents=True, exist_ok=True)
     agent_seed_seed_octobot_config.write_demo_user_config(user_folder, resolved_repo_root)
     agent_seed_seed_logging_config.write_demo_logging_config(user_folder)
     user_root_folder_provider.instance().set_root(os.path.normpath(str(user_folder)))

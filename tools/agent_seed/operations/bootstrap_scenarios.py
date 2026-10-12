@@ -23,14 +23,6 @@ _SCENARIO_ORDER = (
 )
 
 
-def find_automation(debug_payload: dict, automation_id: str) -> typing.Optional[dict]:
-    debug_section = debug_payload.get("debug") or {}
-    for automation in debug_section.get("automations") or []:
-        if automation.get("id") == automation_id:
-            return automation
-    return None
-
-
 def expand_scenarios(
     scenarios: typing.Optional[typing.Iterable[agent_seed_enums.BootstrapScenario]],
 ) -> list[agent_seed_enums.BootstrapScenario]:
@@ -78,7 +70,7 @@ def _wait_for_automation_status(
         debug_payload = _get_debug_payload(debug_url, headers)
         if user_action_id is not None:
             agent_seed_bootstrap_grid.ensure_user_action_not_failed(debug_payload, user_action_id)
-        automation = find_automation(debug_payload, automation_id)
+        automation = agent_seed_bootstrap_grid.find_automation(debug_payload, automation_id)
         if automation is not None and automation.get("status") == expected_status.value:
             return automation
         time.sleep(poll_interval_seconds)
@@ -96,7 +88,10 @@ def _session(base_url: str) -> tuple[str, dict[str, str]]:
 
 
 def _current_status(debug_url: str, headers: dict[str, str], automation_id: str) -> typing.Optional[str]:
-    automation = find_automation(_get_debug_payload(debug_url, headers), automation_id)
+    automation = agent_seed_bootstrap_grid.find_automation(
+        _get_debug_payload(debug_url, headers),
+        automation_id,
+    )
     return None if automation is None else automation.get("status")
 
 
