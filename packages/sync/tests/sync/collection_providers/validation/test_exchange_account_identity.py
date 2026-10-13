@@ -16,30 +16,16 @@
 
 import datetime
 
-import mock
 import pytest
 
-import octobot.community.authentication as community_authentication
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers.validation.exchange_account_identity as exchange_account_identity_module
 import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
 import octobot_protocol.models as protocol_models
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
-_TEST_PRIVATE_KEY = "private-key"
 _DEFAULT_EXCHANGE_CONFIG_ID = "cfg-1"
-
-
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
 
 
 def _make_provider(tmp_path):
@@ -281,7 +267,7 @@ class TestAssertUniqueExchangeAccountIdentity:
 class TestAccountProviderCreateItemExchangeAccountIdentity:
     def _seed_exchange_config(self, provider, exchange_config: protocol_models.ExchangeConfig | None = None):
         config = exchange_config or _sample_exchange_config()
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, config)
         return config
 
@@ -290,16 +276,16 @@ class TestAccountProviderCreateItemExchangeAccountIdentity:
         self._seed_exchange_config(provider)
         first_account = _live_exchange_account(account_id="acc-1", remote_account_id="remote-1")
         second_account = _live_exchange_account(account_id="acc-2", remote_account_id="remote-1")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, first_account)
         with pytest.raises(collection_errors.DuplicateItemError, match="remote-1"):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.create_item(_TEST_ADDRESS, second_account)
 
     def test_different_remote_id_allowed(self, tmp_path):
         provider = _make_provider(tmp_path)
         self._seed_exchange_config(provider)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(
                 _TEST_ADDRESS,
                 _live_exchange_account(account_id="acc-1", remote_account_id="remote-1"),
@@ -313,7 +299,7 @@ class TestAccountProviderCreateItemExchangeAccountIdentity:
     def test_different_url_allowed(self, tmp_path):
         provider = _make_provider(tmp_path)
         self._seed_exchange_config(provider, _sample_exchange_config(config_id="cfg-live", url=None))
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(
                 _TEST_ADDRESS,
                 _sample_exchange_config(config_id="cfg-custom", url="https://custom.example"),
@@ -338,7 +324,7 @@ class TestAccountProviderCreateItemExchangeAccountIdentity:
 
     def test_sandboxed_differs_allowed(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(
                 _TEST_ADDRESS,
                 _sample_exchange_config(config_id="cfg-live", sandboxed=False),
@@ -368,7 +354,7 @@ class TestAccountProviderCreateItemExchangeAccountIdentity:
     def test_simulated_accounts_skipped(self, tmp_path):
         provider = _make_provider(tmp_path)
         self._seed_exchange_config(provider)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(
                 _TEST_ADDRESS,
                 _live_exchange_account(
@@ -391,7 +377,7 @@ class TestAccountProviderCreateItemExchangeAccountIdentity:
 class TestAccountProviderUpdateItemExchangeAccountIdentity:
     def test_edit_same_identity_allowed(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, _sample_exchange_config())
             provider.create_item(
                 _TEST_ADDRESS,
@@ -410,7 +396,7 @@ class TestAccountProviderUpdateItemExchangeAccountIdentity:
 
     def test_edit_to_conflicting_identity_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, _sample_exchange_config())
             provider.create_item(
                 _TEST_ADDRESS,
@@ -421,7 +407,7 @@ class TestAccountProviderUpdateItemExchangeAccountIdentity:
                 _live_exchange_account(account_id="acc-2", remote_account_id="remote-2"),
             )
         with pytest.raises(collection_errors.DuplicateItemError, match="remote-1"):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.update_item(
                     _TEST_ADDRESS,
                     _live_exchange_account(account_id="acc-2", remote_account_id="remote-1"),
