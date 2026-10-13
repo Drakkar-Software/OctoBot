@@ -1,7 +1,8 @@
 """Offline binance and binanceus snapshots for flow functional tests.
 
 The refresh script writes one JSON file per exchange under the flow tests static
-directory. Functional tests do not read those files yet.
+directory. Functional tests serve markets, tickers, and OHLCV from a file when
+that exchange has a committed snapshot.
 """
 
 import copy
@@ -31,6 +32,7 @@ SNAPSHOT_CANDLE_LIMIT = 200
 _OHLCV_ROW_LENGTH = 6
 _STATIC_DIR_NAME = "static"
 _SNAPSHOT_DIR_NAME = "exchange_snapshots"
+_ORIGINAL_INIT_BY_CLASS: dict[type, object] = {}
 
 
 class ExchangeSnapshotError(Exception):
@@ -128,6 +130,42 @@ def dump_exchange_snapshot(
     temporary.write_text(payload, encoding="utf-8")
     temporary.replace(path)
     return path
+
+
+def apply_committed_exchange_snapshots(
+    ccxt_module, root: pathlib.Path | None = None
+) -> tuple[type, ...]:
+    """Point ccxt clients at committed snapshot files. Exchanges without a file stay live."""
+    patched: list[type] = []
+    for exchange_name in SNAPSHOT_EXCHANGES:
+        if not snapshot_path(exchange_name, root).is_file():
+            continue
+        snapshot = load_exchange_snapshot(exchange_name, root)
+        exchange_class = getattr(ccxt_module, exchange_name)
+        if _patch_exchange_class(exchange_class, snapshot):
+            patched.append(exchange_class)
+    return tuple(patched)
+
+
+def restore_committed_exchange_snapshots(exchange_classes: tuple[type, ...] | list[type]) -> None:
+    for exchange_class in exchange_classes:
+        original_init = _ORIGINAL_INIT_BY_CLASS.pop(exchange_class, None)
+        if original_init is not None:
+            exchange_class.__init__ = original_init
+
+
+def _patch_exchange_class(exchange_class: type, snapshot: ExchangeSnapshot) -> bool:
+    if exchange_class in _ORIGINAL_INIT_BY_CLASS:
+        return False
+    original_init = exchange_class.__init__
+
+    def _init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        install_snapshot_fetches(self, snapshot)
+
+    exchange_class.__init__ = _init
+    _ORIGINAL_INIT_BY_CLASS[exchange_class] = original_init
+    return True
 
 
 def install_snapshot_fetches(client, snapshot: ExchangeSnapshot) -> None:

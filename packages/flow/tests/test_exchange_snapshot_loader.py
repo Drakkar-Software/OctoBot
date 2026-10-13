@@ -202,3 +202,50 @@ def test_parse_args_defaults_to_both_exchanges_and_the_static_dir():
     assert args.output is None
     names = tuple(args.exchanges) if args.exchanges else exchange_snapshot_lib.SNAPSHOT_EXCHANGES
     assert names == ("binance", "binanceus")
+
+
+def _committed_binanceus_snapshot() -> exchange_snapshot_lib.ExchangeSnapshot:
+    return exchange_snapshot_lib.ExchangeSnapshot.from_dict(
+        {
+            "version": 1,
+            "exchange": "binanceus",
+            "captured_at": "2026-10-13T00:00:00+00:00",
+            "symbols": ["BTC/USDT"],
+            "unavailable_symbols": [],
+            "timeframes": ["1h"],
+            "candle_limit": 1,
+            "markets": [{"symbol": "BTC/USDT", "spot": True}],
+            "tickers": {"BTC/USDT": {"last": 11, "close": 11}},
+            "ohlcv": {"BTC/USDT": {"1h": [[100, 1, 1, 1, 1, 1]]}},
+        }
+    )
+
+
+@pytest.mark.asyncio
+async def test_apply_committed_snapshots_skips_exchanges_without_a_file(tmp_path):
+    exchange_snapshot_lib.dump_exchange_snapshot(_committed_binanceus_snapshot(), tmp_path)
+
+    class _Binance:
+        def __init__(self, config=None):
+            self.config = config
+
+    class _BinanceUS(_Binance):
+        pass
+
+    class _ObBinanceUS(_BinanceUS):
+        pass
+
+    module = type("CCXT", (), {"binance": _Binance, "binanceus": _BinanceUS})
+    patched = exchange_snapshot_lib.apply_committed_exchange_snapshots(module, tmp_path)
+    try:
+        assert patched == (_BinanceUS,)
+        assert exchange_snapshot_lib.apply_committed_exchange_snapshots(module, tmp_path) == ()
+        live = module.binance({})
+        assert not hasattr(live, "fetch_markets")
+        client = _ObBinanceUS({})
+        assert (await client.fetch_markets())[0]["symbol"] == "BTC/USDT"
+        assert (await client.fetch_ticker("BTC/USDT"))["close"] == 11
+    finally:
+        exchange_snapshot_lib.restore_committed_exchange_snapshots(patched)
+    restored = _ObBinanceUS({})
+    assert not hasattr(restored, "fetch_markets")

@@ -5,8 +5,9 @@ root tests package:
 
     python -m tests.refresh_exchange_snapshots
 
-Files land in tests/static/exchange_snapshots/. Functional tests do not load
-them yet. Needs a network that can reach the exchange.
+Files land in tests/static/exchange_snapshots/. Functional tests load an
+exchange from that directory when its file is present. Needs a network that
+can reach the exchange.
 """
 
 import argparse
