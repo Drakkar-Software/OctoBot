@@ -1,7 +1,5 @@
 #  Unit tests for agent-seed node pidfile, port checks, and stop.
 
-import pathlib
-
 import pytest
 
 import tools.agent_seed.errors as agent_seed_errors
