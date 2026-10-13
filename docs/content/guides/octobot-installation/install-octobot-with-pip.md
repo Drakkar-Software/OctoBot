@@ -10,7 +10,7 @@ sidebar_position: 7
 
 ## Requirements
 
-- Python 3.10 (<a href="https://www.python.org/downloads/" rel="nofollow">download</a>)
+- Python 3.13 (<a href="https://www.python.org/downloads/" rel="nofollow">download</a>)
 - Add python to your PATH (<a href="https://superuser.com/questions/143119/how-do-i-add-python-to-the-windows-path" rel="nofollow">tutorial windows</a>)
 
 ## Installation
@@ -18,10 +18,10 @@ sidebar_position: 7
 In a command line (with python in your PATH) type the following command:
 
 ```bash
-python3.10 -m pip install OctoBot
+python3.13 -m pip install OctoBot
 ```
 
-You can change **python3.10** to the name of the python binary you added to your PATH (for example on linux you may use **python3** or even **python** if the **python --version** commands outputs a python 3.10 version)
+You can change **python3.13** to the name of the python binary you added to your PATH (for example on linux you may use **python3** or even **python** if the **python --version** commands outputs a python 3.13 version)
 
 ## Usage
 
@@ -34,7 +34,7 @@ OctoBot
 Executing the following command will update your Python OctoBot using the latest version, as well as installing the latest requirements.
 
 ```bash
-python3.10 -m pip install -U OctoBot
+python3.13 -m pip install -U OctoBot
 ```
 
 The next restart will automatically update your OctoBot tentacles.
