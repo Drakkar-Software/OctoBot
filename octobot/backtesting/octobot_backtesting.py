@@ -383,7 +383,12 @@ class OctoBotBacktesting:
                     if required_class is not None and service_api.is_service_class(required_class):
                         required_service_classes.add(required_class)
             except Exception as e:
-                pass
+                self.logger.exception(
+                    e,
+                    False,
+                    f"Failed to resolve service requirements of {evaluator.__class__.__name__} for backtesting, "
+                    f"its required services might not be started"
+                )
         for service_class in required_service_classes:
             try:
                 await service_api.get_service(service_class, True, self.services_config)
