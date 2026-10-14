@@ -6,135 +6,71 @@ import shutil
 import typing
 
 import octobot_node.agent_seed.constants as demo_agent_seed_constants
+import octobot_node.config as octobot_node_config
+import octobot_services.constants as octobot_services_constants
 
 import tools.agent_seed.errors as agent_seed_errors
 import tools.agent_seed.paths as agent_seed_paths
-
-_SCHEDULER_SQLITE_FILE_ENV = "SCHEDULER_SQLITE_FILE"
-_NODE_SQLITE_FILE_ENV = "NODE_SQLITE_FILE"
-_DEFAULT_OCTOBOT_SCHEDULER_SQLITE_NAME = "tasks.db"
-_SEED_AGENT_SHELL_HINT = (
-    "bash .cursor/seed-agent.sh --restart (keep fixtures) or bash .cursor/seed-agent.sh --full"
-)
 
 
 class AgentSeedClearLockedSqliteError(RuntimeError):
     """Raised when scheduler sqlite files cannot be removed (node likely running)."""
 
 
-def expected_agent_seed_tasks_db_path(user_folder: os.PathLike[str]) -> pathlib.Path:
-    return pathlib.Path(user_folder).resolve() / _DEFAULT_OCTOBOT_SCHEDULER_SQLITE_NAME
-
-
-def resolve_node_sqlite_path_from_env(
+def _resolve_env_path(
+    env_name: str,
+    env_value: typing.Optional[str],
     repo_root: pathlib.Path,
 ) -> typing.Optional[pathlib.Path]:
-    env_value = os.environ.get(_NODE_SQLITE_FILE_ENV)
     if not env_value:
         return None
     resolved = agent_seed_paths.resolve_path_from_env(env_value, repo_root)
     if resolved is None:
         return None
     return resolved.resolve()
-
-
-def resolve_scheduler_sqlite_path_from_env(
-    repo_root: pathlib.Path,
-) -> typing.Optional[pathlib.Path]:
-    env_value = os.environ.get(_SCHEDULER_SQLITE_FILE_ENV)
-    if not env_value:
-        return None
-    resolved = agent_seed_paths.resolve_path_from_env(env_value, repo_root)
-    if resolved is None:
-        return None
-    return resolved.resolve()
-
-
-def octobot_scheduler_sqlite_path_without_scheduler_env(
-    repo_root: pathlib.Path,
-) -> pathlib.Path:
-    return (repo_root / _DEFAULT_OCTOBOT_SCHEDULER_SQLITE_NAME).resolve()
-
-
-def _scheduler_sqlite_config_error_message(
-    *,
-    scheduler_env_set: bool,
-    node_env_set: bool,
-    scheduler_resolved: typing.Optional[pathlib.Path],
-    node_resolved: typing.Optional[pathlib.Path],
-    expected_path: pathlib.Path,
-    repo_root: pathlib.Path,
-) -> str:
-    if not scheduler_env_set:
-        wrong_path = octobot_scheduler_sqlite_path_without_scheduler_env(repo_root)
-        return (
-            f"Cannot start agent-seed node: {_SCHEDULER_SQLITE_FILE_ENV} is not set. "
-            f"OctoBot would open scheduler database {wrong_path!s} instead of the seeded "
-            f"database {expected_path!s}, so automations from agent-seed would be missing "
-            f"(debug may show automations: []). "
-            f"Export {_SCHEDULER_SQLITE_FILE_ENV} to the same path as {_NODE_SQLITE_FILE_ENV} "
-            f"({expected_path!s}). "
-            f"Do not call `python -m tools.agent_seed start-background` after only "
-            f"`source .cursor/agent-seed.env` — use {_SEED_AGENT_SHELL_HINT}."
-        )
-    scheduler_part = (
-        f"{_SCHEDULER_SQLITE_FILE_ENV}={scheduler_resolved!s}"
-        if scheduler_resolved is not None
-        else f"{_SCHEDULER_SQLITE_FILE_ENV} is set but could not be resolved"
-    )
-    node_part = (
-        f"{_NODE_SQLITE_FILE_ENV}={node_resolved!s}"
-        if node_resolved is not None
-        else f"{_NODE_SQLITE_FILE_ENV} is not set"
-    )
-    wrong_path = scheduler_resolved or octobot_scheduler_sqlite_path_without_scheduler_env(
-        repo_root,
-    )
-    return (
-        f"Cannot start agent-seed node: scheduler database paths must all match "
-        f"{expected_path!s} ({scheduler_part}; {node_part}). "
-        f"The node would use {wrong_path!s}, so seeded automations would be missing. "
-        f"Use {_SEED_AGENT_SHELL_HINT} so env exports stay aligned."
-    )
 
 
 def ensure_scheduler_sqlite_for_agent_seed_start(
     user_folder: pathlib.Path,
     repo_root: pathlib.Path,
 ) -> None:
-    expected_path = expected_agent_seed_tasks_db_path(user_folder)
-    scheduler_env_set = bool(os.environ.get(_SCHEDULER_SQLITE_FILE_ENV))
-    node_env_set = bool(os.environ.get(_NODE_SQLITE_FILE_ENV))
-    scheduler_resolved = (
-        resolve_scheduler_sqlite_path_from_env(repo_root) if scheduler_env_set else None
-    )
-    node_resolved = resolve_node_sqlite_path_from_env(repo_root) if node_env_set else None
-    if not scheduler_env_set:
+    scheduler_env_name = octobot_services_constants.ENV_NODE_SQLITE_FILE
+    default_sqlite_name = octobot_node_config.settings.SCHEDULER_SQLITE_FILE
+    expected_path = (user_folder.resolve() / default_sqlite_name).resolve()
+    default_node_path = (repo_root / default_sqlite_name).resolve()
+    fix_hint = "bash .cursor/seed-agent.sh --restart or bash .cursor/seed-agent.sh --full"
+    scheduler_raw = os.environ.get(scheduler_env_name)
+    node_raw = os.environ.get("NODE_SQLITE_FILE")
+    scheduler_path = _resolve_env_path(scheduler_env_name, scheduler_raw, repo_root)
+    node_path = _resolve_env_path("NODE_SQLITE_FILE", node_raw, repo_root)
+    if not scheduler_raw:
         raise agent_seed_errors.AgentSeedSchedulerSqliteConfigError(
-            _scheduler_sqlite_config_error_message(
-                scheduler_env_set=False,
-                node_env_set=node_env_set,
-                scheduler_resolved=scheduler_resolved,
-                node_resolved=node_resolved,
-                expected_path=expected_path,
-                repo_root=repo_root,
-            ),
+            f"Cannot start agent-seed node: {scheduler_env_name} is not set. "
+            f"OctoBot would open scheduler database {default_node_path!s} instead of the seeded "
+            f"database {expected_path!s}, so automations from agent-seed would be missing "
+            f"(debug may show automations: []). "
+            f"Export {scheduler_env_name} to the same path as NODE_SQLITE_FILE "
+            f"({expected_path!s}). "
+            f"Do not call `python -m tools.agent_seed start-background` after only "
+            f"`source .cursor/agent-seed.env` — use {fix_hint}."
         )
-    paths_match = (
-        scheduler_resolved == expected_path
-        and node_resolved == expected_path
-        and scheduler_resolved == node_resolved
-    )
-    if not paths_match:
+    if scheduler_path != expected_path or node_path != expected_path or scheduler_path != node_path:
+        scheduler_part = (
+            f"{scheduler_env_name}={scheduler_path!s}"
+            if scheduler_path is not None
+            else f"{scheduler_env_name} is set but could not be resolved"
+        )
+        node_part = (
+            f"NODE_SQLITE_FILE={node_path!s}"
+            if node_path is not None
+            else "NODE_SQLITE_FILE is not set"
+        )
+        wrong_path = scheduler_path or default_node_path
         raise agent_seed_errors.AgentSeedSchedulerSqliteConfigError(
-            _scheduler_sqlite_config_error_message(
-                scheduler_env_set=True,
-                node_env_set=node_env_set,
-                scheduler_resolved=scheduler_resolved,
-                node_resolved=node_resolved,
-                expected_path=expected_path,
-                repo_root=repo_root,
-            ),
+            f"Cannot start agent-seed node: scheduler database paths must all match "
+            f"{expected_path!s} ({scheduler_part}; {node_part}). "
+            f"The node would use {wrong_path!s}, so seeded automations would be missing. "
+            f"Use {fix_hint} so env exports stay aligned."
         )
 
 
@@ -144,11 +80,8 @@ def resolve_scheduler_sqlite_path(
     resolved_repo_root = (
         repo_root if repo_root is not None else agent_seed_paths.default_octobot_repo_root()
     )
-    for env_name in ("SCHEDULER_SQLITE_FILE", "NODE_SQLITE_FILE"):
-        env_value = os.environ.get(env_name)
-        if not env_value:
-            continue
-        resolved = agent_seed_paths.resolve_path_from_env(env_value, resolved_repo_root)
+    for env_name in (octobot_services_constants.ENV_NODE_SQLITE_FILE, "NODE_SQLITE_FILE"):
+        resolved = _resolve_env_path(env_name, os.environ.get(env_name), resolved_repo_root)
         if resolved is not None:
             return resolved
     return None
