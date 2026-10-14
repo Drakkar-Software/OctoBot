@@ -103,6 +103,13 @@ Authoritative rules for Python in `octobot/` and `packages/`. Cloud agents: also
 - Example: [`packages/trading/octobot_trading/personal_data/__init__.py`](packages/trading/octobot_trading/personal_data/__init__.py).
 - When adding a new public symbol, export it from the appropriate `__init__.py`.
 
+### Reuse before you write
+
+- Before adding a helper, constant, or CLI entry, search the repo (`rg`) for an existing one and extend or generalize it instead of writing a near copy.
+- Do not add two functions that differ only by a name or a literal; use one helper with a parameter.
+- Do not redefine env var names, default file names, paths, or constants locally; import them from where they are defined (for example `octobot_services.constants`, `octobot_node.config.settings`).
+- Before pushing, self-review the diff: compare every new function and constant against the module and its neighbours, and note in the PR description what was reused.
+
 ## Formatting
 
 Ruff/Biome configs are present; mass format and CI enforce land in later phases. Do not run repo-wide reformat in routine agent PRs unless requested.

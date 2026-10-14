@@ -83,7 +83,7 @@ Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) live
 | `secrets.py` | `octobot_sync.auth.provider`, `octobot_node.agent_seed.constants` | tentacles, CommunityAuthentication, HTTP |
 | `protocol/builders.py` | `octobot_protocol`, tentacles, `octobot_copy.enums`, node constants | `operations`, `cli`, sync providers |
 | `paths.py` | stdlib | `octobot_*` |
-| `operations/scheduler_sqlite.py` | node constants (message prefix), `paths`, `errors` | tentacles, CLI |
+| `operations/scheduler_sqlite.py` | node constants (message prefix), `octobot_node.config`, `octobot_services.constants`, `paths`, `errors` | tentacles, CLI |
 | `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.scheduler_sqlite`, `secrets`, `paths`, node constants | HTTP debug |
 | `operations/seed_octobot_config.py` | `octobot_commons.constants`, `paths` | tentacles, CLI |
 | `operations/bootstrap_*.py` | `protocol.builders`, `secrets`, `enums`, `errors`, node constants, urllib | CollectionProviders |
