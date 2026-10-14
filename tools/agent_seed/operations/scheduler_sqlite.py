@@ -17,17 +17,22 @@ class AgentSeedClearLockedSqliteError(RuntimeError):
     """Raised when scheduler sqlite files cannot be removed (node likely running)."""
 
 
+def _scheduler_sqlite_default_file_name() -> str:
+    default = octobot_node_config.Settings.model_fields["SCHEDULER_SQLITE_FILE"].default
+    return str(default)
+
+
 def _resolve_env_path(
     env_name: str,
-    env_value: typing.Optional[str],
     repo_root: pathlib.Path,
-) -> typing.Optional[pathlib.Path]:
+) -> tuple[typing.Optional[str], typing.Optional[pathlib.Path]]:
+    env_value = os.environ.get(env_name)
     if not env_value:
-        return None
+        return env_value, None
     resolved = agent_seed_paths.resolve_path_from_env(env_value, repo_root)
     if resolved is None:
-        return None
-    return resolved.resolve()
+        return env_value, None
+    return env_value, resolved.resolve()
 
 
 def ensure_scheduler_sqlite_for_agent_seed_start(
@@ -35,14 +40,12 @@ def ensure_scheduler_sqlite_for_agent_seed_start(
     repo_root: pathlib.Path,
 ) -> None:
     scheduler_env_name = octobot_services_constants.ENV_NODE_SQLITE_FILE
-    default_sqlite_name = octobot_node_config.settings.SCHEDULER_SQLITE_FILE
+    default_sqlite_name = _scheduler_sqlite_default_file_name()
     expected_path = (user_folder.resolve() / default_sqlite_name).resolve()
     default_node_path = (repo_root / default_sqlite_name).resolve()
     fix_hint = "bash .cursor/seed-agent.sh --restart or bash .cursor/seed-agent.sh --full"
-    scheduler_raw = os.environ.get(scheduler_env_name)
-    node_raw = os.environ.get("NODE_SQLITE_FILE")
-    scheduler_path = _resolve_env_path(scheduler_env_name, scheduler_raw, repo_root)
-    node_path = _resolve_env_path("NODE_SQLITE_FILE", node_raw, repo_root)
+    scheduler_raw, scheduler_path = _resolve_env_path(scheduler_env_name, repo_root)
+    node_raw, node_path = _resolve_env_path("NODE_SQLITE_FILE", repo_root)
     if not scheduler_raw:
         raise agent_seed_errors.AgentSeedSchedulerSqliteConfigError(
             f"Cannot start agent-seed node: {scheduler_env_name} is not set. "
@@ -81,7 +84,7 @@ def resolve_scheduler_sqlite_path(
         repo_root if repo_root is not None else agent_seed_paths.default_octobot_repo_root()
     )
     for env_name in (octobot_services_constants.ENV_NODE_SQLITE_FILE, "NODE_SQLITE_FILE"):
-        resolved = _resolve_env_path(env_name, os.environ.get(env_name), resolved_repo_root)
+        _, resolved = _resolve_env_path(env_name, resolved_repo_root)
         if resolved is not None:
             return resolved
     return None
