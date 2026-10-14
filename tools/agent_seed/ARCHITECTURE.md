@@ -56,7 +56,7 @@ flowchart TB
 | `paths.py` | Repo root, env path resolution, marker file name |
 | `secrets.py` | `DEMO_INSECURE_*` key material only |
 | `protocol/builders.py` | Kraken sim + grid/index protocol objects |
-| `operations/scheduler_sqlite.py` | Scheduler DB path resolution and wipe |
+| `operations/scheduler_sqlite.py` | Scheduler DB path resolution, wipe, and `start-background` env alignment checks |
 | `operations/bootstrap_automation.py` | Debug automation lookup and id conflict checks (all bootstrap scenarios) |
 | `operations/seed_sync.py` | Wallet import + sync collection writes |
 | `operations/seed_run.py` | `run_seed`, idempotency |
@@ -68,7 +68,7 @@ flowchart TB
 | `operations/base_url_net.py` | Parse base URL host/port; TCP reachability probe |
 | `operations/node_lifecycle.py` | Pidfile, port-in-use checks, detached start (`start-background`), graceful stop (`stop-node`) |
 | `enums.py` | `BootstrapScenario` |
-| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError`, `AgentSeedNodeStartupTimeoutError` |
+| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError`, `AgentSeedNodeStartupTimeoutError`, `AgentSeedSchedulerSqliteConfigError` |
 | `cli/` | Argparse only |
 | `__main__.py` | Entry: `python -m tools.agent_seed` |
 
