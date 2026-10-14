@@ -11,6 +11,7 @@ import typing
 
 import tools.agent_seed.errors as agent_seed_errors
 import tools.agent_seed.operations.base_url_net as agent_seed_base_url_net
+import tools.agent_seed.operations.scheduler_sqlite as agent_seed_scheduler_sqlite
 import tools.agent_seed.paths as agent_seed_paths
 
 DEFAULT_STOP_TIMEOUT_SECONDS = 30.0
@@ -98,6 +99,10 @@ def start_node_background(
     base_url: str,
     repo_root: pathlib.Path,
 ) -> str:
+    agent_seed_scheduler_sqlite.ensure_scheduler_sqlite_for_agent_seed_start(
+        user_folder,
+        repo_root,
+    )
     prepare_node_start(user_folder, base_url)
     user_folder.mkdir(parents=True, exist_ok=True)
     log_file = agent_seed_paths.node_log_file(user_folder)

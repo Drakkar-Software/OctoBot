@@ -40,14 +40,17 @@ Master tentacles on `user/reference_tentacles_config/` must exist (see `tools/ag
 ## Commands (OctoBot repo root)
 
 ```bash
-bash .cursor/seed-agent.sh --full    # seed + detached background start + bootstrap (safe with captured shell output)
-bash .cursor/seed-agent.sh --stop    # stop recorded node; frees port — run when QA is done or before --clear
-bash .cursor/seed-agent.sh --clear   # wipe + re-seed — run --stop first
-bash .cursor/seed-agent.sh bootstrap # node must already listen on AGENT_SEED_BASE_URL
+bash .cursor/seed-agent.sh --full     # seed + detached background start + bootstrap (safe with captured shell output)
+bash .cursor/seed-agent.sh --restart  # stop + background start + wait (keeps DB, automations, orders; no seed/bootstrap)
+bash .cursor/seed-agent.sh --stop     # stop recorded node; frees port — run when QA is done or before --clear
+bash .cursor/seed-agent.sh --clear    # wipe + re-seed — run --stop first
+bash .cursor/seed-agent.sh bootstrap  # node must already listen on AGENT_SEED_BASE_URL
 bash .cursor/seed-agent.sh bootstrap --scenario index --scenario completed  # more automations (grid|index|completed|lifecycle|all)
-bash .cursor/seed-agent.sh start     # foreground start only
-python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full after start-background
+bash .cursor/seed-agent.sh start      # foreground start only
+python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full/--restart after start-background
 ```
+
+Always start or restart through **`seed-agent.sh`** so **`SCHEDULER_SQLITE_FILE`** is exported. Do **not** run `python -m tools.agent_seed start-background` after only `source .cursor/agent-seed.env` — `start-background` will fail with an explicit scheduler DB error.
 
 **`--full` starts OctoBot** in the background (pidfile + `user/agent-seed/agent-seed-node.log`). Never double-start: port busy → fail fast with `--stop` hint. Always **`--stop`** when finished.
 

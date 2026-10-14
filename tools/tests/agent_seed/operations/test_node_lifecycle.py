@@ -108,6 +108,9 @@ def test_start_node_background_writes_pidfile_and_prepares(tmp_path, monkeypatch
         return FakeProcess()
 
     monkeypatch.setattr(agent_seed_node_lifecycle.subprocess, "Popen", fake_popen)
+    tasks_db = user_folder / "tasks.db"
+    monkeypatch.setenv("NODE_SQLITE_FILE", str(tasks_db))
+    monkeypatch.setenv("SCHEDULER_SQLITE_FILE", str(tasks_db))
 
     message = agent_seed_node_lifecycle.start_node_background(
         user_folder=user_folder,

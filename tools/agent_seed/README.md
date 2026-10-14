@@ -57,6 +57,8 @@ From the OctoBot repo root, `seed-agent.sh` sources `.cursor/env.sh` and `.curso
 
 When **starting** OctoBot (not the seed CLI), set runtime scheduler DB via env **`SCHEDULER_SQLITE_FILE`** (see `octobot_services.constants.ENV_NODE_SQLITE_FILE`) to the full path of `user/agent-seed/tasks.db`. Do not confuse with **`NODE_SQLITE_FILE`**, which is only for seed/clear.
 
+`seed-agent.sh` exports **`SCHEDULER_SQLITE_FILE`** from **`NODE_SQLITE_FILE`** (`set -a` after sourcing `.cursor/agent-seed.env`). **`start-background` refuses to launch** if `SCHEDULER_SQLITE_FILE` is missing or does not match `NODE_SQLITE_FILE` and `user/agent-seed/tasks.db` — sourcing only `.cursor/agent-seed.env` is not enough. Always start or restart the node via **`bash .cursor/seed-agent.sh`** (`--full`, `--restart`, or `start`), not `python -m tools.agent_seed start-background` alone.
+
 Also set **`EXIT_BEFORE_TENTACLES_AUTO_REINSTALL=true`** on agent demo `start.py` launches (`seed-agent.sh start` sets this automatically).
 
 ## `seed-agent.sh` commands
@@ -71,6 +73,7 @@ From OctoBot repo root (after sourcing env files):
 | `start` | `start.py --master --user-folder …` (foreground) |
 | `bootstrap [--scenario …]` | HTTP bootstrap of the seeded automations, grid by default (node must be listening). See **Bootstrap scenarios** |
 | `--full` | `seed` → **`start.py` in background** (log file + pidfile) → `wait-for-base-url` → `bootstrap` |
+| `--restart` | Same as **`--stop`**, then background start + `wait-for-base-url` (**no** seed, **no** bootstrap) — keeps automations and orders |
 | `--stop` | Stop the node recorded in **`user/agent-seed/.agent-seed-node.pid`**, verify the base URL port is free |
 
 Background start writes **`user/agent-seed/agent-seed-node.log`** (full path printed) and records the PID in **`user/agent-seed/.agent-seed-node.pid`**. Node stdout/stderr go only to that log so **`--full` returns** even when the caller captures shell output (agents, `$(…)`).
@@ -86,6 +89,7 @@ Background start writes **`user/agent-seed/agent-seed-node.log`** (full path pri
 | Situation | Command |
 |-----------|---------|
 | Cold start: seed + node + bootstrap | Stop node → `--full` |
+| Node stopped; keep fixtures, restart process only | `--restart` |
 | Wipe fixture data (UI) | Stop node → `--clear` → `start` or `--full` |
 | Node up, grid not RUNNING | `bootstrap` |
 | Node up, UI only | Login → navigate `/app` as needed (no seed script); use `/app/debug` to send user actions |

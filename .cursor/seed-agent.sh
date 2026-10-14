@@ -69,11 +69,16 @@ case "${1:-}" in
     wait_for_node_ready
     run_bootstrap
     ;;
+  --restart)
+    run_stop_node
+    run_start_background
+    wait_for_node_ready
+    ;;
   --clear)
     run_seed --clear
     ;;
   *)
-    echo "Usage: $0 {seed [--clear]|bootstrap [--scenario grid|index|completed|lifecycle|all]|start|--full|--clear|--stop}" >&2
+    echo "Usage: $0 {seed [--clear]|bootstrap [--scenario grid|index|completed|lifecycle|all]|start|--full|--restart|--clear|--stop}" >&2
     exit 1
     ;;
 esac

@@ -31,3 +31,7 @@ class AgentSeedPortInUseError(AgentSeedError):
 
 class AgentSeedNodeStopError(AgentSeedError):
     pass
+
+
+class AgentSeedSchedulerSqliteConfigError(AgentSeedError):
+    pass

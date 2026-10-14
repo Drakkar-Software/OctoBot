@@ -65,6 +65,9 @@ def _run_start_background(arguments: argparse.Namespace) -> int:
     except agent_seed_errors.AgentSeedPortInUseError as error:
         print(error, file=sys.stderr)
         return 1
+    except agent_seed_errors.AgentSeedSchedulerSqliteConfigError as error:
+        print(error, file=sys.stderr)
+        return 1
     print(message)
     return 0
 

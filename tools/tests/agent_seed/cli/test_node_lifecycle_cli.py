@@ -68,12 +68,16 @@ def test_start_background_subcommand_invokes_operation(tmp_path, monkeypatch):
     )
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
+    user_folder = tmp_path / "user"
+    tasks_db = user_folder / "tasks.db"
+    monkeypatch.setenv("NODE_SQLITE_FILE", str(tasks_db))
+    monkeypatch.setenv("SCHEDULER_SQLITE_FILE", str(tasks_db))
     assert (
         agent_seed_cli.main(
             [
                 "start-background",
                 "--user-folder",
-                str(tmp_path / "user"),
+                str(user_folder),
                 "--base-url",
                 "http://127.0.0.1:8000",
                 "--repo-root",
@@ -100,12 +104,16 @@ def test_start_background_port_busy_exits_nonzero(tmp_path, monkeypatch):
     )
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
+    user_folder = tmp_path / "user"
+    tasks_db = user_folder / "tasks.db"
+    monkeypatch.setenv("NODE_SQLITE_FILE", str(tasks_db))
+    monkeypatch.setenv("SCHEDULER_SQLITE_FILE", str(tasks_db))
     assert (
         agent_seed_cli.main(
             [
                 "start-background",
                 "--user-folder",
-                str(tmp_path / "user"),
+                str(user_folder),
                 "--repo-root",
                 str(repo_root),
             ],

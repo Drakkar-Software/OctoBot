@@ -42,7 +42,7 @@
 Only when driving the **live Node web UI** or debug view — not for routine `pytest` in this package.
 
 - Operator docs: [`tools/agent_seed/README.md`](../../tools/agent_seed/README.md) (including [Headless / debug API](../../tools/agent_seed/README.md#headless--debug-api): orders/trades via `account_tradings`, not invented `/api/v1/orders`) and skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`).
-- Fixtures: `python -m tools.agent_seed seed` or `bash .cursor/seed-agent.sh seed|bootstrap|start|--full|--clear|--stop` (after `.cursor/agent-seed.env`).
+- Fixtures: `python -m tools.agent_seed seed` or `bash .cursor/seed-agent.sh seed|bootstrap|start|--full|--restart|--clear|--stop` (via `seed-agent.sh` so `SCHEDULER_SQLITE_FILE` is exported — do not call `start-background` after only `source .cursor/agent-seed.env`).
 - After seed: login passphrase; full **`/app`** UI for QA; **`/app/debug`** to submit user actions and inspect automations.
 - Runtime sandbox: `packages/node/octobot_node/agent_seed/` (`is_demo_agent_seed_user`, demo wallet action guards).
 
