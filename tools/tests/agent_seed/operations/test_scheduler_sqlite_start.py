@@ -30,6 +30,25 @@ def test_ensure_scheduler_sqlite_rejects_unset_scheduler_env(tmp_path, monkeypat
     assert "seed-agent.sh --restart" in message
 
 
+def test_ensure_scheduler_sqlite_rejects_same_path_outside_user_folder(tmp_path, monkeypatch):
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    user_folder = repo_root / "user" / "agent-seed"
+    user_folder.mkdir(parents=True)
+    outside_db = tmp_path / "other.db"
+    monkeypatch.setenv("NODE_SQLITE_FILE", str(outside_db))
+    monkeypatch.setenv("SCHEDULER_SQLITE_FILE", str(outside_db))
+
+    with pytest.raises(agent_seed_errors.AgentSeedSchedulerSqliteConfigError) as error_info:
+        agent_seed_scheduler_sqlite.ensure_scheduler_sqlite_for_agent_seed_start(
+            user_folder,
+            repo_root,
+        )
+    message = str(error_info.value)
+    assert str((user_folder / "tasks.db").resolve()) in message
+    assert str(outside_db.resolve()) in message
+
+
 def test_ensure_scheduler_sqlite_rejects_mismatched_paths(tmp_path, monkeypatch):
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
