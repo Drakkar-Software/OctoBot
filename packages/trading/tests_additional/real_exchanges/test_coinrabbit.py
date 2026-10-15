@@ -30,6 +30,12 @@ class TestCoinrabbitRealExchangeTester(real_exchange_tester.RealExchangeTester):
     SYMBOL = "BTC@BTC/USDT@ETH"
     SYMBOL_2 = "BTC@BTC/USDT@BSC"
     SYMBOL_3 = "BTC@BTC/USDT@ARBITRUM"
+    # API pairs ETH/USDT, DOGE/USDT, MATIC/USDT (native base network, USDT on ETH).
+    ADDITIONAL_API_SYMBOLS = (
+        "ETH@ETH/USDT@ETH",
+        "DOGE@DOGE/USDT@ETH",
+        "MATIC@MATIC/USDT@ETH",
+    )
     USES_TENTACLE = False
     TIME_FRAME = common_enums.TimeFrames.ONE_DAY
     REQUIRES_AUTH = False
@@ -42,7 +48,23 @@ class TestCoinrabbitRealExchangeTester(real_exchange_tester.RealExchangeTester):
         await self.assert_supports_order_type([trading_enums.TradeOrderType.MARKET])
 
     async def test_active_symbols(self):
-        await self.inner_test_active_symbols(8, 8)
+        await self.inner_test_active_symbols(88, 88)
+
+    @staticmethod
+    def _coinrabbit_price_ticker_expectations() -> real_exchange_tester.TickerRequiredExpectations:
+        ticker_expect = real_exchange_tester.TickerExpect
+        return real_exchange_tester.TickerRequiredExpectations(
+            open=ticker_expect.NONE,
+            high=ticker_expect.NONE,
+            low=ticker_expect.NONE,
+            close=ticker_expect.TRUTHY,
+            last=ticker_expect.TRUTHY,
+            bid_volume=ticker_expect.NONE,
+            ask_volume=ticker_expect.NONE,
+            base_volume=ticker_expect.NONE,
+            quote_volume=ticker_expect.NONE,
+            previous_close=ticker_expect.NONE,
+        )
 
     async def test_ticker_wise_symbol_parsing(self):
         symbol = commons_symbols.parse_symbol(self.SYMBOL)
@@ -94,24 +116,17 @@ class TestCoinrabbitRealExchangeTester(real_exchange_tester.RealExchangeTester):
             await self.get_recent_trades()
 
     async def test_get_price_ticker(self):
-        def _price_ticker_expectations() -> real_exchange_tester.TickerRequiredExpectations:
-            ticker_expect = real_exchange_tester.TickerExpect
-            return real_exchange_tester.TickerRequiredExpectations(
-                open=ticker_expect.NONE,
-                high=ticker_expect.NONE,
-                low=ticker_expect.NONE,
-                close=ticker_expect.TRUTHY,
-                last=ticker_expect.TRUTHY,
-                bid_volume=ticker_expect.NONE,
-                ask_volume=ticker_expect.NONE,
-                base_volume=ticker_expect.NONE,
-                quote_volume=ticker_expect.NONE,
-                previous_close=ticker_expect.NONE,
-            )
-
         await self.assert_get_price_ticker(
-            ticker_expectations=_price_ticker_expectations(),
+            ticker_expectations=self._coinrabbit_price_ticker_expectations(),
         )
+
+    async def test_additional_api_symbols_price_ticker(self):
+        ticker_expectations = self._coinrabbit_price_ticker_expectations()
+        for symbol in self.ADDITIONAL_API_SYMBOLS:
+            await self.assert_get_price_ticker(
+                symbol=symbol,
+                ticker_expectations=ticker_expectations,
+            )
 
     async def test_get_all_currencies_price_ticker(self):
         with pytest.raises(trading_errors.NotSupported):
