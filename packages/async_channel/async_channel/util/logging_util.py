@@ -19,7 +19,7 @@ Define async_channel logger implementation
 import logging
 
 
-# pylint: disable=no-member, import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 def get_logger(name: str = "") -> logging.Logger:
     """
     :param name: the logger name
