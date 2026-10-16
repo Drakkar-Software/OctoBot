@@ -92,6 +92,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     bootstrap_parser.add_argument(
         "--scenario", action="append", choices=_SCENARIO_CHOICES, default=None, help=_SCENARIO_HELP,
     )
+    bootstrap_parser.add_argument(
+        "--emit-signals", action="store_true", help=agent_seed_cli_bootstrap.EMIT_SIGNALS_HELP,
+    )
     bootstrap_parser.set_defaults(handler=agent_seed_cli_bootstrap.run_from_namespace)
 
     all_parser = subparsers.add_parser("all", help="Run seed then bootstrap")
@@ -103,6 +106,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     all_parser.add_argument("--timeout", type=float, default=None)
     all_parser.add_argument(
         "--scenario", action="append", choices=_SCENARIO_CHOICES, default=None, help=_SCENARIO_HELP,
+    )
+    all_parser.add_argument(
+        "--emit-signals", action="store_true", help=agent_seed_cli_bootstrap.EMIT_SIGNALS_HELP,
     )
     all_parser.set_defaults(handler=agent_seed_cli_all.run_from_namespace)
 

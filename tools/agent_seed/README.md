@@ -71,8 +71,8 @@ From OctoBot repo root (after sourcing env files):
 | `seed` with second arg `--clear` | Not used by shell; use `--clear` below |
 | `--clear` | Wipe user folder + sqlite, then re-seed (**node must be stopped**) |
 | `start` | `start.py --master --user-folder …` (foreground) |
-| `bootstrap [--scenario …]` | HTTP bootstrap of the seeded automations, grid by default (node must be listening). See **Bootstrap scenarios** |
-| `--full` | `seed` → **`start.py` in background** (log file + pidfile) → `wait-for-base-url` → `bootstrap` |
+| `bootstrap [--scenario …] [--emit-signals]` | HTTP bootstrap of the seeded automations, grid by default (node must be listening). See **Bootstrap scenarios**. `--emit-signals` turns signal emitting on for every automation this run creates |
+| `--full [--emit-signals] [--scenario …]` | `seed` → **`start.py` in background** (log file + pidfile) → `wait-for-base-url` → `bootstrap` (extra arguments are forwarded to bootstrap) |
 | `--restart` | Same as **`--stop`**, then background start + `wait-for-base-url` (**no** seed, **no** bootstrap) — keeps automations and orders |
 | `--stop` | Stop the node recorded in **`user/agent-seed/.agent-seed-node.pid`**, verify the base URL port is free |
 
@@ -291,11 +291,19 @@ The demo wallet is sandboxed in `octobot_node/agent_seed/demo_wallet.py`: it **c
 - Kraken **simulated** exchange config and accounts **Seed kraken A** (1000 USDC, grid) and **Seed kraken B** (500 USDC, index; idle until `index` or `completed` scenario)
 - Grid strategy on **BTC/USDC** (3 buy / 3 sell, spread 2000, increment 500)
 - Index strategy on **BTC / ETH / SOL** (10% rebalance trigger)
-- Bootstrap (optional/`--full`) starts the grid automation via `POST /api/v1/debug/`; CLI exits with error if debug shows that create user action **failed**. More automations on the same fixtures: see **Bootstrap scenarios**.
+- Bootstrap (optional/`--full`) starts the grid automation via `POST /api/v1/debug/`; CLI exits with error if debug shows that create user action **failed**. More automations on the same fixtures: see **Bootstrap scenarios**. Created automations have signal emitting **off** unless you pass **`--emit-signals`**.
 
 ## Bootstrap scenarios
 
 `bootstrap` (and `all`) take repeatable `--scenario` options, via `bash .cursor/seed-agent.sh bootstrap --scenario index` or `python -m tools.agent_seed bootstrap --scenario index`. Every scenario is idempotent: one already in its target state does nothing. Automations are created and controlled only through the debug API, with the same user actions the UI sends.
+
+**`--emit-signals`** (off by default) sets `emit_signals: true` on every automation this run creates: grid, index, the stopped index, and any later strategy that goes through the same create-automation builder. Without the flag, each automation is created with `emit_signals: false`, which is the previous behavior. A copy follower fails with `no_trading_signal` until its leader has finished at least one iteration with signals on, so start the leader with `--emit-signals` before creating the follower. The flag applies only when the automation is created. An automation that is already running is left as-is; wipe with `--clear` (node stopped) and bootstrap again to change it.
+
+```bash
+bash .cursor/seed-agent.sh --full --emit-signals
+bash .cursor/seed-agent.sh bootstrap --scenario index --emit-signals
+python -m tools.agent_seed bootstrap --emit-signals --scenario grid --scenario index
+```
 
 | Scenario | Result | Why it exists |
 |----------|--------|---------------|

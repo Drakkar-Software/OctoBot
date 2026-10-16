@@ -161,6 +161,7 @@ def bootstrap_index_automation(
     base_url: str,
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     debug_url, headers = _session(base_url)
     automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID
@@ -169,7 +170,9 @@ def bootstrap_index_automation(
     _create_and_wait_running(
         debug_url=debug_url,
         headers=headers,
-        user_action=agent_seed_protocol_builders.build_create_index_automation_user_action(),
+        user_action=agent_seed_protocol_builders.build_create_index_automation_user_action(
+            emit_signals=emit_signals,
+        ),
         automation_id=automation_id,
         poll_interval_seconds=poll_interval_seconds,
         timeout_seconds=timeout_seconds,
@@ -181,6 +184,7 @@ def bootstrap_completed_automation(
     base_url: str,
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     debug_url, headers = _session(base_url)
     automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID
@@ -194,6 +198,7 @@ def bootstrap_completed_automation(
             user_action=agent_seed_protocol_builders.build_create_index_automation_user_action(
                 automation_id=automation_id,
                 automation_name=demo_agent_seed_constants.DEMO_AGENT_SEED_COMPLETED_AUTOMATION_DISPLAY_NAME,
+                emit_signals=emit_signals,
             ),
             automation_id=automation_id,
             poll_interval_seconds=poll_interval_seconds,
@@ -213,6 +218,7 @@ def check_grid_automation_lifecycle(
     base_url: str,
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     """
     Stop then restart the seeded grid automation and check it is RUNNING again with its display name.
@@ -225,6 +231,7 @@ def check_grid_automation_lifecycle(
             base_url=base_url,
             poll_interval_seconds=poll_interval_seconds,
             timeout_seconds=timeout_seconds,
+            emit_signals=emit_signals,
         )
     _stop_and_wait_completed(
         debug_url=debug_url,
@@ -262,11 +269,13 @@ def run_scenarios(
     scenarios: typing.Optional[typing.Iterable[agent_seed_enums.BootstrapScenario]],
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     common = {
         "base_url": base_url,
         "poll_interval_seconds": poll_interval_seconds,
         "timeout_seconds": timeout_seconds,
+        "emit_signals": emit_signals,
     }
     runners = {
         agent_seed_enums.BootstrapScenario.GRID: agent_seed_bootstrap_grid.bootstrap_grid_automation,

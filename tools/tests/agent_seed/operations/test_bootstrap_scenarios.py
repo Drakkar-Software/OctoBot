@@ -21,6 +21,7 @@ class FakeNode:
         self.automations: dict[str, dict] = {}
         self.user_actions: list[dict] = []
         self.posted_action_types: list[str] = []
+        self.created_configurations: list[dict] = []
         self.drop_name_on_restart = drop_name_on_restart
         self.reject_posts_with = reject_posts_with
 
@@ -45,6 +46,7 @@ class FakeNode:
         self.posted_action_types.append(action_type)
         if action_type == "automation_create":
             configuration = action["configuration"]
+            self.created_configurations.append(configuration)
             self.automations[configuration["id"]] = {
                 "id": configuration["id"],
                 "status": "running",
@@ -67,13 +69,21 @@ def fake_node(monkeypatch):
     return node
 
 
-def _run(scenarios):
+def _run(scenarios, *, emit_signals: bool = False):
     agent_seed_bootstrap_scenarios.run_scenarios(
         base_url=BASE_URL,
         scenarios=scenarios,
         poll_interval_seconds=0,
         timeout_seconds=1,
+        emit_signals=emit_signals,
     )
+
+
+def _created_strategy_flags(fake_node) -> list[tuple[str, bool]]:
+    return [
+        (configuration["strategy"]["id"], configuration["strategy"]["emit_signals"])
+        for configuration in fake_node.created_configurations
+    ]
 
 
 class TestExpandScenarios:
@@ -194,6 +204,33 @@ class TestLifecycleScenario:
 
     def test_name_lost_error_is_an_agent_seed_error(self):
         assert issubclass(agent_seed_errors.AutomationNameLostError, agent_seed_errors.AgentSeedError)
+
+
+class TestEmitSignalsOnSeededAutomations:
+    def test_default_leaves_emit_signals_off_for_grid_and_index(self, fake_node):
+        _run([
+            agent_seed_enums.BootstrapScenario.GRID,
+            agent_seed_enums.BootstrapScenario.INDEX,
+        ])
+        assert _created_strategy_flags(fake_node) == [
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID, False),
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID, False),
+        ]
+
+    def test_emit_signals_turns_signals_on_for_grid_and_index(self, fake_node):
+        _run(
+            [
+                agent_seed_enums.BootstrapScenario.GRID,
+                agent_seed_enums.BootstrapScenario.INDEX,
+                agent_seed_enums.BootstrapScenario.COMPLETED,
+            ],
+            emit_signals=True,
+        )
+        assert _created_strategy_flags(fake_node) == [
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID, True),
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID, True),
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID, True),
+        ]
 
 
 class TestAllScenarios:
