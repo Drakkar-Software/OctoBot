@@ -156,11 +156,12 @@ def _build_create_automation_user_action(
     automation_name: str,
     strategy_id: str,
     account_id: str,
+    emit_signals: bool = False,
 ) -> protocol_models.UserAction:
     strategy_reference = protocol_models.StrategyReference(
         id=strategy_id,
         version=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_VERSION,
-        emit_signals=False,
+        emit_signals=emit_signals,
     )
     automation_configuration = protocol_models.AutomationConfiguration(
         id=automation_id,
@@ -179,13 +180,17 @@ def _build_create_automation_user_action(
     )
 
 
-def build_create_grid_automation_user_action() -> protocol_models.UserAction:
+def build_create_grid_automation_user_action(
+    *,
+    emit_signals: bool = False,
+) -> protocol_models.UserAction:
     return _build_create_automation_user_action(
         user_action_id_prefix="ua-agent-seed-grid",
         automation_id=demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
         automation_name=demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME,
         strategy_id=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID,
         account_id=demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_GRID_ID,
+        emit_signals=emit_signals,
     )
 
 
@@ -193,6 +198,7 @@ def build_create_index_automation_user_action(
     *,
     automation_id: str = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID,
     automation_name: str = demo_agent_seed_constants.DEMO_AGENT_SEED_INDEX_AUTOMATION_DISPLAY_NAME,
+    emit_signals: bool = False,
 ) -> protocol_models.UserAction:
     return _build_create_automation_user_action(
         user_action_id_prefix="ua-agent-seed-index",
@@ -200,6 +206,7 @@ def build_create_index_automation_user_action(
         automation_name=automation_name,
         strategy_id=demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID,
         account_id=demo_agent_seed_constants.DEMO_AGENT_SEED_ACCOUNT_INDEX_IDLE_ID,
+        emit_signals=emit_signals,
     )
 
 

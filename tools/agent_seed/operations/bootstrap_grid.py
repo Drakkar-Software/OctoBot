@@ -93,6 +93,7 @@ def bootstrap_grid_automation(
     base_url: str,
     poll_interval_seconds: float = DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     wallet_address = demo_agent_seed_constants.DEMO_AGENT_SEED_WALLET_EVM_ADDRESS
     headers = agent_seed_bootstrap_http.basic_auth_header(
@@ -114,7 +115,9 @@ def bootstrap_grid_automation(
         ):
             return
 
-    user_action = agent_seed_protocol_builders.build_create_grid_automation_user_action()
+    user_action = agent_seed_protocol_builders.build_create_grid_automation_user_action(
+        emit_signals=emit_signals,
+    )
     user_action_id = user_action.id
     create_status, create_body = agent_seed_bootstrap_http.request_json(
         "POST",

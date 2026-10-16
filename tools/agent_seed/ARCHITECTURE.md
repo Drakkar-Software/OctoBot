@@ -8,6 +8,7 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 - Agent procedure: skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`)
 - Bootstrap polls `GET /api/v1/debug/` (`user_actions` status + automation `RUNNING` in `debug.automations`) and fails fast on FAILED create-automation; shared automation polling/conflict checks in `operations/bootstrap_automation.py` (grid entrypoint `operations/bootstrap_grid.py`)
 - Extra bootstrap scenarios (index, completed, lifecycle) live in `operations/bootstrap_scenarios.py`
+- `--emit-signals` (default off) is applied once in `protocol/builders.py` when the automation config is built, so every scenario gets the same `emit_signals` value
 
 ## Phases
 

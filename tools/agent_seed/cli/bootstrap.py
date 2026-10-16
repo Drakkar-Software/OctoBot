@@ -7,6 +7,11 @@ import tools.agent_seed.enums as agent_seed_enums
 import tools.agent_seed.operations.bootstrap_grid as agent_seed_bootstrap_grid
 import tools.agent_seed.operations.bootstrap_scenarios as agent_seed_bootstrap_scenarios
 
+EMIT_SIGNALS_HELP = (
+    "Create each seeded automation with signal emitting turned on (default: off). "
+    "A copy follower needs the leader to finish one iteration with signals on"
+)
+
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Bootstrap demo agent-seed grid automation")
@@ -32,6 +37,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Scenario to run, repeatable (default: grid). all = grid, index, completed, lifecycle",
     )
+    parser.add_argument("--emit-signals", action="store_true", help=EMIT_SIGNALS_HELP)
     return parser
 
 
@@ -42,6 +48,7 @@ def main(argv: typing.Optional[list[str]] = None) -> int:
         scenarios=[agent_seed_enums.BootstrapScenario(value) for value in arguments.scenario or []],
         poll_interval_seconds=arguments.poll_interval,
         timeout_seconds=arguments.timeout,
+        emit_signals=arguments.emit_signals,
     )
     return 0
 
@@ -54,4 +61,6 @@ def run_from_namespace(arguments: argparse.Namespace) -> int:
         bootstrap_argv.extend(["--timeout", str(arguments.timeout)])
     for scenario in arguments.scenario or []:
         bootstrap_argv.extend(["--scenario", scenario])
+    if arguments.emit_signals:
+        bootstrap_argv.append("--emit-signals")
     return main(bootstrap_argv)

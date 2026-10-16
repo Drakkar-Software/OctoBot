@@ -64,10 +64,11 @@ case "${1:-}" in
     run_stop_node
     ;;
   --full)
+    shift
     run_seed
     run_start_background
     wait_for_node_ready
-    run_bootstrap
+    run_bootstrap "$@"
     ;;
   --restart)
     run_stop_node
@@ -78,7 +79,7 @@ case "${1:-}" in
     run_seed --clear
     ;;
   *)
-    echo "Usage: $0 {seed [--clear]|bootstrap [--scenario grid|index|completed|lifecycle|all]|start|--full|--restart|--clear|--stop}" >&2
+    echo "Usage: $0 {seed [--clear]|bootstrap [--scenario grid|index|completed|lifecycle|all] [--emit-signals]|start|--full [--emit-signals] [--scenario ...]|--restart|--clear|--stop}" >&2
     exit 1
     ;;
 esac

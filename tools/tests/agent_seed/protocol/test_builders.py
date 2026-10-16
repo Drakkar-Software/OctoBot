@@ -2,6 +2,8 @@
 
 import uuid
 
+import pytest
+
 import octobot_protocol.models as protocol_models
 
 import octobot_node.agent_seed.constants as demo_agent_seed_constants
@@ -108,6 +110,32 @@ class TestBuildCreateIndexAutomationUserAction:
         first = agent_seed_protocol_builders.build_create_index_automation_user_action()
         second = agent_seed_protocol_builders.build_create_index_automation_user_action()
         assert first.id != second.id
+
+
+class TestEmitSignalsOnCreateAutomation:
+    @staticmethod
+    def _strategy_reference(user_action):
+        return user_action.configuration.actual_instance.configuration.strategy
+
+    @pytest.mark.parametrize(
+        "builder",
+        [
+            agent_seed_protocol_builders.build_create_grid_automation_user_action,
+            agent_seed_protocol_builders.build_create_index_automation_user_action,
+        ],
+    )
+    def test_defaults_to_emit_signals_off(self, builder):
+        assert self._strategy_reference(builder()).emit_signals is False
+
+    @pytest.mark.parametrize(
+        "builder",
+        [
+            agent_seed_protocol_builders.build_create_grid_automation_user_action,
+            agent_seed_protocol_builders.build_create_index_automation_user_action,
+        ],
+    )
+    def test_emit_signals_option_turns_signals_on(self, builder):
+        assert self._strategy_reference(builder(emit_signals=True)).emit_signals is True
 
 
 class TestBuildStopAndRestartAutomationUserActions:
