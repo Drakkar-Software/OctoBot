@@ -1131,7 +1131,7 @@ class Order(util.Initializable):
     def _get_open_price(self):
         if self.triggered_by is None:
             return self.created_last_price
-        return self.triggered_by.get_filling_price()  # pylint: disable=protected-access
+        return self.triggered_by.get_filling_price()
 
     def get_filling_price(self):
         return self.origin_price
