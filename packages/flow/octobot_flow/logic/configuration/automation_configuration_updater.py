@@ -95,8 +95,12 @@ class AutomationConfigurationUpdater:
         self, configuration_update: octobot_flow.entities.ExchangeAccountDetails
     ):
         if self.automation_state.exchange_account_details.is_simulated():
+            # apply all portfolio updates in simulated mode
             portfolio_update = octobot_flow.entities.ExchangeAccountPortfolio().get_update(configuration_update.portfolio)
             self.automation_state.exchange_account_details.portfolio.update(portfolio_update)
+        elif self.automation_state.exchange_account_details.portfolio and configuration_update.portfolio.unit:
+            # apply the relevant unit to the portfolio in real trading (but not other portfolio fields)
+            self.automation_state.exchange_account_details.portfolio.unit = configuration_update.portfolio.unit
 
     def _update_automation(
         self, automation_state_update: octobot_flow.entities.AutomationState
