@@ -154,7 +154,8 @@ class TickerUpdater(ticker_channel.TickerProducer):
                 ):
                     symbols_filter = symbols
                 tickers = await self.channel.exchange_manager.exchange.get_all_currencies_price_ticker(
-                    symbols=symbols_filter
+                    symbols=symbols_filter,
+                    allow_single_ticker_fallback=True
                 )
                 self.set_cache(exchange_name, exchange_type, sandboxed, tickers)
                 return tickers
@@ -192,8 +193,12 @@ class TickerUpdater(ticker_channel.TickerProducer):
         if exchange.get_option_value(
             enums.ExchangeClientOptions.REQUIRES_SYMBOLS_PARAM_TO_FETCH_TICKERS
         ):
-            return await exchange.get_all_currencies_price_ticker(symbols=missing_symbols)
-        return await exchange.get_all_currencies_price_ticker()
+            return await exchange.get_all_currencies_price_ticker(
+                symbols=missing_symbols, allow_single_ticker_fallback=True
+            )
+        return await exchange.get_all_currencies_price_ticker(
+            allow_single_ticker_fallback=True
+        )
 
     @staticmethod
     def set_cache(exchange_name: str, exchange_type: str, sandboxed: bool, tickers: dict):

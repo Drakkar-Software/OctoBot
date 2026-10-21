@@ -129,8 +129,7 @@ class TestCoinrabbitRealExchangeTester(real_exchange_tester.RealExchangeTester):
             )
 
     async def test_get_all_currencies_price_ticker(self):
-        with pytest.raises(trading_errors.NotSupported):
-            async with self.get_exchange_manager() as exchange_manager:
-                await exchange_manager.exchange.get_all_currencies_price_ticker(
-                    symbols=[self.SYMBOL, self.SYMBOL_2],
-                )
+        await self.assert_get_all_currencies_price_ticker(
+            symbols=[self.SYMBOL, self.SYMBOL_2],
+            require_single_ticker_fallback=True,
+        )

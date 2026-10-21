@@ -1131,9 +1131,13 @@ class RealExchangeTester:
             )
             cls._apply_ticker_content_expectation(column, ticker[column], expect)
 
-    async def get_all_currencies_price_ticker(self, **kwargs):
+    async def get_all_currencies_price_ticker(
+        self, *, allow_single_ticker_fallback: bool = False, **kwargs
+    ):
         async with self.get_exchange_manager() as exchange_manager:
-            return await exchange_manager.exchange.get_all_currencies_price_ticker(**kwargs)
+            return await exchange_manager.exchange.get_all_currencies_price_ticker(
+                allow_single_ticker_fallback=allow_single_ticker_fallback, **kwargs
+            )
 
     async def assert_get_all_currencies_price_ticker(
         self,
@@ -1141,12 +1145,22 @@ class RealExchangeTester:
         extra_checks: typing.Optional[typing.Callable[[dict], None]] = None,
         allowed_failed_tickers_typing_checks_percentage: int = 0,
         ticker_expectations: typing.Optional[TickerRequiredExpectations] = None,
+        require_single_ticker_fallback: bool = False,
     ):
         async with self.get_exchange_manager() as exchange_manager:
             no_volume_in_ticker = exchange_manager.exchange.get_option_value(
                 trading_enums.ExchangeClientOptions.NO_VOLUME_IN_TICKER
             )
-            tickers = await exchange_manager.exchange.get_all_currencies_price_ticker(symbols=symbols)
+            if require_single_ticker_fallback:
+                with pytest.raises(trading_errors.NotSupported):
+                    await exchange_manager.exchange.get_all_currencies_price_ticker(
+                        allow_single_ticker_fallback=False
+                    )
+                if not symbols:
+                    raise ValueError("symbols are required when require_single_ticker_fallback is True")
+                tickers = await exchange_manager.exchange.get_all_currencies_price_ticker(symbols=symbols)
+            else:
+                tickers = await exchange_manager.exchange.get_all_currencies_price_ticker(symbols=symbols)
         if symbols:
             assert sorted(tickers.keys()) == sorted(symbols)
         for symbol, ticker in tickers.items():

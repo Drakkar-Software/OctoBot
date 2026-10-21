@@ -544,6 +544,7 @@ class _TickerMarketsMockCCXT:
         self.urls = {'api': {'public': 'https://test.example'}}
         self.apiKey = None
         self.symbols_to_add_on_fetch = symbols_to_add_on_fetch or []
+        self.has = {'fetchTicker': True, 'fetchTickers': True}
 
     async def fetch_ticker(self, symbol, params=None):
         for symbol_to_add in self.symbols_to_add_on_fetch:

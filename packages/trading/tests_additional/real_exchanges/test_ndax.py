@@ -119,4 +119,4 @@ class TestNdaxRealExchangeTester(real_exchange_tester.RealExchangeTester):
         )
 
     async def test_get_all_currencies_price_ticker(self):
-        await self.get_all_currencies_price_ticker()
+        await self.assert_get_all_currencies_price_ticker(allowed_failed_tickers_typing_checks_percentage=10)
