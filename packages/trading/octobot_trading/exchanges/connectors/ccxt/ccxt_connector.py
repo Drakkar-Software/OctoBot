@@ -746,12 +746,27 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
 
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_all_currencies_price_ticker(
-        self, symbols: typing.Optional[list[str]] = None, can_try_to_fix_missing_tickers: bool = True, **kwargs: dict
+        self,
+        symbols: typing.Optional[list[str]] = None,
+        can_try_to_fix_missing_tickers: bool = True,
+        allow_single_ticker_fallback: bool = True,
+        **kwargs: dict
     ) -> typing.Optional[dict[str, dict]]:
         try:
             with self.error_describer(False):
                 previous_market_symbols = set((self.client.markets or {}).keys())
-                fetched_tickers = await self.client.fetch_tickers(symbols, params=kwargs)
+                if allow_single_ticker_fallback and symbols and not self.client.has['fetchTickers']:
+                    # multi ticker fetch no supported, try to fetch tickers one by one
+                    tickers = await asyncio.gather(*[
+                        self.client.fetch_ticker(symbol, params=kwargs)
+                        for symbol in symbols
+                    ])
+                    fetched_tickers = {
+                        ticker.get(enums.ExchangeConstantsTickersColumns.SYMBOL.value): ticker
+                        for ticker in tickers
+                    }
+                else:
+                    fetched_tickers = await self.client.fetch_tickers(symbols, params=kwargs)
                 self._persist_markets_cache_if_new_symbols(previous_market_symbols)
                 tickers = {
                     symbol: self.adapter.adapt_ticker(ticker)
