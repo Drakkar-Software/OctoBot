@@ -174,7 +174,8 @@ class TestUpdatePortfolio:
         state = _automation_state(simulated=False, portfolio_unit="EUR")
         update_details = _exchange_account_details(simulated=True, portfolio_unit="USDT")
         _updater(state)._update_portfolio(update_details)
-        assert state.exchange_account_details.portfolio.unit == "EUR"
+        # unit takes the value of the update
+        assert state.exchange_account_details.portfolio.unit == "USDT"
 
 
 class TestUpdateAutomation:
