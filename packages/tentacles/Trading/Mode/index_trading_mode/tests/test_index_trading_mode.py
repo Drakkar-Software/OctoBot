@@ -2076,7 +2076,7 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
             ) as cancel_symbol_open_orders_mock, mock.patch.object(
                 mode, "create_rebalancer", return_value=portfolio_rebalancer
             ), mock.patch.object(
-                portfolio_rebalancer._exchange_interface.orders, "wait_for_orders_to_fill", mock.AsyncMock()
+                portfolio_rebalancer._exchange_interface.orders, "wait_for_orders_to_fill_and_ensure_portfolio_sync", mock.AsyncMock()
             ) as wait_for_orders_to_fill_mock:
                 details = {
                     rebalancer_enums.RebalanceDetails.REMOVE.value: {},
@@ -2110,7 +2110,7 @@ async def test_sell_targeted_coins_for_reference_market(trading_tools):
         with mock.patch.object(
                 octobot_trading.modes.modes_util, "convert_assets_to_target_asset", mock.AsyncMock(return_value=orders)
         ) as convert_assets_to_target_asset_mock, mock.patch.object(
-            portfolio_rebalancer._exchange_interface.orders, "wait_for_orders_to_fill", mock.AsyncMock()
+            portfolio_rebalancer._exchange_interface.orders, "wait_for_orders_to_fill_and_ensure_portfolio_sync", mock.AsyncMock()
         ) as wait_for_orders_to_fill_mock, mock.patch.object(
             portfolio_rebalancer, "_get_coins_to_sell", mock.Mock(return_value=["BTC", "ETH", "SOL"])
         ) as _get_coins_to_sell_mock, mock.patch.object(
@@ -4429,6 +4429,65 @@ class TestIndexTradingModeNetworkQualifiedPortfolioAssets:
             PORTFOLIO_BASE_ASSET,
             PORTFOLIO_QUOTE_ASSET,
         )
+
+    @pytest.mark.parametrize("trading_tools", ["spot"], indirect=True)
+    async def test_register_traded_pairs_skips_reference_market_self_pair(self, trading_tools):
+        mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, {}))
+        portfolio_manager = trader.exchange_manager.exchange_personal_data.portfolio_manager
+        portfolio_manager.reference_market = PORTFOLIO_QUOTE_ASSET
+        mode.indexed_coins = [PORTFOLIO_BASE_ASSET, PORTFOLIO_QUOTE_ASSET]
+        with mock.patch.object(
+            trader.exchange_manager.exchange_config,
+            "add_traded_symbols",
+            mock.AsyncMock(),
+        ) as add_traded_symbols_mock:
+            await producer._register_traded_symbol_pairs_update()
+        added_pairs = add_traded_symbols_mock.call_args[0][0]
+        assert TICKER_WISE_SYMBOL in added_pairs
+        assert commons_symbols.merge_currencies(PORTFOLIO_QUOTE_ASSET, PORTFOLIO_QUOTE_ASSET) not in added_pairs
+
+    def test_get_tentacle_config_traded_symbols_skips_reference_self_pair(self):
+        trading_config = {
+            index_trading.IndexTradingModeProducer.INDEX_CONTENT: [
+                {
+                    rebalancer_enums.DistributionKeys.NAME: PORTFOLIO_BASE_ASSET,
+                    rebalancer_enums.DistributionKeys.VALUE: 50,
+                },
+                {
+                    rebalancer_enums.DistributionKeys.NAME: PORTFOLIO_QUOTE_ASSET,
+                    rebalancer_enums.DistributionKeys.VALUE: 50,
+                },
+            ],
+        }
+        symbols = index_trading.IndexTradingMode.get_tentacle_config_traded_symbols(
+            trading_config, PORTFOLIO_QUOTE_ASSET
+        )
+        assert symbols == [TICKER_WISE_SYMBOL]
+
+    def test_get_dsl_dependencies_excludes_reference_self_pair(self):
+        trading_config = {
+            index_trading.IndexTradingModeProducer.INDEX_CONTENT: [
+                {
+                    rebalancer_enums.DistributionKeys.NAME: PORTFOLIO_BASE_ASSET,
+                    rebalancer_enums.DistributionKeys.VALUE: 50,
+                },
+                {
+                    rebalancer_enums.DistributionKeys.NAME: PORTFOLIO_QUOTE_ASSET,
+                    rebalancer_enums.DistributionKeys.VALUE: 50,
+                },
+            ],
+        }
+        global_config = {
+            commons_constants.CONFIG_TRADING: {
+                commons_constants.CONFIG_TRADER_REFERENCE_MARKET: PORTFOLIO_QUOTE_ASSET,
+            },
+        }
+        previous_state = {index_trading.StateKeys.INDEXED_COINS.value: [PORTFOLIO_QUOTE_ASSET]}
+        dependencies = index_trading.IndexTradingMode.get_dsl_dependencies(
+            trading_config, global_config, previous_state
+        )
+        dependency_symbols = [dependency.symbol for dependency in dependencies]
+        assert dependency_symbols == [TICKER_WISE_SYMBOL]
 
 
 @pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)

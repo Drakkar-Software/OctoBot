@@ -11,6 +11,7 @@ import octobot_trading.api.exchange as exchange_api
 import octobot_trading.enums as trading_enums
 import octobot_trading.exchanges as trading_exchanges
 import octobot_trading.exchanges.util.exchange_data as exchange_data_module
+import octobot_trading.exchanges.util.exchange_util as exchange_util
 import octobot_trading.util.protocol_trading_mapping as protocol_trading_mapping
 
 import octobot_flow.entities
@@ -462,12 +463,7 @@ def _derive_price_symbols(
 
 
 def _is_valid_trading_symbol(symbol: str) -> bool:
-    if not symbol_util.is_symbol(symbol):
+    if not exchange_util.is_exchange_ticker_symbol(symbol):
         return False
-    # Bare asset ticker: validate merged valuation symbol legs — .base/.quote are network-qualified on ticker-wise pairs; use .base/.quote for portfolio[...] / reference_market.
     parsed_symbol = symbol_util.parse_symbol(symbol)
-    base_currency = parsed_symbol.base_asset_ticker()
-    quote_currency = parsed_symbol.quote_asset_ticker()
-    if symbol_util.is_usd_like_coin(parsed_symbol.base):
-        return False
-    return bool(base_currency) and bool(quote_currency) and base_currency != quote_currency
+    return not symbol_util.is_usd_like_coin(parsed_symbol.base)

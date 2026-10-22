@@ -645,7 +645,16 @@ def get_common_traded_quote(exchange_manager) -> typing.Union[str, None]:
     return quote
 
 
+def is_exchange_ticker_symbol(symbol: str) -> bool:
+    return (
+        common_symbols.has_different_base_and_quote_currency(symbol)
+        and not common_symbols.is_usd_like_to_usd_like_pair(symbol)
+    )
+
+
 def get_associated_symbol(exchange_manager, asset: str, target_asset: str) -> (typing.Union[str, None], bool):
+    if common_symbols.is_same_coin(asset, target_asset):
+        return None, False
     symbol = common_symbols.merge_currencies(asset, target_asset)
     is_reversed_symbol = False
     if symbol not in exchange_manager.client_symbols:
