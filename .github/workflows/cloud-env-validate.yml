@@ -29,6 +29,7 @@ jobs:
       - name: Cloud validate
         id: validate
         run: |
+          set -o pipefail
           source .cursor/env.sh
           bash .cursor/cloud-validate.sh --profile ci-tentacles --json | tee cloud-validate.json
 
