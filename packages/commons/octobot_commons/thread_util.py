@@ -13,21 +13,14 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
-import sys
 import concurrent.futures as futures
 
 
-# pylint: disable=W0212
 def stop_thread_pool_executor_non_gracefully(executor: futures.ThreadPoolExecutor):
     """
-    Should only be used in python 3.8
-    From https://gist.github.com/clchiou/f2608cbe54403edb0b13
-    Non graceful and non clean but only way to shutdown a ThreadPoolExecutor
+    Shut the pool down and wait for running workers.
+    The name is historical. Before Python 3.9 this cleared private thread tables
+    without waiting. OctoBot requires Python 3.13, so this always waits.
     :param executor: the ThreadPoolExecutor to stop
     """
-    if sys.version_info.minor >= 9:
-        executor.shutdown(True)
-    else:
-        executor.shutdown(False)
-        executor._threads.clear()
-        futures.thread._threads_queues.clear()
+    executor.shutdown(wait=True)
