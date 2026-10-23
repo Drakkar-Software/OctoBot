@@ -1,0 +1,7 @@
+configuration:
+  enable_node_api:
+    name: Enable Node API
+    description: Serve the OctoBot Node web interface on port 8000 (opened by the web UI button).
+  node_external_host:
+    name: Node external host
+    description: Optional. External host (and port, if non-default) the Node sync/mobile features advertise, e.g. behind a reverse proxy or public hostname. Leave empty to use OctoBot's default.
