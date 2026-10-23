@@ -61,7 +61,7 @@ class AbstractServiceFeed(abstract_service_user.AbstractServiceUser,
 
         # backtesting
         self.backtesting = backtesting
-        self.is_backtesting = backtesting is not None and self.BACKTESTING_ENABLED == True
+        self.is_backtesting = backtesting is not None and self.BACKTESTING_ENABLED
         self.social_data_importer = importer
         self.time_consumer = None
 
