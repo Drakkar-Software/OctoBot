@@ -22,6 +22,6 @@ if typing.TYPE_CHECKING:
 
 class PortfolioUpdateEvent(asyncio.Event):
     def is_resolved(
-        self, updated_portfolio: "octobot_trading.personal_data.Portfolio" # pylint: disable=unused-argument
+        self, updated_portfolio: "octobot_trading.personal_data.Portfolio"
     ) -> bool:
         raise NotImplementedError("is_resolved must be implemented")
