@@ -8,6 +8,7 @@ import mock
 import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 import octobot_sync.sync.collection_providers.user_account_history_provider as history_provider_module
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
@@ -16,18 +17,6 @@ import octobot_sync.sync.collection_backend.errors as collection_errors
 _TEST_ADDRESS = "0xaaabbbcccddd"
 _TEST_ACCOUNT_ID = "acc-42"
 _TEST_PRIVATE_KEY = "private-key"
-
-
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
 
 
 def _sample_history_state(updated_at: datetime.datetime) -> protocol_models.PortfolioHistoricalValuesState:
@@ -82,7 +71,7 @@ class TestAccountHistoryProviderLoadSaveState:
         history_state = _sample_history_state(fixture_time)
         updated_time = datetime.datetime(2026, 1, 16, tzinfo=datetime.UTC)
         updated_state = _sample_history_state(updated_time)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, history_state)
             loaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, updated_state)
@@ -94,7 +83,7 @@ class TestAccountHistoryProviderLoadSaveState:
         provider = history_provider_module.AccountHistoryProvider(base_folder=str(tmp_path))
         fixture_time = datetime.datetime(2026, 1, 15, tzinfo=datetime.UTC)
         history_state = _sample_history_state(fixture_time)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, history_state)
             encrypted_blob = provider.load_state_encrypted(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
         assert "iv" in encrypted_blob
@@ -108,7 +97,7 @@ class TestAccountHistoryProviderSeparateFiles:
         second_time = datetime.datetime(2026, 1, 16, tzinfo=datetime.UTC)
         first_state = _sample_history_state(first_time)
         second_state = _sample_history_state(second_time)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, "acc-1", first_state)
             provider.save_state(_TEST_ADDRESS, "acc-2", second_state)
             loaded_first = provider.load_state(_TEST_ADDRESS, "acc-1")
@@ -120,7 +109,7 @@ class TestAccountHistoryProviderSeparateFiles:
 class TestAccountHistoryProviderMissingState:
     def test_load_state_raises_when_file_missing(self, tmp_path):
         provider = history_provider_module.AccountHistoryProvider(base_folder=str(tmp_path))
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             try:
                 provider.load_state(_TEST_ADDRESS, "missing-account")
                 raise AssertionError("Expected CollectionNoDataError")
