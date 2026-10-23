@@ -1,4 +1,3 @@
-# pylint: disable=C0103
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -118,7 +117,7 @@ class CappedFileHandler(logging.FileHandler):
             self.stream = None
         try:
             _trim_file_bytes(self.baseFilename, self._trim_lines_fraction)
-        except Exception: # pylint: disable=broad-exception-caught
+        except Exception:
             _MODULE_LOGGER.exception("Failed to trim log file %s", self.baseFilename)
             raise
         self.stream = self._open()
