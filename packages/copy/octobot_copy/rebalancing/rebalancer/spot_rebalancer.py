@@ -102,7 +102,7 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
                     f"for delta_base={delta_base}"
                 )
                 return None
-            await self._exchange_interface.orders.wait_for_orders_to_fill(sell_orders)
+            await self._exchange_interface.orders.wait_for_orders_to_fill_and_ensure_portfolio_sync(sell_orders)
             return sell_orders
         if delta_base < trading_constants.ZERO:
             await self._pre_cancel_conflicting_orders(
@@ -130,7 +130,7 @@ class SpotRebalancer(base_rebalancer.AbstractRebalancer):
                     "is too small to trade"
                 )
                 return None
-            await self._exchange_interface.orders.wait_for_orders_to_fill(buy_orders)
+            await self._exchange_interface.orders.wait_for_orders_to_fill_and_ensure_portfolio_sync(buy_orders)
             return buy_orders
         return None
 
