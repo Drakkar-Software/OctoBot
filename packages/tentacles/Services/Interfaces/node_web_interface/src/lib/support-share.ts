@@ -9,10 +9,19 @@
  */
 
 import {
+  areClientKeysConfigured,
+  type ClientKeys,
+} from "@/lib/client-encryption"
+import { loadClientKeys } from "@/lib/device-key"
+import {
   buildWorkflowLogsExportFilename,
   fetchAutomationLogsArchive,
 } from "@/lib/logs-export"
 import { getSupportTicket, sendAttachment } from "@/lib/octochat"
+
+export type ShareWorkflowLogsOptions = {
+  removeTiming?: boolean
+}
 
 export type ShareLogsOutcome =
   | { status: "shared"; nodeId: string }
@@ -26,10 +35,25 @@ export function buildLogsExportFilename(): string {
 }
 
 /** Fetch the selected OctoBots' logs from the node as a zip file ready to attach. */
+export async function resolveDefaultHideLogTimings(): Promise<boolean> {
+  const rawKeys = await loadClientKeys()
+  if (!rawKeys) {
+    return false
+  }
+  return areClientKeysConfigured(rawKeys as ClientKeys)
+}
+
 export async function fetchWorkflowLogs(
   taskIds: string[],
+  options?: ShareWorkflowLogsOptions,
 ): Promise<{ bytes: Uint8Array; name: string; mime: string }> {
-  return fetchAutomationLogsArchive(taskIds, buildWorkflowLogsExportFilename())
+  return fetchAutomationLogsArchive(
+    taskIds,
+    buildWorkflowLogsExportFilename(),
+    {
+      removeTiming: options?.removeTiming,
+    },
+  )
 }
 
 /**
@@ -40,10 +64,11 @@ export async function fetchWorkflowLogs(
  */
 export async function shareWorkflowLogs(
   taskIds: string[],
+  options?: ShareWorkflowLogsOptions,
 ): Promise<ShareLogsOutcome> {
   const ticket = await getSupportTicket()
   if (ticket.status === "open") {
-    const file = await fetchWorkflowLogs(taskIds)
+    const file = await fetchWorkflowLogs(taskIds, options)
     await sendAttachment(ticket.nodeId, file, "Workflow logs")
     return { status: "shared", nodeId: ticket.nodeId }
   }
