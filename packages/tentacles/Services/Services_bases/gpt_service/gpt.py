@@ -58,8 +58,8 @@ MINIMAL_PARAMS_SERIES_MODELS = [
     "o",  # the whole o-series does not support temperature parameter
 ]
 MINIMAL_PARAMS_MODELS = [
-    # Empty for now - gpt-5 base models should be checked via _is_of_series instead
     # This list is for exact model name prefixes only
+    "gpt-6-luna",
 ]
 SYSTEM = "system"
 USER = "user"
@@ -73,7 +73,7 @@ REASONING_EFFORT_VALUES = (REASONING_EFFORT_LOW, REASONING_EFFORT_MEDIUM, REASON
 class LLMService(services.AbstractAIService):
     BACKTESTING_ENABLED = True
 
-    DEFAULT_MODEL = "gpt-4o-mini"
+    DEFAULT_MODEL = "gpt-6-luna"
     NO_TOKEN_LIMIT_VALUE = -1
     HTTP_TIMEOUT = 300.0  # HTTP client timeout in seconds
 
