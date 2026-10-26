@@ -15,6 +15,7 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import io
+import logging
 import os
 import re
 import zipfile
@@ -38,21 +39,93 @@ _SAFE_TASK_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 _SAFE_MAIN_LOG_NAME_RE = re.compile(r"^[a-zA-Z0-9_.-]+\.log(\.\d+)?$")
 # Active log file (no ``.log.N`` rotation suffix).
 _ACTIVE_LOG_NAME_RE = re.compile(r"^[a-zA-Z0-9_.-]+\.log$")
+# OctoBot fileFormatter: asctime then levelname within the first columns of each line.
+_LOG_HEADER_SEARCH_WINDOW = 48
+_LOG_LEVEL_TOKENS = tuple(
+    sorted(
+        (
+            logging.getLevelName(level)
+            for level in (
+                logging.CRITICAL,
+                logging.ERROR,
+                logging.WARNING,
+                logging.INFO,
+                logging.DEBUG,
+            )
+        ),
+        key=len,
+        reverse=True,
+    )
+)
+_VALID_TIMING_PREFIX_RE = re.compile(r"^[\d\-: ]+$")
 
 
 class ExportLogsRequest(BaseModel):
     task_ids: list[str] | None = None
     latest_only: bool = False
+    remove_timing: bool = False
 
 
-def _build_zip_from_log_files(log_entries: list[tuple[str, str]]) -> bytes | None:
+def _split_line_ending(line: str) -> tuple[str, str]:
+    if line.endswith("\r\n"):
+        return line[:-2], "\r\n"
+    if line.endswith("\n"):
+        return line[:-1], "\n"
+    if line.endswith("\r"):
+        return line[:-1], "\r"
+    return line, ""
+
+
+def _find_log_level_start(line_body: str) -> int | None:
+    window = line_body[:_LOG_HEADER_SEARCH_WINDOW]
+    best_pos: int | None = None
+    for level in _LOG_LEVEL_TOKENS:
+        pos = window.find(level)
+        if pos == -1:
+            continue
+        before_ok = pos == 0 or window[pos - 1] == " "
+        after_end = pos + len(level)
+        after_ok = after_end < len(window) and window[after_end] == " "
+        if before_ok and after_ok and (best_pos is None or pos < best_pos):
+            best_pos = pos
+    if best_pos is None:
+        return None
+    prefix = line_body[:best_pos].strip()
+    if not prefix or not _VALID_TIMING_PREFIX_RE.match(prefix):
+        return None
+    return best_pos
+
+
+def strip_log_line_timings(text: str) -> str:
+    """Replace leading asctime on standard log header lines with per-file sequence numbers."""
+    sequence = 0
+    result_parts: list[str] = []
+    for line in text.splitlines(keepends=True):
+        line_body, line_end = _split_line_ending(line)
+        level_start = _find_log_level_start(line_body)
+        if level_start is not None:
+            sequence += 1
+            result_parts.append(f"{sequence} {line_body[level_start:]}{line_end}")
+        else:
+            result_parts.append(line)
+    return "".join(result_parts)
+
+
+def _build_zip_from_log_files(
+    log_entries: list[tuple[str, str]], *, remove_timing: bool = False
+) -> bytes | None:
     """Zip existing files. Each entry is ``(absolute path, archive name)``; missing paths are skipped."""
     buffer = io.BytesIO()
     written = 0
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for log_path, arcname in log_entries:
             if os.path.isfile(log_path):
-                archive.write(log_path, arcname=arcname)
+                if remove_timing:
+                    with open(log_path, encoding="utf-8") as log_file:
+                        content = strip_log_line_timings(log_file.read())
+                    archive.writestr(arcname, content)
+                else:
+                    archive.write(log_path, arcname=arcname)
                 written += 1
     if written == 0:
         return None
@@ -141,7 +214,9 @@ def _collect_latest_task_log_entries(task_id: str) -> list[tuple[str, str]]:
     return entries
 
 
-def build_logs_zip(task_ids: list[str], *, latest_only: bool = False) -> bytes | None:
+def build_logs_zip(
+    task_ids: list[str], *, latest_only: bool = False, remove_timing: bool = False
+) -> bytes | None:
     """Zip per-automation logs for the given task ids.
 
     When ``latest_only`` is False, includes ``AUTOMATION_LOGS_FOLDER/<id>.log`` when
@@ -158,7 +233,7 @@ def build_logs_zip(task_ids: list[str], *, latest_only: bool = False) -> bytes |
     )
     for task_id in task_ids:
         log_entries.extend(collector(task_id))
-    return _build_zip_from_log_files(log_entries)
+    return _build_zip_from_log_files(log_entries, remove_timing=remove_timing)
 
 
 @router.post("/export")
@@ -181,7 +256,11 @@ def export_logs(body: ExportLogsRequest, current_user: CurrentUser) -> fastapi.R
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="task_ids required when latest_only is true",
         )
-    archive = build_logs_zip(body.task_ids, latest_only=body.latest_only)
+    archive = build_logs_zip(
+        body.task_ids,
+        latest_only=body.latest_only,
+        remove_timing=body.remove_timing,
+    )
     if archive is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

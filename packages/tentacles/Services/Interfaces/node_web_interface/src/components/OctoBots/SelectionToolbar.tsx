@@ -5,6 +5,7 @@ import { useMemo, useState } from "react"
 
 import type { Task } from "@/client"
 import { TasksService } from "@/client"
+import { ShareLogsDialog } from "@/components/OctoBots/ShareLogsDialog"
 import { StopAutomationDialog } from "@/components/OctoBots/StopAutomationDialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +20,7 @@ import {
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { canStopOctoBot } from "@/lib/octobots/stop-automation"
+import { getSupportTicket } from "@/lib/octochat"
 import { shareWorkflowLogs } from "@/lib/support-share"
 import { getTaskFilterGroup } from "@/utils/task-status"
 
@@ -60,6 +62,9 @@ export function SelectionToolbar({
   const [logsModal, setLogsModal] = useState<
     null | "none" | "pending" | "disabled"
   >(null)
+  const [shareLogsDialogOpen, setShareLogsDialogOpen] = useState(false)
+  const [shareLogsTicketCheckLoading, setShareLogsTicketCheckLoading] =
+    useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -127,11 +132,14 @@ export function SelectionToolbar({
   })
 
   const shareLogsMutation = useMutation({
-    mutationFn: () => shareWorkflowLogs(Array.from(selectedIds)),
+    mutationFn: ({ removeTiming }: { removeTiming: boolean }) =>
+      shareWorkflowLogs(Array.from(selectedIds), { removeTiming }),
     onSuccess: (res) => {
       if (res.status === "shared") {
+        setShareLogsDialogOpen(false)
         showSuccessToast("Workflow logs shared to your support ticket")
       } else {
+        setShareLogsDialogOpen(false)
         setLogsModal(res.status)
       }
     },
@@ -140,6 +148,28 @@ export function SelectionToolbar({
         err instanceof Error ? err.message : "Couldn't share logs",
       ),
   })
+
+  const handleShareLogsClick = () => {
+    setShareLogsTicketCheckLoading(true)
+    void getSupportTicket()
+      .then((ticket) => {
+        if (ticket.status === "open") {
+          setShareLogsDialogOpen(true)
+          return
+        }
+        if (ticket.status === "resolved") {
+          setLogsModal("none")
+          return
+        }
+        setLogsModal(ticket.status)
+      })
+      .catch((err) =>
+        showErrorToast(
+          err instanceof Error ? err.message : "Couldn't check support ticket",
+        ),
+      )
+      .finally(() => setShareLogsTicketCheckLoading(false))
+  }
 
   const exportableTasks = inactiveTasks
 
@@ -186,8 +216,10 @@ export function SelectionToolbar({
           <LoadingButton
             variant="outline"
             size="sm"
-            loading={shareLogsMutation.isPending}
-            onClick={() => shareLogsMutation.mutate()}
+            loading={
+              shareLogsTicketCheckLoading || shareLogsMutation.isPending
+            }
+            onClick={handleShareLogsClick}
           >
             <ScrollText className="size-3.5" />
             Share logs
@@ -259,6 +291,16 @@ export function SelectionToolbar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ShareLogsDialog
+        open={shareLogsDialogOpen}
+        onOpenChange={setShareLogsDialogOpen}
+        octobotCount={selectedIds.size}
+        sharing={shareLogsMutation.isPending}
+        onShare={(hideLogTimings) =>
+          shareLogsMutation.mutate({ removeTiming: hideLogTimings })
+        }
+      />
 
       <StopAutomationDialog
         open={stopOpen}
