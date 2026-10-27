@@ -16,12 +16,11 @@
 
 import typing
 
-import mock
 import pydantic
 import pytest
 
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.constants as sync_constants
-import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.base_local_collection_provider as base_provider_module
 import octobot_sync.sync.collection_backend.errors as collection_errors
 
@@ -87,18 +86,6 @@ def _make_provider(tmp_path):
     return _TestItemProvider(base_folder=str(tmp_path))
 
 
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
-
-
 def _item(item_id: str, label: str | None = None) -> _TestItem:
     return _TestItem(id=item_id, label=label)
 
@@ -107,24 +94,24 @@ class TestBaseLocalCollectionProviderCreateItem:
     def test_creates_and_returns_item(self, tmp_path):
         provider = _make_provider(tmp_path)
         item = _item("item-1", label="First")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             created = provider.create_item(_TEST_ADDRESS, item)
         assert created == item
 
     def test_duplicate_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
         item = _item("item-1")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, item)
         with pytest.raises(collection_errors.DuplicateItemError):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.create_item(_TEST_ADDRESS, item)
 
 
 class TestBaseLocalCollectionProviderListItems:
     def test_lists_created_items(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
             provider.create_item(_TEST_ADDRESS, _item("item-2"))
             listed = provider.list_items(_TEST_ADDRESS)
@@ -135,7 +122,7 @@ class TestBaseLocalCollectionProviderListItems:
 class TestBaseLocalCollectionProviderGetItem:
     def test_returns_matching_item(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="First"))
             fetched = provider.get_item(_TEST_ADDRESS, "item-1")
         assert fetched.label == "First"
@@ -143,14 +130,14 @@ class TestBaseLocalCollectionProviderGetItem:
     def test_missing_item_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
         with pytest.raises(collection_errors.ItemNotFoundError):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.get_item(_TEST_ADDRESS, "nonexistent")
 
 
 class TestBaseLocalCollectionProviderUpdateItem:
     def test_updates_existing_item(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="Original"))
             provider.update_item(_TEST_ADDRESS, _item("item-1", label="Updated"))
             fetched = provider.get_item(_TEST_ADDRESS, "item-1")
@@ -159,14 +146,14 @@ class TestBaseLocalCollectionProviderUpdateItem:
     def test_missing_item_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
         with pytest.raises(collection_errors.ItemNotFoundError):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.update_item(_TEST_ADDRESS, _item("nonexistent"))
 
 
 class TestBaseLocalCollectionProviderDeleteItem:
     def test_deletes_existing_item(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
             provider.delete_item(_TEST_ADDRESS, "item-1")
             listed = provider.list_items(_TEST_ADDRESS)
@@ -175,7 +162,7 @@ class TestBaseLocalCollectionProviderDeleteItem:
     def test_missing_item_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
         with pytest.raises(collection_errors.ItemNotFoundError):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.delete_item(_TEST_ADDRESS, "nonexistent")
 
 
@@ -187,7 +174,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
 
     def test_returns_raw_encrypted_blob(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="secret"))
 
         blob = provider.list_items_encrypted(_TEST_ADDRESS)
@@ -197,7 +184,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
     def test_bypasses_cache(self, tmp_path):
         """list_items_encrypted must read from disk, not the in-memory cache."""
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
             # list_items populates cache
             provider.list_items(_TEST_ADDRESS)
@@ -208,7 +195,7 @@ class TestBaseLocalCollectionProviderListItemsEncrypted:
     def test_does_not_need_wallet_authentication(self, tmp_path):
         """No private key is needed -- the blob is returned as-is from disk."""
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
 
         # Call without wallet mock active -- no authentication needed
@@ -220,7 +207,7 @@ class TestBaseLocalCollectionProviderStateFormat:
     def test_persisted_state_contains_version_and_items_key(self, tmp_path):
         """The decrypted file content must be a state dict with version + items."""
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="A"))
 
         state = provider._storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _TestState)
@@ -231,7 +218,7 @@ class TestBaseLocalCollectionProviderStateFormat:
 
     def test_version_matches_state_version_classvar(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
 
         state = provider._storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _TestState)
@@ -239,7 +226,7 @@ class TestBaseLocalCollectionProviderStateFormat:
 
     def test_items_key_matches_classvar(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
 
         state = provider._storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _TestState)
@@ -248,7 +235,7 @@ class TestBaseLocalCollectionProviderStateFormat:
 
     def test_empty_collection_persists_empty_items_list(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1"))
             provider.delete_item(_TEST_ADDRESS, "item-1")
 
@@ -259,7 +246,7 @@ class TestBaseLocalCollectionProviderStateFormat:
     def test_state_is_valid_state_class_instance(self, tmp_path):
         """The persisted dict must round-trip through STATE_CLASS.from_dict."""
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="test"))
 
         state_model = provider._storage.load_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, _TestState)
@@ -272,14 +259,14 @@ class TestBaseLocalCollectionProviderStateFormat:
 class TestBaseLocalCollectionProviderAddressIsolation:
     def test_items_are_isolated_between_addresses(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet("key-1"):
+        with wallet_test_support.patch_community_wallet("key-1"):
             provider.create_item(_TEST_ADDRESS_ALT, _item("item-a"))
-        with _patch_wallet("key-2"):
+        with wallet_test_support.patch_community_wallet("key-2"):
             provider.create_item(_TEST_ADDRESS_OTHER, _item("item-b"))
 
-        with _patch_wallet("key-1"):
+        with wallet_test_support.patch_community_wallet("key-1"):
             items_alt = provider.list_items(_TEST_ADDRESS_ALT)
-        with _patch_wallet("key-2"):
+        with wallet_test_support.patch_community_wallet("key-2"):
             items_other = provider.list_items(_TEST_ADDRESS_OTHER)
 
         assert [entry.id for entry in items_alt] == ["item-a"]
@@ -343,7 +330,7 @@ class TestBaseLocalCollectionProviderMultiFieldPersistence:
             items=[],
             secondary_items=[secondary_item],
         )
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider._save_state(_TEST_ADDRESS, initial_state)
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="Primary"))
 
@@ -358,7 +345,7 @@ class TestBaseLocalCollectionProviderKeyedCrud:
     def test_create_get_update_delete_secondary_item(self, tmp_path):
         provider = _make_multi_field_provider(tmp_path)
         secondary_key = provider.SECONDARY_ITEMS_KEY
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             created = provider._create_item_for_key(
                 _TEST_ADDRESS,
                 secondary_key,
@@ -389,7 +376,7 @@ class TestBaseLocalCollectionProviderGetItemIdForKey:
 class TestBaseLocalCollectionProviderCacheInvalidation:
     def test_reloads_from_disk_when_file_changed_externally(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_item(_TEST_ADDRESS, _item("item-1", label="Cached"))
             provider.list_items(_TEST_ADDRESS)
 
@@ -399,7 +386,7 @@ class TestBaseLocalCollectionProviderCacheInvalidation:
         )
         provider._storage.save_state(_TEST_ADDRESS, _TEST_PRIVATE_KEY, external_state)
 
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             listed = provider.list_items(_TEST_ADDRESS)
 
         assert len(listed) == 1
