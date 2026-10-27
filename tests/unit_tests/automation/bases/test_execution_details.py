@@ -13,8 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
-import pytest
-
 from octobot.automation.bases.execution_details import ExecutionDetails
 
 
