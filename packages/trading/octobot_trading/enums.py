@@ -762,6 +762,8 @@ class ExchangeClientOptions(enum.StrEnum):
     MY_TRADES_FETCH_PAGINATION_OFFSET = "myTradesFetchPaginationOffset"
     MY_TRADES_FETCH_USE_CCXT_PAGINATE = "myTradesFetchUseCcxtPaginate"
     CLOSED_ORDERS_FETCH_USE_CCXT_PAGINATE = "closedOrdersFetchUseCcxtPaginate"
+    WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS = "waitForOrdersToFillTimeoutSeconds"
+    WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS = "waitForOrdersToFillPollIntervalSeconds"
 
 
 class ExchangeSupportedElements(enum.StrEnum):
@@ -871,6 +873,9 @@ DEFAULT_EXCHANGE_OPTION_VALUES = {
     ExchangeClientOptions.MY_TRADES_FETCH_PAGINATION_OFFSET: None,
     ExchangeClientOptions.MY_TRADES_FETCH_USE_CCXT_PAGINATE: False,
     ExchangeClientOptions.CLOSED_ORDERS_FETCH_USE_CCXT_PAGINATE: False,
+    # Max seconds to poll portfolio totals when order auto-sync is disabled (spot static wait path)
+    ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS: 60,
+    ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS: 5,
     ExchangeClientOptions.SUPPORTED_ELEMENTS: {
         ExchangeSupportedElements.FUTURES: {
             ExchangeSupportedElements.ORDERS: [TradeOrderType.MARKET.value, TradeOrderType.LIMIT.value],

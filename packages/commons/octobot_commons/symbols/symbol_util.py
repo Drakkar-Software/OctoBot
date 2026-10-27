@@ -169,6 +169,18 @@ def is_usd_like_to_usd_like_pair(symbol: str) -> bool:
     )
 
 
+def has_different_base_and_quote_currency(symbol: str) -> bool:
+    """
+    :return: True when bare base and quote tickers are both set and different
+    """
+    if not is_symbol(symbol):
+        return False
+    parsed_symbol = parse_symbol(symbol)
+    base_currency = parsed_symbol.base_asset_ticker()
+    quote_currency = parsed_symbol.quote_asset_ticker()
+    return bool(base_currency) and bool(quote_currency) and base_currency != quote_currency
+
+
 def get_most_common_usd_like_symbol(pairs: list[str]) -> str:
     """
     :return: The most common USD like symbol from the given pairs

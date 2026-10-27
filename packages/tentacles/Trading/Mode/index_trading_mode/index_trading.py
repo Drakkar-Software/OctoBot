@@ -31,6 +31,7 @@ import octobot_trading.enums as trading_enums
 import octobot_trading.errors as trading_errors
 import octobot_trading.modes as trading_modes
 import octobot_trading.util as trading_util
+import octobot_trading.exchanges.util.exchange_util as exchange_util
 import octobot_trading.personal_data as trading_personal_data
 import octobot_trading.signals as signals
 
@@ -333,10 +334,9 @@ class IndexTradingModeProducer(trading_modes.AbstractTradingModeProducer):
                 ]
             else:
                 # on spot, add coins with the reference market as quote currency to trade
-                added_pairs = [
-                    symbol_util.merge_currencies(coin, reference_market)
-                    for coin in self.trading_mode.indexed_coins
-                ]
+                added_pairs = IndexTradingMode._reference_market_trading_symbols(
+                    self.trading_mode.indexed_coins, reference_market
+                )
             self.logger.debug(f"Update traded symbol pair: {added_pairs}...")
             # TODO: remove the pairs when the coins are entirely removed from the index
             await self.exchange_manager.exchange_config.add_traded_symbols(added_pairs, [])
@@ -619,11 +619,25 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
             self.rebalance_actions_planner.update_distribution()
 
     @classmethod
+    def _reference_market_trading_symbols(cls, coins: list[str], reference_market: str) -> list[str]:
+        trading_symbols: list[str] = []
+        for coin in coins:
+            if symbol_util.is_same_coin(coin, reference_market):
+                continue
+            merged_symbol = symbol_util.merge_currencies(coin, reference_market)
+            if exchange_util.is_exchange_ticker_symbol(merged_symbol):
+                trading_symbols.append(merged_symbol)
+        return trading_symbols
+
+    @classmethod
     def get_tentacle_config_traded_symbols(cls, config: dict, reference_market: str) -> list:
-        return [
-            symbol_util.merge_currencies(asset[rebalancer_enums.DistributionKeys.NAME], reference_market)
-            for asset in (cls.get_ideal_distribution(config) or [])
-        ]
+        return cls._reference_market_trading_symbols(
+            [
+                asset[rebalancer_enums.DistributionKeys.NAME]
+                for asset in (cls.get_ideal_distribution(config) or [])
+            ],
+            reference_market,
+        )
 
     @classmethod
     def get_dsl_dependencies(
@@ -637,10 +651,9 @@ class IndexTradingMode(trading_modes.AbstractTradingMode):
         except (KeyError, TypeError):
             reference_market = commons_constants.DEFAULT_REFERENCE_MARKET
         symbols = cls.get_tentacle_config_traded_symbols(trading_config, reference_market) + (
-            [
-                symbol_util.merge_currencies(coin, reference_market)
-                for coin in previous_state.get(StateKeys.INDEXED_COINS.value, [])
-            ] if previous_state else []
+            cls._reference_market_trading_symbols(
+                previous_state.get(StateKeys.INDEXED_COINS.value, []), reference_market
+            ) if previous_state else []
         )
         return [trading_dsl.SymbolDependency(symbol=symbol) for symbol in list_util.deduplicate(symbols)]
 
