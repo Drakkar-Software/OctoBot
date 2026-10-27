@@ -48,6 +48,20 @@ export PYTHONPATH="$ROOT:$ROOT/packages/agents:$ROOT/packages/async_channel:$ROO
 
 PYTHONPATH must use absolute paths (`$PWD`-based) — build subprocesses run from tentacle subdirectories and need to resolve all packages.
 
+### Cursor Cloud agents
+
+Cloud install profile and validation live in [`.cursor/README.md`](.cursor/README.md). Before Python, `OctoBot`, pytest, or `extended_linter`:
+
+```bash
+source .cursor/env.sh
+```
+
+Open pull requests against **`dev`** (GitHub default is `master`; integration work targets `dev` unless release flow says otherwise). Before handoff:
+
+```bash
+python -m tools.extended_linter --base origin/dev
+```
+
 ## Tentacles
 
 - **Source of truth**: `packages/tentacles/` — all tentacle changes go here.
