@@ -12,6 +12,7 @@ import octobot_trading.constants as trading_constants
 import octobot_trading.enums
 import octobot_trading.errors
 import octobot_trading.api.exchange as exchange_api
+import octobot_trading.exchanges.util.exchange_util as exchange_util
 import octobot_trading.personal_data as personal_data
 import octobot_trading.personal_data.orders.order_util as order_util
 import octobot_trading.exchanges
@@ -176,8 +177,13 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
 
     async def _fetch_tickers(self):
         repository = self.get_exchange_repository_factory().get_tickers_repository()
+        traded_symbols = [
+            symbol
+            for symbol in self._get_traded_symbols()
+            if exchange_util.is_exchange_ticker_symbol(symbol)
+        ]
         self.fetched_dependencies.fetched_exchange_data.public_data.tickers = await repository.fetch_tickers(
-            self._get_traded_symbols()
+            traded_symbols
         )
         ticker_close_by_symbols = {
             symbol: ticker[octobot_trading.enums.ExchangeConstantsTickersColumns.CLOSE.value] 
@@ -246,7 +252,7 @@ class ExchangeAccountJob(octobot_flow.repositories.exchange.ExchangeContextMixin
                     (
                         self.fetched_dependencies.fetched_exchange_data.get_last_price(
                             symbol_util.merge_currencies(asset, unit)
-                        ) if asset != unit else trading_constants.ONE
+                        ) if not symbol_util.is_same_coin(asset, unit) else trading_constants.ONE
                      ) * values[common_constants.PORTFOLIO_TOTAL] # type: ignore
                 ),
             )

@@ -182,9 +182,9 @@ class OrdersInterface:
     def automatically_synchronize_orders(self) -> bool:
         return self._exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization
 
-    async def wait_for_orders_to_fill(self, orders: list) -> None:
+    async def wait_for_orders_to_fill_and_ensure_portfolio_sync(self, orders: list) -> None:
         return await trading_personal_data.wait_for_orders_to_fill_considering_order_auto_synchronization(
-            self._exchange_manager, orders, copy_constants.FILL_ORDER_TIMEOUT, True, temp_refresh_portfolio_on_static_wait=False
+            self._exchange_manager, orders, copy_constants.FILL_ORDER_TIMEOUT, True
         )
 
     async def wait_for_orders_to_open(
