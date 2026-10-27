@@ -91,16 +91,46 @@ def compute_win_rate(exchange_manager):
                     else:
                         lost_trades_count += constants.ONE
     else:
-        for trade in exchange_manager.exchange_personal_data.trades_manager.trades.values():
-            if trade.status is trading_enums.OrderStatus.FILLED and trade.side is trading_enums.TradeOrderSide.SELL:
-                if trade.exchange_trade_type in _LOSING_ORDER_TYPES:
-                    lost_trades_count += constants.ONE
-                else:
-                    won_trades_count += constants.ONE
+        for is_win in _get_spot_sell_results(exchange_manager.exchange_personal_data.trades_manager.trades.values()):
+            if is_win:
+                won_trades_count += constants.ONE
+            else:
+                lost_trades_count += constants.ONE
     total_counted_trades = won_trades_count + lost_trades_count
     if total_counted_trades > constants.ZERO:
         return won_trades_count / total_counted_trades
     return constants.ZERO
+
+
+def _get_spot_sell_results(trades) -> typing.Iterator[bool]:
+    """
+    Yields, for each filled spot sell, whether it was a win: a sell above the average entry price of the
+    amount bought before it on the same symbol.
+    Sells without a known entry (such as selling the starting portfolio) are classified by order type.
+    """
+    held_quantity_and_cost_by_symbol = {}
+    filled_trades = sorted(
+        (trade for trade in trades if trade.status is trading_enums.OrderStatus.FILLED),
+        key=lambda trade: trade.executed_time or 0
+    )
+    for trade in filled_trades:
+        held_quantity, held_cost = held_quantity_and_cost_by_symbol.get(trade.symbol, (constants.ZERO, constants.ZERO))
+        if trade.side is trading_enums.TradeOrderSide.BUY:
+            held_quantity_and_cost_by_symbol[trade.symbol] = (
+                held_quantity + trade.executed_quantity,
+                held_cost + trade.executed_quantity * trade.executed_price
+            )
+        elif trade.side is trading_enums.TradeOrderSide.SELL:
+            if held_quantity > constants.ZERO:
+                average_entry_price = held_cost / held_quantity
+                yield trade.executed_price > average_entry_price
+                sold_quantity = min(trade.executed_quantity, held_quantity)
+                held_quantity_and_cost_by_symbol[trade.symbol] = (
+                    held_quantity - sold_quantity,
+                    held_cost - sold_quantity * average_entry_price
+                )
+            else:
+                yield trade.exchange_trade_type not in _LOSING_ORDER_TYPES
 
 
 def aggregate_trades_by_exchange_order_id(trades: list) -> dict:
