@@ -35,6 +35,24 @@ def verify_merge_base(
                 detail=result.stderr.strip() or f"unknown ref {base_ref}",
             )
         )
+        return violations
+    merge_base = subprocess.run(
+        ["git", "merge-base", "HEAD", base_ref],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if merge_base.returncode != 0 or not merge_base.stdout.strip():
+        violations.append(
+            domain_models.Violation(
+                rule_id="git.merge_base_missing",
+                file="",
+                line=None,
+                hint=hint,
+                detail=f"no merge base between HEAD and {base_ref}",
+            )
+        )
     return violations
 
 
