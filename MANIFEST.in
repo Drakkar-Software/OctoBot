@@ -3,6 +3,8 @@ recursive-include octobot *.pxd
 include README.md
 include LICENSE
 include CHANGELOG.md
+include pyproject.toml
+include uv.lock
 include requirements.txt
 include full_requirements.txt
 
