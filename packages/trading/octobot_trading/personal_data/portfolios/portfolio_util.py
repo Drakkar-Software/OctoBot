@@ -34,6 +34,7 @@ import octobot_trading.enums as enums
 import octobot_trading.errors as errors
 
 import octobot_commons.constants as commons_constants
+import octobot_commons.enums as commons_enums
 import octobot_commons.logging as commons_logging
 import octobot_commons.symbols as symbol_util
 import octobot_commons.list_util as list_util
@@ -188,6 +189,41 @@ def get_draw_down(exchange_manager):
                 draw_down = current_draw_down if current_draw_down > draw_down else draw_down
         except Exception as e:
             commons_logging.get_logger(__name__).warning(f"Error when computing draw down: {e}")
+    else:
+        try:
+            draw_down = _get_spot_draw_down(exchange_manager)
+        except Exception as e:
+            commons_logging.get_logger(__name__).warning(f"Error when computing draw down: {e}")
+    return draw_down
+
+
+def _get_spot_draw_down(exchange_manager) -> decimal.Decimal:
+    """
+    Spot draw down from the portfolio value in reference market: the starting value, the recorded
+    historical values (shortest saved time frame) and the current value.
+    """
+    portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+    value_holder = portfolio_manager.portfolio_value_holder
+    portfolio_values = [value_holder.portfolio_origin_value]
+    history_manager = portfolio_manager.historical_portfolio_value_manager
+    if history_manager is not None and history_manager.saved_time_frames:
+        shortest_time_frame = min(
+            (commons_enums.TimeFrames(time_frame) for time_frame in history_manager.saved_time_frames),
+            key=lambda time_frame: commons_enums.TimeFramesMinutes[time_frame]
+        )
+        historical_values = history_manager.get_historical_values(
+            portfolio_manager.reference_market, shortest_time_frame
+        )
+        portfolio_values += [
+            decimal.Decimal(str(historical_values[timestamp])) for timestamp in sorted(historical_values)
+        ]
+    portfolio_values.append(value_holder.portfolio_current_value)
+    draw_down = constants.ZERO
+    highest_value = constants.ZERO
+    for value in portfolio_values:
+        highest_value = max(highest_value, value)
+        if highest_value > constants.ZERO:
+            draw_down = max(draw_down, constants.ONE_HUNDRED - value / (highest_value / constants.ONE_HUNDRED))
     return draw_down
 
 
