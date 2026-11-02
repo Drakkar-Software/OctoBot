@@ -18,10 +18,10 @@ import json
 
 import mock
 
-import octobot.community.authentication as community_authentication
 import octobot_sync.crypto as sync_crypto
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_providers.user_strategy_provider as strategy_provider_module
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
@@ -29,18 +29,6 @@ import octobot_sync.enums as sync_enums
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
 _TEST_PRIVATE_KEY = "private-key"
-
-
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
 
 
 def _legacy_grid_strategy_state_json() -> str:
@@ -121,7 +109,7 @@ class TestStrategyProviderListItems:
             _TEST_PRIVATE_KEY,
         )
         provider = strategy_provider_module.StrategyProvider(base_folder=str(tmp_path))
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             strategies = provider.list_items(_TEST_ADDRESS)
 
         assert len(strategies) == 1
