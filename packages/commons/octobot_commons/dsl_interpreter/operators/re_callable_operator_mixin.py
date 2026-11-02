@@ -115,7 +115,7 @@ class ReCallableOperatorMixin:
             ]).last_execution_result
         return None
 
-    def create_re_callable_result( # pylint: disable=too-many-arguments
+    def create_re_callable_result(
         self,
         keyword: str,
         reset_to_id: typing.Optional[str] = None,
@@ -138,7 +138,7 @@ class ReCallableOperatorMixin:
             },
         )
 
-    def create_re_callable_result_dict( # pylint: disable=too-many-arguments
+    def create_re_callable_result_dict(
         self,
         keyword: str,
         reset_to_id: typing.Optional[str] = None,

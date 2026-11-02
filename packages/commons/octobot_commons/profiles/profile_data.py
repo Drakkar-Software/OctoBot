@@ -1,4 +1,4 @@
-# pylint: disable=C0103,R0902,C0301,C0415,R0401
+# pylint: disable=R0902,C0301,C0415,R0401
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -86,7 +86,6 @@ class FutureExchangeData(
     default_leverage: typing.Union[float, None] = None
     symbol_data: list[FutureSymbolData] = dataclasses.field(default_factory=list)
 
-    # pylint: disable=E1134
     def __post_init__(self):
         if self.symbol_data and isinstance(self.symbol_data[0], dict):
             self.symbol_data = [
@@ -146,7 +145,6 @@ class TradingData(
     sellable_assets: typing.Optional[list[str]] = None
     paused: bool = False
 
-    # pylint: disable=E1134
     def __post_init__(self):
         if self.minimal_funds and isinstance(self.minimal_funds[0], dict):
             self.minimal_funds = [
@@ -211,7 +209,6 @@ class ProfileData(
     options: OptionsData = dataclasses.field(default_factory=OptionsData)
     distribution: str = constants.DEFAULT_DISTRIBUTION
 
-    # pylint: disable=E1134
     def __post_init__(self):
         if self.crypto_currencies and isinstance(self.crypto_currencies[0], dict):
             self.crypto_currencies = [
