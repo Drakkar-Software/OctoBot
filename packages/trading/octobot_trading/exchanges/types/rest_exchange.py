@@ -616,6 +616,9 @@ class RestExchange(abstract_exchange.AbstractExchange):
     async def get_dex_pairs(self, symbols: list[str], **kwargs: dict) -> list[dict]:
         return await self.connector.get_dex_pairs(symbols, **kwargs)
 
+    async def get_exchange_trading_providers(self, **kwargs: dict) -> list:
+        return await self.connector.get_exchange_trading_providers(**kwargs)
+
     def uses_demo_trading_instead_of_sandbox(self, exchange_type: enums.ExchangeTypes) -> bool:
         return self.connector.uses_demo_trading_instead_of_sandbox(exchange_type)
 

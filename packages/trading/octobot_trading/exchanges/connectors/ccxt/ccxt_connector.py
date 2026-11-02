@@ -566,6 +566,15 @@ class CCXTConnector(abstract_exchange.AbstractExchange):
             await self.client.ob_fetch_dex_pairs(symbols, **kwargs)
         )
 
+    async def get_exchange_trading_providers(self, **kwargs: dict) -> list:
+        if not self.client.has.get('obGetExchangeTradingProviders'):
+            raise octobot_trading.errors.NotSupported(
+                "This exchange doesn't support obGetExchangeTradingProviders"
+            )
+        return self.adapter.adapt_exchange_trading_providers(
+            await self.client.ob_get_exchange_trading_providers(**kwargs)
+        )
+
     @ccxt_client_util.converted_ccxt_common_errors
     async def get_account_id(self, **kwargs: dict) -> str:
         if not self.client.has.get('fetchAccountId'):

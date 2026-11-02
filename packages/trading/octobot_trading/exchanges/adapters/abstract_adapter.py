@@ -155,6 +155,11 @@ class AbstractAdapter:
         fixed = self.fix_deposit_address(raw, **kwargs)
         return self.parse_deposit_address(fixed, **kwargs)
 
+    @_adapter
+    def adapt_exchange_trading_providers(self, raw, **kwargs) -> list:
+        fixed = self.fix_exchange_trading_providers(raw, **kwargs)
+        return self.parse_exchange_trading_providers(fixed, **kwargs)
+
     def get_uniformized_timestamp(self, timestamp) -> float:
         # override if the exchange time is not a second timestamp or millisecond
         if timestamp is not None and timestamp > 16728292300:  # Friday 5 February 2500 11:51:40
@@ -309,3 +314,10 @@ class AbstractAdapter:
 
     def parse_deposit_address(self, fixed, **kwargs) -> dict:
         raise NotImplementedError("parse_deposit_address is not implemented")
+
+    def fix_exchange_trading_providers(self, raw, **kwargs):
+        # add generic logic if necessary
+        return raw
+
+    def parse_exchange_trading_providers(self, fixed, **kwargs) -> list:
+        raise NotImplementedError("parse_exchange_trading_providers is not implemented")

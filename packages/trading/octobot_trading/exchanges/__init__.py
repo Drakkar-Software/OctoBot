@@ -118,6 +118,7 @@ from octobot_trading.exchanges.config import (
     BacktestingExchangeConfig,
     ExchangeProxyConfig,
     ExchangeCredentialsData,
+    ExchangeTradingProvider,
 )
 from octobot_trading.exchanges import traders
 from octobot_trading.exchanges.traders import (
@@ -160,6 +161,7 @@ __all__ = [
     "BacktestingExchangeConfig",
     "ExchangeProxyConfig",
     "ExchangeCredentialsData",
+    "ExchangeTradingProvider",
     "ExchangeManager",
     "ExchangeBuilder",
     "create_exchange_builder_instance",
