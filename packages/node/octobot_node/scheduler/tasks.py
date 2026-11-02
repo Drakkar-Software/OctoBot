@@ -101,16 +101,14 @@ async def send_actions_to_automation(actions: list[dict], automation_id: str):
     await send_actions_to_automation_workflow(actions, workflow_status.workflow_id)
 
 
-async def trigger_copier_automation(automation_id: str, trading_signal: octobot_flow.entities.TradingSignal) -> None:
-    import octobot_node.scheduler  # avoid circular import
-    payload = params.AutomationWorkflowActionUpdate(
-        actions_type=octobot_node.enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value,
-        actions_details=[trading_signal.to_dict(include_default_values=False)],
-    ).to_dict(include_default_values=False)
-    await octobot_node.scheduler.SCHEDULER.INSTANCE.send_async(
-        automation_id,
-        payload,
-        topic=octobot_node.enums.AutomationWorkflowMessageTopics.ACTIONS_UPDATE.value,
+async def trigger_copier_automation(
+    target_workflow_id: str,
+    trading_signal: octobot_flow.entities.TradingSignal,
+) -> None:
+    await _send_automation_workflow_action_update(
+        target_workflow_id,
+        octobot_node.enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value,
+        [trading_signal.to_dict(include_default_values=False)],
     )
 
 
@@ -216,4 +214,17 @@ async def send_forced_trigger_to_active_automation(
         wallet_address,
         octobot_node.enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value,
         [],
+    )
+
+
+async def send_trading_signal_to_active_automation(
+    parent_automation_id: str,
+    wallet_address: str,
+    trading_signal: octobot_flow.entities.TradingSignal,
+) -> None:
+    await _send_to_active_automation_workflow(
+        parent_automation_id,
+        wallet_address,
+        octobot_node.enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value,
+        [trading_signal.to_dict(include_default_values=False)],
     )

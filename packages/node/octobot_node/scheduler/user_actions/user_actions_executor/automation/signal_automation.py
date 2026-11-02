@@ -130,8 +130,9 @@ class SignalAutomationActionExecutor(automation_user_action_executor.AutomationU
                     self._mark_user_action_completed(user_action)
             case protocol_models.AutomationSignalType.TRADING_SIGNAL:
                 trading_signal = _parse_trading_signal_payload(raw_payload)
-                await scheduler_tasks.trigger_copier_automation(
+                await scheduler_tasks.send_trading_signal_to_active_automation(
                     signal_config.automation_id,
+                    self._user_id,
                     trading_signal,
                 )
                 self._mark_user_action_completed(user_action)
