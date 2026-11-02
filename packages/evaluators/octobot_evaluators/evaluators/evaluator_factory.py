@@ -1,4 +1,3 @@
-# pylint: disable=E0401
 #  Drakkar-Software OctoBot-Evaluators
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #

@@ -284,7 +284,7 @@ class AbstractDeepAgentsTeamChannelProducer(agents_team.AbstractAgentsTeamChanne
             
             # Get agent-specific skills
             agent_skills = self.get_agent_skills(agent_name)  # pylint: disable=assignment-from-none
-            agent_files = self.get_agent_skills_files(agent_name)  # pylint: disable=assignment-from-none
+            agent_files = self.get_agent_skills_files(agent_name)
             
             if agent_skills:
                 self.logger.debug(f"[{self.team_name}] Loading skills for {agent_name}: {agent_skills}")
