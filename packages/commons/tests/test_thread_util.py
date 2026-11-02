@@ -15,17 +15,21 @@
 #  License along with this library.
 
 import concurrent.futures as futures
-import time
+
+import pytest
 
 import octobot_commons.thread_util as thread_util
 
 
-def test_method():
-    time.sleep(100000000)
+def test_stop_thread_pool_executor_waits_for_workers():
+    executor = futures.ThreadPoolExecutor(max_workers=1)
+    finished = []
 
+    def work():
+        finished.append(True)
 
-def test_stop_thread_pool_executor_non_gracefully():
-    executor = futures.ThreadPoolExecutor(max_workers=2)
-    for _ in range(2):
-        executor.submit(test_method)
+    executor.submit(work)
     thread_util.stop_thread_pool_executor_non_gracefully(executor)
+    assert finished == [True]
+    with pytest.raises(RuntimeError):
+        executor.submit(work)
