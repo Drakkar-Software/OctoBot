@@ -30,7 +30,6 @@ class FilledTakeProfitTrailingProfile(trailing_profile.TrailingProfile):
     """
     steps: list[trailing_price_step.TrailingPriceStep]
 
-    # pylint: disable=E1134
     def __post_init__(self):
         if self.steps and isinstance(self.steps[0], dict):
             self.steps = [
