@@ -1,0 +1,39 @@
+{
+  "comment": "Public throwaway test key only — never use for anything real. Schema 2 (signed sequence). Regenerate only if the manifest format changes, and copy the result to the OctoBot repo fixture (node_api_interface/tests/mobile_ui/fixtures/mobile2_golden_bucket.json).",
+  "seedHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "publicKey": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+  "files": {
+    "index.html": "PGh0bWw+aGk8L2h0bWw+",
+    "_expo/static/js/web/entry-abc.js": "Y29uc29sZS5sb2coMSk=",
+    "assets/a.txt": "YQ==",
+    "assets/node_modules/@scope/pkg/a b.txt": "c2NvcGVk"
+  },
+  "manifest": {
+    "schema": 2,
+    "sequence": 1700000000,
+    "version": "da0ed8ac17b04632",
+    "files": [
+      {
+        "path": "_expo/static/js/web/entry-abc.js",
+        "sha256": "0a286891c11c056e1ab5bfc25bf5d6b2f5b06d38eac10944f678fd8a2e70c393",
+        "size": 14
+      },
+      {
+        "path": "assets/a.txt",
+        "sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        "size": 1
+      },
+      {
+        "path": "assets/node_modules/@scope/pkg/a b.txt",
+        "sha256": "abc3d82314f3edc1385fc7b9b0b092c801b9db30cefdc11fe04ee4be9685cd6d",
+        "size": 6
+      },
+      {
+        "path": "index.html",
+        "sha256": "beb6d42e2e372ff35ff73af2a4bd53d0e440f07180b89ea67136a92c8f80a8ba",
+        "size": 15
+      }
+    ],
+    "signature": "H9N5IXWcoQz/p1s8bQHWlIUh4Wfw7jeUkyAsWpHbiVK9vUlk/bNa5PTtFZOxAv2s0ZtS39O5Z1jrOQaeIVqwCg=="
+  }
+}

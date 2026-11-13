@@ -3,6 +3,7 @@ import { useState } from "react"
 import { QRCode } from "react-qr-code"
 
 import { ManualNodeConnectPanel } from "@/components/Setup/ManualNodeConnectPanel"
+import { MobileUiCard } from "@/components/Setup/MobileUiCard"
 import { NodeConnectAddressTabs } from "@/components/Setup/NodeConnectAddressTabs"
 import { SetupPrivateKeyPanel } from "@/components/Setup/SetupPrivateKeyPanel"
 import { Button } from "@/components/ui/button"
@@ -85,6 +86,7 @@ export function ConnectNodeGuide() {
 
       {connectMethod === "web" ? (
         <div className="flex flex-col gap-4">
+          <MobileUiCard />
           <Card>
             <CardHeader>
               <CardTitle>1. Open the OctoBot web interface</CardTitle>
