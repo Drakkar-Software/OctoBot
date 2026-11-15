@@ -145,7 +145,7 @@ def _protocol_states_from_sources(
     return automations_protocol.to_protocol_automations_state(sources)
 
 
-TRADE_SYMBOL_AUTOMATION_STATUSES: tuple[dbos_lib.WorkflowStatusString, ...] = (
+ACTIVE_AUTOMATION_STATUSES: tuple[dbos_lib.WorkflowStatusString, ...] = (
     dbos_lib.WorkflowStatusString.ENQUEUED,
     dbos_lib.WorkflowStatusString.PENDING,
 )
@@ -225,6 +225,6 @@ async def load_wallet_automation_states_for_trade_symbols(wallet_id: str) -> Wal
     """Load active automation states for trade-symbol resolution (inputs only, no workflow outputs)."""
     return await load_wallet_automation_states(
         wallet_id,
-        statuses=list(TRADE_SYMBOL_AUTOMATION_STATUSES),
+        statuses=list(ACTIVE_AUTOMATION_STATUSES),
         load_output=False,
     )

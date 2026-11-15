@@ -26,8 +26,13 @@ import octobot_commons.timestamp_util as octobot_commons_timestamp_util
 import octobot_flow.entities as flow_entities
 import octobot_flow.entities.automations.octobot_process_state as octobot_process_state_module
 import octobot_node.models as node_models
+import octobot_node.protocol.accounts as accounts_protocol
+import octobot_node.protocol.accounts_trading as accounts_trading_protocol
+import octobot_node.scheduler.api as scheduler_api
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows.params as workflow_params
 import octobot_protocol.models as protocol_models
+import octobot_sync.sync.collection_providers.user_account_provider as user_account_provider
 import octobot_trading.constants as octobot_trading_constants
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.personal_data.portfolios.protocol as octobot_trading_portfolios_protocol
@@ -396,16 +401,28 @@ def _fill_protocol_automation_state(
             exchange_account_ids = [bound_account_id]
     # Derive portfolio and trading summaries from automation exchange elements.
     exchange_elements = flow_automation_state.automation.exchange_account_elements
-    assets: typing.Optional[list[protocol_models.DetailedAsset]] = None
+    assets: typing.Optional[list[protocol_models.DetailedAssetsForTradingType]] = None
     orders: typing.Optional[list[protocol_models.OrderSummary]] = None
     trades: typing.Optional[list[protocol_models.TradeSummary]] = None
     positions: typing.Optional[list[protocol_models.PositionSummary]] = None
     if exchange_elements:
         portfolio = exchange_elements.portfolio
-        if portfolio.content:
-            assets = octobot_trading_portfolios_protocol.to_protocol_assets(portfolio.content)
-        orders = _order_summaries_from_open_orders(exchange_elements.orders.open_orders) or None
         positions = _position_summaries(exchange_elements.positions) or None
+        if portfolio.content:
+            detailed_assets = octobot_trading_portfolios_protocol.to_protocol_assets(portfolio.content)
+            if detailed_assets:
+                trading_type = (
+                    protocol_models.TradingType.FUTURES
+                    if exchange_elements.positions
+                    else protocol_models.TradingType.SPOT
+                )
+                assets = [
+                    protocol_models.DetailedAssetsForTradingType(
+                        trading_type=trading_type,
+                        assets=detailed_assets,
+                    )
+                ]
+        orders = _order_summaries_from_open_orders(exchange_elements.orders.open_orders) or None
         trades = _automation_trade_summaries(exchange_elements) or None
     metadata = protocol_automation_state.metadata.model_copy(
         update={
@@ -498,3 +515,138 @@ def _automation_trade_summaries(
     for trade_summary in _trade_summaries(exchange_elements.trades):
         summaries_by_id[trade_summary.id] = trade_summary
     return list(summaries_by_id.values())
+
+
+def wallet_account_ids(
+    accounts: list[protocol_models.Account] | None,
+) -> list[str]:
+    if not accounts:
+        return []
+    return [
+        account.id
+        for account in accounts
+        if account.id
+    ]
+
+
+def fees_by_currency_from_trades(
+    trades: list[protocol_models.Trade],
+) -> dict[str, float]:
+    fees: dict[str, float] = {}
+    for trade in trades:
+        if trade.fee is None:
+            continue
+        currency = trade.fee.currency
+        fees[currency] = fees.get(currency, 0.0) + float(trade.fee.amount)
+    return fees
+
+
+@dataclasses.dataclass(frozen=True)
+class AutomationReadView:
+    user_id: str
+    automation: protocol_models.AutomationState
+    orders: list[protocol_models.Order]
+    trades: list[protocol_models.Trade]
+    fees_by_currency: dict[str, float]
+
+    @property
+    def display_name(self) -> str:
+        name = self.automation.metadata.name
+        return name if name else self.automation.id
+
+
+def _trading_by_account_id(
+    account_tradings: list[protocol_models.AccountTradingWithAccountId] | None,
+) -> dict[str, protocol_models.AccountTrading]:
+    trading_by_id: dict[str, protocol_models.AccountTrading] = {}
+    if not account_tradings:
+        return trading_by_id
+    for entry in account_tradings:
+        if entry.account_id and entry.account_trading is not None:
+            trading_by_id[entry.account_id] = entry.account_trading
+    return trading_by_id
+
+
+def _running_automation_states(
+    automations: list[protocol_models.AutomationState],
+) -> list[protocol_models.AutomationState]:
+    return [
+        automation for automation in automations
+        if automation.status is protocol_models.WorkflowStatus.RUNNING
+    ]
+
+
+def _orders_bound_to_automation(
+    automation: protocol_models.AutomationState,
+    account_orders: list[protocol_models.Order],
+) -> list[protocol_models.Order]:
+    bound_ids = {summary.id for summary in (automation.orders or [])}
+    if not bound_ids:
+        return []
+    return [
+        order for order in account_orders
+        if order.id in bound_ids or order.exchange_id in bound_ids
+    ]
+
+
+def _trades_bound_to_automation(
+    automation: protocol_models.AutomationState,
+    account_trades: list[protocol_models.Trade],
+) -> list[protocol_models.Trade]:
+    bound_ids = {summary.id for summary in (automation.trades or [])}
+    if not bound_ids:
+        return []
+    return [
+        trade for trade in account_trades
+        if trade.trade_id in bound_ids or trade.id in bound_ids
+    ]
+
+
+def _build_view_for_automation(
+    user_id: str,
+    automation: protocol_models.AutomationState,
+    trading_by_account_id: dict[str, protocol_models.AccountTrading],
+) -> AutomationReadView:
+    account_ids = automation.exchange_account_ids or []
+    orders: list[protocol_models.Order] = []
+    trades: list[protocol_models.Trade] = []
+    for account_id in account_ids:
+        trading = trading_by_account_id.get(account_id)
+        if trading is None:
+            continue
+        if trading.orders:
+            orders.extend(trading.orders)
+        if trading.trades:
+            trades.extend(trading.trades)
+    bound_orders = _orders_bound_to_automation(automation, orders)
+    bound_trades = _trades_bound_to_automation(automation, trades)
+    return AutomationReadView(
+        user_id=user_id,
+        automation=automation,
+        orders=bound_orders,
+        trades=bound_trades,
+        fees_by_currency=fees_by_currency_from_trades(bound_trades),
+    )
+
+
+async def get_automation_read_views(
+    user_ids: list[str] | None = None,
+) -> list[AutomationReadView]:
+    if user_ids is None:
+        user_ids = user_account_provider.AccountProvider.instance().list_collectable_wallet_ids()
+    views: list[AutomationReadView] = []
+    for user_id in user_ids:
+        automations = await scheduler_api.get_automation_states(
+            user_id,
+            statuses=list(automation_states_loader.ACTIVE_AUTOMATION_STATUSES),
+        )
+        automations = _running_automation_states(automations)
+        account_state = accounts_protocol.get_accounts_state(user_id)
+        account_tradings = accounts_trading_protocol.get_account_trading_summaries(
+            user_id,
+            wallet_account_ids(account_state.accounts),
+        )
+        trading_by_account_id = _trading_by_account_id(account_tradings)
+        for automation in automations:
+            views.append(_build_view_for_automation(user_id, automation, trading_by_account_id))
+    return views
