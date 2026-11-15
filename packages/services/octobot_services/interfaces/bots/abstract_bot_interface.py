@@ -23,8 +23,12 @@ import octobot_commons.dict_util as dict_util
 import octobot_trading.api as trading_api
 import octobot_trading.constants as trading_constants
 
+import octobot.configuration_manager as configuration_manager
+import octobot.enums as octobot_enums
+
 import octobot_services.interfaces as interfaces
 import octobot_services.constants as constants
+import octobot_services.interfaces.bots.node_command_format as node_command_format
 import octobot_commons.constants as commons_constants
 
 
@@ -47,6 +51,81 @@ class AbstractBotInterface(interfaces.AbstractInterface):
                and config[constants.CONFIG_INTERFACES][associated_config][common_constants.CONFIG_ENABLED_OPTION]
 
     @staticmethod
+    def is_node_distribution() -> bool:
+        return (
+            configuration_manager.get_distribution(interfaces.get_global_config())
+            is octobot_enums.OctoBotDistribution.NODE
+        )
+
+    @staticmethod
+    async def _node_read_messages(format_message, markdown: bool) -> list[str]:
+        import octobot_node.protocol.automations as automations_protocol
+        views = await automations_protocol.get_automation_read_views()
+        if not views:
+            return [node_command_format.NODE_NO_AUTOMATIONS_MESSAGE]
+        return [
+            format_message(views, view, markdown=markdown)
+            for view in views
+        ]
+
+    @staticmethod
+    def get_command_help(markdown=False) -> str:
+        if AbstractBotInterface.is_node_distribution():
+            message = "* - Node host (read-only) - *" + interfaces.EOL + interfaces.EOL
+            message += (
+                "/portfolio, /open\\_orders, /trades\\_history, /fees: per automation bot."
+                + interfaces.EOL
+            )
+            message += "/ping, /version, /start, /help, /stop, /restart: node host controls." + interfaces.EOL
+            message += "Trading orders and trader control are unavailable on node host." + interfaces.EOL
+            return message
+        message = "* - My OctoBot skills - *" + interfaces.EOL + interfaces.EOL
+        message += "/start: `Displays my startup message.`" + interfaces.EOL
+        message += "/ping: `Shows for how long I'm working.`" + interfaces.EOL
+        message += "/portfolio or /pf: `Displays my current portfolio.`" + interfaces.EOL
+        message += "/open\\_orders or /oo: `Displays my current open orders.`" + interfaces.EOL
+        message += (
+            "/trades\\_history or /th: `Displays my trades history since I started.`" + interfaces.EOL
+        )
+        message += (
+            "/profitability or /pb: `Displays the profitability I made since I started.`" + interfaces.EOL
+        )
+        message += (
+            "/market\\_status or /ms: `Displays my understanding of the market and my risk parameter.`"
+            + interfaces.EOL
+        )
+        message += (
+            "/fees or /fs: `Displays the total amount of fees I paid since I started.`" + interfaces.EOL
+        )
+        message += (
+            "/configuration or /cf: `Displays my traders, exchanges, evaluators, strategies and trading "
+            "mode.`" + interfaces.EOL
+        )
+        message += "* - Trading Orders - *" + interfaces.EOL
+        message += (
+            "/sell\\_all : `Cancels all my orders related to the currency in parameter and instantly "
+            "liquidate my holdings in this currency for my reference market.`" + interfaces.EOL
+        )
+        message += (
+            "/sell\\_all\\_currencies : `Cancels all my orders and instantly liquidate all my currencies "
+            "for my reference market.`" + interfaces.EOL
+        )
+        message += "* - Management - *" + interfaces.EOL
+        message += (
+            "/set\\_risk: `Changes my current risk setting into your command's parameter.`" + interfaces.EOL
+        )
+        message += (
+            "/refresh\\_portfolio or /rpf : `Forces OctoBot's real trader portfolio refresh using exchange "
+            "data. Should normally not be necessary.`" + interfaces.EOL
+        )
+        message += "/pause or /resume: `Pauses or resumes me.`" + interfaces.EOL
+        message += "/restart: `Restarts me.`" + interfaces.EOL
+        message += "/stop: `Stops me.`" + interfaces.EOL
+        message += "/version or /v: `Displays my current software version.`" + interfaces.EOL
+        message += "/help: `Displays this help.`"
+        return message
+
+    @staticmethod
     def _is_valid_user(user_name, associated_config=None):
         config_interface = interfaces.get_global_config()[constants.CONFIG_CATEGORY_SERVICES][associated_config]
 
@@ -59,6 +138,8 @@ class AbstractBotInterface(interfaces.AbstractInterface):
 
     @staticmethod
     def get_command_configuration(markdown=False):
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         _, bold, code = pretty_printer.get_markers(markdown)
         message = f"{bold}My configuration:{bold}{interfaces.EOL}{interfaces.EOL}"
 
@@ -110,6 +191,8 @@ class AbstractBotInterface(interfaces.AbstractInterface):
 
     @staticmethod
     def get_command_market_status(markdown=False):
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         _, bold, code = pretty_printer.get_markers(markdown)
         message = f"{bold}My cryptocurrencies evaluations are:{bold} {interfaces.EOL}{interfaces.EOL}"
         at_least_one_currency = False
@@ -139,7 +222,7 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return trades_history_string
 
     @staticmethod
-    def get_command_trades_history(markdown=False):
+    def _standalone_command_trades_history(markdown=False):
         has_real_trader, has_simulated_trader = interfaces.has_real_and_or_simulated_traders()
         real_trades_history, simulated_trades_history = interfaces.get_trades_history()
 
@@ -159,6 +242,14 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return trades_history_string
 
     @staticmethod
+    async def get_command_trades_history(markdown=False) -> list[str]:
+        if AbstractBotInterface.is_node_distribution():
+            return await AbstractBotInterface._node_read_messages(
+                node_command_format.format_trades_history_message, markdown
+            )
+        return [AbstractBotInterface._standalone_command_trades_history(markdown)]
+
+    @staticmethod
     def _print_open_orders(open_orders, trader_str, markdown=False):
         _, bold, code = pretty_printer.get_markers(markdown)
         orders_string = f"{bold}{trader_str}{bold}{code}Open orders :{code}{interfaces.EOL}"
@@ -173,7 +264,7 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return orders_string
 
     @staticmethod
-    def get_command_open_orders(markdown=False):
+    def _standalone_command_open_orders(markdown=False):
         has_real_trader, has_simulated_trader = interfaces.has_real_and_or_simulated_traders()
         portfolio_real_open_orders, portfolio_simulated_open_orders = interfaces.get_all_open_orders()
 
@@ -195,7 +286,15 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return orders_string
 
     @staticmethod
-    def get_command_fees(markdown=False):
+    async def get_command_open_orders(markdown=False) -> list[str]:
+        if AbstractBotInterface.is_node_distribution():
+            return await AbstractBotInterface._node_read_messages(
+                node_command_format.format_open_orders_message, markdown
+            )
+        return [AbstractBotInterface._standalone_command_open_orders(markdown)]
+
+    @staticmethod
+    def _standalone_command_fees(markdown=False):
         _, bold, _ = pretty_printer.get_markers(markdown)
         real_trader_fees, simulated_trader_fees = interfaces.get_total_paid_fees()
         result_str = ""
@@ -211,7 +310,17 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return result_str
 
     @staticmethod
+    async def get_command_fees(markdown=False) -> list[str]:
+        if AbstractBotInterface.is_node_distribution():
+            return await AbstractBotInterface._node_read_messages(
+                node_command_format.format_fees_message, markdown
+            )
+        return [AbstractBotInterface._standalone_command_fees(markdown)]
+
+    @staticmethod
     async def get_command_sell_all_currencies():
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         try:
             await interfaces.async_cancel_all_open_orders()
             nb_created_orders = len(await interfaces.async_sell_all_currencies())
@@ -224,6 +333,8 @@ class AbstractBotInterface(interfaces.AbstractInterface):
 
     @staticmethod
     async def get_command_sell_all(currency):
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         try:
             await interfaces.async_cancel_all_open_orders(currency)
             nb_created_orders = len(await interfaces.async_sell_all(currency))
@@ -254,7 +365,7 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return portfolios_string
 
     @staticmethod
-    def get_command_portfolio(markdown=False):
+    def _standalone_command_portfolio(markdown=False):
         has_real_trader, has_simulated_trader, \
         portfolio_real_current_value, portfolio_simulated_current_value = interfaces.get_portfolio_current_value()
         reference_market = interfaces.get_reference_market()
@@ -289,7 +400,17 @@ class AbstractBotInterface(interfaces.AbstractInterface):
         return portfolios_string
 
     @staticmethod
+    async def get_command_portfolio(markdown=False) -> list[str]:
+        if AbstractBotInterface.is_node_distribution():
+            return await AbstractBotInterface._node_read_messages(
+                node_command_format.format_portfolio_message, markdown
+            )
+        return [AbstractBotInterface._standalone_command_portfolio(markdown)]
+
+    @staticmethod
     def get_command_profitability(markdown=False):
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         _, bold, code = pretty_printer.get_markers(markdown)
         has_real_trader, has_simulated_trader, \
         real_global_profitability, simulated_global_profitability, \
@@ -339,10 +460,24 @@ class AbstractBotInterface(interfaces.AbstractInterface):
 
     @staticmethod
     async def set_command_portfolios_refresh():
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         return await interfaces.async_trigger_portfolios_refresh()
 
     @staticmethod
+    async def get_command_portfolios_refresh_message() -> str:
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
+        try:
+            await interfaces.async_trigger_portfolios_refresh()
+            return "Refresh successful"
+        except Exception as error:
+            return f"Refresh failure: {error}"
+
+    @staticmethod
     def set_command_risk(new_risk):
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         updated_risk = interfaces.set_risk(new_risk)
         risk_config = {
             commons_constants.CONFIG_TRADING: {
@@ -356,14 +491,22 @@ class AbstractBotInterface(interfaces.AbstractInterface):
     def set_command_stop():
         interfaces.get_bot_api().stop_bot()
 
-    async def set_command_pause(self):
+    async def set_command_pause(self) -> str:
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         await interfaces.async_cancel_all_open_orders()
         interfaces.set_enable_trading(False)
         self.paused = True
+        return f"_Pausing..._{interfaces.EOL}`I'm cancelling my orders.`"
 
-    def set_command_resume(self):
+    def set_command_resume(self) -> str:
+        if AbstractBotInterface.is_node_distribution():
+            return node_command_format.NODE_COMMAND_UNAVAILABLE_MESSAGE
         interfaces.set_enable_trading(True)
         self.paused = False
+        return (
+            f"_Resuming..._{interfaces.EOL}`I will restart trading when I see opportunities !`"
+        )
 
     @staticmethod
     def set_command_restart():

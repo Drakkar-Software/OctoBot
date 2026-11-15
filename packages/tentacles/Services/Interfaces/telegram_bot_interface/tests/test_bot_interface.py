@@ -71,16 +71,20 @@ async def test_all_commands():
     async with get_bot_interface() as bot_interface:
         assert len(bot_interface.get_command_configuration()) > 50
         assert len(bot_interface.get_command_market_status()) > 50
-        assert len(bot_interface.get_command_trades_history()) > 50
-        assert len(bot_interface.get_command_open_orders()) > 50
-        assert len(bot_interface.get_command_fees()) > 50
-        assert "Decimal" not in bot_interface.get_command_fees()
+        trades_history = await bot_interface.get_command_trades_history()
+        open_orders = await bot_interface.get_command_open_orders()
+        fees = await bot_interface.get_command_fees()
+        assert len(trades_history[0]) > 50
+        assert len(open_orders[0]) > 50
+        assert len(fees[0]) > 50
+        assert "Decimal" not in fees[0]
         assert "Nothing to sell" in await bot_interface.get_command_sell_all_currencies()
         assert "Nothing to sell for BTC" in await bot_interface.get_command_sell_all("BTC")
         with pytest.raises(RuntimeError):
             await bot_interface.set_command_portfolios_refresh()
-        assert len(bot_interface.get_command_portfolio()) > 50
-        assert "Decimal" not in bot_interface.get_command_portfolio()
+        portfolio = await bot_interface.get_command_portfolio()
+        assert len(portfolio[0]) > 50
+        assert "Decimal" not in portfolio[0]
         assert len(bot_interface.get_command_profitability()) > 50
         assert "Decimal" not in bot_interface.get_command_profitability()
         assert "I'm alive since" in bot_interface.get_command_ping()
@@ -88,4 +92,5 @@ async def test_all_commands():
                    for elem in
                    [interfaces.AbstractInterface.project_name, interfaces.AbstractInterface.project_version])
         assert "Hello, I'm OctoBot" in bot_interface.get_command_start()
-        assert await bot_interface.set_command_pause() is None
+        pause_message = await bot_interface.set_command_pause()
+        assert "Pausing" in pause_message

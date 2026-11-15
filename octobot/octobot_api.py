@@ -47,6 +47,8 @@ class OctoBotAPI:
         return self._octobot.initialized
 
     def get_exchange_manager_ids(self) -> list:
+        if self._octobot.exchange_producer is None:
+            return []
         return self._octobot.exchange_producer.exchange_manager_ids
 
     def get_global_config(self) -> dict:
