@@ -424,7 +424,7 @@ class hollaex(exchanges.RestExchange):
     def ensure_url_allowed(cls, api_url: str) -> None:
         if cls.is_url_allowed(api_url):
             return
-        raise errors.NotSupported(
+        raise errors.ExchangeConfigurationError(
             f"HollaEx API URL is not allowed when {cls.URL_WHITE_LIST_ENV} is enabled: {api_url}"
         )
 

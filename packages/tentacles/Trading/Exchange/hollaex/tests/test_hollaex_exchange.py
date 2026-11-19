@@ -87,7 +87,7 @@ class TestEnsureUrlAllowed:
 
     def test_raises_not_supported_when_whitelist_enabled_and_url_unknown(self):
         with mock.patch.object(hollaex_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=True):
-            with pytest.raises(trading_errors.NotSupported):
+            with pytest.raises(trading_errors.ExchangeConfigurationError):
                 hollaex_exchange_class.ensure_url_allowed("https://custom.exchange/api/")
 
 
@@ -113,7 +113,7 @@ class TestGetApiUrl:
     def test_raises_when_whitelist_enabled_and_rest_not_allowed(self):
         exchange = _hollaex_exchange_with_rest("https://www.cne.kg/api/")
         with mock.patch.object(hollaex_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=True):
-            with pytest.raises(trading_errors.NotSupported):
+            with pytest.raises(trading_errors.ExchangeConfigurationError):
                 exchange.get_api_url()
 
 
