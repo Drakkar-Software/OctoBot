@@ -26,3 +26,12 @@ class TestOctobotAPI:
             provider_mock.return_value.register_api = mock.Mock()
             api = octobot_api.OctoBotAPI(octobot)
         assert api.get_bot_id() == "bot-id"
+
+    def test_get_exchange_manager_ids_when_exchange_producer_is_none(self):
+        octobot = mock.Mock()
+        octobot.bot_id = "bot-id"
+        octobot.exchange_producer = None
+        with mock.patch.object(octobot_api.OctoBotAPIProvider, "instance") as provider_mock:
+            provider_mock.return_value.register_api = mock.Mock()
+            api = octobot_api.OctoBotAPI(octobot)
+        assert api.get_exchange_manager_ids() == []

@@ -863,3 +863,32 @@ class TestGetCommonTradedQuoteNetworkQualified:
             exchange_config=mock.Mock(traded_symbols=[parsed]),
         )
         assert exchange_util.get_common_traded_quote(exchange_manager) == "USDT@ETH"
+
+
+class TestGetAssociatedSymbolSameCoin:
+    def test_returns_none_for_same_network_qualified_coin(self):
+        exchange_manager = mock.Mock(client_symbols=[])
+        symbol, is_reversed = exchange_util.get_associated_symbol(
+            exchange_manager, "USDT@ETH", "USDT@ETH"
+        )
+        assert symbol is None
+        assert is_reversed is False
+
+
+class TestIsExchangeTickerSymbol:
+    def test_rejects_same_bare_ticker_pairs(self):
+        assert not exchange_util.is_exchange_ticker_symbol("USDT/USDT")
+        assert not exchange_util.is_exchange_ticker_symbol("USDT@ETH/USDT@ETH")
+        assert not exchange_util.is_exchange_ticker_symbol("BTC/BTC")
+
+    def test_rejects_usd_like_to_usd_like_pairs(self):
+        assert not exchange_util.is_exchange_ticker_symbol("USDC/USDT")
+        assert not exchange_util.is_exchange_ticker_symbol("USDC@ETH/USDT@BNB")
+
+    def test_accepts_normal_pairs(self):
+        assert exchange_util.is_exchange_ticker_symbol("BTC/USDT")
+        assert exchange_util.is_exchange_ticker_symbol("BTC@BTC/USDT@ETH")
+        assert exchange_util.is_exchange_ticker_symbol("USDC/EUR")
+
+    def test_rejects_non_symbols(self):
+        assert not exchange_util.is_exchange_ticker_symbol("USDT")

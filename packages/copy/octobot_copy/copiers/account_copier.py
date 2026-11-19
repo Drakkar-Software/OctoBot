@@ -167,8 +167,6 @@ class AccountCopier:
         efficient_orders = await rebalancer.try_efficient_spot_rebalance(details, None)
         if efficient_orders is not None:
             self._get_logger().info("Efficient spot rebalance completed (skipped sell/split pipeline)")
-            if efficient_orders and not self._copier_exchange_interface.orders.automatically_synchronize_orders():
-                await self._copier_exchange_interface.portfolio.refresh_portfolio()
             return efficient_orders
         self._get_logger().info("Step 1/3: ensuring enough funds are available for rebalance")
         await rebalancer.ensure_enough_funds_to_buy_after_selling()
@@ -179,8 +177,6 @@ class AccountCopier:
         else:
             self._get_logger().info(f"Step 2/3: selling coins to free {reference_market}")
             if sell_orders := await rebalancer.sell_targeted_coins_for_reference_market(details, None):
-                if not self._copier_exchange_interface.orders.automatically_synchronize_orders():
-                    await self._copier_exchange_interface.portfolio.refresh_portfolio()
                 orders += sell_orders
         self._get_logger().info(f"Step 3/3: buying coins using {reference_market}")
         if buy_orders := await rebalancer.split_reference_market_into_targeted_coins(
@@ -188,8 +184,6 @@ class AccountCopier:
             is_simple_buy_without_selling,
             None,
         ):
-            if not self._copier_exchange_interface.orders.automatically_synchronize_orders():
-                await self._copier_exchange_interface.portfolio.refresh_portfolio()
             orders += buy_orders
         return orders
 

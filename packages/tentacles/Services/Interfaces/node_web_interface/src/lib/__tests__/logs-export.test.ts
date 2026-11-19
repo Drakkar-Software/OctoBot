@@ -103,6 +103,31 @@ describe("fetchAutomationLogsArchive", () => {
       latest_only: true,
     })
   })
+
+  it("POSTs remove_timing when requested", async () => {
+    fetchMock.mockResolvedValue(zipResponse(new Uint8Array([1])))
+
+    await fetchAutomationLogsArchive(
+      ["task-a"],
+      "workflow-logs-test.zip",
+      { removeTiming: true },
+    )
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({
+      task_ids: ["task-a"],
+      remove_timing: true,
+    })
+  })
+
+  it("omits remove_timing when not requested", async () => {
+    fetchMock.mockResolvedValue(zipResponse(new Uint8Array([1])))
+
+    await fetchAutomationLogsArchive(["task-a"], "workflow-logs-test.zip")
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({ task_ids: ["task-a"] })
+  })
 })
 
 describe("fetchNodeLogsArchive", () => {

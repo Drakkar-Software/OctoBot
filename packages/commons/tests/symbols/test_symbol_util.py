@@ -205,6 +205,25 @@ class TestIsUsdLikeToUsdLikePair:
         assert not octobot_commons.symbols.is_usd_like_to_usd_like_pair("BTC@BTC/USDT@ETH")
 
 
+class TestHasDifferentBaseAndQuoteCurrency:
+    def test_rejects_same_bare_ticker_pairs(self):
+        assert not octobot_commons.symbols.has_different_base_and_quote_currency("USDT/USDT")
+        assert not octobot_commons.symbols.has_different_base_and_quote_currency("USDT@ETH/USDT@ETH")
+        assert not octobot_commons.symbols.has_different_base_and_quote_currency("BTC/BTC")
+
+    def test_accepts_usd_like_pairs_with_different_bare_tickers(self):
+        assert octobot_commons.symbols.has_different_base_and_quote_currency("USDC/USDT")
+        assert octobot_commons.symbols.has_different_base_and_quote_currency("USDC@ETH/USDT@BNB")
+
+    def test_accepts_normal_pairs(self):
+        assert octobot_commons.symbols.has_different_base_and_quote_currency("BTC/USDT")
+        assert octobot_commons.symbols.has_different_base_and_quote_currency("BTC@BTC/USDT@ETH")
+        assert octobot_commons.symbols.has_different_base_and_quote_currency("USDC/EUR")
+
+    def test_rejects_non_symbols(self):
+        assert not octobot_commons.symbols.has_different_base_and_quote_currency("USDT")
+
+
 class TestMergeSymbolNetworkDex:
     def test_strips_network_and_dex_suffix(self):
         assert octobot_commons.symbols.merge_symbol("SOL/USDT@solana!raydium") == "SOLUSDT"

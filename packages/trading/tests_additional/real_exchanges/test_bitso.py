@@ -99,5 +99,7 @@ class TestBitsoRealExchangeTester(real_exchange_tester.RealExchangeTester):
         )
 
     async def test_get_all_currencies_price_ticker(self):
-        with pytest.raises(errors.NotSupported):
-            await self.get_all_currencies_price_ticker()
+        await self.assert_get_all_currencies_price_ticker(
+            symbols=[self.SYMBOL, self.SYMBOL_3],
+            require_single_ticker_fallback=True,
+        )

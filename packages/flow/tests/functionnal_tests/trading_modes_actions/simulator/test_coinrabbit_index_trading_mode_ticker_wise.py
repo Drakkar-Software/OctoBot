@@ -88,6 +88,7 @@ async def test_coinrabbit_index_trading_mode_ticker_wise_rebalance(skip_on_excha
     async with octobot_flow.jobs.AutomationJob(automation_state, [], [], {}) as automation_job:
         await automation_job.run()
     after_init_dump = automation_job.dump()
+    assert after_init_dump["exchange_account_details"]["portfolio"]["unit"] == coinrabbit_util.REFERENCE_ASSET
     portfolio_after_init = (
         after_init_dump["automation"]["exchange_account_elements"]["portfolio"]["content"]
     )
@@ -98,6 +99,7 @@ async def test_coinrabbit_index_trading_mode_ticker_wise_rebalance(skip_on_excha
             await automation_job.run()
         after_index_dump = automation_job.dump()
 
+    assert after_index_dump["exchange_account_details"]["portfolio"]["unit"] == coinrabbit_util.REFERENCE_ASSET
     for action in after_index_dump["automation"]["actions_dag"]["actions"]:
         if action.get("id") == "action_1":
             assert action.get("error_status") == octobot_flow.enums.ActionErrorStatus.NO_ERROR.value

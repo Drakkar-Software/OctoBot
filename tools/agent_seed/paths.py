@@ -5,12 +5,16 @@ import pathlib
 import typing
 
 AGENT_SEED_VERSION_MARKER_FILE = ".agent-seed-version"
+AGENT_SEED_NODE_PID_FILE_NAME = ".agent-seed-node.pid"
+AGENT_SEED_NODE_LOG_FILE_NAME = "agent-seed-node.log"
 OCTOBOT_AGENT_SEED_MASTER_USER_ROOT_ENV = "OCTOBOT_AGENT_SEED_MASTER_USER_ROOT"
 MASTER_USER_FOLDER_NAME = "user"
 REFERENCE_TENTACLES_CONFIG_DIR_NAME = "reference_tentacles_config"
 TENTACLES_CONFIG_FILE_NAME = "tentacles_config.json"
 PROFILES_DIR_NAME = "profiles"
 USER_CONFIG_FILE_NAME = "config.json"
+LOGGING_CONFIG_FILE_NAME = "logging_config.ini"
+BUNDLED_LOGGING_CONFIG_RELATIVE = pathlib.Path("octobot") / "config" / LOGGING_CONFIG_FILE_NAME
 
 
 def default_octobot_repo_root() -> pathlib.Path:
@@ -29,8 +33,29 @@ def resolve_path_from_env(
     return (repo_root / path).resolve()
 
 
+def resolve_agent_seed_user_folder(
+    user_folder_value: typing.Optional[str],
+    repo_root: typing.Optional[pathlib.Path] = None,
+) -> typing.Optional[pathlib.Path]:
+    if user_folder_value is None:
+        user_folder_value = os.environ.get("OCTOBOT_AGENT_SEED_USER_FOLDER")
+    if not user_folder_value:
+        return None
+    if repo_root is None:
+        repo_root = default_octobot_repo_root()
+    return resolve_path_from_env(user_folder_value, repo_root)
+
+
 def marker_path(user_folder: pathlib.Path) -> pathlib.Path:
     return user_folder / AGENT_SEED_VERSION_MARKER_FILE
+
+
+def node_pid_file(user_folder: pathlib.Path) -> pathlib.Path:
+    return user_folder / AGENT_SEED_NODE_PID_FILE_NAME
+
+
+def node_log_file(user_folder: pathlib.Path) -> pathlib.Path:
+    return user_folder / AGENT_SEED_NODE_LOG_FILE_NAME
 
 
 def default_master_user_root(repo_root: pathlib.Path) -> pathlib.Path:
@@ -60,3 +85,11 @@ def master_profiles_dir(master_root: pathlib.Path) -> pathlib.Path:
 
 def user_config_file(user_folder: pathlib.Path) -> pathlib.Path:
     return user_folder / USER_CONFIG_FILE_NAME
+
+
+def logging_config_file(user_folder: pathlib.Path) -> pathlib.Path:
+    return user_folder / LOGGING_CONFIG_FILE_NAME
+
+
+def bundled_octobot_logging_config_file() -> pathlib.Path:
+    return (default_octobot_repo_root() / BUNDLED_LOGGING_CONFIG_RELATIVE).resolve()

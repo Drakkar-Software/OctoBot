@@ -6,25 +6,29 @@ vi.mock("@/lib/octochat", () => ({
 }))
 vi.mock("@/lib/device-key", () => ({
   loadPassword: vi.fn(),
+  loadClientKeys: vi.fn(),
 }))
 
-import { loadPassword } from "@/lib/device-key"
+import { loadClientKeys, loadPassword } from "@/lib/device-key"
 import { getSupportTicket, sendAttachment } from "@/lib/octochat"
 import {
   buildLogsExportFilename,
   fetchWorkflowLogs,
+  resolveDefaultHideLogTimings,
   shareWorkflowLogs,
 } from "@/lib/support-share"
 
 const mockedGetTicket = vi.mocked(getSupportTicket)
 const mockedSendAttachment = vi.mocked(sendAttachment)
 const mockedLoadPassword = vi.mocked(loadPassword)
+const mockedLoadClientKeys = vi.mocked(loadClientKeys)
 const fetchMock = vi.fn()
 
 beforeEach(() => {
   mockedGetTicket.mockReset()
   mockedSendAttachment.mockReset().mockResolvedValue(undefined)
   mockedLoadPassword.mockReset().mockResolvedValue("pw")
+  mockedLoadClientKeys.mockReset().mockResolvedValue(null)
   fetchMock.mockReset()
   vi.stubGlobal("localStorage", { getItem: vi.fn(() => "0xwallet") })
   vi.stubGlobal("fetch", fetchMock)
@@ -76,6 +80,40 @@ describe("fetchWorkflowLogs", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500 } as Response)
     await expect(fetchWorkflowLogs(["a"])).rejects.toThrow(/500/)
   })
+
+  it("POSTs remove_timing when requested", async () => {
+    fetchMock.mockResolvedValue(logsResponse(new Uint8Array([1])))
+
+    await fetchWorkflowLogs(["a"], { removeTiming: true })
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({
+      task_ids: ["a"],
+      remove_timing: true,
+    })
+  })
+})
+
+describe("resolveDefaultHideLogTimings", () => {
+  it("returns true when client keys are fully configured", async () => {
+    mockedLoadClientKeys.mockResolvedValue({
+      ecdsa_private: "ec",
+      rsa_private: "rsa",
+    })
+
+    await expect(resolveDefaultHideLogTimings()).resolves.toBe(true)
+  })
+
+  it("returns false when keys are missing or incomplete", async () => {
+    mockedLoadClientKeys.mockResolvedValue(null)
+    await expect(resolveDefaultHideLogTimings()).resolves.toBe(false)
+
+    mockedLoadClientKeys.mockResolvedValue({
+      ecdsa_private: "ec",
+      rsa_private: "",
+    })
+    await expect(resolveDefaultHideLogTimings()).resolves.toBe(false)
+  })
 })
 
 describe("shareWorkflowLogs", () => {
@@ -97,6 +135,24 @@ describe("shareWorkflowLogs", () => {
     expect(file.mime).toBe("application/zip")
     expect(file.name).toMatch(/^workflow-logs-.*\.zip$/)
     expect(text).toBe("Workflow logs")
+  })
+
+  it("passes remove_timing when sharing", async () => {
+    mockedGetTicket.mockResolvedValue({
+      status: "open",
+      nodeId: "ticket-1",
+      title: "Help",
+      allTickets: [{ nodeId: "ticket-1", title: "Help" }],
+    })
+    fetchMock.mockResolvedValue(logsResponse(new Uint8Array([9])))
+
+    await shareWorkflowLogs(["task-a"], { removeTiming: true })
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({
+      task_ids: ["task-a"],
+      remove_timing: true,
+    })
   })
 
   it.each([

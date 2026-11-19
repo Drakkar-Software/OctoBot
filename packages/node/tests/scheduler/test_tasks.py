@@ -20,9 +20,12 @@
 #  License along with this library.
 
 import json
+import time
 import mock
 import pytest
 
+import octobot_copy.constants as copy_constants
+import octobot_flow.entities as flow_entities
 import octobot_protocol.models as protocol_models
 
 import octobot_node.constants as octobot_node_constants
@@ -336,6 +339,96 @@ class TestSendToActiveAutomationWorkflow:
         payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(call_args.args[1])
         assert payload.actions_type == node_enums.AutomationWorkflowActionTypes.FORCED_TRIGGER.value
         assert payload.actions_details == []
+
+    @pytest.mark.asyncio
+    async def test_send_trading_signal_to_active_automation_sends_trading_signal_payload(self):
+        trading_signal = flow_entities.TradingSignal(
+            strategy_id="test-strategy-id",
+            account=protocol_models.CopiedAccount(
+                version=copy_constants.COPIED_ACCOUNT_VERSION,
+                updated_at=time.time(),
+                copied_assets=[],
+            ),
+        )
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.send_async = mock.AsyncMock()
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch.object(scheduler_module.SCHEDULER, "INSTANCE", mock_dbos_instance),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[self._TEST_CHILD_WORKFLOW_ID],
+            ),
+        ):
+            await octobot_node.scheduler.tasks.send_trading_signal_to_active_automation(
+                self._TEST_PARENT_AUTOMATION_ID,
+                self._TEST_WALLET_ADDRESS,
+                trading_signal,
+            )
+
+        call_args = mock_dbos_instance.send_async.await_args
+        assert call_args.args[0] == self._TEST_CHILD_WORKFLOW_ID
+        payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(call_args.args[1])
+        assert payload.actions_type == node_enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value
+        assert payload.actions_details == [
+            trading_signal.to_dict(include_default_values=False)
+        ]
+
+    @pytest.mark.asyncio
+    async def test_trigger_copier_automation_sends_trading_signal_to_target_workflow_id(self):
+        target_workflow_id = "automation-wf-child-1"
+        trading_signal = flow_entities.TradingSignal(
+            strategy_id="test-strategy-id",
+            account=protocol_models.CopiedAccount(
+                version=copy_constants.COPIED_ACCOUNT_VERSION,
+                updated_at=time.time(),
+                copied_assets=[],
+            ),
+        )
+        mock_dbos_instance = mock.Mock()
+        mock_dbos_instance.send_async = mock.AsyncMock()
+        with mock.patch.object(scheduler_module.SCHEDULER, "INSTANCE", mock_dbos_instance):
+            await octobot_node.scheduler.tasks.trigger_copier_automation(
+                target_workflow_id,
+                trading_signal,
+            )
+
+        call_args = mock_dbos_instance.send_async.await_args
+        assert call_args.args[0] == target_workflow_id
+        payload = workflow_params_module.AutomationWorkflowActionUpdate.from_dict(call_args.args[1])
+        assert payload.actions_type == node_enums.AutomationWorkflowActionTypes.TRADING_SIGNAL.value
+
+    @pytest.mark.asyncio
+    async def test_send_trading_signal_to_active_automation_raises_when_no_workflow_found(self):
+        trading_signal = flow_entities.TradingSignal(
+            strategy_id="test-strategy-id",
+            account=protocol_models.CopiedAccount(
+                version=copy_constants.COPIED_ACCOUNT_VERSION,
+                updated_at=time.time(),
+                copied_assets=[],
+            ),
+        )
+        with (
+            mock.patch("octobot_node.scheduler.is_initialized", return_value=True),
+            mock.patch(
+                "octobot_node.scheduler.tasks.asyncio.sleep",
+                new_callable=mock.AsyncMock,
+            ),
+            mock.patch.object(
+                scheduler_module.SCHEDULER,
+                "resolve_active_automation_workflow_ids_for_parent_id",
+                new_callable=mock.AsyncMock,
+                return_value=[],
+            ),
+        ):
+            with pytest.raises(node_errors.ActiveAutomationWorkflowNotFoundError):
+                await octobot_node.scheduler.tasks.send_trading_signal_to_active_automation(
+                    self._TEST_PARENT_AUTOMATION_ID,
+                    self._TEST_WALLET_ADDRESS,
+                    trading_signal,
+                )
 
     @pytest.mark.asyncio
     async def test_send_to_active_automation_raises_when_no_workflow_found(self):

@@ -213,6 +213,8 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
             openapi_url="/api/v1/openapi.json",
             generate_unique_id_function=custom_generate_unique_id,
             lifespan=lifespan,
+            # Single schema names (Task, not Task-Input/Task-Output) for the TS client.
+            separate_input_output_schemas=False,
         )
 
         octobot_commons_logging.register_unhandled_exception_handler(app, "node_api_interface")

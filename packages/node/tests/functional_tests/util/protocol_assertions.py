@@ -18,6 +18,15 @@ buy_sell_trade_counts_from_exchange_elements = (
 )
 
 
+def _detailed_assets_by_symbol(
+    protocol_assets: list[protocol_models_module.DetailedAssetsForTradingType],
+) -> dict[str, protocol_models_module.DetailedAsset]:
+    flattened: list[protocol_models_module.DetailedAsset] = []
+    for assets_for_trading_type in protocol_assets:
+        flattened.extend(assets_for_trading_type.assets or [])
+    return {asset.symbol: asset for asset in flattened}
+
+
 def assert_protocol_automation_metadata_name(
     protocol_automation: protocol_models_module.AutomationState,
     expected_name: str,
@@ -70,7 +79,7 @@ def assert_protocol_automation_matches_exchange_account_elements(
     assert protocol_assets is not None, (
         "expected AutomationState.assets to be set"
     )
-    assets_by_symbol = {asset.symbol: asset for asset in protocol_assets}
+    assets_by_symbol = _detailed_assets_by_symbol(protocol_assets)
     for symbol, row in content.items():
         matching_asset = assets_by_symbol.get(symbol)
         assert matching_asset is not None, (
@@ -142,7 +151,7 @@ def assert_protocol_automation_matches_exchange_account_elements_multi_symbol(
     )
     protocol_assets = protocol_automation.assets
     assert protocol_assets is not None, "expected AutomationState.assets to be set"
-    assets_by_symbol = {asset.symbol: asset for asset in protocol_assets}
+    assets_by_symbol = _detailed_assets_by_symbol(protocol_assets)
     for symbol, row in content.items():
         matching_asset = assets_by_symbol.get(symbol)
         assert matching_asset is not None, (

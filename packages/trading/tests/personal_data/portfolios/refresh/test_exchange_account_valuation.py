@@ -94,6 +94,33 @@ class TestValuationSymbolsFromPortfolio:
         )
         assert valuation_symbols == ["BTC/EUR"]
 
+    def test_skips_network_qualified_valuation_unit(self):
+        exchange_manager = mock.Mock()
+        exchange_manager.client_symbols = [TICKER_WISE_SYMBOL]
+        portfolio_content = {
+            "USDT@ETH": {
+                commons_constants.PORTFOLIO_TOTAL: 1000.0,
+                commons_constants.PORTFOLIO_AVAILABLE: 1000.0,
+            },
+            "USDT": {
+                commons_constants.PORTFOLIO_TOTAL: 100.0,
+                commons_constants.PORTFOLIO_AVAILABLE: 100.0,
+            },
+            "BTC@BTC": {
+                commons_constants.PORTFOLIO_TOTAL: 0.1,
+                commons_constants.PORTFOLIO_AVAILABLE: 0.1,
+            },
+        }
+        valuation_symbols = exchange_account_valuation_module.valuation_symbols_from_portfolio(
+            exchange_manager,
+            portfolio_content,
+            "USDT@ETH",
+        )
+        assert valuation_symbols == [TICKER_WISE_SYMBOL]
+
+
+TICKER_WISE_SYMBOL = "BTC@BTC/USDT@ETH"
+
 
 class TestRefreshPortfolioValuation:
     def test_syncs_portfolio_value_without_profitability_update(self):

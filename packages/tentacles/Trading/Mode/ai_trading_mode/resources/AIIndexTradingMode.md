@@ -19,7 +19,7 @@ The **AI Index Trading Mode** is an advanced trading mode that inherits from `In
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `model` | string | "gpt-4" | GPT model used by agents (gpt-3.5-turbo, gpt-4, gpt-4-turbo) |
+| `model` | string | "gpt-4" | GPT model used by agents (gpt-3.5-turbo, gpt-4, gpt-4-turbo, gpt-6-luna) |
 | `temperature` | float | 0.3 | AI creativity for agents (0.0 = deterministic, 1.0 = very creative) |
 | `max_tokens` | int | 2000 | Maximum tokens for agent AI responses |
 
@@ -100,7 +100,7 @@ Agents provide instructions as lists of actions:
 ```json
 {
   "trading_mode": "AIIndexTradingMode",
-  "model": "gpt-3.5-turbo",
+  "model": "gpt-6-luna",
   "temperature": 0.1,
   "max_tokens": 1500,
   "refresh_interval": 2

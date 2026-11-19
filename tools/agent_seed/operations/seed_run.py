@@ -9,7 +9,8 @@ import octobot_sync.sync.collection_providers as collection_providers
 
 import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
-import tools.agent_seed.operations.clear as agent_seed_clear
+import tools.agent_seed.operations.scheduler_sqlite as agent_seed_scheduler_sqlite
+import tools.agent_seed.operations.seed_logging_config as agent_seed_seed_logging_config
 import tools.agent_seed.operations.seed_octobot_config as agent_seed_seed_octobot_config
 import tools.agent_seed.operations.seed_sync as agent_seed_seed_sync
 import tools.agent_seed.paths as agent_seed_paths
@@ -73,11 +74,11 @@ def run_seed(
     resolved_repo_root = (
         repo_root if repo_root is not None else agent_seed_paths.default_octobot_repo_root()
     )
-    user_folder.mkdir(parents=True, exist_ok=True)
     if clear:
-        agent_seed_clear.clear_agent_seed_user_folder(user_folder, node_sqlite_file)
-        user_folder.mkdir(parents=True, exist_ok=True)
+        agent_seed_scheduler_sqlite.clear_agent_seed_user_folder(user_folder, node_sqlite_file)
+    user_folder.mkdir(parents=True, exist_ok=True)
     agent_seed_seed_octobot_config.write_demo_user_config(user_folder, resolved_repo_root)
+    agent_seed_seed_logging_config.write_demo_logging_config(user_folder)
     user_root_folder_provider.instance().set_root(os.path.normpath(str(user_folder)))
     agent_seed_seed_sync.import_demo_wallet()
     if not clear and is_already_seeded(user_folder):

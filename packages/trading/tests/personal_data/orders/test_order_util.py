@@ -13,11 +13,13 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library.
+import contextlib
 import decimal
 
 import mock
 from mock import Mock, AsyncMock
 import pytest
+import octobot_commons.constants as commons_constants
 
 import octobot_trading.api as api
 import octobot_trading.enums as enums
@@ -29,7 +31,15 @@ import octobot_trading.personal_data.orders.order_util as order_util
 import octobot_trading.personal_data.orders.order_factory as order_factory
 
 from tests import event_loop
-from tests.exchanges import future_simulated_exchange_manager, simulated_exchange_manager, set_future_exchange_fees
+from tests.exchanges import (
+    backtesting_config,
+    backtesting_exchange_manager,
+    backtesting_trader,
+    fake_backtesting,
+    future_simulated_exchange_manager,
+    simulated_exchange_manager,
+    set_future_exchange_fees,
+)
 from tests.exchanges.traders import future_trader_simulator_with_default_linear, \
     future_trader_simulator_with_default_inverse, DEFAULT_FUTURE_SYMBOL, DEFAULT_FUTURE_FUNDING_RATE, trader_simulator
 
@@ -1215,3 +1225,463 @@ class TestGetPortfolioAmountsNetworkQualified:
         assert market_quantity is not None
         portfolio.get_currency_portfolio.assert_any_call("BTC@BTC")
         portfolio.get_currency_portfolio.assert_any_call("USDT@ETH")
+
+
+class TestHaveOrdersBeenAppliedToPortfolioTotal:
+    @mock.patch.object(
+        order_util.portfolio_util,
+        "get_assets_delta_from_orders",
+        return_value=({"USDT@ETH": decimal.Decimal("10")}, {}, {}, {}),
+    )
+    def test_returns_false_when_portfolio_totals_unchanged(self, _mock_deltas):
+        pre_totals = {"USDT@ETH": decimal.Decimal("1")}
+        post_totals = {"USDT@ETH": decimal.Decimal("1")}
+        assert not order_util.have_orders_been_applied_to_portfolio_total(
+            pre_totals, post_totals, [mock.Mock()]
+        )
+
+    @mock.patch.object(
+        order_util.portfolio_util,
+        "get_assets_delta_from_orders",
+        return_value=({"USDT@ETH": decimal.Decimal("10")}, {}, {}, {}),
+    )
+    def test_returns_true_when_portfolio_totals_reflect_order_deltas(self, _mock_deltas):
+        pre_totals = {"USDT@ETH": decimal.Decimal("1")}
+        post_totals = {"USDT@ETH": decimal.Decimal("11")}
+        assert order_util.have_orders_been_applied_to_portfolio_total(
+            pre_totals, post_totals, [mock.Mock()]
+        )
+
+    def test_returns_true_when_no_orders(self):
+        assert order_util.have_orders_been_applied_to_portfolio_total({}, {}, [])
+
+    @mock.patch.object(
+        order_util.portfolio_util,
+        "get_assets_delta_from_orders",
+        return_value=({"USDT@ETH": decimal.Decimal("10")}, {}, {}, {}),
+    )
+    def test_returns_false_when_observed_change_within_tolerance_band(self, _mock_deltas):
+        pre_totals = {"USDT@ETH": decimal.Decimal("1")}
+        post_totals = {"USDT@ETH": decimal.Decimal("1.5")}
+        assert not order_util.have_orders_been_applied_to_portfolio_total(
+            pre_totals, post_totals, [mock.Mock()]
+        )
+
+
+class TestHaveOrdersBeenAppliedToPortfolioTotalWithRealOrderDeltas:
+    def test_spot_sell_reflected_in_qualified_quote_and_base_totals(self):
+        sell_order = mock.Mock(
+            symbol=TICKER_WISE_SYMBOL,
+            side=enums.TradeOrderSide.SELL,
+            exchange_order_id="sell-1",
+            filled_quantity=decimal.Decimal("0"),
+            origin_quantity=decimal.Decimal("0.000112"),
+            origin_price=decimal.Decimal("84500"),
+            fee=None,
+            get_cost=mock.Mock(return_value=decimal.Decimal("9.464")),
+            get_computed_fee=mock.Mock(return_value={}),
+        )
+        pre_totals = {
+            "BTC@BTC": decimal.Decimal("0.000112"),
+            "USDT@ETH": decimal.Decimal("0.776"),
+        }
+        post_totals = {
+            "BTC@BTC": decimal.Decimal("0"),
+            "USDT@ETH": decimal.Decimal("10.24"),
+        }
+        assert order_util.have_orders_been_applied_to_portfolio_total(
+            pre_totals, post_totals, [sell_order]
+        )
+
+
+class TestWaitForOrdersToFillConsideringOrderAutoSynchronization:
+    @staticmethod
+    def _static_wait_exchange_option_value(option_key, timeout_seconds=60, poll_interval_seconds=5):
+        if option_key == enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS:
+            return timeout_seconds
+        if option_key == enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS:
+            return poll_interval_seconds
+        return None
+
+    @staticmethod
+    def _pending_order_mock():
+        pending_order = mock.Mock()
+        pending_order.is_open.return_value = True
+        pending_order.on_fill = AsyncMock()
+        return pending_order
+
+    @staticmethod
+    def _build_exchange_manager(is_future: bool = False, timeout_seconds=60, poll_interval_seconds=5):
+        portfolio = mock.Mock()
+        portfolio.portfolio = {}
+        portfolio_manager = mock.Mock()
+        portfolio_manager.portfolio = portfolio
+        portfolio_manager.refresh_real_trader_portfolio = AsyncMock()
+        portfolio_manager.disabled_portfolio_update_from_order = mock.Mock(
+            return_value=contextlib.nullcontext()
+        )
+        exchange = mock.Mock()
+        exchange.get_option_value.side_effect = (
+            lambda option_key: TestWaitForOrdersToFillConsideringOrderAutoSynchronization._static_wait_exchange_option_value(
+                option_key, timeout_seconds, poll_interval_seconds
+            )
+        )
+        exchange_manager = mock.Mock()
+        exchange_manager.trader.simulate = False
+        exchange_manager.is_future = is_future
+        exchange_manager.exchange_name = "coinrabbit"
+        exchange_manager.exchange = exchange
+        exchange_manager.exchange_personal_data = mock.Mock()
+        exchange_manager.exchange_personal_data.orders_manager = mock.Mock(
+            enable_order_auto_synchronization=False,
+        )
+        exchange_manager.exchange_personal_data.portfolio_manager = portfolio_manager
+        return exchange_manager, portfolio_manager
+
+    @pytest.mark.asyncio
+    async def test_static_wait_uses_initial_then_poll_sleep_until_portfolio_reflects_orders(self):
+        exchange_manager, portfolio_manager = self._build_exchange_manager()
+        pending_order = self._pending_order_mock()
+        sleep_durations = []
+
+        async def record_sleep(duration):
+            sleep_durations.append(duration)
+
+        # First poll: totals unchanged; second poll: reflected → force-fill path runs.
+        monotonic_values = iter([0.0, 3.0, 3.0, 8.0, 8.0])
+
+        with mock.patch.object(order_util, "_snapshot_portfolio_totals", return_value={}), \
+             mock.patch.object(
+                 order_util,
+                 "have_orders_been_applied_to_portfolio_total",
+                 side_effect=[False, True],
+             ), \
+             mock.patch("octobot_trading.personal_data.orders.order_util.time.monotonic", side_effect=lambda: next(monotonic_values)), \
+             mock.patch("asyncio.sleep", side_effect=record_sleep):
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [pending_order],
+                60,
+                True,
+            )
+
+        # Initial wait, one poll-interval sleep, two portfolio refreshes, then local fill.
+        assert sleep_durations == [
+            order_util.STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS,
+            enums.DEFAULT_EXCHANGE_OPTION_VALUES[
+                enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS
+            ],
+        ]
+        assert portfolio_manager.refresh_real_trader_portfolio.await_count == 2
+        pending_order.is_open.assert_not_called()
+        pending_order.on_fill.assert_awaited_once_with(force_fill=True)
+
+    @pytest.mark.asyncio
+    async def test_static_wait_times_out_when_portfolio_never_reflects_orders(self):
+        exchange_manager, portfolio_manager = self._build_exchange_manager(timeout_seconds=10)
+        sleep_durations = []
+
+        async def record_sleep(duration):
+            sleep_durations.append(duration)
+
+        # Advance clock past the 10s exchange timeout without ever seeing reflected totals.
+        monotonic_values = iter([0.0, 2.0, 2.0, 7.0, 7.0, 10.0])
+
+        with mock.patch.object(order_util, "_snapshot_portfolio_totals", return_value={}), \
+             mock.patch.object(
+                 order_util,
+                 "have_orders_been_applied_to_portfolio_total",
+                 return_value=False,
+             ), \
+             mock.patch("octobot_trading.personal_data.orders.order_util.time.monotonic", side_effect=lambda: next(monotonic_values)), \
+             mock.patch("asyncio.sleep", side_effect=record_sleep), \
+             mock.patch.object(order_util.logging, "get_logger") as get_logger_mock:
+            logger_mock = mock.Mock()
+            get_logger_mock.return_value = logger_mock
+            pending_order = self._pending_order_mock()
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [pending_order],
+                60,
+                True,
+            )
+
+        logger_mock.warning.assert_called_once()
+        pending_order.on_fill.assert_not_called()
+        assert "Timed out after 10.0s" in logger_mock.warning.call_args[0][0]
+        assert sleep_durations[0] == order_util.STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS
+        assert portfolio_manager.refresh_real_trader_portfolio.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_static_wait_on_futures_only_initial_sleep_and_single_refresh(self):
+        exchange_manager, portfolio_manager = self._build_exchange_manager(is_future=True)
+        sleep_durations = []
+
+        async def record_sleep(duration):
+            sleep_durations.append(duration)
+
+        with mock.patch("asyncio.sleep", side_effect=record_sleep):
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [mock.Mock()],
+                60,
+                True,
+            )
+
+        assert sleep_durations == [order_util.STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS]
+        portfolio_manager.refresh_real_trader_portfolio.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_static_wait_reads_exchange_timeout_option(self):
+        exchange_manager, _portfolio_manager = self._build_exchange_manager(timeout_seconds=600)
+
+        with mock.patch.object(order_util, "_snapshot_portfolio_totals", return_value={}), \
+             mock.patch.object(
+                 order_util,
+                 "have_orders_been_applied_to_portfolio_total",
+                 return_value=True,
+             ), \
+             mock.patch("octobot_trading.personal_data.orders.order_util.time.monotonic", return_value=0.0), \
+             mock.patch("asyncio.sleep", new_callable=AsyncMock):
+            pending_order = self._pending_order_mock()
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [pending_order],
+                60,
+                True,
+            )
+
+        pending_order.on_fill.assert_awaited_once_with(force_fill=True)
+        exchange_manager.exchange.get_option_value.assert_any_call(
+            enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS
+        )
+        exchange_manager.exchange.get_option_value.assert_any_call(
+            enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS
+        )
+
+    @pytest.mark.asyncio
+    async def test_static_wait_uses_exchange_poll_interval_seconds(self):
+        exchange_manager, _portfolio_manager = self._build_exchange_manager(poll_interval_seconds=20)
+        sleep_durations = []
+
+        async def record_sleep(duration):
+            sleep_durations.append(duration)
+
+        monotonic_values = iter([0.0, 3.0, 3.0, 25.0, 25.0])
+
+        with mock.patch.object(order_util, "_snapshot_portfolio_totals", return_value={}), \
+             mock.patch.object(
+                 order_util,
+                 "have_orders_been_applied_to_portfolio_total",
+                 side_effect=[False, True],
+             ), \
+             mock.patch("octobot_trading.personal_data.orders.order_util.time.monotonic", side_effect=lambda: next(monotonic_values)), \
+             mock.patch("asyncio.sleep", side_effect=record_sleep):
+            pending_order = self._pending_order_mock()
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [pending_order],
+                60,
+                True,
+            )
+
+        pending_order.on_fill.assert_awaited_once_with(force_fill=True)
+        assert sleep_durations == [
+            order_util.STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS,
+            20,
+        ]
+
+
+class TestWaitForOrdersPortfolioReflectedFillIntegration:
+    @staticmethod
+    def _exchange_balance_asset(total, available):
+        return {
+            constants.CONFIG_PORTFOLIO_TOTAL: total,
+            constants.CONFIG_PORTFOLIO_FREE: available,
+        }
+
+    @staticmethod
+    def _pending_open_quantity(orders_manager, symbol):
+        pending_quantity = decimal.Decimal("0")
+        for open_order in orders_manager.get_open_orders(symbol=symbol):
+            remaining_quantity = open_order.origin_quantity - open_order.filled_quantity
+            if remaining_quantity <= decimal.Decimal("0"):
+                continue
+            if open_order.side is enums.TradeOrderSide.BUY:
+                pending_quantity += remaining_quantity
+            elif open_order.side is enums.TradeOrderSide.SELL:
+                pending_quantity -= remaining_quantity
+        return pending_quantity
+
+    @staticmethod
+    def _assert_order_properly_closed(orders_manager, order, symbol, expected_origin_quantity):
+        # Terminal fill state and full quantity (force_fill path).
+        assert order.is_filled()
+        assert order.is_closed()
+        assert order.status in (enums.OrderStatus.FILLED, enums.OrderStatus.CLOSED)
+        assert isinstance(order.state, personal_data.CloseOrderState)
+        assert order.filled_quantity == expected_origin_quantity
+        # No longer in open-order registry or pending sell adjustment.
+        assert not orders_manager.has_order(order.order_id)
+        assert orders_manager.get_open_orders(symbol=symbol) == []
+        assert TestWaitForOrdersPortfolioReflectedFillIntegration._pending_open_quantity(
+            orders_manager, symbol
+        ) == decimal.Decimal("0")
+
+    @staticmethod
+    def _assert_order_still_open_pending(orders_manager, order, symbol, expected_origin_quantity):
+        assert order.is_open()
+        assert not order.is_filled()
+        assert not order.is_closed()
+        assert order.status == enums.OrderStatus.OPEN
+        assert isinstance(order.state, personal_data.OpenOrderState)
+        assert order.filled_quantity == decimal.Decimal("0")
+        assert orders_manager.has_order(order.order_id)
+        assert order in orders_manager.get_open_orders(symbol=symbol)
+        assert TestWaitForOrdersPortfolioReflectedFillIntegration._pending_open_quantity(
+            orders_manager, symbol
+        ) == -expected_origin_quantity
+
+    @pytest.mark.asyncio
+    async def test_poll_refresh_marks_open_sell_filled_without_second_balance_fetch(self, backtesting_trader):
+        _config, exchange_manager, trader = backtesting_trader
+        # Same mode as Flow on CoinRabbit: real trader, poll refresh, no order auto-sync.
+        exchange_manager.is_backtesting = False
+        exchange_manager.exchange_only = True
+        trader.simulate = False
+        exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization = False
+
+        portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+        # Local totals before the sell shows up on the exchange snapshot.
+        pre_btc_total = decimal.Decimal("0.000112")
+        pre_usdt_total = decimal.Decimal("0.776")
+        post_usdt_total = decimal.Decimal("10.24")
+        portfolio_manager.apply_forced_portfolio({
+            "BTC@BTC": {
+                commons_constants.PORTFOLIO_TOTAL: pre_btc_total,
+                commons_constants.PORTFOLIO_AVAILABLE: pre_btc_total,
+            },
+            "USDT@ETH": {
+                commons_constants.PORTFOLIO_TOTAL: pre_usdt_total,
+                commons_constants.PORTFOLIO_AVAILABLE: pre_usdt_total,
+            },
+        })
+
+        # Open sell still tracked locally; exchange balance will already include proceeds.
+        sell_origin_quantity = decimal.Decimal("0.000112")
+        sell_order = personal_data.SellLimitOrder(trader)
+        sell_order.update(
+            order_type=enums.TraderOrderType.SELL_LIMIT,
+            symbol=TICKER_WISE_SYMBOL,
+            current_price=decimal.Decimal("84500"),
+            quantity=sell_origin_quantity,
+            price=decimal.Decimal("84500"),
+            exchange_order_id="sell-1",
+        )
+        await exchange_manager.exchange_personal_data.orders_manager.upsert_order_instance(sell_order)
+        sell_order.state = personal_data.OpenOrderState(sell_order, False)
+        await sell_order.state.initialize()
+        assert sell_order.is_open()
+
+        # Poll refresh reads this snapshot; on_fill must not call get_balance again.
+        post_sell_balance = {
+            "USDT@ETH": self._exchange_balance_asset(post_usdt_total, post_usdt_total),
+        }
+        get_balance_mock = AsyncMock(return_value=post_sell_balance)
+
+        with mock.patch.object(exchange_manager.exchange, "get_balance", get_balance_mock), \
+             mock.patch("asyncio.sleep", new_callable=AsyncMock):
+            assert portfolio_manager.enable_portfolio_exchange_sync is True
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [sell_order],
+                60,
+                True,
+            )
+
+        orders_manager = exchange_manager.exchange_personal_data.orders_manager
+        # Single exchange fetch, order closed without rewriting totals from the fill.
+        assert get_balance_mock.await_count == 1
+        self._assert_order_properly_closed(
+            orders_manager, sell_order, TICKER_WISE_SYMBOL, sell_origin_quantity
+        )
+        assert portfolio_manager.portfolio.get_currency_portfolio("BTC@BTC").total == decimal.Decimal("0")
+        assert portfolio_manager.portfolio.get_currency_portfolio("BTC@BTC").available == decimal.Decimal("0")
+        assert portfolio_manager.portfolio.get_currency_portfolio("USDT@ETH").total == post_usdt_total
+        assert portfolio_manager.portfolio.get_currency_portfolio("USDT@ETH").available == post_usdt_total
+        assert portfolio_manager.enable_portfolio_exchange_sync is True
+
+    @pytest.mark.asyncio
+    async def test_poll_timeout_leaves_order_open_and_does_not_force_fill(self, backtesting_trader):
+        _config, exchange_manager, trader = backtesting_trader
+        exchange_manager.is_backtesting = False
+        trader.simulate = False
+        exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization = False
+
+        portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+        # Portfolio and exchange stub stay at pre-sell totals for the whole wait.
+        portfolio_manager.apply_forced_portfolio({
+            "BTC@BTC": {
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.000112"),
+                commons_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("0.000112"),
+            },
+            "USDT@ETH": {
+                commons_constants.PORTFOLIO_TOTAL: decimal.Decimal("0.776"),
+                commons_constants.PORTFOLIO_AVAILABLE: decimal.Decimal("0.776"),
+            },
+        })
+
+        sell_origin_quantity = decimal.Decimal("0.000112")
+        sell_order = personal_data.SellLimitOrder(trader)
+        sell_order.update(
+            order_type=enums.TraderOrderType.SELL_LIMIT,
+            symbol=TICKER_WISE_SYMBOL,
+            current_price=decimal.Decimal("84500"),
+            quantity=sell_origin_quantity,
+            price=decimal.Decimal("84500"),
+            exchange_order_id="sell-1",
+        )
+        orders_manager = exchange_manager.exchange_personal_data.orders_manager
+        await orders_manager.upsert_order_instance(sell_order)
+        sell_order.state = personal_data.OpenOrderState(sell_order, False)
+        await sell_order.state.initialize()
+        assert sell_order.is_open()
+
+        unchanged_balance = {
+            "BTC@BTC": self._exchange_balance_asset(
+                decimal.Decimal("0.000112"), decimal.Decimal("0.000112")
+            ),
+            "USDT@ETH": self._exchange_balance_asset(
+                decimal.Decimal("0.776"), decimal.Decimal("0.776")
+            ),
+        }
+        get_balance_mock = AsyncMock(return_value=unchanged_balance)
+        # Short timeout so the wait exits without have_orders_been_applied ever returning true.
+        monotonic_values = iter([0.0, 3.0, 3.0, 12.0, 12.0])
+
+        with mock.patch.object(exchange_manager.exchange, "get_balance", get_balance_mock), \
+             mock.patch.object(
+                 exchange_manager.exchange,
+                 "get_option_value",
+                 side_effect=lambda option_key: (
+                     10.0
+                     if option_key == enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS
+                     else 5.0
+                     if option_key == enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS
+                     else None
+                 ),
+             ), \
+             mock.patch("octobot_trading.personal_data.orders.order_util.time.monotonic", side_effect=lambda: next(monotonic_values)), \
+             mock.patch("asyncio.sleep", new_callable=AsyncMock):
+            await order_util.wait_for_orders_to_fill_considering_order_auto_synchronization(
+                exchange_manager,
+                [sell_order],
+                60,
+                True,
+            )
+
+        # Poll may refresh from the exchange, but orders must stay open on timeout.
+        assert get_balance_mock.await_count >= 1
+        self._assert_order_still_open_pending(
+            orders_manager, sell_order, TICKER_WISE_SYMBOL, sell_origin_quantity
+        )

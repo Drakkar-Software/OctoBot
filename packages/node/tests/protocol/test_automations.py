@@ -17,6 +17,9 @@
 import datetime
 import json
 
+import mock
+import pytest
+
 import dbos
 import octobot_commons.constants as octobot_commons_constants
 import octobot_commons.timestamp_util as octobot_commons_timestamp_util
@@ -27,8 +30,15 @@ import octobot_protocol.models as protocol_models
 import octobot_trading.enums as octobot_trading_enums
 import octobot_trading.exchanges.util.exchange_data as octobot_trading_exchange_data
 
+import octobot_sync.constants as sync_constants
+
+import octobot_node.protocol.accounts as accounts_protocol
+import octobot_node.protocol.accounts_trading as accounts_trading_protocol
 import octobot_node.protocol.automations as automations_protocol
+import octobot_node.scheduler.api as scheduler_api
+import octobot_node.scheduler.automations.automation_states_loader as automation_states_loader
 import octobot_node.scheduler.workflows.params as workflow_params
+import octobot_sync.sync.collection_providers.user_account_provider as user_account_provider
 
 
 def _minimal_protocol_base() -> protocol_models.AutomationState:
@@ -726,7 +736,8 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         )
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.assets is not None
-        bitcoin_asset = filled.assets[0]
+        assert filled.assets[0].trading_type == protocol_models.TradingType.FUTURES
+        bitcoin_asset = filled.assets[0].assets[0]
         assert bitcoin_asset.symbol == "BTC"
         assert bitcoin_asset.total == 2.0
         assert bitcoin_asset.available == 1.0
@@ -752,9 +763,10 @@ class TestFillProtocolAutomationStateAssetsOrdersPositionsTrades:
         flow_state = flow_entities.AutomationState(automation=automation)
         filled = automations_protocol._fill_protocol_automation_state(_minimal_protocol_base(), flow_state)
         assert filled.assets is not None
-        assert filled.assets[0].symbol == "BTC"
-        assert filled.assets[0].total == 2.0
-        assert filled.assets[0].available == 1.0
+        assert filled.assets[0].trading_type == protocol_models.TradingType.SPOT
+        assert filled.assets[0].assets[0].symbol == "BTC"
+        assert filled.assets[0].assets[0].total == 2.0
+        assert filled.assets[0].assets[0].available == 1.0
 
 
 class TestAutomationTradeSummariesFromExchangeElements:
@@ -934,3 +946,361 @@ class TestChildOctobotProcessFromFlowActions:
         assert child_state is not None
         assert child_state.web_port == 5002
         assert child_state.init_state_ok is True
+
+
+_READ_VIEW_SAMPLE_TIMESTAMP = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
+_READ_VIEW_USER_A = "wallet-user-a"
+
+
+def _read_view_automation(
+    automation_id: str,
+    name: str,
+    exchange_account_ids: list[str] | None,
+    status: protocol_models.WorkflowStatus = protocol_models.WorkflowStatus.RUNNING,
+    orders: list[protocol_models.OrderSummary] | None = None,
+    trades: list[protocol_models.TradeSummary] | None = None,
+) -> protocol_models.AutomationState:
+    return protocol_models.AutomationState(
+        id=automation_id,
+        status=status,
+        metadata=protocol_models.AutomationMetadata(
+            name=name,
+            description="",
+            created_at=_READ_VIEW_SAMPLE_TIMESTAMP,
+            updated_at=_READ_VIEW_SAMPLE_TIMESTAMP,
+        ),
+        exchange_account_ids=exchange_account_ids,
+        orders=orders,
+        trades=trades,
+    )
+
+
+def _read_view_trade(
+    trade_id: str,
+    symbol: str,
+    fee_amount: float | None,
+    fee_currency: str = "USDT",
+) -> protocol_models.Trade:
+    fee = None
+    if fee_amount is not None:
+        fee = protocol_models.Fee(amount=fee_amount, currency=fee_currency)
+    return protocol_models.Trade(
+        id=trade_id,
+        trade_id=trade_id,
+        type=protocol_models.OrderType.LIMIT,
+        symbol=symbol,
+        side=protocol_models.Side.BUY,
+        quantity=1.0,
+        price=100.0,
+        fee=fee,
+        status=protocol_models.OrderStatus.FILLED,
+        executed_at=_READ_VIEW_SAMPLE_TIMESTAMP,
+    )
+
+
+def _read_view_order(order_id: str, symbol: str, exchange_id: str | None = None) -> protocol_models.Order:
+    resolved_exchange_id = exchange_id if exchange_id is not None else order_id
+    return protocol_models.Order(
+        id=order_id,
+        symbol=symbol,
+        price=100.0,
+        quantity=1.0,
+        filled=0.0,
+        exchange_id=resolved_exchange_id,
+        side=protocol_models.Side.BUY,
+        type=protocol_models.OrderType.LIMIT,
+        status=protocol_models.OrderStatus.OPEN,
+        created_at=_READ_VIEW_SAMPLE_TIMESTAMP,
+    )
+
+
+def _read_view_trading_summary(
+    account_id: str,
+    orders: list[protocol_models.Order] | None = None,
+    trades: list[protocol_models.Trade] | None = None,
+) -> protocol_models.AccountTradingWithAccountId:
+    return protocol_models.AccountTradingWithAccountId(
+        account_id=account_id,
+        account_trading=protocol_models.AccountTrading(
+            updated_at=_READ_VIEW_SAMPLE_TIMESTAMP,
+            orders=orders,
+            trades=trades,
+        ),
+    )
+
+
+class TestAutomationReadViewDisplayName:
+    def test_uses_id_when_name_empty(self):
+        view = automations_protocol.AutomationReadView(
+            user_id=_READ_VIEW_USER_A,
+            automation=_read_view_automation("auto-id", "", ["acc-1"]),
+            orders=[],
+            trades=[],
+            fees_by_currency={},
+        )
+        assert view.display_name == "auto-id"
+
+
+class TestFeesByCurrencyFromTrades:
+    def test_skips_trade_without_fee(self):
+        trades = [
+            _read_view_trade("t1", "BTC/USDT", 0.1),
+            _read_view_trade("t2", "ETH/USDT", None),
+        ]
+        assert automations_protocol.fees_by_currency_from_trades(trades) == {"USDT": 0.1}
+
+    def test_sums_by_currency(self):
+        trades = [
+            _read_view_trade("t1", "BTC/USDT", 0.1),
+            _read_view_trade("t2", "BTC/USDT", 0.2),
+        ]
+        fees = automations_protocol.fees_by_currency_from_trades(trades)
+        assert fees["USDT"] == pytest.approx(0.3)
+
+
+class TestBoundTradesAndOrdersToAutomation:
+    def test_trades_bound_to_automation_matches_trade_id(self):
+        trade = _read_view_trade("local-1", "BTC/USDT", None)
+        trade = protocol_models.Trade(
+            id="local-1",
+            trade_id="exchange-fill-1",
+            type=trade.type,
+            symbol=trade.symbol,
+            side=trade.side,
+            quantity=trade.quantity,
+            price=trade.price,
+            fee=trade.fee,
+            status=trade.status,
+            executed_at=trade.executed_at,
+        )
+        automation = _read_view_automation(
+            "auto-1",
+            "Bot",
+            ["acc-1"],
+            trades=[protocol_models.TradeSummary(id="exchange-fill-1", symbol="BTC/USDT")],
+        )
+        bound = automations_protocol._trades_bound_to_automation(automation, [trade])
+        assert bound == [trade]
+
+    def test_orders_bound_to_automation_matches_exchange_id(self):
+        order = _read_view_order("local-order-1", "ETH/USDT", exchange_id="exchange-order-9")
+        automation = _read_view_automation(
+            "auto-1",
+            "Bot",
+            ["acc-1"],
+            orders=[protocol_models.OrderSummary(id="exchange-order-9", symbol="ETH/USDT")],
+        )
+        bound = automations_protocol._orders_bound_to_automation(automation, [order])
+        assert bound == [order]
+
+
+class TestBuildViewForAutomation:
+    def test_merges_multiple_bound_accounts(self):
+        trading_by_account = {
+            "acc-1": _read_view_trading_summary("acc-1", trades=[_read_view_trade("t1", "A", 0.1)]).account_trading,
+            "acc-2": _read_view_trading_summary("acc-2", trades=[_read_view_trade("t2", "B", 0.2)]).account_trading,
+        }
+        view = automations_protocol._build_view_for_automation(
+            _READ_VIEW_USER_A,
+            _read_view_automation(
+                "auto-1",
+                "BotA",
+                ["acc-1", "acc-2"],
+                trades=[
+                    protocol_models.TradeSummary(id="t1", symbol="A"),
+                    protocol_models.TradeSummary(id="t2", symbol="B"),
+                ],
+            ),
+            trading_by_account,
+        )
+        assert len(view.trades) == 2
+        assert view.fees_by_currency["USDT"] == pytest.approx(0.3)
+
+    def test_fees_only_from_automation_bound_trades(self):
+        account_trades = [
+            _read_view_trade("bound-trade", "BTC/USDT", 0.1),
+            _read_view_trade("other-trade", "ETH/USDT", 0.9),
+        ]
+        trading_by_account = {
+            "acc-1": _read_view_trading_summary("acc-1", trades=account_trades).account_trading,
+        }
+        view = automations_protocol._build_view_for_automation(
+            _READ_VIEW_USER_A,
+            _read_view_automation(
+                "auto-1",
+                "BotA",
+                ["acc-1"],
+                trades=[protocol_models.TradeSummary(id="bound-trade", symbol="BTC/USDT")],
+            ),
+            trading_by_account,
+        )
+        assert len(view.trades) == 1
+        assert view.trades[0].trade_id == "bound-trade"
+        assert view.fees_by_currency == {"USDT": pytest.approx(0.1)}
+
+    def test_open_orders_only_from_automation_bound_orders(self):
+        account_orders = [
+            _read_view_order("bound-order", "BTC/USDT"),
+            _read_view_order("other-order", "ETH/USDT"),
+        ]
+        trading_by_account = {
+            "acc-1": _read_view_trading_summary("acc-1", orders=account_orders).account_trading,
+        }
+        view = automations_protocol._build_view_for_automation(
+            _READ_VIEW_USER_A,
+            _read_view_automation(
+                "auto-1",
+                "BotA",
+                ["acc-1"],
+                orders=[protocol_models.OrderSummary(id="bound-order", symbol="BTC/USDT")],
+            ),
+            trading_by_account,
+        )
+        assert len(view.orders) == 1
+        assert view.orders[0].id == "bound-order"
+
+    def test_empty_allow_list_excludes_account_activity(self):
+        trading_by_account = {
+            "acc-1": _read_view_trading_summary(
+                "acc-1",
+                orders=[_read_view_order("o1", "BTC/USDT")],
+                trades=[_read_view_trade("t1", "BTC/USDT", 0.5)],
+            ).account_trading,
+        }
+        view = automations_protocol._build_view_for_automation(
+            _READ_VIEW_USER_A,
+            _read_view_automation("auto-1", "BotA", ["acc-1"]),
+            trading_by_account,
+        )
+        assert view.orders == []
+        assert view.trades == []
+        assert view.fees_by_currency == {}
+
+    def test_empty_trading_when_unbound(self):
+        view = automations_protocol._build_view_for_automation(
+            _READ_VIEW_USER_A,
+            _read_view_automation("auto-1", "BotA", None),
+            {},
+        )
+        assert view.orders == []
+        assert view.trades == []
+        assert view.fees_by_currency == {}
+
+
+class TestRunningAutomationStates:
+    def test_keeps_only_protocol_running(self):
+        running = _read_view_automation("r1", "Run", ["a"])
+        completed = _read_view_automation(
+            "c1", "Done", ["b"], status=protocol_models.WorkflowStatus.COMPLETED
+        )
+        canceled = _read_view_automation(
+            "x1", "Off", ["c"], status=protocol_models.WorkflowStatus.CANCELED
+        )
+        filtered = automations_protocol._running_automation_states([running, completed, canceled])
+        assert filtered == [running]
+
+
+class TestGetAutomationReadViews:
+    @pytest.mark.asyncio
+    async def test_isolates_automations_and_wallets(self):
+        auto_a = _read_view_automation(
+            "auto-a",
+            "Alpha",
+            ["acc-a"],
+            orders=[protocol_models.OrderSummary(id="o-a", symbol="BTC/USDT")],
+        )
+        auto_b = _read_view_automation(
+            "auto-b",
+            "Beta",
+            ["acc-b"],
+            trades=[protocol_models.TradeSummary(id="t-b", symbol="ETH/USDT")],
+        )
+        get_states_mock = mock.AsyncMock(return_value=[auto_a, auto_b])
+        with (
+            mock.patch.object(
+                user_account_provider.AccountProvider,
+                "instance",
+                return_value=mock.Mock(list_collectable_wallet_ids=mock.Mock(return_value=[_READ_VIEW_USER_A])),
+            ),
+            mock.patch.object(
+                scheduler_api,
+                "get_automation_states",
+                get_states_mock,
+            ),
+            mock.patch.object(
+                accounts_protocol,
+                "get_accounts_state",
+                return_value=protocol_models.AccountsState(
+                    version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
+                    accounts=[],
+                    exchange_configs=[],
+                ),
+            ),
+            mock.patch.object(
+                accounts_trading_protocol,
+                "get_account_trading_summaries",
+                return_value=[
+                    _read_view_trading_summary("acc-a", orders=[_read_view_order("o-a", "BTC/USDT")]),
+                    _read_view_trading_summary("acc-b", trades=[_read_view_trade("t-b", "ETH/USDT", 0.5)]),
+                ],
+            ),
+        ):
+            views = await automations_protocol.get_automation_read_views()
+        get_states_mock.assert_awaited_once_with(
+            _READ_VIEW_USER_A,
+            statuses=list(automation_states_loader.ACTIVE_AUTOMATION_STATUSES),
+        )
+        assert len(views) == 2
+        alpha_view = next(view for view in views if view.automation.id == "auto-a")
+        beta_view = next(view for view in views if view.automation.id == "auto-b")
+        assert len(alpha_view.orders) == 1
+        assert alpha_view.orders[0].id == "o-a"
+        assert beta_view.trades[0].id == "t-b"
+        assert beta_view.fees_by_currency == {"USDT": 0.5}
+
+    @pytest.mark.asyncio
+    async def test_skips_non_running_automations(self):
+        auto_running = _read_view_automation(
+            "auto-running",
+            "Active",
+            ["acc-a"],
+            orders=[protocol_models.OrderSummary(id="o-a", symbol="BTC/USDT")],
+        )
+        auto_completed = _read_view_automation(
+            "auto-stopped",
+            "Stopped",
+            ["acc-b"],
+            status=protocol_models.WorkflowStatus.COMPLETED,
+        )
+        with (
+            mock.patch.object(
+                user_account_provider.AccountProvider,
+                "instance",
+                return_value=mock.Mock(list_collectable_wallet_ids=mock.Mock(return_value=[_READ_VIEW_USER_A])),
+            ),
+            mock.patch.object(
+                scheduler_api,
+                "get_automation_states",
+                mock.AsyncMock(return_value=[auto_running, auto_completed]),
+            ),
+            mock.patch.object(
+                accounts_protocol,
+                "get_accounts_state",
+                return_value=protocol_models.AccountsState(
+                    version=sync_constants.EXCHANGE_ACCOUNTS_STATE_VERSION,
+                    accounts=[],
+                    exchange_configs=[],
+                ),
+            ),
+            mock.patch.object(
+                accounts_trading_protocol,
+                "get_account_trading_summaries",
+                return_value=[
+                    _read_view_trading_summary("acc-a", orders=[_read_view_order("o-a", "BTC/USDT")]),
+                    _read_view_trading_summary("acc-b", trades=[_read_view_trade("t-b", "ETH/USDT", 0.5)]),
+                ],
+            ),
+        ):
+            views = await automations_protocol.get_automation_read_views()
+        assert len(views) == 1
+        assert views[0].automation.id == "auto-running"

@@ -9,6 +9,8 @@ description: >-
 
 Full reference: [`tools/agent_seed/README.md`](../../../tools/agent_seed/README.md). Code layout: [`tools/agent_seed/ARCHITECTURE.md`](../../../tools/agent_seed/ARCHITECTURE.md).
 
+**CLI rule:** extend `python -m tools.agent_seed` with new **subcommands** under `tools/agent_seed/cli/` and logic in `operations/`. Do not add standalone scripts or nested `python -m tools.agent_seed.<thing>` packages with their own `__main__.py`. `wait-for-base-url` waits for the node port before bootstrap (`seed-agent.sh --full` calls it automatically).
+
 ## When to use / when to skip
 
 | Task | Agent-seed? |
@@ -38,14 +40,19 @@ Master tentacles on `user/reference_tentacles_config/` must exist (see `tools/ag
 ## Commands (OctoBot repo root)
 
 ```bash
-bash .cursor/seed-agent.sh --full    # seed + background start + bootstrap — stop node first; do NOT run start again
-bash .cursor/seed-agent.sh --clear   # wipe + re-seed — stop node first
-bash .cursor/seed-agent.sh bootstrap # node must already listen on AGENT_SEED_BASE_URL
+bash .cursor/seed-agent.sh --full     # seed + detached background start + bootstrap (safe with captured shell output)
+bash .cursor/seed-agent.sh --restart  # stop + background start + wait (keeps DB, automations, orders; no seed/bootstrap)
+bash .cursor/seed-agent.sh --stop     # stop recorded node; frees port — run when QA is done or before --clear
+bash .cursor/seed-agent.sh --clear    # wipe + re-seed — run --stop first
+bash .cursor/seed-agent.sh bootstrap  # node must already listen on AGENT_SEED_BASE_URL
 bash .cursor/seed-agent.sh bootstrap --scenario index --scenario completed  # more automations (grid|index|completed|lifecycle|all)
-bash .cursor/seed-agent.sh start     # foreground start only
+bash .cursor/seed-agent.sh start      # foreground start only
+python -m tools.agent_seed wait-for-base-url  # node must be starting; used by --full/--restart after start-background
 ```
 
-**`--full` starts OctoBot.** Never double-start. Stop before `--full` or `--clear`.
+Always start or restart through **`seed-agent.sh`** so **`SCHEDULER_SQLITE_FILE`** is exported. Do **not** run `python -m tools.agent_seed start-background` after only `source .cursor/agent-seed.env` — `start-background` will fail with an explicit scheduler DB error.
+
+**`--full` starts OctoBot** in the background (pidfile + `user/agent-seed/agent-seed-node.log`). Never double-start: port busy → fail fast with `--stop` hint. Always **`--stop`** when finished.
 
 ## After seed: interact with the UI
 
@@ -57,6 +64,12 @@ bash .cursor/seed-agent.sh start     # foreground start only
 Credentials: wallet `0x70997970c51812dc3a010c7d01b50e0d17dc79c8`, display name `demo` — see fixture README.
 
 HTTP Basic (`wallet:passphrase`) works for **`/api/v1/debug/`** without a browser session (headless equivalent of debug-view user actions).
+
+## Headless debug API (agents)
+
+- **Never invent REST routes** — there is no `/api/v1/orders` or `/api/v1/trades`. Real paths: **`GET /api/v1/openapi.json`** on a running node; debug snapshot is only **`GET` / `POST` `/api/v1/debug/`**.
+- **`debug.automations[].orders` / `.trades`** are thin `{id, symbol}` summaries. **Side, price, quantity, status** → **`debug.account_tradings[].account_trading.orders|trades`**, joined via `automations[].exchange_account_ids`.
+- **curl** snapshot to a file, then **`jq`** — do not dump full debug JSON into context. Status codes and field map: [README § Headless / debug API](../../../tools/agent_seed/README.md#headless--debug-api).
 
 ## Demo-only
 

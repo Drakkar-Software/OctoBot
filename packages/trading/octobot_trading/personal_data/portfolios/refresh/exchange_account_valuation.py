@@ -90,7 +90,7 @@ def valuation_symbols_from_portfolio(
         ]
     for currency, symbol_balance in portfolio_content.items():
         total_holdings = float(symbol_balance.get(commons_constants.PORTFOLIO_TOTAL) or 0)
-        if total_holdings == 0 or currency == valuation_unit:
+        if total_holdings == 0 or symbol_util.is_same_coin(currency, valuation_unit):
             continue
         direct_symbol, _is_reversed_symbol = exchange_util_module.get_associated_symbol(
             exchange_manager,

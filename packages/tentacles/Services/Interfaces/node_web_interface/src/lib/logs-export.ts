@@ -94,13 +94,20 @@ export async function fetchNodeLogsArchive(): Promise<{
 export async function fetchAutomationLogsArchive(
   taskIds: string[],
   archiveName: string,
-  options?: { latestOnly?: boolean },
+  options?: { latestOnly?: boolean; removeTiming?: boolean },
 ): Promise<{ bytes: Uint8Array; name: string; mime: string }> {
-  const body: { task_ids: string[]; latest_only?: boolean } = {
+  const body: {
+    task_ids: string[]
+    latest_only?: boolean
+    remove_timing?: boolean
+  } = {
     task_ids: taskIds,
   }
   if (options?.latestOnly) {
     body.latest_only = true
+  }
+  if (options?.removeTiming) {
+    body.remove_timing = true
   }
   return fetchLogsZip(body, AUTOMATION_LOGS_NOT_FOUND_MESSAGE, archiveName)
 }

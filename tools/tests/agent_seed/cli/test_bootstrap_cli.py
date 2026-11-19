@@ -48,3 +48,21 @@ class TestBootstrapCli:
     def test_all_subcommand_accepts_scenarios(self):
         namespace = agent_seed_cli.build_arg_parser().parse_args(["all", "--scenario", "completed"])
         assert namespace.scenario == ["completed"]
+        assert namespace.emit_signals is False
+
+    def test_emit_signals_defaults_to_off(self, captured_run):
+        assert agent_seed_cli.main(["bootstrap", "--scenario", "grid"]) == 0
+        assert captured_run[0]["emit_signals"] is False
+
+    def test_emit_signals_option_is_forwarded_for_grid_and_index(self, captured_run):
+        argv = ["bootstrap", "--emit-signals", "--scenario", "grid", "--scenario", "index"]
+        assert agent_seed_cli.main(argv) == 0
+        assert captured_run[0]["emit_signals"] is True
+        assert captured_run[0]["scenarios"] == [
+            agent_seed_enums.BootstrapScenario.GRID,
+            agent_seed_enums.BootstrapScenario.INDEX,
+        ]
+
+    def test_all_subcommand_accepts_emit_signals(self):
+        namespace = agent_seed_cli.build_arg_parser().parse_args(["all", "--emit-signals"])
+        assert namespace.emit_signals is True

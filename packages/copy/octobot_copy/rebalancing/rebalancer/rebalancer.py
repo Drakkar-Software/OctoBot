@@ -92,7 +92,7 @@ class AbstractRebalancer:
         orders = removed_coins_to_sell_orders + coins_to_sell_orders
         if orders:
             # ensure all orders are filled
-            await self._exchange_interface.orders.wait_for_orders_to_fill(orders)
+            await self._exchange_interface.orders.wait_for_orders_to_fill_and_ensure_portfolio_sync(orders)
         return orders
 
     def can_simply_buy_coins_without_selling(self, details: dict[str, typing.Any]) -> bool:

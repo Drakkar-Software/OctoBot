@@ -9,6 +9,7 @@ import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
 import tools.agent_seed.enums as agent_seed_enums
 import tools.agent_seed.errors as agent_seed_errors
+import tools.agent_seed.operations.bootstrap_automation as agent_seed_bootstrap_automation
 import tools.agent_seed.operations.bootstrap_grid as agent_seed_bootstrap_grid
 import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.protocol.builders as agent_seed_protocol_builders
@@ -21,14 +22,6 @@ _SCENARIO_ORDER = (
     agent_seed_enums.BootstrapScenario.COMPLETED,
     agent_seed_enums.BootstrapScenario.LIFECYCLE,
 )
-
-
-def find_automation(debug_payload: dict, automation_id: str) -> typing.Optional[dict]:
-    debug_section = debug_payload.get("debug") or {}
-    for automation in debug_section.get("automations") or []:
-        if automation.get("id") == automation_id:
-            return automation
-    return None
 
 
 def expand_scenarios(
@@ -78,7 +71,15 @@ def _wait_for_automation_status(
         debug_payload = _get_debug_payload(debug_url, headers)
         if user_action_id is not None:
             agent_seed_bootstrap_grid.ensure_user_action_not_failed(debug_payload, user_action_id)
-        automation = find_automation(debug_payload, automation_id)
+        if (
+            expected_status == protocol_models.WorkflowStatus.RUNNING
+            and user_action_id is not None
+        ):
+            agent_seed_bootstrap_automation.ensure_automation_not_stale_while_waiting_running(
+                debug_payload,
+                automation_id,
+            )
+        automation = agent_seed_bootstrap_automation.find_automation(debug_payload, automation_id)
         if automation is not None and automation.get("status") == expected_status.value:
             return automation
         time.sleep(poll_interval_seconds)
@@ -96,7 +97,10 @@ def _session(base_url: str) -> tuple[str, dict[str, str]]:
 
 
 def _current_status(debug_url: str, headers: dict[str, str], automation_id: str) -> typing.Optional[str]:
-    automation = find_automation(_get_debug_payload(debug_url, headers), automation_id)
+    automation = agent_seed_bootstrap_automation.find_automation(
+        _get_debug_payload(debug_url, headers),
+        automation_id,
+    )
     return None if automation is None else automation.get("status")
 
 
@@ -109,6 +113,13 @@ def _create_and_wait_running(
     poll_interval_seconds: float,
     timeout_seconds: float,
 ) -> None:
+    debug_payload = _get_debug_payload(debug_url, headers)
+    agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(
+        debug_payload,
+        automation_id,
+    )
+    if agent_seed_bootstrap_automation.automation_is_running(debug_payload, automation_id):
+        return
     user_action_id = _submit_user_action(debug_url, headers, user_action)
     _wait_for_automation_status(
         debug_url=debug_url,
@@ -150,6 +161,7 @@ def bootstrap_index_automation(
     base_url: str,
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     debug_url, headers = _session(base_url)
     automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID
@@ -158,7 +170,9 @@ def bootstrap_index_automation(
     _create_and_wait_running(
         debug_url=debug_url,
         headers=headers,
-        user_action=agent_seed_protocol_builders.build_create_index_automation_user_action(),
+        user_action=agent_seed_protocol_builders.build_create_index_automation_user_action(
+            emit_signals=emit_signals,
+        ),
         automation_id=automation_id,
         poll_interval_seconds=poll_interval_seconds,
         timeout_seconds=timeout_seconds,
@@ -170,6 +184,7 @@ def bootstrap_completed_automation(
     base_url: str,
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     debug_url, headers = _session(base_url)
     automation_id = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID
@@ -183,6 +198,7 @@ def bootstrap_completed_automation(
             user_action=agent_seed_protocol_builders.build_create_index_automation_user_action(
                 automation_id=automation_id,
                 automation_name=demo_agent_seed_constants.DEMO_AGENT_SEED_COMPLETED_AUTOMATION_DISPLAY_NAME,
+                emit_signals=emit_signals,
             ),
             automation_id=automation_id,
             poll_interval_seconds=poll_interval_seconds,
@@ -202,6 +218,7 @@ def check_grid_automation_lifecycle(
     base_url: str,
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     """
     Stop then restart the seeded grid automation and check it is RUNNING again with its display name.
@@ -214,6 +231,7 @@ def check_grid_automation_lifecycle(
             base_url=base_url,
             poll_interval_seconds=poll_interval_seconds,
             timeout_seconds=timeout_seconds,
+            emit_signals=emit_signals,
         )
     _stop_and_wait_completed(
         debug_url=debug_url,
@@ -251,11 +269,13 @@ def run_scenarios(
     scenarios: typing.Optional[typing.Iterable[agent_seed_enums.BootstrapScenario]],
     poll_interval_seconds: float = agent_seed_bootstrap_grid.DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = agent_seed_bootstrap_grid.DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     common = {
         "base_url": base_url,
         "poll_interval_seconds": poll_interval_seconds,
         "timeout_seconds": timeout_seconds,
+        "emit_signals": emit_signals,
     }
     runners = {
         agent_seed_enums.BootstrapScenario.GRID: agent_seed_bootstrap_grid.bootstrap_grid_automation,

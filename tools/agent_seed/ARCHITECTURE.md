@@ -6,18 +6,20 @@ Demo-only fixture tooling for Cloud / local Node UI QA. Insecure committed walle
 
 - Canonical guide: [README.md](README.md)
 - Agent procedure: skill **agent-seed** (`.cursor/skills/agent-seed/SKILL.md`)
-- Bootstrap polls debug `user_actions` and fails fast on FAILED create-automation (`operations/bootstrap_grid.py`)
+- Bootstrap polls `GET /api/v1/debug/` (`user_actions` status + automation `RUNNING` in `debug.automations`) and fails fast on FAILED create-automation; shared automation polling/conflict checks in `operations/bootstrap_automation.py` (grid entrypoint `operations/bootstrap_grid.py`)
 - Extra bootstrap scenarios (index, completed, lifecycle) live in `operations/bootstrap_scenarios.py`
+- `--emit-signals` (default off) is applied once in `protocol/builders.py` when the automation config is built, so every scenario gets the same `emit_signals` value
 
 ## Phases
 
 ```mermaid
 flowchart TB
-  cli[cli seed bootstrap all]
+  cli[cli seed bootstrap all wait-for-base-url start-background stop-node]
   seedRun[operations.seed_run]
   seedOctobotConfig[operations.seed_octobot_config]
   seedSync[operations.seed_sync]
-  clearOp[operations.clear]
+  schedulerSqlite[operations.scheduler_sqlite]
+  bootstrapAutomation[operations.bootstrap_automation]
   bootstrapGrid[operations.bootstrap_grid]
   bootstrapScenarios[operations.bootstrap_scenarios]
   bootstrapHttp[operations.bootstrap_http]
@@ -28,18 +30,22 @@ flowchart TB
 
   cli --> seedRun
   cli --> bootstrapScenarios
+  cli --> waitForBaseUrl[operations.wait_for_base_url]
   bootstrapScenarios --> bootstrapGrid
+  bootstrapScenarios --> bootstrapAutomation
   bootstrapScenarios --> bootstrapHttp
   bootstrapScenarios --> builders
-  seedRun --> clearOp
+  seedRun --> schedulerSqlite
   seedRun --> seedOctobotConfig
   seedRun --> seedSync
   seedRun --> pathsMod
   seedRun --> secretsMod
   seedSync --> builders
+  bootstrapGrid --> bootstrapAutomation
   bootstrapGrid --> bootstrapHttp
   bootstrapGrid --> builders
   bootstrapGrid --> secretsMod
+  bootstrapAutomation --> bootstrapHttp
   builders --> nodeConstants
   secretsMod --> nodeConstants
 ```
@@ -51,17 +57,23 @@ flowchart TB
 | `paths.py` | Repo root, env path resolution, marker file name |
 | `secrets.py` | `DEMO_INSECURE_*` key material only |
 | `protocol/builders.py` | Kraken sim + grid/index protocol objects |
-| `operations/clear.py` | Sqlite-first wipe |
+| `operations/scheduler_sqlite.py` | Scheduler DB path resolution, wipe, and `start-background` env alignment checks |
+| `operations/bootstrap_automation.py` | Debug automation lookup and id conflict checks (all bootstrap scenarios) |
 | `operations/seed_sync.py` | Wallet import + sync collection writes |
 | `operations/seed_run.py` | `run_seed`, idempotency |
 | `operations/seed_octobot_config.py` | `config.json` readonly overlays to master `user/` |
 | `operations/bootstrap_http.py` | Debug API HTTP helpers |
-| `operations/bootstrap_grid.py` | Grid automation bootstrap, shared polling helpers |
+| `operations/bootstrap_grid.py` | Grid automation bootstrap |
 | `operations/bootstrap_scenarios.py` | `--scenario` runners: index, completed, lifecycle (uses the grid helpers) |
+| `operations/wait_for_base_url.py` | TCP poll until node accepts connections on base URL |
+| `operations/base_url_net.py` | Parse base URL host/port; TCP reachability probe |
+| `operations/node_lifecycle.py` | Pidfile, port-in-use checks, detached start (`start-background`), graceful stop (`stop-node`) |
 | `enums.py` | `BootstrapScenario` |
-| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError` |
+| `errors.py` | `AgentSeedError`, `AutomationLifecycleError`, `AutomationNameLostError`, `AgentSeedNodeStartupTimeoutError`, `AgentSeedSchedulerSqliteConfigError` |
 | `cli/` | Argparse only |
 | `__main__.py` | Entry: `python -m tools.agent_seed` |
+
+**CLI rule:** Do not add new `python -m tools.agent_seed.<thing>` packages or extra `__main__.py` entrypoints. New operator commands are a **subcommand** under `cli/` plus logic in `operations/`. The only entry remains `python -m tools.agent_seed`.
 
 Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) lives in `octobot_node/agent_seed/` — not in this package. **`POST /api/v1/debug/`** in `tentacles/.../node_api_interface/api/routes/debug.py` calls `validate_demo_agent_seed_user_action` before enqueueing user actions (GET debug unchanged).
 
@@ -72,10 +84,11 @@ Runtime sandbox (`is_demo_agent_seed_user`, validation in `demo_wallet.py`) live
 | `secrets.py` | `octobot_sync.auth.provider`, `octobot_node.agent_seed.constants` | tentacles, CommunityAuthentication, HTTP |
 | `protocol/builders.py` | `octobot_protocol`, tentacles, `octobot_copy.enums`, node constants | `operations`, `cli`, sync providers |
 | `paths.py` | stdlib | `octobot_*` |
-| `operations/clear.py` | node constants (message prefix) | tentacles, CLI |
-| `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.clear`, `secrets`, `paths`, node constants | HTTP debug |
+| `operations/scheduler_sqlite.py` | node constants (message prefix), `octobot_node.config`, `octobot_services.constants`, `paths`, `errors` | tentacles, CLI |
+| `operations/seed_sync.py`, `seed_run.py` | sync, CommunityAuthentication, `protocol.builders`, `operations.scheduler_sqlite`, `secrets`, `paths`, node constants | HTTP debug |
 | `operations/seed_octobot_config.py` | `octobot_commons.constants`, `paths` | tentacles, CLI |
 | `operations/bootstrap_*.py` | `protocol.builders`, `secrets`, `enums`, `errors`, node constants, urllib | CollectionProviders |
+| `operations/wait_for_base_url.py` | `errors`, stdlib socket/urllib | `octobot_*`, CLI |
 | `enums.py`, `errors.py` | stdlib | `octobot_*` |
 | `cli/*` | `operations`, `paths` | tentacles |
 | `__main__.py` | `cli` | direct `operations` |

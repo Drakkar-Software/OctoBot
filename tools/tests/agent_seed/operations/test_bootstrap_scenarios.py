@@ -6,14 +6,12 @@ import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
 import tools.agent_seed.enums as agent_seed_enums
 import tools.agent_seed.errors as agent_seed_errors
+import tools.agent_seed.operations.bootstrap_automation as agent_seed_bootstrap_automation
+import tools.agent_seed.operations.bootstrap_grid as agent_seed_bootstrap_grid
 import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.operations.bootstrap_scenarios as agent_seed_bootstrap_scenarios
 
 BASE_URL = "http://127.0.0.1:8000"
-GRID_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID
-INDEX_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID
-COMPLETED_ID = demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID
-GRID_NAME = demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME
 
 
 class FakeNode:
@@ -23,6 +21,7 @@ class FakeNode:
         self.automations: dict[str, dict] = {}
         self.user_actions: list[dict] = []
         self.posted_action_types: list[str] = []
+        self.created_configurations: list[dict] = []
         self.drop_name_on_restart = drop_name_on_restart
         self.reject_posts_with = reject_posts_with
 
@@ -47,6 +46,7 @@ class FakeNode:
         self.posted_action_types.append(action_type)
         if action_type == "automation_create":
             configuration = action["configuration"]
+            self.created_configurations.append(configuration)
             self.automations[configuration["id"]] = {
                 "id": configuration["id"],
                 "status": "running",
@@ -69,13 +69,21 @@ def fake_node(monkeypatch):
     return node
 
 
-def _run(scenarios):
+def _run(scenarios, *, emit_signals: bool = False):
     agent_seed_bootstrap_scenarios.run_scenarios(
         base_url=BASE_URL,
         scenarios=scenarios,
         poll_interval_seconds=0,
         timeout_seconds=1,
+        emit_signals=emit_signals,
     )
+
+
+def _created_strategy_flags(fake_node) -> list[tuple[str, bool]]:
+    return [
+        (configuration["strategy"]["id"], configuration["strategy"]["emit_signals"])
+        for configuration in fake_node.created_configurations
+    ]
 
 
 class TestExpandScenarios:
@@ -106,20 +114,26 @@ class TestExpandScenarios:
 class TestFindAutomation:
     def test_returns_matching_automation(self):
         payload = {"debug": {"automations": [{"id": "a"}, {"id": "b", "status": "running"}]}}
-        assert agent_seed_bootstrap_scenarios.find_automation(payload, "b") == {"id": "b", "status": "running"}
+        assert agent_seed_bootstrap_automation.find_automation(payload, "b") == {
+            "id": "b",
+            "status": "running",
+        }
 
     def test_returns_none_when_missing_or_empty(self):
-        assert agent_seed_bootstrap_scenarios.find_automation({"debug": {"automations": []}}, "a") is None
-        assert agent_seed_bootstrap_scenarios.find_automation({}, "a") is None
+        assert agent_seed_bootstrap_automation.find_automation({"debug": {"automations": []}}, "a") is None
+        assert agent_seed_bootstrap_automation.find_automation({}, "a") is None
 
 
 class TestIndexScenario:
     def test_creates_running_index_automation(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.INDEX])
         assert fake_node.posted_action_types == ["automation_create"]
-        assert fake_node.automations[INDEX_ID]["status"] == "running"
         assert (
-            fake_node.automations[INDEX_ID]["metadata"]["name"]
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID]["status"]
+            == "running"
+        )
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_INDEX_ID]["metadata"]["name"]
             == demo_agent_seed_constants.DEMO_AGENT_SEED_INDEX_AUTOMATION_DISPLAY_NAME
         )
 
@@ -139,7 +153,10 @@ class TestCompletedScenario:
     def test_creates_then_stops_automation(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
         assert fake_node.posted_action_types == ["automation_create", "automation_stop"]
-        assert fake_node.automations[COMPLETED_ID]["status"] == "completed"
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID]["status"]
+            == "completed"
+        )
 
     def test_no_op_when_already_completed(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
@@ -148,7 +165,9 @@ class TestCompletedScenario:
 
     def test_only_stops_when_already_running(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
-        fake_node.automations[COMPLETED_ID]["status"] = "running"
+        fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_COMPLETED_ID]["status"] = (
+            "running"
+        )
         _run([agent_seed_enums.BootstrapScenario.COMPLETED])
         assert fake_node.posted_action_types == ["automation_create", "automation_stop", "automation_stop"]
 
@@ -168,8 +187,14 @@ class TestLifecycleScenario:
     def test_passes_when_name_survives_restart(self, fake_node):
         _run([agent_seed_enums.BootstrapScenario.LIFECYCLE])
         assert fake_node.posted_action_types == ["automation_create", "automation_stop", "automation_restart"]
-        assert fake_node.automations[GRID_ID]["status"] == "running"
-        assert fake_node.automations[GRID_ID]["metadata"]["name"] == GRID_NAME
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID]["status"]
+            == "running"
+        )
+        assert (
+            fake_node.automations[demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID]["metadata"]["name"]
+            == demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME
+        )
 
     def test_raises_typed_error_when_name_lost_on_restart(self, monkeypatch):
         node = FakeNode(drop_name_on_restart=True)
@@ -179,6 +204,33 @@ class TestLifecycleScenario:
 
     def test_name_lost_error_is_an_agent_seed_error(self):
         assert issubclass(agent_seed_errors.AutomationNameLostError, agent_seed_errors.AgentSeedError)
+
+
+class TestEmitSignalsOnSeededAutomations:
+    def test_default_leaves_emit_signals_off_for_grid_and_index(self, fake_node):
+        _run([
+            agent_seed_enums.BootstrapScenario.GRID,
+            agent_seed_enums.BootstrapScenario.INDEX,
+        ])
+        assert _created_strategy_flags(fake_node) == [
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID, False),
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID, False),
+        ]
+
+    def test_emit_signals_turns_signals_on_for_grid_and_index(self, fake_node):
+        _run(
+            [
+                agent_seed_enums.BootstrapScenario.GRID,
+                agent_seed_enums.BootstrapScenario.INDEX,
+                agent_seed_enums.BootstrapScenario.COMPLETED,
+            ],
+            emit_signals=True,
+        )
+        assert _created_strategy_flags(fake_node) == [
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_GRID_ID, True),
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID, True),
+            (demo_agent_seed_constants.DEMO_AGENT_SEED_STRATEGY_INDEX_ID, True),
+        ]
 
 
 class TestAllScenarios:

@@ -364,7 +364,7 @@ class TestSignalAutomationActionExecutor_execute:
         assert user_action.status == protocol_models.UserActionStatus.RUNNING
 
     @pytest.mark.asyncio
-    async def test_execute_trading_signal_calls_trigger_copier_automation(self):
+    async def test_execute_trading_signal_calls_send_trading_signal_to_active_automation(self):
         trading_signal_dict = _minimal_trading_signal_dict()
         user_action = _user_action_signal(
             user_action_id="ua-signal-trading",
@@ -378,22 +378,55 @@ class TestSignalAutomationActionExecutor_execute:
                 return_value=True,
             ),
             mock.patch(
-                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.trigger_copier_automation",
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_trading_signal_to_active_automation",
                 new_callable=mock.AsyncMock,
-            ) as trigger_copier_mock,
+            ) as send_trading_signal_mock,
         ):
             await executor.execute(user_action)
 
-        trigger_copier_mock.assert_awaited_once()
-        call_args = trigger_copier_mock.await_args
+        send_trading_signal_mock.assert_awaited_once()
+        call_args = send_trading_signal_mock.await_args
         assert call_args.args[0] == _TEST_AUTOMATION_ID
-        assert isinstance(call_args.args[1], flow_entities.TradingSignal)
-        assert call_args.args[1].strategy_id == "test-strategy-id"
+        assert call_args.args[1] == _TEST_WALLET_ADDRESS
+        assert isinstance(call_args.args[2], flow_entities.TradingSignal)
+        assert call_args.args[2].strategy_id == "test-strategy-id"
         provider_assertions.assert_user_action_terminal_state(
             user_action=user_action,
             expected_status=protocol_models.UserActionStatus.COMPLETED,
             result_channel="automation",
             expect_error_details=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_execute_trading_signal_raises_when_active_automation_workflow_not_found(self):
+        trading_signal_dict = _minimal_trading_signal_dict()
+        user_action = _user_action_signal(
+            user_action_id="ua-signal-trading-missing",
+            signal_type=protocol_models.AutomationSignalType.TRADING_SIGNAL,
+            signal_payload=_signal_payload_wrapper(trading_signal_dict),
+        )
+        executor = signal_automation_executor.SignalAutomationActionExecutor(_TEST_WALLET_ADDRESS)
+        with (
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_module.is_initialized",
+                return_value=True,
+            ),
+            mock.patch(
+                "octobot_node.scheduler.user_actions.user_actions_executor.automation.signal_automation.scheduler_tasks.send_trading_signal_to_active_automation",
+                new_callable=mock.AsyncMock,
+                side_effect=node_errors.ActiveAutomationWorkflowNotFoundError("missing"),
+            ) as send_trading_signal_mock,
+        ):
+            with pytest.raises(node_errors.ActiveAutomationWorkflowNotFoundError):
+                await executor.execute(user_action)
+
+        send_trading_signal_mock.assert_awaited_once()
+        provider_assertions.assert_user_action_terminal_state(
+            user_action=user_action,
+            expected_status=protocol_models.UserActionStatus.FAILED,
+            result_channel="automation",
+            expect_error_details=True,
+            expected_error_message=protocol_models.AutomationActionResultErrorMessage.AUTOMATION_NOT_FOUND,
         )
 
     @pytest.mark.asyncio

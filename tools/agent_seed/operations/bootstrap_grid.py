@@ -8,25 +8,13 @@ import octobot_protocol.models as protocol_models
 
 import octobot_node.agent_seed.constants as demo_agent_seed_constants
 
+import tools.agent_seed.operations.bootstrap_automation as agent_seed_bootstrap_automation
 import tools.agent_seed.operations.bootstrap_http as agent_seed_bootstrap_http
 import tools.agent_seed.protocol.builders as agent_seed_protocol_builders
 import tools.agent_seed.secrets as agent_seed_secrets
 
 DEFAULT_POLL_INTERVAL_SECONDS = 2.0
 DEFAULT_TIMEOUT_SECONDS = 30.0
-
-
-def grid_automation_is_running(debug_payload: dict) -> bool:
-    debug_section = debug_payload.get("debug") or {}
-    automations = debug_section.get("automations") or []
-    target_name = demo_agent_seed_constants.DEMO_AGENT_SEED_GRID_AUTOMATION_DISPLAY_NAME
-    for automation in automations:
-        status = automation.get("status")
-        metadata = automation.get("metadata") or {}
-        automation_name = metadata.get("name")
-        if automation_name == target_name and status == protocol_models.WorkflowStatus.RUNNING.value:
-            return True
-    return False
 
 
 def find_user_action(debug_payload: dict, user_action_id: str) -> typing.Optional[dict]:
@@ -77,6 +65,7 @@ def _poll_debug_after_create(
     *,
     debug_url: str,
     headers: dict[str, str],
+    automation_id: str,
     user_action_id: str,
     deadline: float,
     poll_interval_seconds: float,
@@ -86,7 +75,11 @@ def _poll_debug_after_create(
         status_code, debug_payload = agent_seed_bootstrap_http.request_json("GET", debug_url, headers)
         if status_code == 200 and isinstance(debug_payload, dict):
             ensure_user_action_not_failed(debug_payload, user_action_id)
-            if grid_automation_is_running(debug_payload):
+            agent_seed_bootstrap_automation.ensure_automation_not_stale_while_waiting_running(
+                debug_payload,
+                automation_id,
+            )
+            if agent_seed_bootstrap_automation.automation_is_running(debug_payload, automation_id):
                 return
         time.sleep(poll_interval_seconds)
 
@@ -100,6 +93,7 @@ def bootstrap_grid_automation(
     base_url: str,
     poll_interval_seconds: float = DEFAULT_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    emit_signals: bool = False,
 ) -> None:
     wallet_address = demo_agent_seed_constants.DEMO_AGENT_SEED_WALLET_EVM_ADDRESS
     headers = agent_seed_bootstrap_http.basic_auth_header(
@@ -110,12 +104,20 @@ def bootstrap_grid_automation(
     deadline = time.monotonic() + timeout_seconds
 
     status_code, debug_payload = agent_seed_bootstrap_http.request_json("GET", debug_url, headers)
-    if status_code == 200 and isinstance(debug_payload, dict) and grid_automation_is_running(
-        debug_payload,
-    ):
-        return
+    if status_code == 200 and isinstance(debug_payload, dict):
+        agent_seed_bootstrap_automation.ensure_automation_id_available_for_create(
+            debug_payload,
+            demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
+        )
+        if agent_seed_bootstrap_automation.automation_is_running(
+            debug_payload,
+            demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
+        ):
+            return
 
-    user_action = agent_seed_protocol_builders.build_create_grid_automation_user_action()
+    user_action = agent_seed_protocol_builders.build_create_grid_automation_user_action(
+        emit_signals=emit_signals,
+    )
     user_action_id = user_action.id
     create_status, create_body = agent_seed_bootstrap_http.request_json(
         "POST",
@@ -131,6 +133,7 @@ def bootstrap_grid_automation(
     _poll_debug_after_create(
         debug_url=debug_url,
         headers=headers,
+        automation_id=demo_agent_seed_constants.DEMO_AGENT_SEED_AUTOMATION_GRID_ID,
         user_action_id=user_action_id,
         deadline=deadline,
         poll_interval_seconds=poll_interval_seconds,

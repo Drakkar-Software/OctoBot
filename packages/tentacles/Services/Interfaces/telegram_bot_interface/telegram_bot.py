@@ -96,34 +96,16 @@ class TelegramBotInterface(interfaces_bots.AbstractBotInterface):
             )
 
     @staticmethod
+    async def _send_command_messages(update: telegram.Update, messages: list[str]):
+        for message in messages:
+            await TelegramBotInterface._send_message(update, message)
+
+    @staticmethod
     async def command_help(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
-            message = "* - My OctoBot skills - *" + interfaces_bots.EOL + interfaces_bots.EOL
-            message += "/start: `Displays my startup message.`" + interfaces_bots.EOL
-            message += "/ping: `Shows for how long I'm working.`" + interfaces_bots.EOL
-            message += "/portfolio or /pf: `Displays my current portfolio.`" + interfaces_bots.EOL
-            message += "/open\\_orders or /oo: `Displays my current open orders.`" + interfaces_bots.EOL
-            message += "/trades\\_history or /th: `Displays my trades history since I started.`" + interfaces_bots.EOL
-            message += "/profitability or /pb: `Displays the profitability I made since I started.`" + interfaces_bots.EOL
-            message += "/market\\_status or /ms: `Displays my understanding of the market and my risk parameter.`" + interfaces_bots.EOL
-            message += "/fees or /fs: `Displays the total amount of fees I paid since I started.`" + interfaces_bots.EOL
-            message += "/configuration or /cf: `Displays my traders, exchanges, evaluators, strategies and trading " \
-                       "mode.`" + interfaces_bots.EOL
-            message += "* - Trading Orders - *" + interfaces_bots.EOL
-            message += "/sell\\_all : `Cancels all my orders related to the currency in parameter and instantly " \
-                       "liquidate my holdings in this currency for my reference market.`" + interfaces_bots.EOL
-            message += "/sell\\_all\\_currencies : `Cancels all my orders and instantly liquidate all my currencies " \
-                       "for my reference market.`" + interfaces_bots.EOL
-            message += "* - Management - *" + interfaces_bots.EOL
-            message += "/set\\_risk: `Changes my current risk setting into your command's parameter.`" + interfaces_bots.EOL
-            message += "/refresh\\_portfolio or /rpf : `Forces OctoBot's real trader portfolio refresh using exchange " \
-                       "data. Should normally not be necessary.`" + interfaces_bots.EOL
-            message += "/pause or /resume: `Pauses or resumes me.`" + interfaces_bots.EOL
-            message += "/restart: `Restarts me.`" + interfaces_bots.EOL
-            message += "/stop: `Stops me.`" + interfaces_bots.EOL
-            message += "/version or /v: `Displays my current software version.`" + interfaces_bots.EOL
-            message += "/help: `Displays this help.`"
-            await update.effective_message.reply_markdown(message)
+            await update.effective_message.reply_markdown(
+                interfaces_bots.AbstractBotInterface.get_command_help(markdown=True)
+            )
         elif TelegramBotInterface._is_authorized_chat(update):
             await update.effective_message.reply_text(interfaces_bots.UNAUTHORIZED_USER_MESSAGE)
 
@@ -168,16 +150,9 @@ class TelegramBotInterface(interfaces_bots.AbstractBotInterface):
     async def command_pause_resume(self, update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
             if self.paused:
-                await TelegramBotInterface._send_message(
-                    update,
-                    f"_Resuming..._{interfaces_bots.EOL}`I will restart trading when I see opportunities !`"
-                )
-                self.set_command_resume()
+                await TelegramBotInterface._send_message(update, self.set_command_resume())
             else:
-                await TelegramBotInterface._send_message(
-                    update, f"_Pausing..._{interfaces_bots.EOL}`I'm cancelling my orders.`"
-                )
-                await self.set_command_pause()
+                await TelegramBotInterface._send_message(update, await self.set_command_pause())
 
     @staticmethod
     async def command_ping(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -191,7 +166,10 @@ class TelegramBotInterface(interfaces_bots.AbstractBotInterface):
         if TelegramBotInterface._is_valid_user(update):
             try:
                 result_risk = interfaces_bots.AbstractBotInterface.set_command_risk(decimal.Decimal(context.args[0]))
-                await TelegramBotInterface._send_message(update, f"`Risk successfully set to {result_risk}.`")
+                if isinstance(result_risk, str):
+                    await TelegramBotInterface._send_message(update, f"`{result_risk}`")
+                else:
+                    await TelegramBotInterface._send_message(update, f"`Risk successfully set to {result_risk}.`")
             except Exception:
                 await TelegramBotInterface._send_message(
                     update, "`Failed to set new risk, please provide a number between 0 and 1.`"
@@ -207,8 +185,9 @@ class TelegramBotInterface(interfaces_bots.AbstractBotInterface):
     @staticmethod
     async def command_fees(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
-            await TelegramBotInterface._send_message(
-                update, interfaces_bots.AbstractBotInterface.get_command_fees(markdown=True)
+            await TelegramBotInterface._send_command_messages(
+                update,
+                await interfaces_bots.AbstractBotInterface.get_command_fees(markdown=True),
             )
 
     @staticmethod
@@ -232,33 +211,33 @@ class TelegramBotInterface(interfaces_bots.AbstractBotInterface):
     @staticmethod
     async def command_portfolio(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
-            await TelegramBotInterface._send_message(update, interfaces_bots.AbstractBotInterface.get_command_portfolio(
-                markdown=True))
+            await TelegramBotInterface._send_command_messages(
+                update,
+                await interfaces_bots.AbstractBotInterface.get_command_portfolio(markdown=True),
+            )
 
     @staticmethod
     async def command_open_orders(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
-            await TelegramBotInterface._send_message(
-                update, interfaces_bots.AbstractBotInterface.get_command_open_orders(markdown=True)
+            await TelegramBotInterface._send_command_messages(
+                update,
+                await interfaces_bots.AbstractBotInterface.get_command_open_orders(markdown=True),
             )
 
     @staticmethod
     async def command_trades_history(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
-            await TelegramBotInterface._send_message(
-                update, interfaces_bots.AbstractBotInterface.get_command_trades_history(markdown=True)
+            await TelegramBotInterface._send_command_messages(
+                update,
+                await interfaces_bots.AbstractBotInterface.get_command_trades_history(markdown=True),
             )
 
     # refresh current order lists and portfolios and reload tham from exchanges
     @staticmethod
     async def command_portfolio_refresh(update: telegram.Update, _: telegram.ext.ContextTypes.DEFAULT_TYPE):
         if TelegramBotInterface._is_valid_user(update):
-            result = "Refresh"
-            try:
-                await interfaces_bots.AbstractBotInterface.set_command_portfolios_refresh()
-                await TelegramBotInterface._send_message(update, f"`{result} successful`")
-            except Exception as e:
-                await TelegramBotInterface._send_message(update, f"`{result} failure: {e}`")
+            message = await interfaces_bots.AbstractBotInterface.get_command_portfolios_refresh_message()
+            await TelegramBotInterface._send_message(update, f"`{message}`")
 
     # Displays my trades, exchanges, evaluators, strategies and trading
     @staticmethod

@@ -17,6 +17,7 @@
 import asyncio
 import decimal
 import contextlib
+import time
 import uuid
 import typing
 import collections
@@ -37,6 +38,7 @@ import octobot_trading.personal_data.orders.triggers.price_trigger as price_trig
 import octobot_trading.exchanges.util.exchange_data as exchange_data_import
 import octobot_trading.exchanges.util.exchange_market_status_fixer as exchange_market_status_fixer
 import octobot_trading.signals as signals
+import octobot_trading.personal_data.portfolios.portfolio_util as portfolio_util
 from octobot_trading.enums import ExchangeConstantsMarketStatusColumns as Ecmsc
 
 if typing.TYPE_CHECKING:
@@ -44,6 +46,10 @@ if typing.TYPE_CHECKING:
 
 
 LOGGER_NAME = "order_util"
+
+STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS = 2
+# Loose band for fee/slippage on broker-style exchanges when matching portfolio totals to order deltas
+PORTFOLIO_TOTAL_CHANGE_TOLERANCE_PERCENT = decimal.Decimal("10")
 
 
 def is_valid(element, key, zero_valid=False):
@@ -853,13 +859,69 @@ async def create_and_register_chained_order_on_base_order(
     return params, chained_order
 
 
+def _snapshot_portfolio_totals(portfolio) -> dict[str, decimal.Decimal]:
+    return {
+        currency: asset.total
+        for currency, asset in portfolio.portfolio.items()
+    }
+
+
+def have_orders_been_applied_to_portfolio_total(
+    pre_totals: dict[str, decimal.Decimal],
+    post_totals: dict[str, decimal.Decimal],
+    orders: list,
+) -> bool:
+    if not orders:
+        return True
+    assets_deltas, _, _, _ = portfolio_util.get_assets_delta_from_orders(
+        orders, {}, compute_forecasted_fees=False
+    )
+    for asset, delta_value in assets_deltas.items():
+        origin_value = pre_totals.get(asset)
+        updated_value = post_totals.get(asset)
+        if origin_value is None and updated_value is None:
+            continue
+        if origin_value is not None and updated_value is not None:
+            reference_total = max(
+                abs(origin_value),
+                abs(delta_value),
+                abs(updated_value),
+            )
+            allowed_difference = (
+                reference_total * PORTFOLIO_TOTAL_CHANGE_TOLERANCE_PERCENT / decimal.Decimal("100")
+            )
+            if abs(delta_value) < allowed_difference:
+                if abs(origin_value - updated_value) < allowed_difference:
+                    continue
+            if abs(origin_value - updated_value) < allowed_difference:
+                return False
+    return True
+
+
+async def _mark_portfolio_reflected_orders_filled(portfolio_manager, orders: list) -> None:
+    """
+    Close local orders once exchange portfolio totals already include their effect.
+    Portfolio was refreshed during the poll; do not sync or apply order deltas again.
+    """
+    with portfolio_manager.disabled_portfolio_update_from_order(enable_available_funds_update=False):
+        for order in orders:
+            await order.on_fill(force_fill=True)
+
+
 async def wait_for_orders_to_fill_considering_order_auto_synchronization(
     exchange_manager: "octobot_trading.exchanges.ExchangeManager", 
     orders: list, timeout: float, wait_for_portfolio_update: bool,
-
-    # todo subportfolio: remove these parameters when supported
-    temp_static_wait_time: float = 2, temp_refresh_portfolio_on_static_wait: bool = True
 ) -> None:
+    """
+    Wait for the given orders to be reflected in portfolio state.
+
+    When the trader simulates or order auto-synchronization is enabled, each order's state machine
+    (and optionally portfolio update via FillOrderState) handles fills.
+
+    When order auto-synchronization is disabled on a real trader, there is no order updater:
+    this path polls exchange portfolio totals (refresh_real_trader_portfolio) until order-implied
+    deltas appear in totals or the exchange-configured timeout is reached.
+    """
     if orders:
         if exchange_manager.trader.simulate or exchange_manager.exchange_personal_data.orders_manager.enable_order_auto_synchronization:
             # order will be synchronized by the orders manager
@@ -873,15 +935,61 @@ async def wait_for_orders_to_fill_considering_order_auto_synchronization(
                 return_exceptions=True,
             )
         else:
-            # todo subportfolio: smartly wait for orders to fill instead of waiting for a fixed time
-            logging.get_logger(LOGGER_NAME).info(
-                f"Waiting for {temp_static_wait_time} seconds to let {len(orders)} orders fill..."
-            )
-            await asyncio.sleep(temp_static_wait_time)
-            if temp_refresh_portfolio_on_static_wait:
-                await exchange_manager.exchange_personal_data.portfolio_manager.refresh_real_trader_portfolio(
-                    force_manual_refresh=True
+            portfolio_manager = exchange_manager.exchange_personal_data.portfolio_manager
+            if exchange_manager.is_future:
+                await asyncio.sleep(STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS)
+                await portfolio_manager.refresh_real_trader_portfolio(force_manual_refresh=True)
+                return
+
+            effective_timeout = float(
+                exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS
                 )
+            )
+            poll_interval_seconds = float(
+                exchange_manager.exchange.get_option_value(
+                    enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS
+                )
+            )
+            logger = logging.get_logger(LOGGER_NAME)
+            logger.info(
+                f"Waiting up to {effective_timeout}s (poll every {poll_interval_seconds}s) for "
+                f"{len(orders)} order(s) to reflect on "
+                f"{exchange_manager.exchange_name} portfolio (no order auto-sync)."
+            )
+
+            wait_started_at = time.monotonic()
+            pre_portfolio_totals = _snapshot_portfolio_totals(portfolio_manager.portfolio)
+            deadline = wait_started_at + effective_timeout
+
+            await asyncio.sleep(STATIC_ORDER_FILL_INITIAL_WAIT_SECONDS)
+
+            while time.monotonic() < deadline:
+                await portfolio_manager.refresh_real_trader_portfolio(force_manual_refresh=True)
+
+                post_portfolio_totals = _snapshot_portfolio_totals(portfolio_manager.portfolio)
+                if have_orders_been_applied_to_portfolio_total(
+                    pre_portfolio_totals, post_portfolio_totals, orders
+                ):
+                    logger.info(
+                        f"Portfolio totals reflect {len(orders)} pending order(s) on "
+                        f"{exchange_manager.exchange_name} after "
+                        f"{round(time.monotonic() - wait_started_at, 2)}s. Marking orders as filled."
+                    )
+                    await _mark_portfolio_reflected_orders_filled(portfolio_manager, orders)
+                    return
+
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                await asyncio.sleep(
+                    min(poll_interval_seconds, remaining)
+                )
+
+            logger.warning(
+                f"Timed out after {effective_timeout}s waiting for {len(orders)} order(s) to "
+                f"reflect on {exchange_manager.exchange_name} portfolio totals."
+            )
 
 
 async def wait_for_order_fill(order, timeout, wait_for_portfolio_update):

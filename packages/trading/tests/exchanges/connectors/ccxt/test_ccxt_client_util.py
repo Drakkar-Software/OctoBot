@@ -24,7 +24,23 @@ import octobot_commons.aiohttp_util as aiohttp_util
 import octobot_trading.exchanges as exchanges
 import octobot_trading.exchanges.config.exchange_credentials_data as exchange_credentials_data
 import octobot_trading.exchanges.connectors.ccxt.ccxt_client_util as ccxt_client_util
+import octobot_trading.exchanges.connectors.ccxt.constants as ccxt_connector_constants
 import octobot_trading.constants as constants
+import octobot_trading.enums as enums
+
+
+def _mock_ob_coinrabbit_exchange_class():
+    # CoinRabbit fill-wait contract; canonical values live in ccxt ob_coinrabbit, not CI's pip package.
+    class _ObCoinrabbitExchange:
+        def __init__(self):
+            self.options = {
+                ccxt_connector_constants.CCXT_OCTOBOT_OPTIONS: {
+                    enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS.value: 600,
+                    enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS.value: 20,
+                },
+            }
+
+    return _ObCoinrabbitExchange
 
 
 @pytest.mark.asyncio
@@ -291,3 +307,63 @@ class TestSetSandboxMode:
             assert "test-exchange" in str(error)
             assert "sandbox/test URLs are unavailable" in str(error)
         exchange_connector.logger.warning.assert_called_once()
+
+
+class TestGetOptionValueFromNewCcxtClient:
+    @staticmethod
+    def _clear_option_value_cache():
+        ccxt_client_util.get_option_value_from_new_ccxt_client.cache_clear()
+
+    @mock.patch.object(
+        ccxt_client_util,
+        "ccxt_exchange_class_factory",
+        return_value=_mock_ob_coinrabbit_exchange_class(),
+    )
+    def test_reads_coinrabbit_fill_wait_timeout_from_octobot_options(self, factory_mock):
+        self._clear_option_value_cache()
+        try:
+            timeout_seconds = ccxt_client_util.get_option_value_from_new_ccxt_client(
+                "ob_coinrabbit",
+                enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS,
+            )
+            factory_mock.assert_called_once_with("ob_coinrabbit")
+            assert timeout_seconds == 600
+        finally:
+            self._clear_option_value_cache()
+
+    @mock.patch.object(
+        ccxt_client_util,
+        "ccxt_exchange_class_factory",
+        return_value=_mock_ob_coinrabbit_exchange_class(),
+    )
+    def test_reads_coinrabbit_fill_poll_interval_from_octobot_options(self, factory_mock):
+        self._clear_option_value_cache()
+        try:
+            poll_interval_seconds = ccxt_client_util.get_option_value_from_new_ccxt_client(
+                "ob_coinrabbit",
+                enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS,
+            )
+            factory_mock.assert_called_once_with("ob_coinrabbit")
+            assert poll_interval_seconds == 20
+        finally:
+            self._clear_option_value_cache()
+
+
+class TestGetOptionValue:
+    def test_returns_default_when_octobot_options_block_is_missing(self):
+        client = mock.Mock()
+        client.options = {}
+        timeout_seconds = ccxt_client_util.get_option_value(
+            client,
+            enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS,
+        )
+        poll_interval_seconds = ccxt_client_util.get_option_value(
+            client,
+            enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS,
+        )
+        assert timeout_seconds == enums.DEFAULT_EXCHANGE_OPTION_VALUES[
+            enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_TIMEOUT_SECONDS
+        ]
+        assert poll_interval_seconds == enums.DEFAULT_EXCHANGE_OPTION_VALUES[
+            enums.ExchangeClientOptions.WAIT_FOR_ORDERS_TO_FILL_POLL_INTERVAL_SECONDS
+        ]

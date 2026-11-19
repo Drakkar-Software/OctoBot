@@ -95,12 +95,20 @@ Authoritative rules for Python in `octobot/` and `packages/`. Cloud agents: also
 - Use `import xxx` or `import xxx as yy`; access via `xxx.name` or `yy.name`.
 - Avoid `from xxx import yy` in normal module code; avoid lazy (function-scoped) imports unless breaking a documented import cycle or loading an optional heavy dependency on a rare path.
 - **`from xxx import yyy` is allowed only in `__init__.py`** when re-exporting the public surface (see below).
+- **No assignment aliases** for symbols defined elsewhere (`name = other_module.symbol`, including errors and constants). Import from the defining module at call sites. Re-export only via `from module import name` in `__init__.py`, not `name = module.name`.
 
 ### Package `__init__.py` as public bridge
 
 - Re-export the **public surface** from each package/subpackage `__init__.py` so callers use one stable import (e.g. `import octobot_trading.personal_data as personal_data`) instead of deep internal paths.
 - Example: [`packages/trading/octobot_trading/personal_data/__init__.py`](packages/trading/octobot_trading/personal_data/__init__.py).
 - When adding a new public symbol, export it from the appropriate `__init__.py`.
+
+### Reuse before you write
+
+- Before adding a helper, constant, or CLI entry, search the repo (`rg`) for an existing one and extend or generalize it instead of writing a near copy.
+- Do not add two functions that differ only by a name or a literal; use one helper with a parameter.
+- Do not redefine env var names, default file names, paths, or constants locally; import them from where they are defined (for example `octobot_services.constants`, `octobot_node.config.settings`).
+- Before pushing, self-review the diff: compare every new function and constant against the module and its neighbours, and note in the PR description what was reused.
 
 ## Formatting
 
