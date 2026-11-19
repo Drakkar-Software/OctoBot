@@ -47,7 +47,7 @@ class TestGetKitUrl:
     def test_raises_before_building_kit_path_when_kit_url_not_allowed(self):
         tentacle_config = _autofilled_tentacle_config("cne", "https://www.cne.kg/api/")
         with mock.patch.object(hollaex_autofilled_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=True):
-            with pytest.raises(trading_errors.NotSupported):
+            with pytest.raises(trading_errors.ExchangeConfigurationError):
                 hollaex_autofilled_exchange_class._get_kit_url(tentacle_config, "cne")
 
 
