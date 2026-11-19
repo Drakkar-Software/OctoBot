@@ -1,12 +1,62 @@
 #  Drakkar-Software OctoBot-Tentacles
 #  Copyright (c) Drakkar-Software, All rights reserved.
 
+import mock
+import pytest
+
 import octobot_protocol.models as protocol_models
+import octobot_trading.errors as trading_errors
 
 from ...hollaex.hollaex_exchange import hollaex as hollaex_exchange_class
 from ..hollaex_autofilled_exchange import HollaexAutofilled as hollaex_autofilled_exchange_class
 from ..hollaex_exchanges import CustomExchangeAvailability
 from ..hollaex_exchanges import _CUSTOM_EXCHANGE_AVAILABILITIES
+
+
+def _autofilled_tentacle_config(exchange_name: str, kit_url: str) -> dict:
+    return {
+        hollaex_autofilled_exchange_class.AUTO_FILLED_KEY: {
+            exchange_name: {hollaex_autofilled_exchange_class.URL_KEY: kit_url},
+        },
+    }
+
+
+def _autofilled_exchange_with_rest(rest_url: str):
+    exchange = object.__new__(hollaex_autofilled_exchange_class)
+    exchange.tentacle_config = {hollaex_autofilled_exchange_class.REST_KEY: rest_url}
+    return exchange
+
+
+class TestGetKitUrl:
+    def test_allows_arbitrary_kit_url_when_whitelist_disabled(self):
+        kit_url = "https://www.cne.kg/api/"
+        tentacle_config = _autofilled_tentacle_config("cne", kit_url)
+        with mock.patch.object(hollaex_autofilled_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=False):
+            assert hollaex_autofilled_exchange_class._get_kit_url(tentacle_config, "cne") == (
+                "https://www.cne.kg/api/v2/kit"
+            )
+
+    def test_allows_earn_curve_kit_url_when_whitelist_enabled(self):
+        kit_url = "https://www.earncurve.com.au/api/"
+        tentacle_config = _autofilled_tentacle_config("earncurve", kit_url)
+        with mock.patch.object(hollaex_autofilled_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=True):
+            assert hollaex_autofilled_exchange_class._get_kit_url(tentacle_config, "earncurve") == (
+                "https://www.earncurve.com.au/api/v2/kit"
+            )
+
+    def test_raises_before_building_kit_path_when_kit_url_not_allowed(self):
+        tentacle_config = _autofilled_tentacle_config("cne", "https://www.cne.kg/api/")
+        with mock.patch.object(hollaex_autofilled_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=True):
+            with pytest.raises(trading_errors.NotSupported):
+                hollaex_autofilled_exchange_class._get_kit_url(tentacle_config, "cne")
+
+
+class TestHollaexAutofilledGetApiUrl:
+    def test_returns_resolved_rest_without_whitelist_check(self):
+        resolved_rest_url = "https://api.cne.kg"
+        exchange = _autofilled_exchange_with_rest(resolved_rest_url)
+        with mock.patch.object(hollaex_autofilled_exchange_class, "IS_URL_WHITE_LIST_ENABLED", new=True):
+            assert exchange.get_api_url() == resolved_rest_url
 
 
 class TestCustomExchangeAvailabilityToExchangeAvailability:
