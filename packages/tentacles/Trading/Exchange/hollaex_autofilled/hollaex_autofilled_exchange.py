@@ -160,9 +160,14 @@ class HollaexAutofilled(hollaex):
         except KeyError:
             return False
 
+    def get_api_url(self):
+        # REST comes from kit info.url after fetch; kit page URL was validated in _get_kit_url.
+        return self.tentacle_config[self.REST_KEY]
+
     @classmethod
     def _get_kit_url(cls, tentacle_config, exchange_name) -> str:
         exchange_kit_url = HollaexAutofilled._get_autofilled_config(tentacle_config, exchange_name)[cls.URL_KEY]
+        cls.ensure_url_allowed(exchange_kit_url)
         if not exchange_kit_url.endswith(cls.KIT_PATH) and not exchange_kit_url.endswith("/"):
             exchange_kit_url = f"{exchange_kit_url}/"
         if not exchange_kit_url.endswith(cls.KIT_PATH):

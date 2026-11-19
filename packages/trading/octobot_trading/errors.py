@@ -289,6 +289,12 @@ class ExchangeInternalSyncError(OctoBotExchangeError):
     """
 
 
+class ExchangeConfigurationError(OctoBotExchangeError):
+    """
+    Raised when an exchange failed to execute the given request because of configuration issues
+    """
+
+
 class ExchangeCompliancyError(OctoBotExchangeError):
     """
     Raised when an exchange failed to execute the given request because of compliance rules for the current user account

@@ -350,6 +350,12 @@ class hollaex(exchanges.RestExchange):
     REST_KEY = "rest"
     FEE_TIERS_KEY = "fee_tiers"
     HAS_WEBSOCKETS_KEY = "has_websockets"
+    URL_WHITE_LIST_ENV = "HOLLAEX_URL_WHITE_LIST"
+    IS_URL_WHITE_LIST_ENABLED = commons_constants.parse_boolean_environment_var(URL_WHITE_LIST_ENV, "false")
+    ALLOWED_API_URLS = (
+        f"https://{BASE_REST_API}",
+        "https://www.earncurve.com.au/api/",
+    )
 
     """
     Deprecated constants kept as comments for reference.
@@ -402,8 +408,30 @@ class hollaex(exchanges.RestExchange):
             ccxt_enums.ExchangeColumns.URLS.value: self.get_patched_urls(self.get_api_url()),
         }
 
+    @classmethod
+    def _normalize_api_url(cls, api_url: str) -> str:
+        return api_url.rstrip("/")
+
+    @classmethod
+    def is_url_allowed(cls, api_url: str) -> bool:
+        if not cls.IS_URL_WHITE_LIST_ENABLED:
+            return True
+        normalized_url = cls._normalize_api_url(api_url)
+        allowed_urls = {cls._normalize_api_url(allowed_url) for allowed_url in cls.ALLOWED_API_URLS}
+        return normalized_url in allowed_urls
+
+    @classmethod
+    def ensure_url_allowed(cls, api_url: str) -> None:
+        if cls.is_url_allowed(api_url):
+            return
+        raise errors.NotSupported(
+            f"HollaEx API URL is not allowed when {cls.URL_WHITE_LIST_ENV} is enabled: {api_url}"
+        )
+
     def get_api_url(self):
-        return self.tentacle_config[self.REST_KEY]
+        api_url = self.tentacle_config[self.REST_KEY]
+        self.ensure_url_allowed(api_url)
+        return api_url
 
     def get_configured_fee_tiers(self) -> typing.Optional[FeeTiers]:
         if tiers := self.tentacle_config.get(self.FEE_TIERS_KEY):
