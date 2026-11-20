@@ -63,7 +63,6 @@ class ExchangeAuthDetails(octobot_commons.dataclasses.FlexibleDataclass, octobot
             if field_name in auth_details
         }
 
-    # pylint: disable=E1134
     def __post_init__(self):
         if self.incompatible_assets and isinstance(self.incompatible_assets[0], dict):
             self.incompatible_assets = (
@@ -163,7 +162,6 @@ class ExchangeData(octobot_commons.dataclasses.MinimizableDataclass, octobot_com
     trades: list[dict[str, typing.Any]] = dataclasses.field(default_factory=list)
     positions: list[PositionDetails] = dataclasses.field(default_factory=list)
 
-    # pylint: disable=E1134
     def __post_init__(self):
         if self.markets and isinstance(self.markets[0], dict):
             self.markets = [MarketDetails.from_dict(market) for market in self.markets] if self.markets else []
