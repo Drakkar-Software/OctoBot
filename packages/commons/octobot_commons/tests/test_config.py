@@ -29,7 +29,7 @@ def get_test_config(test_folder=TEST_FOLDER):
     Return test default config
     :return: test default config
     """
-    return os.path.join(test_folder, STATIC_FOLDER, constants.CONFIG_FILE)
+    return os.path.join(test_folder, STATIC_FOLDER, "bot_config.json")
 
 
 def get_test_profile(test_folder=TEST_FOLDER):

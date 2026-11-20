@@ -34,7 +34,7 @@ def test_init_config():
 
     configuration_manager.init_config(
         config_file=config_path,
-        from_config_file=os.path.join(test_config.TEST_CONFIG_FOLDER, commons_constants.CONFIG_FILE),
+        from_config_file=os.path.join(test_config.TEST_CONFIG_FOLDER, "bot_config.json"),
     )
     assert os.path.isfile(config_path)
     os.remove(config_path)
@@ -50,7 +50,7 @@ def test_init_config_uses_runtime_user_root_not_import_time_default(tmp_path):
         configuration_manager.init_config(
             from_config_file=os.path.join(
                 test_config.TEST_CONFIG_FOLDER,
-                commons_constants.CONFIG_FILE,
+                "bot_config.json",
             ),
         )
         assert automation_config_path.is_file()
