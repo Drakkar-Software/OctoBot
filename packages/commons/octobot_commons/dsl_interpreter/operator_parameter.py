@@ -1,4 +1,4 @@
-# pylint: disable=too-many-branches,too-many-return-statements,too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
 #  Drakkar-Software OctoBot-Commons
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #

@@ -61,7 +61,7 @@ class MonitoredProcessError(Exception):
 class MonitoredProcessOutputError(MonitoredProcessError):
     """Raised when an error pattern is found in process stdout/stderr."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         message: str,
         stream: str,
