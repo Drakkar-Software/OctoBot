@@ -58,13 +58,13 @@ class Automation(tentacles_management.AbstractTentacle):
         self,
         bot_id: str,
         tentacles_setup_config: "octobot_tentacles_manager.configuration.TentaclesSetupConfiguration",
-        automations_config: typing.Optional[dict] = {}
+        automations_config: typing.Optional[dict] = None
     ):
         super().__init__()
         self.logger: logging.BotLogger = logging.get_logger(self.get_name())
         self.bot_id: str = bot_id
         self.tentacles_setup_config: "octobot_tentacles_manager.configuration.TentaclesSetupConfiguration" = tentacles_setup_config
-        self.automations_config: typing.Optional[dict] = automations_config
+        self.automations_config: dict = automations_config if automations_config is not None else {}
         self.automation_tasks: list[asyncio.Task] = []
         self.automation_details: list[AutomationDetails] = []
 
