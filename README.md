@@ -180,6 +180,12 @@ OctoBot can be easily launched in the cloud from the [DigitalOcean Marketplace](
 
 [![Deploy on DigitalOcean](https://mp-assets1.sfo2.digitaloceanspaces.com/deploy-to-do/do-btn-blue.svg)](https://marketplace.digitalocean.com/apps/octobot)
 
+### Deploying OctoBot with one click on ZopDay
+
+OctoBot can also be launched on [ZopDay](https://zop.dev/zopday), either fully managed on ZopCloud or into your own AWS, GCP or Azure account.
+
+[![Deploy on ZopDay](https://zop.dev/deploytozopday-inkhard.svg)](https://zop.dev/zopday/app/deploy?image=drakkarsoftware/octobot:stable&port=5001)
+
 ### Using the OctoBot Executable
 
 This is the easiest way to download and install OctoBot on your computer or server. Here is [our executable installation guide](https://www.octobot.cloud/en/guides/octobot-installation/install-octobot-on-your-computer?utm_source=github&utm_medium=dk&utm_campaign=regular_open_source_content&utm_content=readme_local_installation).  
