@@ -16,17 +16,15 @@
 
 import typing
 
-import mock
 import pydantic
 
-import octobot.community.authentication as community_authentication
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.sync.collection_backend.abstract_local_collection_provider as abstract_provider_module
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_backend.file_checksum_tracked_cache as file_checksum_tracked_cache_module
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
-_TEST_PRIVATE_KEY = "private-key"
 
 
 class _TestState(pydantic.BaseModel):
@@ -60,18 +58,6 @@ def _make_provider(tmp_path):
     return _TestAbstractProvider(base_folder=str(tmp_path))
 
 
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
-
-
 class TestAbstractLocalCollectionProviderInit:
     def test_creates_storage_via_create_storage(self, tmp_path):
         provider = _make_provider(tmp_path)
@@ -94,7 +80,7 @@ class TestAbstractLocalCollectionProviderGetWalletPrivateKey:
     def test_returns_wallet_private_key_from_community_authentication(self, tmp_path):
         provider = _make_provider(tmp_path)
 
-        with _patch_wallet("expected-private-key"):
+        with wallet_test_support.patch_community_wallet("expected-private-key"):
             private_key = provider._get_wallet_private_key(_TEST_ADDRESS)
 
         assert private_key == "expected-private-key"

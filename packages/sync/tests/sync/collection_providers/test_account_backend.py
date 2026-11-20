@@ -17,31 +17,18 @@
 import datetime
 from unittest.mock import MagicMock
 
-import mock
 import pytest
 
-import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.base_local_collection_storage as base_storage_module
 import octobot_sync.sync.collection_backend.errors as collection_errors
 import octobot_sync.sync.collection_providers.user_account_provider as account_provider_module
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.constants as sync_constants
 import octobot_protocol.models as protocol_models
 import octobot_sync.enums as sync_enums
 
 _TEST_ADDRESS = "0xaaabbbcccddd"
 _TEST_PRIVATE_KEY = "private-key"
-
-
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
 
 
 def _make_provider(tmp_path):
@@ -119,14 +106,14 @@ class TestAccountProviderExchangeConfigGetItemId:
 class TestAccountProviderListExchangeConfigs:
     def test_empty_by_default(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             listed = provider.list_exchange_configs(_TEST_ADDRESS)
         assert listed == []
 
     def test_lists_created_exchange_configs(self, tmp_path):
         provider = _make_provider(tmp_path)
         exchange_config = _sample_exchange_config("cfg-1")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, exchange_config)
             listed = provider.list_exchange_configs(_TEST_ADDRESS)
         assert len(listed) == 1
@@ -137,17 +124,17 @@ class TestAccountProviderCreateExchangeConfig:
     def test_persists_exchange_config(self, tmp_path):
         provider = _make_provider(tmp_path)
         exchange_config = _sample_exchange_config("cfg-1")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             created = provider.create_exchange_config(_TEST_ADDRESS, exchange_config)
         assert created.id == "cfg-1"
 
     def test_duplicate_id_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
         exchange_config = _sample_exchange_config("cfg-1")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, exchange_config)
         with pytest.raises(collection_errors.DuplicateItemError):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.create_exchange_config(_TEST_ADDRESS, exchange_config)
 
 
@@ -155,7 +142,7 @@ class TestAccountProviderGetExchangeConfig:
     def test_returns_matching_exchange_config(self, tmp_path):
         provider = _make_provider(tmp_path)
         exchange_config = _sample_exchange_config("cfg-1", name="binance-main")
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, exchange_config)
             fetched = provider.get_exchange_config(_TEST_ADDRESS, "cfg-1")
         assert fetched.name == "binance-main"
@@ -163,14 +150,14 @@ class TestAccountProviderGetExchangeConfig:
     def test_missing_exchange_config_raises(self, tmp_path):
         provider = _make_provider(tmp_path)
         with pytest.raises(collection_errors.ItemNotFoundError):
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 provider.get_exchange_config(_TEST_ADDRESS, "missing")
 
 
 class TestAccountProviderUpdateExchangeConfig:
     def test_updates_existing_exchange_config(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, _sample_exchange_config("cfg-1", name="Original"))
             provider.update_exchange_config(
                 _TEST_ADDRESS,
@@ -183,7 +170,7 @@ class TestAccountProviderUpdateExchangeConfig:
 class TestAccountProviderDeleteExchangeConfig:
     def test_deletes_existing_exchange_config(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_exchange_config(_TEST_ADDRESS, _sample_exchange_config("cfg-1"))
             provider.delete_exchange_config(_TEST_ADDRESS, "cfg-1")
             listed = provider.list_exchange_configs(_TEST_ADDRESS)
@@ -193,7 +180,7 @@ class TestAccountProviderDeleteExchangeConfig:
 class TestAccountProviderCrossCollectionPersistence:
     def test_account_update_preserves_exchange_configs(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_account(_TEST_ADDRESS, _sample_account("acc-1", name="Original"))
             provider.create_exchange_config(_TEST_ADDRESS, _sample_exchange_config("cfg-1", name="binance-main"))
             provider.update_account(_TEST_ADDRESS, _sample_account("acc-1", name="Updated"))
@@ -209,7 +196,7 @@ class TestAccountProviderCrossCollectionPersistence:
 
     def test_exchange_config_update_preserves_accounts(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.create_account(_TEST_ADDRESS, _sample_account("acc-1", name="Alpha"))
             provider.create_exchange_config(_TEST_ADDRESS, _sample_exchange_config("cfg-1", name="Original"))
             provider.update_exchange_config(
