@@ -17,10 +17,7 @@
 try:
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.enums as enums
 except ImportError:
-    try:
-        import mobile_ui.enums as enums  # type: ignore[no-redef]
-    except ImportError:
-        import enums  # type: ignore[no-redef]
+    import mobile_ui.enums as enums  # type: ignore[no-redef]
 
 
 class MobileUiError(Exception):

@@ -24,12 +24,8 @@ try:
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.constants as constants
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.store as store_module
 except ImportError:
-    try:
-        import mobile_ui.constants as constants  # type: ignore[no-redef]
-        import mobile_ui.store as store_module  # type: ignore[no-redef]
-    except ImportError:
-        import constants  # type: ignore[no-redef]
-        import store as store_module  # type: ignore[no-redef]
+    import mobile_ui.constants as constants  # type: ignore[no-redef]
+    import mobile_ui.store as store_module  # type: ignore[no-redef]
 
 
 def _content_type_for_path(path: pathlib.Path) -> str:

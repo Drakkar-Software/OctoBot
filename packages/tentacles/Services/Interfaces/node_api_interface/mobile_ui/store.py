@@ -22,7 +22,6 @@ import os
 import pathlib
 import re
 import shutil
-import threading
 import typing
 import uuid
 from urllib import parse as urllib_parse
@@ -36,16 +35,10 @@ try:
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.errors as errors
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.manifest as manifest_module
 except ImportError:
-    try:
-        import mobile_ui.constants as constants  # type: ignore[no-redef]
-        import mobile_ui.enums as enums  # type: ignore[no-redef]
-        import mobile_ui.errors as errors  # type: ignore[no-redef]
-        import mobile_ui.manifest as manifest_module  # type: ignore[no-redef]
-    except ImportError:
-        import constants  # type: ignore[no-redef]
-        import enums  # type: ignore[no-redef]
-        import errors  # type: ignore[no-redef]
-        import manifest as manifest_module  # type: ignore[no-redef]
+    import mobile_ui.constants as constants  # type: ignore[no-redef]
+    import mobile_ui.enums as enums  # type: ignore[no-redef]
+    import mobile_ui.errors as errors  # type: ignore[no-redef]
+    import mobile_ui.manifest as manifest_module  # type: ignore[no-redef]
 
 
 class MobileUiStatus(typing.TypedDict):
@@ -95,7 +88,6 @@ class MobileUiStore:
         self.latest_sequence: int | None = None
         self.last_error: enums.MobileUiErrorCode | None = None
         self._install_task: asyncio.Task[None] | None = None
-        self._start_lock = threading.Lock()
 
     def _is_configured(self) -> bool:
         return bool(self.update_base_url and self.public_keys)
@@ -206,10 +198,9 @@ class MobileUiStore:
         if not self._is_configured():
             return self.get_status()
 
-        with self._start_lock:
-            if self._install_task is not None and not self._install_task.done():
-                return self.get_status()
-            self._install_task = asyncio.create_task(self._run_install())
+        if self._install_task is not None and not self._install_task.done():
+            return self.get_status()
+        self._install_task = asyncio.create_task(self._run_install())
         return self.get_status()
 
     async def _run_install(self) -> None:

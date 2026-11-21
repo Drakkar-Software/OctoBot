@@ -26,12 +26,8 @@ try:
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.constants as constants
     import tentacles.Services.Interfaces.node_api_interface.mobile_ui.errors as errors
 except ImportError:
-    try:
-        import mobile_ui.constants as constants  # type: ignore[no-redef]
-        import mobile_ui.errors as errors  # type: ignore[no-redef]
-    except ImportError:
-        import constants  # type: ignore[no-redef]
-        import errors  # type: ignore[no-redef]
+    import mobile_ui.constants as constants  # type: ignore[no-redef]
+    import mobile_ui.errors as errors  # type: ignore[no-redef]
 
 
 class ManifestFile(typing.TypedDict):
