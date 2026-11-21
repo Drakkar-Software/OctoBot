@@ -1,12 +1,20 @@
-import { Globe, Smartphone, TriangleAlert } from "lucide-react"
+import { Globe, Info, Smartphone, TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { QRCode } from "react-qr-code"
 
+import { OpenAPI } from "@/client"
+import { BrowserAppOpenOrInstallCta } from "@/components/Common/BrowserAppOpenOrInstallCta"
 import { ManualNodeConnectPanel } from "@/components/Setup/ManualNodeConnectPanel"
-import { MobileUiCard } from "@/components/Setup/MobileUiCard"
 import { NodeConnectAddressTabs } from "@/components/Setup/NodeConnectAddressTabs"
 import { SetupPrivateKeyPanel } from "@/components/Setup/SetupPrivateKeyPanel"
 import { Button } from "@/components/ui/button"
+import useAuth from "@/hooks/useAuth"
+import { useMobileUi } from "@/hooks/useMobileUi"
+import {
+  buildMobileUiUrl,
+  getMobileUiView,
+  isMobileUiOfferable,
+} from "@/lib/mobile-ui"
 import {
   Card,
   CardContent,
@@ -24,6 +32,81 @@ import {
 } from "@/lib/external-links"
 
 type ConnectMethod = "web" | "mobile"
+
+const CONNECT_BROWSER_APP_LABEL = "OctoBot browser app (recommended)"
+const CONNECT_BROWSER_APP_HELPER =
+  "The OctoBot interface served by this node in your browser."
+const CONNECT_WEBSITE_LABEL = "Website"
+const CONNECT_WEBSITE_HELPER =
+  "The hosted OctoBot web app (not this node's browser app)."
+
+const CONNECT_STEP1_OPTION_COLUMN_CLASS =
+  "flex h-full flex-col items-start gap-3"
+
+function ConnectWebStep1WebsiteColumn() {
+  return (
+    <div className={CONNECT_STEP1_OPTION_COLUMN_CLASS}>
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {CONNECT_WEBSITE_LABEL}
+      </span>
+      <p className="text-sm text-muted-foreground">{CONNECT_WEBSITE_HELPER}</p>
+      <div className="mt-auto">
+        <Button type="button" variant="outline" size="sm" asChild>
+          <a
+            href={OCTOBOT_WEB_INTERFACE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open web interface
+          </a>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ConnectWebStep1OpenInterface() {
+  const { user } = useAuth()
+  const { status, isLoading } = useMobileUi()
+  const isAdmin = user?.is_superuser === true
+  const view = getMobileUiView(status, isAdmin)
+  const showBrowserAppColumn = isMobileUiOfferable(isLoading, view)
+  const openUrl = buildMobileUiUrl(OpenAPI.BASE, window.location.origin)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>1. Open an OctoBot interface</CardTitle>
+        <CardDescription>
+          Choose how you open OctoBot. Prefer Brave or Google Chrome.
+        </CardDescription>
+      </CardHeader>
+      <CardContent
+        className={
+          showBrowserAppColumn ? "grid gap-4 md:grid-cols-2" : undefined
+        }
+      >
+        {showBrowserAppColumn ? (
+          <div
+            className={CONNECT_STEP1_OPTION_COLUMN_CLASS}
+            aria-busy={isLoading || undefined}
+          >
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {CONNECT_BROWSER_APP_LABEL}
+            </span>
+            <p className="text-sm text-muted-foreground">
+              {CONNECT_BROWSER_APP_HELPER}
+            </p>
+            <div className="mt-auto w-full">
+              <BrowserAppOpenOrInstallCta openHref={openUrl} />
+            </div>
+          </div>
+        ) : null}
+        <ConnectWebStep1WebsiteColumn />
+      </CardContent>
+    </Card>
+  )
+}
 
 export function ConnectNodeGuide() {
   const [connectMethod, setConnectMethod] = useState<ConnectMethod>("web")
@@ -86,28 +169,7 @@ export function ConnectNodeGuide() {
 
       {connectMethod === "web" ? (
         <div className="flex flex-col gap-4">
-          <MobileUiCard />
-          <Card>
-            <CardHeader>
-              <CardTitle>1. Open the OctoBot web interface</CardTitle>
-              <CardDescription>
-                Connect to your node, manage your OctoBots, and link your exchange
-                accounts. To avoid compatibility issues, we recommend using{" "}
-                <strong>Brave</strong> or <strong>Google Chrome</strong>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <a
-                href={OCTOBOT_WEB_INTERFACE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button type="button" variant="outline">
-                  Open web interface
-                </Button>
-              </a>
-            </CardContent>
-          </Card>
+          <ConnectWebStep1OpenInterface />
 
           <Card>
             <CardHeader>
@@ -134,6 +196,14 @@ export function ConnectNodeGuide() {
           <Card>
             <CardHeader>
               <CardTitle>4. Connect this node</CardTitle>
+              <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3 text-sm w-full">
+                <Info className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  Using the <strong>OctoBot browser app</strong>? This step is
+                  already done for you. The pairing steps below apply when you
+                  use the <strong>website</strong>.
+                </span>
+              </div>
               <CardDescription>
                 In the web interface, start a <strong>new automation</strong>,
                 click any kind of automation, then <strong>Add a node</strong> →{" "}

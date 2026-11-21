@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import type { MobileUiErrorCode, MobileUiStatusResponse } from "@/client"
 import {
+  buildMobileUiBotUrl,
+  buildMobileUiBotsNewUrl,
   buildMobileUiUrl,
   getMobileUiHeaderAction,
   getMobileUiView,
@@ -37,6 +39,20 @@ describe("buildMobileUiUrl", () => {
     expect(
       buildMobileUiUrl("http://localhost:8000", "http://localhost:5173"),
     ).toBe("http://localhost:8000/mobile/")
+  })
+})
+
+describe("buildMobileUiBotsNewUrl", () => {
+  it("uses origin when apiBase is empty", () => {
+    expect(buildMobileUiBotsNewUrl("", "http://192.168.0.10:5001")).toBe(
+      "http://192.168.0.10:5001/mobile/bots/new",
+    )
+  })
+
+  it("uses apiBase when set", () => {
+    expect(
+      buildMobileUiBotsNewUrl("http://localhost:8000", "http://localhost:5173"),
+    ).toBe("http://localhost:8000/mobile/bots/new")
   })
 })
 

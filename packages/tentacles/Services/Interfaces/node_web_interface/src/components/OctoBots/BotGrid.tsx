@@ -3,6 +3,9 @@ import { Bot, Plus } from "lucide-react"
 
 import type { Task } from "@/client"
 import { Button } from "@/components/ui/button"
+import useAuth from "@/hooks/useAuth"
+import { useMobileUi } from "@/hooks/useMobileUi"
+import { getMobileUiView } from "@/lib/mobile-ui"
 import { BotCard } from "./BotCard"
 
 export function BotGrid({
@@ -16,6 +19,12 @@ export function BotGrid({
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
 }) {
+  const { user } = useAuth()
+  const { status, isLoading } = useMobileUi()
+  const isAdmin = user?.is_superuser === true
+  const view = getMobileUiView(status, isAdmin)
+  const browserAppReady = !isLoading && view.kind === "ready"
+
   if (allTasksEmpty) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
@@ -67,6 +76,7 @@ export function BotGrid({
           key={task.id}
           task={task}
           selected={task.id ? selectedIds.has(task.id) : false}
+          browserAppReady={browserAppReady}
           onToggleSelect={onToggleSelect}
         />
       ))}

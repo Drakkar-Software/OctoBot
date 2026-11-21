@@ -22,19 +22,15 @@ import os
 import pathlib
 import shutil
 import subprocess
-import sys
 
 import fastapi
 import pytest
 from aiohttp.test_utils import TestServer
 from fastapi.testclient import TestClient
 
-_MOBILE_UI_TESTS = os.path.dirname(os.path.abspath(__file__))
-if _MOBILE_UI_TESTS not in sys.path:
-    sys.path.insert(0, _MOBILE_UI_TESTS)
-
-import mobile_ui_test_server as test_server
 import tentacles.Services.Interfaces.node_api_interface.mobile_ui as mobile_ui
+
+from . import mobile_ui_test_server as test_server
 
 
 def _golden_fixture() -> dict:

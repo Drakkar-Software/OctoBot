@@ -101,7 +101,7 @@ def stop_node(current_user: AdminUser) -> None:
 
 
 @router.patch("/config")
-def update_node_config(config: NodeConfigUpdate, current_user: CurrentUser) -> typing.Any:
+def update_node_config(config: NodeConfigUpdate, current_user: AdminUser) -> typing.Any:
     if config.node_type is not None:
         octobot_node.config.settings.IS_MASTER_MODE = config.node_type == "master"
     if config.use_dedicated_log_file_per_automation is not None:

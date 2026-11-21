@@ -16,25 +16,16 @@
 
 import asyncio
 import json
-import os
-import sys
 
 import aiohttp.web as web
 import pytest
 from aiohttp.test_utils import TestServer
 
-_NODE_API_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _NODE_API_DIR not in sys.path:
-    sys.path.insert(0, _NODE_API_DIR)
-_TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-if _TEST_DIR not in sys.path:
-    sys.path.insert(0, _TEST_DIR)
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui as mobile_ui
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui.enums as enums
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui.errors as errors
 
-import mobile_ui
-import mobile_ui.enums as enums
-import mobile_ui.errors as errors
-
-import mobile_ui_test_server as test_server
+from . import mobile_ui_test_server as test_server
 
 
 @pytest.fixture()

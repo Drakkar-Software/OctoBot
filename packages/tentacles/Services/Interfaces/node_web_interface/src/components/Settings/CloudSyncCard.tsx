@@ -138,8 +138,7 @@ export function CloudSyncSection() {
           </Label>
         </div>
         <span className="text-xs text-muted-foreground">
-          E2E-encrypted mirroring of this node&apos;s data to the shared cloud
-          sync server. Required for website pairing to read anything.
+          Required for website pairing to read this node.
         </span>
         {enabled && (
           <Button

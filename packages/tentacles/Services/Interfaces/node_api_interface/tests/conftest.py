@@ -14,8 +14,6 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import sys
 import typing
 import uuid
 from unittest import mock
@@ -28,16 +26,8 @@ from starlette.middleware.cors import CORSMiddleware
 import octobot.community.wallet_backend as wallet_backend
 import octobot_node.config as _node_config
 import tentacles.Services.Interfaces.node_api_interface as node_api_interface_module
-
-# Allow direct imports from the package (api.* fallback path in route files)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-try:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import get_current_user
-    from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
-except ImportError:
-    from api.deps import get_current_user  # type: ignore[no-redef]
-    from api.main import build_api_router  # type: ignore[no-redef]
+from tentacles.Services.Interfaces.node_api_interface.api.deps import get_current_user
+from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
 import octobot_node.models
 
 ADMIN_ADDRESS = "0xadmin000000000000000000000000000000000001"

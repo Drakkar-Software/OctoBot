@@ -20,7 +20,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPBasicCredentials
 
-from api.deps import get_current_user
+from tentacles.Services.Interfaces.node_api_interface.api.deps import get_current_user
 from .conftest import (
     ADMIN_ADDRESS,
     ADMIN_PASSPHRASE,

@@ -11,22 +11,13 @@ import octobot_node.config
 import octobot_node.models
 import octobot_node.scheduler
 
-try:
-    from tentacles.Services.Interfaces.node_api_interface.api.wallet_route_helpers import (  # type: ignore[no-redef]
-        ensure_debug_routes_enabled,
-        ensure_scheduler_initialized,
-        resolve_user_id,
-        resolve_wallet_address,
-    )
-    import tentacles.Services.Interfaces.node_api_interface.api.wallet_route_helpers as wallet_route_helpers_module  # type: ignore[no-redef]
-except ImportError:
-    from api.wallet_route_helpers import (  # type: ignore[no-redef]
-        ensure_debug_routes_enabled,
-        ensure_scheduler_initialized,
-        resolve_user_id,
-        resolve_wallet_address,
-    )
-    import api.wallet_route_helpers as wallet_route_helpers_module  # type: ignore[no-redef]
+import tentacles.Services.Interfaces.node_api_interface.api.wallet_route_helpers as wallet_route_helpers_module
+from tentacles.Services.Interfaces.node_api_interface.api.wallet_route_helpers import (
+    ensure_debug_routes_enabled,
+    ensure_scheduler_initialized,
+    resolve_user_id,
+    resolve_wallet_address,
+)
 
 
 def _user(email: str, is_superuser: bool = False) -> octobot_node.models.User:

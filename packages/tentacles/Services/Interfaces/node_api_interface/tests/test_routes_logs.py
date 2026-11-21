@@ -22,18 +22,11 @@ import mock
 
 import octobot_node.constants
 
-try:
-    from tentacles.Services.Interfaces.node_api_interface.api.routes.logs import (
-        build_logs_zip,
-        build_main_logs_zip,
-        strip_log_line_timings,
-    )
-except ImportError:
-    from api.routes.logs import (  # type: ignore[no-redef]
-        build_logs_zip,
-        build_main_logs_zip,
-        strip_log_line_timings,
-    )
+from tentacles.Services.Interfaces.node_api_interface.api.routes.logs import (
+    build_logs_zip,
+    build_main_logs_zip,
+    strip_log_line_timings,
+)
 
 _SAMPLE_INFO_LINE = (
     "2026-08-26 10:08:50 INFO   OctoBot Launcher     logger.py:79       "
@@ -229,6 +222,15 @@ class TestExportLogsRequireAuth:
             headers=_auth_header("0xdeadbeef", ADMIN_PASSPHRASE),
         )
         _assert_auth_error_response(response, "auth_wallet_not_found")
+
+
+class TestExportLogsPrivileges:
+    def test_tenant_export_returns_403(self, tenant_client, tmp_path):
+        (tmp_path / "OctoBot.log").write_text("main log line")
+        with mock.patch.object(octobot_node.constants, "BASE_LOGS_FOLDER", str(tmp_path)):
+            response = tenant_client.post("/api/v1/logs/export", json={})
+        assert response.status_code == 403
+        assert response.json()["detail"] == "The user doesn't have enough privileges"
 
 
 class TestExportLogs:

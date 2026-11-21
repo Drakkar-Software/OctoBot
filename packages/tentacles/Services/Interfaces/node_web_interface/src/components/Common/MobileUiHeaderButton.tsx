@@ -10,7 +10,6 @@ import {
   buildMobileUiUrl,
   getMobileUiHeaderAction,
   getMobileUiView,
-  isMobileUiUpToDate,
   MOBILE_UI_HEADER_LABEL_GET,
   MOBILE_UI_HEADER_LABEL_INSTALLED,
   MOBILE_UI_HEADER_LABEL_INSTALLING,
@@ -18,36 +17,36 @@ import {
 
 export function MobileUiHeaderButton() {
   const { user } = useAuth()
-  const {
-    status,
-    install,
-    check,
-    isInstallRequestPending,
-    isCheckRequestPending,
-    checkSucceeded,
-  } = useMobileUi()
+  const { status, isLoading } = useMobileUi()
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const isAdmin = user?.is_superuser === true
   const view = getMobileUiView(status, isAdmin)
   const action = getMobileUiHeaderAction(view)
 
+  if (isLoading) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled
+        aria-busy="true"
+        aria-hidden
+      >
+        <ExternalLink className="size-4" />
+        <span className="hidden sm:inline">
+          {MOBILE_UI_HEADER_LABEL_INSTALLED}
+        </span>
+      </Button>
+    )
+  }
+
   if (action.kind === "hidden") {
     return null
   }
 
   const openUrl = buildMobileUiUrl(OpenAPI.BASE, window.location.origin)
-  const upToDate = isMobileUiUpToDate(view, checkSucceeded)
-
-  const panelProps = {
-    view,
-    onInstall: install,
-    onCheck: check,
-    installPending: isInstallRequestPending,
-    checkPending: isCheckRequestPending,
-    upToDate,
-    openUrl,
-  }
 
   const openDialog = () => setDialogOpen(true)
 
@@ -96,7 +95,7 @@ export function MobileUiHeaderButton() {
         <MobileUiDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          {...panelProps}
+          readyLabel="Open"
         />
       ) : null}
     </>

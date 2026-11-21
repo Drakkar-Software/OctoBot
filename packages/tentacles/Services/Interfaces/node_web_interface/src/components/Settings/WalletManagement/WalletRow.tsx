@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { ShieldCheck } from "lucide-react"
+import { Copy, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { type WalletInfo, WalletsService } from "@/client"
 import { ExportWalletDialog } from "@/components/Settings/WalletManagement/ExportWalletDialog"
@@ -10,6 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { truncateAddress } from "@/lib/wallet-utils"
 
 export function WalletRow({
@@ -60,6 +61,10 @@ export function WalletRow({
       setNameValue(wallet.name ?? "")
     }
   }
+
+  const isOwnWallet =
+    wallet.address.toLowerCase() === currentUserAddress.toLowerCase()
+  const loginUsernameCopyLabel = `Copy login username ${wallet.address}`
 
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3">
@@ -113,20 +118,51 @@ export function WalletRow({
             </span>
           </button>
         )}
-        <span className="text-xs text-muted-foreground font-mono">
-          {truncateAddress(wallet.address)}
-        </span>
+        {isOwnWallet ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground font-mono text-left cursor-pointer hover:text-foreground w-fit"
+                aria-label={loginUsernameCopyLabel}
+                onClick={() =>
+                  copyTextToClipboard(
+                    wallet.address,
+                    "Node login username (admin address)",
+                  )
+                }
+              >
+                <span className="inline-flex items-center gap-1">
+                  {truncateAddress(wallet.address)}
+                  <Copy className="size-3.5 shrink-0 opacity-70" aria-hidden />
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-md p-3">
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-xs break-all">
+                  {wallet.address}
+                </span>
+                <span className="text-xs font-sans">
+                  Username for browser-app login
+                </span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="text-xs text-muted-foreground font-mono">
+            {truncateAddress(wallet.address)}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {showExport && (
           <ExportWalletDialog
             walletAddress={wallet.address}
-            isOwnWallet={wallet.address.toLowerCase() === currentUserAddress.toLowerCase()}
+            isOwnWallet={isOwnWallet}
           />
         )}
-        {wallet.address.toLowerCase() === currentUserAddress.toLowerCase() && (
-          <PairDeviceDialog />
-        )}
+        {isOwnWallet ? <PairDeviceDialog /> : null}
         {wallet.is_admin && (
           <Tooltip>
             <TooltipTrigger asChild>

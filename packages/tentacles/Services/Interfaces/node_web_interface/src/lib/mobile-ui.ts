@@ -4,6 +4,7 @@ import type {
 } from "@/client"
 
 export const MOBILE_UI_PATH = "/mobile/"
+export const MOBILE_UI_BOTS_NEW_PATH = "/mobile/bots/new"
 export const MOBILE_UI_STATUS_POLL_MS = 1500
 export const MOBILE_UI_STATUS_QUERY_KEY = ["mobile-ui", "status"] as const
 
@@ -33,14 +34,41 @@ export type MobileUiView =
       error: string | null
     }
 
+function mobileUiBaseUrl(apiBase: string | undefined, origin: string): string {
+  return apiBase ? apiBase : origin
+}
+
 export function buildMobileUiUrl(
   apiBase: string | undefined,
   origin: string,
 ): string {
-  if (apiBase) {
-    return new URL(MOBILE_UI_PATH, apiBase).toString()
-  }
-  return new URL(MOBILE_UI_PATH, origin).toString()
+  return new URL(MOBILE_UI_PATH, mobileUiBaseUrl(apiBase, origin)).toString()
+}
+
+export function buildMobileUiBotsNewUrl(
+  apiBase: string | undefined,
+  origin: string,
+): string {
+  return new URL(
+    MOBILE_UI_BOTS_NEW_PATH,
+    mobileUiBaseUrl(apiBase, origin),
+  ).toString()
+}
+
+export function buildMobileUiBotUrl(
+  apiBase: string | undefined,
+  origin: string,
+  automationId: string,
+): string {
+  const path = `/mobile/bots/${encodeURIComponent(automationId)}`
+  return new URL(path, mobileUiBaseUrl(apiBase, origin)).toString()
+}
+
+export function isMobileUiOfferable(
+  isLoading: boolean,
+  view: MobileUiView,
+): boolean {
+  return isLoading || view.kind !== "hidden"
 }
 
 export function mobileUiErrorMessage(

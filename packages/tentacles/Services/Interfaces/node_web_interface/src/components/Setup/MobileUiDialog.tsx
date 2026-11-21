@@ -22,7 +22,7 @@ type MobileUiDialogProps = MobileUiPanelProps & {
 export function MobileUiDialog({
   open,
   onOpenChange,
-  ...panelProps
+  readyLabel,
 }: MobileUiDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -31,7 +31,7 @@ export function MobileUiDialog({
           <DialogTitle>{MOBILE_UI_TITLE}</DialogTitle>
           <DialogDescription>{MOBILE_UI_DESCRIPTION}</DialogDescription>
         </DialogHeader>
-        <MobileUiPanel {...panelProps} />
+        <MobileUiPanel readyLabel={readyLabel} />
         <DialogFooter className="flex-row flex-wrap justify-end gap-2">
           <DialogClose asChild>
             <Button type="button" variant="secondary">

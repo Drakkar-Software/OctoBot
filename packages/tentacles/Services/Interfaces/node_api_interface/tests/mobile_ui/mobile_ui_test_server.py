@@ -14,23 +14,19 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import asyncio
 import base64
 import hashlib
 import json
 import mimetypes
 import os
 import pathlib
-import sys
 
 import aiohttp.web as web
 import cryptography.hazmat.primitives.asymmetric.ed25519 as ed25519
 
-_NODE_API_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _NODE_API_DIR not in sys.path:
-    sys.path.insert(0, _NODE_API_DIR)
-
-import mobile_ui
-import mobile_ui.constants as constants
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui as mobile_ui
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui.constants as constants
 
 DEFAULT_TEST_SEQUENCE = 1_700_000_000
 _next_test_sequence = DEFAULT_TEST_SEQUENCE
@@ -81,18 +77,24 @@ def sign_manifest(
 class MobileUiTestServerState:
     def __init__(self) -> None:
         self.file_requests: list[str] = []
+        self.manifest_requests = 0
         self.manifest: dict = {}
         self.file_contents: dict[tuple[str, str], bytes] = {}
         self.fail_manifest = False
+        self.manifest_delay_seconds = 0.0
 
     def reset_requests(self) -> None:
         self.file_requests = []
+        self.manifest_requests = 0
 
 
 def build_application(state: MobileUiTestServerState) -> web.Application:
     async def manifest_handler(_request: web.Request) -> web.Response:
         if state.fail_manifest:
             raise web.HTTPNotFound()
+        state.manifest_requests += 1
+        if state.manifest_delay_seconds > 0:
+            await asyncio.sleep(state.manifest_delay_seconds)
         return web.json_response(state.manifest)
 
     async def file_handler(request: web.Request) -> web.Response:

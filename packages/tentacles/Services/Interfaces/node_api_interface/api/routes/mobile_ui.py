@@ -27,8 +27,12 @@ except ImportError:
 
 try:
     from tentacles.Services.Interfaces.node_api_interface.api.deps import AdminUser, CurrentUser
+    from tentacles.Services.Interfaces.node_api_interface.api.node_setup_gate import (
+        ensure_node_unconfigured_for_first_run,
+    )
 except ImportError:
     from api.deps import AdminUser, CurrentUser  # type: ignore[no-redef]
+    from api.node_setup_gate import ensure_node_unconfigured_for_first_run  # type: ignore[no-redef]
 
 router = fastapi.APIRouter(tags=["mobile-ui"])
 
@@ -69,4 +73,24 @@ async def check_mobile_ui_update(
 ) -> MobileUiStatusResponse:
     store = request.app.state.mobile_ui_store
     return MobileUiStatusResponse(**await store.check_for_update())
+
+
+@router.get("/first-run/status", response_model=MobileUiStatusResponse)
+def get_mobile_ui_first_run_status(request: fastapi.Request) -> MobileUiStatusResponse:
+    ensure_node_unconfigured_for_first_run()
+    store = request.app.state.mobile_ui_store
+    return MobileUiStatusResponse(**store.get_status())
+
+
+@router.post(
+    "/first-run/install",
+    response_model=MobileUiStatusResponse,
+    status_code=fastapi.status.HTTP_202_ACCEPTED,
+)
+async def install_mobile_ui_first_run(
+    request: fastapi.Request,
+) -> MobileUiStatusResponse:
+    ensure_node_unconfigured_for_first_run()
+    store = request.app.state.mobile_ui_store
+    return MobileUiStatusResponse(**store.start_install())
 

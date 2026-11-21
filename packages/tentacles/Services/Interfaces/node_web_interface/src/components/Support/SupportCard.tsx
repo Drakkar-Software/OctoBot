@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { BookOpen, Bug, ExternalLink, LifeBuoy } from "lucide-react"
+import { ExternalLink, LifeBuoy } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,15 @@ import {
   getSupportTicket,
   SUPPORT_TICKET_QUERY_KEY,
 } from "@/lib/octochat"
+
+const SETTINGS_CARD_NAV_LINK_CLASS =
+  "text-sm underline underline-offset-4 hover:text-foreground w-fit"
+
+const SETTINGS_CARD_EXTERNAL_NAV_LINK_CLASS =
+  "inline-flex items-center gap-1 text-sm underline underline-offset-4 hover:text-foreground w-fit"
+
+const SUPPORT_NONE_DESCRIPTION =
+  "Stuck on something? Leave a message and the team will get back to you. Share a debug snapshot in one click."
 
 export function SupportCard() {
   const queryClient = useQueryClient()
@@ -82,25 +91,33 @@ export function SupportCard() {
           <span className="text-sm text-muted-foreground">
             Setup walkthroughs and how-tos for running OctoBot.
           </span>
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href="https://www.octobot.cloud/en/guides/octobot"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <BookOpen className="size-4" />
-              Browse guides
-              <ExternalLink className="size-3.5" />
-            </a>
-          </Button>
+          <a
+            href="https://www.octobot.cloud/en/guides/octobot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={SETTINGS_CARD_EXTERNAL_NAV_LINK_CLASS}
+          >
+            Browse guides
+            <ExternalLink className="size-3.5" />
+          </a>
         </div>
         <div className="border-t" />
-        <div className="flex flex-col items-start gap-3">
+        <div
+          className="flex flex-col items-start gap-3"
+          aria-busy={status === "loading" || undefined}
+        >
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Support
           </span>
           {status === "loading" && (
-            <span className="text-xs text-muted-foreground">Loading…</span>
+            <>
+              <span className="text-sm text-muted-foreground">
+                {SUPPORT_NONE_DESCRIPTION}
+              </span>
+              <Button type="button" size="sm" disabled aria-hidden>
+                New ticket
+              </Button>
+            </>
           )}
 
           {status === "disabled" && (
@@ -112,8 +129,7 @@ export function SupportCard() {
           {status === "none" && (
             <>
               <span className="text-sm text-muted-foreground">
-                Stuck on something? Leave a message and the team will get back to
-                you. Share a debug snapshot in one click.
+                {SUPPORT_NONE_DESCRIPTION}
               </span>
               <Button size="sm" onClick={() => setOpen(true)}>
                 New ticket
@@ -127,9 +143,9 @@ export function SupportCard() {
                 The DRAKKAR-SOFTWARE team hasn't accepted your ticket yet. Replies
                 will appear here once they do. You can share logs after that.
               </span>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/support">View status</Link>
-              </Button>
+              <Link to="/support" className={SETTINGS_CARD_NAV_LINK_CLASS}>
+                View status
+              </Link>
             </>
           )}
 
@@ -138,13 +154,13 @@ export function SupportCard() {
               <span className="text-sm text-muted-foreground">
                 Your previous ticket was resolved. Open a new one any time.
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-start gap-2">
                 <Button size="sm" onClick={() => setOpen(true)}>
                   New ticket
                 </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/support">View</Link>
-                </Button>
+                <Link to="/support" className={SETTINGS_CARD_NAV_LINK_CLASS}>
+                  View
+                </Link>
               </div>
             </>
           )}
@@ -156,11 +172,9 @@ export function SupportCard() {
                   ? `${ticket.allTickets.length} open tickets`
                   : (ticket.title?.trim() || "Support ticket")}
               </span>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/support">
-                  {ticket.allTickets.length > 1 ? "View tickets" : "Open ticket"}
-                </Link>
-              </Button>
+              <Link to="/support" className={SETTINGS_CARD_NAV_LINK_CLASS}>
+                {ticket.allTickets.length > 1 ? "View tickets" : "Open ticket"}
+              </Link>
             </>
           )}
         </div>
@@ -172,12 +186,9 @@ export function SupportCard() {
           <span className="text-sm text-muted-foreground">
             Inspect runtime state, download logs, and run debug actions.
           </span>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/debug">
-              <Bug className="size-4" />
-              Developer view
-            </Link>
-          </Button>
+          <Link to="/debug" className={SETTINGS_CARD_NAV_LINK_CLASS}>
+            Developer view
+          </Link>
         </div>
       </CardContent>
 

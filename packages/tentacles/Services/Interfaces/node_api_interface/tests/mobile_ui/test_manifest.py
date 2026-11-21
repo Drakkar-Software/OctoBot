@@ -20,18 +20,11 @@ import json
 import cryptography.hazmat.primitives.asymmetric.ed25519 as ed25519
 import pytest
 
-import os
-import sys
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui as mobile_ui
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui.constants as constants
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui.errors as errors
 
-_NODE_API_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _NODE_API_DIR not in sys.path:
-    sys.path.insert(0, _NODE_API_DIR)
-
-import mobile_ui
-import mobile_ui.constants as constants
-import mobile_ui.errors as errors
-
-import mobile_ui_test_server as test_server
+from . import mobile_ui_test_server as test_server
 
 DEFAULT_SEQUENCE = test_server.DEFAULT_TEST_SEQUENCE
 

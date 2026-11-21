@@ -27,9 +27,9 @@ from pydantic import BaseModel
 import octobot_node.constants
 
 try:
-    from tentacles.Services.Interfaces.node_api_interface.api.deps import CurrentUser
+    from tentacles.Services.Interfaces.node_api_interface.api.deps import AdminUser
 except ImportError:
-    from api.deps import CurrentUser  # type: ignore[no-redef]
+    from api.deps import AdminUser  # type: ignore[no-redef]
 
 router = APIRouter(tags=["logs"])
 
@@ -237,7 +237,7 @@ def build_logs_zip(
 
 
 @router.post("/export")
-def export_logs(body: ExportLogsRequest, current_user: CurrentUser) -> fastapi.Response:
+def export_logs(body: ExportLogsRequest, current_user: AdminUser) -> fastapi.Response:
     if body.task_ids is None:
         archive = build_main_logs_zip()
         if archive is None:

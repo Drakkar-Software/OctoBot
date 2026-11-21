@@ -17,18 +17,13 @@
 import hashlib
 import json
 import os
-import sys
 
 import fastapi
 import pytest
 from fastapi.testclient import TestClient
 
-_NODE_API_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _NODE_API_DIR not in sys.path:
-    sys.path.insert(0, _NODE_API_DIR)
-
-import mobile_ui
-import mobile_ui.constants as constants
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui as mobile_ui
+import tentacles.Services.Interfaces.node_api_interface.mobile_ui.constants as constants
 
 
 def _write_installed_bundle(root, version: str, files: dict[str, bytes]) -> None:
