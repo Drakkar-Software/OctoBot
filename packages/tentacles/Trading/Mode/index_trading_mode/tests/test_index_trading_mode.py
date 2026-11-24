@@ -48,6 +48,7 @@ import octobot_trading.signals as trading_signals
 import octobot_trading.util as trading_util
 
 import octobot_copy.enums as rebalancer_enums
+import octobot_copy.exchange.orders as copy_orders
 import octobot_copy.rebalancing as rebalancer
 import octobot_copy.rebalancing.planner.base_rebalance_actions_planner as rebalance_actions_planner
 import octobot_copy.errors as copy_errors
@@ -2711,6 +2712,58 @@ async def test_resolve_swaps(trading_tools):
 
 
 @pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
+async def test_split_reference_market_waits_for_buy_fills(trading_tools):
+    update = {}
+    mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, update))
+    mode.indexed_coins = ["ETH", "BTC"]
+    details = {rebalancer_enums.RebalanceDetails.SWAP.value: {}}
+    is_simple_buy_without_selling = False
+    dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="123")])
+    buy_orders = [mock.Mock(order_id="buy-eth"), mock.Mock(order_id="buy-btc")]
+    portfolio_rebalancer = mode.create_rebalancer(mode.exchange_manager)
+    with mock.patch.object(
+        rebalancer.AbstractRebalancer, "_get_buy_symbols_and_amounts", mock.AsyncMock(
+            return_value={
+                "ETH/USDT": {rebalancer.IDEAL_AMOUNT: decimal.Decimal("1"), rebalancer.IDEAL_PRICE: None},
+                "BTC/USDT": {rebalancer.IDEAL_AMOUNT: decimal.Decimal("2"), rebalancer.IDEAL_PRICE: None},
+            },
+        ),
+    ), mock.patch.object(
+        rebalancer.AbstractRebalancer, "_get_simple_buy_coins", mock.Mock(return_value=[]),
+    ), mock.patch.object(
+        trader.exchange_manager.exchange_personal_data.portfolio_manager.portfolio,
+        "get_currency_portfolio", mock.Mock(return_value=mock.Mock(available=decimal.Decimal("2"))),
+    ), mock.patch.object(
+        portfolio_rebalancer, "_buy_coin", mock.AsyncMock(side_effect=[buy_orders[:1], buy_orders[1:]]),
+    ), mock.patch.object(
+        portfolio_rebalancer._exchange_interface.orders,
+        "wait_for_orders_to_fill_and_ensure_portfolio_sync",
+        mock.AsyncMock(),
+    ) as wait_for_orders_to_fill_mock:
+        assert await portfolio_rebalancer.split_reference_market_into_targeted_coins(
+            details, is_simple_buy_without_selling, dependencies,
+        ) == buy_orders
+        wait_for_orders_to_fill_mock.assert_awaited_once_with(buy_orders)
+
+    mode.indexed_coins = []
+    portfolio_rebalancer = mode.create_rebalancer(mode.exchange_manager)
+    with mock.patch.object(
+        rebalancer.AbstractRebalancer, "_get_buy_symbols_and_amounts", mock.AsyncMock(return_value={}),
+    ), mock.patch.object(
+        portfolio_rebalancer._exchange_interface.orders,
+        "wait_for_orders_to_fill_and_ensure_portfolio_sync",
+        mock.AsyncMock(),
+    ) as wait_for_orders_to_fill_mock, mock.patch.object(
+        rebalancer.AbstractRebalancer, "_get_simple_buy_coins", mock.Mock(),
+    ):
+        with pytest.raises(trading_errors.MissingMinimalExchangeTradeVolume):
+            await portfolio_rebalancer.split_reference_market_into_targeted_coins(
+                details, is_simple_buy_without_selling, dependencies,
+            )
+        wait_for_orders_to_fill_mock.assert_not_awaited()
+
+
+@pytest.mark.parametrize("trading_tools", ["spot", "futures"], indirect=True)
 async def test_split_reference_market_into_targeted_coins(trading_tools):
     update = {}
     mode, producer, consumer, trader = await _init_mode(trading_tools, _get_config(trading_tools, update))
@@ -2720,6 +2773,10 @@ async def test_split_reference_market_into_targeted_coins(trading_tools):
     is_simple_buy_without_selling = False
     dependencies = trading_signals.get_orders_dependencies([mock.Mock(order_id="123")])
     with mock.patch.object(
+        copy_orders.OrdersInterface,
+        "wait_for_orders_to_fill_and_ensure_portfolio_sync",
+        mock.AsyncMock(),
+    ), mock.patch.object(
         rebalancer.AbstractRebalancer, "_get_buy_symbols_and_amounts", mock.AsyncMock(
             side_effect=lambda coins_prices, reference_market_to_split, *, coins_to_buy=None: {
                 f"{coin}/USDT": {

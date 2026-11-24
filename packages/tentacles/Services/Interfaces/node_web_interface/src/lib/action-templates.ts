@@ -447,6 +447,8 @@ export const BLOCKCHAIN_WALLET_INIT_TEMPLATE: ActionTemplate = {
   description: "Initialize a blockchain wallet",
   actionTypes: ["blockchain_wallet_init"],
   params: [
+    assetParam("BLOCKCHAIN_FROM_ASSET", "Transfer Asset", true),
+    blockchainParam("BLOCKCHAIN_FROM_AMOUNT", "Transfer Amount", true),
     blockchainParam("BLOCKCHAIN_FROM", "Transfer Network", true),
     privateKeyParam("BLOCKCHAIN_FROM_PRIVATE_KEY", "Transfer Src Private Key"),
     mnemonicParam("BLOCKCHAIN_FROM_MNEMONIC_SEED", "Transfer Src Mnemonic"),

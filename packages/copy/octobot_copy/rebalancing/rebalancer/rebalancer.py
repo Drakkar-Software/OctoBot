@@ -130,6 +130,9 @@ class AbstractRebalancer:
         For each coin, if self._target_coins_prices is set and far enough from the current price,
         the coin will be bought using a limit order at the target price. 
         Otherwise, a market order will be used.
+
+        When buy orders are created, waits for fill and portfolio sync before returning,
+        matching sell_targeted_coins_for_reference_market.
         """
         orders = []
 
@@ -180,6 +183,8 @@ class AbstractRebalancer:
             )
         if not orders and not self._rebalance_actions_planner.client.allow_skip_asset:
             raise trading_errors.MissingMinimalExchangeTradeVolume(f"{amount_by_symbol=}")
+        if orders:
+            await self._exchange_interface.orders.wait_for_orders_to_fill_and_ensure_portfolio_sync(orders)
         return orders
 
     async def _buy_coin(

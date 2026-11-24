@@ -249,7 +249,6 @@ async def get_all_tasks(
 
     tasks = _build_tasks_from_executions(executions)
     await _enrich_tasks_with_child_octobot_process(tasks, user_id)
-    logger.debug("Returning %d total tasks from %d executions", len(tasks), len(executions))
     return tasks
 
 
