@@ -1,13 +1,14 @@
 import os
 import pathlib
 
+import ccxt.async_support as ccxt_async
+import octobot_commons.constants as commons_constants
+import octobot_flow.environment
+import octobot_trading.errors as trading_errors
 import pytest
 
-import octobot_commons.constants as commons_constants
-import octobot_trading.errors as trading_errors
-
-import octobot_flow.environment
-import tests.functionnal_tests as functionnal_tests
+import tests.exchange_snapshots as exchange_snapshot_lib
+import tests.functionnal_tests as functionnal_test_module
 
 
 @pytest.fixture
@@ -41,6 +42,14 @@ def skip_on_exchange_proxy_error(request):
     request.config.pluginmanager.unregister(plugin)
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _offline_committed_exchange_snapshots():
+    """Serve markets, tickers, and OHLCV from a committed snapshot when one exists."""
+    patched = exchange_snapshot_lib.apply_committed_exchange_snapshots(ccxt_async)
+    yield
+    exchange_snapshot_lib.restore_committed_exchange_snapshots(patched)
+
+
 @pytest.fixture(autouse=True)
 def _register_functional_executor_id():
     octobot_flow.environment.register_executor_id("func-test-executor")
@@ -49,7 +58,7 @@ def _register_functional_executor_id():
 
 @pytest.fixture(autouse=True)
 def _mock_local_user_configuration():
-    with functionnal_tests.mocked_local_user_configuration():
+    with functionnal_test_module.mocked_local_user_configuration():
         yield
 
 
