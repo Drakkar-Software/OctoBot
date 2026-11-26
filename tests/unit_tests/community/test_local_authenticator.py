@@ -15,7 +15,6 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import os
 
 import mock
 import pytest

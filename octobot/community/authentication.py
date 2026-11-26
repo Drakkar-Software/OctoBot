@@ -62,13 +62,13 @@ def expired_session_retrier(func):
         except (errors.SessionTokenExpiredError, errors.JWTExpiredError):
             try:
                 with supabase_backend.error_describer():
-                    self.logger.info(f"Expired session, trying to refresh token.")
+                    self.logger.info("Expired session, trying to refresh token.")
                     await self.supabase_client.refresh_session()
                     return await func(*args, **kwargs)
             except (errors.SessionTokenExpiredError, errors.JWTExpiredError) as err:
                 if await self.auto_reauthenticate():
                     self.logger.error(
-                        f"Impossible to use default refresh token, using saved auth details instead."
+                        "Impossible to use default refresh token, using saved auth details instead."
                     )
                     return await func(*args, **kwargs)
                 # can't refresh token: logout
@@ -293,7 +293,7 @@ class CommunityAuthentication(authentication.Authenticator):
 
     async def _re_create_client(self):
         self.supabase_client = self._create_client()
-        self.logger.debug(f"Refreshing user session")
+        self.logger.debug("Refreshing user session")
         self.supabase_client.event_loop = asyncio.get_event_loop()
         await self.supabase_client.refresh_session()
         await self._on_account_updated()
@@ -624,7 +624,7 @@ class CommunityAuthentication(authentication.Authenticator):
     def _update_supports(self, resp_status, json_data):
         if resp_status == 200:
             self.user_account.supports = community_supports.CommunitySupports.from_community_dict(json_data)
-            self.logger.debug(f"Fetched supports data.")
+            self.logger.debug("Fetched supports data.")
         else:
             self.logger.error(f"Error when fetching community support, "
                               f"error code: {resp_status}")
@@ -656,8 +656,8 @@ class CommunityAuthentication(authentication.Authenticator):
             if await self.has_login_info():
                 await self.logout()
         except authentication.UnavailableError as e:
-            self.logger.exception(e, True, f"Error when fetching community data, "
-                                           f"please check your internet connection.")
+            self.logger.exception(e, True, "Error when fetching community data, "
+                                           "please check your internet connection.")
         except Exception as e:
             self.logger.exception(e, True, f"Error when fetching community supports: {e}({e.__class__.__name__})")
         finally:
@@ -864,7 +864,7 @@ class CommunityAuthentication(authentication.Authenticator):
     async def fetch_private_data(self, reset=False):
         try:
             if not self.is_logged_in():
-                self.logger.info(f"Can't fetch private data: no authenticated user")
+                self.logger.info("Can't fetch private data: no authenticated user")
                 return
             mqtt_uuid = None
             try:
@@ -888,7 +888,7 @@ class CommunityAuthentication(authentication.Authenticator):
                         self, install_only=install_only
                     )
                 if has_tentacles_to_install:
-                    self.logger.info(f"New tentacles are available for installation")
+                    self.logger.info("New tentacles are available for installation")
                     self.user_account.has_pending_packages_to_install = True
                 if fetched_mqtt_uuid and fetched_mqtt_uuid != mqtt_uuid:
                     self._save_mqtt_device_uuid(fetched_mqtt_uuid)
@@ -905,7 +905,7 @@ class CommunityAuthentication(authentication.Authenticator):
             await self._refresh_products()
 
     async def _fetch_extensions_details(self, mqtt_uuid: typing.Optional[str]) -> (list[str], list[str], str, str):
-        self.logger.debug(f"Fetching extension package details")
+        self.logger.debug("Fetching extension package details")
         extensions_details = await self.supabase_client.fetch_extensions(mqtt_uuid)
         self.logger.debug("Fetched extension package details")
         if not extensions_details:
@@ -927,7 +927,7 @@ class CommunityAuthentication(authentication.Authenticator):
     async def fetch_checkout_url(self, payment_method: str, redirect_url: str):
         try:
             if not self.is_logged_in():
-                self.logger.info(f"Can't fetch checkout url: no authenticated user")
+                self.logger.info("Can't fetch checkout url: no authenticated user")
                 return None
             self.logger.debug(f"Fetching {payment_method} checkout url")
             url_details = await self.supabase_client.fetch_checkout_url(payment_method, redirect_url)
@@ -1095,7 +1095,7 @@ class CommunityAuthentication(authentication.Authenticator):
                 is_sub_portfolio, bot_locked_assets
             )
             if reset or self.user_account.get_selected_bot_current_portfolio_id() is None:
-                self.logger.info(f"Switching bot portfolio")
+                self.logger.info("Switching bot portfolio")
                 await self.supabase_client.switch_portfolio(formatted_portfolio)
                 await self.refresh_selected_bot()
             portfolio_id = self.user_account.get_selected_bot_current_portfolio_id()
@@ -1134,7 +1134,7 @@ class CommunityAuthentication(authentication.Authenticator):
         try:
             deployment_id = self.user_account.get_selected_bot_deployment_id()
             if not deployment_id:
-                self.logger.debug(f"Missing deployment id to update last deployment activity time.")
+                self.logger.debug("Missing deployment id to update last deployment activity time.")
                 return
             current_time = time.time()
             await self.supabase_client.update_deployment(
