@@ -172,6 +172,14 @@ class TestAutomation:
         automation.automations_config = {"key": "value"}
         assert automation.get_local_config() == {"key": "value"}
 
+    def test_default_automations_config_is_not_shared(self, mock_tentacles_setup_config):
+        first = Automation("bot", mock_tentacles_setup_config)
+        second = Automation("bot", mock_tentacles_setup_config)
+        assert first.automations_config == {}
+        assert first.automations_config is not second.automations_config
+        first.automations_config["key"] = "value"
+        assert second.automations_config == {}
+
     def test_automation_constants(self):
         assert Automation.AUTOMATION == "automation"
         assert Automation.AUTOMATIONS == "automations"
