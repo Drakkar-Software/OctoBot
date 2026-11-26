@@ -76,7 +76,6 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
             self.watcher_task.cancel()
         self.logger.debug("Stopped")
 
-    # pylint: disable=E1101
     async def start_consumer(self):
         while not self.should_stop:
             try:
@@ -231,7 +230,6 @@ class CommunityWSFeed(abstract_feed.AbstractFeed):
                 self.subscribed = True
                 return
 
-    # pylint: disable=E1101
     async def _ensure_connection(self):
         if not self.is_connected():
             async with self.lock:

@@ -1,4 +1,3 @@
-# pylint: disable=too-many-positional-arguments
 #  Drakkar-Software Async-Channel
 #  Copyright (c) Drakkar-Software, All rights reserved.
 #
@@ -27,7 +26,7 @@ if typing.TYPE_CHECKING:
     import async_channel.producer
 
 
-# pylint: disable=undefined-variable, not-callable
+# pylint: disable=not-callable
 class Channel:
     """
     A Channel is the object to connect a producer / producers class(es) to a consumer / consumers class(es)
@@ -87,7 +86,6 @@ class Channel:
         """
         return cls.__name__.replace("Channel", "")
 
-    # pylint: disable=too-many-arguments
     async def new_consumer(
         self,
         callback: object = None,
