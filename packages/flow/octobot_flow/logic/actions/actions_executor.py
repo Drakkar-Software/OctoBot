@@ -61,8 +61,6 @@ class ActionsExecutor:
         self._sync_after_execution(synchronized_exchange_account_elements)
         if synchronized_exchange_account_elements:
             self._clear_post_iteration_after_merge_from_action_results()
-        if self._update_execution_details:
-            await self._update_actions_history()
         await self._insert_execution_bot_logs(dsl_executor.pending_bot_logs)
         if recall_dag_details:
             self._reset_dag_to(recall_dag_details)
@@ -323,14 +321,6 @@ class ActionsExecutor:
         self, recall_dag_details: octobot_commons.dsl_interpreter.ReCallingOperatorResult
     ) -> float:
         return recall_dag_details.get_next_call_time() or 0
-
-    async def _update_actions_history(self):
-        if to_update_actions := [
-            action
-            for action in self._actions
-            if action.should_be_historised_in_database()
-        ]:
-            raise NotImplementedError("_update_actions_history is not implemented yet")
 
     async def _insert_execution_bot_logs(self, log_data: list[octobot.community.BotLogData]):
         try:
