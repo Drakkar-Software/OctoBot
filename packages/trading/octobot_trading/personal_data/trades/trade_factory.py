@@ -17,7 +17,7 @@ import typing
 
 import octobot_commons.logging as logging
 import octobot_trading.personal_data.trades.trade as trade_class
-import octobot_trading.personal_data.orders.order as order_class  # pylint: disable=unused-import
+import octobot_trading.personal_data.orders.order as order_class
 import octobot_trading.personal_data.orders.order_factory as order_factory
 import octobot_trading.enums as enums
 import octobot_trading.constants as constants

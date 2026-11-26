@@ -21,7 +21,7 @@ import octobot_commons.logging as logging
 import octobot_trading.enums as enums
 import octobot_trading.errors as errors
 import octobot_trading.util as util
-import octobot_trading.personal_data  # pylint: disable=unused-import
+import octobot_trading.personal_data
 
 
 class TransactionsManager(util.Initializable):
