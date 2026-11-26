@@ -95,7 +95,7 @@ docker run -p 6379:6379 --name redis -d redis redis-server --save 60 1 --logleve
 ## Developers
 ### Prerequisites
 
-Before proceeding, ensure you have [**Python 3.10+**](https://www.python.org) and [**Node.js 20+**](https://nodejs.org) installed on your system.
+Before proceeding, ensure you have [**Python 3.13**](https://www.python.org) and [**Node.js 20+**](https://nodejs.org) installed on your system.
 
 Once you have installed Python and Node.js, run the following commands:
 ```bash
