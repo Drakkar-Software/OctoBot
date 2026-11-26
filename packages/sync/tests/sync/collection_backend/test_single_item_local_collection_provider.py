@@ -19,8 +19,8 @@ import typing
 import mock
 import pydantic
 
+import tests.sync.wallet_test_support as wallet_test_support
 import octobot_sync.constants as sync_constants
-import octobot.community.authentication as community_authentication
 import octobot_sync.sync.collection_backend.single_item_local_collection_provider as single_item_provider_module
 import octobot_sync.sync.collection_backend.single_item_local_collection_storage as single_item_storage_module
 
@@ -64,18 +64,6 @@ def _make_provider(tmp_path):
     return _TestSingleItemProvider(base_folder=str(tmp_path))
 
 
-def _patch_wallet(private_key: str = _TEST_PRIVATE_KEY):
-    wallet = mock.Mock()
-    wallet.private_key = private_key
-    auth = mock.Mock()
-    auth.get_wallet_by_user_id.return_value = wallet
-    return mock.patch.object(
-        community_authentication.CommunityAuthentication,
-        "instance",
-        return_value=auth,
-    )
-
-
 class TestSingleItemLocalCollectionProviderCreateStorage:
     def test_storage_is_single_item_local_collection_storage(self, tmp_path):
         provider = _make_provider(tmp_path)
@@ -101,7 +89,7 @@ class TestSingleItemLocalCollectionProviderBuildIdentifier:
 class TestSingleItemLocalCollectionProviderLoadState:
     def test_returns_cached_state_without_second_disk_read(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, _SAMPLE_STATE)
 
         with mock.patch.object(
@@ -109,7 +97,7 @@ class TestSingleItemLocalCollectionProviderLoadState:
             "load_state",
             wraps=provider._storage.load_state,
         ) as load_state_mock:
-            with _patch_wallet():
+            with wallet_test_support.patch_community_wallet():
                 first_load = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
                 second_load = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
 
@@ -121,7 +109,7 @@ class TestSingleItemLocalCollectionProviderLoadState:
 class TestSingleItemLocalCollectionProviderSaveState:
     def test_persists_and_updates_cache(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, _SAMPLE_STATE)
 
         cached_state = provider._get_cached_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
@@ -135,7 +123,7 @@ class TestSingleItemLocalCollectionProviderSaveState:
 class TestSingleItemLocalCollectionProviderCacheInvalidation:
     def test_reloads_from_disk_when_file_changed_externally(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, _SAMPLE_STATE)
             provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
 
@@ -146,7 +134,7 @@ class TestSingleItemLocalCollectionProviderCacheInvalidation:
         identifier = provider._build_identifier(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
         provider._storage.save_state(identifier, _TEST_PRIVATE_KEY, external_state)
 
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             loaded_state = provider.load_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
 
         assert loaded_state.items is not None
@@ -158,7 +146,7 @@ class TestSingleItemLocalCollectionProviderCacheInvalidation:
 class TestSingleItemLocalCollectionProviderLoadStateEncrypted:
     def test_reads_encrypted_blob_for_account_id(self, tmp_path):
         provider = _make_provider(tmp_path)
-        with _patch_wallet():
+        with wallet_test_support.patch_community_wallet():
             provider.save_state(_TEST_ADDRESS, _TEST_ACCOUNT_ID, _SAMPLE_STATE)
 
         blob = provider.load_state_encrypted(_TEST_ADDRESS, _TEST_ACCOUNT_ID)
