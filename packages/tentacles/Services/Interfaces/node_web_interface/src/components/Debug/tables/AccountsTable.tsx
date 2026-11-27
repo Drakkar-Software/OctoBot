@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ACCOUNT_COMPACT_COLUMN_CLASS } from "@/lib/debug/constants"
+import { AUTOMATION_ASSETS_MAX_VISIBLE } from "@/lib/debug/constants"
 import {
   debugTableCellClass,
   getAccountExchangeNames,
@@ -42,6 +42,8 @@ import { formatDateTime } from "@/lib/format-datetime"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
 import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { cn } from "@/lib/utils"
+
+const compactColumnClass = "w-0 px-2"
 
 type AccountsTableProps = {
   rows: Account[]
@@ -97,7 +99,7 @@ export function AccountsTable({
   ]
 
   const accountColumnCount = accountColumns.length + 1
-  const actionsHeadClass = "w-32"
+  const actionsHeadClass = "w-24"
 
   if (rows.length === 0) {
     return (
@@ -112,7 +114,7 @@ export function AccountsTable({
       {hasActiveFilters(filters) && (
         <ClearTableFiltersButton onClear={() => setFilters({})} />
       )}
-      <Table>
+      <Table className="[&_th]:px-2 [&_td]:px-2">
         <TableHeader>
           <TableRow>
             <SortableTableHead
@@ -163,14 +165,14 @@ export function AccountsTable({
               sortKey="orders"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
-              className={cn(ACCOUNT_COMPACT_COLUMN_CLASS, "text-center")}
+              className={cn(compactColumnClass, "text-center")}
             />
             <SortableTableHead
               label="Trds"
               sortKey="trades"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
-              className={cn(ACCOUNT_COMPACT_COLUMN_CLASS, "text-center")}
+              className={cn(compactColumnClass, "text-center")}
             />
             <SortableTableHead
               label="Simulated"
@@ -243,12 +245,15 @@ export function AccountsTable({
                   {row.state?.message ?? "—"}
                 </TableCell>
                 <TableCell className={debugTableCellClass("left")}>
-                  <AssetsPortfolioCell assets={row.assets} />
+                  <AssetsPortfolioCell
+                    assets={row.assets}
+                    maxVisible={AUTOMATION_ASSETS_MAX_VISIBLE}
+                  />
                 </TableCell>
                 <TableCell
                   className={debugTableCellClass(
                     "center",
-                    `font-mono text-xs ${ACCOUNT_COMPACT_COLUMN_CLASS}`,
+                    `font-mono text-xs ${compactColumnClass}`,
                   )}
                 >
                   <AutomationTradingCountCell
@@ -261,7 +266,7 @@ export function AccountsTable({
                 <TableCell
                   className={debugTableCellClass(
                     "center",
-                    `font-mono text-xs ${ACCOUNT_COMPACT_COLUMN_CLASS}`,
+                    `font-mono text-xs ${compactColumnClass}`,
                   )}
                 >
                   <AutomationTradingCountCell
@@ -283,8 +288,8 @@ export function AccountsTable({
                     "—"
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2 justify-end">
+                <TableCell className={cn(actionsHeadClass, "px-2")}>
+                  <div className="flex items-center gap-1 justify-end">
                     <button
                       type="button"
                       className="text-muted-foreground hover:text-foreground"

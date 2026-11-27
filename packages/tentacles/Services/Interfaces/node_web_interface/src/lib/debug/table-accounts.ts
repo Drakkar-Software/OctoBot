@@ -3,10 +3,7 @@ import type {
   AccountTradingWithAccountId,
   ExchangeConfig,
 } from "@/client"
-import {
-  ACCOUNT_COMPACT_COLUMN_CLASS,
-  ACCOUNT_COMPACT_COLUMNS,
-} from "@/lib/debug/constants"
+import { ACCOUNT_COMPACT_COLUMNS } from "@/lib/debug/constants"
 import {
   countAccountAssets,
   formatAssetsSymbolsSummary,
@@ -27,9 +24,11 @@ import {
 } from "@/lib/table"
 import type { ColumnFilters, SortState } from "@/lib/table-types"
 
+const compactColumnClass = "w-0 px-2"
+
 export function accountFilterHeadClass(key: AccountSortKey): string {
   return ACCOUNT_COMPACT_COLUMNS.has(key)
-    ? `align-top pb-2 pt-0 ${ACCOUNT_COMPACT_COLUMN_CLASS}`
+    ? `align-top pb-2 pt-0 ${compactColumnClass}`
     : "align-top pb-2 pt-0"
 }
 
