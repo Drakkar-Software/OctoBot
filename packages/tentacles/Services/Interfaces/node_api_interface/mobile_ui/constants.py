@@ -31,9 +31,8 @@ CONNECT_TIMEOUT_SECONDS = 10
 ENV_UPDATE_BASE_URL = "OCTOBOT_MOBILE_UI_BASE_URL"
 ENV_MANIFEST_PUBLIC_KEY = "OCTOBOT_MOBILE_UI_PUBLIC_KEY"
 
-# Filled in by the publish step when the mobile UI bucket is live.
+DEFAULT_UPDATE_BASE_URL = "https://new.mobile.octobot.cloud/embed"
 # DEFAULT_MANIFEST_PUBLIC_KEY may hold a comma-separated list of base64 Ed25519 public keys.
-DEFAULT_UPDATE_BASE_URL = ""
 DEFAULT_MANIFEST_PUBLIC_KEY = ""
 
 VERSION_DIR_NAME = "versions"
