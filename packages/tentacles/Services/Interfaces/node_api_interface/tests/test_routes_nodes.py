@@ -43,6 +43,13 @@ class TestStopNodePrivileges:
         assert response.status_code == 403
         assert response.json()["detail"] == "The user doesn't have enough privileges"
 
+
+class TestUpdateNodeConfigPrivileges:
+    def test_tenant_patch_config_returns_403(self, tenant_client):
+        response = tenant_client.patch("/api/v1/nodes/config", json={"node_type": "standalone"})
+        assert response.status_code == 403
+        assert response.json()["detail"] == "The user doesn't have enough privileges"
+
     def test_admin_returns_204_and_schedules_stop_bot(self, admin_client):
         stop_called = threading.Event()
         bot_api = mock.Mock()

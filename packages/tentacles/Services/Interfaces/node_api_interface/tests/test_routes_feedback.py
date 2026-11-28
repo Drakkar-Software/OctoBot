@@ -18,12 +18,9 @@ import io
 import json
 import zipfile
 
-try:
-    from tentacles.Services.Interfaces.node_api_interface.api.routes.feedback import (
-        FEEDBACK_JOURNAL_JSON_FILENAME,
-    )
-except ImportError:
-    from api.routes.feedback import FEEDBACK_JOURNAL_JSON_FILENAME  # type: ignore[no-redef]
+from tentacles.Services.Interfaces.node_api_interface.api.routes.feedback import (
+    FEEDBACK_JOURNAL_JSON_FILENAME,
+)
 
 
 class TestPostFeedbackExport:

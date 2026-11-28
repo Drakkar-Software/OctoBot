@@ -30,6 +30,10 @@ import {
   SETUP_STEP_TOTAL_IMPORT,
 } from "@/lib/seed-onboarding"
 import { cryptoSecretInputProps } from "@/lib/crypto-secret-input"
+import {
+  isSetupAlreadyConfiguredConflict,
+  markNodeAlreadyInitialized,
+} from "@/lib/setup-conflict"
 import { fetchSeedAfterWalletCreate } from "@/lib/wallet-seed-after-create"
 import { handleError } from "@/utils"
 
@@ -157,8 +161,9 @@ function SetupWallet() {
     },
     onError: async (error) => {
       const apiError = error as ApiError
-      if (apiError.status === 409) {
+      if (isSetupAlreadyConfiguredConflict(apiError.status)) {
         sessionStorage.removeItem("setup_in_progress")
+        markNodeAlreadyInitialized()
         await clearAuth()
         navigate({ to: "/login" })
         return

@@ -38,6 +38,7 @@ try:
         dsl,
         feedback,
         journal_client_event,
+        mobile_ui,
     )
 except ImportError:
     from api.route_provider import register_all_provider_routes  # type: ignore[no-redef]
@@ -57,6 +58,7 @@ except ImportError:
         dsl,
         feedback,
         journal_client_event,
+        mobile_ui,
     )
 
 
@@ -79,4 +81,5 @@ def build_api_router() -> APIRouter:
     # See feedback / journal_client_event module docstrings for unauthenticated write endpoints.
     api_router.include_router(feedback.router, prefix="/feedback")
     api_router.include_router(journal_client_event.router, prefix="/journal")
+    api_router.include_router(mobile_ui.router, prefix="/mobile-ui")
     return api_router

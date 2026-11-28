@@ -35,6 +35,10 @@ import {
   showLoginPassphraseRecoverySuccessToast,
 } from "@/lib/login-passphrase-recovery-hint"
 import { consumeLoginSessionClearedHint } from "@/lib/login-session-hint"
+import {
+  consumeNodeAlreadyInitializedHint,
+  NODE_ALREADY_INITIALIZED_MESSAGE,
+} from "@/lib/setup-conflict"
 import { truncateAddress } from "@/lib/wallet-utils"
 
 const formSchema = z.object({
@@ -43,20 +47,31 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
+const loginSearchSchema = z.object({
+  returnTo: z.string().optional(),
+})
+
 export const Route = createFileRoute("/login/")({
+  validateSearch: (search) => loginSearchSchema.parse(search),
   component: Login,
 })
 
 function Login() {
+  const { returnTo } = Route.useSearch()
   const { loginMutation } = useAuth()
   const [selectedWallet, setSelectedWallet] = useState<WalletInfo | null>(null)
   const [sessionClearedBanner, setSessionClearedBanner] = useState(false)
+  const [nodeAlreadyInitializedBanner, setNodeAlreadyInitializedBanner] =
+    useState(false)
   const [loginAuthError, setLoginAuthError] =
     useState<AuthErrorPresentation | null>(null)
 
   useEffect(() => {
     if (consumeLoginSessionClearedHint()) {
       setSessionClearedBanner(true)
+    }
+    if (consumeNodeAlreadyInitializedHint()) {
+      setNodeAlreadyInitializedBanner(true)
     }
     if (consumeLoginPassphraseRecoverySuccessHint()) {
       showLoginPassphraseRecoverySuccessToast()
@@ -109,7 +124,7 @@ function Login() {
     }
 
     loginMutation.mutate(
-      { username, password: data.passphrase },
+      { username, password: data.passphrase, returnTo },
       {
         onError: (err) => {
           setLoginAuthError(
@@ -233,6 +248,18 @@ function Login() {
                 {sessionExpiredCopy.title}
               </p>
               <p>{sessionExpiredCopy.explanation}</p>
+            </div>
+          ) : null}
+
+          {nodeAlreadyInitializedBanner ? (
+            <div
+              className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground"
+              data-testid="login-node-already-initialized-banner"
+              role="status"
+            >
+              <p className="font-medium text-foreground">
+                {NODE_ALREADY_INITIALIZED_MESSAGE}
+              </p>
             </div>
           ) : null}
 

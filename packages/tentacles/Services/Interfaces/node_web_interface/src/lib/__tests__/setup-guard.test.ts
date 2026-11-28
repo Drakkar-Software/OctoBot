@@ -55,6 +55,25 @@ describe("getSetupRedirect", () => {
     ).toBe("/setup/connect")
   })
 
+  it("redirects configured pre-wallet routes to login when logged out", () => {
+    expect(
+      getSetupRedirect({
+        configured: true,
+        setupInProgress: false,
+        loggedIn: false,
+        pathname: "/setup",
+      }),
+    ).toBe("/login")
+    expect(
+      getSetupRedirect({
+        configured: true,
+        setupInProgress: false,
+        loggedIn: false,
+        pathname: "/setup/welcome",
+      }),
+    ).toBe("/login")
+  })
+
   it("allows connect and first-bot only during setup", () => {
     expect(
       getSetupRedirect({

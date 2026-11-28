@@ -1,6 +1,7 @@
 import { ArrowUpRight, Check, Clock, Layers, Lock, TriangleAlert } from "lucide-react"
 import { memo } from "react"
 
+import { OpenAPI } from "@/client"
 import type {
   ChildOctoBotProcessState,
   Execution,
@@ -15,6 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { buildMobileUiBotUrl } from "@/lib/mobile-ui"
 import { cn } from "@/lib/utils"
 import {
   getActiveExecution,
@@ -36,6 +38,63 @@ import {
   statusLabels,
 } from "@/utils/task-status"
 import { BotAvatar } from "./BotAvatar"
+
+function AutomationTitleOpenLink({
+  label,
+  automationId,
+  browserAppReady,
+  isEncrypted,
+  showBrowserAppTitleOpen,
+}: {
+  label: string
+  automationId: string
+  browserAppReady: boolean
+  isEncrypted: boolean
+  showBrowserAppTitleOpen: boolean
+}) {
+  const href = buildMobileUiBotUrl(
+    OpenAPI.BASE,
+    window.location.origin,
+    automationId,
+  )
+  const stopOpen = (event: React.MouseEvent) => event.stopPropagation()
+
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      {showBrowserAppTitleOpen && browserAppReady ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`View in browser app: ${label}`}
+          onClick={stopOpen}
+          className="group flex min-w-0 items-center gap-0.5 rounded-sm text-foreground transition-colors hover:text-primary"
+        >
+          <span className="truncate">{label}</span>
+          <ArrowUpRight
+            className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+            aria-hidden
+          />
+        </a>
+      ) : (
+        <span className="flex min-w-0 items-center gap-0.5">
+          <span className="truncate">{label}</span>
+          {showBrowserAppTitleOpen ? (
+            <span
+              className="invisible flex size-4 shrink-0 items-center justify-center"
+              aria-hidden
+            >
+              <ArrowUpRight className="size-4" />
+            </span>
+          ) : null}
+        </span>
+      )}
+      {isEncrypted ? (
+        <Lock className="size-3 shrink-0 text-muted-foreground/50" />
+      ) : null}
+    </span>
+  )
+}
 
 function DateRow({ date }: { date: { label: string; value: string } | null }) {
   if (!date) return null
@@ -266,11 +325,12 @@ function BotCardBody({
 }
 
 function areTaskPropsEqual(
-  prev: { task: Task; selected: boolean },
-  next: { task: Task; selected: boolean },
+  prev: { task: Task; selected: boolean; browserAppReady: boolean },
+  next: { task: Task; selected: boolean; browserAppReady: boolean },
 ): boolean {
   return (
     prev.selected === next.selected &&
+    prev.browserAppReady === next.browserAppReady &&
     prev.task.id === next.task.id &&
     prev.task.name === next.task.name &&
     prev.task.error === next.task.error &&
@@ -286,10 +346,12 @@ function areTaskPropsEqual(
 export const BotCard = memo(function BotCard({
   task,
   selected,
+  browserAppReady,
   onToggleSelect,
 }: {
   task: Task
   selected: boolean
+  browserAppReady: boolean
   onToggleSelect: (id: string) => void
 }) {
   const activeExec = getActiveExecution(task.executions)
@@ -326,6 +388,8 @@ export const BotCard = memo(function BotCard({
 
   const isRunning = displayLabel === "Running"
   const isScheduled = displayLabel === "Scheduled"
+  const showBrowserAppTitleOpen = Boolean(task.id)
+
   return (
     <Card
       className={cn(
@@ -347,12 +411,24 @@ export const BotCard = memo(function BotCard({
           <BotAvatar isRunning={isRunning} />
           <div className="min-w-0 flex-1">
             <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-              <span className="flex items-center gap-1.5 truncate text-sm font-semibold leading-tight">
-                <span className="truncate">{label}</span>
-                {isEncrypted && (
-                  <Lock className="size-3 shrink-0 text-muted-foreground/50" />
+              <div className="min-w-0 text-sm font-semibold leading-tight">
+                {showBrowserAppTitleOpen && task.id ? (
+                  <AutomationTitleOpenLink
+                    label={label}
+                    automationId={task.id}
+                    browserAppReady={browserAppReady}
+                    isEncrypted={isEncrypted}
+                    showBrowserAppTitleOpen
+                  />
+                ) : (
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="truncate">{label}</span>
+                    {isEncrypted ? (
+                      <Lock className="size-3 shrink-0 text-muted-foreground/50" />
+                    ) : null}
+                  </span>
                 )}
-              </span>
+              </div>
               <Badge
                 variant={getStatusVariant(badgeStatus, hasError)}
                 className={cn(

@@ -20,7 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { USER_ACTION_ID_DISPLAY_LENGTH } from "@/lib/debug/constants"
+import {
+  USER_ACTION_ERROR_DETAILS_DISPLAY_LENGTH,
+  USER_ACTION_ID_DISPLAY_LENGTH,
+  USER_ACTION_TYPE_DISPLAY_LENGTH,
+} from "@/lib/debug/constants"
 import { debugTableCellClass } from "@/lib/debug/display-utils"
 import {
   filterUserActions,
@@ -36,6 +40,9 @@ import {
 import { formatDateTime } from "@/lib/format-datetime"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
 import type { ColumnFilters, SortState } from "@/lib/table-types"
+import { cn } from "@/lib/utils"
+
+const compactColumnClass = "w-0"
 
 type UserActionsTableProps = {
   rows: UserAction[]
@@ -133,6 +140,7 @@ export function UserActionsTable({
               sortKey="actionType"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
+              className={compactColumnClass}
             />
             <SortableTableHead
               label="Error message"
@@ -146,13 +154,20 @@ export function UserActionsTable({
               sortKey="errorDetails"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
+              className={compactColumnClass}
             />
             <TableHead className="w-12" />
           </TableRow>
           <TableRow className="hover:bg-transparent">
             {selectionMode && <TableHead className="w-10" />}
             {userActionColumns.slice(0, 5).map(({ key, placeholder }) => (
-              <TableHead key={key} className="align-top pb-2 pt-0">
+              <TableHead
+                key={key}
+                className={cn(
+                  "align-top pb-2 pt-0",
+                  key === "actionType" && compactColumnClass,
+                )}
+              >
                 <ColumnFilterInput
                   value={filters[key] ?? ""}
                   placeholder={placeholder}
@@ -166,7 +181,13 @@ export function UserActionsTable({
             ))}
             <TableHead className="align-top pb-2 pt-0" />
             {userActionColumns.slice(5).map(({ key, placeholder }) => (
-              <TableHead key={key} className="align-top pb-2 pt-0">
+              <TableHead
+                key={key}
+                className={cn(
+                  "align-top pb-2 pt-0",
+                  compactColumnClass,
+                )}
+              >
                 <ColumnFilterInput
                   value={filters[key] ?? ""}
                   placeholder={placeholder}
@@ -217,8 +238,16 @@ export function UserActionsTable({
                 <TableCell className={debugTableCellClass("center")}>
                   {formatDateTime(getUserActionUpdatedAt(row))}
                 </TableCell>
-                <TableCell className={debugTableCellClass("left")}>
-                  {getConfigurationActionType(row.configuration)}
+                <TableCell
+                  className={debugTableCellClass(
+                    "left",
+                    compactColumnClass,
+                  )}
+                >
+                  <TruncatedTextWithTooltip
+                    text={getConfigurationActionType(row.configuration)}
+                    maxLength={USER_ACTION_TYPE_DISPLAY_LENGTH}
+                  />
                 </TableCell>
                 <TableCell className={debugTableCellClass("left")}>
                   {getUserActionResultErrorMessage(row.result)}
@@ -227,10 +256,14 @@ export function UserActionsTable({
                   <SignalExecutionResultsCell result={row.result} />
                 </TableCell>
                 <TableCell
-                  className={debugTableCellClass("left", "font-mono text-xs")}
+                  className={debugTableCellClass(
+                    "left",
+                    `font-mono text-xs ${compactColumnClass}`,
+                  )}
                 >
                   <TruncatedTextWithTooltip
                     text={getUserActionResultErrorDetails(row.result)}
+                    maxLength={USER_ACTION_ERROR_DETAILS_DISPLAY_LENGTH}
                   />
                 </TableCell>
                 <TableCell>

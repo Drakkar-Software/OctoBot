@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import { type ApiError, type User, UsersService } from "@/client"
 import { clearPassword, savePassword } from "@/lib/device-key"
 import { verifyLoginCredentials } from "@/lib/verify-login-credentials"
+import { resolvePostLoginDestination } from "@/lib/safe-return-to"
 import { setStoredIsSuperuser } from "@/lib/user-menu-display"
 
 export const clearAuth = async () => {
@@ -21,6 +22,10 @@ import useCustomToast from "./useCustomToast"
 export type LoginCredentials = {
   username: string
   password: string
+}
+
+export type LoginMutationInput = LoginCredentials & {
+  returnTo?: string
 }
 
 const isLoggedIn = () => {
@@ -74,10 +79,11 @@ const useAuth = () => {
   }
 
   const loginMutation = useMutation({
-    mutationFn: login,
-    onSuccess: () => {
+    mutationFn: (data: LoginMutationInput) =>
+      login({ username: data.username, password: data.password }),
+    onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
-      navigate({ to: "/" })
+      navigate({ to: resolvePostLoginDestination(variables.returnTo) })
     },
     onError: (error) => {
       // clearAuth() already called inside login() before re-throwing

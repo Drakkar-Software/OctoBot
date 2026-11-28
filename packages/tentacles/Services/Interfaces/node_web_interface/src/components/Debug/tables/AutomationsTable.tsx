@@ -38,7 +38,6 @@ import {
 } from "@/lib/debug/automation"
 import {
   AUTOMATION_ASSETS_MAX_VISIBLE,
-  AUTOMATION_COMPACT_COLUMN_CLASS,
   AUTOMATION_NAME_DISPLAY_LENGTH,
   AUTOMATION_TABLE_DEFAULT_SORT,
   LATEST_ACTION_DISPLAY_LENGTH,
@@ -59,6 +58,8 @@ import { formatDateTime } from "@/lib/format-datetime"
 import { hasActiveFilters, setColumnFilter, toggleSort } from "@/lib/table"
 import type { ColumnFilters, SortState } from "@/lib/table-types"
 import { cn } from "@/lib/utils"
+
+const compactColumnClass = "w-0 px-2"
 
 type AutomationsTableProps = {
   rows: AutomationState[]
@@ -115,7 +116,7 @@ export function AutomationsTable({
   ]
 
   const automationColumnCount = automationColumns.length + 1 + (selectionMode ? 1 : 0)
-  const actionsHeadClass = "w-32"
+  const actionsHeadClass = "w-24"
   const visibleRowIds = useMemo(
     () => displayRows.map((row) => row.id),
     [displayRows],
@@ -134,7 +135,7 @@ export function AutomationsTable({
       {hasActiveFilters(filters) && (
         <ClearTableFiltersButton onClear={() => setFilters({})} />
       )}
-      <Table>
+      <Table className="[&_th]:px-2 [&_td]:px-2">
         <TableHeader>
           <TableRow>
             {selectionMode && selectedIds && onToggleAllVisible && (
@@ -176,7 +177,7 @@ export function AutomationsTable({
               sortKey="progress"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
-              className={cn(AUTOMATION_COMPACT_COLUMN_CLASS, "text-center")}
+              className={cn(compactColumnClass, "text-center")}
             />
             <SortableTableHead
               label="Latest action"
@@ -201,14 +202,14 @@ export function AutomationsTable({
               sortKey="orders"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
-              className={cn(AUTOMATION_COMPACT_COLUMN_CLASS, "text-center")}
+              className={cn(compactColumnClass, "text-center")}
             />
             <SortableTableHead
               label="Trds"
               sortKey="trades"
               sort={sort}
               onSort={(key) => setSort((current) => toggleSort(current, key))}
-              className={cn(AUTOMATION_COMPACT_COLUMN_CLASS, "text-center")}
+              className={cn(compactColumnClass, "text-center")}
             />
             <TableHead className={actionsHeadClass} />
           </TableRow>
@@ -307,7 +308,7 @@ export function AutomationsTable({
                   <TableCell
                     className={debugTableCellClass(
                       "center",
-                      `font-mono text-xs ${AUTOMATION_COMPACT_COLUMN_CLASS}`,
+                      `font-mono text-xs ${compactColumnClass}`,
                     )}
                   >
                     {formatActionProgress(row)}
@@ -334,7 +335,7 @@ export function AutomationsTable({
                   <TableCell
                     className={debugTableCellClass(
                       "center",
-                      `font-mono text-xs ${AUTOMATION_COMPACT_COLUMN_CLASS}`,
+                      `font-mono text-xs ${compactColumnClass}`,
                     )}
                   >
                     <AutomationTradingCountCell
@@ -347,7 +348,7 @@ export function AutomationsTable({
                   <TableCell
                     className={debugTableCellClass(
                       "center",
-                      `font-mono text-xs ${AUTOMATION_COMPACT_COLUMN_CLASS}`,
+                      `font-mono text-xs ${compactColumnClass}`,
                     )}
                   >
                     <AutomationTradingCountCell
@@ -357,8 +358,8 @@ export function AutomationsTable({
                       }
                     />
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 justify-end">
+                  <TableCell className={cn(actionsHeadClass, "px-2")}>
+                    <div className="flex items-center gap-1 justify-end">
                       <button
                         type="button"
                         className="text-muted-foreground hover:text-foreground"

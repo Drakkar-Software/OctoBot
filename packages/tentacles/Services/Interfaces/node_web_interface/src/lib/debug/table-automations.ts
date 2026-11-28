@@ -6,7 +6,6 @@ import {
 } from "@/lib/debug/automation"
 import {
   AUTOMATION_ASSETS_MAX_VISIBLE,
-  AUTOMATION_COMPACT_COLUMN_CLASS,
   AUTOMATION_COMPACT_COLUMNS,
 } from "@/lib/debug/constants"
 import {
@@ -27,9 +26,11 @@ import {
 } from "@/lib/table"
 import type { ColumnFilters, SortState } from "@/lib/table-types"
 
+const compactColumnClass = "w-0 px-2"
+
 export function automationFilterHeadClass(key: AutomationSortKey): string {
   return AUTOMATION_COMPACT_COLUMNS.has(key)
-    ? `align-top pb-2 pt-0 ${AUTOMATION_COMPACT_COLUMN_CLASS}`
+    ? `align-top pb-2 pt-0 ${compactColumnClass}`
     : "align-top pb-2 pt-0"
 }
 

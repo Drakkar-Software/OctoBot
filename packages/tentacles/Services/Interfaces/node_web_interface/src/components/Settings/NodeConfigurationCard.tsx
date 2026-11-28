@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { NodesService } from "@/client"
 import { CardCornerButton } from "@/components/Settings/CardCornerButton"
 import { CloudSyncSection } from "@/components/Settings/CloudSyncCard"
+import { NodeBrowserAppCompactSection } from "@/components/Settings/NodeBrowserAppCompactSection"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -25,12 +26,46 @@ import {
 import { LoadingButton } from "@/components/ui/loading-button"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
+import { useMobileUi } from "@/hooks/useMobileUi"
+import { getMobileUiView } from "@/lib/mobile-ui"
 import { buildAuthHeader, fetchNodeConfig } from "@/lib/node-config"
 
 type NodeType = "standalone" | "master"
 
+const WEBSITE_SECTION_LABEL = "Website & mobile apps"
+const WEBSITE_SECTION_DESCRIPTION =
+  "Use the website or iOS/Android apps (not this node's browser app)."
+
+const HOST_INPUT_CLASS =
+  "w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+const HOST_SAVE_BUTTON_CLASS =
+  "inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
+const HOST_PLACEHOLDER = "my-node.tailnet.ts.net"
+
+const SETTINGS_CARD_NAV_LINK_CLASS =
+  "text-sm underline underline-offset-4 hover:text-foreground w-fit"
+
+function WebsiteAndMobileAppsSection() {
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {WEBSITE_SECTION_LABEL}
+      </span>
+      <p className="text-sm text-muted-foreground">{WEBSITE_SECTION_DESCRIPTION}</p>
+      <Link to="/settings/connect" className={SETTINGS_CARD_NAV_LINK_CLASS}>
+        Open connect guide
+      </Link>
+    </div>
+  )
+}
+
 export function NodeConfigurationCard() {
   const { user } = useAuth()
+  const { status, isLoading: isMobileUiLoading } = useMobileUi()
+  const isAdmin = user?.is_superuser === true
+  const browserAppView = getMobileUiView(status, isAdmin)
+  const showBrowserAppSection =
+    isMobileUiLoading || browserAppView.kind !== "hidden"
   const { showErrorToast, showSuccessToast } = useCustomToast()
   const [stopDialogOpen, setStopDialogOpen] = useState(false)
   // Node type is currently a hidden section (see CardContent below) — kept
@@ -159,12 +194,41 @@ export function NodeConfigurationCard() {
           </div>
           <div className="border-t" />
           */}
-          <div className="flex flex-col gap-3">
+          {showBrowserAppSection ? (
+            <>
+              <NodeBrowserAppCompactSection />
+              <div className="border-t" />
+            </>
+          ) : null}
+          <WebsiteAndMobileAppsSection />
+          <div className="border-t" />
+          <div
+            className="flex flex-col gap-3"
+            aria-busy={hostStatus === "loading" || undefined}
+          >
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Host
             </span>
             {hostStatus === "loading" ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className={HOST_INPUT_CLASS}
+                  placeholder={HOST_PLACEHOLDER}
+                  disabled
+                  readOnly
+                  value=""
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  className={HOST_SAVE_BUTTON_CLASS}
+                  disabled
+                  aria-hidden
+                >
+                  Save
+                </button>
+              </div>
             ) : envOverride ? (
               <>
                 <div className="min-h-[38px] w-full rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground flex items-center">
@@ -180,14 +244,14 @@ export function NodeConfigurationCard() {
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    placeholder="my-node.tailnet.ts.net"
+                    className={HOST_INPUT_CLASS}
+                    placeholder={HOST_PLACEHOLDER}
                     value={externalHost}
                     onChange={(e) => setExternalHost(e.target.value)}
                   />
                   <button
                     type="button"
-                    className="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
+                    className={HOST_SAVE_BUTTON_CLASS}
                     onClick={handleSaveHost}
                     disabled={hostStatus === "saving"}
                   >
@@ -207,25 +271,8 @@ export function NodeConfigurationCard() {
               </>
             )}
             <span className="text-xs text-muted-foreground">
-              Host (and port, if non-default) clients use to reach this node —
-              required behind a reverse proxy that rewrites the Host header
-              (e.g. <code>tailscale serve</code>).
+              Address clients use to reach this node (e.g. Tailscale).
             </span>
-          </div>
-          <div className="border-t" />
-          <div className="flex flex-col gap-3">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              OctoBot interface
-            </span>
-            <div className="flex flex-col items-start gap-2">
-              <p className="text-sm text-muted-foreground">
-                Connect to your node, manage your OctoBots, and link your
-                exchange accounts.
-              </p>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/settings/connect">Open connect guide</Link>
-              </Button>
-            </div>
           </div>
           <div className="border-t" />
           <CloudSyncSection />

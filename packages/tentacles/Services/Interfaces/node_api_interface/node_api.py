@@ -47,10 +47,12 @@ except ImportError:
 try:
     from tentacles.Services.Interfaces.node_api_interface.utils import get_dist_directory
     from tentacles.Services.Interfaces.node_api_interface.api.main import build_api_router
+    import tentacles.Services.Interfaces.node_api_interface.mobile_ui as mobile_ui
 except ImportError:
     from utils import get_dist_directory  # type: ignore[no-redef]
     import api.main as _api_main  # type: ignore[no-redef]
     build_api_router = _api_main.build_api_router
+    import mobile_ui  # type: ignore[no-redef]
 
 LOCALHOST_ORIGIN_REGEX = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 OCTOBOT_CLOUD_ORIGIN_REGEX = r"^https://([a-z0-9-]+\.)*octobot\.cloud$"
@@ -237,6 +239,9 @@ class NodeApiInterface(services_interfaces.AbstractInterface):
                 external_host=external_host,
             ),
         )
+
+        app.state.mobile_ui_store = mobile_ui.build_default_store()
+        mobile_ui.add_mobile_ui_routes(app)
 
         # Get the path to the dist folder (works for both development and installed packages)
         dist_dir = get_dist_directory()

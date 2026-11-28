@@ -14,11 +14,14 @@
 #  You should have received a copy of the GNU General Public
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 
+import threading
+
 import pytest
 from unittest import mock
 
 from octobot.community.wallet_backend.community_wallet import WalletBackend, WalletEntry
 from octobot.community.wallet_backend.errors import (
+    AdminWalletAlreadyExistsError,
     InvalidPrivateKeyError,
     PassphraseTooShortError,
     WalletAlreadyExistsError,
@@ -26,6 +29,7 @@ from octobot.community.wallet_backend.errors import (
     WalletProofMismatchError,
     WalletStorageReadOnlyError,
 )
+from octobot.community.wallet_backend.wallet_storage import DedicatedFileWalletStorage
 
 
 # BIP-39 test mnemonic (well-known test vector)
@@ -42,6 +46,44 @@ def _make_backend():
     logger = mock.MagicMock()
     sync_storage = mock.MagicMock()
     return WalletBackend(sync_storage, logger, storage=storage), wallet_store
+
+
+class TestConcurrentAdminWalletCreation:
+    def test_concurrent_create_wallet_one_admin_winner(self, tmp_path):
+        storage = DedicatedFileWalletStorage(str(tmp_path / "wallets.json"))
+        logger = mock.MagicMock()
+        sync_storage = mock.MagicMock()
+        backend = WalletBackend(sync_storage, logger, storage=storage)
+        barrier = threading.Barrier(2)
+        results: list[str] = []
+        errors: list[Exception] = []
+
+        def attempt() -> None:
+            try:
+                barrier.wait()
+                wallet = backend.create_wallet(
+                    name=None,
+                    passphrase="passphrase123",
+                    is_admin=True,
+                )
+                results.append(wallet.address)
+            except Exception as err:
+                errors.append(err)
+
+        first_thread = threading.Thread(target=attempt)
+        second_thread = threading.Thread(target=attempt)
+        first_thread.start()
+        second_thread.start()
+        first_thread.join()
+        second_thread.join()
+
+        assert len(results) == 1
+        assert len(errors) == 1
+        assert isinstance(errors[0], AdminWalletAlreadyExistsError)
+        wallets = backend.list_wallets()
+        assert len(wallets) == 1
+        assert wallets[0].is_admin is True
+        assert wallets[0].address == results[0].lower()
 
 
 class TestCreateWallet:
